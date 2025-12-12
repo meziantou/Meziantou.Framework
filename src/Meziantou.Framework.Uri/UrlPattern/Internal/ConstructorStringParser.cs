@@ -2,7 +2,7 @@ namespace Meziantou.Framework.UrlPatternInternal;
 
 // https://urlpattern.spec.whatwg.org/#constructor-string-parsing
 
-/// <summary>Parses a constructor string into a URLPatternInit dictionary.</summary>
+/// <summary>Parses a constructor string into a URLPatternInit.</summary>
 /// <remarks>
 /// <see href="https://urlpattern.spec.whatwg.org/#constructor-string-parsing">WHATWG URL Pattern Spec - Constructor string parsing</see>
 /// </remarks>
@@ -10,7 +10,7 @@ internal sealed class ConstructorStringParser
 {
     private readonly string _input;
     private readonly List<Token> _tokenList;
-    private readonly Dictionary<string, string> _result;
+    private readonly UrlPatternInit _result;
     private int _componentStart;
     private int _tokenIndex;
     private int _tokenIncrement;
@@ -53,7 +53,7 @@ internal sealed class ConstructorStringParser
         _input = input;
         var tokenizer = new Tokenizer(input, TokenizePolicy.Lenient);
         _tokenList = tokenizer.Tokenize();
-        _result = [];
+        _result = new UrlPatternInit();
         _componentStart = 0;
         _tokenIndex = 0;
         _tokenIncrement = 1;
@@ -67,7 +67,7 @@ internal sealed class ConstructorStringParser
     /// <remarks>
     /// <see href="https://urlpattern.spec.whatwg.org/#parse-a-constructor-string">WHATWG URL Pattern Spec - Parse a constructor string</see>
     /// </remarks>
-    public Dictionary<string, string> Parse()
+    public UrlPatternInit Parse()
     {
         while (_tokenIndex < _tokenList.Count)
         {
@@ -146,7 +146,7 @@ internal sealed class ConstructorStringParser
 
                         if (_protocolMatchesSpecialScheme)
                         {
-                            _result[UrlPatternKeys.Pathname] = "/";
+                            _result.Pathname = "/";
                         }
 
                         if (NextIsAuthoritySlashes())
@@ -265,9 +265,9 @@ internal sealed class ConstructorStringParser
         }
 
         // If parser's result contains "hostname" and not "port", set port to empty string
-        if (_result.ContainsKey(UrlPatternKeys.Hostname) && !_result.ContainsKey(UrlPatternKeys.Port))
+        if (_result.Hostname is not null && _result.Port is null)
         {
-            _result[UrlPatternKeys.Port] = "";
+            _result.Port = "";
         }
 
         return _result;
@@ -291,7 +291,7 @@ internal sealed class ConstructorStringParser
             _state != ConstructorStringState.Authority &&
             _state != ConstructorStringState.Done)
         {
-            _result[GetStateKey(_state)] = MakeComponentString();
+            SetComponentValue(_state, MakeComponentString());
         }
 
         if (_state != ConstructorStringState.Init && newState != ConstructorStringState.Done)
@@ -299,32 +299,32 @@ internal sealed class ConstructorStringParser
             // Set hostname to empty string if transitioning from certain states
             if ((_state is ConstructorStringState.Protocol or ConstructorStringState.Authority or ConstructorStringState.Username or ConstructorStringState.Password) &&
                 (newState is ConstructorStringState.Port or ConstructorStringState.Pathname or ConstructorStringState.Search or ConstructorStringState.Hash) &&
-                !_result.ContainsKey(UrlPatternKeys.Hostname))
+                _result.Hostname is null)
             {
-                _result[UrlPatternKeys.Hostname] = "";
+                _result.Hostname = "";
             }
 
             // Set pathname if transitioning to search or hash
             if ((_state is ConstructorStringState.Protocol or ConstructorStringState.Authority or ConstructorStringState.Username or ConstructorStringState.Password or ConstructorStringState.Hostname or ConstructorStringState.Port) &&
                 (newState is ConstructorStringState.Search or ConstructorStringState.Hash) &&
-                !_result.ContainsKey(UrlPatternKeys.Pathname))
+                _result.Pathname is null)
             {
                 if (_protocolMatchesSpecialScheme)
                 {
-                    _result[UrlPatternKeys.Pathname] = "/";
+                    _result.Pathname = "/";
                 }
                 else
                 {
-                    _result[UrlPatternKeys.Pathname] = "";
+                    _result.Pathname = "";
                 }
             }
 
             // Set search if transitioning to hash
             if ((_state is ConstructorStringState.Protocol or ConstructorStringState.Authority or ConstructorStringState.Username or ConstructorStringState.Password or ConstructorStringState.Hostname or ConstructorStringState.Port or ConstructorStringState.Pathname) &&
                 newState == ConstructorStringState.Hash &&
-                !_result.ContainsKey(UrlPatternKeys.Search))
+                _result.Search is null)
             {
-                _result[UrlPatternKeys.Search] = "";
+                _result.Search = "";
             }
         }
 
@@ -351,20 +351,35 @@ internal sealed class ConstructorStringParser
         return _tokenList[^1];
     }
 
-    private static string GetStateKey(ConstructorStringState state)
+    private void SetComponentValue(ConstructorStringState state, string value)
     {
-        return state switch
+        switch (state)
         {
-            ConstructorStringState.Protocol => UrlPatternKeys.Protocol,
-            ConstructorStringState.Username => UrlPatternKeys.Username,
-            ConstructorStringState.Password => UrlPatternKeys.Password,
-            ConstructorStringState.Hostname => UrlPatternKeys.Hostname,
-            ConstructorStringState.Port => UrlPatternKeys.Port,
-            ConstructorStringState.Pathname => UrlPatternKeys.Pathname,
-            ConstructorStringState.Search => UrlPatternKeys.Search,
-            ConstructorStringState.Hash => UrlPatternKeys.Hash,
-            _ => throw new InvalidOperationException($"Invalid state: {state}"),
-        };
+            case ConstructorStringState.Protocol:
+                _result.Protocol = value;
+                break;
+            case ConstructorStringState.Username:
+                _result.Username = value;
+                break;
+            case ConstructorStringState.Password:
+                _result.Password = value;
+                break;
+            case ConstructorStringState.Hostname:
+                _result.Hostname = value;
+                break;
+            case ConstructorStringState.Port:
+                _result.Port = value;
+                break;
+            case ConstructorStringState.Pathname:
+                _result.Pathname = value;
+                break;
+            case ConstructorStringState.Search:
+                _result.Search = value;
+                break;
+            case ConstructorStringState.Hash:
+                _result.Hash = value;
+                break;
+        }
     }
 
     private bool IsNonSpecialPatternChar(int index, string value)

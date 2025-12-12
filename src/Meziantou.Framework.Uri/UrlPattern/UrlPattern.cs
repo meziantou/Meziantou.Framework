@@ -176,17 +176,17 @@ public sealed class UrlPattern
         var parser = new ConstructorStringParser(pattern);
         var init = parser.Parse();
 
-        if (baseUrl is null && !init.ContainsKey(UrlPatternKeys.Protocol))
+        if (baseUrl is null && init.Protocol is null)
         {
             throw new UrlPatternException("A base URL must be provided when the pattern does not specify a protocol.");
         }
 
         if (baseUrl is not null)
         {
-            init[UrlPatternKeys.BaseUrl] = baseUrl;
+            init.BaseUrl = baseUrl;
         }
 
-        return Create(ConvertDictionaryToInit(init), options);
+        return Create(init, options);
     }
 
     /// <summary>Creates a new URLPattern from a URLPatternInit dictionary.</summary>
@@ -693,32 +693,6 @@ public sealed class UrlPattern
         }
 
         return false;
-    }
-
-    private static UrlPatternInit ConvertDictionaryToInit(Dictionary<string, string> dict)
-    {
-        var init = new UrlPatternInit();
-
-        if (dict.TryGetValue(UrlPatternKeys.Protocol, out var protocol))
-            init.Protocol = protocol;
-        if (dict.TryGetValue(UrlPatternKeys.Username, out var username))
-            init.Username = username;
-        if (dict.TryGetValue(UrlPatternKeys.Password, out var password))
-            init.Password = password;
-        if (dict.TryGetValue(UrlPatternKeys.Hostname, out var hostname))
-            init.Hostname = hostname;
-        if (dict.TryGetValue(UrlPatternKeys.Port, out var port))
-            init.Port = port;
-        if (dict.TryGetValue(UrlPatternKeys.Pathname, out var pathname))
-            init.Pathname = pathname;
-        if (dict.TryGetValue(UrlPatternKeys.Search, out var search))
-            init.Search = search;
-        if (dict.TryGetValue(UrlPatternKeys.Hash, out var hash))
-            init.Hash = hash;
-        if (dict.TryGetValue(UrlPatternKeys.BaseUrl, out var baseUrl))
-            init.BaseUrl = baseUrl;
-
-        return init;
     }
 
     // Canonicalization callbacks

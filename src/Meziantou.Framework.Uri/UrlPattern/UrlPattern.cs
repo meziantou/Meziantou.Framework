@@ -10,6 +10,21 @@ namespace Meziantou.Framework;
 /// <see href="https://urlpattern.spec.whatwg.org/">WHATWG URL Pattern Spec</see>
 /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API">MDN - URL Pattern API</see>
 /// </remarks>
+/// <example>
+/// <code language="csharp">
+/// // Create a pattern and test if a URL matches
+/// var pattern = UrlPattern.Create("https://example.com/users/:id");
+/// bool isMatch = pattern.IsMatch("https://example.com/users/123"); // true
+///
+/// // Extract captured groups from a URL
+/// var result = pattern.Match("https://example.com/users/456");
+/// string userId = result?.Pathname.Groups["id"]; // "456"
+///
+/// // Use wildcards to match any value
+/// var wildcardPattern = UrlPattern.Create("https://*.example.com/*");
+/// wildcardPattern.IsMatch("https://api.example.com/data"); // true
+/// </code>
+/// </example>
 public sealed class UrlPattern
 {
     private readonly UrlPatternComponent _protocolComponent;

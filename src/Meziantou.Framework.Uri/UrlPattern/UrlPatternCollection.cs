@@ -2,14 +2,30 @@ using System.Collections;
 
 namespace Meziantou.Framework;
 
-// https://urlpattern.spec.whatwg.org/#urlpatternlist
-
 /// <summary>Represents a collection of URL patterns that can be matched against URLs.</summary>
 /// <remarks>
 /// <para>This is the .NET equivalent of the URLPatternList concept from the spec.</para>
 /// <para>Use this class when you need to match a URL against multiple patterns.</para>
 /// <see href="https://urlpattern.spec.whatwg.org/">WHATWG URL Pattern Spec</see>
 /// </remarks>
+/// <example>
+/// <code language="csharp">
+/// // Create a collection of patterns for routing
+/// var patterns = new UrlPatternCollection();
+/// patterns.Add("https://example.com/api/users/:id");
+/// patterns.Add("https://example.com/api/products/:id");
+/// patterns.Add("https://example.com/static/*");
+///
+/// // Check if any pattern matches
+/// bool isMatch = patterns.IsMatch("https://example.com/api/users/123"); // true
+///
+/// // Find the first matching pattern
+/// var matchingPattern = patterns.FindPattern("https://example.com/api/products/456");
+///
+/// // Get match result with captured groups
+/// var result = patterns.Match("https://example.com/api/users/789");
+/// </code>
+/// </example>
 public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
 {
     private readonly List<UrlPattern> _patterns = [];
@@ -63,10 +79,9 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
     /// <param name="baseUrl">The base URL.</param>
     /// <returns>The created and added pattern.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
-    public UrlPattern Add(string pattern, string baseUrl)
+    public UrlPattern Add(string pattern, string? baseUrl)
     {
         ArgumentNullException.ThrowIfNull(pattern);
-        ArgumentNullException.ThrowIfNull(baseUrl);
         var urlPattern = UrlPattern.Create(pattern, baseUrl);
         _patterns.Add(urlPattern);
         return urlPattern;
@@ -182,7 +197,7 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
 
     /// <summary>Returns the first pattern in the collection that matches the given URL.</summary>
     /// <param name="url">The URL to match against.</param>
-    /// <returns>The first matching pattern, or <c>null</c> if no pattern matches.</returns>
+    /// <returns>The first matching pattern, or <see langword="null"/> if no pattern matches.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public UrlPattern? FindPattern(string url)
     {
@@ -202,7 +217,7 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
     /// <summary>Returns the first pattern in the collection that matches the given URL with a base URL.</summary>
     /// <param name="url">The URL to match against.</param>
     /// <param name="baseUrl">The base URL.</param>
-    /// <returns>The first matching pattern, or <c>null</c> if no pattern matches.</returns>
+    /// <returns>The first matching pattern, or <see langword="null"/> if no pattern matches.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public UrlPattern? FindPattern(string url, string? baseUrl)
     {
@@ -221,7 +236,7 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
 
     /// <summary>Returns the first pattern in the collection that matches the given URL.</summary>
     /// <param name="url">The URL to match against.</param>
-    /// <returns>The first matching pattern, or <c>null</c> if no pattern matches.</returns>
+    /// <returns>The first matching pattern, or <see langword="null"/> if no pattern matches.</returns>
     public UrlPattern? FindPattern(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);

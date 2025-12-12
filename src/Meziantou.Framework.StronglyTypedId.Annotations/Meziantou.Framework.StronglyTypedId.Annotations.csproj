@@ -4,7 +4,6 @@
     <Description>Attributes for the Meziantou.Framework.StronglyTypedId source generator</Description>
     <IsPackable>false</IsPackable>
     <Version>1.0.5</Version>
-    <GenerateSBOM>false</GenerateSBOM>
   </PropertyGroup>
 
   <ItemGroup>

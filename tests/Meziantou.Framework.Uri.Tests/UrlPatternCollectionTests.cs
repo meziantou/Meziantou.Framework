@@ -641,7 +641,7 @@ public sealed class UrlPatternCollectionTests
     }
 
     [SuppressMessage("Performance", "MA0149:Change type of parameter for improved performance", Justification = "Testing IReadOnlyList interface implementation")]
-    private static void AssertReadOnlyListIndexer(IReadOnlyList<UrlPattern> list, UrlPattern expectedFirst, UrlPattern expectedSecond)
+    private static void AssertReadOnlyListIndexer(UrlPatternCollection list, UrlPattern expectedFirst, UrlPattern expectedSecond)
     {
         Assert.Same(expectedFirst, list[0]);
         Assert.Same(expectedSecond, list[1]);

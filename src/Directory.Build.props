@@ -7,11 +7,4 @@
     <EnablePackageValidation Condition="'$(EnablePackageValidation)' == ''">true</EnablePackageValidation>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <GenerateSBOM Condition="'$(GenerateSBOM)' == ''">$(IsPackable)</GenerateSBOM>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Sbom.Targets" Version="4.1.4" PrivateAssets="All" />
-  </ItemGroup>
-
 </Project>

@@ -8,7 +8,6 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>False</IsPackable>
-    <GenerateSBOM>false</GenerateSBOM>
 
     <ValidateProjectTargets>false</ValidateProjectTargets>
     <SkipAutoVersionUpdates>true</SkipAutoVersionUpdates>

@@ -248,7 +248,7 @@ internal sealed class PatternParser
             return;
         }
 
-        var regexpValue = "";
+        string? regexpValue;
         if (regexpOrWildcardToken is null)
         {
             regexpValue = _segmentWildcardRegexp;

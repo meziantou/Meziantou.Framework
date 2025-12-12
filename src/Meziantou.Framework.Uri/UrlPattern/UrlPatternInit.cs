@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 /// <see href="https://urlpattern.spec.whatwg.org/#dictdef-urlpatterninit">WHATWG URL Pattern Spec - URLPatternInit</see>
 /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URLPattern/URLPattern">MDN - URLPattern constructor</see>
 /// </remarks>
-public sealed class UrlPatternInit // TODO remove and use named parameters in UrlPattern.Create?
+public sealed class UrlPatternInit // TODO remove and use named parameters in UrlPattern.Create? 
 {
     /// <summary>Gets or sets the protocol pattern string.</summary>
     public string? Protocol { get; set; }

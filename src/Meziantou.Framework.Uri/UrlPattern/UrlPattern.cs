@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Meziantou.Framework.UrlPatternInternal;
 
 namespace Meziantou.Framework;
@@ -175,6 +176,7 @@ public sealed class UrlPattern
         var parser = new ConstructorStringParser(pattern);
         var init = parser.Parse();
 
+        // TODO is that needed?
         if (baseUrl is null && !init.ContainsKey("protocol"))
         {
             throw new UrlPatternException("A base URL must be provided when the pattern does not specify a protocol.");
@@ -274,25 +276,25 @@ public sealed class UrlPattern
             hashComponent);
     }
 
-    /// <summary>Tests if the pattern matches the given URL.</summary>
+    /// <summary>Indicates whether the pattern finds a match in the specified URL.</summary>
     /// <param name="url">The URL string to test.</param>
-    /// <returns><c>true</c> if the pattern matches the URL; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
     /// <remarks>
     /// <see href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-test">WHATWG URL Pattern Spec - test method</see>
     /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URLPattern/test">MDN - URLPattern.test()</see>
     /// </remarks>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
-    public bool Test(string url)
+    public bool IsMatch(string url)
     {
-        return Test(url, baseUrl: null);
+        return IsMatch(url, baseUrl: null);
     }
 
-    /// <summary>Tests if the pattern matches the given URL with a base URL.</summary>
+    /// <summary>Indicates whether the pattern finds a match in the specified URL with a base URL.</summary>
     /// <param name="url">The URL string to test.</param>
     /// <param name="baseUrl">The base URL to use for resolving relative URLs.</param>
-    /// <returns><c>true</c> if the pattern matches the URL; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
-    public bool Test(string url, string? baseUrl)
+    public bool IsMatch(string url, string? baseUrl)
     {
         ArgumentNullException.ThrowIfNull(url);
 
@@ -302,7 +304,7 @@ public sealed class UrlPattern
             if (uri is null)
                 return false;
 
-            return MatchUrl(uri);
+            return IsMatchUrl(uri);
         }
         catch (UriFormatException)
         {
@@ -310,26 +312,81 @@ public sealed class UrlPattern
         }
     }
 
-    /// <summary>Tests if the pattern matches the given URL.</summary>
+    /// <summary>Indicates whether the pattern finds a match in the specified URL.</summary>
     /// <param name="url">The URL to test.</param>
-    /// <returns><c>true</c> if the pattern matches the URL; otherwise, <c>false</c>.</returns>
-    public bool Test(Uri url)
+    /// <returns><see langword="true"/> if the pattern matches the URL; otherwise, <see langword="false"/>.</returns>
+    public bool IsMatch(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
-        return MatchUrl(url);
+        return IsMatchUrl(url);
     }
 
-    /// <summary>Tests if the pattern matches the given URL input.</summary>
+    /// <summary>Indicates whether the pattern finds a match in the specified URL input.</summary>
     /// <param name="input">The URL input dictionary to test.</param>
-    /// <returns><c>true</c> if the pattern matches the input; otherwise, <c>false</c>.</returns>
-    public bool Test(UrlPatternInit input)
+    /// <returns><see langword="true"/> if the pattern matches the input; otherwise, <see langword="false"/>.</returns>
+    public bool IsMatch(UrlPatternInit input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        var processed = ProcessUrlPatternInit(input);
+        return IsMatchInit(processed);
+    }
+
+    /// <summary>Searches the specified URL for the first occurrence of the pattern and returns the match result with captured groups.</summary>
+    /// <param name="url">The URL string to match.</param>
+    /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    /// <remarks>
+    /// <see href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec">WHATWG URL Pattern Spec - exec method</see>
+    /// <see href="https://developer.mozilla.org/en-US/docs/Web/API/URLPattern/exec">MDN - URLPattern.exec()</see>
+    /// </remarks>
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
+    public UrlPatternResult? Match(string url)
+    {
+        return Match(url, baseUrl: null);
+    }
+
+    /// <summary>Searches the specified URL with a base URL for the first occurrence of the pattern and returns the match result with captured groups.</summary>
+    /// <param name="url">The URL string to match.</param>
+    /// <param name="baseUrl">The base URL to use for resolving relative URLs.</param>
+    /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
+    public UrlPatternResult? Match(string url, string? baseUrl)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+
+        try
+        {
+            var uri = ParseUrl(url, baseUrl);
+            if (uri is null)
+                return null;
+
+            return MatchUrl(uri, url);
+        }
+        catch (UriFormatException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Searches the specified URL for the first occurrence of the pattern and returns the match result with captured groups.</summary>
+    /// <param name="url">The URL to match.</param>
+    /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    public UrlPatternResult? Match(Uri url)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        return MatchUrl(url, url.ToString());
+    }
+
+    /// <summary>Searches the specified URL input for the first occurrence of the pattern and returns the match result with captured groups.</summary>
+    /// <param name="input">The URL input dictionary to match.</param>
+    /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no match.</returns>
+    public UrlPatternResult? Match(UrlPatternInit input)
     {
         ArgumentNullException.ThrowIfNull(input);
         var processed = ProcessUrlPatternInit(input);
         return MatchInit(processed);
     }
 
-    private bool MatchUrl(Uri url)
+    private UrlPatternResult? MatchUrl(Uri url, string originalInput)
     {
         var protocol = url.Scheme;
         var username = Uri.UnescapeDataString(url.UserInfo.Split(':').FirstOrDefault() ?? "");
@@ -340,10 +397,10 @@ public sealed class UrlPattern
         var search = url.Query.TrimStart('?');
         var hash = url.Fragment.TrimStart('#');
 
-        return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
+        return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash, originalInput);
     }
 
-    private bool MatchInit(UrlPatternInit init)
+    private UrlPatternResult? MatchInit(UrlPatternInit init)
     {
         var protocol = init.Protocol ?? "";
         var username = init.Username ?? "";
@@ -354,10 +411,123 @@ public sealed class UrlPattern
         var search = init.Search ?? "";
         var hash = init.Hash ?? "";
 
-        return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
+        return MatchComponents(protocol, username, password, hostname, port, pathname, search, hash, originalInput: null);
     }
 
-    private bool MatchComponents(string protocol, string username, string password, string hostname, string port, string pathname, string search, string hash)
+    private UrlPatternResult? MatchComponents(string protocol, string username, string password, string hostname, string port, string pathname, string search, string hash, string? originalInput)
+    {
+        var protocolMatch = _protocolComponent.RegularExpression.Match(protocol);
+        if (!protocolMatch.Success)
+            return null;
+
+        var usernameMatch = _usernameComponent.RegularExpression.Match(username);
+        if (!usernameMatch.Success)
+            return null;
+
+        var passwordMatch = _passwordComponent.RegularExpression.Match(password);
+        if (!passwordMatch.Success)
+            return null;
+
+        var hostnameMatch = _hostnameComponent.RegularExpression.Match(hostname);
+        if (!hostnameMatch.Success)
+            return null;
+
+        var portMatch = _portComponent.RegularExpression.Match(port);
+        if (!portMatch.Success)
+            return null;
+
+        var pathnameMatch = _pathnameComponent.RegularExpression.Match(pathname);
+        if (!pathnameMatch.Success)
+            return null;
+
+        var searchMatch = _searchComponent.RegularExpression.Match(search);
+        if (!searchMatch.Success)
+            return null;
+
+        var hashMatch = _hashComponent.RegularExpression.Match(hash);
+        if (!hashMatch.Success)
+            return null;
+
+        var input = originalInput is not null
+            ? new UrlPatternInput(originalInput)
+            : new UrlPatternInput(new UrlPatternInit
+            {
+                Protocol = protocol,
+                Username = username,
+                Password = password,
+                Hostname = hostname,
+                Port = port,
+                Pathname = pathname,
+                Search = search,
+                Hash = hash,
+            });
+
+        return new UrlPatternResult(
+            [input],
+            CreateComponentResult(protocol, protocolMatch, _protocolComponent.GroupNameList),
+            CreateComponentResult(username, usernameMatch, _usernameComponent.GroupNameList),
+            CreateComponentResult(password, passwordMatch, _passwordComponent.GroupNameList),
+            CreateComponentResult(hostname, hostnameMatch, _hostnameComponent.GroupNameList),
+            CreateComponentResult(port, portMatch, _portComponent.GroupNameList),
+            CreateComponentResult(pathname, pathnameMatch, _pathnameComponent.GroupNameList),
+            CreateComponentResult(search, searchMatch, _searchComponent.GroupNameList),
+            CreateComponentResult(hash, hashMatch, _hashComponent.GroupNameList));
+    }
+
+    private static UrlPatternComponentResult CreateComponentResult(string input, Match match, List<string> groupNameList)
+    {
+        var groups = new Dictionary<string, string?>(StringComparer.Ordinal);
+
+        // The GroupNameList contains the names in order, and they correspond to
+        // positional groups in the regex (1-indexed, since group 0 is the full match).
+        for (var i = 0; i < groupNameList.Count; i++)
+        {
+            var groupName = groupNameList[i];
+            // Groups are 1-indexed in regex (group 0 is the full match)
+            var groupIndex = i + 1;
+            if (groupIndex < match.Groups.Count)
+            {
+                var group = match.Groups[groupIndex];
+                groups[groupName] = group.Success ? group.Value : null;
+            }
+            else
+            {
+                groups[groupName] = null;
+            }
+        }
+
+        return new UrlPatternComponentResult(input, groups);
+    }
+
+    private bool IsMatchUrl(Uri url)
+    {
+        var protocol = url.Scheme;
+        var username = Uri.UnescapeDataString(url.UserInfo.Split(':').FirstOrDefault() ?? "");
+        var password = url.UserInfo.Contains(':', StringComparison.Ordinal) ? Uri.UnescapeDataString(url.UserInfo[(url.UserInfo.IndexOf(':', StringComparison.Ordinal) + 1)..]) : "";
+        var hostname = url.Host;
+        var port = url.IsDefaultPort ? "" : url.Port.ToString(CultureInfo.InvariantCulture);
+        var pathname = url.AbsolutePath;
+        var search = url.Query.TrimStart('?');
+        var hash = url.Fragment.TrimStart('#');
+
+        return IsMatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
+    }
+
+    private bool IsMatchInit(UrlPatternInit init)
+    {
+        var protocol = init.Protocol ?? "";
+        var username = init.Username ?? "";
+        var password = init.Password ?? "";
+        var hostname = init.Hostname ?? "";
+        var port = init.Port ?? "";
+        var pathname = init.Pathname ?? "";
+        var search = init.Search ?? "";
+        var hash = init.Hash ?? "";
+
+        return IsMatchComponents(protocol, username, password, hostname, port, pathname, search, hash);
+    }
+
+    private bool IsMatchComponents(string protocol, string username, string password, string hostname, string port, string pathname, string search, string hash)
     {
         if (!_protocolComponent.RegularExpression.IsMatch(protocol))
             return false;
@@ -554,7 +724,6 @@ public sealed class UrlPattern
 
     // Canonicalization callbacks
     // https://urlpattern.spec.whatwg.org/#canon-encoding-callbacks
-
     private static string CanonicalizeProtocol(string value)
     {
         if (string.IsNullOrEmpty(value))

@@ -85,7 +85,7 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
 
     /// <summary>Removes a pattern from the collection.</summary>
     /// <param name="pattern">The pattern to remove.</param>
-    /// <returns><c>true</c> if the pattern was removed; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the pattern was removed; otherwise, <see langword="false"/>.</returns>
     public bool Remove(UrlPattern pattern)
     {
         return _patterns.Remove(pattern);
@@ -99,23 +99,23 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
 
     /// <summary>Determines whether the collection contains the specified pattern.</summary>
     /// <param name="pattern">The pattern to locate.</param>
-    /// <returns><c>true</c> if the pattern is found; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the pattern is found; otherwise, <see langword="false"/>.</returns>
     public bool Contains(UrlPattern pattern)
     {
         return _patterns.Contains(pattern);
     }
 
-    /// <summary>Tests if any pattern in the collection matches the given URL.</summary>
+    /// <summary>Indicates whether any pattern in the collection finds a match in the specified URL.</summary>
     /// <param name="url">The URL to test.</param>
-    /// <returns><c>true</c> if any pattern matches; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if any pattern matches; otherwise, <see langword="false"/>.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
-    public bool Test(string url)
+    public bool IsMatch(string url)
     {
         ArgumentNullException.ThrowIfNull(url);
 
         foreach (var pattern in _patterns)
         {
-            if (pattern.Test(url))
+            if (pattern.IsMatch(url))
             {
                 return true;
             }
@@ -124,18 +124,18 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
         return false;
     }
 
-    /// <summary>Tests if any pattern in the collection matches the given URL with a base URL.</summary>
+    /// <summary>Indicates whether any pattern in the collection finds a match in the specified URL with a base URL.</summary>
     /// <param name="url">The URL to test.</param>
     /// <param name="baseUrl">The base URL.</param>
-    /// <returns><c>true</c> if any pattern matches; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if any pattern matches; otherwise, <see langword="false"/>.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
-    public bool Test(string url, string? baseUrl)
+    public bool IsMatch(string url, string? baseUrl)
     {
         ArgumentNullException.ThrowIfNull(url);
 
         foreach (var pattern in _patterns)
         {
-            if (pattern.Test(url, baseUrl))
+            if (pattern.IsMatch(url, baseUrl))
             {
                 return true;
             }
@@ -144,16 +144,16 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
         return false;
     }
 
-    /// <summary>Tests if any pattern in the collection matches the given URL.</summary>
+    /// <summary>Indicates whether any pattern in the collection finds a match in the specified URL.</summary>
     /// <param name="url">The URL to test.</param>
-    /// <returns><c>true</c> if any pattern matches; otherwise, <c>false</c>.</returns>
-    public bool Test(Uri url)
+    /// <returns><see langword="true"/> if any pattern matches; otherwise, <see langword="false"/>.</returns>
+    public bool IsMatch(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
 
         foreach (var pattern in _patterns)
         {
-            if (pattern.Test(url))
+            if (pattern.IsMatch(url))
             {
                 return true;
             }
@@ -162,16 +162,16 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
         return false;
     }
 
-    /// <summary>Tests if any pattern in the collection matches the given URL input.</summary>
+    /// <summary>Indicates whether any pattern in the collection finds a match in the specified URL input.</summary>
     /// <param name="input">The URL input to test.</param>
-    /// <returns><c>true</c> if any pattern matches; otherwise, <c>false</c>.</returns>
-    public bool Test(UrlPatternInit input)
+    /// <returns><see langword="true"/> if any pattern matches; otherwise, <see langword="false"/>.</returns>
+    public bool IsMatch(UrlPatternInit input)
     {
         ArgumentNullException.ThrowIfNull(input);
 
         foreach (var pattern in _patterns)
         {
-            if (pattern.Test(input))
+            if (pattern.IsMatch(input))
             {
                 return true;
             }
@@ -184,13 +184,13 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
     /// <param name="url">The URL to match against.</param>
     /// <returns>The first matching pattern, or <c>null</c> if no pattern matches.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
-    public UrlPattern? Match(string url)
+    public UrlPattern? FindPattern(string url)
     {
         ArgumentNullException.ThrowIfNull(url);
 
         foreach (var pattern in _patterns)
         {
-            if (pattern.Test(url))
+            if (pattern.IsMatch(url))
             {
                 return pattern;
             }
@@ -204,13 +204,13 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
     /// <param name="baseUrl">The base URL.</param>
     /// <returns>The first matching pattern, or <c>null</c> if no pattern matches.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
-    public UrlPattern? Match(string url, string? baseUrl)
+    public UrlPattern? FindPattern(string url, string? baseUrl)
     {
         ArgumentNullException.ThrowIfNull(url);
 
         foreach (var pattern in _patterns)
         {
-            if (pattern.Test(url, baseUrl))
+            if (pattern.IsMatch(url, baseUrl))
             {
                 return pattern;
             }
@@ -222,15 +222,97 @@ public sealed class UrlPatternCollection : IReadOnlyList<UrlPattern>
     /// <summary>Returns the first pattern in the collection that matches the given URL.</summary>
     /// <param name="url">The URL to match against.</param>
     /// <returns>The first matching pattern, or <c>null</c> if no pattern matches.</returns>
-    public UrlPattern? Match(Uri url)
+    public UrlPattern? FindPattern(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
 
         foreach (var pattern in _patterns)
         {
-            if (pattern.Test(url))
+            if (pattern.IsMatch(url))
             {
                 return pattern;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Searches the specified URL using all patterns in the collection and returns the first match result with captured groups.</summary>
+    /// <param name="url">The URL to match.</param>
+    /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no pattern matches.</returns>
+    /// <remarks>
+    /// <see href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec">WHATWG URL Pattern Spec - exec method</see>
+    /// </remarks>
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
+    public UrlPatternResult? Match(string url)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+
+        foreach (var pattern in _patterns)
+        {
+            var result = pattern.Match(url);
+            if (result is not null)
+            {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Searches the specified URL with a base URL using all patterns in the collection and returns the first match result with captured groups.</summary>
+    /// <param name="url">The URL to match.</param>
+    /// <param name="baseUrl">The base URL.</param>
+    /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no pattern matches.</returns>
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
+    public UrlPatternResult? Match(string url, string? baseUrl)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+
+        foreach (var pattern in _patterns)
+        {
+            var result = pattern.Match(url, baseUrl);
+            if (result is not null)
+            {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Searches the specified URL using all patterns in the collection and returns the first match result with captured groups.</summary>
+    /// <param name="url">The URL to match.</param>
+    /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no pattern matches.</returns>
+    public UrlPatternResult? Match(Uri url)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+
+        foreach (var pattern in _patterns)
+        {
+            var result = pattern.Match(url);
+            if (result is not null)
+            {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Searches the specified URL input using all patterns in the collection and returns the first match result with captured groups.</summary>
+    /// <param name="input">The URL input to match.</param>
+    /// <returns>A <see cref="UrlPatternResult"/> containing the match result, or <see langword="null"/> if no pattern matches.</returns>
+    public UrlPatternResult? Match(UrlPatternInit input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        foreach (var pattern in _patterns)
+        {
+            var result = pattern.Match(input);
+            if (result is not null)
+            {
+                return result;
             }
         }
 

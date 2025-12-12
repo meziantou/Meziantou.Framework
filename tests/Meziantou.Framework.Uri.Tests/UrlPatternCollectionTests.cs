@@ -49,7 +49,7 @@ public sealed class UrlPatternCollectionTests
     }
 
     [Fact]
-    public void Test_WithMatchingUrl_ShouldReturnTrue()
+    public void IsMatch_WithMatchingUrl_ShouldReturnTrue()
     {
         var collection = new UrlPatternCollection
         {
@@ -57,12 +57,12 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id" }),
         };
 
-        Assert.True(collection.Test("https://example.com/api/users"));
-        Assert.True(collection.Test("https://example.com/books/123"));
+        Assert.True(collection.IsMatch("https://example.com/api/users"));
+        Assert.True(collection.IsMatch("https://example.com/books/123"));
     }
 
     [Fact]
-    public void Test_WithNonMatchingUrl_ShouldReturnFalse()
+    public void IsMatch_WithNonMatchingUrl_ShouldReturnFalse()
     {
         var collection = new UrlPatternCollection
         {
@@ -70,22 +70,22 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id" }),
         };
 
-        Assert.False(collection.Test("https://example.com/articles/123"));
+        Assert.False(collection.IsMatch("https://example.com/articles/123"));
     }
 
     [Fact]
-    public void Test_WithBaseUrl_ShouldWork()
+    public void IsMatch_WithBaseUrl_ShouldWork()
     {
         var collection = new UrlPatternCollection
         {
             UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" }),
         };
 
-        Assert.True(collection.Test("/api/test", "https://example.com"));
+        Assert.True(collection.IsMatch("/api/test", "https://example.com"));
     }
 
     [Fact]
-    public void Test_WithUri_ShouldWork()
+    public void IsMatch_WithUri_ShouldWork()
     {
         var collection = new UrlPatternCollection
         {
@@ -93,64 +93,64 @@ public sealed class UrlPatternCollectionTests
         };
 
         var uri = new System.Uri("https://example.com/api/test");
-        Assert.True(collection.Test(uri));
+        Assert.True(collection.IsMatch(uri));
     }
 
     [Fact]
-    public void Test_WithUrlPatternInit_ShouldWork()
+    public void IsMatch_WithUrlPatternInit_ShouldWork()
     {
         var collection = new UrlPatternCollection
         {
             UrlPattern.Create(new UrlPatternInit { Protocol = "https" }),
         };
 
-        Assert.True(collection.Test(new UrlPatternInit { Protocol = "https", Hostname = "example.com" }));
+        Assert.True(collection.IsMatch(new UrlPatternInit { Protocol = "https", Hostname = "example.com" }));
     }
 
     [Fact]
-    public void Match_WithMatchingUrl_ShouldReturnFirstMatchingPattern()
+    public void FindPattern_WithMatchingUrl_ShouldReturnFirstMatchingPattern()
     {
         var pattern1 = UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" });
         var pattern2 = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id" });
         var collection = new UrlPatternCollection { pattern1, pattern2 };
 
-        var result = collection.Match("https://example.com/api/users");
+        var result = collection.FindPattern("https://example.com/api/users");
 
         Assert.Same(pattern1, result);
     }
 
     [Fact]
-    public void Match_WithNonMatchingUrl_ShouldReturnNull()
+    public void FindPattern_WithNonMatchingUrl_ShouldReturnNull()
     {
         var collection = new UrlPatternCollection
         {
             UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" }),
         };
 
-        var result = collection.Match("https://example.com/other/path");
+        var result = collection.FindPattern("https://example.com/other/path");
 
         Assert.Null(result);
     }
 
     [Fact]
-    public void Match_WithBaseUrl_ShouldWork()
+    public void FindPattern_WithBaseUrl_ShouldWork()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" });
         var collection = new UrlPatternCollection { pattern };
 
-        var result = collection.Match("/api/test", "https://example.com");
+        var result = collection.FindPattern("/api/test", "https://example.com");
 
         Assert.Same(pattern, result);
     }
 
     [Fact]
-    public void Match_WithUri_ShouldWork()
+    public void FindPattern_WithUri_ShouldWork()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" });
         var collection = new UrlPatternCollection { pattern };
 
         var uri = new System.Uri("https://example.com/api/test");
-        var result = collection.Match(uri);
+        var result = collection.FindPattern(uri);
 
         Assert.Same(pattern, result);
     }
@@ -270,19 +270,19 @@ public sealed class UrlPatternCollectionTests
     }
 
     [Fact]
-    public void Test_WithNullUrl_ShouldThrowArgumentNullException()
+    public void IsMatch_WithNullUrl_ShouldThrowArgumentNullException()
     {
         var collection = new UrlPatternCollection();
 
-        Assert.Throws<ArgumentNullException>(() => collection.Test((string)null!));
+        Assert.Throws<ArgumentNullException>(() => collection.IsMatch((string)null!));
     }
 
     [Fact]
-    public void Match_WithNullUrl_ShouldThrowArgumentNullException()
+    public void FindPattern_WithNullUrl_ShouldThrowArgumentNullException()
     {
         var collection = new UrlPatternCollection();
 
-        Assert.Throws<ArgumentNullException>(() => collection.Match((string)null!));
+        Assert.Throws<ArgumentNullException>(() => collection.FindPattern((string)null!));
     }
 
     [Fact]
@@ -293,19 +293,19 @@ public sealed class UrlPatternCollectionTests
 
     // Empty collection tests
     [Fact]
-    public void Test_OnEmptyCollection_ShouldReturnFalse()
+    public void IsMatch_OnEmptyCollection_ShouldReturnFalse()
     {
         var collection = new UrlPatternCollection();
 
-        Assert.False(collection.Test("https://example.com/test"));
+        Assert.False(collection.IsMatch("https://example.com/test"));
     }
 
     [Fact]
-    public void Match_OnEmptyCollection_ShouldReturnNull()
+    public void FindPattern_OnEmptyCollection_ShouldReturnNull()
     {
         var collection = new UrlPatternCollection();
 
-        Assert.Null(collection.Match("https://example.com/test"));
+        Assert.Null(collection.FindPattern("https://example.com/test"));
     }
 
     // Equivalent to URLPatternSetTest.Empty
@@ -314,8 +314,8 @@ public sealed class UrlPatternCollectionTests
     {
         var collection = new UrlPatternCollection();
 
-        Assert.False(collection.Test("http://www.foo.com/bar"));
-        Assert.False(collection.Test("invalid"));
+        Assert.False(collection.IsMatch("http://www.foo.com/bar"));
+        Assert.False(collection.IsMatch("invalid"));
     }
 
     // Equivalent to URLPatternSetTest.One
@@ -332,10 +332,10 @@ public sealed class UrlPatternCollectionTests
             }),
         };
 
-        Assert.True(collection.Test("http://www.google.com/"));
-        Assert.True(collection.Test("http://www.google.com/monkey"));
-        Assert.False(collection.Test("https://www.google.com/"));
-        Assert.False(collection.Test("https://www.microsoft.com/"));
+        Assert.True(collection.IsMatch("http://www.google.com/"));
+        Assert.True(collection.IsMatch("http://www.google.com/monkey"));
+        Assert.False(collection.IsMatch("https://www.google.com/"));
+        Assert.False(collection.IsMatch("https://www.microsoft.com/"));
     }
 
     // Equivalent to URLPatternSetTest.Two
@@ -358,9 +358,9 @@ public sealed class UrlPatternCollectionTests
             }),
         };
 
-        Assert.True(collection.Test("http://www.google.com/monkey"));
-        Assert.True(collection.Test("http://www.yahoo.com/monkey"));
-        Assert.False(collection.Test("https://www.apple.com/monkey"));
+        Assert.True(collection.IsMatch("http://www.google.com/monkey"));
+        Assert.True(collection.IsMatch("http://www.yahoo.com/monkey"));
+        Assert.False(collection.IsMatch("https://www.apple.com/monkey"));
     }
 
     // Equivalent to URLPatternSetTest.Duplicates
@@ -388,7 +388,7 @@ public sealed class UrlPatternCollectionTests
 
     // Match priority - first match wins
     [Fact]
-    public void Match_ReturnsFirstMatchingPattern()
+    public void FindPattern_ReturnsFirstMatchingPattern()
     {
         var general = UrlPattern.Create(new UrlPatternInit { Pathname = "/*" });
         var specific = UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" });
@@ -396,12 +396,12 @@ public sealed class UrlPatternCollectionTests
         var collection = new UrlPatternCollection { general, specific };
 
         // General pattern is first, so it matches
-        var result = collection.Match("https://example.com/api/users");
+        var result = collection.FindPattern("https://example.com/api/users");
         Assert.Same(general, result);
     }
 
     [Fact]
-    public void Match_ReturnsFirstMatchingPattern_ReversedOrder()
+    public void FindPattern_ReturnsFirstMatchingPattern_ReversedOrder()
     {
         var general = UrlPattern.Create(new UrlPatternInit { Pathname = "/*" });
         var specific = UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" });
@@ -409,13 +409,13 @@ public sealed class UrlPatternCollectionTests
         var collection = new UrlPatternCollection { specific, general };
 
         // Specific pattern is first, so it matches for /api/ paths
-        var result = collection.Match("https://example.com/api/users");
+        var result = collection.FindPattern("https://example.com/api/users");
         Assert.Same(specific, result);
     }
 
     // Complex matching scenarios
     [Fact]
-    public void Test_MultipleProtocols()
+    public void IsMatch_MultipleProtocols()
     {
         var collection = new UrlPatternCollection
         {
@@ -423,13 +423,13 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Protocol = "https" }),
         };
 
-        Assert.True(collection.Test("http://example.com"));
-        Assert.True(collection.Test("https://example.com"));
-        Assert.False(collection.Test("ftp://example.com"));
+        Assert.True(collection.IsMatch("http://example.com"));
+        Assert.True(collection.IsMatch("https://example.com"));
+        Assert.False(collection.IsMatch("ftp://example.com"));
     }
 
     [Fact]
-    public void Test_MultipleHostnames()
+    public void IsMatch_MultipleHostnames()
     {
         var collection = new UrlPatternCollection
         {
@@ -438,16 +438,16 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Hostname = "*.reddit.com" }),
         };
 
-        Assert.True(collection.Test("https://google.com/path"));
-        Assert.True(collection.Test("https://yahoo.com/path"));
-        Assert.True(collection.Test("https://www.reddit.com/path"));
-        Assert.True(collection.Test("https://old.reddit.com/path"));
-        Assert.False(collection.Test("https://microsoft.com/path"));
+        Assert.True(collection.IsMatch("https://google.com/path"));
+        Assert.True(collection.IsMatch("https://yahoo.com/path"));
+        Assert.True(collection.IsMatch("https://www.reddit.com/path"));
+        Assert.True(collection.IsMatch("https://old.reddit.com/path"));
+        Assert.False(collection.IsMatch("https://microsoft.com/path"));
     }
 
     // Path prefix matching
     [Fact]
-    public void Test_PathPrefixPatterns()
+    public void IsMatch_PathPrefixPatterns()
     {
         var collection = new UrlPatternCollection
         {
@@ -456,15 +456,15 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Pathname = "/admin/*" }),
         };
 
-        Assert.True(collection.Test("https://example.com/api/v1/users"));
-        Assert.True(collection.Test("https://example.com/docs/getting-started"));
-        Assert.True(collection.Test("https://example.com/admin/dashboard"));
-        Assert.False(collection.Test("https://example.com/public/index.html"));
+        Assert.True(collection.IsMatch("https://example.com/api/v1/users"));
+        Assert.True(collection.IsMatch("https://example.com/docs/getting-started"));
+        Assert.True(collection.IsMatch("https://example.com/admin/dashboard"));
+        Assert.False(collection.IsMatch("https://example.com/public/index.html"));
     }
 
     // IP address patterns in collection
     [Fact]
-    public void Test_IPv4AddressPatterns()
+    public void IsMatch_IPv4AddressPatterns()
     {
         var collection = new UrlPatternCollection
         {
@@ -472,14 +472,14 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Hostname = "192.168.1.1" }),
         };
 
-        Assert.True(collection.Test("http://127.0.0.1/"));
-        Assert.True(collection.Test("http://192.168.1.1/path"));
-        Assert.False(collection.Test("http://10.0.0.1/"));
+        Assert.True(collection.IsMatch("http://127.0.0.1/"));
+        Assert.True(collection.IsMatch("http://192.168.1.1/path"));
+        Assert.False(collection.IsMatch("http://10.0.0.1/"));
     }
 
     // Port matching in collection
     [Fact]
-    public void Test_PortPatterns()
+    public void IsMatch_PortPatterns()
     {
         var collection = new UrlPatternCollection
         {
@@ -487,14 +487,14 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Port = "3000" }),
         };
 
-        Assert.True(collection.Test("http://example.com:8080/"));
-        Assert.True(collection.Test("http://example.com:3000/"));
-        Assert.False(collection.Test("http://example.com:9000/"));
+        Assert.True(collection.IsMatch("http://example.com:8080/"));
+        Assert.True(collection.IsMatch("http://example.com:3000/"));
+        Assert.False(collection.IsMatch("http://example.com:9000/"));
     }
 
     // Combined patterns
     [Fact]
-    public void Test_CombinedPatterns()
+    public void IsMatch_CombinedPatterns()
     {
         var collection = new UrlPatternCollection
         {
@@ -512,15 +512,15 @@ public sealed class UrlPatternCollectionTests
             }),
         };
 
-        Assert.True(collection.Test("https://api.example.com/v1/users"));
-        Assert.True(collection.Test("https://api.example.com/v2/users"));
-        Assert.False(collection.Test("https://api.example.com/v3/users"));
-        Assert.False(collection.Test("http://api.example.com/v1/users")); // Wrong protocol
+        Assert.True(collection.IsMatch("https://api.example.com/v1/users"));
+        Assert.True(collection.IsMatch("https://api.example.com/v2/users"));
+        Assert.False(collection.IsMatch("https://api.example.com/v3/users"));
+        Assert.False(collection.IsMatch("http://api.example.com/v1/users")); // Wrong protocol
     }
 
     // Test with UrlPatternInit input
     [Fact]
-    public void Test_WithUrlPatternInit_InCollection()
+    public void IsMatch_WithUrlPatternInit_InCollection()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -529,7 +529,7 @@ public sealed class UrlPatternCollectionTests
         });
         var collection = new UrlPatternCollection { pattern };
 
-        var result = collection.Test(new UrlPatternInit
+        var result = collection.IsMatch(new UrlPatternInit
         {
             Protocol = "https",
             Hostname = "example.com",
@@ -541,7 +541,7 @@ public sealed class UrlPatternCollectionTests
 
     // Wildcard patterns
     [Fact]
-    public void Test_WildcardProtocolPatterns()
+    public void IsMatch_WildcardProtocolPatterns()
     {
         var collection = new UrlPatternCollection
         {
@@ -552,14 +552,14 @@ public sealed class UrlPatternCollectionTests
             }),
         };
 
-        Assert.True(collection.Test("http://secure.example.com/"));
-        Assert.True(collection.Test("https://secure.example.com/"));
-        Assert.True(collection.Test("ftp://secure.example.com/"));
+        Assert.True(collection.IsMatch("http://secure.example.com/"));
+        Assert.True(collection.IsMatch("https://secure.example.com/"));
+        Assert.True(collection.IsMatch("ftp://secure.example.com/"));
     }
 
     // Collection with various pattern types
     [Fact]
-    public void Test_MixedPatternTypes()
+    public void IsMatch_MixedPatternTypes()
     {
         var collection = new UrlPatternCollection
         {
@@ -571,14 +571,14 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Pathname = "/public/*" }),
         };
 
-        Assert.True(collection.Test("https://api.example.com/endpoint"));
-        Assert.True(collection.Test("https://img.cdn.example.com/image.png"));
-        Assert.True(collection.Test("https://anything.com/public/file.txt"));
+        Assert.True(collection.IsMatch("https://api.example.com/endpoint"));
+        Assert.True(collection.IsMatch("https://img.cdn.example.com/image.png"));
+        Assert.True(collection.IsMatch("https://anything.com/public/file.txt"));
     }
 
     // Edge case: pattern that matches everything
     [Fact]
-    public void Test_CatchAllPattern()
+    public void IsMatch_CatchAllPattern()
     {
         var collection = new UrlPatternCollection
         {
@@ -590,9 +590,9 @@ public sealed class UrlPatternCollectionTests
             }),
         };
 
-        Assert.True(collection.Test("http://example.com/"));
-        Assert.True(collection.Test("https://any.domain.org/any/path"));
-        Assert.True(collection.Test("ftp://files.server.net/dir/file.txt"));
+        Assert.True(collection.IsMatch("http://example.com/"));
+        Assert.True(collection.IsMatch("https://any.domain.org/any/path"));
+        Assert.True(collection.IsMatch("ftp://files.server.net/dir/file.txt"));
     }
 
     // Test ordering of matches
@@ -607,12 +607,12 @@ public sealed class UrlPatternCollectionTests
 
         // Test that all three patterns match
         var url = "https://example.com/api/users/123";
-        Assert.True(general.Test(url));
-        Assert.True(apiPattern.Test(url));
-        Assert.True(usersPattern.Test(url));
+        Assert.True(general.IsMatch(url));
+        Assert.True(apiPattern.IsMatch(url));
+        Assert.True(usersPattern.IsMatch(url));
 
-        // Match returns first one
-        Assert.Same(general, collection.Match(url));
+        // FindPattern returns first one
+        Assert.Same(general, collection.FindPattern(url));
     }
 
     // IReadOnlyList implementation tests
@@ -660,7 +660,136 @@ public sealed class UrlPatternCollectionTests
             collection.Add(new UrlPatternInit { Pathname = $"/path{i}/*" });
         }
 
-        Assert.True(collection.Test("https://example.com/path50/something"));
-        Assert.False(collection.Test("https://example.com/path200/something"));
+        Assert.True(collection.IsMatch("https://example.com/path50/something"));
+        Assert.False(collection.IsMatch("https://example.com/path200/something"));
+    }
+
+    // ===========================================
+    // Exec() Method Tests
+    // ===========================================
+
+    [Fact]
+    public void Match_WithMatchingUrl_ShouldReturnResult()
+    {
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/api/:version/*" }),
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id" }),
+        };
+
+        var result = collection.Match("https://example.com/api/v2/users");
+
+        Assert.NotNull(result);
+        Assert.Equal("v2", result.Pathname.Groups["version"]);
+    }
+
+    [Fact]
+    public void Match_WithNonMatchingUrl_ShouldReturnNull()
+    {
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/api/*" }),
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id" }),
+        };
+
+        var result = collection.Match("https://example.com/articles/123");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_ShouldReturnFirstMatchingPattern()
+    {
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/data/:type" }),
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/:category/:id" }),
+        };
+
+        var result = collection.Match("https://example.com/data/users");
+
+        Assert.NotNull(result);
+        Assert.Equal("users", result.Pathname.Groups["type"]);
+        Assert.False(result.Pathname.Groups.ContainsKey("category"));
+    }
+
+    [Fact]
+    public void Match_WithBaseUrl_ShouldWork()
+    {
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/items/:id" }),
+        };
+
+        var result = collection.Match("/items/42", "https://example.com");
+
+        Assert.NotNull(result);
+        Assert.Equal("42", result.Pathname.Groups["id"]);
+    }
+
+    [Fact]
+    public void Match_WithUri_ShouldWork()
+    {
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/products/:id" }),
+        };
+
+        var uri = new System.Uri("https://example.com/products/999");
+        var result = collection.Match(uri);
+
+        Assert.NotNull(result);
+        Assert.Equal("999", result.Pathname.Groups["id"]);
+    }
+
+    [Fact]
+    public void Match_WithUrlPatternInit_ShouldWork()
+    {
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit { Pathname = "/users/:userId" }),
+        };
+
+        var input = new UrlPatternInit
+        {
+            Protocol = "https",
+            Hostname = "example.com",
+            Pathname = "/users/123",
+        };
+
+        var result = collection.Match(input);
+
+        Assert.NotNull(result);
+        Assert.Equal("123", result.Pathname.Groups["userId"]);
+    }
+
+    [Fact]
+    public void Match_WithEmptyCollection_ShouldReturnNull()
+    {
+        var collection = new UrlPatternCollection();
+
+        var result = collection.Match("https://example.com/any/path");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_WithMultipleComponents_ShouldCaptureAll()
+    {
+        var collection = new UrlPatternCollection
+        {
+            UrlPattern.Create(new UrlPatternInit
+            {
+                Hostname = ":subdomain.example.com",
+                Pathname = "/:resource/:id",
+            }),
+        };
+
+        var result = collection.Match("https://api.example.com/users/42");
+
+        Assert.NotNull(result);
+        Assert.Equal("api", result.Hostname.Groups["subdomain"]);
+        Assert.Equal("users", result.Pathname.Groups["resource"]);
+        Assert.Equal("42", result.Pathname.Groups["id"]);
     }
 }

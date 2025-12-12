@@ -36,25 +36,25 @@ public sealed class UrlPatternTests
 
     // https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API#matching_url_paths
     [Fact]
-    public void Test_WithMatchingUrl_ShouldReturnTrue()
+    public void IsMatch_WithMatchingUrl_ShouldReturnTrue()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/books/:id",
         });
 
-        Assert.True(pattern.Test("https://example.com/books/123"));
+        Assert.True(pattern.IsMatch("https://example.com/books/123"));
     }
 
     [Fact]
-    public void Test_WithNonMatchingUrl_ShouldReturnFalse()
+    public void IsMatch_WithNonMatchingUrl_ShouldReturnFalse()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/books/:id",
         });
 
-        Assert.False(pattern.Test("https://example.com/articles/123"));
+        Assert.False(pattern.IsMatch("https://example.com/articles/123"));
     }
 
     // https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API#named_groups
@@ -66,10 +66,10 @@ public sealed class UrlPatternTests
             Pathname = "/product/:id",
         });
 
-        Assert.True(pattern.Test("https://example.com/product/123"));
-        Assert.True(pattern.Test("https://example.com/product/abc"));
-        Assert.False(pattern.Test("https://example.com/product/")); // Empty segment should not match
-        Assert.False(pattern.Test("https://example.com/product")); // Missing segment
+        Assert.True(pattern.IsMatch("https://example.com/product/123"));
+        Assert.True(pattern.IsMatch("https://example.com/product/abc"));
+        Assert.False(pattern.IsMatch("https://example.com/product/")); // Empty segment should not match
+        Assert.False(pattern.IsMatch("https://example.com/product")); // Missing segment
     }
 
     // https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API#wildcards
@@ -81,8 +81,8 @@ public sealed class UrlPatternTests
             Pathname = "/product/*",
         });
 
-        Assert.True(pattern.Test("https://example.com/product/123"));
-        Assert.True(pattern.Test("https://example.com/product/abc/def"));
+        Assert.True(pattern.IsMatch("https://example.com/product/123"));
+        Assert.True(pattern.IsMatch("https://example.com/product/abc/def"));
     }
 
     // https://developer.mozilla.org/en-US/docs/Web/API/URL_Pattern_API#pattern_syntax
@@ -94,86 +94,86 @@ public sealed class UrlPatternTests
             Pathname = "/books{/:category}?",
         });
 
-        Assert.True(pattern.Test("https://example.com/books"));
-        Assert.True(pattern.Test("https://example.com/books/fiction"));
+        Assert.True(pattern.IsMatch("https://example.com/books"));
+        Assert.True(pattern.IsMatch("https://example.com/books/fiction"));
     }
 
     // Protocol matching
     [Fact]
-    public void Test_MatchProtocol()
+    public void IsMatch_MatchProtocol()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Protocol = "https",
         });
 
-        Assert.True(pattern.Test("https://example.com"));
-        Assert.False(pattern.Test("http://example.com"));
+        Assert.True(pattern.IsMatch("https://example.com"));
+        Assert.False(pattern.IsMatch("http://example.com"));
     }
 
     // Hostname matching
     [Fact]
-    public void Test_MatchHostname()
+    public void IsMatch_MatchHostname()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Hostname = "example.com",
         });
 
-        Assert.True(pattern.Test("https://example.com/path"));
-        Assert.False(pattern.Test("https://other.com/path"));
+        Assert.True(pattern.IsMatch("https://example.com/path"));
+        Assert.False(pattern.IsMatch("https://other.com/path"));
     }
 
     // Port matching
     [Fact]
-    public void Test_MatchPort()
+    public void IsMatch_MatchPort()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Port = "8080",
         });
 
-        Assert.True(pattern.Test("https://example.com:8080/path"));
-        Assert.False(pattern.Test("https://example.com:9090/path"));
+        Assert.True(pattern.IsMatch("https://example.com:8080/path"));
+        Assert.False(pattern.IsMatch("https://example.com:9090/path"));
     }
 
     // Search/query matching
     [Fact]
-    public void Test_MatchSearch()
+    public void IsMatch_MatchSearch()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Search = "foo=:value",
         });
 
-        Assert.True(pattern.Test("https://example.com?foo=bar"));
-        Assert.True(pattern.Test("https://example.com?foo=123"));
+        Assert.True(pattern.IsMatch("https://example.com?foo=bar"));
+        Assert.True(pattern.IsMatch("https://example.com?foo=123"));
     }
 
     // Hash/fragment matching
     [Fact]
-    public void Test_MatchHash()
+    public void IsMatch_MatchHash()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Hash = "section-:id",
         });
 
-        Assert.True(pattern.Test("https://example.com#section-1"));
-        Assert.True(pattern.Test("https://example.com#section-abc"));
+        Assert.True(pattern.IsMatch("https://example.com#section-1"));
+        Assert.True(pattern.IsMatch("https://example.com#section-abc"));
     }
 
     // Case insensitive matching
     [Fact]
-    public void Test_IgnoreCase_ShouldMatchCaseInsensitively()
+    public void IsMatch_IgnoreCase_ShouldMatchCaseInsensitively()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/books/:id",
         }, new UrlPatternOptions { IgnoreCase = true });
 
-        Assert.True(pattern.Test("https://example.com/BOOKS/123"));
-        Assert.True(pattern.Test("https://example.com/Books/123"));
+        Assert.True(pattern.IsMatch("https://example.com/BOOKS/123"));
+        Assert.True(pattern.IsMatch("https://example.com/Books/123"));
     }
 
     // Full URL pattern string
@@ -185,12 +185,12 @@ public sealed class UrlPatternTests
         Assert.Equal("https", pattern.Protocol);
         Assert.Equal("example.com", pattern.Hostname);
         Assert.Equal("/books/:id", pattern.Pathname);
-        Assert.True(pattern.Test("https://example.com/books/123"));
+        Assert.True(pattern.IsMatch("https://example.com/books/123"));
     }
 
     // Wildcard protocol
     [Fact]
-    public void Test_WildcardProtocol_ShouldMatchAny()
+    public void IsMatch_WildcardProtocol_ShouldMatchAny()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -198,14 +198,14 @@ public sealed class UrlPatternTests
             Hostname = "example.com",
         });
 
-        Assert.True(pattern.Test("https://example.com"));
-        Assert.True(pattern.Test("http://example.com"));
-        Assert.True(pattern.Test("ftp://example.com"));
+        Assert.True(pattern.IsMatch("https://example.com"));
+        Assert.True(pattern.IsMatch("http://example.com"));
+        Assert.True(pattern.IsMatch("ftp://example.com"));
     }
 
     // Wildcard hostname
     [Fact]
-    public void Test_WildcardHostname_ShouldMatchAny()
+    public void IsMatch_WildcardHostname_ShouldMatchAny()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -213,21 +213,21 @@ public sealed class UrlPatternTests
             Hostname = "*",
         });
 
-        Assert.True(pattern.Test("https://example.com"));
-        Assert.True(pattern.Test("https://foo.bar.com"));
+        Assert.True(pattern.IsMatch("https://example.com"));
+        Assert.True(pattern.IsMatch("https://foo.bar.com"));
     }
 
     // Multiple path segments
     [Fact]
-    public void Test_MultiplePathSegments()
+    public void IsMatch_MultiplePathSegments()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/api/:version/users/:userId/posts/:postId",
         });
 
-        Assert.True(pattern.Test("https://example.com/api/v1/users/123/posts/456"));
-        Assert.False(pattern.Test("https://example.com/api/v1/users/123"));
+        Assert.True(pattern.IsMatch("https://example.com/api/v1/users/123/posts/456"));
+        Assert.False(pattern.IsMatch("https://example.com/api/v1/users/123"));
     }
 
     // HasRegExpGroups property
@@ -256,7 +256,7 @@ public sealed class UrlPatternTests
 
     // Test with Uri input
     [Fact]
-    public void Test_WithUriInput_ShouldWork()
+    public void IsMatch_WithUriInput_ShouldWork()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -264,11 +264,11 @@ public sealed class UrlPatternTests
         });
 
         var uri = new System.Uri("https://example.com/books/123");
-        Assert.True(pattern.Test(uri));
+        Assert.True(pattern.IsMatch(uri));
     }
 
     [Fact]
-    public void Test_WithUrlPatternInitInput_ShouldWork()
+    public void IsMatch_WithUrlPatternInitInput_ShouldWork()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -276,7 +276,7 @@ public sealed class UrlPatternTests
             Hostname = "example.com",
         });
 
-        var result = pattern.Test(new UrlPatternInit
+        var result = pattern.IsMatch(new UrlPatternInit
         {
             Protocol = "https",
             Hostname = "example.com",
@@ -288,21 +288,21 @@ public sealed class UrlPatternTests
 
     // Fixed text pattern
     [Fact]
-    public void Test_FixedPathname_ShouldMatchExactly()
+    public void IsMatch_FixedPathname_ShouldMatchExactly()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/exact/path",
         });
 
-        Assert.True(pattern.Test("https://example.com/exact/path"));
-        Assert.False(pattern.Test("https://example.com/exact/path/extra"));
-        Assert.False(pattern.Test("https://example.com/wrong/path"));
+        Assert.True(pattern.IsMatch("https://example.com/exact/path"));
+        Assert.False(pattern.IsMatch("https://example.com/exact/path/extra"));
+        Assert.False(pattern.IsMatch("https://example.com/wrong/path"));
     }
 
     // Empty component
     [Fact]
-    public void Test_EmptySearch_ShouldMatchNoQueryString()
+    public void IsMatch_EmptySearch_ShouldMatchNoQueryString()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -310,8 +310,8 @@ public sealed class UrlPatternTests
             Search = "",
         });
 
-        Assert.True(pattern.Test("https://example.com/path"));
-        Assert.False(pattern.Test("https://example.com/path?query=value"));
+        Assert.True(pattern.IsMatch("https://example.com/path"));
+        Assert.False(pattern.IsMatch("https://example.com/path?query=value"));
     }
 
     // Default port handling - https uses 443
@@ -350,7 +350,7 @@ public sealed class UrlPatternTests
     [InlineData("ws")]
     [InlineData("wss")]
     [InlineData("ftp")]
-    public void Test_SpecialSchemes_ShouldBeRecognized(string scheme)
+    public void IsMatch_SpecialSchemes_ShouldBeRecognized(string scheme)
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -371,10 +371,10 @@ public sealed class UrlPatternTests
             Pathname = "/files/:path+",
         });
 
-        Assert.True(pattern.Test("https://example.com/files/a"));
-        Assert.True(pattern.Test("https://example.com/files/a/b"));
-        Assert.True(pattern.Test("https://example.com/files/a/b/c"));
-        Assert.False(pattern.Test("https://example.com/files"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a/b"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a/b/c"));
+        Assert.False(pattern.IsMatch("https://example.com/files"));
     }
 
     [Fact]
@@ -385,9 +385,9 @@ public sealed class UrlPatternTests
             Pathname = "/files/:path*",
         });
 
-        Assert.True(pattern.Test("https://example.com/files"));
-        Assert.True(pattern.Test("https://example.com/files/a"));
-        Assert.True(pattern.Test("https://example.com/files/a/b"));
+        Assert.True(pattern.IsMatch("https://example.com/files"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a/b"));
     }
 
     // Exception tests
@@ -414,14 +414,14 @@ public sealed class UrlPatternTests
 
     // Escaped characters
     [Fact]
-    public void Test_EscapedCharacters()
+    public void IsMatch_EscapedCharacters()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/path\\:literal",
         });
 
-        Assert.True(pattern.Test("https://example.com/path:literal"));
+        Assert.True(pattern.IsMatch("https://example.com/path:literal"));
     }
 
     // Base URL processing
@@ -436,22 +436,22 @@ public sealed class UrlPatternTests
 
     // IP address patterns
     [Fact]
-    public void Test_IPv4Address()
+    public void IsMatch_IPv4Address()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Hostname = "127.0.0.1",
         });
 
-        Assert.True(pattern.Test("https://127.0.0.1/path"));
-        Assert.False(pattern.Test("https://127.0.0.2/path"));
+        Assert.True(pattern.IsMatch("https://127.0.0.1/path"));
+        Assert.False(pattern.IsMatch("https://127.0.0.2/path"));
     }
 
     // Note: IPv6 address patterns require special handling in the WHATWG spec.
     // The brackets are part of the URL syntax, not the hostname pattern syntax.
     // Testing with actual IPv6 address format.
     [Fact]
-    public void Test_IPv6Address()
+    public void IsMatch_IPv6Address()
     {
         // IPv6 addresses in URL patterns should be specified without brackets
         // as the hostname component doesn't include the brackets
@@ -460,38 +460,38 @@ public sealed class UrlPatternTests
             Hostname = "*", // Use wildcard to match any IPv6 address
         });
 
-        Assert.True(pattern.Test("https://[::1]/path"));
+        Assert.True(pattern.IsMatch("https://[::1]/path"));
     }
 
     // Subdomain patterns
     [Fact]
-    public void Test_SubdomainWildcard()
+    public void IsMatch_SubdomainWildcard()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Hostname = "*.example.com",
         });
 
-        Assert.True(pattern.Test("https://www.example.com/path"));
-        Assert.True(pattern.Test("https://sub.example.com/path"));
-        Assert.True(pattern.Test("https://deep.sub.example.com/path"));
+        Assert.True(pattern.IsMatch("https://www.example.com/path"));
+        Assert.True(pattern.IsMatch("https://sub.example.com/path"));
+        Assert.True(pattern.IsMatch("https://deep.sub.example.com/path"));
     }
 
     // URL encoding
     [Fact]
-    public void Test_PercentEncodedPath()
+    public void IsMatch_PercentEncodedPath()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/path%20with%20spaces",
         });
 
-        Assert.True(pattern.Test("https://example.com/path%20with%20spaces"));
+        Assert.True(pattern.IsMatch("https://example.com/path%20with%20spaces"));
     }
 
     // Unicode in patterns - patterns match after URL encoding
     [Fact]
-    public void Test_UnicodeInPath()
+    public void IsMatch_UnicodeInPath()
     {
         // Unicode in patterns is percent-encoded during normalization
         var pattern = UrlPattern.Create(new UrlPatternInit
@@ -499,12 +499,12 @@ public sealed class UrlPatternTests
             Pathname = "/caf%C3%A9",
         });
 
-        Assert.True(pattern.Test("https://example.com/caf%C3%A9"));
+        Assert.True(pattern.IsMatch("https://example.com/caf%C3%A9"));
     }
 
     // Complex pattern combinations
     [Fact]
-    public void Test_ComplexPatternWithMultipleComponents()
+    public void IsMatch_ComplexPatternWithMultipleComponents()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -514,13 +514,13 @@ public sealed class UrlPatternTests
             Search = "format=:format",
         });
 
-        Assert.True(pattern.Test("https://api.example.com/api/v1/users/123?format=json"));
-        Assert.False(pattern.Test("http://api.example.com/api/v1/users/123?format=json")); // Wrong protocol
+        Assert.True(pattern.IsMatch("https://api.example.com/api/v1/users/123?format=json"));
+        Assert.False(pattern.IsMatch("http://api.example.com/api/v1/users/123?format=json")); // Wrong protocol
     }
 
     // Empty patterns - empty string in init becomes wildcard
     [Fact]
-    public void Test_EmptyPathname()
+    public void IsMatch_EmptyPathname()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -530,13 +530,13 @@ public sealed class UrlPatternTests
         });
 
         // Root pathname matches root URL
-        Assert.True(pattern.Test("https://example.com"));
-        Assert.True(pattern.Test("https://example.com/"));
+        Assert.True(pattern.IsMatch("https://example.com"));
+        Assert.True(pattern.IsMatch("https://example.com/"));
     }
 
     // Pattern with only wildcards
     [Fact]
-    public void Test_AllWildcards()
+    public void IsMatch_AllWildcards()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -545,13 +545,13 @@ public sealed class UrlPatternTests
             Pathname = "*",
         });
 
-        Assert.True(pattern.Test("https://example.com/any/path"));
-        Assert.True(pattern.Test("http://other.org/different"));
+        Assert.True(pattern.IsMatch("https://example.com/any/path"));
+        Assert.True(pattern.IsMatch("http://other.org/different"));
     }
 
     // Groups and modifiers
     [Fact]
-    public void Test_GroupWithOptionalModifier()
+    public void IsMatch_GroupWithOptionalModifier()
     {
         // Each group with modifier applies to that group
         var pattern = UrlPattern.Create(new UrlPatternInit
@@ -559,67 +559,67 @@ public sealed class UrlPatternTests
             Pathname = "/items{/:category}?{/:subcategory}?",
         });
 
-        Assert.True(pattern.Test("https://example.com/items"));
-        Assert.True(pattern.Test("https://example.com/items/electronics"));
-        Assert.True(pattern.Test("https://example.com/items/electronics/phones"));
+        Assert.True(pattern.IsMatch("https://example.com/items"));
+        Assert.True(pattern.IsMatch("https://example.com/items/electronics"));
+        Assert.True(pattern.IsMatch("https://example.com/items/electronics/phones"));
     }
 
     [Fact]
-    public void Test_GroupWithOneOrMoreModifier()
+    public void IsMatch_GroupWithOneOrMoreModifier()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/files{/:segment}+",
         });
 
-        Assert.True(pattern.Test("https://example.com/files/a"));
-        Assert.True(pattern.Test("https://example.com/files/a/b"));
-        Assert.True(pattern.Test("https://example.com/files/a/b/c"));
-        Assert.False(pattern.Test("https://example.com/files"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a/b"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a/b/c"));
+        Assert.False(pattern.IsMatch("https://example.com/files"));
     }
 
     [Fact]
-    public void Test_GroupWithZeroOrMoreModifier()
+    public void IsMatch_GroupWithZeroOrMoreModifier()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/files{/:segment}*",
         });
 
-        Assert.True(pattern.Test("https://example.com/files"));
-        Assert.True(pattern.Test("https://example.com/files/a"));
-        Assert.True(pattern.Test("https://example.com/files/a/b"));
+        Assert.True(pattern.IsMatch("https://example.com/files"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a"));
+        Assert.True(pattern.IsMatch("https://example.com/files/a/b"));
     }
 
     // Custom regex patterns
     [Fact]
-    public void Test_CustomRegexForNumericId()
+    public void IsMatch_CustomRegexForNumericId()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/users/:id(\\d+)",
         });
 
-        Assert.True(pattern.Test("https://example.com/users/123"));
-        Assert.False(pattern.Test("https://example.com/users/abc"));
+        Assert.True(pattern.IsMatch("https://example.com/users/123"));
+        Assert.False(pattern.IsMatch("https://example.com/users/abc"));
     }
 
     [Fact]
-    public void Test_CustomRegexForAlphanumeric()
+    public void IsMatch_CustomRegexForAlphanumeric()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/items/:code([a-z]{3}\\d{3})",
         });
 
-        Assert.True(pattern.Test("https://example.com/items/abc123"));
-        Assert.False(pattern.Test("https://example.com/items/ABC123")); // Case sensitive by default
-        Assert.False(pattern.Test("https://example.com/items/ab12")); // Wrong format
+        Assert.True(pattern.IsMatch("https://example.com/items/abc123"));
+        Assert.False(pattern.IsMatch("https://example.com/items/ABC123")); // Case sensitive by default
+        Assert.False(pattern.IsMatch("https://example.com/items/ab12")); // Wrong format
     }
 
     // Port patterns
     [Fact]
-    public void Test_WildcardPort()
+    public void IsMatch_WildcardPort()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -628,13 +628,13 @@ public sealed class UrlPatternTests
             Port = "*",
         });
 
-        Assert.True(pattern.Test("https://example.com:8080/path"));
-        Assert.True(pattern.Test("https://example.com:9090/path"));
-        Assert.True(pattern.Test("https://example.com/path")); // Default port
+        Assert.True(pattern.IsMatch("https://example.com:8080/path"));
+        Assert.True(pattern.IsMatch("https://example.com:9090/path"));
+        Assert.True(pattern.IsMatch("https://example.com/path")); // Default port
     }
 
     [Fact]
-    public void Test_SpecificPort()
+    public void IsMatch_SpecificPort()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -642,63 +642,63 @@ public sealed class UrlPatternTests
             Port = "8080",
         });
 
-        Assert.True(pattern.Test("https://example.com:8080/path"));
-        Assert.False(pattern.Test("https://example.com:9090/path"));
+        Assert.True(pattern.IsMatch("https://example.com:8080/path"));
+        Assert.False(pattern.IsMatch("https://example.com:9090/path"));
     }
 
     // Username and password patterns
     [Fact]
-    public void Test_UsernamePattern()
+    public void IsMatch_UsernamePattern()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Username = ":user",
         });
 
-        Assert.True(pattern.Test("https://john@example.com/path"));
-        Assert.True(pattern.Test("https://jane@example.com/path"));
+        Assert.True(pattern.IsMatch("https://john@example.com/path"));
+        Assert.True(pattern.IsMatch("https://jane@example.com/path"));
     }
 
     [Fact]
-    public void Test_PasswordPattern()
+    public void IsMatch_PasswordPattern()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Password = ":pass",
         });
 
-        Assert.True(pattern.Test("https://user:secret@example.com/path"));
+        Assert.True(pattern.IsMatch("https://user:secret@example.com/path"));
     }
 
     // Trailing slash handling
     [Fact]
-    public void Test_TrailingSlash()
+    public void IsMatch_TrailingSlash()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/path/",
         });
 
-        Assert.True(pattern.Test("https://example.com/path/"));
-        Assert.False(pattern.Test("https://example.com/path")); // No trailing slash
+        Assert.True(pattern.IsMatch("https://example.com/path/"));
+        Assert.False(pattern.IsMatch("https://example.com/path")); // No trailing slash
     }
 
     // Double wildcards
     [Fact]
-    public void Test_DoubleWildcardInPath()
+    public void IsMatch_DoubleWildcardInPath()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/*/items/*",
         });
 
-        Assert.True(pattern.Test("https://example.com/category/items/123"));
-        Assert.True(pattern.Test("https://example.com/any/items/thing/deep"));
+        Assert.True(pattern.IsMatch("https://example.com/category/items/123"));
+        Assert.True(pattern.IsMatch("https://example.com/any/items/thing/deep"));
     }
 
     // Case sensitivity tests
     [Fact]
-    public void Test_CaseSensitiveHostname()
+    public void IsMatch_CaseSensitiveHostname()
     {
         // Hostnames should be case-insensitive by URL spec
         var pattern = UrlPattern.Create(new UrlPatternInit
@@ -706,12 +706,12 @@ public sealed class UrlPatternTests
             Hostname = "example.com",
         });
 
-        Assert.True(pattern.Test("https://EXAMPLE.COM/path"));
-        Assert.True(pattern.Test("https://Example.Com/path"));
+        Assert.True(pattern.IsMatch("https://EXAMPLE.COM/path"));
+        Assert.True(pattern.IsMatch("https://Example.Com/path"));
     }
 
     [Fact]
-    public void Test_CaseSensitiveProtocol()
+    public void IsMatch_CaseSensitiveProtocol()
     {
         // Protocols should be case-insensitive
         var pattern = UrlPattern.Create(new UrlPatternInit
@@ -719,61 +719,61 @@ public sealed class UrlPatternTests
             Protocol = "https",
         });
 
-        Assert.True(pattern.Test("HTTPS://example.com/path"));
+        Assert.True(pattern.IsMatch("HTTPS://example.com/path"));
     }
 
     // Search parameter patterns
     [Fact]
-    public void Test_MultipleSearchParameters()
+    public void IsMatch_MultipleSearchParameters()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Search = "foo=:foo&bar=:bar",
         });
 
-        Assert.True(pattern.Test("https://example.com?foo=1&bar=2"));
+        Assert.True(pattern.IsMatch("https://example.com?foo=1&bar=2"));
     }
 
     [Fact]
-    public void Test_WildcardSearch()
+    public void IsMatch_WildcardSearch()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Search = "*",
         });
 
-        Assert.True(pattern.Test("https://example.com?any=query&string=here"));
-        Assert.True(pattern.Test("https://example.com?"));
+        Assert.True(pattern.IsMatch("https://example.com?any=query&string=here"));
+        Assert.True(pattern.IsMatch("https://example.com?"));
     }
 
     // Hash patterns
     [Fact]
-    public void Test_WildcardHash()
+    public void IsMatch_WildcardHash()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Hash = "*",
         });
 
-        Assert.True(pattern.Test("https://example.com#anything"));
-        Assert.True(pattern.Test("https://example.com#"));
+        Assert.True(pattern.IsMatch("https://example.com#anything"));
+        Assert.True(pattern.IsMatch("https://example.com#"));
     }
 
     // Literal special characters
     [Fact]
-    public void Test_EscapedWildcard()
+    public void IsMatch_EscapedWildcard()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/path/\\*literal",
         });
 
-        Assert.True(pattern.Test("https://example.com/path/*literal"));
-        Assert.False(pattern.Test("https://example.com/path/anythingliteral"));
+        Assert.True(pattern.IsMatch("https://example.com/path/*literal"));
+        Assert.False(pattern.IsMatch("https://example.com/path/anythingliteral"));
     }
 
     [Fact]
-    public void Test_QuestionMarkInPath()
+    public void IsMatch_QuestionMarkInPath()
     {
         // Question marks in the pathname are typically percent-encoded in URLs
         var pattern = UrlPattern.Create(new UrlPatternInit
@@ -781,12 +781,12 @@ public sealed class UrlPatternTests
             Pathname = "/path/item%3F",
         });
 
-        Assert.True(pattern.Test("https://example.com/path/item%3F"));
+        Assert.True(pattern.IsMatch("https://example.com/path/item%3F"));
     }
 
     // Complex patterns with dots
     [Fact]
-    public void Test_PatternWithDot()
+    public void IsMatch_PatternWithDot()
     {
         // Dots between fixed text parts work normally
         var pattern = UrlPattern.Create(new UrlPatternInit
@@ -794,25 +794,25 @@ public sealed class UrlPatternTests
             Pathname = "/api/v1.:format",
         });
 
-        Assert.True(pattern.Test("https://example.com/api/v1.json"));
-        Assert.True(pattern.Test("https://example.com/api/v1.xml"));
+        Assert.True(pattern.IsMatch("https://example.com/api/v1.json"));
+        Assert.True(pattern.IsMatch("https://example.com/api/v1.xml"));
     }
 
     // Invalid URL handling
     [Fact]
-    public void Test_WithInvalidUrl_ShouldReturnFalse()
+    public void IsMatch_WithInvalidUrl_ShouldReturnFalse()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/path",
         });
 
-        Assert.False(pattern.Test("not-a-valid-url"));
+        Assert.False(pattern.IsMatch("not-a-valid-url"));
     }
 
     // File URLs
     [Fact]
-    public void Test_FileProtocol()
+    public void IsMatch_FileProtocol()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -820,24 +820,24 @@ public sealed class UrlPatternTests
             Pathname = "/path/to/file.txt",
         });
 
-        Assert.True(pattern.Test("file:///path/to/file.txt"));
+        Assert.True(pattern.IsMatch("file:///path/to/file.txt"));
     }
 
     // Data URLs
     [Fact]
-    public void Test_DataProtocol()
+    public void IsMatch_DataProtocol()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Protocol = "data",
         });
 
-        Assert.True(pattern.Test("data:text/plain;base64,SGVsbG8="));
+        Assert.True(pattern.IsMatch("data:text/plain;base64,SGVsbG8="));
     }
 
     // WebSocket URLs
     [Fact]
-    public void Test_WebSocketProtocol()
+    public void IsMatch_WebSocketProtocol()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -846,12 +846,12 @@ public sealed class UrlPatternTests
             Pathname = "/socket",
         });
 
-        Assert.True(pattern.Test("wss://example.com/socket"));
+        Assert.True(pattern.IsMatch("wss://example.com/socket"));
     }
 
     // Pattern string parsing tests
     [Fact]
-    public void Test_PatternStringWithAllComponents()
+    public void IsMatch_PatternStringWithAllComponents()
     {
         // Note: URL pattern parsing may handle userinfo differently
         var pattern = UrlPattern.Create("https://example.com:8080/path?query#hash");
@@ -866,7 +866,7 @@ public sealed class UrlPatternTests
 
     // Edge cases
     [Fact]
-    public void Test_EmptyNamedGroup()
+    public void IsMatch_EmptyNamedGroup()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -874,11 +874,11 @@ public sealed class UrlPatternTests
         });
 
         // Empty segment should not match a named parameter
-        Assert.False(pattern.Test("https://example.com/"));
+        Assert.False(pattern.IsMatch("https://example.com/"));
     }
 
     [Fact]
-    public void Test_NamedGroupWithSlash()
+    public void IsMatch_NamedGroupWithSlash()
     {
         // Named groups without modifiers don't match across slashes
         var pattern = UrlPattern.Create(new UrlPatternInit
@@ -886,34 +886,34 @@ public sealed class UrlPatternTests
             Pathname = "/:name",
         });
 
-        Assert.True(pattern.Test("https://example.com/value"));
-        Assert.False(pattern.Test("https://example.com/value/extra"));
+        Assert.True(pattern.IsMatch("https://example.com/value"));
+        Assert.False(pattern.IsMatch("https://example.com/value/extra"));
     }
 
     // Multiple patterns with same prefix
     [Fact]
-    public void Test_OverlappingPatterns()
+    public void IsMatch_OverlappingPatterns()
     {
         var pattern1 = UrlPattern.Create(new UrlPatternInit { Pathname = "/api/users" });
         var pattern2 = UrlPattern.Create(new UrlPatternInit { Pathname = "/api/users/:id" });
 
-        Assert.True(pattern1.Test("https://example.com/api/users"));
-        Assert.False(pattern1.Test("https://example.com/api/users/123"));
+        Assert.True(pattern1.IsMatch("https://example.com/api/users"));
+        Assert.False(pattern1.IsMatch("https://example.com/api/users/123"));
 
-        Assert.False(pattern2.Test("https://example.com/api/users"));
-        Assert.True(pattern2.Test("https://example.com/api/users/123"));
+        Assert.False(pattern2.IsMatch("https://example.com/api/users"));
+        Assert.True(pattern2.IsMatch("https://example.com/api/users/123"));
     }
 
     // Relative URLs with base
     [Fact]
-    public void Test_RelativeUrlWithBase()
+    public void IsMatch_RelativeUrlWithBase()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
             Pathname = "/path/:id",
         });
 
-        Assert.True(pattern.Test("/path/123", "https://example.com"));
+        Assert.True(pattern.IsMatch("/path/123", "https://example.com"));
     }
 
     // Test with various URL formats
@@ -922,7 +922,7 @@ public sealed class UrlPatternTests
     [InlineData("https://example.com/", true)]
     [InlineData("https://example.com:443", true)]
     [InlineData("https://example.com:443/", true)]
-    public void Test_HttpsDefaultPort_Variations(string url, bool expected)
+    public void IsMatch_HttpsDefaultPort_Variations(string url, bool expected)
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -930,12 +930,12 @@ public sealed class UrlPatternTests
             Hostname = "example.com",
         });
 
-        Assert.Equal(expected, pattern.Test(url));
+        Assert.Equal(expected, pattern.IsMatch(url));
     }
 
     // Pathname normalization
     [Fact]
-    public void Test_PathWithDotSegments()
+    public void IsMatch_PathWithDotSegments()
     {
         var pattern = UrlPattern.Create(new UrlPatternInit
         {
@@ -943,6 +943,275 @@ public sealed class UrlPatternTests
         });
 
         // URLs are normalized, so /a/./b/../b/c becomes /a/b/c
-        Assert.True(pattern.Test("https://example.com/a/./b/../b/c"));
+        Assert.True(pattern.IsMatch("https://example.com/a/./b/../b/c"));
+    }
+
+    // ===========================================
+    // Exec() Method Tests
+    // ===========================================
+
+    // https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec
+    // https://developer.mozilla.org/en-US/docs/Web/API/URLPattern/exec
+    [Fact]
+    public void Match_WithMatchingUrl_ShouldReturnResult()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books/:id",
+        });
+
+        var result = pattern.Match("https://example.com/books/123");
+
+        Assert.NotNull(result);
+        Assert.Equal("/books/123", result.Pathname.Input);
+        Assert.True(result.Pathname.Groups.ContainsKey("id"));
+        Assert.Equal("123", result.Pathname.Groups["id"]);
+    }
+
+    [Fact]
+    public void Match_WithNonMatchingUrl_ShouldReturnNull()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books/:id",
+        });
+
+        var result = pattern.Match("https://example.com/articles/123");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Match_WithMultipleNamedGroups_ShouldCaptureAll()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/users/:userId/posts/:postId",
+        });
+
+        var result = pattern.Match("https://example.com/users/42/posts/99");
+
+        Assert.NotNull(result);
+        Assert.Equal("42", result.Pathname.Groups["userId"]);
+        Assert.Equal("99", result.Pathname.Groups["postId"]);
+    }
+
+    [Fact]
+    public void Match_WithWildcard_ShouldCaptureWildcardValue()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/files/*",
+        });
+
+        var result = pattern.Match("https://example.com/files/path/to/file.txt");
+
+        Assert.NotNull(result);
+        // Wildcard creates a group with index "0"
+        Assert.Equal("path/to/file.txt", result.Pathname.Groups["0"]);
+    }
+
+    [Fact]
+    public void Match_WithOptionalGroup_MatchingWithGroup()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books{/:category}?",
+        });
+
+        var result = pattern.Match("https://example.com/books/fiction");
+
+        Assert.NotNull(result);
+        Assert.Equal("fiction", result.Pathname.Groups["category"]);
+    }
+
+    [Fact]
+    public void Match_WithOptionalGroup_MatchingWithoutGroup()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books{/:category}?",
+        });
+
+        var result = pattern.Match("https://example.com/books");
+
+        Assert.NotNull(result);
+        Assert.Null(result.Pathname.Groups["category"]);
+    }
+
+    [Fact]
+    public void Match_AllComponents_ShouldPopulateAllResults()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Protocol = ":protocol",
+            Hostname = ":subdomain.example.com",
+            Port = ":port",
+            Pathname = "/:path",
+            Search = ":query",
+            Hash = ":hash",
+        });
+
+        var result = pattern.Match("https://api.example.com:8080/users?name=test#section");
+
+        Assert.NotNull(result);
+
+        Assert.Equal("https", result.Protocol.Input);
+        Assert.Equal("https", result.Protocol.Groups["protocol"]);
+
+        Assert.Equal("api.example.com", result.Hostname.Input);
+        Assert.Equal("api", result.Hostname.Groups["subdomain"]);
+
+        Assert.Equal("8080", result.Port.Input);
+        Assert.Equal("8080", result.Port.Groups["port"]);
+
+        Assert.Equal("/users", result.Pathname.Input);
+        Assert.Equal("users", result.Pathname.Groups["path"]);
+
+        Assert.Equal("name=test", result.Search.Input);
+        Assert.Equal("name=test", result.Search.Groups["query"]);
+
+        Assert.Equal("section", result.Hash.Input);
+        Assert.Equal("section", result.Hash.Groups["hash"]);
+    }
+
+    [Fact]
+    public void Match_WithUri_ShouldReturnResult()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books/:id",
+        });
+
+        var uri = new System.Uri("https://example.com/books/456");
+        var result = pattern.Match(uri);
+
+        Assert.NotNull(result);
+        Assert.Equal("456", result.Pathname.Groups["id"]);
+    }
+
+    [Fact]
+    public void Match_WithUrlPatternInit_ShouldReturnResult()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books/:id",
+        });
+
+        var input = new UrlPatternInit
+        {
+            Protocol = "https",
+            Hostname = "example.com",
+            Pathname = "/books/789",
+        };
+
+        var result = pattern.Match(input);
+
+        Assert.NotNull(result);
+        Assert.Equal("789", result.Pathname.Groups["id"]);
+    }
+
+    [Fact]
+    public void Match_WithBaseUrl_ShouldResolveRelativeUrl()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books/:id",
+        });
+
+        var result = pattern.Match("/books/999", "https://example.com");
+
+        Assert.NotNull(result);
+        Assert.Equal("999", result.Pathname.Groups["id"]);
+    }
+
+    [Fact]
+    public void Match_InputContainsOriginalUrl()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/path/:segment",
+        });
+
+        var result = pattern.Match("https://example.com/path/value");
+
+        Assert.NotNull(result);
+        Assert.Single(result.Inputs);
+        Assert.Equal("https://example.com/path/value", result.Inputs[0].Url);
+    }
+
+    [Fact]
+    public void Match_InputContainsUrlPatternInit_WhenUsingInitInput()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books/:id",
+        });
+
+        var input = new UrlPatternInit
+        {
+            Protocol = "https",
+            Hostname = "example.com",
+            Pathname = "/books/123",
+        };
+
+        var result = pattern.Match(input);
+
+        Assert.NotNull(result);
+        Assert.Single(result.Inputs);
+        Assert.NotNull(result.Inputs[0].Init);
+        Assert.Equal("https", result.Inputs[0].Init.Protocol);
+        Assert.Equal("example.com", result.Inputs[0].Init.Hostname);
+        Assert.Equal("/books/123", result.Inputs[0].Init.Pathname);
+    }
+
+    [Fact]
+    public void Match_ProtocolMatching_ShouldCaptureProtocol()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Protocol = "http{s}?",
+        });
+
+        var httpResult = pattern.Match("http://example.com");
+        var httpsResult = pattern.Match("https://example.com");
+
+        Assert.NotNull(httpResult);
+        Assert.Equal("http", httpResult.Protocol.Input);
+
+        Assert.NotNull(httpsResult);
+        Assert.Equal("https", httpsResult.Protocol.Input);
+    }
+
+    [Fact]
+    public void Match_WithRegexpGroup_ShouldCapture()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/items/:id(\\d+)",
+        });
+
+        var result = pattern.Match("https://example.com/items/42");
+
+        Assert.NotNull(result);
+        Assert.Equal("42", result.Pathname.Groups["id"]);
+
+        // Non-matching due to regex constraint
+        var nullResult = pattern.Match("https://example.com/items/abc");
+        Assert.Null(nullResult);
+    }
+
+    [Fact]
+    public void Match_WithNamedWildcard_ShouldCapture()
+    {
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/static/:path*",
+        });
+
+        var result = pattern.Match("https://example.com/static/css/styles/main.css");
+
+        Assert.NotNull(result);
+        Assert.Equal("css/styles/main.css", result.Pathname.Groups["path"]);
     }
 }

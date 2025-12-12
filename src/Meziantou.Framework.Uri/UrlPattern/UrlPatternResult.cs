@@ -12,7 +12,7 @@ namespace Meziantou.Framework;
 public sealed class UrlPatternResult
 {
     /// <summary>Gets the input URL or URL components that were matched.</summary>
-    public ReadOnlyCollection<UrlPatternInput> Inputs { get; } // TODO IReadOnlyCollection / List
+    public IReadOnlyCollection<UrlPatternInput> Inputs { get; }
 
     /// <summary>Gets the protocol component result.</summary>
     public UrlPatternComponentResult Protocol { get; }

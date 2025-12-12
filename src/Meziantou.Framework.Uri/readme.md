@@ -16,7 +16,7 @@ var pattern = UrlPattern.Create(new UrlPatternInit
 });
 
 // Test if a URL matches the pattern
-bool matches = pattern.Test("https://example.com/books/123"); // true
+bool matches = pattern.IsMatch("https://example.com/books/123"); // true
 
 // Create a pattern from a pattern string
 var pattern2 = UrlPattern.Create("https://example.com/api/:version/*");
@@ -26,21 +26,33 @@ var wildcardPattern = UrlPattern.Create(new UrlPatternInit
 {
     Pathname = "/files/*",
 });
-wildcardPattern.Test("https://example.com/files/a/b/c"); // true
+wildcardPattern.IsMatch("https://example.com/files/a/b/c"); // true
 
 // Use modifiers (optional, one-or-more, zero-or-more)
 var optionalPattern = UrlPattern.Create(new UrlPatternInit
 {
     Pathname = "/items{/:category}?",
 });
-optionalPattern.Test("https://example.com/items"); // true
-optionalPattern.Test("https://example.com/items/books"); // true
+optionalPattern.IsMatch("https://example.com/items"); // true
+optionalPattern.IsMatch("https://example.com/items/books"); // true
 
 // Case-insensitive matching
 var caseInsensitivePattern = UrlPattern.Create(
     new UrlPatternInit { Pathname = "/Books/:id" },
     new UrlPatternOptions { IgnoreCase = true });
-caseInsensitivePattern.Test("https://example.com/BOOKS/123"); // true
+caseInsensitivePattern.IsMatch("https://example.com/BOOKS/123"); // true
+
+// Execute pattern and capture groups
+var pattern3 = UrlPattern.Create(new UrlPatternInit
+{
+    Pathname = "/users/:userId/posts/:postId",
+});
+UrlPatternResult? result = pattern3.Match("https://example.com/users/42/posts/99");
+if (result != null)
+{
+    string? userId = result.Pathname.Groups["userId"]; // "42"
+    string? postId = result.Pathname.Groups["postId"]; // "99"
+}
 ```
 
 ### UrlPatternCollection
@@ -55,10 +67,21 @@ var collection = new UrlPatternCollection
 };
 
 // Test if any pattern matches
-bool anyMatch = collection.Test("https://example.com/api/users"); // true
+bool anyMatch = collection.IsMatch("https://example.com/api/users"); // true
 
 // Get the first matching pattern
-UrlPattern? match = collection.Match("https://example.com/docs/guide"); // returns the /docs/* pattern
+UrlPattern? match = collection.FindPattern("https://example.com/docs/guide"); // returns the /docs/* pattern
+
+// Match and capture groups from the first matching pattern
+var apiCollection = new UrlPatternCollection
+{
+    UrlPattern.Create(new UrlPatternInit { Pathname = "/api/:version/*" }),
+};
+UrlPatternResult? apiResult = apiCollection.Match("https://example.com/api/v2/users");
+if (apiResult != null)
+{
+    string? version = apiResult.Pathname.Groups["version"]; // "v2"
+}
 ```
 
 ## Query String Utilities

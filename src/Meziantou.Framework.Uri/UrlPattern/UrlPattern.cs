@@ -176,7 +176,6 @@ public sealed class UrlPattern
         var parser = new ConstructorStringParser(pattern);
         var init = parser.Parse();
 
-        // TODO is that needed?
         if (baseUrl is null && !init.ContainsKey("protocol"))
         {
             throw new UrlPatternException("A base URL must be provided when the pattern does not specify a protocol.");

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);net9.0</TargetFrameworks>
-    <Version>1.0.24</Version>
+    <Version>1.0.25</Version>
     <Description>Default configuration for meziantou applications</Description>
   </PropertyGroup>
   <ItemGroup>

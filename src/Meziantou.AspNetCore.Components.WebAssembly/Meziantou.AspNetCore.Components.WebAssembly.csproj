@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.18</Version>
+    <Version>1.0.19</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Services for Blazor WebAssembly</Description>
 

@@ -67,7 +67,7 @@ public static class CustomAttributeExtensions
     /// <summary>Determines whether a custom attribute of the specified type is applied to the assembly.</summary>
     /// <typeparam name="T">The type of attribute to search for.</typeparam>
     /// <param name="assembly">The assembly to check.</param>
-    /// <param name="inherit"><see langword="true"/> to search the assembly's inheritance chain to find the attributes; otherwise, <see langword="false"/>.</param>
+    /// <param name="inherit">This parameter is ignored for assemblies.</param>
     /// <returns><see langword="true"/> if the attribute is applied to the assembly; otherwise, <see langword="false"/>.</returns>
     public static bool HasCustomAttribute<T>(this Assembly assembly, bool inherit)
         where T : Attribute
@@ -90,7 +90,7 @@ public static class CustomAttributeExtensions
     /// <summary>Determines whether a custom attribute of the specified type is applied to the assembly.</summary>
     /// <param name="assembly">The assembly to check.</param>
     /// <param name="attributeType">The type of attribute to search for.</param>
-    /// <param name="inherit"><see langword="true"/> to search the assembly's inheritance chain to find the attributes; otherwise, <see langword="false"/>.</param>
+    /// <param name="inherit">This parameter is ignored for assemblies.</param>
     /// <returns><see langword="true"/> if the attribute is applied to the assembly; otherwise, <see langword="false"/>.</returns>
     public static bool HasCustomAttribute(this Assembly assembly, Type attributeType, bool inherit)
     {
@@ -114,7 +114,7 @@ public static class CustomAttributeExtensions
     /// <summary>Determines whether a custom attribute of the specified type is applied to the module.</summary>
     /// <typeparam name="T">The type of attribute to search for.</typeparam>
     /// <param name="module">The module to check.</param>
-    /// <param name="inherit"><see langword="true"/> to search the module's inheritance chain to find the attributes; otherwise, <see langword="false"/>.</param>
+    /// <param name="inherit">This parameter is ignored for modules.</param>
     /// <returns><see langword="true"/> if the attribute is applied to the module; otherwise, <see langword="false"/>.</returns>
     public static bool HasCustomAttribute<T>(this Module module, bool inherit)
         where T : Attribute
@@ -137,7 +137,7 @@ public static class CustomAttributeExtensions
     /// <summary>Determines whether a custom attribute of the specified type is applied to the module.</summary>
     /// <param name="module">The module to check.</param>
     /// <param name="attributeType">The type of attribute to search for.</param>
-    /// <param name="inherit"><see langword="true"/> to search the module's inheritance chain to find the attributes; otherwise, <see langword="false"/>.</param>
+    /// <param name="inherit">This parameter is ignored for modules.</param>
     /// <returns><see langword="true"/> if the attribute is applied to the module; otherwise, <see langword="false"/>.</returns>
     public static bool HasCustomAttribute(this Module module, Type attributeType, bool inherit)
     {

@@ -17,6 +17,7 @@ public abstract class MergeTool
     public static MergeTool Kaleidoscope { get; } = new DiffEngineTool(DiffTool.Kaleidoscope);
     public static MergeTool KDiff3 { get; } = new DiffEngineTool(DiffTool.KDiff3);
     public static MergeTool Meld { get; } = new DiffEngineTool(DiffTool.Meld);
+    public static MergeTool MsWordDiff { get; } = new DiffEngineTool(DiffTool.MsWordDiff);
     public static MergeTool Neovim { get; } = new DiffEngineTool(DiffTool.Neovim);
     public static MergeTool P4Merge { get; } = new DiffEngineTool(DiffTool.P4Merge);
     public static MergeTool Rider { get; } = new DiffEngineTool(DiffTool.Rider);

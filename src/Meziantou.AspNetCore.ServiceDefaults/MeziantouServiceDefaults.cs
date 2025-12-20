@@ -180,6 +180,12 @@ public static class MeziantouServiceDefaults
         forwardedHeadersOptions.KnownProxies.Clear();
 
         app.UseForwardedHeaders(forwardedHeadersOptions);
+
+        if (options.Caching.SetNoCacheWhenMissingCacheHeaders)
+        {
+            app.UseMiddleware<NoCacheMiddleware>();
+        }
+
         if (options.Https.Enabled)
         {
             app.UseHttpsRedirection();

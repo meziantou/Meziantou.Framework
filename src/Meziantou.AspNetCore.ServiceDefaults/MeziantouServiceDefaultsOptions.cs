@@ -15,4 +15,5 @@ public sealed class MeziantouServiceDefaultsOptions
     public MeziantouAntiForgeryConfiguration AntiForgery { get; } = new();
     public MeziantouStaticAssetsConfiguration StaticAssets { get; } = new();
     public MeziantouForwardedHeadersConfiguration ForwardedHeaders { get; } = new();
+    public MeziantouCachingConfiguration Caching { get; } = new();
 }

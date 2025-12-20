@@ -72,6 +72,76 @@ public sealed class ServiceDefaultTests
         Assert.Throws<AggregateException>(() => builder.Build());
     }
 
+    [Fact]
+    public async Task CachingMiddleware_AddsNoCacheHeadersWhenNotSet()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.UseMeziantouConventions();
+        builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
+
+        await using var app = builder.Build();
+        app.MapMeziantouDefaultEndpoints();
+        app.MapGet("/test", () => TypedResults.Ok(new { Value = "test" }));
+        var t = app.RunAsync();
+
+        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
+        using var response = await httpClient.GetAsync("/test", XunitCancellationToken);
+
+        Assert.True(response.Headers.CacheControl is not null);
+        Assert.True(response.Headers.CacheControl.NoCache);
+        Assert.True(response.Headers.CacheControl.NoStore);
+        Assert.True(response.Headers.CacheControl.MustRevalidate);
+    }
+
+    [Fact]
+    public async Task CachingMiddleware_DoesNotOverrideExplicitCacheHeaders()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.UseMeziantouConventions();
+        builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
+
+        await using var app = builder.Build();
+        app.MapMeziantouDefaultEndpoints();
+        app.MapGet("/test", (HttpContext context) =>
+        {
+            context.Response.Headers.CacheControl = "public, max-age=3600";
+            return TypedResults.Ok(new { Value = "test" });
+        });
+        var t = app.RunAsync();
+
+        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
+        using var response = await httpClient.GetAsync("/test", XunitCancellationToken);
+
+        Assert.True(response.Headers.CacheControl is not null);
+        Assert.True(response.Headers.CacheControl.Public);
+        Assert.Equal(3600, response.Headers.CacheControl.MaxAge?.TotalSeconds);
+        Assert.False(response.Headers.CacheControl.NoCache);
+    }
+
+    [Fact]
+    public async Task CachingMiddleware_CanBeDisabled()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.UseMeziantouConventions(options =>
+        {
+            options.Caching.SetNoCacheWhenMissingCacheHeaders = false;
+        });
+        builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
+
+        await using var app = builder.Build();
+        app.MapMeziantouDefaultEndpoints();
+        app.MapGet("/test", () => TypedResults.Ok(new { Value = "test" }));
+        var t = app.RunAsync();
+
+        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
+        using var response = await httpClient.GetAsync("/test", XunitCancellationToken);
+
+        Assert.True(response.Headers.CacheControl is null || response.Headers.CacheControl.NoCache == false);
+    }
+
     private enum Sample
     {
         Value1,

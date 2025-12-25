@@ -1,8 +1,8 @@
 # Meziantou.Extensions.Logging.Xunit.v3
 
 ```c#
-ILogger logger = XUnitLogger.CreateLogger();
-ILogger<MyType> logger = XUnitLogger.CreateLogger<MyType>();
+ILogger logger = XUnitLogger.CreateLogger(testOutputHelper);
+ILogger<MyType> logger = XUnitLogger.CreateLogger<MyType>(testOutputHelper);
 ```
 
 If you are using a `WebApplicationFactory`:

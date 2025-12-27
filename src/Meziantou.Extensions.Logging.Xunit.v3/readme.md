@@ -1,13 +1,13 @@
 # Meziantou.Extensions.Logging.Xunit.v3
 
-## Statically create XUnitLogger or XUnitLogger&lt;T&gt;
+## Statically create XUnitLogger or XUnitLogger\<T\>
 
 ```c#
 ILogger logger = XUnitLogger.CreateLogger();
 ILogger<MyType> logger = XUnitLogger.CreateLogger<MyType>();
 ```
 
-## Statically create XUnitLogger or XUnitLogger&lt;T&gt; by passing an existing ITestOutputHelper
+## Statically create XUnitLogger or XUnitLogger\<T\> by passing an existing ITestOutputHelper
 
 ```c#
 ILogger logger = XUnitLogger.CreateLogger(testOutputHelper);

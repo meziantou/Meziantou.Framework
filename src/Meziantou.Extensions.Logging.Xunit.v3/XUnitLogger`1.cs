@@ -8,7 +8,12 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 internal sealed class XUnitLogger<T> : XUnitLogger, ILogger<T>
 {
     public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider)
-        : base(testOutputHelper, scopeProvider, GetCategoryName())
+        : this(testOutputHelper, scopeProvider, options: null)
+    {
+    }
+
+    public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider, XUnitLoggerOptions? options)
+        : base(testOutputHelper, scopeProvider, GetCategoryName(), options)
     {
     }
 

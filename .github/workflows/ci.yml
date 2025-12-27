@@ -232,7 +232,7 @@ jobs:
               }
           }
         name: Publish NuGet packages
-        if: always()
+        if: github.event.pull_request.head.repo.fork != true
         env:
           NUGETAPIKEY: ${{ secrets.NUGETAPIKEY }}
           FEEDZ_APIKEY: ${{ secrets.FEEDZ_APIKEY }}

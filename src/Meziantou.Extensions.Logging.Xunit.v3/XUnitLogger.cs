@@ -28,13 +28,18 @@ public class XUnitLogger : ILogger
 
     /// <summary>Creates a new logger instance without a test output helper.</summary>
     /// <returns>A new <see cref="ILogger"/> instance.</returns>
-    public static ILogger CreateLogger() => new XUnitLogger(testOutputHelper: null, new LoggerExternalScopeProvider(), categoryName: "");
+    public static ILogger CreateLogger() => CreateLogger(testOutputHelper: null);
 
     /// <summary>Creates a new logger instance with the specified test output helper.</summary>
     /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
-    /// <param name="options">The logger options [optional].</param>
     /// <returns>A new <see cref="ILogger"/> instance.</returns>
-    public static ILogger CreateLogger(ITestOutputHelper? testOutputHelper, XUnitLoggerOptions? options = null) => new XUnitLogger(testOutputHelper, new LoggerExternalScopeProvider(), "", options);
+    public static ILogger CreateLogger(ITestOutputHelper? testOutputHelper) => CreateLogger(testOutputHelper, options: null);
+
+    /// <summary>Creates a new logger instance with the specified test output helper.</summary>
+    /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
+    /// <param name="options">The logger options.</param>
+    /// <returns>A new <see cref="ILogger"/> instance.</returns>
+    public static ILogger CreateLogger(ITestOutputHelper? testOutputHelper, XUnitLoggerOptions? options) => new XUnitLogger(testOutputHelper, new LoggerExternalScopeProvider(), "", options);
 
     /// <summary>Creates a new typed logger instance without a test output helper.</summary>
     /// <typeparam name="T">The type whose name is used for the logger category.</typeparam>
@@ -44,9 +49,15 @@ public class XUnitLogger : ILogger
     /// <summary>Creates a new typed logger instance with the specified test output helper.</summary>
     /// <typeparam name="T">The type whose name is used for the logger category.</typeparam>
     /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
+    /// <returns>A new <see cref="ILogger{T}"/> instance.</returns>
+    public static ILogger<T> CreateLogger<T>(ITestOutputHelper? testOutputHelper) => CreateLogger<T>(testOutputHelper, options: null);
+
+    /// <summary>Creates a new typed logger instance with the specified test output helper.</summary>
+    /// <typeparam name="T">The type whose name is used for the logger category.</typeparam>
+    /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
     /// <param name="options">The logger options [optional].</param>
     /// <returns>A new <see cref="ILogger{T}"/> instance.</returns>
-    public static ILogger<T> CreateLogger<T>(ITestOutputHelper? testOutputHelper, XUnitLoggerOptions? options = null) => new XUnitLogger<T>(testOutputHelper, new LoggerExternalScopeProvider(), options);
+    public static ILogger<T> CreateLogger<T>(ITestOutputHelper? testOutputHelper, XUnitLoggerOptions? options) => new XUnitLogger<T>(testOutputHelper, new LoggerExternalScopeProvider(), options);
 
     /// <summary>Initializes a new instance of the <see cref="XUnitLogger"/> class.</summary>
     /// <param name="testOutputHelper">The xUnit.net test output helper.</param>

@@ -16,8 +16,14 @@ internal sealed class TaskDialogPrompt : Prompt
     private static readonly PromptResult Default = new(PromptConfigurationMode.MergeTool, TimeSpan.Zero, PromptConfigurationScope.CurrentSnapshot);
 
     public bool MustRegisterUriScheme { get; set; }
-    public bool MustStartNotificationTray { get; set; } = true;
+    public bool MustStartNotificationTray { get; set; }
     public bool MustShowDialog { get; set; }
+
+    public TaskDialogPrompt()
+    {
+        var env = Environment.GetEnvironmentVariable("InlineSnapshotTesting_StartNotificationTray");
+        MustStartNotificationTray = string.IsNullOrEmpty(env) || string.Equals(env, "1", StringComparison.OrdinalIgnoreCase) || string.Equals(env, "true", StringComparison.OrdinalIgnoreCase);
+    }
 
     [SupportedOSPlatformGuard("windows")]
     public static bool IsSupported()

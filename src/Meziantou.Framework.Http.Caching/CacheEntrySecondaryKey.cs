@@ -60,7 +60,9 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
         {
             if (request.Headers.TryGetValues(headerName, out var values))
             {
-                foreach (var value in values)
+                // Sort values to ensure consistent ordering for cache matching
+                // RFC 7234: Order of header values shouldn't affect cache matching
+                foreach (var value in values.Order(StringComparer.Ordinal))
                 {
                     requestKey.Add(headerName, value);
                 }

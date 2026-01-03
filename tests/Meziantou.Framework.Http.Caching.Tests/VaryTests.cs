@@ -319,6 +319,7 @@ public sealed class VaryHeaderTests
             Headers:
               Cache-Control: max-age=3600
               Vary: Accept-Language
+              Age: 0
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8

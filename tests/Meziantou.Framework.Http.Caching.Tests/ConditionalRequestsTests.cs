@@ -26,8 +26,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: "abc123"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -36,13 +36,13 @@ public sealed class ConditionalRequestsAndRevalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2
               ETag: "abc123"
-              Age: 3
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -68,8 +68,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               X-Custom: old-value
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -78,14 +78,14 @@ public sealed class ConditionalRequestsAndRevalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=10
               ETag: "v1"
               X-Custom: new-value
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -106,8 +106,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -116,13 +116,13 @@ public sealed class ConditionalRequestsAndRevalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=10
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -145,8 +145,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: v1-content
             """);
 
@@ -159,8 +159,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: "v2"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: v2-content
             """);
     }
@@ -181,8 +181,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: W/"weak-tag"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -191,13 +191,13 @@ public sealed class ConditionalRequestsAndRevalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2
               ETag: W/"weak-tag"
-              Age: 3
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -223,8 +223,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Last-Modified: {{lastModified}}
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -233,13 +233,13 @@ public sealed class ConditionalRequestsAndRevalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2
               Last-Modified: {{lastModified}}
-              Age: 3
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -265,8 +265,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Last-Modified: {{lastModified}}
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -275,14 +275,14 @@ public sealed class ConditionalRequestsAndRevalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2
               ETag: "v1"
               Last-Modified: {{lastModified}}
-              Age: 3
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -309,8 +309,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 3
+                Content-Type: text/plain; charset=utf-8
               Value: old
             """);
 
@@ -323,8 +323,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: "v2"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 3
+                Content-Type: text/plain; charset=utf-8
               Value: new
             """);
     }
@@ -345,8 +345,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: exists
             """);
 
@@ -358,8 +358,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 4
+                Content-Type: text/plain; charset=utf-8
               Value: gone
             """);
     }
@@ -380,8 +380,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -396,8 +396,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Warning: 110 - "Response is Stale", 111 - "Revalidation Failed"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
     }

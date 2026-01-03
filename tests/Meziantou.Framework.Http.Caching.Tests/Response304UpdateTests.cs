@@ -26,21 +26,21 @@ public class Response304UpdateTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=0
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -70,22 +70,22 @@ public class Response304UpdateTests
               Cache-Control: max-age=0
             Content:
               Headers:
+                Content-Length: 7
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Thu, 30 Dec 1999 00:00:00 GMT
-                Content-Length: 7
               Value: content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=0
               Age: 0
+              Cache-Control: max-age=0
             Content:
               Headers:
+                Content-Length: 7
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Thu, 30 Dec 1999 00:00:00 GMT
-                Content-Length: 7
               Value: content
             """);
     }
@@ -107,9 +107,9 @@ public class Response304UpdateTests
             StatusCode: 200 (OK)
             Content:
               Headers:
+                Content-Length: 7
                 Content-Type: text/plain; charset=utf-8
                 Expires: Sat, 01 Jan 2000 00:01:00 GMT
-                Content-Length: 7
               Value: content
             """);
 
@@ -153,21 +153,21 @@ public class Response304UpdateTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=0
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -186,26 +186,26 @@ public class Response304UpdateTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 5
               Cache-Control: max-age=0
               ETag: "v1"
-              Age: 5
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 20
               Cache-Control: max-age=0
               ETag: "v1"
-              Age: 20
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -227,21 +227,21 @@ public class Response304UpdateTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=0
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }

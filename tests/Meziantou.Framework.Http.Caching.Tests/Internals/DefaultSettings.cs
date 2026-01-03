@@ -12,5 +12,10 @@ internal static class DefaultSettings
         {
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
         };
+        InlineSnapshotSettings.Default.UseHumanReadableSerializer(settings =>
+        {
+            settings.PropertyOrder = StringComparer.OrdinalIgnoreCase;
+            settings.DictionaryKeyOrder = StringComparer.OrdinalIgnoreCase;
+        });
     }
 }

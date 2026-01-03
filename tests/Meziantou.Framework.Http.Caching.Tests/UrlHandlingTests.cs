@@ -18,8 +18,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: http-content
             """);
 
@@ -29,8 +29,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: https-content
             """);
     }
@@ -47,32 +47,32 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content
             """);
 
         await context.SnapshotResponse("HTTP://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content
             """);
 
         await context.SnapshotResponse("HtTp://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content
             """);
     }
@@ -89,32 +89,32 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content
             """);
 
         await context.SnapshotResponse("http://EXAMPLE.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content
             """);
     }
@@ -132,8 +132,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: lowercase-path
             """);
 
@@ -143,8 +143,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: uppercase-path
             """);
 
@@ -152,12 +152,12 @@ public class UrlHandlingTests
         await context.SnapshotResponse("http://example.com/Resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: uppercase-path
             """);
     }
@@ -175,8 +175,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: query-lower
             """);
 
@@ -186,8 +186,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: query-upper
             """);
     }
@@ -204,32 +204,32 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: cached-resource
             """);
 
         await context.SnapshotResponse("http://example.com/page#section2", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: cached-resource
             """);
 
         await context.SnapshotResponse("http://example.com/page", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: cached-resource
             """);
     }
@@ -247,8 +247,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: port-80
             """);
 
@@ -258,8 +258,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
               Value: port-8080
             """);
     }
@@ -276,20 +276,20 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: default-port
             """);
 
         await context.SnapshotResponse("http://example.com:80/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: default-port
             """);
     }
@@ -308,8 +308,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: user1-content
             """);
 
@@ -319,8 +319,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: user2-content
             """);
 
@@ -330,8 +330,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: no-user-content
             """);
     }
@@ -349,8 +349,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: order-1
             """);
 
@@ -360,8 +360,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: order-2
             """);
     }
@@ -379,8 +379,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: no-slash
             """);
 
@@ -390,8 +390,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: with-slash
             """);
     }
@@ -409,8 +409,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: encoded-space
             """);
 
@@ -420,8 +420,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
               Value: plus-sign
             """);
     }
@@ -438,20 +438,20 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: normalized-path
             """);
 
         await context.SnapshotResponse("http://example.com/a/./b/../b/c/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: normalized-path
             """);
     }
@@ -469,8 +469,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: no-query
             """);
 
@@ -480,8 +480,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: empty-query
             """);
     }
@@ -498,20 +498,20 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
               Value: deep-path
             """);
 
         await context.SnapshotResponse("http://example.com/api/v1/users/123", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
               Value: deep-path
             """);
     }
@@ -529,8 +529,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: domain-content
             """);
 
@@ -540,8 +540,8 @@ public class UrlHandlingTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: ip-content
             """);
     }

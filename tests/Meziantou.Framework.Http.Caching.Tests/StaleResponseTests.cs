@@ -17,8 +17,8 @@ public class StaleResponseTests
               Cache-Control: max-age=1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: stale-content
             """);
 
@@ -31,12 +31,12 @@ public class StaleResponseTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=1
               Age: 10
+              Cache-Control: max-age=1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: stale-content
             """);
     }
@@ -55,8 +55,8 @@ public class StaleResponseTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 16
+                Content-Type: text/plain; charset=utf-8
               Value: original-content
             """);
 
@@ -73,13 +73,13 @@ public class StaleResponseTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 10
               Cache-Control: max-age=1
               ETag: "v1"
-              Age: 10
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 16
+                Content-Type: text/plain; charset=utf-8
               Value: original-content
             """);
     }
@@ -96,8 +96,8 @@ public class StaleResponseTests
               Cache-Control: max-age=1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: stale-content
             """);
 
@@ -114,12 +114,12 @@ public class StaleResponseTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=1
               Age: 5
+              Cache-Control: max-age=1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: stale-content
             """);
     }
@@ -138,8 +138,8 @@ public class StaleResponseTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: must-revalidate
             """);
 
@@ -152,13 +152,13 @@ public class StaleResponseTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 10
               Cache-Control: must-revalidate, max-age=1
               ETag: "v1"
-              Age: 10
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: must-revalidate
             """);
     }
@@ -176,8 +176,8 @@ public class StaleResponseTests
               Cache-Control: max-age=1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 18
+                Content-Type: text/plain; charset=utf-8
               Value: stale-no-validator
             """);
 
@@ -189,8 +189,8 @@ public class StaleResponseTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: fresh-content
             """);
     }

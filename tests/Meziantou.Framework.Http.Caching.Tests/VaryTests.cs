@@ -25,8 +25,8 @@ public sealed class VaryHeaderTests
               Vary: Accept-Language
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: en-content
             """);
 
@@ -35,13 +35,13 @@ public sealed class VaryHeaderTests
         await context.SnapshotResponse(request2, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=3600
               Vary: Accept-Language
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: en-content
             """);
     }
@@ -66,8 +66,8 @@ public sealed class VaryHeaderTests
               Vary: Accept-Language
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: en-content
             """);
 
@@ -80,8 +80,8 @@ public sealed class VaryHeaderTests
               Vary: Accept-Language
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: fr-content
             """);
     }
@@ -106,8 +106,8 @@ public sealed class VaryHeaderTests
                 - Accept-Language
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: json-en
             """);
 
@@ -117,15 +117,15 @@ public sealed class VaryHeaderTests
         await context.SnapshotResponse(request2, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=3600
               Vary:
                 - Accept
                 - Accept-Language
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: json-en
             """);
     }
@@ -153,8 +153,8 @@ public sealed class VaryHeaderTests
                 - Accept-Language
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: json-en
             """);
 
@@ -170,8 +170,8 @@ public sealed class VaryHeaderTests
                 - Accept-Language
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: xml-en
             """);
     }
@@ -194,8 +194,8 @@ public sealed class VaryHeaderTests
               Vary: *
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: response-1
             """);
 
@@ -206,8 +206,8 @@ public sealed class VaryHeaderTests
               Vary: *
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: response-2
             """);
     }
@@ -232,8 +232,8 @@ public sealed class VaryHeaderTests
               Vary: Accept-Encoding
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: with-encoding
             """);
 
@@ -246,8 +246,8 @@ public sealed class VaryHeaderTests
               Vary: Accept-Encoding
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 16
+                Content-Type: text/plain; charset=utf-8
               Value: without-encoding
             """);
     }
@@ -269,8 +269,8 @@ public sealed class VaryHeaderTests
               Vary: Accept-Language
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -279,13 +279,13 @@ public sealed class VaryHeaderTests
         await context.SnapshotResponse(request2, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=3600
               Vary: Accept-Language
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -307,8 +307,8 @@ public sealed class VaryHeaderTests
               Vary: Accept-Language
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -317,13 +317,13 @@ public sealed class VaryHeaderTests
         await context.SnapshotResponse(request2, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=3600
               Vary: Accept-Language
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }

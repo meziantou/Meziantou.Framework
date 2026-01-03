@@ -23,8 +23,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 18
+                Content-Type: text/plain; charset=utf-8
               Value: cached-before-post
             """);
 
@@ -33,8 +33,8 @@ public sealed class UnsafeMethodInvalidationTests
             StatusCode: 201 (Created)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: post-result
             """);
 
@@ -45,8 +45,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 18
+                Content-Type: text/plain; charset=utf-8
               Value: fetched-after-post
             """);
     }
@@ -65,8 +65,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -74,8 +74,8 @@ public sealed class UnsafeMethodInvalidationTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: put-result
             """);
 
@@ -85,8 +85,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: updated
             """);
     }
@@ -105,8 +105,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: exists
             """);
 
@@ -124,8 +124,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: deleted
             """);
     }
@@ -144,8 +144,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: before-patch
             """);
 
@@ -153,8 +153,8 @@ public sealed class UnsafeMethodInvalidationTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: patch-result
             """);
 
@@ -164,8 +164,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: after-patch
             """);
     }
@@ -187,8 +187,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: cached-target
             """);
 
@@ -198,8 +198,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: cached-location
             """);
 
@@ -210,8 +210,8 @@ public sealed class UnsafeMethodInvalidationTests
               Location: http://example.com/new-resource
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: created
             """);
 
@@ -222,8 +222,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 16
+                Content-Type: text/plain; charset=utf-8
               Value: target-refreshed
             """);
 
@@ -233,8 +233,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 18
+                Content-Type: text/plain; charset=utf-8
               Value: location-refreshed
             """);
     }
@@ -256,8 +256,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: cached-target
             """);
 
@@ -267,8 +267,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 18
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content-loc
             """);
 
@@ -277,9 +277,9 @@ public sealed class UnsafeMethodInvalidationTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
-                Content-Location: http://example.com/content-resource
                 Content-Length: 7
+                Content-Location: http://example.com/content-resource
+                Content-Type: text/plain; charset=utf-8
               Value: created
             """);
 
@@ -290,8 +290,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 16
+                Content-Type: text/plain; charset=utf-8
               Value: target-refreshed
             """);
 
@@ -301,8 +301,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: content-refreshed
             """);
     }
@@ -320,8 +320,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -329,8 +329,8 @@ public sealed class UnsafeMethodInvalidationTests
             StatusCode: 400 (BadRequest)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: bad-request
             """);
 
@@ -338,12 +338,12 @@ public sealed class UnsafeMethodInvalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600
               Age: 0
+              Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
     }
@@ -361,8 +361,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -370,8 +370,8 @@ public sealed class UnsafeMethodInvalidationTests
             StatusCode: 500 (InternalServerError)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: error
             """);
 
@@ -379,12 +379,12 @@ public sealed class UnsafeMethodInvalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600
               Age: 0
+              Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
     }
@@ -410,8 +410,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: target-cached
             """);
 
@@ -421,8 +421,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: location-cached
             """);
 
@@ -432,8 +432,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: content-cached
             """);
 
@@ -444,9 +444,9 @@ public sealed class UnsafeMethodInvalidationTests
               Location: http://example.com/location
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
-                Content-Location: http://example.com/content
                 Content-Length: 6
+                Content-Location: http://example.com/content
+                Content-Type: text/plain; charset=utf-8
               Value: result
             """);
 
@@ -457,8 +457,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: target-new
             """);
 
@@ -468,8 +468,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: location-new
             """);
 
@@ -479,8 +479,8 @@ public sealed class UnsafeMethodInvalidationTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: content-new
             """);
     }

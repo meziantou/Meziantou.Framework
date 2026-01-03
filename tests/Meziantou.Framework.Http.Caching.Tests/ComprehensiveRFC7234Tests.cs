@@ -24,8 +24,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content
             """);
 
@@ -36,8 +36,8 @@ public sealed class ComprehensiveRFC7234Tests
               Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: cached-content
             """);
     }
@@ -61,8 +61,8 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(HttpMethod.Head, "http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600
               Age: 0
+              Cache-Control: max-age=3600
             Content:
               Headers:
                 Content-Length: 100
@@ -82,8 +82,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: post-1
             """);
 
@@ -93,8 +93,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: post-2
             """);
     }
@@ -112,8 +112,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: put-1
             """);
 
@@ -123,8 +123,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: put-2
             """);
     }
@@ -165,20 +165,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 2
+                Content-Type: text/plain; charset=utf-8
               Value: ok
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 2
+                Content-Type: text/plain; charset=utf-8
               Value: ok
             """);
     }
@@ -195,20 +195,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: non-auth
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 203 (NonAuthoritativeInformation)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: non-auth
             """);
     }
@@ -228,8 +228,8 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 204 (No Content)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             """);
     }
 
@@ -247,22 +247,22 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
                 Content-Range: bytes 0-6/100
+                Content-Type: text/plain; charset=utf-8
               Value: partial
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 206 (Partial Content)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
                 Content-Range: bytes 0-6/100
+                Content-Type: text/plain; charset=utf-8
               Value: partial
             """);
     }
@@ -279,20 +279,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: choices
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 300 (Multiple Choices)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: choices
             """);
     }
@@ -312,21 +312,21 @@ public sealed class ComprehensiveRFC7234Tests
               Location: http://example.com/new
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: moved
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 301 (Moved Permanently)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
               Location: http://example.com/new
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: moved
             """);
     }
@@ -343,20 +343,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
               Value: not-found
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 404 (Not Found)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
               Value: not-found
             """);
     }
@@ -373,8 +373,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: not-allowed
             """);
 
@@ -385,8 +385,8 @@ public sealed class ComprehensiveRFC7234Tests
               Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: not-allowed
             """);
     }
@@ -403,20 +403,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 4
+                Content-Type: text/plain; charset=utf-8
               Value: gone
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 410 (Gone)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 4
+                Content-Type: text/plain; charset=utf-8
               Value: gone
             """);
     }
@@ -433,20 +433,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: uri-too-long
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 414 (Request-URI Too Long)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: uri-too-long
             """);
     }
@@ -463,20 +463,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: not-impl
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 501 (Not Implemented)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: not-impl
             """);
     }
@@ -492,8 +492,8 @@ public sealed class ComprehensiveRFC7234Tests
             StatusCode: 500 (Internal Server Error)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: error-1
             """);
 
@@ -501,8 +501,8 @@ public sealed class ComprehensiveRFC7234Tests
             StatusCode: 500 (Internal Server Error)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: error-2
             """);
     }
@@ -519,20 +519,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: error
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 500 (Internal Server Error)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: error
             """);
     }
@@ -553,8 +553,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=5
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: fresh
             """);
 
@@ -563,12 +563,12 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=5
               Age: 3
+              Cache-Control: max-age=5
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: fresh
             """);
 
@@ -581,8 +581,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=5
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
               Value: refreshed
             """);
     }
@@ -610,12 +610,12 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600, s-maxage=2
               Age: 1
+              Cache-Control: max-age=3600, s-maxage=2
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -628,8 +628,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600, s-maxage=2
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 3
+                Content-Type: text/plain; charset=utf-8
               Value: new
             """);
     }
@@ -647,8 +647,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: no-store
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: secret-1
             """);
 
@@ -658,8 +658,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: no-store
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: secret-2
             """);
     }
@@ -680,21 +680,21 @@ public sealed class ComprehensiveRFC7234Tests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: no-cache
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -712,20 +712,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: public, max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: public-content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: public, max-age=60
               Age: 0
+              Cache-Control: public, max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: public-content
             """);
     }
@@ -743,20 +743,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: private, max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: private-content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: private, max-age=60
               Age: 0
+              Cache-Control: private, max-age=60
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: private-content
             """);
     }
@@ -777,8 +777,8 @@ public sealed class ComprehensiveRFC7234Tests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: must-reval
             """);
 
@@ -787,13 +787,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2, must-revalidate
               ETag: "v1"
-              Age: 3
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: must-reval
             """);
     }
@@ -814,8 +814,8 @@ public sealed class ComprehensiveRFC7234Tests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: proxy-reval
             """);
 
@@ -824,13 +824,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2, proxy-revalidate
               ETag: "v1"
-              Age: 3
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: proxy-reval
             """);
     }
@@ -848,20 +848,20 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=60, no-transform
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: no-transform-data
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=60, no-transform
               Age: 0
+              Cache-Control: max-age=60, no-transform
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: no-transform-data
             """);
     }
@@ -884,8 +884,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -898,8 +898,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
               Value: fresh-fetch
             """);
     }
@@ -921,8 +921,8 @@ public sealed class ComprehensiveRFC7234Tests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -932,13 +932,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=3600
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -959,8 +959,8 @@ public sealed class ComprehensiveRFC7234Tests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -969,13 +969,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=3600
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -996,8 +996,8 @@ public sealed class ComprehensiveRFC7234Tests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -1008,13 +1008,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 10
               Cache-Control: max-age=3600
               ETag: "v1"
-              Age: 10
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -1035,8 +1035,8 @@ public sealed class ComprehensiveRFC7234Tests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -1048,13 +1048,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 6
               Cache-Control: max-age=10
               ETag: "v1"
-              Age: 6
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -1071,8 +1071,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=2
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: stale
             """);
 
@@ -1083,13 +1083,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=2
               Age: 5
+              Cache-Control: max-age=2
               Warning: 110 - "Response is Stale"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: stale
             """);
     }
@@ -1106,8 +1106,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=2
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: stale
             """);
 
@@ -1122,13 +1122,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=2
               Age: 4
+              Cache-Control: max-age=2
               Warning: 110 - "Response is Stale"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: stale
             """);
     }
@@ -1157,8 +1157,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -1167,12 +1167,12 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600
               Age: 0
+              Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
     }
@@ -1197,8 +1197,8 @@ public sealed class ComprehensiveRFC7234Tests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -1207,13 +1207,13 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=3600
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -1230,8 +1230,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -1242,12 +1242,12 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600
               Age: 0
+              Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
     }

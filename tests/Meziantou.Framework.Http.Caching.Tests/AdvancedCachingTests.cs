@@ -25,8 +25,8 @@ public sealed class AdvancedCachingTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: immutable-content
             """);
 
@@ -36,13 +36,13 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=3600, immutable
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: immutable-content
             """);
     }
@@ -63,8 +63,8 @@ public sealed class AdvancedCachingTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: immutable-content
             """);
 
@@ -73,13 +73,13 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2, immutable
               ETag: "v1"
-              Age: 3
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: immutable-content
             """);
     }
@@ -97,8 +97,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: max-age=3600, immutable
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: immutable-content
             """);
 
@@ -107,12 +107,12 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600, immutable
               Age: 0
+              Cache-Control: max-age=3600, immutable
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: immutable-content
             """);
     }
@@ -131,12 +131,11 @@ public sealed class AdvancedCachingTests
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
-            Headers:
-              Expires: {{expires}}
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+                Expires: Sat, 01 Jan 2000 00:00:05 GMT
               Value: expires-content
             """);
 
@@ -145,12 +144,12 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Expires: {{expires}}
               Age: 3
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+                Expires: Sat, 01 Jan 2000 00:00:05 GMT
               Value: expires-content
             """);
     }
@@ -172,21 +171,21 @@ public sealed class AdvancedCachingTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: expired-content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Expires: {{expires}}
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: expired-content
             """);
     }
@@ -207,8 +206,8 @@ public sealed class AdvancedCachingTests
               Expires: {{expires}}
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -218,13 +217,13 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 5
               Cache-Control: max-age=10
               Expires: {{expires}}
-              Age: 5
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -241,25 +240,25 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Expires: not-a-date
               ETag: "v1"
+              Expires: not-a-date
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: invalid-expires
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Expires: not-a-date
-              ETag: "v1"
               Age: 0
+              ETag: "v1"
+              Expires: not-a-date
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: invalid-expires
             """);
     }
@@ -282,8 +281,8 @@ public sealed class AdvancedCachingTests
               Last-Modified: {{lastModified}}
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: heuristic-content
             """);
 
@@ -293,13 +292,13 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Last-Modified: {{lastModified}}
               Age: 43200
+              Last-Modified: {{lastModified}}
               Warning: 113 - "Heuristic Expiration"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
               Value: heuristic-content
             """);
     }
@@ -315,8 +314,8 @@ public sealed class AdvancedCachingTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: no-cache-info-1
             """);
 
@@ -324,8 +323,8 @@ public sealed class AdvancedCachingTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: no-cache-info-2
             """);
     }
@@ -345,12 +344,12 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=100
               Age: 50
+              Cache-Control: max-age=100
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -360,12 +359,12 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=100
               Age: 80
+              Cache-Control: max-age=100
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -383,13 +382,13 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=100
               Age: 90
+              Cache-Control: max-age=100
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -399,13 +398,13 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=100
               Age: 110
+              Cache-Control: max-age=100
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -426,8 +425,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: max-age=2
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: stale
             """);
 
@@ -438,13 +437,13 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=2
               Age: 5
+              Cache-Control: max-age=2
               Warning: 110 - "Response is Stale"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 5
+                Content-Type: text/plain; charset=utf-8
               Value: stale
             """);
     }
@@ -475,14 +474,14 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2, stale-if-error=60
               ETag: "v1"
-              Age: 3
               Warning: 110 - "Response is Stale", 111 - "Revalidation Failed"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -501,8 +500,8 @@ public sealed class AdvancedCachingTests
               Last-Modified: {{lastModified}}
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -511,13 +510,13 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Last-Modified: {{lastModified}}
               Age: 3600
+              Last-Modified: {{lastModified}}
               Warning: 113 - "Heuristic Expiration"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -539,8 +538,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: 
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: response-1
             """);
 
@@ -550,8 +549,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: 
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: response-2
             """);
     }
@@ -569,8 +568,8 @@ public sealed class AdvancedCachingTests
               Cache-Control:    
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: response-1
             """);
 
@@ -580,8 +579,8 @@ public sealed class AdvancedCachingTests
               Cache-Control:    
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: response-2
             """);
     }
@@ -602,21 +601,21 @@ public sealed class AdvancedCachingTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=0
               ETag: "v1"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }
@@ -636,8 +635,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10000000
+                Content-Type: text/plain; charset=utf-8
               Value: {largeContent}
             """);
 
@@ -648,8 +647,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: small-response
             """);
     }
@@ -667,8 +666,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: query1
             """);
 
@@ -678,8 +677,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: query2
             """);
     }
@@ -696,8 +695,8 @@ public sealed class AdvancedCachingTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -705,12 +704,12 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource#section2", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600
               Age: 0
+              Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
     }

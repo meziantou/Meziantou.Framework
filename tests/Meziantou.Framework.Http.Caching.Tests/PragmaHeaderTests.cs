@@ -19,8 +19,8 @@ public class PragmaHeaderTests
               ETag: "abc"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: default-content
             """);
         
@@ -29,13 +29,13 @@ public class PragmaHeaderTests
         await context.SnapshotResponse(request2, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 0
               Cache-Control: max-age=600
               ETag: "abc"
-              Age: 0
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: default-content
             """);
     }
@@ -52,8 +52,8 @@ public class PragmaHeaderTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: default-content
             """);
         
@@ -63,12 +63,12 @@ public class PragmaHeaderTests
         await context.SnapshotResponse(request2, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: default-content
             """);
     }

@@ -10,7 +10,7 @@ internal static class DefaultSettings
     {
         InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
         {
-            SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
         };
     }
 }

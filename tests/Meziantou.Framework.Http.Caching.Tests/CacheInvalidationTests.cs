@@ -20,8 +20,8 @@ public class CacheInvalidationTests
               X-Version: 1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 16
+                Content-Type: text/plain; charset=utf-8
               Value: original-content
             """);
 
@@ -29,8 +29,8 @@ public class CacheInvalidationTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: post-response
             """);
 
@@ -41,8 +41,8 @@ public class CacheInvalidationTests
               X-Version: 2
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
               Value: updated-content
             """);
     }
@@ -61,8 +61,8 @@ public class CacheInvalidationTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
               Value: before-put
             """);
 
@@ -70,8 +70,8 @@ public class CacheInvalidationTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: put-response
             """);
 
@@ -81,8 +81,8 @@ public class CacheInvalidationTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
               Value: after-put
             """);
     }
@@ -101,8 +101,8 @@ public class CacheInvalidationTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
               Value: before-delete
             """);
 
@@ -120,8 +120,8 @@ public class CacheInvalidationTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: after-delete
             """);
     }

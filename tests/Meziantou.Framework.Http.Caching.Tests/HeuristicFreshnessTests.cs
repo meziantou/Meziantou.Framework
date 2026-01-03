@@ -20,9 +20,9 @@ public class HeuristicFreshnessTests
             StatusCode: 200 (OK)
             Content:
               Headers:
+                Content-Length: 17
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Wed, 22 Dec 1999 00:00:00 GMT
-                Content-Length: 17
               Value: heuristic-content
             """);
 
@@ -33,9 +33,9 @@ public class HeuristicFreshnessTests
               Age: 0
             Content:
               Headers:
+                Content-Length: 17
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Wed, 22 Dec 1999 00:00:00 GMT
-                Content-Length: 17
               Value: heuristic-content
             """);
     }
@@ -61,9 +61,9 @@ public class HeuristicFreshnessTests
               ETag: "v1"
             Content:
               Headers:
+                Content-Length: 8
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Fri, 31 Dec 1999 23:59:50 GMT
-                Content-Length: 8
               Value: original
             """);
 
@@ -73,13 +73,13 @@ public class HeuristicFreshnessTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              ETag: "v1"
               Age: 2
+              ETag: "v1"
             Content:
               Headers:
+                Content-Length: 8
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Fri, 31 Dec 1999 23:59:50 GMT
-                Content-Length: 8
               Value: original
             """);
     }
@@ -95,8 +95,8 @@ public class HeuristicFreshnessTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: no-freshness-1
             """);
 
@@ -104,8 +104,8 @@ public class HeuristicFreshnessTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: no-freshness-2
             """);
     }
@@ -127,9 +127,9 @@ public class HeuristicFreshnessTests
             StatusCode: 200 (OK)
             Content:
               Headers:
+                Content-Length: 15
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Sun, 02 Jan 2000 00:00:00 GMT
-                Content-Length: 15
               Value: future-modified
             """);
 
@@ -138,8 +138,8 @@ public class HeuristicFreshnessTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: second-request
             """);
     }
@@ -162,9 +162,9 @@ public class HeuristicFreshnessTests
               Cache-Control: max-age=10
             Content:
               Headers:
+                Content-Length: 13
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Thu, 23 Sep 1999 00:00:00 GMT
-                Content-Length: 13
               Value: explicit-wins
             """);
 
@@ -172,13 +172,13 @@ public class HeuristicFreshnessTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=10
               Age: 0
+              Cache-Control: max-age=10
             Content:
               Headers:
+                Content-Length: 13
                 Content-Type: text/plain; charset=utf-8
                 Last-Modified: Thu, 23 Sep 1999 00:00:00 GMT
-                Content-Length: 13
               Value: explicit-wins
             """);
     }

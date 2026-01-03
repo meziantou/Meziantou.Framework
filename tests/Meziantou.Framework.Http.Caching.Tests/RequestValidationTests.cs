@@ -19,8 +19,8 @@ public class RequestValidationTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -36,13 +36,13 @@ public class RequestValidationTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 5
               Cache-Control: max-age=10
               ETag: "v1"
-              Age: 5
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -59,8 +59,8 @@ public class RequestValidationTests
               Cache-Control: max-age=100
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -76,12 +76,12 @@ public class RequestValidationTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=100
               Age: 10
+              Cache-Control: max-age=100
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
     }
@@ -100,8 +100,8 @@ public class RequestValidationTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
 
@@ -117,13 +117,13 @@ public class RequestValidationTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
+              Age: 10
               Cache-Control: max-age=100
               ETag: "v1"
-              Age: 10
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 8
+                Content-Type: text/plain; charset=utf-8
               Value: original
             """);
     }
@@ -140,8 +140,8 @@ public class RequestValidationTests
               Cache-Control: max-age=100
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -157,12 +157,12 @@ public class RequestValidationTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=100
               Age: 10
+              Cache-Control: max-age=100
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
     }
@@ -179,8 +179,8 @@ public class RequestValidationTests
               Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
 
@@ -193,12 +193,12 @@ public class RequestValidationTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=600
               Age: 0
+              Cache-Control: max-age=600
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 6
+                Content-Type: text/plain; charset=utf-8
               Value: cached
             """);
     }
@@ -215,8 +215,8 @@ public class RequestValidationTests
               Cache-Control: max-age=1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: stale-cached
             """);
 
@@ -233,12 +233,12 @@ public class RequestValidationTests
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=1
               Age: 10
+              Cache-Control: max-age=1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: stale-cached
             """);
     }
@@ -255,8 +255,8 @@ public class RequestValidationTests
               Cache-Control: max-age=1
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
               Value: stale-cached
             """);
 

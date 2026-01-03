@@ -11,14 +11,13 @@ internal sealed class HttpTestContext : IDisposable
     private readonly HttpClient _httpClient;
     private int _responseIndex = -1;
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public HttpTestContext()
     {
         var handler = new MockResponseHandler(this);
         var cache = new CachingDelegateHandler(handler, TimeProvider);
-        _httpClient = new HttpClient(cache);
+        _httpClient = new HttpClient(cache, disposeHandler: true);
     }
-
-    public CancellationToken CancellationToken => TestContext.Current.CancellationToken;
 
     public FakeTimeProvider TimeProvider { get; } = new();
 
@@ -32,6 +31,7 @@ internal sealed class HttpTestContext : IDisposable
         _responseFactories.Add(_ => response);
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public void AddResponse(HttpStatusCode statusCode, params (string, string)[] headers)
     {
         var response = new HttpResponseMessage(statusCode);
@@ -46,6 +46,8 @@ internal sealed class HttpTestContext : IDisposable
         _responseFactories.Add(_ => response);
     }
 
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public void AddResponse(HttpStatusCode statusCode, string content, params (string, string)[] headers)
     {
         var response = new HttpResponseMessage(statusCode);
@@ -65,7 +67,7 @@ internal sealed class HttpTestContext : IDisposable
 
     private async Task<HttpResponseMessage> SendRequest(HttpRequestMessage request)
     {
-        return await _httpClient.SendAsync(request);
+        return await _httpClient.SendAsync(request, TestContext.Current.CancellationToken);
     }
 
     private HttpResponseMessage GetResponse(HttpRequestMessage request)
@@ -90,6 +92,14 @@ internal sealed class HttpTestContext : IDisposable
     public async Task SnapshotResponse(string url, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await SendRequest(request);
+        InlineSnapshot.Validate(response, expected, filePath, lineNumber);
+    }
+
+    [InlineSnapshotAssertion(nameof(expected))]
+    public async Task SnapshotResponse(HttpMethod method, string url, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+    {
+        using var request = new HttpRequestMessage(method, url);
         using var response = await SendRequest(request);
         InlineSnapshot.Validate(response, expected, filePath, lineNumber);
     }

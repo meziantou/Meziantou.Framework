@@ -24,7 +24,7 @@ public class PragmaHeaderTests
               Value: default-content
             """);
         
-        var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
         request2.Headers.TryAddWithoutValidation("Pragma", "no-cache");
         await context.SnapshotResponse(request2, """
             StatusCode: 200 (OK)
@@ -57,7 +57,7 @@ public class PragmaHeaderTests
               Value: default-content
             """);
         
-        var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
         request2.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
         request2.Headers.TryAddWithoutValidation("Pragma", "no-cache");
         await context.SnapshotResponse(request2, """

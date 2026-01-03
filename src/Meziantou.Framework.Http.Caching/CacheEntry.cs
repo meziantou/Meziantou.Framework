@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Net.Http.Headers;
+
 namespace HttpCaching;
 
 internal sealed class CacheEntry
@@ -30,6 +33,9 @@ internal sealed class CacheEntry
             entry.MaxAge = cacheControl.SharedMaxAge ?? cacheControl.MaxAge;
             entry.MustRevalidate = cacheControl.MustRevalidate || cacheControl.ProxyRevalidate;
             entry.ResponseNoCache = cacheControl.NoCache;
+
+            // RFC 8246: Parse immutable directive
+            entry.Immutable = HasImmutableDirective(cacheControl);
         }
 
         // Parse Expires header
@@ -43,6 +49,21 @@ internal sealed class CacheEntry
         entry.SecondaryKey = BuildSecondaryKey(request, response);
 
         return entry;
+    }
+
+    private static bool HasImmutableDirective(CacheControlHeaderValue cacheControl)
+    {
+        // RFC 8246: Check for immutable directive in cache-control extensions
+        if (cacheControl.Extensions is null)
+            return false;
+
+        foreach (var extension in cacheControl.Extensions)
+        {
+            if (string.Equals(extension.Name, "immutable", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     private static DateTimeOffset? ParseExpiresHeader(HttpResponseMessage response)
@@ -124,6 +145,7 @@ internal sealed class CacheEntry
     public DateTimeOffset? Expires { get; private set; }
     public bool MustRevalidate { get; private set; }
     public bool ResponseNoCache { get; private set; }
+    public bool Immutable { get; private set; }
 
     // Validators for conditional requests
     public string? ETag { get; private set; }
@@ -227,3 +249,4 @@ internal sealed class CacheEntry
         }
     }
 }
+

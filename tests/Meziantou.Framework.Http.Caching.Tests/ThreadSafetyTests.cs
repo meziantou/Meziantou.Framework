@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Net;
-using HttpCaching.Tests.Internals;
 
 namespace HttpCaching.Tests;
 
@@ -10,10 +9,10 @@ public class ThreadSafetyTests
     public async Task WhenMultipleThreadsRequestSameUrlThenOnlyOneRequestIsSentToOrigin()
     {
         var requestCount = 0;
-        var handler = new MockResponseHandler(async req =>
+        var handler = new MockResponseHandler(req =>
         {
             Interlocked.Increment(ref requestCount);
-            await Task.Delay(50, TestContext.Current.CancellationToken);
+            Thread.Sleep(50);
             var response = new HttpResponseMessage(HttpStatusCode.OK);
             response.Content = new StringContent("default-content");
             response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
@@ -24,14 +23,14 @@ public class ThreadSafetyTests
         using var httpClient = new HttpClient(cache);
 
         var tasks = Enumerable.Range(0, 10)
-            .Select(_ => httpClient.GetAsync("http://example.com/test", TestContext.Current.CancellationToken))
+            .Select(_ => httpClient.GetAsync("http://example.com/test"))
             .ToArray();
 
         var responses = await Task.WhenAll(tasks);
 
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
         Assert.True(requestCount < 10, $"Expected fewer than 10 requests, but got {requestCount}");
-
+        
         foreach (var response in responses)
         {
             response.Dispose();
@@ -41,7 +40,7 @@ public class ThreadSafetyTests
     [Fact]
     public async Task WhenConcurrentRequestsToSameUrlWithDifferentVaryHeadersThenCorrectResponsesAreReturned()
     {
-        var handler = new MockResponseHandler(async req =>
+        var handler = new MockResponseHandler(req =>
         {
             var lang = req.Headers.TryGetValues("Accept-Language", out var values) ? values.FirstOrDefault() : "en";
             var response = new HttpResponseMessage(HttpStatusCode.OK);
@@ -61,7 +60,7 @@ public class ThreadSafetyTests
             var lang = i % 2 == 0 ? "en" : "fr";
             var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
             request.Headers.TryAddWithoutValidation("Accept-Language", lang);
-            tasks.Add(httpClient.SendAsync(request, TestContext.Current.CancellationToken));
+            tasks.Add(httpClient.SendAsync(request));
         }
 
         var responses = await Task.WhenAll(tasks);
@@ -71,8 +70,8 @@ public class ThreadSafetyTests
         for (int i = 0; i < responses.Length; i++)
         {
             var expectedLang = i % 2 == 0 ? "en" : "fr";
-            var actualLang = responses[i].Content.Headers.TryGetValues("Content-Language", out var values)
-                ? values.FirstOrDefault()
+            var actualLang = responses[i].Content.Headers.TryGetValues("Content-Language", out var values) 
+                ? values.FirstOrDefault() 
                 : null;
             Assert.Equal(expectedLang, actualLang);
         }
@@ -89,11 +88,11 @@ public class ThreadSafetyTests
         var urls = Enumerable.Range(1, 5).Select(i => $"http://example.com/test{i}").ToArray();
         var requestCounts = new ConcurrentDictionary<string, int>();
 
-        var handler = new MockResponseHandler(async req =>
+        var handler = new MockResponseHandler(req =>
         {
             var url = req.RequestUri?.ToString() ?? string.Empty;
             requestCounts.AddOrUpdate(url, 1, (_, count) => count + 1);
-            await Task.Delay(10, TestContext.Current.CancellationToken);
+            Thread.Sleep(10);
             var response = new HttpResponseMessage(HttpStatusCode.OK);
             response.Content = new StringContent("default-content");
             response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
@@ -107,7 +106,7 @@ public class ThreadSafetyTests
         for (int i = 0; i < 50; i++)
         {
             var url = urls[i % urls.Length];
-            tasks.Add(httpClient.GetAsync(url, TestContext.Current.CancellationToken));
+            tasks.Add(httpClient.GetAsync(url));
         }
 
         var responses = await Task.WhenAll(tasks);
@@ -130,10 +129,10 @@ public class ThreadSafetyTests
     public async Task WhenConcurrentRequestsWithConditionalValidationThenNoDataRaces()
     {
         var requestCount = 0;
-        var handler = new MockResponseHandler(async req =>
+        var handler = new MockResponseHandler(req =>
         {
             var count = Interlocked.Increment(ref requestCount);
-
+            
             if (count == 1)
             {
                 var response1 = new HttpResponseMessage(HttpStatusCode.OK);
@@ -142,12 +141,12 @@ public class ThreadSafetyTests
                 response1.Headers.TryAddWithoutValidation("ETag", "\"v1\"");
                 return response1;
             }
-
+            
             if (req.Headers.IfNoneMatch.Any())
             {
                 return new HttpResponseMessage(HttpStatusCode.NotModified);
             }
-
+            
             var response2 = new HttpResponseMessage(HttpStatusCode.OK);
             response2.Content = new StringContent("default-content");
             response2.Headers.TryAddWithoutValidation("Cache-Control", "max-age=0");
@@ -158,13 +157,13 @@ public class ThreadSafetyTests
         using var cache = new CachingDelegateHandler(handler);
         using var httpClient = new HttpClient(cache);
 
-        using (var response = await httpClient.GetAsync("http://example.com/test", TestContext.Current.CancellationToken))
+        using (var response = await httpClient.GetAsync("http://example.com/test"))
         {
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         var tasks = Enumerable.Range(0, 20)
-            .Select(_ => httpClient.GetAsync("http://example.com/test", TestContext.Current.CancellationToken))
+            .Select(_ => httpClient.GetAsync("http://example.com/test"))
             .ToArray();
 
         var responses = await Task.WhenAll(tasks);
@@ -181,14 +180,14 @@ public class ThreadSafetyTests
     [Fact]
     public async Task WhenConcurrentCacheInvalidationsThenCacheRemainsConsistent()
     {
-        var handler = new MockResponseHandler(async req =>
+        var handler = new MockResponseHandler(req =>
         {
             Thread.Sleep(5);
             if (req.Method == HttpMethod.Post)
             {
                 return new HttpResponseMessage(HttpStatusCode.Created);
             }
-
+            
             var response = new HttpResponseMessage(HttpStatusCode.OK);
             response.Content = new StringContent("default-content");
             response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
@@ -198,7 +197,7 @@ public class ThreadSafetyTests
         using var cache = new CachingDelegateHandler(handler);
         using var httpClient = new HttpClient(cache);
 
-        using (var response = await httpClient.GetAsync("http://example.com/test", TestContext.Current.CancellationToken))
+        using (var response = await httpClient.GetAsync("http://example.com/test"))
         {
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -209,11 +208,11 @@ public class ThreadSafetyTests
             if (i % 5 == 0)
             {
                 var postRequest = new HttpRequestMessage(HttpMethod.Post, "http://example.com/test");
-                tasks.Add(httpClient.SendAsync(postRequest, TestContext.Current.CancellationToken));
+                tasks.Add(httpClient.SendAsync(postRequest));
             }
             else
             {
-                tasks.Add(httpClient.GetAsync("http://example.com/test", TestContext.Current.CancellationToken));
+                tasks.Add(httpClient.GetAsync("http://example.com/test"));
             }
         }
 
@@ -232,10 +231,10 @@ public class ThreadSafetyTests
     public async Task WhenConcurrentRequestsWithMaxStaleThenStaleResponsesAreReturnedSafely()
     {
         var requestCount = 0;
-        var handler = new MockResponseHandler(async req =>
+        var handler = new MockResponseHandler(req =>
         {
             Interlocked.Increment(ref requestCount);
-            await Task.Delay(20, TestContext.Current.CancellationToken);
+            Thread.Sleep(20);
             var response = new HttpResponseMessage(HttpStatusCode.OK);
             response.Content = new StringContent("default-content");
             response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=0");
@@ -245,19 +244,19 @@ public class ThreadSafetyTests
         using var cache = new CachingDelegateHandler(handler);
         using var httpClient = new HttpClient(cache);
 
-        using (var response = await httpClient.GetAsync("http://example.com/test", TestContext.Current.CancellationToken))
+        using (var response = await httpClient.GetAsync("http://example.com/test"))
         {
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        await Task.Delay(50, TestContext.Current.CancellationToken);
+        await Task.Delay(50);
 
         var tasks = Enumerable.Range(0, 15)
             .Select(_ =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
                 request.Headers.TryAddWithoutValidation("Cache-Control", "max-stale=3600");
-                return httpClient.SendAsync(request, TestContext.Current.CancellationToken);
+                return httpClient.SendAsync(request);
             })
             .ToArray();
 
@@ -269,6 +268,14 @@ public class ThreadSafetyTests
         foreach (var response in responses)
         {
             response.Dispose();
+        }
+    }
+
+    private sealed class MockResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(responseFunc(request));
         }
     }
 }

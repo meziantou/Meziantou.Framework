@@ -25,8 +25,7 @@ public class CacheInvalidationTests
               Value: original-content
             """);
 
-        var request2 = new HttpRequestMessage(HttpMethod.Post, "http://example.com/test");
-        await context.SnapshotResponse(request2, """
+        await context.SnapshotResponse(HttpMethod.Post, "http://example.com/test", """
             StatusCode: 200 (OK)
             Content:
               Headers:
@@ -67,8 +66,7 @@ public class CacheInvalidationTests
               Value: before-put
             """);
 
-        var request2 = new HttpRequestMessage(HttpMethod.Put, "http://example.com/test");
-        await context.SnapshotResponse(request2, """
+        await context.SnapshotResponse(HttpMethod.Put, "http://example.com/test", """
             StatusCode: 200 (OK)
             Content:
               Headers:
@@ -108,8 +106,7 @@ public class CacheInvalidationTests
               Value: before-delete
             """);
 
-        var request2 = new HttpRequestMessage(HttpMethod.Delete, "http://example.com/test");
-        await context.SnapshotResponse(request2, """
+        await context.SnapshotResponse(HttpMethod.Delete, "http://example.com/test", """
             StatusCode: 204 (NoContent)
             Content:
               Headers:

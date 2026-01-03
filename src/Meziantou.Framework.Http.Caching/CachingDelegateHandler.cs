@@ -87,9 +87,15 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             var freshnessLifetime = cacheResult.FreshnessLifetime;
             var isFresh = freshnessLifetime > currentAge;
 
+            // RFC 8246: immutable directive indicates response will not change
+            // When response is fresh and immutable, skip validation even if no-cache is present
+            var isImmutableAndFresh = cacheResult.Immutable && isFresh;
+
             // RFC 7234 Section 5.2.1.4 & 5.4: no-cache directive or Pragma: no-cache
-            var requiresValidation = (requestCacheControl?.NoCache) is true ||
-                                     (hasPragmaNoCache && requestCacheControl is null);
+            // RFC 8246: immutable overrides no-cache when response is still fresh
+            var requiresValidation = !isImmutableAndFresh && 
+                                     ((requestCacheControl?.NoCache) is true ||
+                                      (hasPragmaNoCache && requestCacheControl is null));
 
             // RFC 7234 Section 5.2.1.1: max-age request directive
             if (requestCacheControl?.MaxAge != null)
@@ -113,13 +119,15 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             }
 
             // RFC 7234 Section 5.2.2.1: must-revalidate response directive
+            // RFC 8246: must-revalidate takes precedence over immutable when stale
             if (cacheResult.MustRevalidate && !isFresh)
             {
                 requiresValidation = true;
             }
 
             // RFC 7234 Section 5.2.2.2: no-cache response directive
-            if (cacheResult.ResponseNoCache)
+            // RFC 8246: immutable prevents validation only when fresh
+            if (cacheResult.ResponseNoCache && !isImmutableAndFresh)
             {
                 requiresValidation = true;
             }

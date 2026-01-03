@@ -5,7 +5,7 @@ namespace HttpCaching;
 internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondaryKey>
 {
     public static CacheEntrySecondaryKey MatchAll { get; } = new(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
-    public static CacheEntrySecondaryKey MatchNone { get; } = default;
+    public static CacheEntrySecondaryKey MatchNone { get; }
 
     private readonly Dictionary<string, string>? _headers;
 
@@ -19,7 +19,7 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
         _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
-    public void Add(String name, String value)
+    public void Add(string name, string value)
     {
         if (_headers is null)
             return;

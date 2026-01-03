@@ -101,7 +101,9 @@ public sealed class VaryHeaderTests
             StatusCode: 200 (OK)
             Headers:
               Cache-Control: max-age=3600
-              Vary: Accept, Accept-Language
+              Vary:
+                - Accept
+                - Accept-Language
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
@@ -116,7 +118,9 @@ public sealed class VaryHeaderTests
             StatusCode: 200 (OK)
             Headers:
               Cache-Control: max-age=3600
-              Vary: Accept, Accept-Language
+              Vary:
+                - Accept
+                - Accept-Language
               Age: 0
             Content:
               Headers:
@@ -144,7 +148,9 @@ public sealed class VaryHeaderTests
             StatusCode: 200 (OK)
             Headers:
               Cache-Control: max-age=3600
-              Vary: Accept, Accept-Language
+              Vary:
+                - Accept
+                - Accept-Language
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
@@ -159,7 +165,9 @@ public sealed class VaryHeaderTests
             StatusCode: 200 (OK)
             Headers:
               Cache-Control: max-age=3600
-              Vary: Accept, Accept-Language
+              Vary:
+                - Accept
+                - Accept-Language
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8

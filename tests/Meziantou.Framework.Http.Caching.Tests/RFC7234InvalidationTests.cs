@@ -46,7 +46,7 @@ public sealed class UnsafeMethodInvalidationTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Content-Length: 19
+                Content-Length: 18
               Value: fetched-after-post
             """);
     }
@@ -111,11 +111,15 @@ public sealed class UnsafeMethodInvalidationTests
             """);
 
         await context.SnapshotResponse(HttpMethod.Delete, "http://example.com/resource", """
-            StatusCode: 204 (No Content)
+            StatusCode: 204 (NoContent)
+            Content:
+              Headers:
+                Content-Length: 0
+              Value:
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
-            StatusCode: 404 (Not Found)
+            StatusCode: 404 (NotFound)
             Headers:
               Cache-Control: max-age=60
             Content:
@@ -219,7 +223,7 @@ public sealed class UnsafeMethodInvalidationTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Content-Length: 17
+                Content-Length: 16
               Value: target-refreshed
             """);
 
@@ -230,7 +234,7 @@ public sealed class UnsafeMethodInvalidationTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Content-Length: 19
+                Content-Length: 18
               Value: location-refreshed
             """);
     }
@@ -287,7 +291,7 @@ public sealed class UnsafeMethodInvalidationTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Content-Length: 17
+                Content-Length: 16
               Value: target-refreshed
             """);
 
@@ -322,7 +326,7 @@ public sealed class UnsafeMethodInvalidationTests
             """);
 
         await context.SnapshotResponse(HttpMethod.Post, "http://example.com/resource", """
-            StatusCode: 400 (Bad Request)
+            StatusCode: 400 (BadRequest)
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
@@ -363,7 +367,7 @@ public sealed class UnsafeMethodInvalidationTests
             """);
 
         await context.SnapshotResponse(HttpMethod.Put, "http://example.com/resource", """
-            StatusCode: 500 (Internal Server Error)
+            StatusCode: 500 (InternalServerError)
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8

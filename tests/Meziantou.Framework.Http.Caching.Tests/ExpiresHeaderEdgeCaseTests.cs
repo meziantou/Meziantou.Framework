@@ -27,11 +27,11 @@ public class ExpiresHeaderEdgeCaseTests
             StatusCode: 200 (OK)
             Content:
               Headers:
+                Content-Length: 13
                 Content-Type: text/plain; charset=utf-8
                 Expires:
                   - Sat, 01 Jan 2000 01:00:00 GMT
                   - Sat, 01 Jan 2000 02:00:00 GMT
-                Content-Length: 13
               Value: multi-expires
             """);
 
@@ -43,11 +43,11 @@ public class ExpiresHeaderEdgeCaseTests
               Age: 1800
             Content:
               Headers:
+                Content-Length: 13
                 Content-Type: text/plain; charset=utf-8
                 Expires:
                   - Sat, 01 Jan 2000 01:00:00 GMT
                   - Sat, 01 Jan 2000 02:00:00 GMT
-                Content-Length: 13
               Value: multi-expires
             """);
 
@@ -58,8 +58,8 @@ public class ExpiresHeaderEdgeCaseTests
             StatusCode: 200 (OK)
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
               Value: fresh-response
             """);
     }
@@ -81,9 +81,9 @@ public class ExpiresHeaderEdgeCaseTests
             StatusCode: 200 (OK)
             Content:
               Headers:
+                Content-Length: 14
                 Content-Type: text/plain; charset=utf-8
                 Expires: Sat, 01 Jan 2000 01:00:00 GMT
-                Content-Length: 14
               Value: rfc850-expires
             """);
 
@@ -93,9 +93,9 @@ public class ExpiresHeaderEdgeCaseTests
               Age: 0
             Content:
               Headers:
+                Content-Length: 14
                 Content-Type: text/plain; charset=utf-8
                 Expires: Sat, 01 Jan 2000 01:00:00 GMT
-                Content-Length: 14
               Value: rfc850-expires
             """);
     }
@@ -117,9 +117,9 @@ public class ExpiresHeaderEdgeCaseTests
             StatusCode: 200 (OK)
             Content:
               Headers:
+                Content-Length: 15
                 Content-Type: text/plain; charset=utf-8
                 Expires: Sat, 01 Jan 2000 01:00:00 GMT
-                Content-Length: 15
               Value: asctime-expires
             """);
 
@@ -129,9 +129,9 @@ public class ExpiresHeaderEdgeCaseTests
               Age: 0
             Content:
               Headers:
+                Content-Length: 15
                 Content-Type: text/plain; charset=utf-8
                 Expires: Sat, 01 Jan 2000 01:00:00 GMT
-                Content-Length: 15
               Value: asctime-expires
             """);
     }
@@ -152,9 +152,9 @@ public class ExpiresHeaderEdgeCaseTests
             StatusCode: 200 (OK)
             Content:
               Headers:
+                Content-Length: 10
                 Content-Type: text/plain; charset=utf-8
                 Expires: Fri, 31 Dec 9999 23:59:59 GMT
-                Content-Length: 10
               Value: far-future
             """);
 
@@ -164,9 +164,9 @@ public class ExpiresHeaderEdgeCaseTests
               Age: 0
             Content:
               Headers:
+                Content-Length: 10
                 Content-Type: text/plain; charset=utf-8
                 Expires: Fri, 31 Dec 9999 23:59:59 GMT
-                Content-Length: 10
               Value: far-future
             """);
     }
@@ -187,9 +187,9 @@ public class ExpiresHeaderEdgeCaseTests
             StatusCode: 200 (OK)
             Content:
               Headers:
+                Content-Length: 16
                 Content-Type: text/plain; charset=utf-8
                 Expires: Sat, 01 Jan 2000 01:00:00 GMT
-                Content-Length: 16
               Value: timezone-expires
             """);
 
@@ -199,9 +199,9 @@ public class ExpiresHeaderEdgeCaseTests
               Age: 0
             Content:
               Headers:
+                Content-Length: 16
                 Content-Type: text/plain; charset=utf-8
                 Expires: Sat, 01 Jan 2000 01:00:00 GMT
-                Content-Length: 16
               Value: timezone-expires
             """);
     }

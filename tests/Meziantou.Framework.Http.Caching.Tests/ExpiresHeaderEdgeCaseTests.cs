@@ -18,26 +18,49 @@ public class ExpiresHeaderEdgeCaseTests
         response.Content.Headers.TryAddWithoutValidation("Expires", futureDate2.ToString("R"));
         context.AddResponse(response);
 
+        using var freshResponse = new HttpResponseMessage(HttpStatusCode.OK);
+        freshResponse.Content = new StringContent("fresh-response");
+        context.AddResponse(freshResponse);
+
+        // First request - get and cache the response with multiple Expires headers
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Expires: Sat, 01 Jan 2000 01:00:00 GMT, Sat, 01 Jan 2000 02:00:00 GMT
+                Expires:
+                  - Sat, 01 Jan 2000 01:00:00 GMT
+                  - Sat, 01 Jan 2000 02:00:00 GMT
                 Content-Length: 13
               Value: multi-expires
             """);
 
+        // Second request at 30 minutes - should be cached (within first Expires time)
+        context.TimeProvider.Advance(TimeSpan.FromMinutes(30));
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Age: 0
+              Age: 1800
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Expires: Sat, 01 Jan 2000 01:00:00 GMT, Sat, 01 Jan 2000 02:00:00 GMT
+                Expires:
+                  - Sat, 01 Jan 2000 01:00:00 GMT
+                  - Sat, 01 Jan 2000 02:00:00 GMT
                 Content-Length: 13
               Value: multi-expires
+            """);
+
+        // Third request at 90 minutes - should NOT be cached (past first Expires, but before second)
+        // This proves the first Expires header is used, not the second
+        context.TimeProvider.Advance(TimeSpan.FromMinutes(60));
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Content:
+              Headers:
+                Content-Type: text/plain; charset=utf-8
+                Content-Length: 14
+              Value: fresh-response
             """);
     }
 
@@ -47,9 +70,9 @@ public class ExpiresHeaderEdgeCaseTests
         using var context = new HttpTestContext();
         // RFC 850 format: Sunday, 06-Nov-94 08:49:37 GMT
         var futureDate = context.TimeProvider.GetUtcNow().AddHours(1);
-        var rfc850Date = futureDate.ToString("dddd, dd-MMM-yy HH:mm:ss GMT");
+        var rfc850Date = futureDate.ToString("dddd, dd-MMM-yy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture);
 
-        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        using var response = new HttpResponseMessage(HttpStatusCode.OK);
         response.Content = new StringContent("rfc850-expires");
         response.Content.Headers.TryAddWithoutValidation("Expires", rfc850Date);
         context.AddResponse(response);
@@ -59,7 +82,7 @@ public class ExpiresHeaderEdgeCaseTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Expires: Saturday, 01-Jan-00 01:00:00 GMT
+                Expires: Sat, 01 Jan 2000 01:00:00 GMT
                 Content-Length: 14
               Value: rfc850-expires
             """);
@@ -71,7 +94,7 @@ public class ExpiresHeaderEdgeCaseTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Expires: Saturday, 01-Jan-00 01:00:00 GMT
+                Expires: Sat, 01 Jan 2000 01:00:00 GMT
                 Content-Length: 14
               Value: rfc850-expires
             """);
@@ -95,7 +118,7 @@ public class ExpiresHeaderEdgeCaseTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Expires: Sat Jan  1 01:00:00 2000
+                Expires: Sat, 01 Jan 2000 01:00:00 GMT
                 Content-Length: 15
               Value: asctime-expires
             """);
@@ -107,7 +130,7 @@ public class ExpiresHeaderEdgeCaseTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-                Expires: Sat Jan  1 01:00:00 2000
+                Expires: Sat, 01 Jan 2000 01:00:00 GMT
                 Content-Length: 15
               Value: asctime-expires
             """);
@@ -154,7 +177,7 @@ public class ExpiresHeaderEdgeCaseTests
         using var context = new HttpTestContext();
         var futureDate = context.TimeProvider.GetUtcNow().AddHours(1);
 
-        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        using var response = new HttpResponseMessage(HttpStatusCode.OK);
         response.Content = new StringContent("timezone-expires");
         // Most HTTP dates should be GMT, but test other timezone handling
         response.Content.Headers.TryAddWithoutValidation("Expires", futureDate.ToString("R"));

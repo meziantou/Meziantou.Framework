@@ -14,7 +14,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task WhenStaleResponseHasETagThenRevalidatesWithIfNoneMatch()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"abc123\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"abc123\""));
@@ -51,7 +51,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task When304ResponseThenUpdatesStoredHeaders()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "content", 
+        context.AddResponse(HttpStatusCode.OK, "content",
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""),
             ("X-Custom", "old-value"));
@@ -96,7 +96,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task When304ResponseWithoutETagThenUsesStoredResponse()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "content", 
+        context.AddResponse(HttpStatusCode.OK, "content",
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "max-age=10"));
@@ -135,10 +135,10 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task WhenETagChangedThenStoresNewResponse()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "v1-content", 
+        context.AddResponse(HttpStatusCode.OK, "v1-content",
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""));
-        context.AddResponse(HttpStatusCode.OK, "v2-content", 
+        context.AddResponse(HttpStatusCode.OK, "v2-content",
             ("Cache-Control", "max-age=10"),
             ("ETag", "\"v2\""));
 
@@ -175,7 +175,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task WhenWeakETagThenRevalidatesSuccessfully()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "content", 
+        context.AddResponse(HttpStatusCode.OK, "content",
             ("Cache-Control", "max-age=2"),
             ("ETag", "W/\"weak-tag\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "W/\"weak-tag\""));
@@ -217,7 +217,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     {
         await using var context = new HttpTestContext2();
         var lastModified = context.TimeProvider.GetUtcNow().AddHours(-1);
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=2"),
             ("Last-Modified", lastModified.ToString("R")));
         context.AddResponse(HttpStatusCode.NotModified, ("Last-Modified", lastModified.ToString("R")));
@@ -255,11 +255,11 @@ public sealed class ConditionalRequestsAndRevalidationTests
     {
         await using var context = new HttpTestContext2();
         var lastModified = context.TimeProvider.GetUtcNow().AddHours(-1);
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""),
             ("Last-Modified", lastModified.ToString("R")));
-        context.AddResponse(HttpStatusCode.NotModified, 
+        context.AddResponse(HttpStatusCode.NotModified,
             ("ETag", "\"v1\""),
             ("Last-Modified", lastModified.ToString("R")));
 
@@ -268,11 +268,11 @@ public sealed class ConditionalRequestsAndRevalidationTests
             Headers:
               Cache-Control: max-age=2
               ETag: "v1"
-              Last-Modified: {{lastModified}}
             Content:
               Headers:
                 Content-Length: 8
                 Content-Type: text/plain; charset=utf-8
+                Last-Modified: Fri, 31 Dec 1999 23:00:00 GMT
               Value: original
             """);
 
@@ -301,7 +301,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task WhenPutWithIfNoneMatchStarAndNoResourceThenSucceeds()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.Created, "created", 
+        context.AddResponse(HttpStatusCode.Created, "created",
             ("ETag", "\"v1\""),
             ("Location", "http://example.com/resource"));
 
@@ -342,7 +342,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task WhenMultiplePutsWithIfNoneMatchStarThenOnlyFirstSucceeds()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.Created, "first-created", 
+        context.AddResponse(HttpStatusCode.Created, "first-created",
             ("ETag", "\"v1\""),
             ("Location", "http://example.com/resource"));
         context.AddResponse(HttpStatusCode.PreconditionFailed);
@@ -381,10 +381,10 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task WhenRevalidationReturns200ThenUsesNewResponse()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "old", 
+        context.AddResponse(HttpStatusCode.OK, "old",
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""));
-        context.AddResponse(HttpStatusCode.OK, "new", 
+        context.AddResponse(HttpStatusCode.OK, "new",
             ("Cache-Control", "max-age=10"),
             ("ETag", "\"v2\""));
 
@@ -421,7 +421,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task WhenRevalidationReturns404ThenStoresNewError()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "exists", 
+        context.AddResponse(HttpStatusCode.OK, "exists",
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotFound, "gone", ("Cache-Control", "max-age=60"));
@@ -441,7 +441,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
         context.TimeProvider.Advance(TimeSpan.FromSeconds(3));
 
         await context.SnapshotResponse("http://example.com/resource", """
-            StatusCode: 404 (Not Found)
+            StatusCode: 404 (NotFound)
             Headers:
               Cache-Control: max-age=60
             Content:
@@ -458,7 +458,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
     public async Task WhenRevalidationReturns500ThenServesStaleIfAllowed()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "cached", 
+        context.AddResponse(HttpStatusCode.OK, "cached",
             ("Cache-Control", "max-age=2, stale-if-error=60"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.InternalServerError, "error");

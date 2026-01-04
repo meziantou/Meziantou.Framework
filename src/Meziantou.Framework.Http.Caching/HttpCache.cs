@@ -106,11 +106,6 @@ internal sealed class HttpCache
         if ((responseCacheControl?.NoStore) is true)
             return false;
 
-        // private directive (we're treating this as a shared cache - can be made configurable)
-        // For private cache, this would be allowed
-        if ((responseCacheControl?.Private) is true)
-            return false;
-
         // Authorization header without explicit cacheable directive
         if (request.Headers.Authorization != null)
         {

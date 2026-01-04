@@ -302,6 +302,36 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         // RFC 7234 Section 5.1: Set Age header
         response.Headers.Age = currentAge;
 
+        // Rebuild Cache-Control header from CacheEntry properties
+        // This ensures that updates from 304 responses are reflected
+        if (entry.MaxAge is not null || entry.MustRevalidate || entry.ResponseNoCache || entry.Immutable)
+        {
+            response.Headers.Remove("Cache-Control");
+            var cacheControl = new CacheControlHeaderValue();
+            
+            if (entry.MaxAge is not null)
+            {
+                cacheControl.MaxAge = entry.MaxAge;
+            }
+            
+            if (entry.MustRevalidate)
+            {
+                cacheControl.MustRevalidate = true;
+            }
+            
+            if (entry.ResponseNoCache)
+            {
+                cacheControl.NoCache = true;
+            }
+            
+            if (entry.Immutable)
+            {
+                cacheControl.Extensions.Add(new NameValueHeaderValue("immutable"));
+            }
+            
+            response.Headers.CacheControl = cacheControl;
+        }
+
         return response;
     }
 

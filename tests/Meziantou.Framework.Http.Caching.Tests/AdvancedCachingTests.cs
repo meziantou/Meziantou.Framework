@@ -531,8 +531,6 @@ public sealed class AdvancedCachingTests
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
-            Headers:
-              Cache-Control:
             Content:
               Headers:
                 Content-Length: 10
@@ -542,8 +540,6 @@ public sealed class AdvancedCachingTests
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
-            Headers:
-              Cache-Control:
             Content:
               Headers:
                 Content-Length: 10

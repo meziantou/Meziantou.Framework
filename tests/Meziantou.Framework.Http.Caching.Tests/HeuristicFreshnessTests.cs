@@ -27,6 +27,7 @@ public class HeuristicFreshnessTests
             StatusCode: 200 (OK)
             Headers:
               Age: 0
+              Warning: 113 - "Heuristic Expiration"
             Content:
               Headers:
                 Content-Length: 17

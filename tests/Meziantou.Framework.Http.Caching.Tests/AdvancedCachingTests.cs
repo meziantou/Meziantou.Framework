@@ -463,8 +463,8 @@ public sealed class AdvancedCachingTests
               ETag: "v1"
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 

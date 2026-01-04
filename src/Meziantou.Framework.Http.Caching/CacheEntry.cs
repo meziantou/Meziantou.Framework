@@ -46,7 +46,18 @@ internal sealed class CacheEntry
 
         // Parse validators
         entry.ETag = response.Headers.ETag?.ToString();
+        
+        // RFC 7232: Last-Modified can be in content headers or response headers
+        // For 204 No Content responses, it will be in response headers
         entry.LastModified = response.Content.Headers.LastModified;
+        if (entry.LastModified is null && response.Headers.TryGetValues("Last-Modified", out var lastModifiedValues))
+        {
+            var lastModifiedValue = lastModifiedValues.FirstOrDefault();
+            if (lastModifiedValue is not null && DateTimeOffset.TryParse(lastModifiedValue, CultureInfo.InvariantCulture, out var parsedDate))
+            {
+                entry.LastModified = parsedDate;
+            }
+        }
 
         // Handle Vary header for secondary key
         entry.SecondaryKey = BuildSecondaryKey(request, response);
@@ -279,9 +290,18 @@ internal sealed class CacheEntry
             ETag = validationResponse.Headers.ETag.ToString();
         }
 
+        // RFC 7232: Last-Modified can be in content headers or response headers
         if (validationResponse.Content.Headers.LastModified is not null)
         {
             LastModified = validationResponse.Content.Headers.LastModified;
+        }
+        else if (validationResponse.Headers.TryGetValues("Last-Modified", out var lastModifiedValues))
+        {
+            var lastModifiedValue = lastModifiedValues.FirstOrDefault();
+            if (lastModifiedValue is not null && DateTimeOffset.TryParse(lastModifiedValue, CultureInfo.InvariantCulture, out var parsedDate))
+            {
+                LastModified = parsedDate;
+            }
         }
 
         // Update Expires if provided

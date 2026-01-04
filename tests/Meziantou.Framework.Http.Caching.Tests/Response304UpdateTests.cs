@@ -28,7 +28,7 @@ public class Response304UpdateTests
             StatusCode: 200 (OK)
             Headers:
               Age: 0
-              Cache-Control: max-age=0
+              Cache-Control: max-age=600
               ETag: "v1"
             Content:
               Headers:
@@ -64,7 +64,7 @@ public class Response304UpdateTests
             StatusCode: 200 (OK)
             Headers:
               Age: 0
-              Cache-Control: max-age=0
+              Cache-Control: max-age=600
             Content:
               Headers:
                 Content-Length: 7
@@ -134,7 +134,7 @@ public class Response304UpdateTests
             StatusCode: 200 (OK)
             Headers:
               Age: 0
-              Cache-Control: max-age=0
+              Cache-Control: max-age=600
               ETag: "v1"
             Content:
               Headers:
@@ -168,7 +168,7 @@ public class Response304UpdateTests
             StatusCode: 200 (OK)
             Headers:
               Age: 20
-              Cache-Control: max-age=0
+              Cache-Control: max-age=600
               ETag: "v1"
             Content:
               Headers:

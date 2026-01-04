@@ -69,6 +69,13 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             return response;
         }
 
+        // RFC 7233: Range requests should bypass cache
+        // Cache doesn't support serving partial content, so forward to origin
+        if (request.Headers.Range != null)
+        {
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+
         // Check request-level cache directives
         var requestCacheControl = request.Headers.CacheControl;
         var hasPragmaNoCache = HasPragmaNoCache(request.Headers);

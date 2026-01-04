@@ -41,11 +41,11 @@ public sealed class RangeRequestsTests
         await context.SnapshotResponse(rangeRequest, """
             StatusCode: 206 (PartialContent)
             Headers:
-              Content-Range: bytes 5-11/17
               ETag: "strong-etag"
             Content:
               Headers:
                 Content-Length: 7
+                Content-Range: bytes 5-11/17
                 Content-Type: text/plain; charset=utf-8
               Value: content
             """);
@@ -83,11 +83,11 @@ public sealed class RangeRequestsTests
         await context.SnapshotResponse(rangeRequest, """
             StatusCode: 206 (PartialContent)
             Headers:
-              Content-Range: bytes 5-11/17
               ETag: "strong-etag"
             Content:
               Headers:
                 Content-Length: 7
+                Content-Range: bytes 5-11/17
                 Content-Type: text/plain; charset=utf-8
               Value: content
             """);

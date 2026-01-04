@@ -109,9 +109,6 @@ public class CacheInvalidationTests
         await context.SnapshotResponse(HttpMethod.Delete, "http://example.com/test", """
             StatusCode: 204 (NoContent)
             Content:
-              Headers:
-                Content-Length: 0
-              Value:
             """);
 
         await context.SnapshotResponse("http://example.com/test", """

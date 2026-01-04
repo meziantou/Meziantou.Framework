@@ -30,7 +30,8 @@ internal sealed class CacheEntry
         var cacheControl = response.Headers.CacheControl;
         if (cacheControl != null)
         {
-            entry.MaxAge = cacheControl.SharedMaxAge ?? cacheControl.MaxAge;
+            entry.MaxAge = cacheControl.MaxAge;
+            entry.SharedMaxAge = cacheControl.SharedMaxAge;
             entry.MustRevalidate = cacheControl.MustRevalidate || cacheControl.ProxyRevalidate;
             entry.ResponseNoCache = cacheControl.NoCache;
 
@@ -178,6 +179,7 @@ internal sealed class CacheEntry
     public DateTimeOffset ResponseDate { get; private set; }
     public TimeSpan AgeValue { get; private set; }
     public TimeSpan? MaxAge { get; private set; }
+    public TimeSpan? SharedMaxAge { get; private set; }
     public DateTimeOffset? Expires { get; private set; }
     public bool MustRevalidate { get; private set; }
     public bool ResponseNoCache { get; private set; }
@@ -197,7 +199,10 @@ internal sealed class CacheEntry
     {
         get
         {
-            // 1. Use max-age (or s-maxage) if present
+            // 1. Use s-maxage if present (takes precedence for shared caches), otherwise max-age
+            if (SharedMaxAge.HasValue)
+                return SharedMaxAge.Value;
+
             if (MaxAge.HasValue)
                 return MaxAge.Value;
 
@@ -262,10 +267,15 @@ internal sealed class CacheEntry
         var updatedMaxAge = false;
         if (cacheControl is not null)
         {
-            var newMaxAge = cacheControl.SharedMaxAge ?? cacheControl.MaxAge;
-            if (newMaxAge is not null && newMaxAge != MaxAge)
+            if (cacheControl.MaxAge is not null && cacheControl.MaxAge != MaxAge)
             {
-                MaxAge = newMaxAge;
+                MaxAge = cacheControl.MaxAge;
+                updatedMaxAge = true;
+            }
+
+            if (cacheControl.SharedMaxAge is not null && cacheControl.SharedMaxAge != SharedMaxAge)
+            {
+                SharedMaxAge = cacheControl.SharedMaxAge;
                 updatedMaxAge = true;
             }
 

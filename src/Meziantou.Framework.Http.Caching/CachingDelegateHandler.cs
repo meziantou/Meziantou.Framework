@@ -327,7 +327,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
 
         // Rebuild Cache-Control header from CacheEntry properties
         // This ensures that updates from 304 responses are reflected
-        if (entry.MaxAge is not null || entry.MustRevalidate || entry.ResponseNoCache || entry.Immutable || entry.StaleIfError is not null)
+        if (entry.MaxAge is not null || entry.SharedMaxAge is not null || entry.MustRevalidate || entry.ResponseNoCache || entry.Immutable || entry.StaleIfError is not null)
         {
             response.Headers.Remove("Cache-Control");
             var cacheControl = new CacheControlHeaderValue();
@@ -335,6 +335,11 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             if (entry.MaxAge is not null)
             {
                 cacheControl.MaxAge = entry.MaxAge;
+            }
+
+            if (entry.SharedMaxAge is not null)
+            {
+                cacheControl.SharedMaxAge = entry.SharedMaxAge;
             }
             
             if (entry.MustRevalidate)

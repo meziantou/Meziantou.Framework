@@ -8,7 +8,7 @@ public class StaleResponseTests
     [Fact]
     public async Task WhenMaxStaleAllowsAnyStalenessThenStaleResponseServed()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "stale-content", ("Cache-Control", "max-age=1"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -45,7 +45,7 @@ public class StaleResponseTests
     [Fact]
     public async Task WhenMaxStaleLimitExceededThenRevalidationRequired()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "original-content", ("Cache-Control", "max-age=1"), ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified);
 
@@ -88,7 +88,7 @@ public class StaleResponseTests
     [Fact]
     public async Task WhenMaxStaleWithinLimitThenStaleResponseServed()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "stale-content", ("Cache-Control", "max-age=1"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -129,7 +129,7 @@ public class StaleResponseTests
     [Fact]
     public async Task WhenMustRevalidateThenMaxStaleIgnored()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "must-revalidate", ("Cache-Control", "max-age=1, must-revalidate"), ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified);
 
@@ -168,7 +168,7 @@ public class StaleResponseTests
     [Fact]
     public async Task WhenResponseStaleWithoutValidatorThenFetchNew()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "stale-no-validator", ("Cache-Control", "max-age=1"));
         context.AddResponse(HttpStatusCode.OK, "fresh-content");
 

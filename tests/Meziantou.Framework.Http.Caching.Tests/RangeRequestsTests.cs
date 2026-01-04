@@ -13,7 +13,7 @@ public sealed class RangeRequestsTests
     [Fact]
     public async Task WhenRangeRequestWithStrongETagThenIfRangeHeaderSent()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "full content here",
             ("Cache-Control", "max-age=100"),
             ("ETag", "\"strong-etag\""),
@@ -54,7 +54,7 @@ public sealed class RangeRequestsTests
     [Fact]
     public async Task WhenIfRangeWithStrongETagMatchesThenReturnsPartialContent()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "full content here",
             ("Cache-Control", "max-age=100"),
             ("ETag", "\"strong-etag\""),
@@ -96,7 +96,7 @@ public sealed class RangeRequestsTests
     [Fact]
     public async Task WhenIfRangeWithStrongETagMismatchesThenReturnsFullContent()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "original content",
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""),
@@ -146,7 +146,7 @@ public sealed class RangeRequestsTests
     [Fact]
     public async Task WhenRangeRequestWithWeakETagThenShouldNotUseIfRange()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "full content here",
             ("Cache-Control", "max-age=100"),
             ("ETag", "W/\"weak-etag\""),
@@ -189,7 +189,7 @@ public sealed class RangeRequestsTests
     [Fact]
     public async Task WhenIfRangeWithWeakETagThenIgnoresIfRange()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "full content here",
             ("Cache-Control", "max-age=100"),
             ("ETag", "W/\"weak-etag\""),

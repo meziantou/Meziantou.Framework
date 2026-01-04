@@ -1,90 +1,93 @@
-
 using System.Net;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.InlineSnapshotTesting;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Time.Testing;
 
 namespace HttpCaching.Tests.Internals;
 
-internal sealed class HttpTestContext : IDisposable
+internal sealed class HttpTestContext : IAsyncDisposable
 {
-    private readonly List<Func<HttpRequestMessage, HttpResponseMessage>> _responseFactories = [];
+    private readonly WebApplication _app;
     private readonly HttpClient _httpClient;
-    private int _responseIndex = -1;
+    private readonly Queue<ExpectedRequest> _expectedRequests = [];
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public HttpTestContext()
+        : this(new CachingOptions())
     {
-        var handler = new MockResponseHandler(this);
-        var cache = new CachingDelegateHandler(handler, TimeProvider);
+    }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
+    public HttpTestContext(CachingOptions options)
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseTestServer();
+        _app = builder.Build();
+        _app.Run(async context =>
+        {
+            await HandleRequest(context);
+        });
+        _ = _app.StartAsync();
+
+        var handler = _app.GetTestServer().CreateHandler();
+        var cache = new CachingDelegateHandler(handler, TimeProvider, options);
         _httpClient = new HttpClient(cache, disposeHandler: true);
     }
 
     public FakeTimeProvider TimeProvider { get; } = new();
 
-    public void AddResponse(Func<HttpRequestMessage, HttpResponseMessage> factory)
+    public void AddResponse(Func<HttpContext, Task> responseFactory)
     {
-        var factoryWrapper = (HttpRequestMessage request) =>
-        {
-            var response = factory(request);
-            response.RequestMessage = request;
-            return response;
-        };
-
-        _responseFactories.Add(factoryWrapper);
+        _expectedRequests.Enqueue(new ExpectedRequest(responseFactory));
     }
 
-    public void AddResponse(HttpResponseMessage response)
-    {
-        AddResponse(_ => response);
-    }
-
-    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public void AddResponse(HttpStatusCode statusCode, params (string, string)[] headers)
     {
-        var response = new HttpResponseMessage(statusCode);
-        response.StatusCode = statusCode;
-        foreach (var (key, value) in headers)
+        AddResponse((context) =>
         {
-            if (!response.Headers.TryAddWithoutValidation(key, value))
+            context.Response.StatusCode = (int)statusCode;
+            foreach (var (key, value) in headers)
             {
-                response.Content ??= new ByteArrayContent([]);
-                response.Content.Headers.TryAddWithoutValidation(key, value);
+                context.Response.Headers.Append(key, value);
             }
-        }
-        AddResponse(_ => response);
+
+            return Task.CompletedTask;
+        });
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public void AddResponse(HttpStatusCode statusCode, string content, params (string, string)[] headers)
     {
-        var response = new HttpResponseMessage(statusCode);
-        response.StatusCode = statusCode;
-        response.Content = new StringContent(content);
-        foreach (var (key, value) in headers)
+        AddResponse(async (context) =>
         {
-            if (!response.Headers.TryAddWithoutValidation(key, value))
+            context.Response.StatusCode = (int)statusCode;
+            foreach (var (key, value) in headers)
             {
-                response.Content.Headers.TryAddWithoutValidation(key, value);
+                context.Response.Headers.Append(key, value);
             }
-        }
-        AddResponse(_ => response);
+
+            context.Response.ContentLength = Encoding.UTF8.GetByteCount(content);
+            context.Response.ContentType = "text/plain; charset=utf-8";
+            await context.Response.Body.WriteAsync(Encoding.UTF8.GetBytes(content));
+        });
     }
 
-    private async Task<HttpResponseMessage> SendRequest(HttpRequestMessage request)
+    private async Task<HttpResponseMessage> SendRequest(HttpRequestMessage message)
     {
-        return await _httpClient.SendAsync(request, TestContext.Current.CancellationToken);
+        return await _httpClient.SendAsync(message);
     }
 
-    private HttpResponseMessage GetResponse(HttpRequestMessage request)
+    public async ValueTask DisposeAsync()
     {
-        _responseIndex++;
-        if (_responseIndex >= _responseFactories.Count)
+        await _app.DisposeAsync();
+        if (_expectedRequests.Count != 0)
         {
-            throw new InvalidOperationException("No more responses available");
+            throw new InvalidOperationException("Not all expected requests were made. Remaining requests: " + _expectedRequests.Count);
         }
-        var factory = _responseFactories[_responseIndex];
-        return factory(request);
     }
 
     [InlineSnapshotAssertion(nameof(expected))]
@@ -110,20 +113,12 @@ internal sealed class HttpTestContext : IDisposable
         InlineSnapshot.Validate(response, expected, filePath, lineNumber);
     }
 
-    public void Dispose()
+
+    private async Task HandleRequest(HttpContext context)
     {
-        _httpClient?.Dispose();
-        if (_responseIndex + 1 != _responseFactories.Count)
-        {
-            // TODO throw new InvalidOperationException($"Not all responses were used. Used {_responseIndex + 1} of {_responseFactories.Count}.");
-        }
+        var request = _expectedRequests.Dequeue();
+        await request.ResponseFactory(context);
     }
 
-    private sealed class MockResponseHandler(HttpTestContext context) : DelegatingHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(context.GetResponse(request));
-        }
-    }
+    private sealed record ExpectedRequest(Func<HttpContext, Task> ResponseFactory);
 }

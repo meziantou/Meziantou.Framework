@@ -15,7 +15,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenGetRequestWithCacheableResponseThenSecondRequestUsesCache()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "cached-content", ("Cache-Control", "max-age=3600"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -45,7 +45,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenHeadRequestWithCacheableResponseThenSecondRequestUsesCache()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, ("Cache-Control", "max-age=3600"), ("Content-Length", "100"));
 
         await context.SnapshotResponse(HttpMethod.Head, "http://example.com/resource", """
@@ -73,7 +73,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenPostRequestThenNotCached()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "post-1", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "post-2", ("Cache-Control", "max-age=3600"));
 
@@ -103,7 +103,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenPutRequestThenNotCached()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "put-1", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "put-2", ("Cache-Control", "max-age=3600"));
 
@@ -133,7 +133,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenDeleteRequestThenNotCached()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.NoContent, ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.NoContent, ("Cache-Control", "max-age=3600"));
 
@@ -159,7 +159,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When200OKThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "ok", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -189,7 +189,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When203NonAuthoritativeThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.NonAuthoritativeInformation, "non-auth", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -219,7 +219,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When204NoContentThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.NoContent, ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -244,7 +244,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When206PartialContentThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.PartialContent, "partial",
             ("Cache-Control", "max-age=60"),
             ("Content-Range", "bytes 0-6/100"));
@@ -278,7 +278,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When300MultipleChoicesThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.MultipleChoices, "choices", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -308,7 +308,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When301MovedPermanentlyThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.MovedPermanently, "moved",
             ("Cache-Control", "max-age=60"),
             ("Location", "http://example.com/new"));
@@ -342,7 +342,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When404NotFoundThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.NotFound, "not-found", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -372,7 +372,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When405MethodNotAllowedThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.MethodNotAllowed, "not-allowed", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -402,7 +402,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When410GoneThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.Gone, "gone", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -432,7 +432,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When414UriTooLongThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.RequestUriTooLong, "uri-too-long", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -462,7 +462,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When501NotImplementedThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.NotImplemented, "not-impl", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -492,7 +492,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When500InternalServerErrorThenNotCachedByDefault()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.InternalServerError, "error-1");
         context.AddResponse(HttpStatusCode.InternalServerError, "error-2");
 
@@ -518,7 +518,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task When500WithExplicitCacheControlThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.InternalServerError, "error", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -552,7 +552,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasMaxAgeThenCachedForThatDuration()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "fresh", ("Cache-Control", "max-age=5"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -598,7 +598,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasSMaxAgeThenItTakesPrecedenceOverMaxAge()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content",
             ("Cache-Control", "max-age=3600, s-maxage=2"));
 
@@ -645,7 +645,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasNoStoreThenNotCached()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "secret-1", ("Cache-Control", "no-store"));
         context.AddResponse(HttpStatusCode.OK, "secret-2", ("Cache-Control", "no-store"));
 
@@ -675,7 +675,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasNoCacheThenMustRevalidate()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "no-cache"),
             ("ETag", "\"v1\""));
@@ -710,7 +710,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasPublicThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "public-content",
             ("Cache-Control", "public, max-age=60"));
 
@@ -741,7 +741,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasPrivateThenCacheable()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "private-content",
             ("Cache-Control", "private, max-age=60"));
 
@@ -772,7 +772,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasMustRevalidateThenRevalidatesWhenStale()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "must-reval",
             ("Cache-Control", "max-age=2, must-revalidate"),
             ("ETag", "\"v1\""));
@@ -809,7 +809,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasProxyRevalidateThenRevalidatesWhenStale()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "proxy-reval",
             ("Cache-Control", "max-age=2, proxy-revalidate"),
             ("ETag", "\"v1\""));
@@ -846,7 +846,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenResponseHasNoTransformThenPreservedInCache()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "no-transform-data",
             ("Cache-Control", "max-age=60, no-transform"));
 
@@ -881,7 +881,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasNoStoreThenBypassesCache()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "fresh-fetch", ("Cache-Control", "max-age=3600"));
 
@@ -915,7 +915,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasNoCacheThenRevalidates()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=3600"),
             ("ETag", "\"v1\""));
@@ -954,7 +954,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasMaxAgeZeroThenRevalidates()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=3600"),
             ("ETag", "\"v1\""));
@@ -991,7 +991,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasMaxAgeLessThanCacheAgeThenRevalidates()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=3600"),
             ("ETag", "\"v1\""));
@@ -1030,7 +1030,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasMinFreshThenRevalidatesIfNotFreshEnough()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=10"),
             ("ETag", "\"v1\""));
@@ -1070,7 +1070,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasMaxStaleWithoutValueThenAcceptsStaleResponse()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "stale", ("Cache-Control", "max-age=2"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -1105,7 +1105,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasMaxStaleWithValueThenAcceptsStaleWithinLimit()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "stale", ("Cache-Control", "max-age=2"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -1144,7 +1144,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasOnlyIfCachedAndNoCacheThenReturns504()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
         request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { OnlyIfCached = true };
@@ -1160,7 +1160,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasOnlyIfCachedAndCacheExistsThenReturnsCached()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=3600"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -1196,7 +1196,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasPragmaNoCacheAndNoCacheControlThenRevalidates()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=3600"),
             ("ETag", "\"v1\""));
@@ -1233,7 +1233,7 @@ public sealed class ComprehensiveRFC7234Tests
     [Fact]
     public async Task WhenRequestHasPragmaNoCacheAndCacheControlThenCacheControlTakesPrecedence()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=3600"));
 
         await context.SnapshotResponse("http://example.com/resource", """

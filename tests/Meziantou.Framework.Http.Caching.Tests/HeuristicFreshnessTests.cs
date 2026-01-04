@@ -8,7 +8,7 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenLastModifiedPresentWithoutExplicitExpirationThenHeuristicUsed()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-10);
         context.AddResponse(HttpStatusCode.OK, "heuristic-content", ("Last-Modified", lastModified.ToString("R")));
 
@@ -40,7 +40,7 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenHeuristicFreshnessExpiredThenRevalidate()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         // Last-Modified 10 seconds ago, heuristic = 1 second
         // TODO Validate with 1 second later request
         var lastModified = context.TimeProvider.GetUtcNow().AddSeconds(-10);
@@ -79,7 +79,7 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenNoLastModifiedAndNoExplicitExpirationThenNotCached()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "no-freshness-1");
         context.AddResponse(HttpStatusCode.OK, "no-freshness-2");
 
@@ -105,7 +105,7 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenLastModifiedInFutureThenNoHeuristicFreshness()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var futureModified = context.TimeProvider.GetUtcNow().AddDays(1);
         context.AddResponse(HttpStatusCode.OK, "future-modified", ("Last-Modified", futureModified.ToString("R")));
         context.AddResponse(HttpStatusCode.OK, "second-request");
@@ -134,7 +134,7 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenExplicitExpirationPresentThenHeuristicNotUsed()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-100);
         context.AddResponse(HttpStatusCode.OK, "explicit-wins", ("Last-Modified", lastModified.ToString("R")), ("Cache-Control", "max-age=10"));
 

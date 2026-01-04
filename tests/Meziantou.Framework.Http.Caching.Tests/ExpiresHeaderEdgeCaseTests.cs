@@ -8,7 +8,7 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenMultipleExpiresHeadersThenFirstUsed()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var futureDate1 = context.TimeProvider.GetUtcNow().AddHours(1);
         var futureDate2 = context.TimeProvider.GetUtcNow().AddHours(2);
 
@@ -60,7 +60,7 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenExpiresWithRFC850DateFormatThenParsed()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         // RFC 850 format: Sunday, 06-Nov-94 08:49:37 GMT
         var futureDate = context.TimeProvider.GetUtcNow().AddHours(1);
         var rfc850Date = futureDate.ToString("dddd, dd-MMM-yy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture);
@@ -93,7 +93,7 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenExpiresWithAsctimeFormatThenParsed()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         // asctime format: Sun Nov  6 08:49:37 1994
         var futureDate = context.TimeProvider.GetUtcNow().AddHours(1);
         var asctimeDate = futureDate.ToString("ddd MMM  d HH:mm:ss yyyy", CultureInfo.InvariantCulture);
@@ -126,7 +126,7 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenExpiresVeryFarInFutureThenCached()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         // Year 9999 - far future
         var farFuture = new DateTimeOffset(9999, 12, 31, 23, 59, 59, TimeSpan.Zero);
 
@@ -158,7 +158,7 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenExpiresWithTimezoneThenNormalizedToGMT()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var futureDate = context.TimeProvider.GetUtcNow().AddHours(1);
 
         // Most HTTP dates should be GMT, but test other timezone handling

@@ -8,7 +8,7 @@ public class Response304UpdateTests
     [Fact]
     public async Task When304ResponseHasNewETagThenCachedETagUpdated()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=0"), ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "max-age=600"), ("ETag", "\"v2\""));
 
@@ -41,7 +41,7 @@ public class Response304UpdateTests
     [Fact]
     public async Task When304ResponseHasNewLastModifiedThenCachedLastModifiedUpdated()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var oldLastModified = context.TimeProvider.GetUtcNow().AddDays(-2);
         var newLastModified = context.TimeProvider.GetUtcNow().AddDays(-1);
 
@@ -77,7 +77,7 @@ public class Response304UpdateTests
     [Fact]
     public async Task When304ResponseHasNewExpiresThenCachedExpiresUpdated()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var oldExpires = context.TimeProvider.GetUtcNow().AddMinutes(1);
         var newExpires = context.TimeProvider.GetUtcNow().AddHours(1);
 
@@ -109,7 +109,7 @@ public class Response304UpdateTests
     [Fact]
     public async Task When304ResponseHasDateHeaderThenResponseDateUpdated()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var oldDate = context.TimeProvider.GetUtcNow();
 
 
@@ -147,7 +147,7 @@ public class Response304UpdateTests
     [Fact]
     public async Task When304ResponseHasAgeHeaderThenAgeValueUpdated()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=0"), ("ETag", "\"v1\""), ("Age", "5"));
         context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "max-age=600"), ("Age", "20"));
 
@@ -181,7 +181,7 @@ public class Response304UpdateTests
     [Fact]
     public async Task When304ResponseDoesNotHaveCacheControlThenOriginalPreserved()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=0"), ("ETag", "\"v1\""));
         // No Cache-Control in 304 response
         context.AddResponse(HttpStatusCode.NotModified);

@@ -8,7 +8,7 @@ public class PragmaHeaderTests
     [Fact]
     public async Task WhenRequestHasPragmaNoCacheWithoutCacheControlThenValidationIsRequired()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "default-content", ("Cache-Control", "max-age=600"), ("ETag", "\"abc\""));
         context.AddResponse(HttpStatusCode.NotModified);
 
@@ -43,7 +43,7 @@ public class PragmaHeaderTests
     [Fact]
     public async Task WhenRequestHasBothCacheControlAndPragmaThenCacheControlTakesPrecedence()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "default-content", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://example.com/test", """

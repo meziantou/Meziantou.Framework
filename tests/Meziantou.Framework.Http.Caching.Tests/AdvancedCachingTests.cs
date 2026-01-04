@@ -13,7 +13,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenImmutableAndFreshThenBypassesRevalidationEvenWithNoCache()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "immutable-content", 
             ("Cache-Control", "max-age=3600, immutable"),
             ("ETag", "\"v1\""));
@@ -50,7 +50,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenImmutableButStaleThenRevalidates()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "immutable-content", 
             ("Cache-Control", "max-age=2, immutable"),
             ("ETag", "\"v1\""));
@@ -87,7 +87,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenImmutableWithPragmaNoCacheAndFreshThenUsesCache()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "immutable-content", 
             ("Cache-Control", "max-age=3600, immutable"));
 
@@ -124,7 +124,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenExpiresHeaderThenCachesUntilExpiration()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var expires = context.TimeProvider.GetUtcNow().AddSeconds(5);
         context.AddResponse(HttpStatusCode.OK, "expires-content", 
             ("Expires", expires.ToString("R")));
@@ -157,7 +157,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenExpiresInPastThenStaleImmediately()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var expires = context.TimeProvider.GetUtcNow().AddSeconds(-10);
         context.AddResponse(HttpStatusCode.OK, "expired-content", 
             ("Expires", expires.ToString("R")),
@@ -193,7 +193,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenMaxAgeAndExpiresBothPresentThenMaxAgeTakesPrecedence()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var expires = context.TimeProvider.GetUtcNow().AddSeconds(2);
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=10"),
@@ -231,7 +231,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenExpiresInvalidThenTreatedAsStale()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "invalid-expires", 
             ("Expires", "not-a-date"),
             ("ETag", "\"v1\""));
@@ -270,7 +270,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenLastModifiedWithoutExplicitFreshnessThenUsesHeuristicCaching()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-10);
         context.AddResponse(HttpStatusCode.OK, "heuristic-content", 
             ("Last-Modified", lastModified.ToString("R")));
@@ -305,7 +305,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenNoExplicitFreshnessAndNoLastModifiedThenDoesNotCacheOrUsesMinimalHeuristic()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "no-cache-info-1");
         context.AddResponse(HttpStatusCode.OK, "no-cache-info-2");
 
@@ -335,7 +335,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenResponseHasAgeHeaderThenAddsToCalculatedAge()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=100"),
             ("Age", "50"));
@@ -371,7 +371,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenAgeExceedsMaxAgeThenResponseIsStale()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=100"),
             ("Age", "90"),
@@ -415,7 +415,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenServingStaleResponseThenAddsWarning110()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "stale", ("Cache-Control", "max-age=2"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -450,7 +450,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenRevalidationFailsAndServingStaleThenAddsWarning111()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=2, stale-if-error=60"),
             ("ETag", "\"v1\""));
@@ -488,7 +488,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenUsingHeuristicExpirationThenAddsWarning113()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-10);
         context.AddResponse(HttpStatusCode.OK, "content", ("Last-Modified", lastModified.ToString("R")));
 
@@ -525,7 +525,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenEmptyCacheControlValueThenIgnored()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "response-1", ("Cache-Control", ""));
         context.AddResponse(HttpStatusCode.OK, "response-2", ("Cache-Control", ""));
 
@@ -551,7 +551,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenCacheControlWithWhitespaceOnlyThenIgnored()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "response-1", ("Cache-Control", "   "));
         context.AddResponse(HttpStatusCode.OK, "response-2", ("Cache-Control", "   "));
 
@@ -581,7 +581,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenMaxAgeZeroThenMustRevalidate()
     {
-        await using var context = new HttpTestContext2();
+        await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=0"),
             ("ETag", "\"v1\""));
@@ -618,7 +618,7 @@ public sealed class AdvancedCachingTests
     {
         // Test that responses exceeding the maximum size are not cached
         var options = new CachingOptions { MaximumResponseSize = 1024 * 1024 }; // 1 MB limit
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         var largeContent = new string('x', 2_000_000); // 2MB
         context.AddResponse(HttpStatusCode.OK, largeContent, ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "small-response", ("Cache-Control", "max-age=3600"));
@@ -652,7 +652,7 @@ public sealed class AdvancedCachingTests
     {
         // Test that responses within the size limit are cached
         var options = new CachingOptions { MaximumResponseSize = 1024 * 1024 }; // 1 MB limit
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         var smallContent = new string('x', 500_000); // 500 KB
         context.AddResponse(HttpStatusCode.OK, smallContent, ("Cache-Control", "max-age=3600"));
 
@@ -686,7 +686,7 @@ public sealed class AdvancedCachingTests
     {
         // Test that setting MaximumResponseSize to null disables size checking
         var options = new CachingOptions { MaximumResponseSize = null };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         var largeContent = new string('x', 10_000_000); // 10 MB
         context.AddResponse(HttpStatusCode.OK, largeContent, ("Cache-Control", "max-age=3600"));
 
@@ -721,7 +721,7 @@ public sealed class AdvancedCachingTests
         // Test edge case where response is exactly at the size limit
         // Note: We need a large enough limit to account for serialization overhead (headers, metadata)
         var options = new CachingOptions { MaximumResponseSize = 2000 };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         var content = new string('x', 1000); // Content is 1000 bytes, but serialized will be larger
         context.AddResponse(HttpStatusCode.OK, content, ("Cache-Control", "max-age=3600"));
 
@@ -756,7 +756,7 @@ public sealed class AdvancedCachingTests
         // Test edge case where response serialized size exceeds the limit
         // We set a limit that's smaller than the serialized response size
         var options = new CachingOptions { MaximumResponseSize = 500 };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         var content = new string('x', 400); // Small content, but serialized will exceed 500 bytes
         context.AddResponse(HttpStatusCode.OK, content, ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "second-response", ("Cache-Control", "max-age=3600"));
@@ -796,7 +796,7 @@ public sealed class AdvancedCachingTests
         { 
             ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK 
         };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "cacheable-content", ("Cache-Control", "max-age=3600"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -831,7 +831,7 @@ public sealed class AdvancedCachingTests
         { 
             ShouldCacheResponse = response => response.StatusCode != HttpStatusCode.OK 
         };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "first-response", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "second-response", ("Cache-Control", "max-age=3600"));
 
@@ -866,7 +866,7 @@ public sealed class AdvancedCachingTests
         { 
             ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK 
         };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "ok-response", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.NotFound, "notfound-response", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.NotFound, "notfound-response-2", ("Cache-Control", "max-age=3600"));
@@ -926,7 +926,7 @@ public sealed class AdvancedCachingTests
         { 
             ShouldCacheResponse = response => response.Headers.Contains("X-Cache-This")
         };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "cacheable", 
             ("Cache-Control", "max-age=3600"), 
             ("X-Cache-This", "true"));
@@ -987,7 +987,7 @@ public sealed class AdvancedCachingTests
     public async Task WhenShouldCacheResponseIsNullThenAllCacheableResponsesAreCached()
     {
         var options = new CachingOptions { ShouldCacheResponse = null };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "cached-response", ("Cache-Control", "max-age=3600"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -1023,7 +1023,7 @@ public sealed class AdvancedCachingTests
             MaximumResponseSize = 1500, // Large enough for small response with headers
             ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK
         };
-        await using var context = new HttpTestContext2(options);
+        await using var context = new HttpTestContext(options);
         
         // Small OK response - should be cached (passes predicate and size check)
         var smallContent = new string('x', 50);

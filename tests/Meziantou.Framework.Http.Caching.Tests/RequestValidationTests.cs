@@ -235,6 +235,7 @@ public class RequestValidationTests
             Headers:
               Age: 10
               Cache-Control: max-age=1
+              Warning: 110 - "Response is Stale"
             Content:
               Headers:
                 Content-Length: 12

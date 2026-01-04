@@ -86,7 +86,7 @@ internal sealed class HttpTestContext2 : IAsyncDisposable
         await _app.DisposeAsync();
         if (_expectedRequests.Count != 0)
         {
-            // TODO throw new InvalidOperationException("Not all expected requests were made. Remaining requests: " + _expectedRequests.Count);
+            throw new InvalidOperationException("Not all expected requests were made. Remaining requests: " + _expectedRequests.Count);
         }
     }
 

@@ -17,7 +17,6 @@ public sealed class ComprehensiveRFC7234Tests
     {
         await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached-content", ("Cache-Control", "max-age=3600"));
-        context.AddResponse(HttpStatusCode.OK, "should-not-be-called");
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)

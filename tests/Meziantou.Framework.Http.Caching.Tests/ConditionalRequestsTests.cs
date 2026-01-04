@@ -89,7 +89,21 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Value: content
             """);
 
-        // TODO add a new request to verify the headers are stored correctly
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 5
+              Cache-Control: max-age=10
+              ETag: "v1"
+              X-Custom: new-value
+            Content:
+              Headers:
+                Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
+              Value: content
+            """);
     }
 
     [Fact]
@@ -128,7 +142,20 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Value: content
             """);
 
-        // TODO add a new request to verify the max-age is correctly stored
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 5
+              Cache-Control: max-age=10
+              ETag: "v1"
+            Content:
+              Headers:
+                Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
+              Value: content
+            """);
     }
 
     [Fact]
@@ -168,7 +195,20 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Value: v2-content
             """);
 
-        // TODO make a new request to verify the new etag is stored
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 5
+              Cache-Control: max-age=10
+              ETag: "v2"
+            Content:
+              Headers:
+                Content-Length: 10
+                Content-Type: text/plain; charset=utf-8
+              Value: v2-content
+            """);
     }
 
     [Fact]
@@ -414,7 +454,20 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Value: new
             """);
 
-        // TODO new request to verify new response is stored
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 5
+              Cache-Control: max-age=10
+              ETag: "v2"
+            Content:
+              Headers:
+                Content-Length: 3
+                Content-Type: text/plain; charset=utf-8
+              Value: new
+            """);
     }
 
     [Fact]
@@ -451,7 +504,19 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Value: gone
             """);
 
-        // TODO new request to verify new response is stored
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(30));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 404 (NotFound)
+            Headers:
+              Age: 30
+              Cache-Control: max-age=60
+            Content:
+              Headers:
+                Content-Length: 4
+                Content-Type: text/plain; charset=utf-8
+              Value: gone
+            """);
     }
 
     [Fact]

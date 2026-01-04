@@ -3,9 +3,7 @@ using HttpCaching.Tests.Internals;
 
 namespace HttpCaching.Tests;
 
-/// <summary>
-/// Tests for Vary header handling (RFC 7231 Section 7.1.4, RFC 7234 Section 4.1).
-/// </summary>
+/// <summary>Tests for Vary header handling (RFC 7231 Section 7.1.4, RFC 7234 Section 4.1).</summary>
 public sealed class VaryHeaderTests
 {
     [Fact]

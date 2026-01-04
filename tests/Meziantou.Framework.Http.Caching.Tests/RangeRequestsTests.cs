@@ -3,9 +3,7 @@ using HttpCaching.Tests.Internals;
 
 namespace HttpCaching.Tests;
 
-/// <summary>
-/// Tests for HTTP Range Requests with ETags (RFC 7233).
-/// </summary>
+/// <summary>Tests for HTTP Range Requests with ETags (RFC 7233).</summary>
 public sealed class RangeRequestsTests
 {
     #region Range Requests with Strong ETags (RFC 7233 Section 3.2)

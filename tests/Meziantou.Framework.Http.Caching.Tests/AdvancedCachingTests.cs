@@ -3,9 +3,7 @@ using HttpCaching.Tests.Internals;
 
 namespace HttpCaching.Tests;
 
-/// <summary>
-/// Tests for RFC 8246 immutable directive, Expires header, heuristic freshness, and edge cases.
-/// </summary>
+/// <summary>Tests for RFC 8246 immutable directive, Expires header, heuristic freshness, and edge cases.</summary>
 public sealed class AdvancedCachingTests
 {
     #region RFC 8246: Immutable Responses

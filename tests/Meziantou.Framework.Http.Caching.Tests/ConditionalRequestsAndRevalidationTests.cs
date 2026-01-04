@@ -3,9 +3,7 @@ using HttpCaching.Tests.Internals;
 
 namespace HttpCaching.Tests;
 
-/// <summary>
-/// Tests for conditional requests and revalidation (RFC 7232, RFC 7234 Section 4.3).
-/// </summary>
+/// <summary>Tests for conditional requests and revalidation (RFC 7232, RFC 7234 Section 4.3).</summary>
 public sealed class ConditionalRequestsAndRevalidationTests
 {
     #region ETag-based Revalidation (RFC 7232 Section 2.3 & 3.1)

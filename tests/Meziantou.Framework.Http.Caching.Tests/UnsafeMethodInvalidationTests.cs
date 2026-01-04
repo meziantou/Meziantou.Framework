@@ -3,9 +3,7 @@ using HttpCaching.Tests.Internals;
 
 namespace HttpCaching.Tests;
 
-/// <summary>
-/// Comprehensive tests for RFC 7234 cache invalidation on unsafe methods (Section 4.4).
-/// </summary>
+/// <summary>Comprehensive tests for RFC 7234 cache invalidation on unsafe methods (Section 4.4).</summary>
 public sealed class UnsafeMethodInvalidationTests
 {
     [Fact]

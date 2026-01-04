@@ -229,7 +229,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             // Attempt conditional validation
             if (cacheResult.ETag != null || cacheResult.LastModified != null)
             {
-                var conditionalRequest = CloneRequest(request);
+                using var conditionalRequest = CloneRequest(request);
 
                 // RFC 7232 Section 3.2: If-None-Match
                 if (cacheResult.ETag != null)

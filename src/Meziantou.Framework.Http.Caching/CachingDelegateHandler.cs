@@ -49,6 +49,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
     }
 
     /// <inheritdoc />
+    // TODO set response.RequestMessage to the original request
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var requestTime = _timeProvider.GetUtcNow();

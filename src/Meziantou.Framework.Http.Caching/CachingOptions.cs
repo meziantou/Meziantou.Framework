@@ -12,4 +12,12 @@ public sealed class CachingOptions
     /// Set to null to disable size checking.
     /// </summary>
     public long? MaximumResponseSize { get; set; } = 5 * 1024 * 1024; // 5 MB default
+
+    /// <summary>
+    /// Gets or sets a predicate that determines whether a response should be cached.
+    /// When the predicate returns true, normal caching logic applies.
+    /// When the predicate returns false, the response is not cached.
+    /// Default is null (all responses that meet caching requirements are cached).
+    /// </summary>
+    public Func<HttpResponseMessage, bool>? ShouldCacheResponse { get; set; }
 }

@@ -786,4 +786,329 @@ public sealed class AdvancedCachingTests
     }
 
     #endregion
+
+    #region ShouldCacheResponse Predicate
+
+    [Fact]
+    public async Task WhenShouldCacheResponseReturnsTrueThenResponseIsCached()
+    {
+        var options = new CachingOptions 
+        { 
+            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK 
+        };
+        await using var context = new HttpTestContext2(options);
+        context.AddResponse(HttpStatusCode.OK, "cacheable-content", ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
+              Value: cacheable-content
+            """);
+
+        // Response should be cached
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
+              Value: cacheable-content
+            """);
+    }
+
+    [Fact]
+    public async Task WhenShouldCacheResponseReturnsFalseThenResponseIsNotCached()
+    {
+        var options = new CachingOptions 
+        { 
+            ShouldCacheResponse = response => response.StatusCode != HttpStatusCode.OK 
+        };
+        await using var context = new HttpTestContext2(options);
+        context.AddResponse(HttpStatusCode.OK, "first-response", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, "second-response", ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 14
+                Content-Type: text/plain; charset=utf-8
+              Value: first-response
+            """);
+
+        // Predicate returns false for 200 OK, so response should not be cached
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+              Value: second-response
+            """);
+    }
+
+    [Fact]
+    public async Task WhenShouldCacheResponseFiltersBasedOnStatusCodeThenOnlyMatchingResponsesAreCached()
+    {
+        var options = new CachingOptions 
+        { 
+            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK 
+        };
+        await using var context = new HttpTestContext2(options);
+        context.AddResponse(HttpStatusCode.OK, "ok-response", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.NotFound, "notfound-response", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.NotFound, "notfound-response-2", ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/ok", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
+              Value: ok-response
+            """);
+
+        await context.SnapshotResponse("http://example.com/notfound", """
+            StatusCode: 404 (NotFound)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 17
+                Content-Type: text/plain; charset=utf-8
+              Value: notfound-response
+            """);
+
+        // OK response should be cached
+        await context.SnapshotResponse("http://example.com/ok", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 11
+                Content-Type: text/plain; charset=utf-8
+              Value: ok-response
+            """);
+
+        // NotFound response should not be cached (predicate returns false)
+        await context.SnapshotResponse("http://example.com/notfound", """
+            StatusCode: 404 (NotFound)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 19
+                Content-Type: text/plain; charset=utf-8
+              Value: notfound-response-2
+            """);
+    }
+
+    [Fact]
+    public async Task WhenShouldCacheResponseFiltersBasedOnHeaderThenOnlyMatchingResponsesAreCached()
+    {
+        var options = new CachingOptions 
+        { 
+            ShouldCacheResponse = response => response.Headers.Contains("X-Cache-This")
+        };
+        await using var context = new HttpTestContext2(options);
+        context.AddResponse(HttpStatusCode.OK, "cacheable", 
+            ("Cache-Control", "max-age=3600"), 
+            ("X-Cache-This", "true"));
+        context.AddResponse(HttpStatusCode.OK, "non-cacheable-1", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, "non-cacheable-2", ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/with-header", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+              X-Cache-This: true
+            Content:
+              Headers:
+                Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
+              Value: cacheable
+            """);
+
+        await context.SnapshotResponse("http://example.com/without-header", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+              Value: non-cacheable-1
+            """);
+
+        // Response with header should be cached
+        await context.SnapshotResponse("http://example.com/with-header", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=3600
+              X-Cache-This: true
+            Content:
+              Headers:
+                Content-Length: 9
+                Content-Type: text/plain; charset=utf-8
+              Value: cacheable
+            """);
+
+        // Response without header should not be cached
+        await context.SnapshotResponse("http://example.com/without-header", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+              Value: non-cacheable-2
+            """);
+    }
+
+    [Fact]
+    public async Task WhenShouldCacheResponseIsNullThenAllCacheableResponsesAreCached()
+    {
+        var options = new CachingOptions { ShouldCacheResponse = null };
+        await using var context = new HttpTestContext2(options);
+        context.AddResponse(HttpStatusCode.OK, "cached-response", ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+              Value: cached-response
+            """);
+
+        // Default behavior: response should be cached
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+              Value: cached-response
+            """);
+    }
+
+    [Fact]
+    public async Task WhenShouldCacheResponseCombinedWithMaximumResponseSizeThenBothFiltersApply()
+    {
+        var options = new CachingOptions 
+        { 
+            MaximumResponseSize = 1500, // Large enough for small response with headers
+            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK
+        };
+        await using var context = new HttpTestContext2(options);
+        
+        // Small OK response - should be cached (passes predicate and size check)
+        var smallContent = new string('x', 50);
+        context.AddResponse(HttpStatusCode.OK, smallContent, ("Cache-Control", "max-age=3600"));
+        
+        // Large OK response - should not be cached (passes predicate but exceeds size)
+        var largeContent = new string('y', 5000);
+        context.AddResponse(HttpStatusCode.OK, largeContent, ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, "second-fetch", ("Cache-Control", "max-age=3600"));
+
+        // Small NotFound response - should not be cached (fails predicate check)
+        var smallNotFoundContent = new string('z', 50);
+        context.AddResponse(HttpStatusCode.NotFound, smallNotFoundContent, ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.NotFound, "second-notfound", ("Cache-Control", "max-age=3600"));
+
+        // Small OK response should be cached (passes both checks)
+        await context.SnapshotResponse("http://example.com/small-ok", $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 50
+                Content-Type: text/plain; charset=utf-8
+              Value: {smallContent}
+            """);
+
+        await context.SnapshotResponse("http://example.com/small-ok", $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 50
+                Content-Type: text/plain; charset=utf-8
+              Value: {smallContent}
+            """);
+
+        // Large OK response should not be cached (exceeds size limit)
+        await context.SnapshotResponse("http://example.com/large-ok", $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 5000
+                Content-Type: text/plain; charset=utf-8
+              Value: {largeContent}
+            """);
+
+        await context.SnapshotResponse("http://example.com/large-ok", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 12
+                Content-Type: text/plain; charset=utf-8
+              Value: second-fetch
+            """);
+
+        // Small NotFound response should not be cached (fails predicate check)
+        await context.SnapshotResponse("http://example.com/small-notfound", $"""
+            StatusCode: 404 (NotFound)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 50
+                Content-Type: text/plain; charset=utf-8
+              Value: {smallNotFoundContent}
+            """);
+
+        await context.SnapshotResponse("http://example.com/small-notfound", """
+            StatusCode: 404 (NotFound)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+              Value: second-notfound
+            """);
+    }
+
+    #endregion
 }

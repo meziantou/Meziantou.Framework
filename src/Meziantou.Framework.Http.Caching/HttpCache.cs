@@ -58,6 +58,10 @@ internal sealed class HttpCache
         if (!IsCacheable(request, response))
             return;
 
+        // Check if response should be cached based on custom predicate
+        if (_options.ShouldCacheResponse is not null && !_options.ShouldCacheResponse(response))
+            return;
+
         var primaryKey = ComputePrimaryKey(request.RequestUri);
         var entry = await CacheEntry.CreateAsync(request, response, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
 

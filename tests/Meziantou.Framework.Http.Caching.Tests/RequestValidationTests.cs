@@ -8,7 +8,7 @@ public class RequestValidationTests
     [Fact]
     public async Task WhenMinFreshRequirementNotMetThenRevalidate()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "original", ("Cache-Control", "max-age=10"), ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified);
 
@@ -50,7 +50,7 @@ public class RequestValidationTests
     [Fact]
     public async Task WhenMinFreshRequirementMetThenCachedResponseServed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=100"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -89,7 +89,7 @@ public class RequestValidationTests
     [Fact]
     public async Task WhenRequestMaxAgeExceededThenRevalidate()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "original", ("Cache-Control", "max-age=100"), ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified);
 
@@ -131,7 +131,7 @@ public class RequestValidationTests
     [Fact]
     public async Task WhenRequestMaxAgeWithinLimitThenCachedResponseServed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=100"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -170,7 +170,7 @@ public class RequestValidationTests
     [Fact]
     public async Task WhenOnlyIfCachedWithFreshResponseThenServed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -206,7 +206,7 @@ public class RequestValidationTests
     [Fact]
     public async Task WhenOnlyIfCachedWithStaleAndMaxStaleThenServed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "stale-cached", ("Cache-Control", "max-age=1"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -246,7 +246,7 @@ public class RequestValidationTests
     [Fact]
     public async Task WhenOnlyIfCachedWithStaleWithoutMaxStaleThen504()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "stale-cached", ("Cache-Control", "max-age=1"));
 
         await context.SnapshotResponse("http://example.com/resource", """

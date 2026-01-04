@@ -13,7 +13,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenImmutableAndFreshThenBypassesRevalidationEvenWithNoCache()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "immutable-content", 
             ("Cache-Control", "max-age=3600, immutable"),
             ("ETag", "\"v1\""));
@@ -50,7 +50,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenImmutableButStaleThenRevalidates()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "immutable-content", 
             ("Cache-Control", "max-age=2, immutable"),
             ("ETag", "\"v1\""));
@@ -87,7 +87,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenImmutableWithPragmaNoCacheAndFreshThenUsesCache()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "immutable-content", 
             ("Cache-Control", "max-age=3600, immutable"));
 
@@ -124,7 +124,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenExpiresHeaderThenCachesUntilExpiration()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var expires = context.TimeProvider.GetUtcNow().AddSeconds(5);
         context.AddResponse(HttpStatusCode.OK, "expires-content", 
             ("Expires", expires.ToString("R")));
@@ -157,7 +157,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenExpiresInPastThenStaleImmediately()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var expires = context.TimeProvider.GetUtcNow().AddSeconds(-10);
         context.AddResponse(HttpStatusCode.OK, "expired-content", 
             ("Expires", expires.ToString("R")),
@@ -167,12 +167,12 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Expires: {{expires}}
               ETag: "v1"
             Content:
               Headers:
                 Content-Length: 15
                 Content-Type: text/plain; charset=utf-8
+                Expires: Fri, 31 Dec 1999 23:59:50 GMT
               Value: expired-content
             """);
 
@@ -180,12 +180,12 @@ public sealed class AdvancedCachingTests
             StatusCode: 200 (OK)
             Headers:
               Age: 0
-              Expires: {{expires}}
               ETag: "v1"
             Content:
               Headers:
                 Content-Length: 15
                 Content-Type: text/plain; charset=utf-8
+                Expires: Fri, 31 Dec 1999 23:59:50 GMT
               Value: expired-content
             """);
     }
@@ -193,7 +193,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenMaxAgeAndExpiresBothPresentThenMaxAgeTakesPrecedence()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var expires = context.TimeProvider.GetUtcNow().AddSeconds(2);
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=10"),
@@ -203,11 +203,11 @@ public sealed class AdvancedCachingTests
             StatusCode: 200 (OK)
             Headers:
               Cache-Control: max-age=10
-              Expires: {{expires}}
             Content:
               Headers:
                 Content-Length: 7
                 Content-Type: text/plain; charset=utf-8
+                Expires: Sat, 01 Jan 2000 00:00:02 GMT
               Value: content
             """);
 
@@ -219,11 +219,11 @@ public sealed class AdvancedCachingTests
             Headers:
               Age: 5
               Cache-Control: max-age=10
-              Expires: {{expires}}
             Content:
               Headers:
                 Content-Length: 7
                 Content-Type: text/plain; charset=utf-8
+                Expires: Sat, 01 Jan 2000 00:00:02 GMT
               Value: content
             """);
     }
@@ -231,7 +231,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenExpiresInvalidThenTreatedAsStale()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "invalid-expires", 
             ("Expires", "not-a-date"),
             ("ETag", "\"v1\""));
@@ -241,11 +241,11 @@ public sealed class AdvancedCachingTests
             StatusCode: 200 (OK)
             Headers:
               ETag: "v1"
-              Expires: not-a-date
             Content:
               Headers:
                 Content-Length: 15
                 Content-Type: text/plain; charset=utf-8
+                Expires: not-a-date
               Value: invalid-expires
             """);
 
@@ -254,11 +254,11 @@ public sealed class AdvancedCachingTests
             Headers:
               Age: 0
               ETag: "v1"
-              Expires: not-a-date
             Content:
               Headers:
                 Content-Length: 15
                 Content-Type: text/plain; charset=utf-8
+                Expires: not-a-date
               Value: invalid-expires
             """);
     }
@@ -270,19 +270,18 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenLastModifiedWithoutExplicitFreshnessThenUsesHeuristicCaching()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-10);
         context.AddResponse(HttpStatusCode.OK, "heuristic-content", 
             ("Last-Modified", lastModified.ToString("R")));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
-            Headers:
-              Last-Modified: {{lastModified}}
             Content:
               Headers:
                 Content-Length: 17
                 Content-Type: text/plain; charset=utf-8
+                Last-Modified: Wed, 22 Dec 1999 00:00:00 GMT
               Value: heuristic-content
             """);
 
@@ -293,12 +292,12 @@ public sealed class AdvancedCachingTests
             StatusCode: 200 (OK)
             Headers:
               Age: 43200
-              Last-Modified: {{lastModified}}
               Warning: 113 - "Heuristic Expiration"
             Content:
               Headers:
                 Content-Length: 17
                 Content-Type: text/plain; charset=utf-8
+                Last-Modified: Wed, 22 Dec 1999 00:00:00 GMT
               Value: heuristic-content
             """);
     }
@@ -306,7 +305,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenNoExplicitFreshnessAndNoLastModifiedThenDoesNotCacheOrUsesMinimalHeuristic()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "no-cache-info-1");
         context.AddResponse(HttpStatusCode.OK, "no-cache-info-2");
 
@@ -336,7 +335,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenResponseHasAgeHeaderThenAddsToCalculatedAge()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=100"),
             ("Age", "50"));
@@ -372,7 +371,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenAgeExceedsMaxAgeThenResponseIsStale()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=100"),
             ("Age", "90"),
@@ -416,7 +415,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenServingStaleResponseThenAddsWarning110()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "stale", ("Cache-Control", "max-age=2"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -451,7 +450,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenRevalidationFailsAndServingStaleThenAddsWarning111()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=2, stale-if-error=60"),
             ("ETag", "\"v1\""));
@@ -489,7 +488,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenUsingHeuristicExpirationThenAddsWarning113()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-10);
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Last-Modified", lastModified.ToString("R")));
@@ -528,14 +527,14 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenEmptyCacheControlValueThenIgnored()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "response-1", ("Cache-Control", ""));
         context.AddResponse(HttpStatusCode.OK, "response-2", ("Cache-Control", ""));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: 
+              Cache-Control:
             Content:
               Headers:
                 Content-Length: 10
@@ -546,7 +545,7 @@ public sealed class AdvancedCachingTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: 
+              Cache-Control:
             Content:
               Headers:
                 Content-Length: 10
@@ -558,7 +557,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenCacheControlWithWhitespaceOnlyThenIgnored()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "response-1", ("Cache-Control", "   "));
         context.AddResponse(HttpStatusCode.OK, "response-2", ("Cache-Control", "   "));
 
@@ -588,7 +587,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenMaxAgeZeroThenMustRevalidate()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "content", 
             ("Cache-Control", "max-age=0"),
             ("ETag", "\"v1\""));
@@ -624,7 +623,7 @@ public sealed class AdvancedCachingTests
     public async Task WhenResponseTooLargeThenNotCached()
     {
         // Implementation-specific: test if there's a size limit
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var largeContent = new string('x', 10_000_000); // 10MB
         context.AddResponse(HttpStatusCode.OK, largeContent, ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "small-response", ("Cache-Control", "max-age=3600"));
@@ -656,7 +655,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenQueryStringDiffersThenFetchesSeparately()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "query1", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "query2", ("Cache-Control", "max-age=3600"));
 
@@ -686,7 +685,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenFragmentDiffersThenUsesSameCache()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=3600"));
 
         await context.SnapshotResponse("http://example.com/resource#section1", """

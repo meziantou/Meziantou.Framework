@@ -8,7 +8,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenSchemeIsDifferentThenCacheDoesNotMatch()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "http-content", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "https-content", ("Cache-Control", "max-age=600"));
 
@@ -38,7 +38,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenSchemeCasingDiffersThenCacheMatches()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached-content", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -80,7 +80,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenHostCasingDiffersThenCacheMatches()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached-content", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://Example.COM/resource", """
@@ -122,7 +122,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenPathCasingDiffersThenCacheDoesNotMatch()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "lowercase-path", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "uppercase-path", ("Cache-Control", "max-age=600"));
 
@@ -165,7 +165,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenQueryStringCasingDiffersThenCacheDoesNotMatch()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "query-lower", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "query-upper", ("Cache-Control", "max-age=600"));
 
@@ -195,7 +195,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenFragmentDiffersThenCacheMatches()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached-resource", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://example.com/page#section1", """
@@ -237,7 +237,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenPortIsDifferentThenCacheDoesNotMatch()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "port-80", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "port-8080", ("Cache-Control", "max-age=600"));
 
@@ -267,7 +267,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenDefaultPortIsExplicitThenCacheMatches()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "default-port", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -297,7 +297,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenUserInfoDiffersThenCacheDoesNotMatch()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "user1-content", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "user2-content", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "no-user-content", ("Cache-Control", "max-age=600"));
@@ -339,7 +339,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenQueryParameterOrderDiffersThenCacheDoesNotMatch()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "order-1", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "order-2", ("Cache-Control", "max-age=600"));
 
@@ -369,7 +369,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenTrailingSlashDiffersThenCacheDoesNotMatch()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "no-slash", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "with-slash", ("Cache-Control", "max-age=600"));
 
@@ -399,7 +399,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenUrlHasPercentEncodingThenCacheMatchesExactly()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "encoded-space", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "plus-sign", ("Cache-Control", "max-age=600"));
 
@@ -429,7 +429,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenUrlHasDotSegmentsThenCacheUsesNormalizedPath()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "normalized-path", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://example.com/a/b/c/resource", """
@@ -459,7 +459,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenUrlHasEmptyQueryStringThenCacheDoesNotMatchWithoutQueryString()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "no-query", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "empty-query", ("Cache-Control", "max-age=600"));
 
@@ -489,7 +489,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenMultiplePathSegmentsWithSameCasingThenCacheMatches()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "deep-path", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://example.com/api/v1/users/123", """
@@ -519,7 +519,7 @@ public class UrlHandlingTests
     [Fact]
     public async Task WhenIpAddressUsedInsteadOfDomainThenCacheDoesNotMatch()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "domain-content", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "ip-content", ("Cache-Control", "max-age=600"));
 

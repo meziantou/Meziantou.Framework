@@ -1,3 +1,4 @@
+
 using System.Net;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.InlineSnapshotTesting;
@@ -47,12 +48,12 @@ internal sealed class HttpTestContext : IDisposable
         {
             if (!response.Headers.TryAddWithoutValidation(key, value))
             {
+                response.Content ??= new ByteArrayContent([]);
                 response.Content.Headers.TryAddWithoutValidation(key, value);
             }
         }
         AddResponse(_ => response);
     }
-
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public void AddResponse(HttpStatusCode statusCode, string content, params (string, string)[] headers)
@@ -60,7 +61,6 @@ internal sealed class HttpTestContext : IDisposable
         var response = new HttpResponseMessage(statusCode);
         response.StatusCode = statusCode;
         response.Content = new StringContent(content);
-
         foreach (var (key, value) in headers)
         {
             if (!response.Headers.TryAddWithoutValidation(key, value))
@@ -68,7 +68,6 @@ internal sealed class HttpTestContext : IDisposable
                 response.Content.Headers.TryAddWithoutValidation(key, value);
             }
         }
-
         AddResponse(_ => response);
     }
 

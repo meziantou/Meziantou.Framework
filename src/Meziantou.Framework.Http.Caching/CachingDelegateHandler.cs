@@ -190,16 +190,17 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                     conditionalRequest.Headers.IfModifiedSince = cacheResult.LastModified;
                 }
 
+                var validationRequestTime = _timeProvider.GetUtcNow();
                 var conditionalResponse = await base.SendAsync(conditionalRequest, cancellationToken).ConfigureAwait(false);
                 var responseTime = _timeProvider.GetUtcNow();
 
                 // RFC 7234 Section 4.3.3: Handle 304 Not Modified
                 if (conditionalResponse.StatusCode is HttpStatusCode.NotModified)
                 {
-                    conditionalResponse.Dispose();
-
                     // Update cached entry with new headers from 304 response
-                    cacheResult.UpdateFromValidationResponse(conditionalResponse, responseTime);
+                    await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
+
+                    conditionalResponse.Dispose();
 
                     var newAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
                     return CreateCachedResponse(cacheResult, newAge);

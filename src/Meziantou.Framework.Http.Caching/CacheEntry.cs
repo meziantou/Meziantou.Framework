@@ -216,39 +216,139 @@ internal sealed class CacheEntry
     }
 
     /// <summary>Updates this cache entry from a 304 Not Modified validation response.</summary>
-    public void UpdateFromValidationResponse(HttpResponseMessage validationResponse, DateTimeOffset responseTime)
+    public async ValueTask UpdateFromValidationResponse(HttpResponseMessage validationResponse, DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
     {
         // RFC 7234 Section 4.3.4: Update metadata from 304 response
-        ResponseTime = responseTime;
-        ResponseDate = validationResponse.Headers.Date ?? responseTime;
-        AgeValue = validationResponse.Headers.Age ?? TimeSpan.Zero;
-
-        // Update validators if provided
-        if (validationResponse.Headers.ETag != null)
-        {
-            ETag = validationResponse.Headers.ETag.ToString();
-        }
-
-        if (validationResponse.Content.Headers.LastModified != null)
-        {
-            LastModified = validationResponse.Content.Headers.LastModified;
-        }
 
         // Update cache control if provided
         var cacheControl = validationResponse.Headers.CacheControl;
-        if (cacheControl != null)
+        var updatedMaxAge = false;
+        if (cacheControl is not null)
         {
-            MaxAge = cacheControl.SharedMaxAge ?? cacheControl.MaxAge ?? MaxAge;
+            var newMaxAge = cacheControl.SharedMaxAge ?? cacheControl.MaxAge;
+            if (newMaxAge is not null && newMaxAge != MaxAge)
+            {
+                MaxAge = newMaxAge;
+                updatedMaxAge = true;
+            }
+
             MustRevalidate = cacheControl.MustRevalidate || cacheControl.ProxyRevalidate;
             ResponseNoCache = cacheControl.NoCache;
         }
 
+        // If the 304 response provides a new max-age, treat it as a fresh revalidation
+        // and update the timing. Otherwise, preserve original timing so age continues to accumulate.
+        if (updatedMaxAge || validationResponse.Headers.Date is not null)
+        {
+            RequestTime = requestTime;
+            ResponseTime = responseTime;
+            ResponseDate = validationResponse.Headers.Date ?? responseTime;
+        }
+
+        AgeValue = validationResponse.Headers.Age ?? TimeSpan.Zero;
+
+        // Update validators if provided
+        if (validationResponse.Headers.ETag is not null)
+        {
+            ETag = validationResponse.Headers.ETag.ToString();
+        }
+
+        if (validationResponse.Content.Headers.LastModified is not null)
+        {
+            LastModified = validationResponse.Content.Headers.LastModified;
+        }
+
         // Update Expires if provided
         var newExpires = ParseExpiresHeader(validationResponse);
-        if (newExpires != null)
+        if (newExpires is not null)
         {
             Expires = newExpires;
         }
+
+        // RFC 7234 Section 4.3.4: Update stored response headers with headers from 304 response
+        // The cache MUST update the stored response with header fields provided in the 304 response
+        await UpdateSerializedResponseHeaders(validationResponse, cancellationToken);
+    }
+
+    private async ValueTask UpdateSerializedResponseHeaders(HttpResponseMessage validationResponse, CancellationToken cancellationToken)
+    {
+        // Deserialize the stored response
+        var storedResponse = ResponseSerializer.Deserialize(SerializedResponse);
+
+        // Collect headers to update from the 304 response
+        // RFC 7234 Section 4.3.4: Update stored response headers, but exclude headers
+        // that are managed as metadata properties (Cache-Control, Date, ETag, Expires, Last-Modified)
+        var headersToUpdate = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in validationResponse.Headers)
+        {
+            // Skip headers managed separately via properties
+            if (string.Equals(header.Key, "Cache-Control", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(header.Key, "Date", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(header.Key, "ETag", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(header.Key, "Expires", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            headersToUpdate[header.Key] = header.Value.ToArray();
+        }
+
+        foreach (var header in validationResponse.Content.Headers)
+        {
+            // Skip headers managed separately via properties
+            if (string.Equals(header.Key, "Last-Modified", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            headersToUpdate[header.Key] = header.Value.ToArray();
+        }
+
+        // Update existing headers in the stored response while preserving order
+        // First, update headers that exist in both
+        var existingHeaders = storedResponse.Headers.ToList();
+        foreach (var header in existingHeaders)
+        {
+            if (headersToUpdate.TryGetValue(header.Key, out var newValue))
+            {
+                storedResponse.Headers.Remove(header.Key);
+                storedResponse.Headers.TryAddWithoutValidation(header.Key, newValue);
+                headersToUpdate.Remove(header.Key);
+            }
+        }
+
+        // Update existing content headers
+        if (storedResponse.Content?.Headers is not null)
+        {
+            var existingContentHeaders = storedResponse.Content.Headers.ToList();
+            foreach (var header in existingContentHeaders)
+            {
+                if (headersToUpdate.TryGetValue(header.Key, out var newValue))
+                {
+                    storedResponse.Content.Headers.Remove(header.Key);
+                    storedResponse.Content.Headers.TryAddWithoutValidation(header.Key, newValue);
+                    headersToUpdate.Remove(header.Key);
+                }
+            }
+        }
+
+        // Add any new headers from the validation response
+        foreach (var kvp in headersToUpdate)
+        {
+            // Try adding to response headers first, then content headers if that fails
+            if (!storedResponse.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value))
+            {
+                storedResponse.Content.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
+            }
+        }
+
+        // Remove Age header as it's calculated dynamically in CreateCachedResponse
+        storedResponse.Headers.Remove("Age");
+
+        // Re-serialize the updated response
+        SerializedResponse = await ResponseSerializer.SerializeAsync(storedResponse, cancellationToken);
+
+        storedResponse.Dispose();
     }
 }
 

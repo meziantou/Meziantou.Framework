@@ -28,7 +28,7 @@ mock.MapGet("/upstream", () => Results.Extensions.ForwardToUpstream());
 mock.ForwardUnknownRequestsToUpstream();
 ````
 
-The  `RequestCounter` class allows you to count the number of requests per endpoint. You can use it to test if a specific endpoint has been called.
+The `RequestCounter` class allows you to count the number of requests per endpoint. You can use it to test if a specific endpoint has been called.
 
 ````c#
 mock.MapGet("/counter", (RequestCounter counter) => counter.Get());

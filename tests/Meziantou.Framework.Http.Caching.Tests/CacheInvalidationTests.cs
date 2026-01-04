@@ -8,7 +8,7 @@ public class CacheInvalidationTests
     [Fact]
     public async Task WhenUnsafeMethodSucceedsThenCacheIsInvalidated()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "original-content", ("Cache-Control", "max-age=600"), ("X-Version", "1"));
         context.AddResponse(HttpStatusCode.OK, "post-response");
         context.AddResponse(HttpStatusCode.OK, "updated-content", ("Cache-Control", "max-age=600"), ("X-Version", "2"));
@@ -50,7 +50,7 @@ public class CacheInvalidationTests
     [Fact]
     public async Task WhenPutMethodSucceedsThenCacheIsInvalidated()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "before-put", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.OK, "put-response");
         context.AddResponse(HttpStatusCode.OK, "after-put", ("Cache-Control", "max-age=600"));
@@ -90,7 +90,7 @@ public class CacheInvalidationTests
     [Fact]
     public async Task WhenDeleteMethodSucceedsThenCacheIsInvalidated()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "before-delete", ("Cache-Control", "max-age=600"));
         context.AddResponse(HttpStatusCode.NoContent);
         context.AddResponse(HttpStatusCode.OK, "after-delete", ("Cache-Control", "max-age=600"));

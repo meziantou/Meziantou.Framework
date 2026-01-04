@@ -8,13 +8,9 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenLastModifiedPresentWithoutExplicitExpirationThenHeuristicUsed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-10);
-
-        using var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Content = new StringContent("heuristic-content");
-        response.Content.Headers.LastModified = lastModified;
-        context.AddResponse(response);
+        context.AddResponse(HttpStatusCode.OK, "heuristic-content", ("Last-Modified", lastModified.ToString("R")));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
@@ -43,17 +39,12 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenHeuristicFreshnessExpiredThenRevalidate()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         // Last-Modified 10 seconds ago, heuristic = 1 second
+        // TODO Validate with 1 second later request
         var lastModified = context.TimeProvider.GetUtcNow().AddSeconds(-10);
-
-        using var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-        response1.Content = new StringContent("original");
-        response1.Content.Headers.LastModified = lastModified;
-        response1.Headers.TryAddWithoutValidation("ETag", "\"v1\"");
-        context.AddResponse(response1);
-        
-        context.AddResponse(HttpStatusCode.NotModified);
+        context.AddResponse(HttpStatusCode.OK, "original", ("Last-Modified", lastModified.ToString("R")), ("ETag", "\"v1\""));
+        context.AddResponse(HttpStatusCode.NotModified); // TODO validate the header sent by the client
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
@@ -87,7 +78,7 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenNoLastModifiedAndNoExplicitExpirationThenNotCached()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "no-freshness-1");
         context.AddResponse(HttpStatusCode.OK, "no-freshness-2");
 
@@ -113,14 +104,9 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenLastModifiedInFutureThenNoHeuristicFreshness()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var futureModified = context.TimeProvider.GetUtcNow().AddDays(1);
-
-        using var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Content = new StringContent("future-modified");
-        response.Content.Headers.LastModified = futureModified;
-        context.AddResponse(response);
-        
+        context.AddResponse(HttpStatusCode.OK, "future-modified", ("Last-Modified", futureModified.ToString("R")));
         context.AddResponse(HttpStatusCode.OK, "second-request");
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -147,14 +133,9 @@ public class HeuristicFreshnessTests
     [Fact]
     public async Task WhenExplicitExpirationPresentThenHeuristicNotUsed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-100);
-
-        using var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Content = new StringContent("explicit-wins");
-        response.Content.Headers.LastModified = lastModified;
-        response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=10");
-        context.AddResponse(response);
+        context.AddResponse(HttpStatusCode.OK, "explicit-wins", ("Last-Modified", lastModified.ToString("R")), ("Cache-Control", "max-age=10"));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)

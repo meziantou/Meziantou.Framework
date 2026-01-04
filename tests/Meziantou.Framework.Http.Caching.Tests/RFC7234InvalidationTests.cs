@@ -11,7 +11,7 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenPostSucceedsThenInvalidatesTargetUri()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached-before-post", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.Created, "post-result");
         context.AddResponse(HttpStatusCode.OK, "fetched-after-post", ("Cache-Control", "max-age=3600"));
@@ -54,7 +54,7 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenPutSucceedsThenInvalidatesTargetUri()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "original", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "put-result");
         context.AddResponse(HttpStatusCode.OK, "updated", ("Cache-Control", "max-age=3600"));
@@ -94,7 +94,7 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenDeleteSucceedsThenInvalidatesTargetUri()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "exists", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.NoContent);
         context.AddResponse(HttpStatusCode.NotFound, "deleted", ("Cache-Control", "max-age=60"));
@@ -113,9 +113,6 @@ public sealed class UnsafeMethodInvalidationTests
         await context.SnapshotResponse(HttpMethod.Delete, "http://example.com/resource", """
             StatusCode: 204 (NoContent)
             Content:
-              Headers:
-                Content-Length: 0
-              Value:
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -133,7 +130,7 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenPatchSucceedsThenInvalidatesTargetUri()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "before-patch", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "patch-result");
         context.AddResponse(HttpStatusCode.OK, "after-patch", ("Cache-Control", "max-age=3600"));
@@ -173,7 +170,7 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenPostWithLocationHeaderThenInvalidatesBothUris()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached-target", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "cached-location", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.Created, "created", ("Location", "http://example.com/new-resource"));
@@ -242,7 +239,7 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenPostWithContentLocationHeaderThenInvalidatesBothUris()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached-target", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "cached-content-loc", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "created", ("Content-Location", "http://example.com/content-resource"));
@@ -310,7 +307,7 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenUnsafeMethodFailsThenDoesNotInvalidate()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.BadRequest, "bad-request");
 
@@ -351,7 +348,7 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenUnsafeMethodReturns5xxThenDoesNotInvalidate()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "cached", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.InternalServerError, "error");
 
@@ -392,11 +389,11 @@ public sealed class UnsafeMethodInvalidationTests
     [Fact]
     public async Task WhenMultipleUrisNeedInvalidationThenAllAreInvalidated()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, "target-cached", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "location-cached", ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "content-cached", ("Cache-Control", "max-age=3600"));
-        context.AddResponse(HttpStatusCode.Created, "result", 
+        context.AddResponse(HttpStatusCode.Created, "result",
             ("Location", "http://example.com/location"),
             ("Content-Location", "http://example.com/content"));
         context.AddResponse(HttpStatusCode.OK, "target-new", ("Cache-Control", "max-age=3600"));

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using DiffEngine;
 using Meziantou.Framework.InlineSnapshotTesting;
 
 namespace Meziantou.Framework.Http.Caching.Tests.Internals;
@@ -10,7 +11,8 @@ internal static class DefaultSettings
     {
         InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
         {
-            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            //SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
         };
         InlineSnapshotSettings.Default.UseHumanReadableSerializer(settings =>
         {

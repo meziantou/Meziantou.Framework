@@ -11,8 +11,8 @@ public sealed class VaryHeaderTests
     [Fact]
     public async Task WhenVaryHeaderMatchesThenUsesCache()
     {
-        using var context = new HttpTestContext();
-        context.AddResponse(HttpStatusCode.OK, "en-content", 
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.OK, "en-content",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept-Language"));
 
@@ -49,11 +49,11 @@ public sealed class VaryHeaderTests
     [Fact]
     public async Task WhenVaryHeaderDiffersThenfetchesNewResponse()
     {
-        using var context = new HttpTestContext();
-        context.AddResponse(HttpStatusCode.OK, "en-content", 
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.OK, "en-content",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept-Language"));
-        context.AddResponse(HttpStatusCode.OK, "fr-content", 
+        context.AddResponse(HttpStatusCode.OK, "fr-content",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept-Language"));
 
@@ -89,8 +89,8 @@ public sealed class VaryHeaderTests
     [Fact]
     public async Task WhenMultipleVaryHeadersThenAllMustMatch()
     {
-        using var context = new HttpTestContext();
-        context.AddResponse(HttpStatusCode.OK, "json-en", 
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.OK, "json-en",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept, Accept-Language"));
 
@@ -133,11 +133,11 @@ public sealed class VaryHeaderTests
     [Fact]
     public async Task WhenVaryHeaderOneFieldDiffersThenFetchesNewResponse()
     {
-        using var context = new HttpTestContext();
-        context.AddResponse(HttpStatusCode.OK, "json-en", 
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.OK, "json-en",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept, Accept-Language"));
-        context.AddResponse(HttpStatusCode.OK, "xml-en", 
+        context.AddResponse(HttpStatusCode.OK, "xml-en",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept, Accept-Language"));
 
@@ -179,11 +179,11 @@ public sealed class VaryHeaderTests
     [Fact]
     public async Task WhenVaryStarThenEachRequestUnique()
     {
-        using var context = new HttpTestContext();
-        context.AddResponse(HttpStatusCode.OK, "response-1", 
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.OK, "response-1",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "*"));
-        context.AddResponse(HttpStatusCode.OK, "response-2", 
+        context.AddResponse(HttpStatusCode.OK, "response-2",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "*"));
 
@@ -215,11 +215,11 @@ public sealed class VaryHeaderTests
     [Fact]
     public async Task WhenVaryHeaderAbsentInRequestButPresentInCacheThenFetchesNewResponse()
     {
-        using var context = new HttpTestContext();
-        context.AddResponse(HttpStatusCode.OK, "with-encoding", 
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.OK, "with-encoding",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept-Encoding"));
-        context.AddResponse(HttpStatusCode.OK, "without-encoding", 
+        context.AddResponse(HttpStatusCode.OK, "without-encoding",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept-Encoding"));
 
@@ -255,8 +255,8 @@ public sealed class VaryHeaderTests
     [Fact]
     public async Task WhenVaryHeaderCaseInsensitiveThenMatches()
     {
-        using var context = new HttpTestContext();
-        context.AddResponse(HttpStatusCode.OK, "content", 
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.OK, "content",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept-Language"));
 
@@ -293,8 +293,8 @@ public sealed class VaryHeaderTests
     [Fact]
     public async Task WhenVaryHeaderValueOrderDiffersThenStillMatches()
     {
-        using var context = new HttpTestContext();
-        context.AddResponse(HttpStatusCode.OK, "content", 
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.OK, "content",
             ("Cache-Control", "max-age=3600"),
             ("Vary", "Accept-Language"));
 

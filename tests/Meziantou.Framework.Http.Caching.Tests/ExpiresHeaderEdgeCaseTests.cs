@@ -8,19 +8,12 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenMultipleExpiresHeadersThenFirstUsed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var futureDate1 = context.TimeProvider.GetUtcNow().AddHours(1);
         var futureDate2 = context.TimeProvider.GetUtcNow().AddHours(2);
 
-        using var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Content = new StringContent("multi-expires");
-        response.Content.Headers.TryAddWithoutValidation("Expires", futureDate1.ToString("R"));
-        response.Content.Headers.TryAddWithoutValidation("Expires", futureDate2.ToString("R"));
-        context.AddResponse(response);
-
-        using var freshResponse = new HttpResponseMessage(HttpStatusCode.OK);
-        freshResponse.Content = new StringContent("fresh-response");
-        context.AddResponse(freshResponse);
+        context.AddResponse(HttpStatusCode.OK, "multi-expires", ("Expires", futureDate1.ToString("R")), ("Expires", futureDate2.ToString("R")));
+        context.AddResponse(HttpStatusCode.OK, "fresh-response");
 
         // First request - get and cache the response with multiple Expires headers
         await context.SnapshotResponse("http://example.com/resource", """
@@ -67,15 +60,12 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenExpiresWithRFC850DateFormatThenParsed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         // RFC 850 format: Sunday, 06-Nov-94 08:49:37 GMT
         var futureDate = context.TimeProvider.GetUtcNow().AddHours(1);
         var rfc850Date = futureDate.ToString("dddd, dd-MMM-yy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture);
 
-        using var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Content = new StringContent("rfc850-expires");
-        response.Content.Headers.TryAddWithoutValidation("Expires", rfc850Date);
-        context.AddResponse(response);
+        context.AddResponse(HttpStatusCode.OK, "rfc850-expires", ("Expires", rfc850Date));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
@@ -103,15 +93,12 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenExpiresWithAsctimeFormatThenParsed()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         // asctime format: Sun Nov  6 08:49:37 1994
         var futureDate = context.TimeProvider.GetUtcNow().AddHours(1);
         var asctimeDate = futureDate.ToString("ddd MMM  d HH:mm:ss yyyy", CultureInfo.InvariantCulture);
 
-        using var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Content = new StringContent("asctime-expires");
-        response.Content.Headers.TryAddWithoutValidation("Expires", asctimeDate);
-        context.AddResponse(response);
+        context.AddResponse(HttpStatusCode.OK, "asctime-expires", ("Expires", asctimeDate));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
@@ -139,14 +126,11 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenExpiresVeryFarInFutureThenCached()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         // Year 9999 - far future
         var farFuture = new DateTimeOffset(9999, 12, 31, 23, 59, 59, TimeSpan.Zero);
 
-        using var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Content = new StringContent("far-future");
-        response.Content.Headers.TryAddWithoutValidation("Expires", farFuture.ToString("R"));
-        context.AddResponse(response);
+        context.AddResponse(HttpStatusCode.OK, "far-future", ("Expires", farFuture.ToString("R")));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
@@ -174,14 +158,11 @@ public class ExpiresHeaderEdgeCaseTests
     [Fact]
     public async Task WhenExpiresWithTimezoneThenNormalizedToGMT()
     {
-        using var context = new HttpTestContext();
+        await using var context = new HttpTestContext2();
         var futureDate = context.TimeProvider.GetUtcNow().AddHours(1);
 
-        using var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Content = new StringContent("timezone-expires");
         // Most HTTP dates should be GMT, but test other timezone handling
-        response.Content.Headers.TryAddWithoutValidation("Expires", futureDate.ToString("R"));
-        context.AddResponse(response);
+        context.AddResponse(HttpStatusCode.OK, "timezone-expires", ("Expires", futureDate.ToString("R")));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)

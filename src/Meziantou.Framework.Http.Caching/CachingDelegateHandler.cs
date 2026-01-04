@@ -206,6 +206,20 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                     return CreateCachedResponse(cacheResult, newAge);
                 }
 
+                // RFC 5861: Handle error responses with stale-if-error
+                if (cacheResult.StaleIfError is not null && !conditionalResponse.IsSuccessStatusCode)
+                {
+                    var staleness = currentAge - freshnessLifetime;
+                    if (staleness <= cacheResult.StaleIfError.Value)
+                    {
+                        conditionalResponse.Dispose();
+                        
+                        // RFC 7234 Section 5.5: Add Warning headers
+                        var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
+                        return CreateCachedResponse(cacheResult, currentAge, warnings);
+                    }
+                }
+
                 // Use fresh response and cache it
                 await _cache.StoreAsync(request, conditionalResponse, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
                 return conditionalResponse;
@@ -295,16 +309,24 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         return string.Equals(uri1.Host, uri2.Host, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static HttpResponseMessage CreateCachedResponse(CacheEntry entry, TimeSpan currentAge)
+    private static HttpResponseMessage CreateCachedResponse(CacheEntry entry, TimeSpan currentAge, string? warningHeaders = null)
     {
         var response = ResponseSerializer.Deserialize(entry.SerializedResponse);
+
+        // RFC 7234 Section 5.5: Add Warning headers if provided
+        // Remove any existing Warning headers first to avoid duplication
+        if (warningHeaders is not null)
+        {
+            response.Headers.Remove("Warning");
+            response.Headers.TryAddWithoutValidation("Warning", warningHeaders);
+        }
 
         // RFC 7234 Section 5.1: Set Age header
         response.Headers.Age = currentAge;
 
         // Rebuild Cache-Control header from CacheEntry properties
         // This ensures that updates from 304 responses are reflected
-        if (entry.MaxAge is not null || entry.MustRevalidate || entry.ResponseNoCache || entry.Immutable)
+        if (entry.MaxAge is not null || entry.MustRevalidate || entry.ResponseNoCache || entry.Immutable || entry.StaleIfError is not null)
         {
             response.Headers.Remove("Cache-Control");
             var cacheControl = new CacheControlHeaderValue();
@@ -327,6 +349,11 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             if (entry.Immutable)
             {
                 cacheControl.Extensions.Add(new NameValueHeaderValue("immutable"));
+            }
+
+            if (entry.StaleIfError is not null)
+            {
+                cacheControl.Extensions.Add(new NameValueHeaderValue("stale-if-error", ((int)entry.StaleIfError.Value.TotalSeconds).ToString(CultureInfo.InvariantCulture)));
             }
             
             response.Headers.CacheControl = cacheControl;

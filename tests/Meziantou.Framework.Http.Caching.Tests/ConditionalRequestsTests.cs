@@ -480,9 +480,9 @@ public sealed class ConditionalRequestsAndRevalidationTests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
+              Age: 3
               Cache-Control: max-age=2, stale-if-error=60
               ETag: "v1"
-              Age: 3
               Warning: 110 - "Response is Stale", 111 - "Revalidation Failed"
             Content:
               Headers:

@@ -313,9 +313,8 @@ internal sealed class CacheEntry
             RequestTime = requestTime;
             ResponseTime = responseTime;
             ResponseDate = validationResponse.Headers.Date ?? responseTime;
+            AgeValue = validationResponse.Headers.Age ?? TimeSpan.Zero;
         }
-
-        AgeValue = validationResponse.Headers.Age ?? TimeSpan.Zero;
 
         // Update validators if provided
         if (validationResponse.Headers.ETag is not null)

@@ -53,7 +53,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""),
             ("X-Custom", "old-value"));
-        context.AddResponse(HttpStatusCode.NotModified,  // TODO validate the client send If-None-Match
+        context.AddNoContentResponse(expectedRequestHeaders: [("If-None-Match","\"v1\"")],
             ("ETag", "\"v1\""),
             ("Cache-Control", "max-age=10"),
             ("X-Custom", "new-value"));

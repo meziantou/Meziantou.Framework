@@ -76,6 +76,29 @@ internal sealed class HttpTestContext : IAsyncDisposable
         });
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
+    public void AddNoContentResponse((string, string)[] expectedRequestHeaders, params (string, string)[] responseHeaders)
+    {
+        AddResponse(async (context) =>
+        {
+            foreach (var (key, value) in expectedRequestHeaders)
+            {
+                if (context.Request.Headers[key] != value)
+                {
+                    context.Response.StatusCode = 400;
+                    await context.Response.WriteAsync($"Expected header '{key}' with value '{value}'");
+                    return;
+                }
+            }
+
+            context.Response.StatusCode = 304;
+            foreach (var (key, value) in responseHeaders)
+            {
+                context.Response.Headers.Append(key, value);
+            }
+        });
+    }
+
     private async Task<HttpResponseMessage> SendRequest(HttpRequestMessage message)
     {
         return await _httpClient.SendAsync(message);

@@ -42,10 +42,19 @@ public class HeuristicFreshnessTests
     {
         await using var context = new HttpTestContext();
         // Last-Modified 10 seconds ago, heuristic = 1 second
-        // TODO Validate with 1 second later request
         var lastModified = context.TimeProvider.GetUtcNow().AddSeconds(-10);
         context.AddResponse(HttpStatusCode.OK, "original", ("Last-Modified", lastModified.ToString("R")), ("ETag", "\"v1\""));
-        context.AddResponse(HttpStatusCode.NotModified); // TODO validate the header sent by the client
+        context.AddNoContentResponse(
+            expectedRequestHeaders:
+            [
+                ("If-None-Match", "\"v1\""),
+                ("If-Modified-Since", lastModified.ToString("R")),
+            ],
+            responseHeaders:
+            [
+                ("ETag", "\"v1\""),
+                ("Last-Modified", lastModified.ToString("R")),
+            ]);
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)

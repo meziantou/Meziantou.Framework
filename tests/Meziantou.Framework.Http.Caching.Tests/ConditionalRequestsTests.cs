@@ -226,11 +226,11 @@ public sealed class ConditionalRequestsAndRevalidationTests
             StatusCode: 200 (OK)
             Headers:
               Cache-Control: max-age=2
-              Last-Modified: Fri, 31 Dec 1999 23:00:00 GMT
             Content:
               Headers:
                 Content-Length: 8
                 Content-Type: text/plain; charset=utf-8
+                Last-Modified: Fri, 31 Dec 1999 23:00:00 GMT
               Value: original
             """);
 
@@ -241,11 +241,11 @@ public sealed class ConditionalRequestsAndRevalidationTests
             Headers:
               Age: 3
               Cache-Control: max-age=2
-              Last-Modified: Fri, 31 Dec 1999 23:00:00 GMT
             Content:
               Headers:
                 Content-Length: 8
                 Content-Type: text/plain; charset=utf-8
+                Last-Modified: Fri, 31 Dec 1999 23:00:00 GMT
               Value: original
             """);
     }
@@ -284,11 +284,11 @@ public sealed class ConditionalRequestsAndRevalidationTests
               Age: 3
               Cache-Control: max-age=2
               ETag: "v1"
-              Last-Modified: Fri, 31 Dec 1999 23:00:00 GMT
             Content:
               Headers:
                 Content-Length: 8
                 Content-Type: text/plain; charset=utf-8
+                Last-Modified: Fri, 31 Dec 1999 23:00:00 GMT
               Value: original
             """);
     }

@@ -83,6 +83,7 @@ internal sealed class HttpTestContext : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _httpClient.Dispose();
         await _app.DisposeAsync();
         if (_expectedRequests.Count != 0)
         {

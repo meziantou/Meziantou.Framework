@@ -324,6 +324,15 @@ public sealed class CachingDelegateHandler : DelegatingHandler
     {
         var response = ResponseSerializer.Deserialize(entry.SerializedResponse);
 
+        // RFC 7234 Section 5.5.4: Add Warning 113 for heuristic expiration exceeding 24 hours
+        if (entry.UsesHeuristicExpiration && entry.FreshnessLifetime >= TimeSpan.FromHours(24))
+        {
+            var warning113 = "113 - \"Heuristic Expiration\"";
+            warningHeaders = warningHeaders is not null 
+                ? $"{warningHeaders}, {warning113}" 
+                : warning113;
+        }
+
         // RFC 7234 Section 5.5: Add Warning headers if provided
         // Remove any existing Warning headers first to avoid duplication
         if (warningHeaders is not null)

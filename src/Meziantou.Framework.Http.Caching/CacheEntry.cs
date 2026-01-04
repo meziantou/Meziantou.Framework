@@ -241,6 +241,17 @@ internal sealed class CacheEntry
         }
     }
 
+    /// <summary>Gets whether heuristic expiration was used to calculate the freshness lifetime.</summary>
+    public bool UsesHeuristicExpiration
+    {
+        get
+        {
+            // RFC 7234 Section 4.2.2: Heuristic expiration is used when there's no explicit expiration
+            // (no max-age, no s-maxage, no Expires) but Last-Modified is present
+            return !SharedMaxAge.HasValue && !MaxAge.HasValue && !Expires.HasValue && LastModified.HasValue;
+        }
+    }
+
     /// <summary>Calculates the current age per RFC 7234 Section 4.2.3.</summary>
     public TimeSpan CalculateCurrentAge(DateTimeOffset now)
     {

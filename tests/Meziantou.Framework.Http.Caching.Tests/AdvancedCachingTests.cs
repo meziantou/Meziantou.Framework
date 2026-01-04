@@ -490,17 +490,15 @@ public sealed class AdvancedCachingTests
     {
         await using var context = new HttpTestContext2();
         var lastModified = context.TimeProvider.GetUtcNow().AddDays(-10);
-        context.AddResponse(HttpStatusCode.OK, "content", 
-            ("Last-Modified", lastModified.ToString("R")));
+        context.AddResponse(HttpStatusCode.OK, "content", ("Last-Modified", lastModified.ToString("R")));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
-            Headers:
-              Last-Modified: {{lastModified}}
             Content:
               Headers:
                 Content-Length: 7
                 Content-Type: text/plain; charset=utf-8
+                Last-Modified: Wed, 22 Dec 1999 00:00:00 GMT
               Value: content
             """);
 
@@ -510,12 +508,12 @@ public sealed class AdvancedCachingTests
             StatusCode: 200 (OK)
             Headers:
               Age: 3600
-              Last-Modified: {{lastModified}}
               Warning: 113 - "Heuristic Expiration"
             Content:
               Headers:
                 Content-Length: 7
                 Content-Type: text/plain; charset=utf-8
+                Last-Modified: Wed, 22 Dec 1999 00:00:00 GMT
               Value: content
             """);
     }

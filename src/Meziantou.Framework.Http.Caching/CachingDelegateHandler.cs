@@ -151,7 +151,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             if (requestCacheControl?.MaxAge != null)
             {
                 var maxAgeSeconds = requestCacheControl.MaxAge.Value.TotalSeconds;
-                if (currentAge.TotalSeconds > maxAgeSeconds)
+                if (currentAge.TotalSeconds >= maxAgeSeconds)
                 {
                     isFresh = false;
                 }

@@ -6,7 +6,7 @@ namespace HttpCaching;
 /// <summary>A delegating handler that caches HTTP responses following RFC 7234.</summary>
 public sealed class CachingDelegateHandler : DelegatingHandler
 {
-    private readonly HttpCache _cache = new();
+    private readonly HttpCache _cache;
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
@@ -22,9 +22,29 @@ public sealed class CachingDelegateHandler : DelegatingHandler
     /// </summary>
     /// <param name="timeProvider">The time provider to use for time-based operations.</param>
     public CachingDelegateHandler(TimeProvider timeProvider)
+        : this(timeProvider, options: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with caching options.
+    /// </summary>
+    /// <param name="options">The caching options.</param>
+    public CachingDelegateHandler(CachingOptions? options)
+        : this(TimeProvider.System, options)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with a time provider and caching options.
+    /// </summary>
+    /// <param name="timeProvider">The time provider to use for time-based operations.</param>
+    /// <param name="options">The caching options.</param>
+    public CachingDelegateHandler(TimeProvider timeProvider, CachingOptions? options)
     {
         ArgumentNullException.ThrowIfNull(timeProvider);
         _timeProvider = timeProvider;
+        _cache = new HttpCache(options);
     }
 
     /// <summary>
@@ -42,10 +62,32 @@ public sealed class CachingDelegateHandler : DelegatingHandler
     /// <param name="innerHandler">The inner handler.</param>
     /// <param name="timeProvider">The time provider to use for time-based operations.</param>
     public CachingDelegateHandler(HttpMessageHandler innerHandler, TimeProvider timeProvider)
+        : this(innerHandler, timeProvider, options: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with an inner handler and caching options.
+    /// </summary>
+    /// <param name="innerHandler">The inner handler.</param>
+    /// <param name="options">The caching options.</param>
+    public CachingDelegateHandler(HttpMessageHandler innerHandler, CachingOptions? options)
+        : this(innerHandler, TimeProvider.System, options)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with an inner handler, time provider, and caching options.
+    /// </summary>
+    /// <param name="innerHandler">The inner handler.</param>
+    /// <param name="timeProvider">The time provider to use for time-based operations.</param>
+    /// <param name="options">The caching options.</param>
+    public CachingDelegateHandler(HttpMessageHandler innerHandler, TimeProvider timeProvider, CachingOptions? options)
         : base(innerHandler)
     {
         ArgumentNullException.ThrowIfNull(timeProvider);
         _timeProvider = timeProvider;
+        _cache = new HttpCache(options);
     }
 
     /// <inheritdoc />

@@ -6,6 +6,12 @@ namespace HttpCaching;
 internal sealed class HttpCache
 {
     private readonly ConcurrentDictionary<string, ConcurrentBag<CacheEntry>> _entries = new(StringComparer.Ordinal);
+    private readonly CachingOptions _options;
+
+    public HttpCache(CachingOptions? options)
+    {
+        _options = options ?? new();
+    }
 
     private static string ComputePrimaryKey(Uri? uri)
     {
@@ -54,6 +60,16 @@ internal sealed class HttpCache
 
         var primaryKey = ComputePrimaryKey(request.RequestUri);
         var entry = await CacheEntry.CreateAsync(request, response, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
+
+        // Check response size limit if configured
+        // We check the serialized size which includes headers and metadata
+        if (_options.MaximumResponseSize is not null)
+        {
+            if (entry.SerializedResponse.Length > _options.MaximumResponseSize.Value)
+            {
+                return;
+            }
+        }
 
         _entries.AddOrUpdate(
             primaryKey,

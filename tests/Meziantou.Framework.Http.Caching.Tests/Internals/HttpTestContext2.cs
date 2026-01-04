@@ -17,6 +17,12 @@ internal sealed class HttpTestContext2 : IAsyncDisposable
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public HttpTestContext2()
+        : this(new CachingOptions())
+    {
+    }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
+    public HttpTestContext2(CachingOptions options)
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseTestServer();
@@ -28,7 +34,7 @@ internal sealed class HttpTestContext2 : IAsyncDisposable
         _ = _app.StartAsync();
 
         var handler = _app.GetTestServer().CreateHandler();
-        var cache = new CachingDelegateHandler(handler, TimeProvider);
+        var cache = new CachingDelegateHandler(handler, TimeProvider, options);
         _httpClient = new HttpClient(cache, disposeHandler: true);
     }
 

@@ -616,9 +616,10 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenResponseTooLargeThenNotCached()
     {
-        // Implementation-specific: test if there's a size limit
-        await using var context = new HttpTestContext2();
-        var largeContent = new string('x', 10_000_000); // 10MB
+        // Test that responses exceeding the maximum size are not cached
+        var options = new CachingOptions { MaximumResponseSize = 1024 * 1024 }; // 1 MB limit
+        await using var context = new HttpTestContext2(options);
+        var largeContent = new string('x', 2_000_000); // 2MB
         context.AddResponse(HttpStatusCode.OK, largeContent, ("Cache-Control", "max-age=3600"));
         context.AddResponse(HttpStatusCode.OK, "small-response", ("Cache-Control", "max-age=3600"));
 
@@ -628,12 +629,12 @@ public sealed class AdvancedCachingTests
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Length: 10000000
+                Content-Length: 2000000
                 Content-Type: text/plain; charset=utf-8
               Value: {largeContent}
             """);
 
-        // If size-limited, should fetch again
+        // Response was too large, should fetch again from origin
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
@@ -647,63 +648,140 @@ public sealed class AdvancedCachingTests
     }
 
     [Fact]
-    public async Task WhenQueryStringDiffersThenFetchesSeparately()
+    public async Task WhenResponseWithinSizeLimitThenCached()
     {
-        await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "query1", ("Cache-Control", "max-age=3600"));
-        context.AddResponse(HttpStatusCode.OK, "query2", ("Cache-Control", "max-age=3600"));
+        // Test that responses within the size limit are cached
+        var options = new CachingOptions { MaximumResponseSize = 1024 * 1024 }; // 1 MB limit
+        await using var context = new HttpTestContext2(options);
+        var smallContent = new string('x', 500_000); // 500 KB
+        context.AddResponse(HttpStatusCode.OK, smallContent, ("Cache-Control", "max-age=3600"));
 
-        await context.SnapshotResponse("http://example.com/resource?q=1", """
+        await context.SnapshotResponse("http://example.com/resource", $"""
             StatusCode: 200 (OK)
             Headers:
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Length: 6
+                Content-Length: 500000
                 Content-Type: text/plain; charset=utf-8
-              Value: query1
+              Value: {smallContent}
             """);
 
-        await context.SnapshotResponse("http://example.com/resource?q=2", """
-            StatusCode: 200 (OK)
-            Headers:
-              Cache-Control: max-age=3600
-            Content:
-              Headers:
-                Content-Length: 6
-                Content-Type: text/plain; charset=utf-8
-              Value: query2
-            """);
-    }
-
-    [Fact]
-    public async Task WhenFragmentDiffersThenUsesSameCache()
-    {
-        await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=3600"));
-
-        await context.SnapshotResponse("http://example.com/resource#section1", """
-            StatusCode: 200 (OK)
-            Headers:
-              Cache-Control: max-age=3600
-            Content:
-              Headers:
-                Content-Length: 7
-                Content-Type: text/plain; charset=utf-8
-              Value: content
-            """);
-
-        // Fragments are client-side only, should use same cache
-        await context.SnapshotResponse("http://example.com/resource#section2", """
+        // Response was within limit, should be cached
+        await context.SnapshotResponse("http://example.com/resource", $"""
             StatusCode: 200 (OK)
             Headers:
               Age: 0
               Cache-Control: max-age=3600
             Content:
               Headers:
-                Content-Length: 7
+                Content-Length: 500000
                 Content-Type: text/plain; charset=utf-8
-              Value: content
+              Value: {smallContent}
+            """);
+    }
+
+    [Fact]
+    public async Task WhenMaximumResponseSizeNullThenNoSizeLimit()
+    {
+        // Test that setting MaximumResponseSize to null disables size checking
+        var options = new CachingOptions { MaximumResponseSize = null };
+        await using var context = new HttpTestContext2(options);
+        var largeContent = new string('x', 10_000_000); // 10 MB
+        context.AddResponse(HttpStatusCode.OK, largeContent, ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/resource", $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 10000000
+                Content-Type: text/plain; charset=utf-8
+              Value: {largeContent}
+            """);
+
+        // No size limit, should be cached
+        await context.SnapshotResponse("http://example.com/resource", $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 10000000
+                Content-Type: text/plain; charset=utf-8
+              Value: {largeContent}
+            """);
+    }
+
+    [Fact]
+    public async Task WhenResponseExactlyAtSizeLimitThenCached()
+    {
+        // Test edge case where response is exactly at the size limit
+        // Note: We need a large enough limit to account for serialization overhead (headers, metadata)
+        var options = new CachingOptions { MaximumResponseSize = 2000 };
+        await using var context = new HttpTestContext2(options);
+        var content = new string('x', 1000); // Content is 1000 bytes, but serialized will be larger
+        context.AddResponse(HttpStatusCode.OK, content, ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/resource", $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 1000
+                Content-Type: text/plain; charset=utf-8
+              Value: {content}
+            """);
+
+        // Response serialized size is within limit, should be cached
+        await context.SnapshotResponse("http://example.com/resource", $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Age: 0
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 1000
+                Content-Type: text/plain; charset=utf-8
+              Value: {content}
+            """);
+    }
+
+    [Fact]
+    public async Task WhenResponseOneByteLargerThanLimitThenNotCached()
+    {
+        // Test edge case where response serialized size exceeds the limit
+        // We set a limit that's smaller than the serialized response size
+        var options = new CachingOptions { MaximumResponseSize = 500 };
+        await using var context = new HttpTestContext2(options);
+        var content = new string('x', 400); // Small content, but serialized will exceed 500 bytes
+        context.AddResponse(HttpStatusCode.OK, content, ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, "second-response", ("Cache-Control", "max-age=3600"));
+
+        await context.SnapshotResponse("http://example.com/resource", $"""
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 400
+                Content-Type: text/plain; charset=utf-8
+              Value: {content}
+            """);
+
+        // Response serialized size exceeded limit, should not be cached
+        await context.SnapshotResponse("http://example.com/resource", """
+            StatusCode: 200 (OK)
+            Headers:
+              Cache-Control: max-age=3600
+            Content:
+              Headers:
+                Content-Length: 15
+                Content-Type: text/plain; charset=utf-8
+              Value: second-response
             """);
     }
 

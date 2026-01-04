@@ -8,8 +8,15 @@ public class ThreadSafetyTests
     [Fact]
     public async Task RequestMessageIsSet()
     {
+        var firstRequest = true;
         using var handler = new MockResponseHandler(req =>
         {
+            if (!firstRequest)
+            {
+                throw new InvalidOperationException("This handler should be called only once.");
+            }
+
+            firstRequest = false;
             var response = new HttpResponseMessage(HttpStatusCode.OK);
             response.Content = new StringContent("default-content");
             response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
@@ -20,11 +27,11 @@ public class ThreadSafetyTests
         using var httpClient = new HttpClient(cache);
 
         using var request1 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
-        using var response1 = await httpClient.GetAsync("http://example.com/test", XunitCancellationToken);
+        using var response1 = await httpClient.SendAsync(request1, XunitCancellationToken);
         Assert.Equal(request1, response1.RequestMessage);
 
         using var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
-        using var response2 = await httpClient.GetAsync("http://example.com/test", XunitCancellationToken);
+        using var response2 = await httpClient.SendAsync(request2, XunitCancellationToken);
         Assert.Equal(request2, response2.RequestMessage);
     }
 

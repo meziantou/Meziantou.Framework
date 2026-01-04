@@ -92,7 +92,7 @@ public class CacheInvalidationTests
     {
         await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "before-delete", ("Cache-Control", "max-age=600"));
-        context.AddNoContentResponse(expectedRequestHeaders: []);
+        context.AddResponse(HttpStatusCode.NoContent);
         context.AddResponse(HttpStatusCode.OK, "after-delete", ("Cache-Control", "max-age=600"));
 
         await context.SnapshotResponse("http://example.com/test", """

@@ -77,7 +77,7 @@ internal sealed class HttpTestContext : IAsyncDisposable
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
-    public void AddNoContentResponse((string, string)[] expectedRequestHeaders, params (string, string)[] responseHeaders)
+    public void AddNotModifiedResponse((string, string)[] expectedRequestHeaders, params (string, string)[] responseHeaders)
     {
         AddResponse(async (context) =>
         {

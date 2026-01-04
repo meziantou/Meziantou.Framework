@@ -134,8 +134,8 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenDeleteRequestThenNotCached()
     {
         await using var context = new HttpTestContext();
-        context.AddNoContentResponse(expectedRequestHeaders: [], ("Cache-Control", "max-age=3600"));
-        context.AddNoContentResponse(expectedRequestHeaders: [], ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.NoContent, ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.NoContent, ("Cache-Control", "max-age=3600"));
 
         await context.SnapshotResponse(HttpMethod.Delete, "http://example.com/resource", """
             StatusCode: 204 (NoContent)
@@ -220,7 +220,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task When204NoContentThenCacheable()
     {
         await using var context = new HttpTestContext();
-        context.AddNoContentResponse(expectedRequestHeaders: [], ("Cache-Control", "max-age=60"));
+        context.AddResponse(HttpStatusCode.NoContent, ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 204 (NoContent)

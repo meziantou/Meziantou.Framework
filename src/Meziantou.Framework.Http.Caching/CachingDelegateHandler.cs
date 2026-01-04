@@ -91,7 +91,6 @@ public sealed class CachingDelegateHandler : DelegatingHandler
     }
 
     /// <inheritdoc />
-    // TODO set response.RequestMessage to the original request
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var requestTime = _timeProvider.GetUtcNow();
@@ -108,6 +107,9 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                 InvalidateLocationHeaders(response);
             }
 
+            // Set RequestMessage if it's not already set by the base handler
+            response.RequestMessage ??= request;
+
             return response;
         }
 
@@ -115,7 +117,9 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         // Cache doesn't support serving partial content, so forward to origin
         if (request.Headers.Range != null)
         {
-            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var rangeResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            rangeResponse.RequestMessage ??= request;
+            return rangeResponse;
         }
 
         // Check request-level cache directives
@@ -125,7 +129,9 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         // RFC 7234 Section 5.2.1.5: no-store request directive
         if ((requestCacheControl?.NoStore) is true)
         {
-            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var noStoreResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            noStoreResponse.RequestMessage ??= request;
+            return noStoreResponse;
         }
 
         // Try to get a cached response
@@ -203,7 +209,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             // Return cached response if fresh and doesn't require validation
             if (isFresh && !requiresValidation)
             {
-                return CreateCachedResponse(cacheResult, currentAge);
+                return CreateCachedResponse(request, cacheResult, currentAge);
             }
 
             // RFC 7234 Section 5.2.1.7: only-if-cached request directive
@@ -213,17 +219,20 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                 {
                     // RFC 7234 Section 5.5: Add Warning header for stale response
                     var warningHeader = !isFresh ? "110 - \"Response is Stale\"" : null;
-                    return CreateCachedResponse(cacheResult, currentAge, warningHeader);
+                    return CreateCachedResponse(request, cacheResult, currentAge, warningHeader);
                 }
                 // Return 504 Gateway Timeout if no suitable cached response
-                return new HttpResponseMessage(HttpStatusCode.GatewayTimeout);
+                return new HttpResponseMessage(HttpStatusCode.GatewayTimeout)
+                {
+                    RequestMessage = request,
+                };
             }
 
             // Allow stale response if max-stale permits
             if (allowStale && !requiresValidation)
             {
                 // RFC 7234 Section 5.5: Add Warning header for stale response
-                return CreateCachedResponse(cacheResult, currentAge, "110 - \"Response is Stale\"");
+                return CreateCachedResponse(request, cacheResult, currentAge, "110 - \"Response is Stale\"");
             }
 
             // Attempt conditional validation
@@ -238,7 +247,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                 }
 
                 // RFC 7232 Section 3.3: If-Modified-Since
-                if (cacheResult.LastModified != null && cacheResult.ETag is null)
+                if (cacheResult.LastModified != null)
                 {
                     conditionalRequest.Headers.IfModifiedSince = cacheResult.LastModified;
                 }
@@ -256,7 +265,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                     conditionalResponse.Dispose();
 
                     var newAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
-                    return CreateCachedResponse(cacheResult, newAge);
+                    return CreateCachedResponse(request, cacheResult, newAge);
                 }
 
                 // RFC 5861: Handle error responses with stale-if-error
@@ -269,12 +278,13 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                         
                         // RFC 7234 Section 5.5: Add Warning headers
                         var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
-                        return CreateCachedResponse(cacheResult, currentAge, warnings);
+                        return CreateCachedResponse(request, cacheResult, currentAge, warnings);
                     }
                 }
 
                 // Use fresh response and cache it
                 await _cache.StoreAsync(request, conditionalResponse, requestTime, responseTime, cancellationToken).ConfigureAwait(false);
+                conditionalResponse.RequestMessage ??= request;
                 return conditionalResponse;
             }
         }
@@ -282,7 +292,10 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         // RFC 7234 Section 5.2.1.7: only-if-cached with no cached response
         if ((requestCacheControl?.OnlyIfCached) is true)
         {
-            return new HttpResponseMessage(HttpStatusCode.GatewayTimeout);
+            return new HttpResponseMessage(HttpStatusCode.GatewayTimeout)
+            {
+                RequestMessage = request,
+            };
         }
 
         // No suitable cached response, send request to origin
@@ -290,6 +303,9 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         var freshResponseTime = _timeProvider.GetUtcNow();
 
         await _cache.StoreAsync(request, freshResponse, requestTime, freshResponseTime, cancellationToken).ConfigureAwait(false);
+        
+        // Set RequestMessage if it's not already set by the base handler
+        freshResponse.RequestMessage ??= request;
         return freshResponse;
     }
 
@@ -362,7 +378,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         return string.Equals(uri1.Host, uri2.Host, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static HttpResponseMessage CreateCachedResponse(CacheEntry entry, TimeSpan currentAge, string? warningHeaders = null)
+    private static HttpResponseMessage CreateCachedResponse(HttpRequestMessage request, CacheEntry entry, TimeSpan currentAge, string? warningHeaders = null)
     {
         var response = ResponseSerializer.Deserialize(entry.SerializedResponse);
 
@@ -446,6 +462,8 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             response.Headers.CacheControl = cacheControl;
         }
 
+        // Set RequestMessage on the response
+        response.RequestMessage = request;
         return response;
     }
 

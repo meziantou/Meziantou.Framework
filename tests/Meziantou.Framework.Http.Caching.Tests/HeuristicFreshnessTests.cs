@@ -44,7 +44,7 @@ public class HeuristicFreshnessTests
         // Last-Modified 10 seconds ago, heuristic = 1 second
         var lastModified = context.TimeProvider.GetUtcNow().AddSeconds(-10);
         context.AddResponse(HttpStatusCode.OK, "original", ("Last-Modified", lastModified.ToString("R")), ("ETag", "\"v1\""));
-        context.AddNoContentResponse(
+        context.AddNotModifiedResponse(
             expectedRequestHeaders:
             [
                 ("If-None-Match", "\"v1\""),

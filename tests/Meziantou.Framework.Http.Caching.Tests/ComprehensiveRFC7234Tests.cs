@@ -33,8 +33,8 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=3600
               Age: 0
+              Cache-Control: max-age=3600
             Content:
               Headers:
                 Content-Length: 14
@@ -48,7 +48,6 @@ public sealed class ComprehensiveRFC7234Tests
     {
         await using var context = new HttpTestContext2();
         context.AddResponse(HttpStatusCode.OK, ("Cache-Control", "max-age=3600"), ("Content-Length", "100"));
-        context.AddResponse(HttpStatusCode.OK, ("Content-Length", "999"));
 
         await context.SnapshotResponse(HttpMethod.Head, "http://example.com/resource", """
             StatusCode: 200 (OK)
@@ -57,6 +56,7 @@ public sealed class ComprehensiveRFC7234Tests
             Content:
               Headers:
                 Content-Length: 100
+              Value:
             """);
 
         await context.SnapshotResponse(HttpMethod.Head, "http://example.com/resource", """
@@ -67,6 +67,7 @@ public sealed class ComprehensiveRFC7234Tests
             Content:
               Headers:
                 Content-Length: 100
+              Value:
             """);
     }
 
@@ -138,15 +139,17 @@ public sealed class ComprehensiveRFC7234Tests
         context.AddResponse(HttpStatusCode.NoContent, ("Cache-Control", "max-age=3600"));
 
         await context.SnapshotResponse(HttpMethod.Delete, "http://example.com/resource", """
-            StatusCode: 204 (No Content)
+            StatusCode: 204 (NoContent)
             Headers:
               Cache-Control: max-age=3600
+            Content:
             """);
 
         await context.SnapshotResponse(HttpMethod.Delete, "http://example.com/resource", """
-            StatusCode: 204 (No Content)
+            StatusCode: 204 (NoContent)
             Headers:
               Cache-Control: max-age=3600
+            Content:
             """);
     }
 
@@ -224,6 +227,7 @@ public sealed class ComprehensiveRFC7234Tests
             StatusCode: 204 (NoContent)
             Headers:
               Cache-Control: max-age=60
+            Content:
             """);
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -231,6 +235,10 @@ public sealed class ComprehensiveRFC7234Tests
             Headers:
               Age: 0
               Cache-Control: max-age=60
+            Content:
+              Headers:
+                Content-Length: 0
+              Value:
             """);
     }
 
@@ -238,7 +246,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task When206PartialContentThenCacheable()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.PartialContent, "partial", 
+        context.AddResponse(HttpStatusCode.PartialContent, "partial",
             ("Cache-Control", "max-age=60"),
             ("Content-Range", "bytes 0-6/100"));
 
@@ -275,7 +283,7 @@ public sealed class ComprehensiveRFC7234Tests
         context.AddResponse(HttpStatusCode.MultipleChoices, "choices", ("Cache-Control", "max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
-            StatusCode: 300 (Multiple Choices)
+            StatusCode: 300 (MultipleChoices)
             Headers:
               Cache-Control: max-age=60
             Content:
@@ -302,7 +310,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task When301MovedPermanentlyThenCacheable()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.MovedPermanently, "moved", 
+        context.AddResponse(HttpStatusCode.MovedPermanently, "moved",
             ("Cache-Control", "max-age=60"),
             ("Location", "http://example.com/new"));
 
@@ -382,8 +390,8 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 405 (MethodNotAllowed)
             Headers:
-              Cache-Control: max-age=60
               Age: 0
+              Cache-Control: max-age=60
             Content:
               Headers:
                 Content-Length: 11
@@ -592,7 +600,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenResponseHasSMaxAgeThenItTakesPrecedenceOverMaxAge()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "content", 
+        context.AddResponse(HttpStatusCode.OK, "content",
             ("Cache-Control", "max-age=3600, s-maxage=2"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -601,8 +609,8 @@ public sealed class ComprehensiveRFC7234Tests
               Cache-Control: max-age=3600, s-maxage=2
             Content:
               Headers:
-                Content-Type: text/plain; charset=utf-8
                 Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
               Value: content
             """);
 
@@ -669,7 +677,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenResponseHasNoCacheThenMustRevalidate()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "no-cache"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""));
@@ -704,7 +712,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenResponseHasPublicThenCacheable()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "public-content", 
+        context.AddResponse(HttpStatusCode.OK, "public-content",
             ("Cache-Control", "public, max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
@@ -735,13 +743,13 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenResponseHasPrivateThenCacheable()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "private-content", 
+        context.AddResponse(HttpStatusCode.OK, "private-content",
             ("Cache-Control", "private, max-age=60"));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: private, max-age=60
+              Cache-Control: max-age=60, private
             Content:
               Headers:
                 Content-Length: 15
@@ -753,7 +761,7 @@ public sealed class ComprehensiveRFC7234Tests
             StatusCode: 200 (OK)
             Headers:
               Age: 0
-              Cache-Control: private, max-age=60
+              Cache-Control: max-age=60, private
             Content:
               Headers:
                 Content-Length: 15
@@ -766,7 +774,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenResponseHasMustRevalidateThenRevalidatesWhenStale()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "must-reval", 
+        context.AddResponse(HttpStatusCode.OK, "must-reval",
             ("Cache-Control", "max-age=2, must-revalidate"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""));
@@ -774,7 +782,7 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=2, must-revalidate
+              Cache-Control: must-revalidate, max-age=2
               ETag: "v1"
             Content:
               Headers:
@@ -789,7 +797,7 @@ public sealed class ComprehensiveRFC7234Tests
             StatusCode: 200 (OK)
             Headers:
               Age: 3
-              Cache-Control: max-age=2, must-revalidate
+              Cache-Control: must-revalidate, max-age=2
               ETag: "v1"
             Content:
               Headers:
@@ -803,7 +811,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenResponseHasProxyRevalidateThenRevalidatesWhenStale()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "proxy-reval", 
+        context.AddResponse(HttpStatusCode.OK, "proxy-reval",
             ("Cache-Control", "max-age=2, proxy-revalidate"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""));
@@ -811,7 +819,7 @@ public sealed class ComprehensiveRFC7234Tests
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=2, proxy-revalidate
+              Cache-Control: proxy-revalidate, max-age=2
               ETag: "v1"
             Content:
               Headers:
@@ -826,7 +834,7 @@ public sealed class ComprehensiveRFC7234Tests
             StatusCode: 200 (OK)
             Headers:
               Age: 3
-              Cache-Control: max-age=2, proxy-revalidate
+              Cache-Control: proxy-revalidate, max-age=2
               ETag: "v1"
             Content:
               Headers:
@@ -840,13 +848,13 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenResponseHasNoTransformThenPreservedInCache()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "no-transform-data", 
+        context.AddResponse(HttpStatusCode.OK, "no-transform-data",
             ("Cache-Control", "max-age=60, no-transform"));
 
         await context.SnapshotResponse("http://example.com/resource", """
             StatusCode: 200 (OK)
             Headers:
-              Cache-Control: max-age=60, no-transform
+              Cache-Control: no-transform, max-age=60
             Content:
               Headers:
                 Content-Length: 17
@@ -858,7 +866,7 @@ public sealed class ComprehensiveRFC7234Tests
             StatusCode: 200 (OK)
             Headers:
               Age: 0
-              Cache-Control: max-age=60, no-transform
+              Cache-Control: no-transform, max-age=60
             Content:
               Headers:
                 Content-Length: 17
@@ -909,7 +917,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenRequestHasNoCacheThenRevalidates()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=3600"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""));
@@ -948,7 +956,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenRequestHasMaxAgeZeroThenRevalidates()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=3600"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""));
@@ -985,7 +993,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenRequestHasMaxAgeLessThanCacheAgeThenRevalidates()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=3600"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""));
@@ -1024,7 +1032,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenRequestHasMinFreshThenRevalidatesIfNotFreshEnough()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=10"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""));
@@ -1115,10 +1123,10 @@ public sealed class ComprehensiveRFC7234Tests
         context.TimeProvider.Advance(TimeSpan.FromSeconds(4));
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
-        request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue 
-        { 
-            MaxStale = true, 
-            MaxAge = TimeSpan.FromSeconds(5)  // Allow 5 seconds staleness - fixed: removed MaxStaleLimit
+        request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue
+        {
+            MaxStale = true,
+            MaxAge = TimeSpan.FromSeconds(5),  // Allow 5 seconds staleness - fixed: removed MaxStaleLimit
         };
         await context.SnapshotResponse(request, """
             StatusCode: 200 (OK)
@@ -1138,11 +1146,15 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenRequestHasOnlyIfCachedAndNoCacheThenReturns504()
     {
         await using var context = new HttpTestContext2();
-        
+
         using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
         request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { OnlyIfCached = true };
         await context.SnapshotResponse(request, """
             StatusCode: 504 (GatewayTimeout)
+            Content:
+              Headers:
+                Content-Length: 0
+              Value:
             """);
     }
 
@@ -1186,7 +1198,7 @@ public sealed class ComprehensiveRFC7234Tests
     public async Task WhenRequestHasPragmaNoCacheAndNoCacheControlThenRevalidates()
     {
         await using var context = new HttpTestContext2();
-        context.AddResponse(HttpStatusCode.OK, "original", 
+        context.AddResponse(HttpStatusCode.OK, "original",
             ("Cache-Control", "max-age=3600"),
             ("ETag", "\"v1\""));
         context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""));

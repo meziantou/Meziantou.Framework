@@ -7,6 +7,7 @@ internal static class ResponseSerializer
 {
     public static async Task<byte[]> SerializeAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
+        var content = response.Content is null ? null : await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
         var serialized = new SerializedResponseMessage
         {
             HttpStatusCode = response.StatusCode,
@@ -14,7 +15,7 @@ internal static class ResponseSerializer
             Headers = CopyHeaders(response.Headers),
             ContentHeaders = CopyHeaders(response.Content.Headers),
             TrailingHeaders = CopyHeaders(response.TrailingHeaders),
-            Content = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false),
+            Content = content,
         };
 
         return JsonSerializer.SerializeToUtf8Bytes(serialized, SerializationContext.Default.SerializedResponseMessage);
@@ -29,8 +30,12 @@ internal static class ResponseSerializer
         var response = new HttpResponseMessage(serialized.HttpStatusCode)
         {
             ReasonPhrase = serialized.ReasonPhrase,
-            Content = new ByteArrayContent(serialized.Content ?? []),
         };
+
+        if (serialized.Content is not null)
+        {
+            response.Content = new ByteArrayContent(serialized.Content);
+        }
 
         if (serialized.Headers != null)
         {
@@ -40,7 +45,7 @@ internal static class ResponseSerializer
             }
         }
 
-        if (serialized.ContentHeaders != null)
+        if (response.Content is not null && serialized.ContentHeaders != null)
         {
             foreach (var header in serialized.ContentHeaders)
             {

@@ -33,6 +33,7 @@ public class StaleResponseTests
             Headers:
               Age: 10
               Cache-Control: max-age=1
+              Warning: 110 - "Response is Stale"
             Content:
               Headers:
                 Content-Length: 13
@@ -116,6 +117,7 @@ public class StaleResponseTests
             Headers:
               Age: 5
               Cache-Control: max-age=1
+              Warning: 110 - "Response is Stale"
             Content:
               Headers:
                 Content-Length: 13

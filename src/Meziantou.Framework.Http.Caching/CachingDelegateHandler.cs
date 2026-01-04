@@ -162,7 +162,9 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             {
                 if (isFresh || allowStale)
                 {
-                    return CreateCachedResponse(cacheResult, currentAge);
+                    // RFC 7234 Section 5.5: Add Warning header for stale response
+                    var warningHeader = !isFresh ? "110 - \"Response is Stale\"" : null;
+                    return CreateCachedResponse(cacheResult, currentAge, warningHeader);
                 }
                 // Return 504 Gateway Timeout if no suitable cached response
                 return new HttpResponseMessage(HttpStatusCode.GatewayTimeout);
@@ -171,7 +173,8 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             // Allow stale response if max-stale permits
             if (allowStale && !requiresValidation)
             {
-                return CreateCachedResponse(cacheResult, currentAge);
+                // RFC 7234 Section 5.5: Add Warning header for stale response
+                return CreateCachedResponse(cacheResult, currentAge, "110 - \"Response is Stale\"");
             }
 
             // Attempt conditional validation

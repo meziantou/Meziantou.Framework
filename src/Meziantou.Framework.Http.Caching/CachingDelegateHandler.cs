@@ -121,7 +121,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
 
             // RFC 7234 Section 5.2.2.1: must-revalidate response directive
             // RFC 8246: must-revalidate takes precedence over immutable when stale
-            if (cacheResult.MustRevalidate && !isFresh)
+            if ((cacheResult.MustRevalidate || cacheResult.ProxyRevalidate) && !isFresh)
             {
                 requiresValidation = true;
             }
@@ -135,7 +135,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
 
             // RFC 7234 Section 5.2.1.2: max-stale request directive allows stale responses
             var allowStale = false;
-            if ((requestCacheControl?.MaxStale) is true && !cacheResult.MustRevalidate)
+            if ((requestCacheControl?.MaxStale) is true && !cacheResult.MustRevalidate && !cacheResult.ProxyRevalidate)
             {
                 if (requestCacheControl.MaxStaleLimit != null)
                 {
@@ -327,7 +327,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
 
         // Rebuild Cache-Control header from CacheEntry properties
         // This ensures that updates from 304 responses are reflected
-        if (entry.MaxAge is not null || entry.SharedMaxAge is not null || entry.MustRevalidate || entry.ResponseNoCache || entry.Immutable || entry.StaleIfError is not null)
+        if (entry.MaxAge is not null || entry.SharedMaxAge is not null || entry.MustRevalidate || entry.ProxyRevalidate || entry.ResponseNoCache || entry.Public || entry.Private || entry.NoTransform || entry.Immutable || entry.StaleIfError is not null)
         {
             response.Headers.Remove("Cache-Control");
             var cacheControl = new CacheControlHeaderValue();
@@ -347,9 +347,29 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                 cacheControl.MustRevalidate = true;
             }
             
+            if (entry.ProxyRevalidate)
+            {
+                cacheControl.ProxyRevalidate = true;
+            }
+            
             if (entry.ResponseNoCache)
             {
                 cacheControl.NoCache = true;
+            }
+            
+            if (entry.Public)
+            {
+                cacheControl.Public = true;
+            }
+            
+            if (entry.Private)
+            {
+                cacheControl.Private = true;
+            }
+            
+            if (entry.NoTransform)
+            {
+                cacheControl.NoTransform = true;
             }
             
             if (entry.Immutable)

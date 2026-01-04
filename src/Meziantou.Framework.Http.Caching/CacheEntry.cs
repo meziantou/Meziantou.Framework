@@ -32,8 +32,12 @@ internal sealed class CacheEntry
         {
             entry.MaxAge = cacheControl.MaxAge;
             entry.SharedMaxAge = cacheControl.SharedMaxAge;
-            entry.MustRevalidate = cacheControl.MustRevalidate || cacheControl.ProxyRevalidate;
+            entry.MustRevalidate = cacheControl.MustRevalidate;
+            entry.ProxyRevalidate = cacheControl.ProxyRevalidate;
             entry.ResponseNoCache = cacheControl.NoCache;
+            entry.Public = cacheControl.Public;
+            entry.Private = cacheControl.Private;
+            entry.NoTransform = cacheControl.NoTransform;
 
             // RFC 8246: Parse immutable directive
             entry.Immutable = HasImmutableDirective(cacheControl);
@@ -182,7 +186,11 @@ internal sealed class CacheEntry
     public TimeSpan? SharedMaxAge { get; private set; }
     public DateTimeOffset? Expires { get; private set; }
     public bool MustRevalidate { get; private set; }
+    public bool ProxyRevalidate { get; private set; }
     public bool ResponseNoCache { get; private set; }
+    public bool Public { get; private set; }
+    public bool Private { get; private set; }
+    public bool NoTransform { get; private set; }
     public bool Immutable { get; private set; }
 
     // RFC 5861: stale-if-error directive
@@ -279,8 +287,12 @@ internal sealed class CacheEntry
                 updatedMaxAge = true;
             }
 
-            MustRevalidate = cacheControl.MustRevalidate || cacheControl.ProxyRevalidate;
+            MustRevalidate = cacheControl.MustRevalidate;
+            ProxyRevalidate = cacheControl.ProxyRevalidate;
             ResponseNoCache = cacheControl.NoCache;
+            Public = cacheControl.Public;
+            Private = cacheControl.Private;
+            NoTransform = cacheControl.NoTransform;
         }
 
         // If the 304 response provides a new max-age, treat it as a fresh revalidation

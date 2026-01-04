@@ -151,7 +151,8 @@ internal sealed class HttpCache
 
     private static bool IsCacheableStatusCode(HttpStatusCode status)
     {
-        // RFC 7231 Section 6.1: Cacheable status codes
+        // RFC 7234 Section 3: Cacheable status codes
+        // RFC 7231 Section 6.1: These can be cached with explicit caching directives
         return status switch
         {
             HttpStatusCode.OK => true,
@@ -165,6 +166,7 @@ internal sealed class HttpCache
             HttpStatusCode.Gone => true,
             HttpStatusCode.RequestUriTooLong => true,
             HttpStatusCode.NotImplemented => true,
+            HttpStatusCode.InternalServerError => true,
             _ => false,
         };
     }

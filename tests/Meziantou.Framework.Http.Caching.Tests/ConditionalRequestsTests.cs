@@ -55,7 +55,7 @@ public sealed class ConditionalRequestsAndRevalidationTests
             ("Cache-Control", "max-age=2"),
             ("ETag", "\"v1\""),
             ("X-Custom", "old-value"));
-        context.AddResponse(HttpStatusCode.NotModified, 
+        context.AddResponse(HttpStatusCode.NotModified,  // TODO validate the client send If-None-Match
             ("ETag", "\"v1\""),
             ("Cache-Control", "max-age=10"),
             ("X-Custom", "new-value"));
@@ -88,6 +88,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
                 Content-Type: text/plain; charset=utf-8
               Value: content
             """);
+
+        // TODO add a new request to verify the headers are stored correctly
     }
 
     [Fact]
@@ -125,6 +127,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
                 Content-Type: text/plain; charset=utf-8
               Value: content
             """);
+
+        // TODO add a new request to verify the max-age is correctly stored
     }
 
     [Fact]
@@ -163,6 +167,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
                 Content-Type: text/plain; charset=utf-8
               Value: v2-content
             """);
+
+        // TODO make a new request to verify the new etag is stored
     }
 
     [Fact]
@@ -289,6 +295,86 @@ public sealed class ConditionalRequestsAndRevalidationTests
 
     #endregion
 
+    #region If-None-Match: "*" for Unsafe Methods (RFC 7232 Section 3.2)
+
+    [Fact]
+    public async Task WhenPutWithIfNoneMatchStarAndNoResourceThenSucceeds()
+    {
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.Created, "created", 
+            ("ETag", "\"v1\""),
+            ("Location", "http://example.com/resource"));
+
+        using var request = new HttpRequestMessage(HttpMethod.Put, "http://example.com/resource");
+        request.Headers.TryAddWithoutValidation("If-None-Match", "*");
+        request.Content = new StringContent("new content");
+
+        await context.SnapshotResponse(request, """
+            StatusCode: 201 (Created)
+            Headers:
+              ETag: "v1"
+              Location: http://example.com/resource
+            Content:
+              Headers:
+                Content-Length: 7
+                Content-Type: text/plain; charset=utf-8
+              Value: created
+            """);
+    }
+
+    [Fact]
+    public async Task WhenPutWithIfNoneMatchStarAndResourceExistsThenReturns412()
+    {
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.PreconditionFailed);
+
+        using var request = new HttpRequestMessage(HttpMethod.Put, "http://example.com/resource");
+        request.Headers.TryAddWithoutValidation("If-None-Match", "*");
+        request.Content = new StringContent("attempt to create");
+
+        await context.SnapshotResponse(request, """
+            StatusCode: 412 (PreconditionFailed)
+            Content:
+            """);
+    }
+
+    [Fact]
+    public async Task WhenMultiplePutsWithIfNoneMatchStarThenOnlyFirstSucceeds()
+    {
+        await using var context = new HttpTestContext2();
+        context.AddResponse(HttpStatusCode.Created, "first-created", 
+            ("ETag", "\"v1\""),
+            ("Location", "http://example.com/resource"));
+        context.AddResponse(HttpStatusCode.PreconditionFailed);
+
+        using var request1 = new HttpRequestMessage(HttpMethod.Put, "http://example.com/resource");
+        request1.Headers.TryAddWithoutValidation("If-None-Match", "*");
+        request1.Content = new StringContent("first client");
+
+        await context.SnapshotResponse(request1, """
+            StatusCode: 201 (Created)
+            Headers:
+              ETag: "v1"
+              Location: http://example.com/resource
+            Content:
+              Headers:
+                Content-Length: 13
+                Content-Type: text/plain; charset=utf-8
+              Value: first-created
+            """);
+
+        using var request2 = new HttpRequestMessage(HttpMethod.Put, "http://example.com/resource");
+        request2.Headers.TryAddWithoutValidation("If-None-Match", "*");
+        request2.Content = new StringContent("second client");
+
+        await context.SnapshotResponse(request2, """
+            StatusCode: 412 (PreconditionFailed)
+            Content:
+            """);
+    }
+
+    #endregion
+
     #region Revalidation Failures
 
     [Fact]
@@ -327,6 +413,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
                 Content-Type: text/plain; charset=utf-8
               Value: new
             """);
+
+        // TODO new request to verify new response is stored
     }
 
     [Fact]
@@ -362,6 +450,8 @@ public sealed class ConditionalRequestsAndRevalidationTests
                 Content-Type: text/plain; charset=utf-8
               Value: gone
             """);
+
+        // TODO new request to verify new response is stored
     }
 
     [Fact]

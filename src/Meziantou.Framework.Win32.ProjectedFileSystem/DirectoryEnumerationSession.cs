@@ -7,7 +7,9 @@ internal sealed class DirectoryEnumerationSession : IDisposable
 
     public DirectoryEnumerationSession(IEnumerable<ProjectedFileSystemEntry> entries)
     {
-        Entries = entries;
+        // ProjFS requires entries to be sorted using PrjFileNameCompare order
+        // Failure to sort causes duplicate entries when merging with on-disk items
+        Entries = entries.OrderBy(e => e.Name, FileNameComparer.Instance).ToList();
     }
 
     public ProjectedFileSystemEntry? GetNextEntry()

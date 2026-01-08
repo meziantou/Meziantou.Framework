@@ -71,7 +71,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return base.BeginRead(buffer, offset, count, callback, state);
+        return stream.BeginRead(buffer, offset, count, callback, state);
     }
 
     /// <inheritdoc />
@@ -79,7 +79,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfWritingNotAllowed();
-        return base.BeginWrite(buffer, offset, count, callback, state);
+        return stream.BeginWrite(buffer, offset, count, callback, state);
     }
 
     /// <inheritdoc />
@@ -87,7 +87,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfSynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        base.CopyTo(destination, bufferSize);
+        stream.CopyTo(destination, bufferSize);
     }
 
     /// <inheritdoc />
@@ -95,21 +95,29 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return base.CopyToAsync(destination, bufferSize, cancellationToken);
+        return stream.CopyToAsync(destination, bufferSize, cancellationToken);
     }
 
     /// <inheritdoc />
-    protected override void Dispose(bool disposing) => base.Dispose(disposing);
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        stream.Dispose();
+    }
 
     /// <inheritdoc />
-    public override ValueTask DisposeAsync() => base.DisposeAsync();
+    public async override ValueTask DisposeAsync()
+    {
+        await stream.DisposeAsync().ConfigureAwait(false);
+        await base.DisposeAsync().ConfigureAwait(false);
+    }
 
     /// <inheritdoc />
     public override int EndRead(IAsyncResult asyncResult)
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return base.EndRead(asyncResult);
+        return stream.EndRead(asyncResult);
     }
 
     /// <inheritdoc />
@@ -117,7 +125,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfWritingNotAllowed();
-        base.EndWrite(asyncResult);
+        stream.EndWrite(asyncResult);
     }
 
     /// <inheritdoc />
@@ -125,7 +133,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfWritingNotAllowed();
-        return base.FlushAsync(cancellationToken);
+        return stream.FlushAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -133,7 +141,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfSynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return base.Read(buffer);
+        return stream.Read(buffer);
     }
 
     /// <inheritdoc />
@@ -141,7 +149,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return base.ReadAsync(buffer, offset, count, cancellationToken);
+        return stream.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -149,7 +157,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return base.ReadAsync(buffer, cancellationToken);
+        return stream.ReadAsync(buffer, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -157,7 +165,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfSynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return base.ReadByte();
+        return stream.ReadByte();
     }
 
     /// <inheritdoc />
@@ -165,7 +173,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfSynchronousCallNotAllowed();
         ThrowIfWritingNotAllowed();
-        base.Write(buffer);
+        stream.Write(buffer);
     }
 
     /// <inheritdoc />
@@ -173,7 +181,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfWritingNotAllowed();
-        return base.WriteAsync(buffer, offset, count, cancellationToken);
+        return stream.WriteAsync(buffer, offset, count, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -181,7 +189,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfWritingNotAllowed();
-        return base.WriteAsync(buffer, cancellationToken);
+        return stream.WriteAsync(buffer, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -189,7 +197,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfSynchronousCallNotAllowed();
         ThrowIfWritingNotAllowed();
-        base.WriteByte(value);
+        stream.WriteByte(value);
     }
 
     private void ThrowIfSynchronousCallNotAllowed()

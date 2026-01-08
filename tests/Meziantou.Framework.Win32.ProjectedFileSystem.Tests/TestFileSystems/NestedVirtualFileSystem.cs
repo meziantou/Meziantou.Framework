@@ -25,16 +25,6 @@ internal sealed class NestedVirtualFileSystem : ProjectedFileSystemBase
             yield return ProjectedFileSystemEntry.File("Baz.txt", 18);
     }
 
-    // Override GetEntry to fix comparison for nested paths.
-    // The base implementation compares entry.Name with the full path, which fails for nested paths.
-    // It should compare with just the filename portion.
-    protected override ProjectedFileSystemEntry? GetEntry(string path)
-    {
-        var directory = Path.GetDirectoryName(path);
-        var fileName = Path.GetFileName(path);
-        return GetEntries(directory ?? "").FirstOrDefault(entry => AreFileNamesEqual(entry.Name, fileName));
-    }
-
     protected override Stream? OpenRead(string path)
     {
         if (AreFileNamesEqual(path, @"Foo\Bar\Baz.txt"))

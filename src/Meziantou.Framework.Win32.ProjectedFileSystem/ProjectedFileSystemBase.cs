@@ -231,7 +231,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
     protected virtual ProjectedFileSystemEntry? GetEntry(string path)
     {
         var directory = Path.GetDirectoryName(path);
-        return GetEntries(directory ?? "").FirstOrDefault(entry => CompareFileName(entry.Name, path) == 0);
+        var fileName = Path.GetFileName(path);
+        return GetEntries(directory ?? "").FirstOrDefault(entry => CompareFileName(entry.Name, fileName) == 0);
     }
 
     /// <summary>When overridden in a derived class, opens a stream to read the content of a file at the specified path.</summary>

@@ -696,4 +696,136 @@ public sealed class RestrictedStreamTests
 
         Assert.Throws<ObjectDisposedException>(() => baseStream.ReadByte());
     }
+
+    [Fact]
+    public void Read_ByteArray_WhenMaxReadLengthSet_ReturnsAtMostMaxReadLength()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowReading = true, MaxReadLength = 5 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        var buffer = new byte[10];
+
+        var bytesRead = restrictedStream.Read(buffer, 0, 10);
+
+        Assert.Equal(5, bytesRead);
+        Assert.Equal([1, 2, 3, 4, 5], buffer[..5]);
+    }
+
+    [Fact]
+    public void Read_ByteArray_WhenMaxReadLengthNegative_ReadsAllRequested()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowReading = true, MaxReadLength = -1 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        var buffer = new byte[10];
+
+        var bytesRead = restrictedStream.Read(buffer, 0, 10);
+
+        Assert.Equal(10, bytesRead);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], buffer);
+    }
+
+    [Fact]
+    public void Read_ByteArray_WhenMaxReadLengthZero_ReadsAllRequested()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowReading = true, MaxReadLength = 0 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        var buffer = new byte[10];
+
+        var bytesRead = restrictedStream.Read(buffer, 0, 10);
+
+        Assert.Equal(10, bytesRead);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], buffer);
+    }
+
+    [Fact]
+    public void Read_Span_WhenMaxReadLengthSet_ReturnsAtMostMaxReadLength()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowReading = true, MaxReadLength = 5 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        Span<byte> buffer = stackalloc byte[10];
+
+        var bytesRead = restrictedStream.Read(buffer);
+
+        Assert.Equal(5, bytesRead);
+        Assert.Equal([1, 2, 3, 4, 5], buffer[..5].ToArray());
+    }
+
+    [Fact]
+    public async Task ReadAsync_ByteArray_WhenMaxReadLengthSet_ReturnsAtMostMaxReadLength()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowReading = true, MaxReadLength = 5 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        var buffer = new byte[10];
+
+        var bytesRead = await restrictedStream.ReadAsync(buffer.AsMemory(0, 10));
+
+        Assert.Equal(5, bytesRead);
+        Assert.Equal([1, 2, 3, 4, 5], buffer[..5]);
+    }
+
+    [Fact]
+    public async Task ReadAsync_Memory_WhenMaxReadLengthSet_ReturnsAtMostMaxReadLength()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowReading = true, MaxReadLength = 5 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        var buffer = new byte[10];
+
+        var bytesRead = await restrictedStream.ReadAsync(buffer.AsMemory());
+
+        Assert.Equal(5, bytesRead);
+        Assert.Equal([1, 2, 3, 4, 5], buffer[..5]);
+    }
+
+    [Fact]
+    public void BeginRead_WhenMaxReadLengthSet_ReturnsAtMostMaxReadLength()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowReading = true, MaxReadLength = 5 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        var buffer = new byte[10];
+        var asyncResult = baseStream.BeginRead(buffer, 0, 5, null, null);
+        asyncResult.AsyncWaitHandle.WaitOne();
+
+        var bytesRead = restrictedStream.EndRead(asyncResult);
+
+        Assert.Equal(5, bytesRead);
+        Assert.Equal([1, 2, 3, 4, 5], buffer[..5]);
+    }
+
+    [Fact]
+    public void Read_ByteArray_WhenMaxReadLengthGreaterThanRequest_ReadsRequestedAmount()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowReading = true, MaxReadLength = 10 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        var buffer = new byte[5];
+
+        var bytesRead = restrictedStream.Read(buffer, 0, 5);
+
+        Assert.Equal(5, bytesRead);
+        Assert.Equal([1, 2, 3, 4, 5], buffer);
+    }
+
+    [Fact]
+    public void Read_ByteArray_WithMaxReadLength_CanReadMultipleTimes()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowReading = true, MaxReadLength = 3 };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+        var buffer = new byte[10];
+
+        var bytesRead1 = restrictedStream.Read(buffer, 0, 10);
+        var bytesRead2 = restrictedStream.Read(buffer, bytesRead1, 10);
+        var bytesRead3 = restrictedStream.Read(buffer, bytesRead1 + bytesRead2, 10);
+
+        Assert.Equal(3, bytesRead1);
+        Assert.Equal(3, bytesRead2);
+        Assert.Equal(3, bytesRead3);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9], buffer[..9]);
+    }
 }

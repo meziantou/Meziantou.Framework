@@ -41,6 +41,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfSynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
+        count = ApplyMaxReadLength(count);
         return stream.Read(buffer, offset, count);
     }
 
@@ -71,6 +72,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
+        count = ApplyMaxReadLength(count);
         return stream.BeginRead(buffer, offset, count, callback, state);
     }
 
@@ -141,7 +143,8 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfSynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return stream.Read(buffer);
+        var length = ApplyMaxReadLength(buffer.Length);
+        return stream.Read(buffer[..length]);
     }
 
     /// <inheritdoc />
@@ -149,6 +152,7 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
+        count = ApplyMaxReadLength(count);
         return stream.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
@@ -157,7 +161,8 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         ThrowIfAsynchronousCallNotAllowed();
         ThrowIfReadingNotAllowed();
-        return stream.ReadAsync(buffer, cancellationToken);
+        var length = ApplyMaxReadLength(buffer.Length);
+        return stream.ReadAsync(buffer[..length], cancellationToken);
     }
 
     /// <inheritdoc />
@@ -228,5 +233,13 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     {
         if (!options.AllowSeeking)
             throw new NotSupportedException("Seeking is not allowed on this stream.");
+    }
+
+    private int ApplyMaxReadLength(int count)
+    {
+        if (options.MaxReadLength > 0 && count > options.MaxReadLength)
+            return options.MaxReadLength;
+
+        return count;
     }
 }

@@ -42,4 +42,3 @@ internal sealed class SampleVirtualFileSystem : ProjectedFileSystemBase
         return null;
     }
 }
-

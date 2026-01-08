@@ -31,4 +31,3 @@ internal sealed class LargeFileVirtualFileSystem : ProjectedFileSystemBase
         return null;
     }
 }
-

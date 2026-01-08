@@ -162,6 +162,56 @@ public sealed class ProjectedFileSystemTests
     }
 
     /// <summary>
+    /// Verifies that large file content is read correctly from a non-seekable stream.
+    ///
+    /// When the stream returned by OpenRead does not support seeking (e.g., a network
+    /// or pipe stream), ProjFS may still request data starting at an arbitrary byte offset.
+    /// The implementation must manually read and discard bytes up to the requested offset
+    /// before returning the actual data.
+    ///
+    /// This test uses predictable byte patterns (byte[i] = i % 256) to verify that data
+    /// at any position matches the expected value, even with a non-seekable stream.
+    /// </summary>
+    [ProjectedFileSystemFact]
+    public void NonSeekableStreamFileRead()
+    {
+        var guid = Guid.NewGuid();
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new NonSeekableStreamVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            var filePath = Path.Combine(fullPath, "nonseekabledatafile.bin");
+
+            // Read the entire file and verify content integrity
+            var allData = File.ReadAllBytes(filePath);
+            Assert.Equal(10000, allData.Length);
+
+            // Verify data at various positions
+            Assert.Equal(0, allData[0]);
+            Assert.Equal(1, allData[1]);
+
+            // Check middle (offset 5000) - critical test for non-seekable offset handling
+            Assert.Equal((byte)(5000 % 256), allData[5000]);
+
+            // Check near end
+            Assert.Equal((byte)(9999 % 256), allData[9999]);
+
+            // Verify a range of bytes to ensure no corruption
+            for (var i = 4000; i < 6000; i++)
+            {
+                Assert.Equal((byte)(i % 256), allData[i]);
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
     /// Verifies that directory enumeration returns consistent results without duplicates.
     ///
     /// ProjFS merges on-disk placeholders with provider-returned entries during enumeration.

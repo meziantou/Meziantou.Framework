@@ -208,6 +208,9 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     needs: [ validate_bom, validate_readme, validate_test_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
@@ -216,6 +219,12 @@ jobs:
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: meziantou
+
       - run: |
           Write-Host "Current ref: $env:GITHUB_REF"
           Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
@@ -234,5 +243,5 @@ jobs:
         name: Publish NuGet packages
         if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
         env:
-          NUGETAPIKEY: ${{ secrets.NUGETAPIKEY }}
+          NUGETAPIKEY: ${{steps.login.outputs.NUGET_API_KEY}}
           FEEDZ_APIKEY: ${{ secrets.FEEDZ_APIKEY }}

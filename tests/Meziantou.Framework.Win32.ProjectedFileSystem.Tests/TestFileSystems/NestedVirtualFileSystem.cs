@@ -32,4 +32,3 @@ internal sealed class NestedVirtualFileSystem : ProjectedFileSystemBase
         return null;
     }
 }
-

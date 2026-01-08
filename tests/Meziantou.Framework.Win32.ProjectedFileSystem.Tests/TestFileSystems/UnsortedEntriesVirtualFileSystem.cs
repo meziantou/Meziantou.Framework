@@ -24,4 +24,3 @@ internal sealed class UnsortedEntriesVirtualFileSystem : ProjectedFileSystemBase
 
     protected override Stream? OpenRead(string path) => new MemoryStream([0]);
 }
-

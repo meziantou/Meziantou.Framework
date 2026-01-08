@@ -349,9 +349,27 @@ public abstract class ProjectedFileSystemBase : IDisposable
             return HResult.E_FILENOTFOUND;
 
         // Seek to the requested offset
-        if (stream.CanSeek && byteOffset > 0)
+        if (byteOffset > 0)
         {
-            stream.Seek((long)byteOffset, SeekOrigin.Begin);
+            if (stream.CanSeek)
+            {
+                stream.Seek((long)byteOffset, SeekOrigin.Begin);
+            }
+            else
+            {
+                // For non-seekable streams, manually read and discard bytes to advance to the offset.
+                // Note: this may be slow for large offsets since all preceding bytes must be read and discarded.
+                var bytesToSkip = (long)byteOffset;
+                var skipBuffer = new byte[Math.Min(bytesToSkip, 4096)];
+                while (bytesToSkip > 0)
+                {
+                    var toRead = (int)Math.Min(bytesToSkip, skipBuffer.Length);
+                    var skipped = stream.Read(skipBuffer, 0, toRead);
+                    if (skipped == 0)
+                        break;
+                    bytesToSkip -= skipped;
+                }
+            }
         }
 
         using var safeHandle = new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false);
@@ -387,7 +405,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
                 // For alignment, truncate to alignment boundary (except for last chunk)
                 if (remainingLength > writeLength && alignment > 1)
-        {
+                {
                     var alignedEnd = BlockAlignTruncate(currentOffset + writeLength, alignment);
                     if (alignedEnd > currentOffset)
                     {
@@ -401,25 +419,25 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
                 Marshal.Copy(data, 0, writeBuffer, read);
 
-            // Write the data to the file in the local file system.
-            var hr = NativeMethods.PrjWriteFileData(safeHandle,
-                                  callbackData.DataStreamId,
-                                  writeBuffer,
-                                      currentOffset,
-                                      (uint)read);
+                // Write the data to the file in the local file system.
+                var hr = NativeMethods.PrjWriteFileData(safeHandle,
+                    callbackData.DataStreamId,
+                    writeBuffer,
+                    currentOffset,
+                    (uint)read);
 
-            if (!hr.IsSuccess)
-                return hr;
+                if (!hr.IsSuccess)
+                    return hr;
 
                 currentOffset += (uint)read;
                 remainingLength -= (uint)read;
             }
 
             return HResult.S_OK;
-            }
+        }
         finally
         {
-        NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
+            NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
         }
     }
 

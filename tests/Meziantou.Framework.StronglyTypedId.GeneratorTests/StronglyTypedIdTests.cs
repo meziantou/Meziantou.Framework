@@ -1,5 +1,6 @@
 #pragma warning disable RS0030 // Do not use banned APIs
 #pragma warning disable IDE0250 // Make struct readonly
+#pragma warning disable MA0182 // Unused internal type
 using System.ComponentModel;
 using System.Globalization;
 using System.Numerics;

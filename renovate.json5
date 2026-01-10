@@ -30,7 +30,8 @@
         "src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj",
         "src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj",
         "src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj",
-        "tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj"
+        "tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj",
+        "tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj"
       ],
       "matchUpdateTypes": [ "major", "minor" ], // Only allow patch updates
       "groupName": "all dependencies",

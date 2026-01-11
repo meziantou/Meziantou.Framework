@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Http</RootNamespace>
-    <Version>1.0.13</Version>
+    <Version>1.0.14</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Provide an HttpClientHandler to upgrade request from http to https if an HSTS policy is set for the domain</Description>
     <DefineConstants Condition="'$(IsOfficialBuild)' == 'true'">$(DefineConstants);HSTS_PRELOAD_FULL</DefineConstants>

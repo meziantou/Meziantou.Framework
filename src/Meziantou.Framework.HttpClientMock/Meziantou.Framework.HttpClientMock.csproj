@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.4.16</Version>
+    <Version>1.4.17</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Allow to create mocks for HttpClient</Description>
   </PropertyGroup>

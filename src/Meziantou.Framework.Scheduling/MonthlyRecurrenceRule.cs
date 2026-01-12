@@ -10,13 +10,13 @@ namespace Meziantou.Framework.Scheduling;
 public sealed class MonthlyRecurrenceRule : RecurrenceRule
 {
     /// <summary>Limits occurrences to specific days of the week with optional ordinal positions.</summary>
-    public IList<ByDay> ByWeekDays { get; set; } = new List<ByDay>();
+    public IList<ByDay> ByWeekDays { get; set; } = [];
 
     /// <summary>Limits occurrences to specific days of the month.</summary>
-    public IList<int> ByMonthDays { get; set; } = new List<int>();
+    public IList<int> ByMonthDays { get; set; } = [];
 
     /// <summary>Limits occurrences to specific months.</summary>
-    public IList<Month> ByMonths { get; set; } = new List<Month>();
+    public IList<Month> ByMonths { get; set; } = [];
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {

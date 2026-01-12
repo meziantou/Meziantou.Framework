@@ -2,14 +2,18 @@ namespace Meziantou.Framework.Scheduling;
 
 internal static class Extensions
 {
-    public static string? GetValue(this IDictionary<string, string> dict, string key, string? defaultValue)
+    public static bool TryGetNonEmptyValue(this IDictionary<string, string> dict, string key, [NotNullWhen(true)] out string? result)
     {
         ArgumentNullException.ThrowIfNull(dict);
 
-        if (dict.TryGetValue(key, out var value))
-            return value;
+        if (dict.TryGetValue(key, out var value) && !string.IsNullOrEmpty(value))
+        {
+            result = value;
+            return true;
+        }
 
-        return defaultValue;
+        result = null;
+        return false;
     }
 
     public static int GetValue(this IDictionary<string, string> dict, string key, int defaultValue)

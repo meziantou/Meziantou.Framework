@@ -434,7 +434,7 @@ public sealed partial class StronglyTypedIdTests
     [Fact]
     public void Bson_Guid_Class_Null()
     {
-        IdClassGuid instance = null;
+        IdClassGuid? instance = null;
         var clone = BsonClone(instance);
         Assert.Null(clone);
     }

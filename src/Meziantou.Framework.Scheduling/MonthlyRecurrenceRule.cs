@@ -12,12 +12,6 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
     /// <summary>Limits occurrences to specific days of the week with optional ordinal positions.</summary>
     public IList<ByDay> ByWeekDays { get; set; } = [];
 
-    /// <summary>Limits occurrences to specific days of the month.</summary>
-    public IList<int> ByMonthDays { get; set; } = [];
-
-    /// <summary>Limits occurrences to specific months.</summary>
-    public IList<Month> ByMonths { get; set; } = [];
-
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
         var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
@@ -55,10 +49,9 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
 
             if (b)
             {
-                var resultByMonthDays = ResultByMonthDays(startOfMonth, ByMonthDays);
                 var resultByDays = ResultByWeekDaysInMonth(startOfMonth, ByWeekDays);
 
-                var result = Intersect(resultByDays, resultByMonthDays);
+                var result = Intersect(resultByDays, Enumerable.Empty<DateTime>());
                 result = FilterBySetPosition(result.Distinct().Order().ToArray(), BySetPositions);
 
                 foreach (var date in result.Where(d => d >= startDate))

@@ -9,12 +9,6 @@ namespace Meziantou.Framework.Scheduling;
 /// </example>
 public sealed class DailyRecurrenceRule : RecurrenceRule
 {
-    /// <summary>Limits occurrences to specific months.</summary>
-    public IList<Month> ByMonths { get; set; } = new List<Month>();
-
-    /// <summary>Limits occurrences to specific days of the month.</summary>
-    public IList<int> ByMonthDays { get; set; } = new List<int>();
-
     /// <summary>Limits occurrences to specific days of the week.</summary>
     public IList<DayOfWeek> ByWeekDays { get; set; } = new List<DayOfWeek>();
 
@@ -25,22 +19,6 @@ public sealed class DailyRecurrenceRule : RecurrenceRule
         while (true)
         {
             var b = true;
-
-            if (!IsEmpty(ByMonths))
-            {
-                if (!ByMonths.Contains((Month)startDate.Month))
-                {
-                    b = false;
-                }
-            }
-
-            if (!IsEmpty(ByMonthDays))
-            {
-                if (!ByMonthDays.Contains(startDate.Day))
-                {
-                    b = false;
-                }
-            }
 
             if (!IsEmpty(ByWeekDays))
             {

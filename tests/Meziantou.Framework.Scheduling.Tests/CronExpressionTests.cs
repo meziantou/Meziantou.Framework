@@ -9,7 +9,6 @@ public sealed class CronExpressionTests
     [InlineData("* *")]
     [InlineData("* * *")]
     [InlineData("* * * *")]
-    [InlineData("* * * * * * *")]
     [InlineData("* * * * * * * *")]
     [InlineData("a * * * * *")]
     public void CronExpression_Parse_InvalidExpression(string expression)
@@ -248,9 +247,9 @@ public sealed class CronExpressionTests
     }
 
     [Theory]
-    [InlineData("0 0 15 2 * 2024", "2024-02-15T00:00:00")]
-    [InlineData("0 0 29 2 * 2024", "2024-02-29T00:00:00")]
-    [InlineData("0 0 29 2 * 2025")]
+    [InlineData("0 0 0 15 2 * 2024", "2024-02-15T00:00:00")]
+    [InlineData("0 0 0 29 2 * 2024", "2024-02-29T00:00:00")]
+    [InlineData("0 0 0 29 2 * 2025")]
     public void EvaluateCronExpression_LeapYear(string expression, params string[] expectedOccurrences)
     {
         var cron = CronExpression.Parse(expression);

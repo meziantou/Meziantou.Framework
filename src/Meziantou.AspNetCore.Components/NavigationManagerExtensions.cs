@@ -10,7 +10,7 @@ public static class NavigationManagerExtensions
     /// <summary>Gets the first value of a query string parameter from the current URL.</summary>
     /// <param name="navigationManager">The navigation manager.</param>
     /// <param name="parameterName">The name of the query string parameter.</param>
-    /// <returns>The first value of the parameter, or <c>null</c> if the parameter is not found.</returns>
+    /// <returns>The first value of the parameter, or <see langword="null"/> if the parameter is not found.</returns>
     public static string? GetQueryStringParameterValue(this NavigationManager navigationManager, string parameterName)
     {
         var values = GetQueryStringParameterValues(navigationManager, parameterName);

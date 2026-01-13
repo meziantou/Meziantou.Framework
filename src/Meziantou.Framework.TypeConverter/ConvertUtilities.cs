@@ -246,7 +246,7 @@ public static class ConvertUtilities
     {
         ArgumentNullException.ThrowIfNull(converter);
 
-        return ChangeType(converter, input, default(T)!);
+        return ChangeType(converter, input, default(T));
     }
 
     /// <summary>Converts an input value to the specified type using the default converter, or returns a default value if conversion fails.</summary>

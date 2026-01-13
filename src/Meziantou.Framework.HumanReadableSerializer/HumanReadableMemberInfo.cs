@@ -93,7 +93,7 @@ internal sealed class HumanReadableMemberInfo
         var defaultValueAttribute = options.GetCustomAttribute<HumanReadableDefaultValueAttribute>(member);
         var defaultValue = defaultValueAttribute is not null ? defaultValueAttribute.DefaultValue : GetDefaultValue(ignoreAttributes, member.PropertyType);
 
-        object GetValue(object? instance)
+        object? GetValue(object? instance)
         {
             try
             {
@@ -101,8 +101,12 @@ internal sealed class HumanReadableMemberInfo
             }
             catch (TargetInvocationException ex)
             {
-                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-                return null;
+                if (ex.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                }
+
+                throw;
             }
         }
 

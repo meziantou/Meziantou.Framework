@@ -11,7 +11,7 @@ internal sealed class NameValueCollectionConverter : HumanReadableConverter<Name
 
         if (options.DictionaryKeyOrder is not null)
         {
-            var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+            var dict = new Dictionary<string, string?>(StringComparer.Ordinal);
             foreach (string item in value.Keys)
             {
                 dict.Add(item, value[item]);
@@ -30,9 +30,13 @@ internal sealed class NameValueCollectionConverter : HumanReadableConverter<Name
                     hasItem = true;
                 }
 
-                writer.WritePropertyName(value.GetKey(i));
+                writer.WritePropertyName(value.GetKey(i) ?? "");
                 var values = value.GetValues(i);
-                if (values.Length == 1)
+                if (values is null)
+                {
+                    writer.WriteNullValue();
+                }
+                else if (values.Length is 1)
                 {
                     HumanReadableSerializer.Serialize(writer, values[0], options);
                 }

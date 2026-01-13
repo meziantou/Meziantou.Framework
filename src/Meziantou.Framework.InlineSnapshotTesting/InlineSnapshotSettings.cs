@@ -152,30 +152,27 @@ public sealed record InlineSnapshotSettings
         Scrubbers = [];
     }
 
-    private InlineSnapshotSettings(InlineSnapshotSettings? options)
+    private InlineSnapshotSettings(InlineSnapshotSettings options)
     {
         Scrubbers = [];
-        if (options != null)
-        {
-            Indentation = options.Indentation;
-            EndOfLine = options.EndOfLine;
-            FileEncoding = options.FileEncoding;
-            AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
-            SnapshotUpdateStrategy = options.SnapshotUpdateStrategy;
-            SnapshotSerializer = options.SnapshotSerializer;
-            SnapshotComparer = options.SnapshotComparer;
-            ErrorMessageFormatter = options.ErrorMessageFormatter;
-            AssertionExceptionCreator = options.AssertionExceptionCreator;
-            AllowedStringFormats = options.AllowedStringFormats;
-            MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
-            ValidateSourceFilePathUsingPdbInfoWhenAvailable = options.ValidateSourceFilePathUsingPdbInfoWhenAvailable;
-            ValidateLineNumberUsingPdbInfoWhenAvailable = options.ValidateLineNumberUsingPdbInfoWhenAvailable;
-            ForceUpdateSnapshots = options.ForceUpdateSnapshots;
+        AllowedStringFormats = options.AllowedStringFormats;
+        AssertionExceptionCreator = options.AssertionExceptionCreator;
+        AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
+        EndOfLine = options.EndOfLine;
+        ErrorMessageFormatter = options.ErrorMessageFormatter;
+        FileEncoding = options.FileEncoding;
+        ForceUpdateSnapshots = options.ForceUpdateSnapshots;
+        Indentation = options.Indentation;
+        MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
+        SnapshotComparer = options.SnapshotComparer;
+        SnapshotSerializer = options.SnapshotSerializer;
+        SnapshotUpdateStrategy = options.SnapshotUpdateStrategy;
+        ValidateLineNumberUsingPdbInfoWhenAvailable = options.ValidateLineNumberUsingPdbInfoWhenAvailable;
+        ValidateSourceFilePathUsingPdbInfoWhenAvailable = options.ValidateSourceFilePathUsingPdbInfoWhenAvailable;
 
-            foreach (var item in options.Scrubbers)
-            {
-                Scrubbers.Add(item);
-            }
+        foreach (var item in options.Scrubbers)
+        {
+            Scrubbers.Add(item);
         }
     }
 

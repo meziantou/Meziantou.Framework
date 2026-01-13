@@ -561,7 +561,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
             throw new InvalidOperationException("Path is empty");
 
         var itemList = PInvoke.ILCreateFromPath(Value);
-        if (itemList != null)
+        if (itemList is not null)
         {
             try
             {

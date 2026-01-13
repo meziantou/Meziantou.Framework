@@ -1,4 +1,4 @@
-﻿@page "/clipboard"
+@page "/clipboard"
 @inject ClipboardService ClipboardService
 
 <h1>Clipboard!</h1>
@@ -10,8 +10,8 @@
 @error
 
 @code {
-    string text;
-    string error;
+    string? text;
+    string? error;
 
     async Task CopyFromClipboard()
     {
@@ -29,7 +29,7 @@
     {
         try
         {
-            await ClipboardService.WriteTextAsync(text);
+            await ClipboardService.WriteTextAsync(text ?? "");
         }
         catch (Exception ex)
         {

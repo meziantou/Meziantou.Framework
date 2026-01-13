@@ -24,8 +24,8 @@
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
-  <PropertyGroup Condition="'$(TargetFramework)' != '$(LatestTargetFrameworkPreview)'">
-    <NoWarn>$(NoWarn);nullable</NoWarn>
+  <PropertyGroup Condition="'$(TargetFramework)' != '$(LatestTargetFramework)'">
+    <NoWarn>$(NoWarn);nullable;IDE0370</NoWarn>
   </PropertyGroup>
 
   <!-- Package configuration -->

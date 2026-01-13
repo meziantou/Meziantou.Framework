@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace HttpCaching;
+namespace Meziantou.Framework.Http;
 
 [JsonSerializable(typeof(SerializedResponseMessage))]
 [JsonSourceGenerationOptions(WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, PropertyNameCaseInsensitive = false)]

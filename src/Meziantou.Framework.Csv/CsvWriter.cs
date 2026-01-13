@@ -36,7 +36,7 @@ public class CsvWriter
 
     /// <summary>Initializes a new instance of the <see cref="CsvWriter"/> class with the specified <see cref="TextWriter"/>.</summary>
     /// <param name="textReader">The <see cref="TextWriter"/> to write CSV data to.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="textReader"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="textReader"/> is <see langword="null"/>.</exception>
     public CsvWriter(TextWriter textReader)
     {
         BaseWriter = textReader ?? throw new ArgumentNullException(nameof(textReader));

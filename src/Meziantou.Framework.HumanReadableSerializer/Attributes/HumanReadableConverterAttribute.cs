@@ -22,7 +22,7 @@ public sealed class HumanReadableConverterAttribute : HumanReadableAttribute
     public Type ConverterType { get; }
 
     /// <summary>Gets the converter instance.</summary>
-    public HumanReadableConverter ConverterInstance { get; }
+    public HumanReadableConverter? ConverterInstance { get; }
 
     internal void EnsureTypeIsValid()
     {

@@ -10,7 +10,8 @@ internal sealed class VisualStudioMergeTool : MergeTool
         if (!DiffTools.TryFindByName(DiffTool.VisualStudio, out var resolvedTool))
             return null;
 
-        var vsdiffmerge = Path.Combine(Path.GetDirectoryName(resolvedTool.ExePath), "CommonExtensions", "Microsoft", "TeamFoundation", "Team Explorer", "vsdiffmerge.exe");
+        var rootFolder = Path.GetDirectoryName(resolvedTool.ExePath) ?? "";
+        var vsdiffmerge = Path.Combine(rootFolder, "CommonExtensions", "Microsoft", "TeamFoundation", "Team Explorer", "vsdiffmerge.exe");
         if (!File.Exists(vsdiffmerge))
             return null;
 

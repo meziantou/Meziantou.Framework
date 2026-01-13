@@ -11,7 +11,7 @@ internal sealed class SerializationContext
     public T GetOrSetSerializationData<T>(string name, Func<T> addValue)
     {
         Data ??= new ConcurrentDictionary<string, object?>(StringComparer.Ordinal);
-        return (T)Data.GetOrAdd(name, static (key, addValue) => addValue(), addValue);
+        return (T)Data.GetOrAdd(name, static (key, addValue) => addValue(), addValue)!;
     }
 
     public ScopeContext BeginScope()

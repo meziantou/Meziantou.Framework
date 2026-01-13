@@ -14,7 +14,7 @@ public static class DictionaryExtensions
     {
         ref var dictionaryValue = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out var exists);
         if (exists)
-            return dictionaryValue;
+            return dictionaryValue!;
 
         dictionaryValue = value;
         return value;
@@ -26,7 +26,7 @@ public static class DictionaryExtensions
     {
         ref var dictionaryValue = ref CollectionsMarshal.GetValueRefOrAddDefault(dict, key, out var exists);
         if (exists)
-            return dictionaryValue;
+            return dictionaryValue!;
 
         dictionaryValue = valueFactory(key);
         return dictionaryValue;

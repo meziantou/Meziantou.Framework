@@ -144,7 +144,7 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
             return false;
 
         var versionStartColumn = indexOf + (dependency.Name + '.').Length;
-        var versionLocation = new XmlLocation(context.FileSystem, file, element, column: versionStartColumn, length: dependency.Version!.Length);
+        var versionLocation = new XmlLocation(context.FileSystem, file, element, column: versionStartColumn, length: dependency.Version.Length);
         context.ReportDependency(this, dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
         return true;
     }
@@ -161,7 +161,7 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
 
         var versionStartColumn = indexOf + (dependency.Name + '.').Length;
         Debug.Assert(attribute.Parent is not null);
-        var versionLocation = new XmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: versionStartColumn, length: dependency.Version!.Length);
+        var versionLocation = new XmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: versionStartColumn, length: dependency.Version.Length);
         context.ReportDependency(this, dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
     }
 

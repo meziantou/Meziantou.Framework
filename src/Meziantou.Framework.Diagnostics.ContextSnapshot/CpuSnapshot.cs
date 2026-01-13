@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 /// </example>
 public sealed class CpuSnapshot
 {
-    private CpuSnapshot(CpuInfo info)
+    private CpuSnapshot(CpuInfo? info)
     {
         if (info is not null)
         {

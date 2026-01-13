@@ -15,7 +15,10 @@ internal sealed class MergeToolFromEnvironment : MergeTool
         if (!typeof(MergeTool).IsAssignableFrom(property.PropertyType))
             return null;
 
-        var tool = (MergeTool)property.GetValue(null);
+        var tool = (MergeTool?)property.GetValue(null);
+        if (tool is null)
+            return null;
+
         return tool.Start(currentFilePath, newFilePath);
     }
 }

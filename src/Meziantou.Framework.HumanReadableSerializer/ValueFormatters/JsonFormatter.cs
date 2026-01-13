@@ -72,7 +72,7 @@ public sealed class JsonFormatter : ValueFormatter
 
     private static void OrderNode(JsonNode node)
     {
-        var queue = new Queue<JsonNode>();
+        var queue = new Queue<JsonNode?>();
         queue.Enqueue(node);
 
         while (queue.Count > 0)
@@ -105,6 +105,12 @@ public sealed class JsonFormatter : ValueFormatter
 
     private static void WriteValueAsObject(HumanReadableTextWriter writer, JsonNode? value, HumanReadableSerializerOptions options)
     {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
         var kind = value.GetValueKind();
         switch (kind)
         {
@@ -134,7 +140,7 @@ public sealed class JsonFormatter : ValueFormatter
 
             case JsonValueKind.Array:
                 var array = value.AsArray();
-                EnumerableConverter<JsonNode>.WriteValueCore(writer, array, options);
+                EnumerableConverter<JsonNode?>.WriteValueCore(writer, array, options);
                 break;
 
             case JsonValueKind.String:

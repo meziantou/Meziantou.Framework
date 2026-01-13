@@ -107,7 +107,7 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
         process.ErrorDataReceived += (sender, e) => testOutputHelper.WriteLine(e.Data ?? "");
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-        await process!.WaitForExitAsync();
+        await process.WaitForExitAsync();
 
         var actual = File.Exists(outputFilePath) ? File.ReadAllText(outputFilePath) : null;
         Assert.Equal(0, process.ExitCode);

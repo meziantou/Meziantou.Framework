@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 
-namespace HttpCaching;
+namespace Meziantou.Framework.Http;
 
 internal static class ResponseSerializer
 {
@@ -13,7 +13,7 @@ internal static class ResponseSerializer
             HttpStatusCode = response.StatusCode,
             ReasonPhrase = response.ReasonPhrase,
             Headers = CopyHeaders(response.Headers),
-            ContentHeaders = CopyHeaders(response.Content.Headers),
+            ContentHeaders = CopyHeaders(response.Content?.Headers),
             TrailingHeaders = CopyHeaders(response.TrailingHeaders),
             Content = content,
         };
@@ -37,7 +37,7 @@ internal static class ResponseSerializer
             response.Content = new ByteArrayContent(serialized.Content);
         }
 
-        if (serialized.Headers != null)
+        if (serialized.Headers is not null)
         {
             foreach (var header in serialized.Headers)
             {
@@ -45,7 +45,7 @@ internal static class ResponseSerializer
             }
         }
 
-        if (response.Content is not null && serialized.ContentHeaders != null)
+        if (response.Content is not null && serialized.ContentHeaders is not null)
         {
             foreach (var header in serialized.ContentHeaders)
             {
@@ -53,7 +53,7 @@ internal static class ResponseSerializer
             }
         }
 
-        if (serialized.TrailingHeaders != null)
+        if (serialized.TrailingHeaders is not null)
         {
             foreach (var header in serialized.TrailingHeaders)
             {
@@ -64,13 +64,18 @@ internal static class ResponseSerializer
         return response;
     }
 
-    private static List<KeyValuePair<string, string[]>> CopyHeaders(HttpHeaders headers)
+    [return: NotNullIfNotNull(nameof(headers))]
+    private static List<KeyValuePair<string, string[]>>? CopyHeaders(HttpHeaders? headers)
     {
+        if (headers is null)
+            return null;
+
         var result = new List<KeyValuePair<string, string[]>>();
         foreach (var header in headers)
         {
             result.Add(new KeyValuePair<string, string[]>(header.Key, header.Value.ToArray()));
         }
+
         return result;
     }
 }

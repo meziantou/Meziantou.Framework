@@ -7,7 +7,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
 /// <summary>Serializes objects to human-readable string representations suitable for snapshot testing.</summary>
 public sealed class HumanReadableSnapshotSerializer : SnapshotSerializer
 {
-    internal HumanReadableSerializerOptions? Options { get; }
+    internal HumanReadableSerializerOptions Options { get; }
 
     internal static HumanReadableSnapshotSerializer DefaultInstance { get; } = new(CreateDefaultOptions());
 
@@ -28,7 +28,7 @@ public sealed class HumanReadableSnapshotSerializer : SnapshotSerializer
 
     public HumanReadableSnapshotSerializer(HumanReadableSerializerOptions? options = null)
     {
-        Options = options;
+        Options = options ?? CreateDefaultOptions();
     }
 
     public HumanReadableSnapshotSerializer(Action<HumanReadableSerializerOptions>? configure)

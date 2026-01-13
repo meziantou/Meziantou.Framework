@@ -11,7 +11,7 @@ public class WeatherForecastClient
         _httpClient = httpClient;
     }
 
-    public async Task<IReadOnlyList<WeatherForecast>> GetAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<WeatherForecast>?> GetAsync(CancellationToken cancellationToken = default)
     {
         return await _httpClient.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json", cancellationToken).ConfigureAwait(false);
     }

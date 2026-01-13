@@ -93,7 +93,7 @@ public sealed class QueryStringService
     /// <summary>Updates the URL query string with values from component properties marked with <see cref="SupplyParameterFromQueryAttribute"/>.</summary>
     /// <typeparam name="T">The type of the component.</typeparam>
     /// <param name="component">The component whose properties should be written to the query string.</param>
-    /// <param name="reloadPage">Whether to reload the page after updating the query string. If <c>false</c>, the URL is updated using the browser's history API without reloading.</param>
+    /// <param name="reloadPage">Whether to reload the page after updating the query string. If <see langword="false"/>, the URL is updated using the browser's history API without reloading.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async ValueTask UpdateQueryString<T>(T component, bool reloadPage = true, CancellationToken cancellationToken = default)

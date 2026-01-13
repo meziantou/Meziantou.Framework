@@ -454,8 +454,14 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <param name="result">When this method returns, contains the <see cref="ByteSize"/> equivalent to the byte size specified in <paramref name="text"/>, if the conversion succeeded, or zero if the conversion failed.</param>
     /// <returns><see langword="true"/> if <paramref name="text"/> was converted successfully; otherwise, <see langword="false"/>.</returns>
     [SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Would be a breaking change")]
-    public static bool TryParse(string text, IFormatProvider? formatProvider, out ByteSize result)
+    public static bool TryParse(string? text, IFormatProvider? formatProvider, out ByteSize result)
     {
+        if (text is null)
+        {
+            result = default;
+            return false;
+        }
+
         return TryParse(text.AsSpan(), formatProvider, out result);
     }
 

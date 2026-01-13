@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 
-namespace HttpCaching;
+namespace Meziantou.Framework.Http;
 
 internal sealed class HttpCache
 {
@@ -127,7 +127,7 @@ internal sealed class HttpCache
             return false;
 
         // Authorization header without explicit cacheable directive
-        if (request.Headers.Authorization != null)
+        if (request.Headers.Authorization is not null)
         {
             // RFC 7234 Section 3.2: Must have must-revalidate, public, or s-maxage
             if (responseCacheControl is null)

@@ -202,7 +202,7 @@ public sealed class GenericFormField<TModel>
         }
     }
 
-    /// <summary>Gets a render fragment that renders the validation message for this field, or <c>null</c> if field validation is disabled.</summary>
+    /// <summary>Gets a render fragment that renders the validation message for this field, or <see langword="null"/> if field validation is disabled.</summary>
     public RenderFragment? FieldValidationTemplate
     {
         get

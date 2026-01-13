@@ -14,8 +14,8 @@ public sealed class ProcessModuleSnapshot
         FileVersion = Utils.SafeGet(() => module.FileVersionInfo.FileVersion);
     }
 
-    public string ModuleName { get; }
-    public string FileName { get; }
+    public string? ModuleName { get; }
+    public string? FileName { get; }
     public string? ProductVersion { get; }
     public string? FileVersion { get; }
 }

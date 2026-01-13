@@ -19,7 +19,7 @@ public class CsvColumn
         Name = name;
     }
 
-    /// <summary>Gets the name of the column, or <c>null</c> if the CSV file has no header row.</summary>
+    /// <summary>Gets the name of the column, or <see langword="null"/> if the CSV file has no header row.</summary>
     public string? Name { get; }
 
     /// <summary>Gets the zero-based index of the column.</summary>

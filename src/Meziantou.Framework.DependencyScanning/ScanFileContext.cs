@@ -65,7 +65,10 @@ public readonly struct ScanFileContext : IAsyncDisposable
             return;
 
         var dep = new Dependency(name, version, type, nameLocation, versionLocation);
-        dep.Tags.Add(scanner.GetType().FullName);
+        if (scanner.GetType().FullName is { } fullTypeName)
+        {
+            dep.Tags.Add(fullTypeName);
+        }
         foreach (var tag in tags)
         {
             dep.Tags.Add(tag);

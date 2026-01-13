@@ -1,7 +1,7 @@
 using System.Net;
 using HttpCaching.Tests.Internals;
 
-namespace HttpCaching.Tests;
+namespace Meziantou.Framework.Http.Caching.Tests;
 
 /// <summary>Tests for HTTP Range Requests with ETags (RFC 7233).</summary>
 public sealed class RangeRequestsTests

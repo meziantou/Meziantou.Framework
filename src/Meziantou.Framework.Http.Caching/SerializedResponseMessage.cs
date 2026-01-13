@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace HttpCaching;
+namespace Meziantou.Framework.Http;
 
 internal sealed class SerializedResponseMessage
 {

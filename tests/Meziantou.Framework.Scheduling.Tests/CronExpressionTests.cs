@@ -26,8 +26,8 @@ public sealed class CronExpressionTests
     [Fact]
     public void CronExpression_Parse_NullExpression()
     {
-        Assert.Throws<ArgumentNullException>(() => CronExpression.Parse((string?)null!));
-        Assert.False(CronExpression.TryParse((string?)null!, out _));
+        Assert.Throws<ArgumentNullException>(() => CronExpression.Parse(null));
+        Assert.False(CronExpression.TryParse(null, out _));
 
         Assert.Throws<FormatException>(() => CronExpression.Parse(ReadOnlySpan<char>.Empty));
         Assert.False(CronExpression.TryParse(ReadOnlySpan<char>.Empty, out _));

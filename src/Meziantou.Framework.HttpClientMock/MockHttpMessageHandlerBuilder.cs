@@ -24,7 +24,7 @@ internal sealed class MockHttpMessageHandlerBuilder : HttpMessageHandlerBuilder,
         _handlers[typeof(T).Name] = mock.CreateHttpMessageHandler();
     }
 
-    public override string Name { get; set; }
+    public override string Name { get; set; } = "";
     public override HttpMessageHandler PrimaryHandler { get; set; } = new HttpClientHandler();
     public override IList<DelegatingHandler> AdditionalHandlers { get; } = new List<DelegatingHandler>();
 

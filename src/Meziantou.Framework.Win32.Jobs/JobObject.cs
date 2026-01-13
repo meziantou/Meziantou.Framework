@@ -99,7 +99,7 @@ public sealed class JobObject : IDisposable
     /// <param name="jobObject">When this method returns, contains the opened job object if the operation succeeded, or null if the job object was not found.</param>
     /// <returns><see langword="true"/> if the job object was successfully opened; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="Win32Exception">An error occurred while attempting to open the job object (other than the job object not being found).</exception>
-    public static bool TryOpen(JobObjectAccessRights desiredAccess, bool inherited, string name, out JobObject jobObject)
+    public static bool TryOpen(JobObjectAccessRights desiredAccess, bool inherited, string name, [NotNullWhen(true)] out JobObject? jobObject)
     {
         var handle = Windows.Win32.PInvoke.OpenJobObject((uint)desiredAccess, inherited, name);
         if (handle.IsInvalid)

@@ -7,13 +7,13 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 public sealed class AzureDevOpsScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } =
-        [
-            DependencyType.AzureDevOpsVMPool,
-            DependencyType.AzureDevOpsTask,
-            DependencyType.AzureDevOpsTemplate,
-            DependencyType.GitReference,
-            DependencyType.DockerImage,
-        ];
+    [
+        DependencyType.AzureDevOpsVMPool,
+        DependencyType.AzureDevOpsTask,
+        DependencyType.AzureDevOpsTemplate,
+        DependencyType.GitReference,
+        DependencyType.DockerImage,
+    ];
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
@@ -26,7 +26,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         return false;
     }
 
-    private static string? GetScalarValue(YamlNode node)
+    private static string? GetScalarValue(YamlNode? node)
     {
         if (node is YamlScalarNode scalar && scalar.Value is not null)
         {

@@ -223,10 +223,10 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
 #if NET7_0_OR_GREATER
     static SemanticVersion IParsable<SemanticVersion>.Parse(string versionsString, IFormatProvider? provider) => Parse(versionsString);
-    static bool IParsable<SemanticVersion>.TryParse(string? versionsString, IFormatProvider? provider, out SemanticVersion result) => TryParse(versionsString, out result);
+    static bool IParsable<SemanticVersion>.TryParse(string? versionsString, IFormatProvider? provider, [NotNullWhen(true)] out SemanticVersion? result) => TryParse(versionsString, out result);
 
     static SemanticVersion ISpanParsable<SemanticVersion>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
-    static bool ISpanParsable<SemanticVersion>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out SemanticVersion result) => TryParse(s, out result);
+    static bool ISpanParsable<SemanticVersion>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out SemanticVersion? result) => TryParse(s, out result);
 #endif
 
     /// <summary>Converts the string representation of a semantic version to its <see cref="SemanticVersion"/> equivalent.</summary>

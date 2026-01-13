@@ -19,7 +19,7 @@ public sealed class ServiceDefaultsSourceGenerator : IIncrementalGenerator
             .CreateSyntaxProvider(
                 predicate: (syntaxNode, cancellationToken) => syntaxNode.IsKind(SyntaxKind.InvocationExpression),
                 transform: Transform)
-            .Where(node => node != null)
+            .Where(node => node is not null)
             .Collect();
 
         var combined = syntax.Combine(hasType);
@@ -39,8 +39,11 @@ public sealed class ServiceDefaultsSourceGenerator : IIncrementalGenerator
                 sb.AppendLine("{");
 
                 var index = 0;
-                foreach (var method in interceptionData.OrderBy(item => item.OrderKey, StringComparer.Ordinal))
+                foreach (var method in interceptionData.Where(item => item is not null).OrderBy(item => item!.OrderKey, StringComparer.Ordinal))
                 {
+                    if (method is null || method.InterceptableLocation is null)
+                        continue;
+
                     if (method.Kind is InterceptionMethodKind.Build)
                     {
                         sb.AppendLine($$"""

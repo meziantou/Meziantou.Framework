@@ -77,7 +77,7 @@ public sealed class ObjectMethodExecutor
         _parameterDefaultValues = parameterDefaultValues;
     }
 
-    private delegate ObjectMethodExecutorAwaitable MethodExecutorAsync(object target, object?[]? parameters);
+    private delegate ObjectMethodExecutorAwaitable MethodExecutorAsync(object? target, object?[]? parameters);
 
     private delegate object? MethodExecutor(object? target, object?[]? parameters);
 
@@ -225,7 +225,7 @@ public sealed class ObjectMethodExecutor
 
     private static MethodExecutor WrapVoidMethod(VoidMethodExecutor executor)
     {
-        return delegate (object target, object?[]? parameters)
+        return delegate (object? target, object?[]? parameters)
         {
             executor(target, parameters);
             return null;
@@ -382,7 +382,7 @@ public sealed class ObjectMethodExecutor
 
     private static MethodExecutorAsync GetExecutorAsyncFromSync(MethodExecutor executor)
     {
-        return delegate (object target, object?[]? parameters)
+        return delegate (object? target, object?[]? parameters)
         {
             var task = Task.FromResult(executor(target, parameters));
             return new ObjectMethodExecutorAwaitable(

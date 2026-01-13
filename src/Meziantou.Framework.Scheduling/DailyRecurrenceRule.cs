@@ -20,6 +20,22 @@ public sealed class DailyRecurrenceRule : RecurrenceRule
         {
             var b = true;
 
+            if (!IsEmpty(ByMonths))
+            {
+                if (!ByMonths.Contains((Month)startDate.Month))
+                {
+                    b = false;
+                }
+            }
+
+            if (!IsEmpty(ByMonthDays))
+            {
+                if (!ByMonthDays.Contains(startDate.Day))
+                {
+                    b = false;
+                }
+            }
+
             if (!IsEmpty(ByWeekDays))
             {
                 if (!ByWeekDays.Contains(startDate.DayOfWeek))

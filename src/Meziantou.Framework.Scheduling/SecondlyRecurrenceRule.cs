@@ -19,6 +19,12 @@ public sealed class SecondlyRecurrenceRule : RecurrenceRule
         {
             var matches = true;
 
+            if (!IsEmpty(ByMonths) && !ByMonths.Contains((Month)current.Month))
+                matches = false;
+
+            if (!IsEmpty(ByMonthDays) && !ByMonthDays.Contains(current.Day))
+                matches = false;
+
             if (!IsEmpty(ByWeekDays) && !ByWeekDays.Contains(current.DayOfWeek))
                 matches = false;
 

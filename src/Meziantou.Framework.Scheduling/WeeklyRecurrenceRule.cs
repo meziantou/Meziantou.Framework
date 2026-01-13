@@ -26,14 +26,30 @@ public sealed class WeeklyRecurrenceRule : RecurrenceRule
 
         while (true)
         {
-            var b = true;
-
-            if (b)
+            foreach (var dayOffset in dayOffsets)
             {
-                foreach (var dayOffset in dayOffsets)
+                var next = startOfWeek.AddDays(dayOffset);
+                if (next >= startDate)
                 {
-                    var next = startOfWeek.AddDays(dayOffset);
-                    if (next >= startDate)
+                    var b = true;
+
+                    if (!IsEmpty(ByMonths))
+                    {
+                        if (!ByMonths.Contains((Month)next.Month))
+                        {
+                            b = false;
+                        }
+                    }
+
+                    if (!IsEmpty(ByMonthDays))
+                    {
+                        if (!ByMonthDays.Contains(next.Day))
+                        {
+                            b = false;
+                        }
+                    }
+
+                    if (b)
                     {
                         if (hasTimeFilters)
                         {
@@ -107,6 +123,18 @@ public sealed class WeeklyRecurrenceRule : RecurrenceRule
             {
                 sb.Append(";WKST=");
                 sb.Append(Utilities.DayOfWeekToString(WeekStart));
+            }
+
+            if (!IsEmpty(ByMonths))
+            {
+                sb.Append(";BYMONTH=");
+                sb.AppendJoin(',', ByMonths.Cast<int>());
+            }
+
+            if (!IsEmpty(ByMonthDays))
+            {
+                sb.Append(";BYMONTHDAY=");
+                sb.AppendJoin(',', ByMonthDays);
             }
 
             if (!IsEmpty(ByWeekDays))

@@ -185,4 +185,317 @@ public class CircularBufferTests
         list.AddLast(new object());
         Assert.NotNull(list.RemoveLast());
     }
+
+    [Fact]
+    public void EnumeratorBasicIteration()
+    {
+        var list = new CircularBuffer<int>(5);
+        list.AddLast(1);
+        list.AddLast(2);
+        list.AddLast(3);
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Equal([1, 2, 3], result);
+    }
+
+    [Fact]
+    public void EnumeratorWithWrappedBuffer()
+    {
+        var list = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        list.AddLast(1);
+        list.AddLast(2);
+        list.AddLast(3);
+        list.AddLast(4);
+        list.AddLast(5);
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Equal([3, 4, 5], result);
+    }
+
+    [Fact]
+    public void EnumeratorOnEmptyBuffer()
+    {
+        var list = new CircularBuffer<int>(3);
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void EnumeratorAfterAddFirst()
+    {
+        var list = new CircularBuffer<int>(5) { AllowOverwrite = true };
+        list.AddFirst(3);
+        list.AddFirst(2);
+        list.AddFirst(1);
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Equal([1, 2, 3], result);
+    }
+
+    [Fact]
+    public void EnumeratorAfterRemoveFirst()
+    {
+        var list = new CircularBuffer<int>(5);
+        list.AddLast(1);
+        list.AddLast(2);
+        list.AddLast(3);
+        list.RemoveFirst();
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Equal([2, 3], result);
+    }
+
+    [Fact]
+    public void EnumeratorAfterRemoveLast()
+    {
+        var list = new CircularBuffer<int>(5);
+        list.AddLast(1);
+        list.AddLast(2);
+        list.AddLast(3);
+        list.RemoveLast();
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Equal([1, 2], result);
+    }
+
+    [Fact]
+    public void EnumeratorResetRestartsIteration()
+    {
+        var list = new CircularBuffer<int>(5);
+        list.AddLast(1);
+        list.AddLast(2);
+        list.AddLast(3);
+
+        var enumerator = (System.Collections.IEnumerator)list.GetEnumerator();
+        enumerator.MoveNext();
+        enumerator.MoveNext();
+
+        enumerator.Reset();
+
+        var result = new List<int>();
+        while (enumerator.MoveNext())
+        {
+            result.Add((int)enumerator.Current);
+        }
+
+        Assert.Equal([1, 2, 3], result);
+    }
+
+    [Fact]
+    public void EnumeratorResetMultipleTimes()
+    {
+        var list = new CircularBuffer<int>(3);
+        list.AddLast(1);
+        list.AddLast(2);
+
+        var enumerator = (System.Collections.IEnumerator)list.GetEnumerator();
+        enumerator.MoveNext();
+        enumerator.Reset();
+        enumerator.MoveNext();
+        Assert.Equal(1, enumerator.Current);
+
+        enumerator.Reset();
+        enumerator.MoveNext();
+        Assert.Equal(1, enumerator.Current);
+    }
+
+    [Fact]
+    public void EnumeratorModificationThrowsException()
+    {
+        var list = new CircularBuffer<int>(5);
+        list.AddLast(1);
+        list.AddLast(2);
+        list.AddLast(3);
+
+        var enumerator = list.GetEnumerator();
+        enumerator.MoveNext();
+
+        list.AddLast(4);
+
+        Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+    }
+
+    [Fact]
+    public void EnumeratorResetAfterModificationThrowsException()
+    {
+        var list = new CircularBuffer<int>(5);
+        list.AddLast(1);
+        list.AddLast(2);
+
+        var enumerator = (System.Collections.IEnumerator)list.GetEnumerator();
+        enumerator.MoveNext();
+
+        list.AddLast(3);
+
+        Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
+    }
+
+    [Fact]
+    public void EnumeratorCurrentBeforeMoveNextThrowsException()
+    {
+        var list = new CircularBuffer<int>(3);
+        list.AddLast(1);
+
+        var enumerator = (System.Collections.IEnumerator)list.GetEnumerator();
+
+        Assert.Throws<InvalidOperationException>(() => _ = enumerator.Current);
+    }
+
+    [Fact]
+    public void EnumeratorCurrentAfterEndThrowsException()
+    {
+        var list = new CircularBuffer<int>(3);
+        list.AddLast(1);
+
+        var enumerator = (System.Collections.IEnumerator)list.GetEnumerator();
+        while (enumerator.MoveNext()) { }
+
+        Assert.Throws<InvalidOperationException>(() => _ = enumerator.Current);
+    }
+
+    [Fact]
+    public void EnumeratorWithWrappedBufferAndStartIndex()
+    {
+        var list = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        list.AddLast(1);
+        list.AddLast(2);
+        list.AddLast(3);
+        list.RemoveFirst();
+        list.AddLast(4);
+        list.AddLast(5);
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Equal([3, 4, 5], result);
+    }
+
+    [Fact]
+    public void EnumeratorGenericAndNonGeneric()
+    {
+        var list = new CircularBuffer<int>(3);
+        list.AddLast(1);
+        list.AddLast(2);
+
+        var genericResult = new List<int>();
+        using var genericEnumerator = ((IEnumerable<int>)list).GetEnumerator();
+        while (genericEnumerator.MoveNext())
+        {
+            genericResult.Add(genericEnumerator.Current);
+        }
+
+        var nonGenericResult = new List<int>();
+        var nonGenericEnumerator = ((System.Collections.IEnumerable)list).GetEnumerator();
+        while (nonGenericEnumerator.MoveNext())
+        {
+            nonGenericResult.Add((int)nonGenericEnumerator.Current);
+        }
+
+        Assert.Equal(genericResult, nonGenericResult);
+        Assert.Equal([1, 2], genericResult);
+    }
+
+    [Fact]
+    public void EnumeratorDisposeIsNoOp()
+    {
+        var list = new CircularBuffer<int>(3);
+        list.AddLast(1);
+        list.AddLast(2);
+
+        var enumerator = list.GetEnumerator();
+        enumerator.MoveNext();
+        enumerator.Dispose();
+        enumerator.Dispose();
+    }
+
+    [Fact]
+    public void EnumeratorAfterClear()
+    {
+        var list = new CircularBuffer<int>(3);
+        list.AddLast(1);
+        list.AddLast(2);
+        list.Clear();
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void EnumeratorCapacityOne()
+    {
+        var list = new CircularBuffer<int>(1) { AllowOverwrite = true };
+        list.AddLast(1);
+        list.AddLast(2);
+
+        var result = new List<int>();
+        foreach (var item in list)
+        {
+            result.Add(item);
+        }
+
+        Assert.Equal([2], result);
+    }
+
+    [Fact]
+    public void EnumeratorMultipleIterations()
+    {
+        var list = new CircularBuffer<int>(3);
+        list.AddLast(1);
+        list.AddLast(2);
+        list.AddLast(3);
+
+        var firstPass = new List<int>();
+        foreach (var item in list)
+        {
+            firstPass.Add(item);
+        }
+
+        var secondPass = new List<int>();
+        foreach (var item in list)
+        {
+            secondPass.Add(item);
+        }
+
+        Assert.Equal([1, 2, 3], firstPass);
+        Assert.Equal(firstPass, secondPass);
+    }
 }

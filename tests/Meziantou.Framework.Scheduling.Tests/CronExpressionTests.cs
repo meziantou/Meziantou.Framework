@@ -11,6 +11,9 @@ public sealed class CronExpressionTests
     [InlineData("* * * *")]
     [InlineData("* * * * * * * *")]
     [InlineData("a * * * * *")]
+    [InlineData("*/0 * * * *")]
+    [InlineData("0 */0 * * *")]
+    [InlineData("0 0 */0 * *")]
     public void CronExpression_Parse_InvalidExpression(string expression)
     {
         Assert.Throws<FormatException>(() => CronExpression.Parse(expression));

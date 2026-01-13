@@ -63,6 +63,15 @@ public abstract class RecurrenceRuleHumanizer
 
         if (humanizer is not null)
         {
+            if (rrule is SecondlyRecurrenceRule secondlyRecurrenceRule)
+                return humanizer.GetText(secondlyRecurrenceRule, cultureInfo);
+
+            if (rrule is MinutelyRecurrenceRule minutelyRecurrenceRule)
+                return humanizer.GetText(minutelyRecurrenceRule, cultureInfo);
+
+            if (rrule is HourlyRecurrenceRule hourlyRecurrenceRule)
+                return humanizer.GetText(hourlyRecurrenceRule, cultureInfo);
+
             if (rrule is DailyRecurrenceRule dailyRecurrenceRule)
                 return humanizer.GetText(dailyRecurrenceRule, cultureInfo);
 
@@ -78,6 +87,24 @@ public abstract class RecurrenceRuleHumanizer
 
         return null;
     }
+
+    /// <summary>Converts a secondly recurrence rule to human-readable text.</summary>
+    /// <param name="rrule">The secondly recurrence rule.</param>
+    /// <param name="cultureInfo">The culture to use for formatting.</param>
+    /// <returns>A human-readable string representation.</returns>
+    protected abstract string GetText(SecondlyRecurrenceRule rrule, CultureInfo cultureInfo);
+
+    /// <summary>Converts a minutely recurrence rule to human-readable text.</summary>
+    /// <param name="rrule">The minutely recurrence rule.</param>
+    /// <param name="cultureInfo">The culture to use for formatting.</param>
+    /// <returns>A human-readable string representation.</returns>
+    protected abstract string GetText(MinutelyRecurrenceRule rrule, CultureInfo cultureInfo);
+
+    /// <summary>Converts an hourly recurrence rule to human-readable text.</summary>
+    /// <param name="rrule">The hourly recurrence rule.</param>
+    /// <param name="cultureInfo">The culture to use for formatting.</param>
+    /// <returns>A human-readable string representation.</returns>
+    protected abstract string GetText(HourlyRecurrenceRule rrule, CultureInfo cultureInfo);
 
     /// <summary>Converts a daily recurrence rule to human-readable text.</summary>
     /// <param name="rrule">The daily recurrence rule.</param>

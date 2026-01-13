@@ -7,6 +7,24 @@ namespace Meziantou.Framework.Scheduling;
 /// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).Take(50).ToArray();
 /// </code>
 /// </example>
+/// <remarks>
+/// <para>Supports the following RFC 5545 recurrence rule properties:</para>
+/// <list type="bullet">
+/// <item><description>FREQ (Secondly, Minutely, Hourly, Daily, Weekly, Monthly, Yearly)</description></item>
+/// <item><description>INTERVAL - The interval between occurrences</description></item>
+/// <item><description>COUNT - Maximum number of occurrences</description></item>
+/// <item><description>UNTIL - End date for the recurrence</description></item>
+/// <item><description>WKST - The day on which the workweek starts</description></item>
+/// <item><description>BYSECOND - Limits occurrences to specific seconds (0-60)</description></item>
+/// <item><description>BYMINUTE - Limits occurrences to specific minutes (0-59)</description></item>
+/// <item><description>BYHOUR - Limits occurrences to specific hours (0-23)</description></item>
+/// <item><description>BYDAY - Limits occurrences to specific days of the week</description></item>
+/// <item><description>BYMONTHDAY - Limits occurrences to specific days of the month (1-31, -1 to -31)</description></item>
+/// <item><description>BYYEARDAY - Limits occurrences to specific days of the year (1-366, -1 to -366)</description></item>
+/// <item><description>BYMONTH - Limits occurrences to specific months (1-12)</description></item>
+/// <item><description>BYSETPOS - Limits occurrences to specific positions in the recurrence set</description></item>
+/// </list>
+/// </remarks>
 public abstract class RecurrenceRule
 {
     /// <summary>The default first day of the week (Monday).</summary>
@@ -27,6 +45,15 @@ public abstract class RecurrenceRule
     /// <summary>The first day of the week for the recurrence rule.</summary>
     public DayOfWeek WeekStart { get; set; } = DefaultFirstDayOfWeek;
 
+    /// <summary>Limits occurrences to specific seconds (0-60, where 60 represents leap seconds).</summary>
+    public IList<int>? BySeconds { get; set; }
+
+    /// <summary>Limits occurrences to specific minutes (0-59).</summary>
+    public IList<int>? ByMinutes { get; set; }
+
+    /// <summary>Limits occurrences to specific hours (0-23).</summary>
+    public IList<int>? ByHours { get; set; }
+
     /// <summary>Limits occurrences to specific positions in the recurrence set.</summary>
     public IList<int>? BySetPositions { get; set; }
 
@@ -40,7 +67,7 @@ public abstract class RecurrenceRule
     public static RecurrenceRule Parse(string rrule)
     {
         if (!TryParse(rrule, out var recurrenceRule, out var error))
-            throw new FormatException("RRule format is invalid: " + error);
+            throw new FormatException($"RRule value '{rrule}' is invalid: " + error);
 
         return recurrenceRule;
     }
@@ -52,7 +79,7 @@ public abstract class RecurrenceRule
     public static RecurrenceRule Parse(ReadOnlySpan<char> rrule)
     {
         if (!TryParse(rrule, out var recurrenceRule, out var error))
-            throw new FormatException("RRule format is invalid: " + error);
+            throw new FormatException($"RRule value '{rrule}' is invalid: " + error);
 
         return recurrenceRule;
     }
@@ -118,6 +145,39 @@ public abstract class RecurrenceRule
             var frequency = values.GetValue("FREQ", Frequency.None);
             switch (frequency)
             {
+                case Frequency.Secondly:
+                    var secondlyRecurrenceRule = new SecondlyRecurrenceRule
+                    {
+                        ByMonthDays = ParseByMonthDays(values),
+                        ByMonths = ParseByMonth(values),
+                        ByWeekDays = ParseByDay(values),
+                        ByHours = ParseByHours(values) ?? [],
+                        ByMinutes = ParseByMinutes(values) ?? [],
+                    };
+                    recurrenceRule = secondlyRecurrenceRule;
+                    break;
+                case Frequency.Minutely:
+                    var minutelyRecurrenceRule = new MinutelyRecurrenceRule
+                    {
+                        ByMonthDays = ParseByMonthDays(values),
+                        ByMonths = ParseByMonth(values),
+                        ByWeekDays = ParseByDay(values),
+                        ByHours = ParseByHours(values) ?? [],
+                        BySeconds = ParseBySeconds(values) ?? [],
+                    };
+                    recurrenceRule = minutelyRecurrenceRule;
+                    break;
+                case Frequency.Hourly:
+                    var hourlyRecurrenceRule = new HourlyRecurrenceRule
+                    {
+                        ByMonthDays = ParseByMonthDays(values),
+                        ByMonths = ParseByMonth(values),
+                        ByWeekDays = ParseByDay(values),
+                        ByMinutes = ParseByMinutes(values) ?? [],
+                        BySeconds = ParseBySeconds(values) ?? [],
+                    };
+                    recurrenceRule = hourlyRecurrenceRule;
+                    break;
                 case Frequency.Daily:
                     var dailyRecurrenceRule = new DailyRecurrenceRule
                     {
@@ -172,6 +232,9 @@ public abstract class RecurrenceRule
 
             recurrenceRule.BySetPositions = ParseBySetPos(values);
             recurrenceRule.WeekStart = ParseWeekStart(values);
+            recurrenceRule.BySeconds = ParseBySeconds(values);
+            recurrenceRule.ByMinutes = ParseByMinutes(values);
+            recurrenceRule.ByHours = ParseByHours(values);
 
             return true;
         }
@@ -236,6 +299,39 @@ public abstract class RecurrenceRule
             var frequency = values.GetValue("FREQ", Frequency.None);
             switch (frequency)
             {
+                case Frequency.Secondly:
+                    var secondlyRecurrenceRule = new SecondlyRecurrenceRule
+                    {
+                        ByMonthDays = ParseByMonthDays(values),
+                        ByMonths = ParseByMonth(values),
+                        ByWeekDays = ParseByDay(values),
+                        ByHours = ParseByHours(values) ?? [],
+                        ByMinutes = ParseByMinutes(values) ?? [],
+                    };
+                    recurrenceRule = secondlyRecurrenceRule;
+                    break;
+                case Frequency.Minutely:
+                    var minutelyRecurrenceRule = new MinutelyRecurrenceRule
+                    {
+                        ByMonthDays = ParseByMonthDays(values),
+                        ByMonths = ParseByMonth(values),
+                        ByWeekDays = ParseByDay(values),
+                        ByHours = ParseByHours(values) ?? [],
+                        BySeconds = ParseBySeconds(values) ?? [],
+                    };
+                    recurrenceRule = minutelyRecurrenceRule;
+                    break;
+                case Frequency.Hourly:
+                    var hourlyRecurrenceRule = new HourlyRecurrenceRule
+                    {
+                        ByMonthDays = ParseByMonthDays(values),
+                        ByMonths = ParseByMonth(values),
+                        ByWeekDays = ParseByDay(values),
+                        ByMinutes = ParseByMinutes(values) ?? [],
+                        BySeconds = ParseBySeconds(values) ?? [],
+                    };
+                    recurrenceRule = hourlyRecurrenceRule;
+                    break;
                 case Frequency.Daily:
                     var dailyRecurrenceRule = new DailyRecurrenceRule
                     {
@@ -290,6 +386,9 @@ public abstract class RecurrenceRule
 
             recurrenceRule.BySetPositions = ParseBySetPos(values);
             recurrenceRule.WeekStart = ParseWeekStart(values);
+            recurrenceRule.BySeconds = ParseBySeconds(values);
+            recurrenceRule.ByMinutes = ParseByMinutes(values);
+            recurrenceRule.ByHours = ParseByHours(values);
 
             return true;
         }
@@ -366,9 +465,7 @@ public abstract class RecurrenceRule
         foreach (var month in months)
         {
             if (!Enum.IsDefined(month))
-            {
-                throw new FormatException("BYMONTH is invalid.");
-            }
+                throw new FormatException($"BYMONTH value '{month}' is invalid.");
         }
 
         return months;
@@ -401,6 +498,81 @@ public abstract class RecurrenceRule
             return ParseDayOfWeek(str);
 
         return DefaultFirstDayOfWeek;
+    }
+
+    private static List<int>? ParseBySeconds(Dictionary<string, string> values)
+    {
+        if (values.TryGetNonEmptyValue("BYSECOND", out var str))
+            return ParseBySeconds(str.AsSpan());
+
+        return null;
+    }
+
+    private static List<int>? ParseBySeconds(ReadOnlySpan<char> str)
+    {
+        if (str.IsEmpty)
+            return null;
+
+        var seconds = SplitToInt32List(str);
+        foreach (var second in seconds)
+        {
+            if (second is >= 0 and <= 60)
+                continue;
+
+            throw new FormatException($"Second '{second.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 60.");
+        }
+
+        return seconds;
+    }
+
+    private static List<int>? ParseByMinutes(Dictionary<string, string> values)
+    {
+        if (values.TryGetNonEmptyValue("BYMINUTE", out var str))
+            return ParseByMinutes(str.AsSpan());
+
+        return null;
+    }
+
+    private static List<int>? ParseByMinutes(ReadOnlySpan<char> str)
+    {
+        if (str.IsEmpty)
+            return null;
+
+        var minutes = SplitToInt32List(str);
+        foreach (var minute in minutes)
+        {
+            if (minute is >= 0 and <= 59)
+                continue;
+
+            throw new FormatException($"Minute '{minute.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 59.");
+        }
+
+        return minutes;
+    }
+
+    private static List<int>? ParseByHours(Dictionary<string, string> values)
+    {
+        if (values.TryGetNonEmptyValue("BYHOUR", out var str))
+            return ParseByHours(str.AsSpan());
+
+        return null;
+    }
+
+    private static List<int>? ParseByHours(ReadOnlySpan<char> str)
+    {
+        if (str.IsEmpty)
+            return null;
+
+        var hours = SplitToInt32List(str);
+        foreach (var hour in hours)
+        {
+            if (hour is >= 0 and <= 23)
+                continue;
+
+            throw new FormatException($"Hour '{hour.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 23.");
+        }
+
+        return hours;
     }
 
     private static ByDay[] ParseByDayWithOffset(Dictionary<string, string> values)

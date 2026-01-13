@@ -17,6 +17,7 @@ public sealed class WeeklyRecurrenceRule : RecurrenceRule
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
+        var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
         var byWeekDays = ByWeekDays?.ToList();
         if (IsEmpty(byWeekDays))
         {
@@ -43,11 +44,46 @@ public sealed class WeeklyRecurrenceRule : RecurrenceRule
                 {
                     var next = startOfWeek.AddDays(dayOffset);
                     if (next >= startDate)
-                        yield return next;
+                    {
+                        if (hasTimeFilters)
+                        {
+                            foreach (var occurrence in ExpandByTime(next))
+                            {
+                                yield return occurrence;
+                            }
+                        }
+                        else
+                        {
+                            yield return next;
+                        }
+                    }
                 }
             }
 
             startOfWeek = startOfWeek.AddDays(7 * Interval);
+        }
+    }
+
+    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    {
+        var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
+        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
+        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
+
+        var dateOnly = date.Date;
+        foreach (var hour in hours)
+        {
+            foreach (var minute in minutes)
+            {
+                foreach (var second in seconds)
+                {
+                    var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
+                    if (result >= date)
+                    {
+                        yield return result;
+                    }
+                }
+            }
         }
     }
 
@@ -93,6 +129,24 @@ public sealed class WeeklyRecurrenceRule : RecurrenceRule
             {
                 sb.Append(";BYDAY=");
                 sb.AppendJoin(',', ByWeekDays.Select(Utilities.DayOfWeekToString));
+            }
+
+            if (!IsEmpty(ByHours))
+            {
+                sb.Append(";BYHOUR=");
+                sb.AppendJoin(',', ByHours);
+            }
+
+            if (!IsEmpty(ByMinutes))
+            {
+                sb.Append(";BYMINUTE=");
+                sb.AppendJoin(',', ByMinutes);
+            }
+
+            if (!IsEmpty(BySeconds))
+            {
+                sb.Append(";BYSECOND=");
+                sb.AppendJoin(',', BySeconds);
             }
 
             if (!IsEmpty(BySetPositions))

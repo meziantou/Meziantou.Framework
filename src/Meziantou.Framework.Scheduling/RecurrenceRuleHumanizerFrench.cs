@@ -25,6 +25,69 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
         return sb.ToString();
     }
 
+    protected override string GetText(SecondlyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("toutes les");
+        if (rrule.Interval == 1)
+        {
+            sb.Append(" secondes");
+        }
+        else
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" secondes");
+        }
+
+        GetHumanEnd(rrule, sb);
+        return sb.ToString();
+    }
+
+    protected override string GetText(MinutelyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("toutes les");
+        if (rrule.Interval == 1)
+        {
+            sb.Append(" minutes");
+        }
+        else
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" minutes");
+        }
+
+        GetHumanEnd(rrule, sb);
+        return sb.ToString();
+    }
+
+    protected override string GetText(HourlyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("toutes les");
+        if (rrule.Interval == 1)
+        {
+            sb.Append(" heures");
+        }
+        else
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" heures");
+        }
+
+        GetHumanEnd(rrule, sb);
+        return sb.ToString();
+    }
+
     protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
         ArgumentNullException.ThrowIfNull(rrule);

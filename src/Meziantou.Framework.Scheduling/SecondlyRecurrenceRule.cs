@@ -1,97 +1,54 @@
 namespace Meziantou.Framework.Scheduling;
 
-/// <summary>Represents a daily recurrence rule.</summary>
+/// <summary>Represents a secondly recurrence rule.</summary>
 /// <example>
 /// <code>
-/// var rrule = new DailyRecurrenceRule { Interval = 2, Occurrences = 10 };
+/// var rrule = new SecondlyRecurrenceRule { Interval = 30, Occurrences = 10 };
 /// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
 /// </code>
 /// </example>
-public sealed class DailyRecurrenceRule : RecurrenceRule
+public sealed class SecondlyRecurrenceRule : RecurrenceRule
 {
     /// <summary>Limits occurrences to specific months.</summary>
-    public IList<Month> ByMonths { get; set; } = new List<Month>();
+    public IList<Month> ByMonths { get; set; } = [];
 
     /// <summary>Limits occurrences to specific days of the month.</summary>
-    public IList<int> ByMonthDays { get; set; } = new List<int>();
+    public IList<int> ByMonthDays { get; set; } = [];
 
     /// <summary>Limits occurrences to specific days of the week.</summary>
-    public IList<DayOfWeek> ByWeekDays { get; set; } = new List<DayOfWeek>();
+    public IList<DayOfWeek> ByWeekDays { get; set; } = [];
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
-
+        var current = startDate;
         while (true)
         {
-            var b = true;
+            var matches = true;
 
-            if (!IsEmpty(ByMonths))
+            if (!IsEmpty(ByMonths) && !ByMonths.Contains((Month)current.Month))
+                matches = false;
+
+            if (!IsEmpty(ByMonthDays) && !ByMonthDays.Contains(current.Day))
+                matches = false;
+
+            if (!IsEmpty(ByWeekDays) && !ByWeekDays.Contains(current.DayOfWeek))
+                matches = false;
+
+            if (!IsEmpty(ByHours) && !ByHours.Contains(current.Hour))
+                matches = false;
+
+            if (!IsEmpty(ByMinutes) && !ByMinutes.Contains(current.Minute))
+                matches = false;
+
+            if (matches)
             {
-                if (!ByMonths.Contains((Month)startDate.Month))
-                {
-                    b = false;
-                }
+                yield return current;
             }
 
-            if (!IsEmpty(ByMonthDays))
-            {
-                if (!ByMonthDays.Contains(startDate.Day))
-                {
-                    b = false;
-                }
-            }
-
-            if (!IsEmpty(ByWeekDays))
-            {
-                if (!ByWeekDays.Contains(startDate.DayOfWeek))
-                {
-                    b = false;
-                }
-            }
-
-            if (b)
-            {
-                if (hasTimeFilters)
-                {
-                    foreach (var occurrence in ExpandByTime(startDate))
-                    {
-                        yield return occurrence;
-                    }
-                }
-                else
-                {
-                    yield return startDate;
-                }
-            }
-
-            startDate = startDate.AddDays(Interval);
+            current = current.AddSeconds(Interval);
         }
 
         // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
-    }
-
-    private IEnumerable<DateTime> ExpandByTime(DateTime date)
-    {
-        var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
-        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
-        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
-
-        var dateOnly = date.Date;
-        foreach (var hour in hours)
-        {
-            foreach (var minute in minutes)
-            {
-                foreach (var second in seconds)
-                {
-                    var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= date)
-                    {
-                        yield return result;
-                    }
-                }
-            }
-        }
     }
 
     /// <inheritdoc />
@@ -100,7 +57,7 @@ public sealed class DailyRecurrenceRule : RecurrenceRule
         get
         {
             var sb = new StringBuilder();
-            sb.Append("FREQ=DAILY");
+            sb.Append("FREQ=SECONDLY");
 
             if (Interval != 1)
             {
@@ -154,12 +111,6 @@ public sealed class DailyRecurrenceRule : RecurrenceRule
             {
                 sb.Append(";BYMINUTE=");
                 sb.AppendJoin(',', ByMinutes);
-            }
-
-            if (!IsEmpty(BySeconds))
-            {
-                sb.Append(";BYSECOND=");
-                sb.AppendJoin(',', BySeconds);
             }
 
             if (!IsEmpty(BySetPositions))

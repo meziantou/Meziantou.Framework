@@ -122,6 +122,81 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         return sb.ToString();
     }
 
+    protected override string GetText(SecondlyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("every");
+        if (rrule.Interval == 1)
+        {
+            sb.Append(" second");
+        }
+        else if (rrule.Interval == 2)
+        {
+            sb.Append(" other second");
+        }
+        else if (rrule.Interval > 2)
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" seconds");
+        }
+
+        GetEndHumanText(rrule, sb);
+        return sb.ToString();
+    }
+
+    protected override string GetText(MinutelyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("every");
+        if (rrule.Interval == 1)
+        {
+            sb.Append(" minute");
+        }
+        else if (rrule.Interval == 2)
+        {
+            sb.Append(" other minute");
+        }
+        else if (rrule.Interval > 2)
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" minutes");
+        }
+
+        GetEndHumanText(rrule, sb);
+        return sb.ToString();
+    }
+
+    protected override string GetText(HourlyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("every");
+        if (rrule.Interval == 1)
+        {
+            sb.Append(" hour");
+        }
+        else if (rrule.Interval == 2)
+        {
+            sb.Append(" other hour");
+        }
+        else if (rrule.Interval > 2)
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" hours");
+        }
+
+        GetEndHumanText(rrule, sb);
+        return sb.ToString();
+    }
+
     protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
         ArgumentNullException.ThrowIfNull(rrule);

@@ -428,7 +428,7 @@ public sealed partial class StronglyTypedIdTests
     {
         Assert.Equal("IdString { Value = test }", IdString.FromString("test").ToString());
         Assert.Equal("test", IdString_RawToString.FromString("test").ToString());
-        Assert.Equal("", IdString_RawToString.FromString(null).ToString());
+        Assert.Equal("", IdString_RawToString.FromString(null!).ToString());
     }
 
     [Fact]

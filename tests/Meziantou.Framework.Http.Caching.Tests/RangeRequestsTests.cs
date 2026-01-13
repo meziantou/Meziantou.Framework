@@ -1,5 +1,4 @@
 using System.Net;
-using HttpCaching.Tests.Internals;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 

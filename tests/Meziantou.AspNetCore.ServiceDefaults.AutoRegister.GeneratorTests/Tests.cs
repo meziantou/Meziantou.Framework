@@ -20,7 +20,7 @@ public sealed class Tests
         Assert.NotNull(app.Services.GetService<MeziantouServiceDefaultsOptions>());
         var t = app.RunAsync();
 
-        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
 
         Assert.Equal("Healthy", await httpClient.GetStringAsync("health", XunitCancellationToken));
@@ -36,7 +36,7 @@ public sealed class Tests
         Assert.NotNull(app.Services.GetService<MeziantouServiceDefaultsOptions>());
         var t = app.RunAsync();
 
-        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
 
         Assert.Equal("Healthy", await httpClient.GetStringAsync("health", XunitCancellationToken));

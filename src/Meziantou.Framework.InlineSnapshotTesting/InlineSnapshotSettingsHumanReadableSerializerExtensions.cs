@@ -30,7 +30,7 @@ public static class InlineSnapshotSettingsHumanReadableSerializerExtensions
         if (settings.SnapshotSerializer is HumanReadableSnapshotSerializer existing)
         {
             var clone = existing.Options with { };
-            configure(clone);
+            configure?.Invoke(clone);
             settings.SnapshotSerializer = new HumanReadableSnapshotSerializer(clone);
         }
         else

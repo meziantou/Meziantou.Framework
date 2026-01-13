@@ -1,7 +1,6 @@
-using System.Globalization;
 using System.Net.Http.Headers;
 
-namespace HttpCaching;
+namespace Meziantou.Framework.Http;
 
 internal sealed class CacheEntry
 {
@@ -28,7 +27,7 @@ internal sealed class CacheEntry
 
         // Parse cache control directives
         var cacheControl = response.Headers.CacheControl;
-        if (cacheControl != null)
+        if (cacheControl is not null)
         {
             entry.MaxAge = cacheControl.MaxAge;
             entry.SharedMaxAge = cacheControl.SharedMaxAge;
@@ -51,7 +50,7 @@ internal sealed class CacheEntry
 
         // Parse validators
         entry.ETag = response.Headers.ETag?.ToString();
-        
+
         // RFC 7232: Last-Modified can be in content headers or response headers
         // For 204 No Content responses, it will be in response headers
         entry.LastModified = response.Content.Headers.LastModified;
@@ -95,7 +94,7 @@ internal sealed class CacheEntry
         {
             if (string.Equals(extension.Name, "stale-if-error", StringComparison.OrdinalIgnoreCase))
             {
-                if (extension.Value != null && int.TryParse(extension.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
+                if (extension.Value is not null && int.TryParse(extension.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
                 {
                     return TimeSpan.FromSeconds(seconds);
                 }
@@ -414,7 +413,7 @@ internal sealed class CacheEntry
         foreach (var kvp in headersToUpdate)
         {
             // Try adding to response headers first, then content headers if that fails
-            if (!storedResponse.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value))
+            if (storedResponse.Content is not null && !storedResponse.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value))
             {
                 storedResponse.Content.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
             }

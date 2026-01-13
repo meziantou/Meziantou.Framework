@@ -39,7 +39,7 @@ public abstract class SnapshotUpdateStrategy
 
     public virtual bool ReuseTemporaryFile => true;
 
-    internal bool CanUpdateSnapshotInternal(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot)
+    internal bool CanUpdateSnapshotInternal(InlineSnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot)
     {
         if (settings.AutoDetectContinuousEnvironment && InlineSnapshotSettings.IsRunningOnContinuousIntegration())
             return false;
@@ -49,7 +49,7 @@ public abstract class SnapshotUpdateStrategy
 
 
     /// <summary>Indicates if an an inline snapshot must be updated</summary>
-    public abstract bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot);
+    public abstract bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot);
 
     public abstract void UpdateFile(InlineSnapshotSettings settings, string targetFile, string tempFile);
 

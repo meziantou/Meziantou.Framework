@@ -22,8 +22,14 @@ internal static class TypeUtils
         return sb.ToString();
     }
 
-    public static void GetHumanDisplayName(StringBuilder sb, Type type)
+    public static void GetHumanDisplayName(StringBuilder sb, Type? type)
     {
+        if(type is null)
+        {
+            sb.Append("<UnknownType>");
+            return;
+        }
+
         if (!type.IsGenericParameter)
         {
             if (type.DeclaringType != null)
@@ -112,13 +118,13 @@ internal static class TypeUtils
         }
     }
 
-    private static void WriteValueTupleType(StringBuilder sb, Type type, string[] tupleNames, IList<bool> dynamicFlags)
+    private static void WriteValueTupleType(StringBuilder sb, Type type, string?[]? tupleNames, IList<bool>? dynamicFlags)
     {
         var nameIndex = 0;
         var dynamicIndex = 1;
         WriteValueTupleType(sb, type, tupleNames, ref nameIndex, dynamicFlags, ref dynamicIndex);
 
-        static void WriteValueTupleType(StringBuilder sb, Type type, string[] tupleNames, ref int tupleNameIndex, IList<bool> dynamicFlags, ref int dynamicFlagIndex)
+        static void WriteValueTupleType(StringBuilder sb, Type type, string?[]? tupleNames, ref int tupleNameIndex, IList<bool>? dynamicFlags, ref int dynamicFlagIndex)
         {
             sb.Append('(');
             var index = 0;

@@ -1,4 +1,5 @@
-﻿#if NETFRAMEWORK
+#nullable enable
+#if NETFRAMEWORK
 using System.Net.Http;
 #endif
 

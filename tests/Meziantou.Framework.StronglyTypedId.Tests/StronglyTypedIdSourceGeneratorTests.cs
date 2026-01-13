@@ -623,7 +623,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         return TestGeneratedAssembly(sourceCode, typeName: null, assert);
     }
 
-    private static async Task TestGeneratedAssembly([StringSyntax("c#-test")] string sourceCode, string? typeName, Action<Type> assert, bool mustGenerateTrees = true)
+    private static async Task TestGeneratedAssembly([StringSyntax("c#-test")] string sourceCode, string typeName, Action<Type> assert, bool mustGenerateTrees = true)
     {
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);

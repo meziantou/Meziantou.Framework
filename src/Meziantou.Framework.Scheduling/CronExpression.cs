@@ -673,9 +673,9 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
     }
 
     static CronExpression IParsable<CronExpression>.Parse(string s, IFormatProvider? provider) => Parse(s);
-    static bool IParsable<CronExpression>.TryParse(string? s, IFormatProvider? provider, out CronExpression result) => TryParse(s, out result);
+    static bool IParsable<CronExpression>.TryParse(string? s, IFormatProvider? provider, [NotNullWhen(true)] out CronExpression? result) => TryParse(s, out result);
     static CronExpression ISpanParsable<CronExpression>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
-    static bool ISpanParsable<CronExpression>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out CronExpression result) => TryParse(s, out result);
+    static bool ISpanParsable<CronExpression>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out CronExpression? result) => TryParse(s, out result);
 
     private enum CronFieldKind
     {

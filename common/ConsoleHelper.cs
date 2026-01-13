@@ -1,3 +1,4 @@
+#nullable enable
 #pragma warning disable CA1001
 #pragma warning disable CA2213
 #pragma warning disable CA2215
@@ -48,11 +49,17 @@ internal sealed class ConsoleHelper
         public override Encoding Encoding => Encoding.UTF8;
         public override void WriteLine(string? value)
         {
-            _testOutputHelper.WriteLine(value);
+            if (value is not null)
+            {
+                _testOutputHelper.WriteLine(value);
+            }
         }
         public override void Write(string? value)
         {
-            _testOutputHelper.Write(value);
+            if (value is not null)
+            {
+                _testOutputHelper.Write(value);
+            }
         }
     }
 

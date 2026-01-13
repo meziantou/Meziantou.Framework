@@ -33,7 +33,7 @@ public static class CredentialManager
 {
     /// <summary>Reads a credential from the Windows Credential Manager.</summary>
     /// <param name="applicationName">The name that identifies the credential.</param>
-    /// <returns>The credential if found; otherwise, <c>null</c>.</returns>
+    /// <returns>The credential if found; otherwise, <see langword="null"/>.</returns>
     public static Credential? ReadCredential(string applicationName)
     {
         return ReadCredential(applicationName, CredentialType.Generic);
@@ -42,7 +42,7 @@ public static class CredentialManager
     /// <summary>Reads a credential from the Windows Credential Manager.</summary>
     /// <param name="applicationName">The name that identifies the credential.</param>
     /// <param name="type">The type of the credential.</param>
-    /// <returns>The credential if found; otherwise, <c>null</c>.</returns>
+    /// <returns>The credential if found; otherwise, <see langword="null"/>.</returns>
     public static unsafe Credential? ReadCredential(string applicationName, CredentialType type)
     {
         var read = PInvoke.CredRead(applicationName, (CRED_TYPE)type, out var handle);
@@ -116,7 +116,7 @@ public static class CredentialManager
     /// <param name="comment">An optional comment describing the credential.</param>
     /// <param name="persistence">The persistence option for the credential.</param>
     /// <param name="type">The type of the credential.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/>, <paramref name="userName"/>, or <paramref name="secret"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/>, <paramref name="userName"/>, or <paramref name="secret"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="secret"/> exceeds 512 bytes (on Windows XP/Vista) or 2560 bytes (on Windows 7 and later), or <paramref name="comment"/> exceeds 255 characters.</exception>
     public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence, CredentialType type)
     {
@@ -191,7 +191,7 @@ public static class CredentialManager
     /// <summary>Deletes a credential from the Windows Credential Manager.</summary>
     /// <param name="applicationName">The name that identifies the credential.</param>
     /// <param name="type">The type of the credential.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/> is <see langword="null"/>.</exception>
     public static void DeleteCredential(string applicationName, CredentialType type)
     {
         ArgumentNullException.ThrowIfNull(applicationName);
@@ -220,7 +220,7 @@ public static class CredentialManager
     public static IReadOnlyList<Credential> EnumerateCrendentials(string? filter) => EnumerateCredentials(filter);
 
     /// <summary>Enumerates credentials from the Windows Credential Manager that match the specified filter.</summary>
-    /// <param name="filter">A filter string that supports wildcards. Pass <c>null</c> or "*" to enumerate all credentials.</param>
+    /// <param name="filter">A filter string that supports wildcards. Pass <see langword="null"/> or "*" to enumerate all credentials.</param>
     /// <returns>A read-only list of credentials matching the filter.</returns>
     public static unsafe IReadOnlyList<Credential> EnumerateCredentials(string? filter)
     {
@@ -324,7 +324,7 @@ public static class CredentialManager
     /// <param name="captionText">The caption text to display in the dialog.</param>
     /// <param name="userName">An optional default username.</param>
     /// <param name="saveCredential">Specifies whether the save checkbox should be displayed and its default state.</param>
-    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <c>null</c>.</returns>
+    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <see langword="null"/>.</returns>
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, CredentialSaveOption saveCredential)
     {
@@ -338,7 +338,7 @@ public static class CredentialManager
     /// <param name="userName">An optional default username.</param>
     /// <param name="password">An optional default password.</param>
     /// <param name="saveCredential">Specifies whether the save checkbox should be displayed and its default state.</param>
-    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <c>null</c>.</returns>
+    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <see langword="null"/>.</returns>
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, string? password, CredentialSaveOption saveCredential)
     {
@@ -353,7 +353,7 @@ public static class CredentialManager
     /// <param name="password">An optional default password.</param>
     /// <param name="saveCredential">Specifies whether the save checkbox should be displayed and its default state.</param>
     /// <param name="error">Specifies an error code to display an error message.</param>
-    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <c>null</c>.</returns>
+    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <see langword="null"/>.</returns>
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected, CredentialErrorCode error = CredentialErrorCode.None)
     {

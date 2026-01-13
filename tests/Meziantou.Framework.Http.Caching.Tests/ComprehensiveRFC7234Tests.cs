@@ -1,8 +1,6 @@
 using System.Net;
-using HttpCaching.Tests.Internals;
-using Meziantou.Framework.Http.Caching.Tests.Internals;
 
-namespace HttpCaching.Tests;
+namespace Meziantou.Framework.Http.Caching.Tests;
 
 /// <summary>
 /// Comprehensive test suite for HTTP caching following RFC 7234 and RFC 8246.

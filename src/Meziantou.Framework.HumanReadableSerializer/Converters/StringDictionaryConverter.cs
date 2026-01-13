@@ -12,7 +12,7 @@ internal sealed class StringDictionaryConverter : HumanReadableConverter<StringD
 
         if (options.DictionaryKeyOrder is not null)
         {
-            var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+            var dict = new Dictionary<string, string?>(StringComparer.Ordinal);
             foreach (string item in value.Keys)
             {
                 dict.Add(item, value[item]);

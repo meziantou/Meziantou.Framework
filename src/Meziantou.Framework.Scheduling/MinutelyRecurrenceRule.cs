@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a minutely recurrence rule.</summary>
@@ -37,6 +39,7 @@ public sealed class MinutelyRecurrenceRule : RecurrenceRule
             {
                 if (hasSecondsFilter)
                 {
+                    Debug.Assert(BySeconds is not null);
                     foreach (var second in BySeconds)
                     {
                         var result = new DateTime(current.Year, current.Month, current.Day, current.Hour, current.Minute, second, current.Kind);

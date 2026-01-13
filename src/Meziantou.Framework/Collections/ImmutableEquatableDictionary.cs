@@ -23,12 +23,12 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
 
     public int Count => _values.Count;
     public bool ContainsKey(TKey key) => _values.ContainsKey(key);
-    public bool TryGetValue(TKey key, out TValue value) => _values.TryGetValue(key, out value);
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _values.TryGetValue(key, out value);
     public TValue this[TKey key] => _values[key];
 
-    public bool Equals(ImmutableEquatableDictionary<TKey, TValue> other)
+    public bool Equals(ImmutableEquatableDictionary<TKey, TValue>? other)
     {
-        if(other is null)
+        if (other is null)
             return false;
 
         if (ReferenceEquals(this, other))
@@ -91,7 +91,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
     object ICollection.SyncRoot => this;
 
     TValue IDictionary<TKey, TValue>.this[TKey key] { get => _values[key]; set => throw new InvalidOperationException(); }
-    object IDictionary.this[object key] { get => ((IDictionary)_values)[key]; set => throw new InvalidOperationException(); }
+    object? IDictionary.this[object key] { get => ((IDictionary)_values)[key]; set => throw new InvalidOperationException(); }
     bool IDictionary.Contains(object key) => ((IDictionary)_values).Contains(key);
     void ICollection.CopyTo(Array array, int index) => ((IDictionary)_values).CopyTo(array, index);
     bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item) => _values.Contains(item);
@@ -103,7 +103,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
     void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) => throw new InvalidOperationException();
     bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item) => throw new InvalidOperationException();
     void ICollection<KeyValuePair<TKey, TValue>>.Clear() => throw new InvalidOperationException();
-    void IDictionary.Add(object key, object value) => throw new InvalidOperationException();
+    void IDictionary.Add(object key, object? value) => throw new InvalidOperationException();
     void IDictionary.Remove(object key) => throw new InvalidOperationException();
     void IDictionary.Clear() => throw new InvalidOperationException();
 

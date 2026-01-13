@@ -1,7 +1,6 @@
 using System.Net;
-using HttpCaching.Tests.Internals;
 
-namespace HttpCaching.Tests;
+namespace Meziantou.Framework.Http.Caching.Tests;
 
 /// <summary>Tests for conditional requests and revalidation (RFC 7232, RFC 7234 Section 4.3).</summary>
 public sealed class ConditionalRequestsAndRevalidationTests

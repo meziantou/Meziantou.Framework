@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.InlineSnapshotTesting;
 
-namespace Meziantou.Framework.Http.Caching.Tests.Internals;
+namespace Meziantou.Framework.Http.Caching.Tests;
 
 internal static class DefaultSettings
 {

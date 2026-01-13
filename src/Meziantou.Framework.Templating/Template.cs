@@ -104,7 +104,7 @@ public class Template
 
     /// <summary>Adds a using directive for the specified namespace with an optional alias.</summary>
     /// <param name="namespace">The namespace to import.</param>
-    /// <param name="alias">The alias for the namespace, or <c>null</c> for no alias.</param>
+    /// <param name="alias">The alias for the namespace, or <see langword="null"/> for no alias.</param>
     public void AddUsing(string @namespace, string? alias)
     {
         ArgumentNullException.ThrowIfNull(@namespace);
@@ -128,7 +128,7 @@ public class Template
 
     /// <summary>Adds a using directive for the specified type with an optional alias, and a reference to its assembly.</summary>
     /// <param name="type">The type to import.</param>
-    /// <param name="alias">The alias for the type, or <c>null</c> for no alias.</param>
+    /// <param name="alias">The alias for the type, or <see langword="null"/> for no alias.</param>
     public void AddUsing(Type type, string? alias)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -200,7 +200,7 @@ public class Template
 
     /// <summary>Adds a template argument with the specified type.</summary>
     /// <param name="name">The name of the argument.</param>
-    /// <param name="type">The type of the argument, or <c>null</c> for dynamic type.</param>
+    /// <param name="type">The type of the argument, or <see langword="null"/> for dynamic type.</param>
     public void AddArgument(string name, Type? type)
     {
         ArgumentNullException.ThrowIfNull(name);

@@ -100,7 +100,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         mock.MapGet("/", () => Results.Extensions.RawJson("""{"id":1}"""));
 
         using var client = mock.CreateHttpClient();
-        var data = await client.GetFromJsonAsync<Dictionary<string, object?>>("/", XunitCancellationToken);
+        var data = await client.GetFromJsonAsync<Dictionary<string, object>>("/", XunitCancellationToken);
         Assert.True(data.ContainsKey("id"));
     }
 
@@ -113,7 +113,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         using var client = mock.CreateHttpClient();
         using var response = await client.GetAsync("/", XunitCancellationToken);
         Assert.Equal(400, (int)response.StatusCode);
-        var data = await response.Content.ReadFromJsonAsync<Dictionary<string, object?>>(XunitCancellationToken);
+        var data = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>(XunitCancellationToken);
         Assert.True(data.ContainsKey("id"));
     }
 
@@ -121,7 +121,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
     public async Task MapGet_RelativeUrl_WithQueryString()
     {
         await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
-        mock.MapGet("/", (string? a = "a") => a);
+        mock.MapGet("/", (string a = "a") => a);
         mock.MapGet("/?a=b", () => "b");
         mock.MapGet("/?a=c", () => "c");
 

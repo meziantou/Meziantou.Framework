@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json.Nodes;
 using System.Xml;
 using System.Xml.Linq;
@@ -109,8 +110,14 @@ public static class HumanReadableSerializerScrubExtensions
 
     private sealed class ValueScrubberConverter<T>(Func<T, string> scrubber) : HumanReadableConverter<T>
     {
-        protected override void WriteValue(HumanReadableTextWriter writer, T value, HumanReadableSerializerOptions options)
+        protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
         {
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             writer.WriteValue(scrubber(value));
         }
     }
@@ -150,9 +157,12 @@ public static class HumanReadableSerializerScrubExtensions
     {
         private readonly string _uniqueName = Guid.NewGuid().ToString();
 
-        protected override void WriteValue(HumanReadableTextWriter writer, T value, HumanReadableSerializerOptions options)
+        protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
         {
+            Debug.Assert(value is not null);
+#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
             var dict = options.GetOrSetSerializationData(_uniqueName, () => new Dictionary<T, string>(comparer));
+#pragma warning restore CS8714
             if (!dict.TryGetValue(value, out var scrubbedValue))
             {
                 scrubbedValue = formatValue(value, dict.Count);
@@ -180,10 +190,23 @@ public static class HumanReadableSerializerScrubExtensions
 
         public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
         {
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             var node = JsonNode.Parse(value);
+            if (node is null)
+            {
+                writer.WriteValue(value);
+                return;
+            }
+
             var result = _path.Evaluate(node);
             foreach (var match in result.Matches)
             {
+                Debug.Assert(match.Value is not null);
                 var scrubValue = _scrubber(match.Value);
                 ReplaceWith(match.Value, scrubValue);
             }
@@ -246,6 +269,12 @@ public static class HumanReadableSerializerScrubExtensions
 
         public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
         {
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             var document = XDocument.Parse(value);
             var result = document.XPathEvaluate(_xpath, _nsResolver);
             var navigator = (IEnumerable<object>)result;
@@ -289,6 +318,12 @@ public static class HumanReadableSerializerScrubExtensions
 
         public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
         {
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             var document = XDocument.Parse(value);
             var result = document.XPathEvaluate(_xpath, _nsResolver);
             var navigator = (IEnumerable<object>)result;

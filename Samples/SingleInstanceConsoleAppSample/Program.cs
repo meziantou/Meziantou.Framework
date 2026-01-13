@@ -14,7 +14,7 @@ singleInstance.NewInstance += SingleInstance_NewInstance;
 Console.WriteLine("Waiting for other instances");
 Console.ReadLine();
 
-static void SingleInstance_NewInstance(object sender, SingleInstanceEventArgs e)
+static void SingleInstance_NewInstance(object? sender, SingleInstanceEventArgs e)
 {
     Console.WriteLine("New instance " + e.ProcessId.ToString(CultureInfo.InvariantCulture));
     foreach (var arg in e.Arguments)

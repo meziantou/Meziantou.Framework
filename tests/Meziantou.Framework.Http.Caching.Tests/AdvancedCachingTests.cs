@@ -1,7 +1,6 @@
 using System.Net;
-using HttpCaching.Tests.Internals;
 
-namespace HttpCaching.Tests;
+namespace Meziantou.Framework.Http.Caching.Tests;
 
 /// <summary>Tests for RFC 8246 immutable directive, Expires header, heuristic freshness, and edge cases.</summary>
 public sealed class AdvancedCachingTests

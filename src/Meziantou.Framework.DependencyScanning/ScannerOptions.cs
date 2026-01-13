@@ -39,7 +39,7 @@ public sealed class ScannerOptions
 
     internal static ScannerOptions Default { get; } = new ScannerOptions();
 
-    private DependencyScanner[] _enabledScanners;
+    private DependencyScanner[]? _enabledScanners;
 
     /// <summary>Gets or sets the collection of scanners to use. Defaults to all built-in scanners.</summary>
     public ImmutableArray<DependencyScanner> Scanners
@@ -132,7 +132,7 @@ public sealed class ScannerOptions
 
     private void ThrowIfFrozen()
     {
-        if (_enabledScanners != null)
+        if (_enabledScanners is not null)
             throw new InvalidOperationException("The options are frozen and cannot be modified.");
     }
 }

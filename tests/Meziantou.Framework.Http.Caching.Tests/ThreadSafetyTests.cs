@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 
-namespace HttpCaching.Tests;
+namespace Meziantou.Framework.Http.Caching.Tests;
 
 public class ThreadSafetyTests
 {

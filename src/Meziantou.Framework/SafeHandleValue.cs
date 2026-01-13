@@ -21,9 +21,10 @@ internal
 struct SafeHandleValue : IDisposable
 {
     private bool _hasValue;
-    private SafeHandle _safeHandle;
+    private SafeHandle? _safeHandle;
 
     /// <summary>Gets a value indicating whether the handle has a valid value.</summary>
+    [MemberNotNullWhen(true, nameof(_safeHandle))]
     public readonly bool HasValue => _safeHandle is not null && _hasValue && !_safeHandle.IsClosed;
 
     /// <summary>Gets the underlying handle value.</summary>

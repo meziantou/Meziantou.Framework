@@ -1,4 +1,3 @@
-#nullable disable
 //#define HTML_XPATH_TRACE
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -15,10 +14,10 @@ internal
 sealed class HtmlNodeNavigator : XPathNavigator
 {
     private readonly NameTable _nameTable = new();
-    private readonly HtmlNode _rootNode;
+    private readonly HtmlNode? _rootNode;
 
     [Conditional("HTML_XPATH_TRACE")]
-    private static void Trace(object value, [CallerMemberName] string methodName = null)
+    private static void Trace(object? value, [CallerMemberName] string? methodName = null)
     {
 #if HTML_XPATH_TRACE
         if (!EnableTrace)
@@ -32,13 +31,13 @@ sealed class HtmlNodeNavigator : XPathNavigator
     internal static bool EnableTrace { get; set; }
 #endif
 
-    public HtmlNodeNavigator(HtmlDocument document, HtmlNode currentNode, HtmlNodeNavigatorOptions options)
+    public HtmlNodeNavigator(HtmlDocument? document, HtmlNode currentNode, HtmlNodeNavigatorOptions options)
     {
         CurrentNode = currentNode ?? throw new ArgumentNullException(nameof(currentNode));
         Document = document;
         BaseNode = currentNode;
         Options = options;
-        if ((options & HtmlNodeNavigatorOptions.RootNode) == HtmlNodeNavigatorOptions.RootNode)
+        if ((options & HtmlNodeNavigatorOptions.RootNode) is HtmlNodeNavigatorOptions.RootNode)
         {
             _rootNode = CurrentNode;
         }
@@ -71,7 +70,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
     }
 
     public HtmlNodeNavigatorOptions Options { get; }
-    public HtmlDocument Document { get; }
+    public HtmlDocument? Document { get; }
     public HtmlNode BaseNode { get; }
 
     private string GetOrAdd(string array)
@@ -88,7 +87,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         get
         {
             if (CurrentNode is null)
-                return null;
+                return "";
 
             return CurrentNode.OuterXml;
         }
@@ -152,7 +151,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         return true;
     }
 
-    private static HtmlAttribute MoveToFirstNamespaceLocal(HtmlAttributeList attributes)
+    private static HtmlAttribute? MoveToFirstNamespaceLocal(HtmlAttributeList attributes)
     {
         if (attributes is null)
             return null;
@@ -166,7 +165,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         return null;
     }
 
-    private static HtmlAttribute MoveToFirstNamespaceGlobal(HtmlNode rootNode, ref HtmlAttributeList attributes)
+    private static HtmlAttribute? MoveToFirstNamespaceGlobal(HtmlNode? rootNode, ref HtmlAttributeList attributes)
     {
         var att = MoveToFirstNamespaceLocal(attributes);
         if (att is not null)
@@ -201,8 +200,8 @@ sealed class HtmlNodeNavigator : XPathNavigator
         if (CurrentNode is not HtmlElement element)
             return false;
 
-        HtmlAttribute att = null;
-        HtmlAttributeList attributes = null;
+        HtmlAttribute? att = null;
+        HtmlAttributeList? attributes = null;
         switch (namespaceScope)
         {
             case XPathNamespaceScope.Local:
@@ -263,7 +262,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         return true;
     }
 
-    private static HtmlAttribute MoveToNextNamespaceLocal(HtmlAttribute att)
+    private static HtmlAttribute? MoveToNextNamespaceLocal(HtmlAttribute att)
     {
         att = att.NextSibling;
         while (att is not null)
@@ -277,7 +276,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         return null;
     }
 
-    private static HtmlAttribute MoveToNextNamespaceGlobal(HtmlNode rootNode, ref HtmlAttributeList attributes, HtmlAttribute att)
+    private static HtmlAttribute? MoveToNextNamespaceGlobal(HtmlNode? rootNode, ref HtmlAttributeList? attributes, HtmlAttribute att)
     {
         var next = MoveToNextNamespaceLocal(att);
         if (next is not null)
@@ -311,8 +310,8 @@ sealed class HtmlNodeNavigator : XPathNavigator
         if (CurrentNode is not HtmlAttribute attribute || !attribute.IsNamespace)
             return false;
 
-        HtmlAttribute att;
-        var attributes = attribute.ParentNode.HasAttributes ? attribute.ParentNode.Attributes : null;
+        HtmlAttribute? att;
+        var attributes = attribute.ParentNode is not null && attribute.ParentNode.HasAttributes ? attribute.ParentNode.Attributes : null;
         switch (namespaceScope)
         {
             case XPathNamespaceScope.Local:
@@ -530,10 +529,10 @@ sealed class HtmlNodeNavigator : XPathNavigator
             Trace("=" + CurrentNode.Value);
             if (CurrentNode is HtmlElement element)
             {
-                if ((Options & HtmlNodeNavigatorOptions.UppercasedValues) == HtmlNodeNavigatorOptions.UppercasedValues)
+                if ((Options & HtmlNodeNavigatorOptions.UppercasedValues) is HtmlNodeNavigatorOptions.UppercasedValues)
                     return element.InnerText.ToUpperInvariant();
 
-                if ((Options & HtmlNodeNavigatorOptions.LowercasedValues) == HtmlNodeNavigatorOptions.LowercasedValues)
+                if ((Options & HtmlNodeNavigatorOptions.LowercasedValues) is HtmlNodeNavigatorOptions.LowercasedValues)
                     return element.InnerText.ToLowerInvariant();
 
                 return element.InnerText;
@@ -542,14 +541,14 @@ sealed class HtmlNodeNavigator : XPathNavigator
             var value = CurrentNode.Value;
             if (value is not null)
             {
-                if ((Options & HtmlNodeNavigatorOptions.UppercasedValues) == HtmlNodeNavigatorOptions.UppercasedValues)
+                if ((Options & HtmlNodeNavigatorOptions.UppercasedValues) is HtmlNodeNavigatorOptions.UppercasedValues)
                     return value.ToUpperInvariant();
 
-                if ((Options & HtmlNodeNavigatorOptions.LowercasedValues) == HtmlNodeNavigatorOptions.LowercasedValues)
+                if ((Options & HtmlNodeNavigatorOptions.LowercasedValues) is HtmlNodeNavigatorOptions.LowercasedValues)
                     return value.ToLowerInvariant();
             }
 
-            return value;
+            return value ?? "";
         }
     }
 }

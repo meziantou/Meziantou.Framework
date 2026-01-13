@@ -36,7 +36,7 @@ public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
     /// <param name="items">The collection whose elements are copied to the new list.</param>
     public SynchronizedList(IEnumerable<T>? items = null)
     {
-        _list = items != null ? [.. items] : [];
+        _list = items is not null ? [.. items] : [];
     }
 
     /// <summary>Initializes a new instance of the <see cref="SynchronizedList{T}"/> class that contains elements copied from the specified span.</summary>

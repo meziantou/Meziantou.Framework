@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using Meziantou.Framework.HumanReadable.Utils;
 
@@ -5,8 +6,9 @@ namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class MethodInfoConverter : HumanReadableConverter<MethodInfo>
 {
-    protected override void WriteValue(HumanReadableTextWriter writer, MethodInfo value, HumanReadableSerializerOptions options)
+    protected override void WriteValue(HumanReadableTextWriter writer, MethodInfo? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value is not null);
         var sb = new StringBuilder();
         if (value.IsStatic)
         {

@@ -58,7 +58,7 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
             var value = span[i];
             if (value.Key == name)
             {
-                var newValue = new string[value.Value.Count + values.Count];
+                var newValue = new string?[value.Value.Count + values.Count];
                 value.Value.ToArray().AsSpan().CopyTo(newValue);
                 values.ToArray().AsSpan().CopyTo(newValue.AsSpan(value.Value.Count));
                 span[i] = KeyValuePair.Create(name, new StringValues(newValue));

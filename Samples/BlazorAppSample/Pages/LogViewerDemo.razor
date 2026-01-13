@@ -1,4 +1,4 @@
-﻿@page "/logviewer"
+@page "/logviewer"
 
 <h1>Log Viewer!</h1>
 
@@ -27,7 +27,7 @@
 		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(14), Message = "test data", LogLevel = LogLevel.Information,
 			Data = new
 			{
-				Null = (object)null,
+				Null = (object?)null,
 				A = "test",
 				B = 10,
 				C = new object[] { 1, "test", 'c', new[] { 123 } },

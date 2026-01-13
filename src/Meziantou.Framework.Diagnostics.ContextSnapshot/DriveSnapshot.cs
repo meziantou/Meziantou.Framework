@@ -19,15 +19,15 @@ public sealed class DriveSnapshot
         RootDirectory = Utils.SafeGet(() => driveInfo.RootDirectory.FullName);
     }
 
-    public string Name { get; }
-    public string DriveFormat { get; }
+    public string? Name { get; }
+    public string? DriveFormat { get; }
     public DriveType DriveType { get; }
-    public string VolumeLabel { get; }
+    public string? VolumeLabel { get; }
     public long AvailableFreeSpace { get; }
     public long TotalFreeSpace { get; }
     public long TotalSize { get; }
     public bool IsReady { get; }
-    public string RootDirectory { get; }
+    public string? RootDirectory { get; }
 
     internal static ImmutableArray<DriveSnapshot> Get()
     {

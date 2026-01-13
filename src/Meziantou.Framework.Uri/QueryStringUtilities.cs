@@ -43,9 +43,11 @@ public static class QueryStringUtilities
     /// <returns>The combined result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
-    public static string AddQueryString(string uri, IEnumerable<(string Name, string? Value)> queryString)
+    public static string AddQueryString(string uri, IEnumerable<(string Name, string? Value)>? queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);
+        if (queryString is null)
+            return uri;
 
         return AddQueryString(uri, queryString.Select(tuple => KeyValuePair.Create(tuple.Name, tuple.Value)));
     }
@@ -194,7 +196,7 @@ public static class QueryStringUtilities
     /// <returns>The combined result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
-    public static string AddOrReplaceQueryString(string uri, IEnumerable<(string Name, string Value)> queryString)
+    public static string AddOrReplaceQueryString(string uri, IEnumerable<(string Name, string? Value)> queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);

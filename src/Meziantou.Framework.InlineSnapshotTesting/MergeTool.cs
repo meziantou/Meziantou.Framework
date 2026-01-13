@@ -61,14 +61,17 @@ public abstract class MergeTool
         if (IsDisable())
             return null;
 
-        foreach (var mergeTool in mergeTools)
+        if (mergeTools is not null)
         {
-            if (mergeTool is null)
-                continue;
+            foreach (var mergeTool in mergeTools)
+            {
+                if (mergeTool is null)
+                    continue;
 
-            var process = mergeTool.Start(currentFilePath, newFilePath);
-            if (process is not null)
-                return process;
+                var process = mergeTool.Start(currentFilePath, newFilePath);
+                if (process is not null)
+                    return process;
+            }
         }
 
         return null;

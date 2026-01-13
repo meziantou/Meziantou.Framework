@@ -227,7 +227,7 @@ public sealed class AccessToken : IDisposable
     private TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<T, TResult> func)
         where T : unmanaged
     {
-        return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg))!;
+        return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg));
     }
 
     private unsafe TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
@@ -268,7 +268,7 @@ public sealed class AccessToken : IDisposable
             }
         }
 
-        return default!;
+        return default;
     }
 
     /// <summary>Enables a privilege for this token.</summary>
@@ -359,7 +359,7 @@ public sealed class AccessToken : IDisposable
     public void Dispose()
     {
         _token.Dispose();
-        _token = null;
+        _token = null!;
     }
 
     /// <summary>Opens the access token associated with the current process.</summary>

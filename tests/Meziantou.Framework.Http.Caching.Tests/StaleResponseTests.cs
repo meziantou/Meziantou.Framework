@@ -1,7 +1,6 @@
 using System.Net;
-using HttpCaching.Tests.Internals;
 
-namespace HttpCaching.Tests;
+namespace Meziantou.Framework.Http.Caching.Tests;
 
 public class StaleResponseTests
 {

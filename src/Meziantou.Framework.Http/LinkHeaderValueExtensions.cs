@@ -14,7 +14,7 @@ public static class LinkHeaderValueExtensions
     /// <param name="links">The collection of links to search.</param>
     /// <param name="rel">The relation type to find.</param>
     /// <returns>The first <see cref="LinkHeaderValue"/> with the specified relation type, or <see langword="null"/> if not found.</returns>
-    public static LinkHeaderValue GetLink(this IEnumerable<LinkHeaderValue> links, string rel) => links.FirstOrDefault(l => string.Equals(l.Rel, rel, StringComparison.OrdinalIgnoreCase));
+    public static LinkHeaderValue? GetLink(this IEnumerable<LinkHeaderValue> links, string rel) => links.FirstOrDefault(l => string.Equals(l.Rel, rel, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Gets the URL of the first link with the specified relation type.</summary>
     /// <param name="links">The collection of links to search.</param>

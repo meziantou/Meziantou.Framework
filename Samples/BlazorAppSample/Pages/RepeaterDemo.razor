@@ -1,4 +1,4 @@
-﻿@page "/repeater"
+@page "/repeater"
 @inject WeatherForecastClient WeatherForecastClient
 
 <h1>Repeater</h1>
@@ -35,7 +35,7 @@
 </Repeater>
 
 @code {
-    private IReadOnlyList<WeatherForecast> data;
+    private IReadOnlyList<WeatherForecast>? data;
 
     protected override async Task OnInitializedAsync()
     {

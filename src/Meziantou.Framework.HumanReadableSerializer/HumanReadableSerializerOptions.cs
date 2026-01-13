@@ -23,11 +23,12 @@ public sealed record HumanReadableSerializerOptions
     private readonly ConcurrentDictionary<Type, HumanReadableConverter> _convertersCache;
     private readonly ConcurrentDictionary<Type, HumanReadableMemberInfo[]> _memberInfoCache;
 
-    private readonly List<(Func<Type, bool>? Condition, HumanReadableAttribute Attribute)> _typeAttributes;
-    private readonly List<(Func<MemberInfo, bool>? Condition, HumanReadableAttribute Attribute)> _memberAttributes;
+    private readonly List<(Func<Type, bool> Condition, HumanReadableAttribute Attribute)> _typeAttributes;
+    private readonly List<(Func<MemberInfo, bool> Condition, HumanReadableAttribute Attribute)> _memberAttributes;
     private readonly Dictionary<string, ValueFormatter> _valueFormatters;
+
     [ThreadStatic]
-    private static SerializationContext s_currentContext;
+    private static SerializationContext? s_currentContext;
 
     public HumanReadableSerializerOptions()
     {
@@ -79,6 +80,9 @@ public sealed record HumanReadableSerializerOptions
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "'By design")]
     public T GetOrSetSerializationData<T>(string name, Func<T> addValue)
     {
+        if (s_currentContext is null)
+            throw new InvalidOperationException("No serialization context is available. Make sure to call this method within a serialization scope.");
+
         return s_currentContext.GetOrSetSerializationData(name, addValue);
     }
 
@@ -161,6 +165,9 @@ public sealed record HumanReadableSerializerOptions
     /// <param name="formatter">The formatter to use for the media type.</param>
     public void AddFormatter(string mediaType, ValueFormatter formatter)
     {
+        ArgumentNullException.ThrowIfNull(mediaType);
+        ArgumentNullException.ThrowIfNull(formatter);
+
         VerifyMutable();
         _valueFormatters[mediaType] = formatter;
     }
@@ -170,6 +177,9 @@ public sealed record HumanReadableSerializerOptions
     /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(Type type, HumanReadableAttribute attribute)
     {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(attribute);
+
         VerifyMutable();
         _typeAttributes.Add((t => t == type, attribute));
     }
@@ -180,6 +190,9 @@ public sealed record HumanReadableSerializerOptions
     /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(Type type, string memberName, HumanReadableAttribute attribute)
     {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(memberName);
+
         VerifyMutable();
 
 #if !NET7_0_OR_GREATER
@@ -200,6 +213,9 @@ public sealed record HumanReadableSerializerOptions
 
     private void AddAttribute(MemberInfo member, HumanReadableAttribute attribute)
     {
+        ArgumentNullException.ThrowIfNull(member);
+        ArgumentNullException.ThrowIfNull(attribute);
+
         VerifyMutable();
         _memberAttributes.Add((m => m == member, attribute));
     }
@@ -219,6 +235,9 @@ public sealed record HumanReadableSerializerOptions
     /// <param name="attribute">The attribute to add.</param>
     public void AddPropertyAttribute(Func<PropertyInfo, bool> condition, HumanReadableAttribute attribute)
     {
+        ArgumentNullException.ThrowIfNull(condition);
+        ArgumentNullException.ThrowIfNull(attribute);
+
         VerifyMutable();
         _memberAttributes.Add((Condition: member => member is PropertyInfo property && condition(property), attribute));
     }
@@ -229,6 +248,9 @@ public sealed record HumanReadableSerializerOptions
     /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute<T>(Expression<Func<T, object>> member, HumanReadableAttribute attribute)
     {
+        ArgumentNullException.ThrowIfNull(member);
+        ArgumentNullException.ThrowIfNull(attribute);
+
         VerifyMutable();
         var memberInfos = member.GetMemberInfos();
         if (memberInfos.Count is 0)
@@ -257,6 +279,8 @@ public sealed record HumanReadableSerializerOptions
     /// <param name="attribute">The attribute to add.</param>
     public void AddFieldAttribute(Func<FieldInfo, bool> condition, HumanReadableAttribute attribute)
     {
+        ArgumentNullException.ThrowIfNull(condition);
+        ArgumentNullException.ThrowIfNull(attribute);
         VerifyMutable();
         _memberAttributes.Add((Condition: member => member is FieldInfo field && condition(field), attribute));
     }
@@ -266,12 +290,16 @@ public sealed record HumanReadableSerializerOptions
     /// <param name="attribute">The attribute to add.</param>
     public void AddTypeAttribute(Func<Type, bool> condition, HumanReadableAttribute attribute)
     {
+        ArgumentNullException.ThrowIfNull(condition);
+        ArgumentNullException.ThrowIfNull(attribute);
+
         VerifyMutable();
         _typeAttributes.Add((condition, attribute));
     }
 
     internal T? GetCustomAttribute<T>(Type type) where T : HumanReadableAttribute
     {
+        ArgumentNullException.ThrowIfNull(type);
         MakeReadOnly();
 
         // Read reverse, so attributes set by the user override the default attributes
@@ -287,6 +315,7 @@ public sealed record HumanReadableSerializerOptions
 
     internal T? GetCustomAttribute<T>(MemberInfo member) where T : HumanReadableAttribute
     {
+        ArgumentNullException.ThrowIfNull(member);
         MakeReadOnly();
 
         // Read reverse, so attributes set by the user override the default attributes
@@ -302,22 +331,29 @@ public sealed record HumanReadableSerializerOptions
 
     internal IEnumerable<T> GetCustomAttributes<T>(MemberInfo member) where T : HumanReadableAttribute
     {
+        ArgumentNullException.ThrowIfNull(member);
         MakeReadOnly();
 
-        // Read reverse, so attributes set by the user override the default attributes
-        for (var i = _memberAttributes.Count - 1; i >= 0; i--)
+        return GetCustomAttributes(member);
+        IEnumerable<T> GetCustomAttributes(MemberInfo member)
         {
-            var attribute = _memberAttributes[i];
-            if (attribute.Attribute is T result && attribute.Condition(member))
-                yield return result;
-        }
+            // Read reverse, so attributes set by the user override the default attributes
+            for (var i = _memberAttributes.Count - 1; i >= 0; i--)
+            {
+                var attribute = _memberAttributes[i];
+                if (attribute.Attribute is T result && attribute.Condition(member))
+                    yield return result;
+            }
 
-        foreach (var attribute in member.GetCustomAttributes<T>())
-            yield return attribute;
+            foreach (var attribute in member.GetCustomAttributes<T>())
+                yield return attribute;
+        }
     }
 
     internal HumanReadableConverter GetConverter(Type type)
     {
+        ArgumentNullException.ThrowIfNull(type);
+
         // Make sure the instance is readonly on the first usage
         MakeReadOnly();
         return _convertersCache.GetOrAdd(type, type => FindConverter(type, Converters));
@@ -380,6 +416,8 @@ public sealed record HumanReadableSerializerOptions
 
     internal HumanReadableMemberInfo[] GetMembers(Type type)
     {
+        ArgumentNullException.ThrowIfNull(type);
+
         return _memberInfoCache.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
     }
 
@@ -392,8 +430,8 @@ public sealed record HumanReadableSerializerOptions
                 return formatter;
 
             // Normalize the format
-            mediaType = GetFormat(mediaType);
-            if (mediaType is not null && _valueFormatters.TryGetValue(mediaType, out formatter))
+            var normalizedMediaType = GetFormat(mediaType);
+            if (normalizedMediaType is not null && _valueFormatters.TryGetValue(normalizedMediaType, out formatter))
                 return formatter;
         }
 

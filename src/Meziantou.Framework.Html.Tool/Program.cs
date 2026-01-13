@@ -46,7 +46,12 @@ internal static class Program
 
         replaceValueCommand.SetAction((parseResult, cancellationToken) =>
         {
-            return ReplaceValue(parseResult.GetValue(singleFileOption), parseResult.GetValue(filePatternOption), parseResult.GetValue(rootDirectoryOption), parseResult.GetValue(xpathOption), parseResult.GetValue(newValueOption));
+            return ReplaceValue(
+                parseResult.GetValue(singleFileOption),
+                parseResult.GetValue(filePatternOption),
+                parseResult.GetValue(rootDirectoryOption),
+                parseResult.GetRequiredValue(xpathOption),
+                parseResult.GetRequiredValue(newValueOption));
         });
 
         rootCommand.Subcommands.Add(replaceValueCommand);
@@ -352,15 +357,15 @@ internal static class Program
                     if (!File.Exists(assetPath))
                         continue;
 
-                    var element = node.ParentElement!;
-                    if (string.Equals(element.Name, "SCRIPT", StringComparison.OrdinalIgnoreCase))
+                    var element = node.ParentElement;
+                    if (element is not null && string.Equals(element.Name, "SCRIPT", StringComparison.OrdinalIgnoreCase))
                     {
                         var text = await File.ReadAllTextAsync(assetPath, cancellationToken).ConfigureAwait(false);
                         element.RemoveAttribute("src");
                         element.InnerText = text;
 
                     }
-                    else if (string.Equals(element.Name, "LINK", StringComparison.OrdinalIgnoreCase))
+                    else if (element is not null && string.Equals(element.Name, "LINK", StringComparison.OrdinalIgnoreCase))
                     {
                         var text = await File.ReadAllTextAsync(assetPath, cancellationToken).ConfigureAwait(false);
                         element.Name = "style";

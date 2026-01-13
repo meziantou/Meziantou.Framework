@@ -1,3 +1,4 @@
+#nullable enable
 using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Time.Testing;
 
-namespace HttpCaching.Tests.Internals;
+namespace Meziantou.Framework.Http.Caching.Tests;
 
 internal sealed class HttpTestContext : IAsyncDisposable
 {
@@ -27,10 +28,7 @@ internal sealed class HttpTestContext : IAsyncDisposable
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseTestServer();
         _app = builder.Build();
-        _app.Run(async context =>
-        {
-            await HandleRequest(context);
-        });
+        _app.Run(HandleRequest);
         _ = _app.StartAsync();
 
         var handler = _app.GetTestServer().CreateHandler();

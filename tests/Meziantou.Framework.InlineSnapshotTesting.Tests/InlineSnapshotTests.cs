@@ -1032,7 +1032,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 
     [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Not supported on .NET Framework")]
     [SuppressMessage("Performance", "CA1849:Call async methods when in an async method", Justification = "Not supported on .NET Framework")]
-    private async Task AssertSnapshot([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null, string[]? preprocessorSymbols = null)
+    private async Task AssertSnapshot([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null, string[] preprocessorSymbols = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var projectPath = CreateTextFile("Project.csproj", $$"""
@@ -1204,7 +1204,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             process.ErrorDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            await process!.WaitForExitAsync();
+            await process.WaitForExitAsync();
             testOutputHelper.WriteLine("Exit code: " + process.ExitCode);
             if (expectedExitCode.HasValue)
             {

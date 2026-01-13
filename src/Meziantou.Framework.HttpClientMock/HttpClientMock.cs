@@ -153,6 +153,9 @@ public sealed partial class HttpClientMock : IAsyncDisposable
     private static IEndpointConventionBuilder MapCore(string path, Func<string, IEndpointConventionBuilder> mapMethodFunc)
     {
         var (scheme, domain, pathOnly, query) = ParseUrl(path);
+        if (pathOnly is null)
+            throw new ArgumentException("path must be a URI with a path segment", nameof(path));
+
         var method = mapMethodFunc(pathOnly);
         var order = 0;
 
@@ -176,7 +179,7 @@ public sealed partial class HttpClientMock : IAsyncDisposable
         method.WithOrder(order);
         return method;
 
-        static (string Scheme, string Domain, string Path, string Query) ParseUrl(string path)
+        static (string? Scheme, string? Domain, string? Path, string? Query) ParseUrl(string path)
         {
             if (path.Contains('#', StringComparison.Ordinal))
                 throw new ArgumentException("Fragment ('#') is not supported", nameof(path));

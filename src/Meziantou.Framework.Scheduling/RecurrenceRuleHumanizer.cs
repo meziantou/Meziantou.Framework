@@ -162,7 +162,7 @@ public abstract class RecurrenceRuleHumanizer
 
     protected static bool IsWeekday(ICollection<DayOfWeek> daysOfWeek)
     {
-        return daysOfWeek.Count == 5 &&
+        return daysOfWeek.Count is 5 &&
                daysOfWeek.Contains(DayOfWeek.Monday) &&
                daysOfWeek.Contains(DayOfWeek.Tuesday) &&
                daysOfWeek.Contains(DayOfWeek.Wednesday) &&
@@ -172,14 +172,14 @@ public abstract class RecurrenceRuleHumanizer
 
     protected static bool IsWeekendDay(ICollection<DayOfWeek> daysOfWeek)
     {
-        return daysOfWeek.Count == 2 &&
+        return daysOfWeek.Count is 2 &&
                daysOfWeek.Contains(DayOfWeek.Sunday) &&
                daysOfWeek.Contains(DayOfWeek.Saturday);
     }
 
     protected static bool IsFullWeek(ICollection<DayOfWeek> daysOfWeek)
     {
-        return daysOfWeek.Count == 7 &&
+        return daysOfWeek.Count is 7 &&
                daysOfWeek.Contains(DayOfWeek.Monday) &&
                daysOfWeek.Contains(DayOfWeek.Tuesday) &&
                daysOfWeek.Contains(DayOfWeek.Wednesday) &&

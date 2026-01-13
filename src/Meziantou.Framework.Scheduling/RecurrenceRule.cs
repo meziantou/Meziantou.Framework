@@ -463,7 +463,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
             if (!part.IsEmpty)
                 result.Add(ParseDayOfWeekWithOffset(part));
         }
-        return result.ToArray();
+        return [.. result];
     }
 
     private static DayOfWeek[] ParseByDay(Dictionary<string, string> values)
@@ -500,7 +500,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
             if (c is (>= '0' and <= '9') or '+' or '-')
                 continue;
 
-            if (i == 0)
+            if (i is 0)
             {
                 break;
             }
@@ -565,7 +565,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
 
     private protected static bool IsEmpty<T>([NotNullWhen(false)] IList<T>? list)
     {
-        return list is null || list.Count == 0;
+        return list is null || list.Count is 0;
     }
 
     private protected static IEnumerable<T> Intersect<T>(params IEnumerable<T>?[] enumerables)
@@ -724,7 +724,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <returns>An enumerable sequence of occurrence dates.</returns>
     public virtual IEnumerable<DateTime> GetNextOccurrences(DateTime startDate)
     {
-        if (Occurrences == 0)
+        if (Occurrences is 0)
             yield break;
 
         var count = 0;

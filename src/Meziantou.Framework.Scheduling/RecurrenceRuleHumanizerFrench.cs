@@ -10,7 +10,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("tous les");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" jours");
         }
@@ -31,7 +31,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("toutes les");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" secondes");
         }
@@ -52,7 +52,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("toutes les");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" minutes");
         }
@@ -73,7 +73,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("toutes les");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" heures");
         }
@@ -94,7 +94,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("toutes les");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" semaines");
         }
@@ -120,7 +120,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
         ArgumentNullException.ThrowIfNull(rrule);
         var sb = new StringBuilder();
         sb.Append("tous les");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" mois");
         }
@@ -160,7 +160,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("tous les");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" ans");
         }
@@ -245,10 +245,10 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
     private static string? GetWeekdayHumanText(ICollection<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
     {
-        if (daysOfWeek.Count == 0)
+        if (daysOfWeek.Count is 0)
             return null;
 
-        return GetWeekdayHumanText(daysOfWeek.Where(dow => !dow.Ordinal.HasValue).Select(dow => dow.DayOfWeek).ToList(), ", ", " et ", options);
+        return GetWeekdayHumanText([.. daysOfWeek.Where(dow => !dow.Ordinal.HasValue).Select(dow => dow.DayOfWeek)], ", ", " et ", options);
     }
 
     private static string GetBySetPosHumanText(int setPosition)

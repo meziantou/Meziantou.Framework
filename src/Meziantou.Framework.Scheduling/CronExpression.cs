@@ -86,7 +86,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
         bool hasSeconds;
         bool hasYear;
 
-        if (count == 5)
+        if (count is 5)
         {
             // Standard: min hour dom month dow
             hasSeconds = false;
@@ -106,7 +106,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
 
             year = CronField.CreateAll(CronFieldKind.Year);
         }
-        else if (count == 6)
+        else if (count is 6)
         {
             // With seconds: sec min hour dom month dow
             hasSeconds = true;
@@ -250,14 +250,14 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
             return false;
 
         // Handle ? (any)
-        if (field.Length == 1 && field[0] == '?')
+        if (field.Length is 1 && field[0] == '?')
         {
             result = CronField.CreateAll(kind);
             return true;
         }
 
         // Handle * (all)
-        if (field.Length == 1 && field[0] == '*')
+        if (field.Length is 1 && field[0] == '*')
         {
             result = CronField.CreateAll(kind);
             return true;
@@ -318,7 +318,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
             return false;
 
         // Handle special day of month cases: L, LW, L-n
-        if (kind == CronFieldKind.DayOfMonth)
+        if (kind is CronFieldKind.DayOfMonth)
         {
             if (part.Equals("L", StringComparison.OrdinalIgnoreCase))
             {
@@ -351,7 +351,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
         }
 
         // Handle special day of week cases: nL (last occurrence), n#m (nth occurrence)
-        if (kind == CronFieldKind.DayOfWeek)
+        if (kind is CronFieldKind.DayOfWeek)
         {
             // Handle nL (last day of week in month)
             if (part.Length >= 2 && (part[^1] == 'L' || part[^1] == 'l'))
@@ -442,15 +442,13 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
 
     private static bool TryParseValue(ReadOnlySpan<char> value, CronFieldKind kind, out int result)
     {
-        result = 0;
-
-        if (kind == CronFieldKind.Month)
+        if (kind is CronFieldKind.Month)
         {
             if (TryParseMonth(value, out result))
                 return true;
         }
 
-        if (kind == CronFieldKind.DayOfWeek)
+        if (kind is CronFieldKind.DayOfWeek)
         {
             if (TryParseDayOfWeek(value, out result))
                 return true;
@@ -468,8 +466,6 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
 
     private static bool TryParseMonth(ReadOnlySpan<char> value, out int result)
     {
-        result = 0;
-
         if (value.Equals("JAN", StringComparison.OrdinalIgnoreCase)) { result = 1; return true; }
         if (value.Equals("FEB", StringComparison.OrdinalIgnoreCase)) { result = 2; return true; }
         if (value.Equals("MAR", StringComparison.OrdinalIgnoreCase)) { result = 3; return true; }
@@ -488,8 +484,6 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
 
     private static bool TryParseDayOfWeek(ReadOnlySpan<char> value, out int result)
     {
-        result = 0;
-
         if (value.Equals("SUN", StringComparison.OrdinalIgnoreCase)) { result = 0; return true; }
         if (value.Equals("MON", StringComparison.OrdinalIgnoreCase)) { result = 1; return true; }
         if (value.Equals("TUE", StringComparison.OrdinalIgnoreCase)) { result = 2; return true; }
@@ -553,103 +547,105 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
     private DateTime? GetNextOccurrence(DateTime from)
     {
         var current = from;
-
-        // Maximum years to search forward
-        const int maxYearsToSearch = 100;
-        var maxDate = from.AddYears(maxYearsToSearch);
-
-        while (current < maxDate)
+        try
         {
-            // Check year
-            if (!_year.Matches(current.Year, current))
+            while (true)
             {
-                var nextYear = _year.GetNext(current.Year, current);
-                if (nextYear is null || nextYear.Value > 2099)
-                    return null;
-
-                current = new DateTime(nextYear.Value, 1, 1, 0, 0, 0);
-                continue;
-            }
-
-            // Check month
-            if (!_month.Matches(current.Month, current))
-            {
-                var nextMonth = _month.GetNext(current.Month, current);
-                if (nextMonth is null)
+                // Check year
+                if (!_year.Matches(current.Year))
                 {
-                    current = new DateTime(current.Year + 1, 1, 1, 0, 0, 0);
+                    var nextYear = _year.GetNext(current.Year);
+                    if (nextYear is null || nextYear.Value > 2099)
+                        return null;
+
+                    current = new DateTime(nextYear.Value, 1, 1, 0, 0, 0, from.Kind);
                     continue;
                 }
 
-                current = new DateTime(current.Year, nextMonth.Value, 1, 0, 0, 0);
-                continue;
-            }
-
-            // Check day of month and day of week
-            if (!MatchesDay(current))
-            {
-                var nextDay = GetNextMatchingDay(current);
-                if (nextDay is null)
+                // Check month
+                if (!_month.Matches(current.Month))
                 {
-                    // Move to next month
-                    if (current.Month == 12)
+                    var nextMonth = _month.GetNext(current.Month);
+                    if (nextMonth is null)
                     {
-                        current = new DateTime(current.Year + 1, 1, 1, 0, 0, 0);
+                        current = new DateTime(current.Year + 1, 1, 1, 0, 0, 0, from.Kind);
+                        continue;
                     }
-                    else
+
+                    current = new DateTime(current.Year, nextMonth.Value, 1, 0, 0, 0, from.Kind);
+                    continue;
+                }
+
+                // Check day of month and day of week
+                if (!MatchesDay(current))
+                {
+                    var nextDay = GetNextMatchingDay(current);
+                    if (nextDay is null)
                     {
-                        current = new DateTime(current.Year, current.Month + 1, 1, 0, 0, 0);
+                        // Move to next month
+                        if (current.Month is 12)
+                        {
+                            current = new DateTime(current.Year + 1, 1, 1, 0, 0, 0, from.Kind);
+                        }
+                        else
+                        {
+                            current = new DateTime(current.Year, current.Month + 1, 1, 0, 0, 0, from.Kind);
+                        }
+                        continue;
                     }
+
+                    current = new DateTime(current.Year, current.Month, nextDay.Value, 0, 0, 0, from.Kind);
                     continue;
                 }
 
-                current = new DateTime(current.Year, current.Month, nextDay.Value, 0, 0, 0);
-                continue;
-            }
-
-            // Check hour
-            if (!_hours.Matches(current.Hour, current))
-            {
-                var nextHour = _hours.GetNext(current.Hour, current);
-                if (nextHour is null)
+                // Check hour
+                if (!_hours.Matches(current.Hour))
                 {
-                    current = current.Date.AddDays(1);
+                    var nextHour = _hours.GetNext(current.Hour);
+                    if (nextHour is null)
+                    {
+                        current = current.Date.AddDays(1);
+                        continue;
+                    }
+
+                    current = new DateTime(current.Year, current.Month, current.Day, nextHour.Value, 0, 0, from.Kind);
                     continue;
                 }
 
-                current = new DateTime(current.Year, current.Month, current.Day, nextHour.Value, 0, 0);
-                continue;
-            }
-
-            // Check minute
-            if (!_minutes.Matches(current.Minute, current))
-            {
-                var nextMinute = _minutes.GetNext(current.Minute, current);
-                if (nextMinute is null)
+                // Check minute
+                if (!_minutes.Matches(current.Minute))
                 {
-                    current = new DateTime(current.Year, current.Month, current.Day, current.Hour, 0, 0).AddHours(1);
+                    var nextMinute = _minutes.GetNext(current.Minute);
+                    if (nextMinute is null)
+                    {
+                        current = new DateTime(current.Year, current.Month, current.Day, current.Hour, 0, 0, from.Kind).AddHours(1);
+                        continue;
+                    }
+
+                    current = new DateTime(current.Year, current.Month, current.Day, current.Hour, nextMinute.Value, 0, from.Kind);
                     continue;
                 }
 
-                current = new DateTime(current.Year, current.Month, current.Day, current.Hour, nextMinute.Value, 0);
-                continue;
-            }
-
-            // Check second
-            if (!_seconds.Matches(current.Second, current))
-            {
-                var nextSecond = _seconds.GetNext(current.Second, current);
-                if (nextSecond is null)
+                // Check second
+                if (!_seconds.Matches(current.Second))
                 {
-                    current = new DateTime(current.Year, current.Month, current.Day, current.Hour, current.Minute, 0).AddMinutes(1);
+                    var nextSecond = _seconds.GetNext(current.Second);
+                    if (nextSecond is null)
+                    {
+                        current = new DateTime(current.Year, current.Month, current.Day, current.Hour, current.Minute, 0, from.Kind).AddMinutes(1);
+                        continue;
+                    }
+
+                    current = new DateTime(current.Year, current.Month, current.Day, current.Hour, current.Minute, nextSecond.Value, from.Kind);
                     continue;
                 }
 
-                current = new DateTime(current.Year, current.Month, current.Day, current.Hour, current.Minute, nextSecond.Value);
-                continue;
+                return current;
             }
-
-            return current;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // Greater than DateTime.MaxValue
         }
 
         return null;
@@ -743,7 +739,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
         public static CronField CreateList(CronFieldKind kind, List<CronFieldValue> values) =>
             new(kind, isAll: false, values: values);
 
-        public bool Matches(int value, DateTime context)
+        public bool Matches(int value)
         {
             if (_isAll)
                 return true;
@@ -753,7 +749,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
 
             foreach (var v in _values)
             {
-                if (v.Kind == CronValueKind.Value && v.Value == value)
+                if (v.Kind is CronValueKind.Value && v.Value == value)
                     return true;
             }
 
@@ -847,7 +843,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
             var daysInMonth = DateTime.DaysInMonth(year, month);
             var lastDay = new DateTime(year, month, daysInMonth);
 
-            while (lastDay.DayOfWeek == DayOfWeek.Saturday || lastDay.DayOfWeek == DayOfWeek.Sunday)
+            while (lastDay.DayOfWeek is DayOfWeek.Saturday || lastDay.DayOfWeek is DayOfWeek.Sunday)
             {
                 lastDay = lastDay.AddDays(-1);
             }
@@ -865,7 +861,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
 
             var date = new DateTime(year, month, targetDay);
 
-            if (date.DayOfWeek == DayOfWeek.Saturday)
+            if (date.DayOfWeek is DayOfWeek.Saturday)
             {
                 // Move to Friday if possible, otherwise Monday
                 if (targetDay > 1)
@@ -874,7 +870,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
                     return targetDay + 2; // Monday
             }
 
-            if (date.DayOfWeek == DayOfWeek.Sunday)
+            if (date.DayOfWeek is DayOfWeek.Sunday)
             {
                 // Move to Monday if possible, otherwise Friday
                 if (targetDay < daysInMonth)
@@ -898,7 +894,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
             return (date.Day - 1) / 7 + 1;
         }
 
-        public int? GetNext(int current, DateTime context)
+        public int? GetNext(int current)
         {
             if (_isAll)
             {
@@ -914,10 +910,12 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
             int? result = null;
             foreach (var v in _values)
             {
-                if (v.Kind == CronValueKind.Value && v.Value >= current)
+                if (v.Kind is CronValueKind.Value && v.Value >= current)
                 {
                     if (result is null || v.Value < result.Value)
+                    {
                         result = v.Value;
+                    }
                 }
             }
 

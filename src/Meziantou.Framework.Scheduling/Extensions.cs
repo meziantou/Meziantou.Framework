@@ -74,7 +74,7 @@ internal static class Extensions
             return dt.AddDays(-dt.Day + 1);
         }
 
-        return new DateTime(dt.Year, dt.Month, 1);
+        return new DateTime(dt.Year, dt.Month, 1, 0, 0, 0, dt.Kind);
     }
 
     public static DateTime StartOfYear(DateTime dt)
@@ -90,7 +90,7 @@ internal static class Extensions
         }
         else
         {
-            return new DateTime(dt.Year, 1, 1);
+            return new DateTime(dt.Year, 1, 1, 0, 0, 0, dt.Kind);
         }
     }
 

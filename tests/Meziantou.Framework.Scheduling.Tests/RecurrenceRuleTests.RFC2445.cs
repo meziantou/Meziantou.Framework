@@ -45,7 +45,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    public void Daily_For3ccurrences()
+    public void Daily_For3Occurrences()
     {
         var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
         var startDate = new DateTime(1997, 09, 02, 09, 00, 00);

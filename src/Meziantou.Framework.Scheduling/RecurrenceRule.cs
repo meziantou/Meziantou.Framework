@@ -7,7 +7,25 @@ namespace Meziantou.Framework.Scheduling;
 /// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).Take(50).ToArray();
 /// </code>
 /// </example>
-public abstract class RecurrenceRule
+/// <remarks>
+/// <para>Supports the following RFC 5545 recurrence rule properties:</para>
+/// <list type="bullet">
+/// <item><description>FREQ (Secondly, Minutely, Hourly, Daily, Weekly, Monthly, Yearly)</description></item>
+/// <item><description>INTERVAL - The interval between occurrences</description></item>
+/// <item><description>COUNT - Maximum number of occurrences</description></item>
+/// <item><description>UNTIL - End date for the recurrence</description></item>
+/// <item><description>WKST - The day on which the workweek starts</description></item>
+/// <item><description>BYSECOND - Limits occurrences to specific seconds (0-60)</description></item>
+/// <item><description>BYMINUTE - Limits occurrences to specific minutes (0-59)</description></item>
+/// <item><description>BYHOUR - Limits occurrences to specific hours (0-23)</description></item>
+/// <item><description>BYDAY - Limits occurrences to specific days of the week</description></item>
+/// <item><description>BYMONTHDAY - Limits occurrences to specific days of the month (1-31, -1 to -31)</description></item>
+/// <item><description>BYYEARDAY - Limits occurrences to specific days of the year (1-366, -1 to -366)</description></item>
+/// <item><description>BYMONTH - Limits occurrences to specific months (1-12)</description></item>
+/// <item><description>BYSETPOS - Limits occurrences to specific positions in the recurrence set</description></item>
+/// </list>
+/// </remarks>
+public abstract class RecurrenceRule : IRecurrenceRule
 {
     /// <summary>The default first day of the week (Monday).</summary>
     public static readonly DayOfWeek DefaultFirstDayOfWeek = DayOfWeek.Monday;
@@ -27,6 +45,21 @@ public abstract class RecurrenceRule
     /// <summary>The first day of the week for the recurrence rule.</summary>
     public DayOfWeek WeekStart { get; set; } = DefaultFirstDayOfWeek;
 
+    /// <summary>Limits occurrences to specific seconds (0-60, where 60 represents leap seconds).</summary>
+    public IList<int>? BySeconds { get; set; }
+
+    /// <summary>Limits occurrences to specific minutes (0-59).</summary>
+    public IList<int>? ByMinutes { get; set; }
+
+    /// <summary>Limits occurrences to specific hours (0-23).</summary>
+    public IList<int>? ByHours { get; set; }
+
+    /// <summary>Limits occurrences to specific months (1-12).</summary>
+    public IList<Month> ByMonths { get; set; } = [];
+
+    /// <summary>Limits occurrences to specific days of the month (1-31, -1 to -31).</summary>
+    public IList<int> ByMonthDays { get; set; } = [];
+
     /// <summary>Limits occurrences to specific positions in the recurrence set.</summary>
     public IList<int>? BySetPositions { get; set; }
 
@@ -40,7 +73,7 @@ public abstract class RecurrenceRule
     public static RecurrenceRule Parse(string rrule)
     {
         if (!TryParse(rrule, out var recurrenceRule, out var error))
-            throw new FormatException("RRule format is invalid: " + error);
+            throw new FormatException($"RRule value '{rrule}' is invalid: " + error);
 
         return recurrenceRule;
     }
@@ -52,7 +85,7 @@ public abstract class RecurrenceRule
     public static RecurrenceRule Parse(ReadOnlySpan<char> rrule)
     {
         if (!TryParse(rrule, out var recurrenceRule, out var error))
-            throw new FormatException("RRule format is invalid: " + error);
+            throw new FormatException($"RRule value '{rrule}' is invalid: " + error);
 
         return recurrenceRule;
     }
@@ -118,11 +151,36 @@ public abstract class RecurrenceRule
             var frequency = values.GetValue("FREQ", Frequency.None);
             switch (frequency)
             {
+                case Frequency.Secondly:
+                    var secondlyRecurrenceRule = new SecondlyRecurrenceRule
+                    {
+                        ByWeekDays = ParseByDay(values),
+                        ByHours = ParseByHours(values) ?? [],
+                        ByMinutes = ParseByMinutes(values) ?? [],
+                    };
+                    recurrenceRule = secondlyRecurrenceRule;
+                    break;
+                case Frequency.Minutely:
+                    var minutelyRecurrenceRule = new MinutelyRecurrenceRule
+                    {
+                        ByWeekDays = ParseByDay(values),
+                        ByHours = ParseByHours(values) ?? [],
+                        BySeconds = ParseBySeconds(values) ?? [],
+                    };
+                    recurrenceRule = minutelyRecurrenceRule;
+                    break;
+                case Frequency.Hourly:
+                    var hourlyRecurrenceRule = new HourlyRecurrenceRule
+                    {
+                        ByWeekDays = ParseByDay(values),
+                        ByMinutes = ParseByMinutes(values) ?? [],
+                        BySeconds = ParseBySeconds(values) ?? [],
+                    };
+                    recurrenceRule = hourlyRecurrenceRule;
+                    break;
                 case Frequency.Daily:
                     var dailyRecurrenceRule = new DailyRecurrenceRule
                     {
-                        ByMonthDays = ParseByMonthDays(values),
-                        ByMonths = ParseByMonth(values),
                         ByWeekDays = ParseByDay(values),
                     };
                     recurrenceRule = dailyRecurrenceRule;
@@ -130,7 +188,6 @@ public abstract class RecurrenceRule
                 case Frequency.Weekly:
                     var weeklyRecurrence = new WeeklyRecurrenceRule
                     {
-                        ByMonths = ParseByMonth(values),
                         ByWeekDays = ParseByDay(values),
                     };
                     recurrenceRule = weeklyRecurrence;
@@ -139,8 +196,6 @@ public abstract class RecurrenceRule
                     var monthlyRecurrence = new MonthlyRecurrenceRule
                     {
                         ByWeekDays = ParseByDayWithOffset(values),
-                        ByMonthDays = ParseByMonthDays(values),
-                        ByMonths = ParseByMonth(values),
                     };
                     recurrenceRule = monthlyRecurrence;
                     break;
@@ -172,6 +227,11 @@ public abstract class RecurrenceRule
 
             recurrenceRule.BySetPositions = ParseBySetPos(values);
             recurrenceRule.WeekStart = ParseWeekStart(values);
+            recurrenceRule.BySeconds = ParseBySeconds(values);
+            recurrenceRule.ByMinutes = ParseByMinutes(values);
+            recurrenceRule.ByHours = ParseByHours(values);
+            recurrenceRule.ByMonths = ParseByMonth(values);
+            recurrenceRule.ByMonthDays = ParseByMonthDays(values);
 
             return true;
         }
@@ -203,101 +263,7 @@ public abstract class RecurrenceRule
         if (rrule is null)
             return false;
 
-        try
-        {
-            // Extract parts
-            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var parts = rrule.Split(';', StringSplitOptions.RemoveEmptyEntries);
-            foreach (var part in parts)
-            {
-                var (name, value) = SplitPart(part);
-                if (values.ContainsKey(name))
-                {
-                    error = $"Duplicate name: '{name}'.";
-                    return false;
-                }
-
-                if (name.Equals("UNTIL", StringComparison.OrdinalIgnoreCase) && values.ContainsKey("COUNT"))
-                {
-                    error = "Cannot set UNTIL and COUNT in the same recurrence rule.";
-                    return false;
-                }
-
-                if (name.Equals("COUNT", StringComparison.OrdinalIgnoreCase) && values.ContainsKey("UNTIL"))
-                {
-                    error = "Cannot set UNTIL and COUNT in the same recurrence rule.";
-                    return false;
-                }
-
-                values.Add(name, value);
-            }
-
-            // Set specific properties
-            var frequency = values.GetValue("FREQ", Frequency.None);
-            switch (frequency)
-            {
-                case Frequency.Daily:
-                    var dailyRecurrenceRule = new DailyRecurrenceRule
-                    {
-                        ByMonthDays = ParseByMonthDays(values),
-                        ByMonths = ParseByMonth(values),
-                        ByWeekDays = ParseByDay(values),
-                    };
-                    recurrenceRule = dailyRecurrenceRule;
-                    break;
-                case Frequency.Weekly:
-                    var weeklyRecurrence = new WeeklyRecurrenceRule
-                    {
-                        ByMonths = ParseByMonth(values),
-                        ByWeekDays = ParseByDay(values),
-                    };
-                    recurrenceRule = weeklyRecurrence;
-                    break;
-                case Frequency.Monthly:
-                    var monthlyRecurrence = new MonthlyRecurrenceRule
-                    {
-                        ByWeekDays = ParseByDayWithOffset(values),
-                        ByMonthDays = ParseByMonthDays(values),
-                        ByMonths = ParseByMonth(values),
-                    };
-                    recurrenceRule = monthlyRecurrence;
-                    break;
-                case Frequency.Yearly:
-                    var yearlyRecurrence = new YearlyRecurrenceRule
-                    {
-                        ByWeekDays = ParseByDayWithOffset(values),
-                        ByMonthDays = ParseByMonthDays(values),
-                        BySetPositions = ParseBySetPos(values),
-                        ByMonths = ParseByMonth(values),
-                        ByYearDays = ParseByYearDay(values),
-                    };
-                    //yearlyRecurrence.ByWeekNo = ParseByWeekNo(values);
-                    recurrenceRule = yearlyRecurrence;
-                    break;
-                default:
-                    error = "Unknown Frequency (FREQ).";
-                    return false;
-            }
-
-            // Set general properties
-            // Set Interval
-            recurrenceRule.Interval = values.GetValue("INTERVAL", 1);
-            recurrenceRule.Occurrences = values.GetValue("COUNT", null);
-            if (values.TryGetNonEmptyValue("UNTIL", out var until))
-            {
-                recurrenceRule.EndDate = Utilities.ParseDateTime(until);
-            }
-
-            recurrenceRule.BySetPositions = ParseBySetPos(values);
-            recurrenceRule.WeekStart = ParseWeekStart(values);
-
-            return true;
-        }
-        catch (FormatException e)
-        {
-            error = e.Message;
-            return false;
-        }
+        return TryParse(rrule.AsSpan(), out recurrenceRule, out error);
     }
 
     private static (string Name, string Value) SplitPart(ReadOnlySpan<char> str)
@@ -366,9 +332,7 @@ public abstract class RecurrenceRule
         foreach (var month in months)
         {
             if (!Enum.IsDefined(month))
-            {
-                throw new FormatException("BYMONTH is invalid.");
-            }
+                throw new FormatException($"BYMONTH value '{month}' is invalid.");
         }
 
         return months;
@@ -403,6 +367,81 @@ public abstract class RecurrenceRule
         return DefaultFirstDayOfWeek;
     }
 
+    private static List<int>? ParseBySeconds(Dictionary<string, string> values)
+    {
+        if (values.TryGetNonEmptyValue("BYSECOND", out var str))
+            return ParseBySeconds(str.AsSpan());
+
+        return null;
+    }
+
+    private static List<int>? ParseBySeconds(ReadOnlySpan<char> str)
+    {
+        if (str.IsEmpty)
+            return null;
+
+        var seconds = SplitToInt32List(str);
+        foreach (var second in seconds)
+        {
+            if (second is >= 0 and <= 60)
+                continue;
+
+            throw new FormatException($"Second '{second.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 60.");
+        }
+
+        return seconds;
+    }
+
+    private static List<int>? ParseByMinutes(Dictionary<string, string> values)
+    {
+        if (values.TryGetNonEmptyValue("BYMINUTE", out var str))
+            return ParseByMinutes(str.AsSpan());
+
+        return null;
+    }
+
+    private static List<int>? ParseByMinutes(ReadOnlySpan<char> str)
+    {
+        if (str.IsEmpty)
+            return null;
+
+        var minutes = SplitToInt32List(str);
+        foreach (var minute in minutes)
+        {
+            if (minute is >= 0 and <= 59)
+                continue;
+
+            throw new FormatException($"Minute '{minute.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 59.");
+        }
+
+        return minutes;
+    }
+
+    private static List<int>? ParseByHours(Dictionary<string, string> values)
+    {
+        if (values.TryGetNonEmptyValue("BYHOUR", out var str))
+            return ParseByHours(str.AsSpan());
+
+        return null;
+    }
+
+    private static List<int>? ParseByHours(ReadOnlySpan<char> str)
+    {
+        if (str.IsEmpty)
+            return null;
+
+        var hours = SplitToInt32List(str);
+        foreach (var hour in hours)
+        {
+            if (hour is >= 0 and <= 23)
+                continue;
+
+            throw new FormatException($"Hour '{hour.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 23.");
+        }
+
+        return hours;
+    }
+
     private static ByDay[] ParseByDayWithOffset(Dictionary<string, string> values)
     {
         if (values.TryGetNonEmptyValue("BYDAY", out var str))
@@ -424,7 +463,7 @@ public abstract class RecurrenceRule
             if (!part.IsEmpty)
                 result.Add(ParseDayOfWeekWithOffset(part));
         }
-        return result.ToArray();
+        return [.. result];
     }
 
     private static DayOfWeek[] ParseByDay(Dictionary<string, string> values)
@@ -461,7 +500,7 @@ public abstract class RecurrenceRule
             if (c is (>= '0' and <= '9') or '+' or '-')
                 continue;
 
-            if (i == 0)
+            if (i is 0)
             {
                 break;
             }
@@ -526,7 +565,7 @@ public abstract class RecurrenceRule
 
     private protected static bool IsEmpty<T>([NotNullWhen(false)] IList<T>? list)
     {
-        return list is null || list.Count == 0;
+        return list is null || list.Count is 0;
     }
 
     private protected static IEnumerable<T> Intersect<T>(params IEnumerable<T>?[] enumerables)
@@ -680,20 +719,12 @@ public abstract class RecurrenceRule
         return list;
     }
 
-    /// <summary>Gets the next occurrence of the recurrence starting from the specified date.</summary>
-    /// <param name="startDate">The date to start searching for the next occurrence.</param>
-    /// <returns>The next occurrence date, or <see langword="null"/> if there are no more occurrences.</returns>
-    public DateTime? GetNextOccurrence(DateTime startDate)
-    {
-        return GetNextOccurrences(startDate).FirstOrDefault();
-    }
-
     /// <summary>Gets all occurrences of the recurrence starting from the specified date.</summary>
     /// <param name="startDate">The date to start generating occurrences from.</param>
     /// <returns>An enumerable sequence of occurrence dates.</returns>
     public virtual IEnumerable<DateTime> GetNextOccurrences(DateTime startDate)
     {
-        if (Occurrences == 0)
+        if (Occurrences is 0)
             yield break;
 
         var count = 0;

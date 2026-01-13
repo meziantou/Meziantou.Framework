@@ -3,7 +3,7 @@ namespace Meziantou.Framework.Scheduling;
 /// <summary>Represents an iCalendar calendar containing events.</summary>
 /// <example>
 /// <code>
-/// var calendar = new Calendar();
+/// var calendar = new InternetCalendar();
 /// calendar.Events.Add(new Event
 /// {
 ///     Start = DateTime.Now,
@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Scheduling;
 /// var icsContent = calendar.ToIcs();
 /// </code>
 /// </example>
-public sealed class Calendar
+public sealed class InternetCalendar
 {
     /// <summary>Gets additional custom properties for the calendar.</summary>
     public IDictionary<string, string> AdditionalProperties { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

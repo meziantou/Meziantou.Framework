@@ -14,10 +14,10 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
 
     private static string? GetWeekdayHumanText(IList<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
     {
-        if (daysOfWeek.Count == 0)
+        if (daysOfWeek.Count is 0)
             return null;
 
-        return GetWeekdayHumanText(daysOfWeek.Where(dow => !dow.Ordinal.HasValue).Select(dow => dow.DayOfWeek).ToList(), ", ", " and ", options);
+        return GetWeekdayHumanText([.. daysOfWeek.Where(dow => !dow.Ordinal.HasValue).Select(dow => dow.DayOfWeek)], ", ", " and ", options);
     }
 
     private static void GetEndHumanText(RecurrenceRule rrule, StringBuilder sb)
@@ -103,11 +103,11 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("every");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" day");
         }
-        else if (rrule.Interval == 2)
+        else if (rrule.Interval is 2)
         {
             sb.Append(" other day");
         }
@@ -122,17 +122,92 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         return sb.ToString();
     }
 
+    protected override string GetText(SecondlyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("every");
+        if (rrule.Interval is 1)
+        {
+            sb.Append(" second");
+        }
+        else if (rrule.Interval is 2)
+        {
+            sb.Append(" other second");
+        }
+        else if (rrule.Interval > 2)
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" seconds");
+        }
+
+        GetEndHumanText(rrule, sb);
+        return sb.ToString();
+    }
+
+    protected override string GetText(MinutelyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("every");
+        if (rrule.Interval is 1)
+        {
+            sb.Append(" minute");
+        }
+        else if (rrule.Interval is 2)
+        {
+            sb.Append(" other minute");
+        }
+        else if (rrule.Interval > 2)
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" minutes");
+        }
+
+        GetEndHumanText(rrule, sb);
+        return sb.ToString();
+    }
+
+    protected override string GetText(HourlyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    {
+        ArgumentNullException.ThrowIfNull(rrule);
+
+        var sb = new StringBuilder();
+        sb.Append("every");
+        if (rrule.Interval is 1)
+        {
+            sb.Append(" hour");
+        }
+        else if (rrule.Interval is 2)
+        {
+            sb.Append(" other hour");
+        }
+        else if (rrule.Interval > 2)
+        {
+            sb.Append(' ');
+            sb.Append(rrule.Interval);
+            sb.Append(" hours");
+        }
+
+        GetEndHumanText(rrule, sb);
+        return sb.ToString();
+    }
+
     protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
         ArgumentNullException.ThrowIfNull(rrule);
 
         var sb = new StringBuilder();
         sb.Append("every");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" week");
         }
-        else if (rrule.Interval == 2)
+        else if (rrule.Interval is 2)
         {
             sb.Append(" other week");
         }
@@ -159,11 +234,11 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("every");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" month");
         }
-        else if (rrule.Interval == 2)
+        else if (rrule.Interval is 2)
         {
             sb.Append(" other month");
         }
@@ -211,11 +286,11 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         sb.Append("every");
-        if (rrule.Interval == 1)
+        if (rrule.Interval is 1)
         {
             sb.Append(" year");
         }
-        else if (rrule.Interval == 2)
+        else if (rrule.Interval is 2)
         {
             sb.Append(" other year");
         }

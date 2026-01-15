@@ -204,7 +204,10 @@ static async Task<List<(int Start, int End, UnicodeBlock Block)>> LoadBlocksRang
 
         var rangeParts = parts[0].Split("..", StringSplitOptions.TrimEntries);
         if (rangeParts.Length != 2)
+        {
+            Console.WriteLine($"Warning: Skipping malformed block range: {line}");
             continue;
+        }
 
         var start = int.Parse(rangeParts[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
         var end = int.Parse(rangeParts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
@@ -219,10 +222,27 @@ static async Task<List<(int Start, int End, UnicodeBlock Block)>> LoadBlocksRang
 
 static UnicodeBlock GetBlockForCodePoint(int codePoint, List<(int Start, int End, UnicodeBlock Block)> blockRanges)
 {
-    foreach (var (start, end, block) in blockRanges)
+    // Binary search since block ranges are sorted by start position
+    var left = 0;
+    var right = blockRanges.Count - 1;
+
+    while (left <= right)
     {
-        if (codePoint >= start && codePoint <= end)
+        var mid = left + (right - left) / 2;
+        var (start, end, block) = blockRanges[mid];
+
+        if (codePoint < start)
+        {
+            right = mid - 1;
+        }
+        else if (codePoint > end)
+        {
+            left = mid + 1;
+        }
+        else
+        {
             return block;
+        }
     }
 
     return UnicodeBlock.Unknown;
@@ -230,15 +250,15 @@ static UnicodeBlock GetBlockForCodePoint(int codePoint, List<(int Start, int End
 
 static UnicodeBlock ParseUnicodeBlock(string name)
 {
-    // Convert block name to enum name (remove spaces, hyphens, and special chars)
-    var enumName = name.Replace(" ", "", StringComparison.Ordinal)
-        .Replace("-", "", StringComparison.Ordinal)
-        .Replace("'", "", StringComparison.Ordinal);
+    // Convert block name to enum name by removing all non-alphanumeric characters
+    // This handles spaces, hyphens, apostrophes, and any other special characters
+    var enumName = new string(name.Where(char.IsLetterOrDigit).ToArray());
 
     if (Enum.TryParse<UnicodeBlock>(enumName, ignoreCase: true, out var result))
         return result;
 
-    // If not found, return Unknown
+    // Log warning for unmapped blocks (helps with debugging if Unicode adds new blocks)
+    Console.WriteLine($"Warning: Could not map block '{name}' to UnicodeBlock enum, using Unknown");
     return UnicodeBlock.Unknown;
 }
 

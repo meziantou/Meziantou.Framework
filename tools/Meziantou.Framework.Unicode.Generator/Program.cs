@@ -222,7 +222,7 @@ static async Task<List<(int Start, int End, UnicodeBlock Block)>> LoadBlocksRang
 
 static UnicodeBlock GetBlockForCodePoint(int codePoint, List<(int Start, int End, UnicodeBlock Block)> blockRanges)
 {
-    // Binary search since block ranges are sorted by start position
+    // Binary search - Unicode Blocks.txt is ordered by start position
     var left = 0;
     var right = blockRanges.Count - 1;
 
@@ -252,7 +252,19 @@ static UnicodeBlock ParseUnicodeBlock(string name)
 {
     // Convert block name to enum name by removing all non-alphanumeric characters
     // This handles spaces, hyphens, apostrophes, and any other special characters
-    var enumName = new string(name.Where(char.IsLetterOrDigit).ToArray());
+    // Using Span to avoid allocations
+    Span<char> buffer = stackalloc char[name.Length];
+    var length = 0;
+    
+    foreach (var c in name)
+    {
+        if (char.IsLetterOrDigit(c))
+        {
+            buffer[length++] = c;
+        }
+    }
+    
+    var enumName = new string(buffer[..length]);
 
     if (Enum.TryParse<UnicodeBlock>(enumName, ignoreCase: true, out var result))
         return result;

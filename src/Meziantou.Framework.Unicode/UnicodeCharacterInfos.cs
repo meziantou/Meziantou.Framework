@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Reflection;
 
 namespace Meziantou.Framework;
@@ -24,13 +25,13 @@ internal static partial class UnicodeCharacterInfos
 
     private static Dictionary<Rune, UnicodeCharacterInfo> ReadData(Stream stream)
     {
-        var entryCount = ReadInt32(stream);
-        var stringCount = ReadInt32(stream);
+        var entryCount = Read7BitEncodedInt(stream);
+        var stringCount = Read7BitEncodedInt(stream);
 
         var strings = new string[stringCount];
         for (var i = 0; i < strings.Length; i++)
         {
-            strings[i] = ReadString(stream);
+            strings[i] = ReadString255LengthMax(stream);
         }
 
         var entries = new Dictionary<Rune, UnicodeCharacterInfo>(capacity: entryCount);
@@ -83,15 +84,15 @@ internal static partial class UnicodeCharacterInfos
         return values[index];
     }
 
-    private static string ReadString(Stream stream)
+    private static string ReadString255LengthMax(Stream stream)
     {
-        var length = Read7BitEncodedInt(stream);
+        var length = ReadByte(stream);
         if (length == 0)
             return "";
 
         Span<byte> buffer = stackalloc byte[MaxCharacterNameLength];
-        stream.ReadExactly(buffer);
-        return Encoding.UTF8.GetString(buffer);
+        stream.ReadExactly(buffer[..length]);
+        return Encoding.UTF8.GetString(buffer[..length]);
     }
 
     private static int Read7BitEncodedInt(Stream stream)
@@ -120,7 +121,7 @@ internal static partial class UnicodeCharacterInfos
     {
         Span<byte> buffer = stackalloc byte[4];
         stream.ReadExactly(buffer);
-        return BitConverter.ToInt32(buffer);
+        return BinaryPrimitives.ReadInt32LittleEndian(buffer);
     }
 
     private static byte ReadByte(Stream stream)

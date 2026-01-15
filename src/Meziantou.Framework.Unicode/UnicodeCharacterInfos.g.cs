@@ -2,5 +2,5 @@
 namespace Meziantou.Framework;
 internal static partial class UnicodeCharacterInfos
 {
-    private const int MaxCharacterNameLength = 88;
+    private const int MaxCharacterNameLength = 128;
 }

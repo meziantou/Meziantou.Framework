@@ -296,6 +296,9 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
     if (maxStringLength > 255)
         throw new InvalidOperationException("A string exceeds the maximum length of 255 characters.");
 
+    if(strings.Count > 65536 - 1)
+        throw new InvalidOperationException("Too many strings: " + strings.Count);
+
     using (var compressed = new MemoryStream())
     {
         using (var stream = new System.IO.Compression.GZipStream(compressed, System.IO.Compression.CompressionLevel.SmallestSize, leaveOpen: true))
@@ -311,17 +314,17 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
             foreach (var entry in serialized.OrderBy(entry => entry.RuneValue))
             {
                 WriteInt32(stream, entry.RuneValue);
-                WriteInt32(stream, entry.NameIndex);
+                WriteStringIndex(stream, entry.NameIndex);
                 WriteByte(stream, (byte)entry.Category);
                 WriteByte(stream, (byte)entry.BidiCategory);
                 WriteByte(stream, entry.CanonicalCombiningClass);
-                WriteInt32(stream, entry.DecompositionIndex);
+                WriteStringIndex(stream, entry.DecompositionIndex);
                 WriteSByte(stream, entry.DecimalDigitValue);
                 WriteSByte(stream, entry.DigitValue);
-                WriteInt32(stream, entry.NumericIndex);
+                WriteStringIndex(stream, entry.NumericIndex);
                 WriteByte(stream, entry.Mirrored ? (byte)1 : (byte)0);
-                WriteInt32(stream, entry.Unicode1NameIndex);
-                WriteInt32(stream, entry.IsoCommentIndex);
+                WriteStringIndex(stream, entry.Unicode1NameIndex);
+                WriteStringIndex(stream, entry.IsoCommentIndex);
                 WriteInt32(stream, entry.SimpleUppercaseMapping);
                 WriteInt32(stream, entry.SimpleLowercaseMapping);
                 WriteInt32(stream, entry.SimpleTitlecaseMapping);
@@ -476,6 +479,22 @@ static void WriteUtf8StringMax255Length(Stream stream, string value)
     stream.Write(bytes, 0, bytes.Length);
 }
 
+static void WriteStringIndex(Stream stream, int value)
+{
+    var persistedValue = (ushort)(value + 1);
+
+    Span<byte> buffer = stackalloc byte[2];
+    BinaryPrimitives.WriteUInt16LittleEndian(buffer, persistedValue);
+    stream.Write(buffer);
+}
+
+static void WriteInt32(Stream stream, int value)
+{
+    Span<byte> buffer = stackalloc byte[4];
+    BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
+    stream.Write(buffer);
+}
+
 static void Write7BitEncodedInt(Stream stream, int value)
 {
     var uValue = (uint)value;
@@ -486,13 +505,6 @@ static void Write7BitEncodedInt(Stream stream, int value)
     }
 
     stream.WriteByte((byte)uValue);
-}
-
-static void WriteInt32(Stream stream, int value)
-{
-    Span<byte> buffer = stackalloc byte[sizeof(int)];
-    BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
-    stream.Write(buffer);
 }
 
 static void WriteSByte(Stream stream, sbyte value)

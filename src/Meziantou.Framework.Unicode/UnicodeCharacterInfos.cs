@@ -38,17 +38,17 @@ internal static partial class UnicodeCharacterInfos
         for (var i = 0; i < entryCount; i++)
         {
             var runeValue = ReadInt32(stream);
-            var nameIndex = ReadInt32(stream);
+            var nameIndex = ReadStringIndex(stream);
             var category = (UnicodeCategory)ReadByte(stream);
             var bidiCategory = (UnicodeBidirectionalCategory)ReadByte(stream);
             var canonicalCombiningClass = ReadByte(stream);
-            var decompositionIndex = ReadInt32(stream);
+            var decompositionIndex = ReadStringIndex(stream);
             var decimalDigitValue = ReadSByte(stream);
             var digitValue = ReadSByte(stream);
-            var numericIndex = ReadInt32(stream);
+            var numericIndex = ReadStringIndex(stream);
             var mirrored = ReadByte(stream) != 0;
-            var unicode1NameIndex = ReadInt32(stream);
-            var isoCommentIndex = ReadInt32(stream);
+            var unicode1NameIndex = ReadStringIndex(stream);
+            var isoCommentIndex = ReadStringIndex(stream);
             var simpleUppercaseMapping = ReadInt32(stream);
             var simpleLowercaseMapping = ReadInt32(stream);
             var simpleTitlecaseMapping = ReadInt32(stream);
@@ -115,6 +115,14 @@ internal static partial class UnicodeCharacterInfos
         }
 
         return count;
+    }
+
+    private static int ReadStringIndex(Stream stream)
+    {
+        Span<byte> buffer = stackalloc byte[2];
+        stream.ReadExactly(buffer);
+        var value = BinaryPrimitives.ReadUInt16LittleEndian(buffer);
+        return value - 1;
     }
 
     private static int ReadInt32(Stream stream)

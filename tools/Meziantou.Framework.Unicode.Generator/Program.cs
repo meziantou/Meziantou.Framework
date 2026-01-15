@@ -51,7 +51,7 @@ var result = $$"""
 
         private static Dictionary<Rune, string> Create()
         {
-            return new Dictionary<Rune, string>
+            return new Dictionary<Rune, string>(capacity: {{entries.Count}})
             {
     {{sb.ToString().TrimEnd('\n')}}
             };

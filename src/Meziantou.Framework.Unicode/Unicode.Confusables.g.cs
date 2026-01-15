@@ -21,7 +21,7 @@ internal static class UnicodeConfusablesData
 
     private static Dictionary<Rune, string> Create()
     {
-        return new Dictionary<Rune, string>
+        return new Dictionary<Rune, string>(capacity: 6565)
         {
             [new Rune(0x22)] = "\u0027\u0027",
             [new Rune(0x25)] = "\u00BA\u002F\u2080",

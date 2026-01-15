@@ -1,0 +1,12 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
+  </ItemGroup>
+
+</Project>

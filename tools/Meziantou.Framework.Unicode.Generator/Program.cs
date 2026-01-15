@@ -257,14 +257,14 @@ static UnicodeBlock ParseUnicodeBlock(string name)
 {
     // Convert block name to enum name by removing all non-alphanumeric characters
     // This handles spaces, hyphens, apostrophes, and any other special characters
-    // Using Span to avoid allocations with a reasonable size limit to prevent stack overflow
-    const int MaxBlockNameLength = 256;
-    Span<char> buffer = stackalloc char[Math.Min(name.Length, MaxBlockNameLength)];
+    // Using fixed-size Span to avoid allocations. Most block names are under 100 chars.
+    const int MaxBlockNameLength = 128; // Sufficient for all known Unicode block names
+    Span<char> buffer = stackalloc char[MaxBlockNameLength];
     var length = 0;
     
     foreach (var c in name)
     {
-        if (char.IsLetterOrDigit(c) && length < buffer.Length)
+        if (char.IsLetterOrDigit(c) && length < MaxBlockNameLength)
         {
             buffer[length++] = c;
         }

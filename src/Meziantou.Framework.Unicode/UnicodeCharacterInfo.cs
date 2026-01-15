@@ -5,9 +5,6 @@ public readonly struct UnicodeCharacterInfo
 {
     private readonly sbyte _decimalDigitValue;
     private readonly sbyte _digitValue;
-    private readonly int _simpleUppercaseMapping;
-    private readonly int _simpleLowercaseMapping;
-    private readonly int _simpleTitlecaseMapping;
 
     internal UnicodeCharacterInfo(
         Rune rune,
@@ -38,9 +35,17 @@ public readonly struct UnicodeCharacterInfo
         IsMirrored = mirrored;
         Unicode1Name = unicode1Name;
         IsoComment = isoComment;
-        _simpleUppercaseMapping = simpleUppercaseMapping;
-        _simpleLowercaseMapping = simpleLowercaseMapping;
-        _simpleTitlecaseMapping = simpleTitlecaseMapping;
+        SimpleUppercaseMapping = TryCreateRune(simpleUppercaseMapping);
+        SimpleLowercaseMapping = TryCreateRune(simpleLowercaseMapping);
+        SimpleTitlecaseMapping = TryCreateRune(simpleTitlecaseMapping);
+
+        static Rune? TryCreateRune(int value)
+        {
+            if (Rune.TryCreate(value, out var result))
+                return result;
+
+            return null;
+        }
     }
 
     /// <summary>Gets the Unicode scalar value.</summary>
@@ -80,11 +85,11 @@ public readonly struct UnicodeCharacterInfo
     public string? IsoComment { get; }
 
     /// <summary>Gets the simple uppercase mapping.</summary>
-    public Rune? SimpleUppercaseMapping => _simpleUppercaseMapping >= 0 ? new Rune(_simpleUppercaseMapping) : null;
+    public Rune? SimpleUppercaseMapping { get; }
 
     /// <summary>Gets the simple lowercase mapping.</summary>
-    public Rune? SimpleLowercaseMapping => _simpleLowercaseMapping >= 0 ? new Rune(_simpleLowercaseMapping) : null;
+    public Rune? SimpleLowercaseMapping { get; }
 
     /// <summary>Gets the simple titlecase mapping.</summary>
-    public Rune? SimpleTitlecaseMapping => _simpleTitlecaseMapping >= 0 ? new Rune(_simpleTitlecaseMapping) : null;
+    public Rune? SimpleTitlecaseMapping { get; }
 }

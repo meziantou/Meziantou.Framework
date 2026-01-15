@@ -67,6 +67,30 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void GetCharacterInfo_ReturnsExpectedMetadata_ForOneHalf()
+    {
+        var info = Unicode.GetCharacterInfo(new Rune(0x00BD));
+
+        // 00BD;VULGAR FRACTION ONE HALF;No;0;ON;<fraction> 0031 2044 0032;;;1/2;N;FRACTION ONE HALF;;;;
+        Assert.NotNull(info);
+        Assert.Equal(new Rune(0x00BD), info.Value.Rune);
+        Assert.Equal("VULGAR FRACTION ONE HALF", info.Value.Name);
+        Assert.Equal(UnicodeCategory.OtherNumber, info.Value.Category);
+        Assert.Equal(UnicodeBidirectionalCategory.OtherNeutral, info.Value.BidiCategory);
+        Assert.Equal(0, info.Value.CanonicalCombiningClass);
+        Assert.Equal("<fraction> 0031 2044 0032", info.Value.DecompositionMapping);
+        Assert.Null(info.Value.DecimalDigitValue);
+        Assert.Null(info.Value.DigitValue);
+        Assert.Equal("1/2", info.Value.NumericValue);
+        Assert.False(info.Value.IsMirrored);
+        Assert.Equal("FRACTION ONE HALF", info.Value.Unicode1Name);
+        Assert.Null(info.Value.IsoComment);
+        Assert.Null(info.Value.SimpleUppercaseMapping);
+        Assert.Null(info.Value.SimpleLowercaseMapping);
+        Assert.Null(info.Value.SimpleTitlecaseMapping);
+    }
+
+    [Fact]
     public void GetCharacterInfo_CharOverload_HandlesSurrogates()
     {
         var info = Unicode.GetCharacterInfo('A');

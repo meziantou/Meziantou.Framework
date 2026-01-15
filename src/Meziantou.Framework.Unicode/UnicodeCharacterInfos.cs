@@ -1,18 +1,15 @@
-using System.Globalization;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 
 namespace Meziantou.Framework;
 
-internal static class UnicodeCharacterInfos
+internal static partial class UnicodeCharacterInfos
 {
     private const string ResourceName = "Meziantou.Framework.Resources.UnicodeData.bin.gz";
-    private static readonly Lazy<Dictionary<Rune, UnicodeCharacterInfo>> Infos = new(Create, LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly Dictionary<Rune, UnicodeCharacterInfo> Infos = Create();
 
     public static bool TryGetInfo(Rune rune, out UnicodeCharacterInfo info)
     {
-        return Infos.Value.TryGetValue(rune, out info);
+        return Infos.TryGetValue(rune, out info);
     }
 
     private static Dictionary<Rune, UnicodeCharacterInfo> Create()
@@ -27,15 +24,6 @@ internal static class UnicodeCharacterInfos
 
     private static Dictionary<Rune, UnicodeCharacterInfo> ReadData(Stream stream)
     {
-        Span<byte> header = stackalloc byte[4];
-        stream.ReadExactly(header);
-        if (header[0] != 'U' || header[1] != 'C' || header[2] != 'D' || header[3] != '1')
-            throw new InvalidDataException("Invalid Unicode data file header.");
-
-        var version = ReadInt32(stream);
-        if (version != 1)
-            throw new InvalidDataException("Unsupported Unicode data file version: " + version);
-
         var entryCount = ReadInt32(stream);
         var stringCount = ReadInt32(stream);
 
@@ -99,9 +87,9 @@ internal static class UnicodeCharacterInfos
     {
         var length = Read7BitEncodedInt(stream);
         if (length == 0)
-            return string.Empty;
+            return "";
 
-        var buffer = new byte[length];
+        Span<byte> buffer = stackalloc byte[MaxCharacterNameLength];
         stream.ReadExactly(buffer);
         return Encoding.UTF8.GetString(buffer);
     }

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+  <Project Path="../tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />
+  <Project Path="../tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />
+  <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+</Solution>

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../src/Meziantou.Extensions.Logging.Xunit/Meziantou.Extensions.Logging.Xunit.csproj" />
+  <Project Path="../tests/Meziantou.Extensions.Logging.Xunit.Tests/Meziantou.Extensions.Logging.Xunit.Tests.csproj" />
+</Solution>

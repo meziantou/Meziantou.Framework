@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../src/Meziantou.Framework.RelativeDate/Meziantou.Framework.RelativeDate.csproj" />
+  <Project Path="../tests/Meziantou.Framework.RelativeDate.Tests/Meziantou.Framework.RelativeDate.Tests.csproj" />
+</Solution>

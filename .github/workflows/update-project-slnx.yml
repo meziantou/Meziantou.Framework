@@ -1,0 +1,56 @@
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 3 * * 0' # once a week
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update_project_slnx:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Generate per-project solutions
+        run: ./eng/update-project-slnx.ps1
+      - name: Create pull request if needed
+        run: |
+          $changes = git status --porcelain
+          if (-not $changes) {
+            Write-Host "No changes to commit"
+            return
+          }
+
+          git config --global user.email "git@meziantou.net"
+          git config --global user.name "meziantou"
+          git checkout -b generated/update-project-slnx
+          git add slnx/*.slnx
+
+          if (-not (git status --porcelain)) {
+            Write-Host "No slnx changes to commit"
+            return
+          }
+
+          git commit -m "Update per-project solutions"
+          git push origin generated/update-project-slnx --force
+
+          Start-Sleep -Seconds 5
+          $openPr = gh pr list --repo meziantou/meziantou.framework --head generated/update-project-slnx --json number | ConvertFrom-Json
+          if ($openPr) {
+            gh pr edit $openPr.number --title "Update per-project solutions" --body "Update per-project solutions"
+          }
+          else {
+            gh pr create --title "Update per-project solutions" --body "Update per-project solutions" --base main --head generated/update-project-slnx
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

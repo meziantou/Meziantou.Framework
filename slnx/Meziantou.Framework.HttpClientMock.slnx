@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../src/Meziantou.Extensions.Logging.InMemory/Meziantou.Extensions.Logging.InMemory.csproj" />
+  <Project Path="../src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
+  <Project Path="../src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
+  <Project Path="../tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj" />
+</Solution>

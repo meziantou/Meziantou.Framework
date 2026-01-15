@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../src/Meziantou.Framework.Templating.Html/Meziantou.Framework.Templating.Html.csproj" />
+  <Project Path="../src/Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />
+  <Project Path="../tests/Meziantou.Framework.Templating.Html.Tests/Meziantou.Framework.Templating.Html.Tests.csproj" />
+</Solution>

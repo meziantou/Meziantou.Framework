@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
+  <Project Path="../src/Meziantou.Framework.TypeConverter/Meziantou.Framework.TypeConverter.csproj" />
+  <Project Path="../tests/Meziantou.Framework.Csv.Tests/Meziantou.Framework.Csv.Tests.csproj" />
+</Solution>

@@ -30,3 +30,5 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
 - There should be no trailing whitespace in any lines.
 - Add a blank line before XML documentation comments (`///`) when they follow other code (methods, properties, fields, etc.).
+
+Do not consider solution files (sln, slnx) in the slnx folders. These files are automatically generated and only for developers working on the project.

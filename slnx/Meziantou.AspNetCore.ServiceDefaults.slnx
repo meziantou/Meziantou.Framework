@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj" />
+  <Project Path="../src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" />
+  <Project Path="../tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests.csproj" />
+  <Project Path="../tests/Meziantou.AspNetCore.ServiceDefaults.Tests/Meziantou.AspNetCore.ServiceDefaults.Tests.csproj" />
+  <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+</Solution>

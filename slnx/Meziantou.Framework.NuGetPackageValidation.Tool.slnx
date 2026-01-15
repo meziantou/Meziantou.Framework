@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+  <Project Path="../src/Meziantou.Framework.NuGetPackageValidation.Tool/Meziantou.Framework.NuGetPackageValidation.Tool.csproj" />
+  <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
+  <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tool.Tests/Meziantou.Framework.NuGetPackageValidation.Tool.Tests.csproj" />
+</Solution>

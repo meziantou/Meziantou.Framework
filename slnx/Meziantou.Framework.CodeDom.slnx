@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
+  <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
+  <Project Path="../tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
+  <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+</Solution>

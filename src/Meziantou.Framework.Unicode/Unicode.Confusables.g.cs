@@ -12,11 +12,11 @@ namespace Meziantou.Framework;
 
 internal static class UnicodeConfusablesData
 {
-    private static readonly Lazy<Dictionary<Rune, string>> Confusables = new(Create, LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly Dictionary<Rune, string> Confusables = Create();
 
     public static bool TryGetReplacement(Rune rune, out string? replacement)
     {
-        return Confusables.Value.TryGetValue(rune, out replacement);
+        return Confusables.TryGetValue(rune, out replacement);
     }
 
     private static Dictionary<Rune, string> Create()

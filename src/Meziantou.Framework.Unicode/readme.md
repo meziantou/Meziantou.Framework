@@ -10,3 +10,15 @@ var normalized = Unicode.ReplaceConfusablesCharacters(input);
 
 Console.WriteLine(normalized); // "paypal"
 ```
+
+This package also exposes Unicode character metadata from the Unicode data table:
+
+```csharp
+var info = Unicode.GetCharacterInfo(new Rune('A'));
+if (info is not null)
+{
+	Console.WriteLine(info.Value.Name); // "LATIN CAPITAL LETTER A"
+	Console.WriteLine(info.Value.Category); // UppercaseLetter
+	Console.WriteLine(info.Value.BidiCategory); // LeftToRight
+}
+```

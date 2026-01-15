@@ -3,9 +3,16 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Unicode helpers for confusable character normalization</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\UnicodeData.bin.gz">
+      <LogicalName>Meziantou.Framework.Resources.UnicodeData.bin.gz</LogicalName>
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
+  </ItemGroup>
 
 </Project>

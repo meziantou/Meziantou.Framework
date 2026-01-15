@@ -5,11 +5,11 @@
   },
   "msbuild-sdks": {
     "Microsoft.Build.Traversal": "4.1.82",
-    "Meziantou.NET.Sdk": "1.0.52",
-    "Meziantou.NET.Sdk.BlazorWebAssembly": "1.0.52",
-    "Meziantou.NET.Sdk.Razor": "1.0.52",
-    "Meziantou.NET.Sdk.Test": "1.0.52",
-    "Meziantou.NET.Sdk.Web": "1.0.52",
-    "Meziantou.NET.Sdk.WindowsDesktop": "1.0.52"
+    "Meziantou.NET.Sdk": "1.0.54",
+    "Meziantou.NET.Sdk.BlazorWebAssembly": "1.0.54",
+    "Meziantou.NET.Sdk.Razor": "1.0.54",
+    "Meziantou.NET.Sdk.Test": "1.0.54",
+    "Meziantou.NET.Sdk.Web": "1.0.54",
+    "Meziantou.NET.Sdk.WindowsDesktop": "1.0.54"
   }
 }

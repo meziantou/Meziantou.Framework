@@ -209,8 +209,13 @@ static async Task<List<(int Start, int End, UnicodeBlock Block)>> LoadBlocksRang
             continue;
         }
 
-        var start = int.Parse(rangeParts[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-        var end = int.Parse(rangeParts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        if (!int.TryParse(rangeParts[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var start) ||
+            !int.TryParse(rangeParts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var end))
+        {
+            Console.WriteLine($"Warning: Skipping block range with invalid hex values: {line}");
+            continue;
+        }
+
         var blockName = parts[1];
         var block = ParseUnicodeBlock(blockName);
 
@@ -252,13 +257,14 @@ static UnicodeBlock ParseUnicodeBlock(string name)
 {
     // Convert block name to enum name by removing all non-alphanumeric characters
     // This handles spaces, hyphens, apostrophes, and any other special characters
-    // Using Span to avoid allocations
-    Span<char> buffer = stackalloc char[name.Length];
+    // Using Span to avoid allocations with a reasonable size limit to prevent stack overflow
+    const int MaxBlockNameLength = 256;
+    Span<char> buffer = stackalloc char[Math.Min(name.Length, MaxBlockNameLength)];
     var length = 0;
     
     foreach (var c in name)
     {
-        if (char.IsLetterOrDigit(c))
+        if (char.IsLetterOrDigit(c) && length < buffer.Length)
         {
             buffer[length++] = c;
         }

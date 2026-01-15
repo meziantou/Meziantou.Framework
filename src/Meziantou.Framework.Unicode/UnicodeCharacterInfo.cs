@@ -11,6 +11,7 @@ public readonly struct UnicodeCharacterInfo
         string name,
         UnicodeCategory category,
         UnicodeBidirectionalCategory bidiCategory,
+        UnicodeBlock block,
         byte canonicalCombiningClass,
         string? decompositionMapping,
         sbyte decimalDigitValue,
@@ -27,6 +28,7 @@ public readonly struct UnicodeCharacterInfo
         Name = name;
         Category = category;
         BidiCategory = bidiCategory;
+        Block = block;
         CanonicalCombiningClass = canonicalCombiningClass;
         DecompositionMapping = decompositionMapping;
         _decimalDigitValue = decimalDigitValue;
@@ -59,6 +61,9 @@ public readonly struct UnicodeCharacterInfo
 
     /// <summary>Gets the Unicode bidirectional category.</summary>
     public UnicodeBidirectionalCategory BidiCategory { get; }
+
+    /// <summary>Gets the Unicode block.</summary>
+    public UnicodeBlock Block { get; }
 
     /// <summary>Gets the canonical combining class.</summary>
     public byte CanonicalCombiningClass { get; }

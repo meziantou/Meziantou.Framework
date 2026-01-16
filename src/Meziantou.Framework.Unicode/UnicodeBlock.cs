@@ -989,4 +989,58 @@ public enum UnicodeBlock : ushort
 
     /// <summary>Supplementary Private Use Area-B (U+100000..U+10FFFF).</summary>
     SupplementaryPrivateUseAreaB = 328,
+
+    /// <summary>Todhri.</summary>
+    Todhri = 329,
+
+    /// <summary>Sidetic.</summary>
+    Sidetic = 330,
+
+    /// <summary>Hanifi Rohingya.</summary>
+    HanifiRohingya = 331,
+
+    /// <summary>Tulu-Tigalari.</summary>
+    TuluTigalari = 332,
+
+    /// <summary>Myanmar Extended-C.</summary>
+    MyanmarExtendedC = 333,
+
+    /// <summary>Sharada Supplement.</summary>
+    SharadaSupplement = 334,
+
+    /// <summary>Sunuwar.</summary>
+    Sunuwar = 335,
+
+    /// <summary>Tolong Siki.</summary>
+    TolongSiki = 336,
+
+    /// <summary>Egyptian Hieroglyphs Extended-A.</summary>
+    EgyptianHieroglyphsExtendedA = 337,
+
+    /// <summary>Gurung Khema.</summary>
+    GurungKhema = 338,
+
+    /// <summary>Kirat Rai.</summary>
+    KiratRai = 339,
+
+    /// <summary>Beria Erfe.</summary>
+    BeriaErfe = 340,
+
+    /// <summary>Tangut Components Supplement.</summary>
+    TangutComponentsSupplement = 341,
+
+    /// <summary>Symbols for Legacy Computing Supplement.</summary>
+    SymbolsForLegacyComputingSupplement = 342,
+
+    /// <summary>Miscellaneous Symbols Supplement.</summary>
+    MiscellaneousSymbolsSupplement = 343,
+
+    /// <summary>Ol Onal.</summary>
+    OlOnal = 344,
+
+    /// <summary>Tai Yo.</summary>
+    TaiYo = 345,
+
+    /// <summary>CJK Unified Ideographs Extension J.</summary>
+    CjkUnifiedIdeographsExtensionJ = 346,
 }

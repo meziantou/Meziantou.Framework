@@ -6,11 +6,13 @@ namespace Meziantou.Framework;
 internal static partial class UnicodeCharacterInfos
 {
     private const string ResourceName = "Meziantou.Framework.Resources.UnicodeData.bin.gz";
-    private static readonly Dictionary<Rune, UnicodeCharacterInfo> Infos = Create();
+    private static readonly Dictionary<Rune, UnicodeCharacterInfo> CharacterInfo = Create();
+
+    public static IReadOnlyCollection<UnicodeCharacterInfo> AllCharacters => CharacterInfo.Values;
 
     public static bool TryGetInfo(Rune rune, out UnicodeCharacterInfo info)
     {
-        return Infos.TryGetValue(rune, out info);
+        return CharacterInfo.TryGetValue(rune, out info);
     }
 
     private static Dictionary<Rune, UnicodeCharacterInfo> Create()

@@ -82,6 +82,8 @@ public static partial class Unicode
         return UnicodeConfusablesData.TryGetReplacement(rune, out _);
     }
 
+    public static IReadOnlyCollection<UnicodeCharacterInfo> AllCharacters => UnicodeCharacterInfos.AllCharacters;
+
     /// <summary>Gets information about a Unicode character.</summary>
     /// <param name="rune">The Unicode scalar value to inspect.</param>
     /// <returns>The character information, or <see langword="null"/> when not found.</returns>

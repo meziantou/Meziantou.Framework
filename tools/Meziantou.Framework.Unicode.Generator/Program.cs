@@ -541,13 +541,6 @@ static void WriteInt32(Stream stream, int value)
     stream.Write(buffer);
 }
 
-static void WriteUInt16(Stream stream, ushort value)
-{
-    Span<byte> buffer = stackalloc byte[2];
-    BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
-    stream.Write(buffer);
-}
-
 static void Write7BitEncodedInt(Stream stream, int value)
 {
     var uValue = (uint)value;

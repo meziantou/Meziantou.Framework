@@ -9,6 +9,7 @@ using Meziantou.Framework.Versioning;
 
 const string ConfusablesUrl = "https://www.unicode.org/Public/UCD/latest/security/confusables.txt";
 const string UnicodeDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt";
+const string BlocksUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt";
 
 var updated = false;
 if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Exists(path / ".git"), out var root))
@@ -183,10 +184,107 @@ static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries()
     return entries;
 }
 
+static async Task<List<(int Start, int End, UnicodeBlock Block)>> LoadBlocksRanges()
+{
+    using var response = await SharedHttpClient.Instance.GetAsync(BlocksUrl);
+    response.EnsureSuccessStatusCode();
+
+    var content = await response.Content.ReadAsStringAsync();
+    var blockRanges = new List<(int Start, int End, UnicodeBlock Block)>();
+
+    foreach (var rawLine in content.Split('\n'))
+    {
+        var line = rawLine.Trim();
+        if (line.Length == 0 || line.StartsWith('#'))
+            continue;
+
+        var parts = line.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length < 2)
+            continue;
+
+        var rangeParts = parts[0].Split("..", StringSplitOptions.TrimEntries);
+        if (rangeParts.Length != 2)
+        {
+            Console.WriteLine($"Warning: Skipping malformed block range: {line}");
+            continue;
+        }
+
+        if (!int.TryParse(rangeParts[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var start) ||
+            !int.TryParse(rangeParts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var end))
+        {
+            Console.WriteLine($"Warning: Skipping block range with invalid hex values: {line}");
+            continue;
+        }
+
+        var blockName = parts[1];
+        var block = ParseUnicodeBlock(blockName);
+
+        blockRanges.Add((start, end, block));
+    }
+
+    return blockRanges;
+}
+
+static UnicodeBlock GetBlockForCodePoint(int codePoint, List<(int Start, int End, UnicodeBlock Block)> blockRanges)
+{
+    // Binary search - Unicode Blocks.txt is ordered by start position
+    var left = 0;
+    var right = blockRanges.Count - 1;
+
+    while (left <= right)
+    {
+        var mid = left + (right - left) / 2;
+        var (start, end, block) = blockRanges[mid];
+
+        if (codePoint < start)
+        {
+            right = mid - 1;
+        }
+        else if (codePoint > end)
+        {
+            left = mid + 1;
+        }
+        else
+        {
+            return block;
+        }
+    }
+
+    return UnicodeBlock.Unknown;
+}
+
+static UnicodeBlock ParseUnicodeBlock(string name)
+{
+    // Convert block name to enum name by removing all non-alphanumeric characters
+    // This handles spaces, hyphens, apostrophes, and any other special characters
+    // Using fixed-size Span to avoid allocations. Most block names are under 100 chars.
+    const int MaxBlockNameLength = 128; // Sufficient for all known Unicode block names
+    Span<char> buffer = stackalloc char[MaxBlockNameLength];
+    var length = 0;
+    
+    foreach (var c in name)
+    {
+        if (char.IsLetterOrDigit(c) && length < MaxBlockNameLength)
+        {
+            buffer[length++] = c;
+        }
+    }
+    
+    var enumName = new string(buffer[..length]);
+
+    if (Enum.TryParse<UnicodeBlock>(enumName, ignoreCase: true, out var result))
+        return result;
+
+    // Log warning for unmapped blocks (helps with debugging if Unicode adds new blocks)
+    Console.WriteLine($"Warning: Could not map block '{name}' to UnicodeBlock enum, using Unknown");
+    return UnicodeBlock.Unknown;
+}
+
 async Task WriteUnicodeCharacterInfosFile()
 {
+    var blockRanges = await LoadBlocksRanges();
     var unicodeDataEntries = await LoadUnicodeDataEntries();
-    var unicodeDataBytes = BuildUnicodeDataBinary(unicodeDataEntries);
+    var unicodeDataBytes = BuildUnicodeDataBinary(unicodeDataEntries, blockRanges);
     if (WriteBinaryIfChanged(unicodeDataPath, unicodeDataBytes))
         updated = true;
 
@@ -269,7 +367,7 @@ static string EscapeString(string value)
     return sb.ToString();
 }
 
-static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
+static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries, List<(int Start, int End, UnicodeBlock Block)> blockRanges)
 {
     var stringIndex = new Dictionary<string, int>(StringComparer.Ordinal);
     var strings = new List<string>();
@@ -277,11 +375,14 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
 
     foreach (var entry in entries)
     {
+        var block = GetBlockForCodePoint(entry.Rune.Value, blockRanges);
+        
         serialized.Add(new SerializedUnicodeDataEntry(
             entry.Rune.Value,
             GetStringIndex(entry.Name),
             entry.Category,
             entry.BidiCategory,
+            block,
             entry.CanonicalCombiningClass,
             GetStringIndex(entry.DecompositionMapping),
             entry.DecimalDigitValue,
@@ -320,6 +421,7 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
                 WriteStringIndex(stream, entry.NameIndex);
                 WriteByte(stream, (byte)entry.Category);
                 WriteByte(stream, (byte)entry.BidiCategory);
+                WriteUInt16(stream, (ushort)entry.Block);
                 WriteByte(stream, entry.CanonicalCombiningClass);
                 WriteStringIndex(stream, entry.DecompositionIndex);
                 WriteSByte(stream, entry.DecimalDigitValue);
@@ -498,6 +600,13 @@ static void WriteInt32(Stream stream, int value)
     stream.Write(buffer);
 }
 
+static void WriteUInt16(Stream stream, ushort value)
+{
+    Span<byte> buffer = stackalloc byte[2];
+    BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
+    stream.Write(buffer);
+}
+
 static void Write7BitEncodedInt(Stream stream, int value)
 {
     var uValue = (uint)value;
@@ -572,33 +681,6 @@ async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string c
 
 internal sealed record Entry(Rune Source, string Target);
 
-internal enum UnicodeBidirectionalCategory : byte
-{
-    LeftToRight,
-    RightToLeft,
-    RightToLeftArabic,
-    EuropeanNumber,
-    EuropeanSeparator,
-    EuropeanTerminator,
-    ArabicNumber,
-    CommonSeparator,
-    ParagraphSeparator,
-    SegmentSeparator,
-    WhiteSpace,
-    OtherNeutral,
-    NonspacingMark,
-    LeftToRightEmbedding,
-    LeftToRightOverride,
-    RightToLeftEmbedding,
-    RightToLeftOverride,
-    PopDirectionalFormat,
-    LeftToRightIsolate,
-    RightToLeftIsolate,
-    FirstStrongIsolate,
-    PopDirectionalIsolate,
-    BoundaryNeutral,
-}
-
 internal sealed record PendingRange(int Start, UnicodeDataEntry Entry);
 
 internal sealed record UnicodeDataEntry(
@@ -623,6 +705,7 @@ internal sealed record SerializedUnicodeDataEntry(
     int NameIndex,
     UnicodeCategory Category,
     UnicodeBidirectionalCategory BidiCategory,
+    UnicodeBlock Block,
     byte CanonicalCombiningClass,
     int DecompositionIndex,
     sbyte DecimalDigitValue,

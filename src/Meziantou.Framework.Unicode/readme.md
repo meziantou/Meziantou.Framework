@@ -20,5 +20,6 @@ if (info is not null)
 	Console.WriteLine(info.Value.Name); // "LATIN CAPITAL LETTER A"
 	Console.WriteLine(info.Value.Category); // UppercaseLetter
 	Console.WriteLine(info.Value.BidiCategory); // LeftToRight
+	Console.WriteLine(info.Value.Block); // BasicLatin
 }
 ```

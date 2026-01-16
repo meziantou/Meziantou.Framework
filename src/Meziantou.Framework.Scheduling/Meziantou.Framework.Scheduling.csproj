@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Description>RecurrenceRule parser and evaluator (RFC5545)</Description>
-    <Version>2.0.9</Version>
+    <Description>RecurrenceRule (RFC 5545) and Cron expression parser and evaluator</Description>
+    <Version>2.0.10</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

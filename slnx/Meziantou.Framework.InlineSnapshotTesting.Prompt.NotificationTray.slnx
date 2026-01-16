@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" />
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" />
+  </Folder>
 </Solution>

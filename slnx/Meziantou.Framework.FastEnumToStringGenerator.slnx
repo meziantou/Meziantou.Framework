@@ -1,6 +1,10 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.FastEnumToStringGenerator.Annotations/Meziantou.Framework.FastEnumToStringGenerator.Annotations.csproj" />
-  <Project Path="../src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj" />
-  <Project Path="../tests/Meziantou.Framework.FastEnumToStringGenerator.Tests/Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj" />
-  <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+    <Project Path="../tests/Meziantou.Framework.FastEnumToStringGenerator.Tests/Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.FastEnumToStringGenerator.Annotations/Meziantou.Framework.FastEnumToStringGenerator.Annotations.csproj" />
+    <Project Path="../src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj" />
+  </Folder>
 </Solution>

@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="../src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj" />
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj" />
+  </Folder>
 </Solution>

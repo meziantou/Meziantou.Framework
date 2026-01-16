@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" />
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" />
+  </Folder>
 </Solution>

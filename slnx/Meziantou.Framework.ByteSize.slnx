@@ -1,4 +1,8 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
-  <Project Path="../tests/Meziantou.Framework.ByteSize.Tests/Meziantou.Framework.ByteSize.Tests.csproj" />
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.ByteSize.Tests/Meziantou.Framework.ByteSize.Tests.csproj" />
+  </Folder>
 </Solution>

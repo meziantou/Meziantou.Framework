@@ -86,70 +86,99 @@ function ConvertToRelativePath($path) {
 }
 
 function ApplySolutionFolders($slnxPath, $projectsToAdd, $solutionFolderByProjectPath) {
-    if (-not (Test-Path -LiteralPath $slnxPath)) {
-        return
+    try {
+        if (-not (Test-Path -LiteralPath $slnxPath)) {
+            return
+        }
+
+        $solutionDirectory = Split-Path $slnxPath -Parent
+
+        $doc = [xml]::new()
+        $doc.Load($slnxPath)
+
+        $solutionNode = $doc.Solution
+        if (-not $solutionNode) {
+            return
+        }
+
+        $folderNodesByName = @{}
+        foreach ($folderNode in @($solutionNode.Folder)) {
+            if ([string]::IsNullOrWhiteSpace($folderNode.Name)) {
+                continue
+            }
+
+            $folderNodesByName[$folderNode.Name] = $folderNode
+        }
+
+        $projectNodesByFullPath = @{}
+        foreach ($projectNode in $doc.SelectNodes("//Project")) {
+            $projectPath = $projectNode.Path
+            if (-not $projectPath) {
+                continue
+            }
+
+            $projectFullPath = Resolve-Path -LiteralPath (Join-Path $solutionDirectory $projectPath) -ErrorAction SilentlyContinue
+            if ($projectFullPath) {
+                $projectNodesByFullPath[$projectFullPath.Path] = $projectNode
+            }
+        }
+
+        foreach ($projectFullPath in $projectNodesByFullPath.Keys) {
+            if ([string]::IsNullOrWhiteSpace($projectFullPath)) {
+                continue
+            }
+
+            $folderName = $null
+            if (-not $solutionFolderByProjectPath.TryGetValue($projectFullPath, [ref]$folderName)) {
+                $relativePathFromRoot = ConvertToRelativePath $projectFullPath
+                if ($relativePathFromRoot -like "src/*") {
+                    $folderName = "/src/"
+                }
+                elseif ($relativePathFromRoot -like "tests/SourceGenerators/*") {
+                    $folderName = "/tests/SourceGenerators/"
+                }
+                elseif ($relativePathFromRoot -like "tests/*") {
+                    $folderName = "/tests/"
+                }
+                elseif ($relativePathFromRoot -like "tools/*") {
+                    $folderName = "/tools/"
+                }
+                elseif ($relativePathFromRoot -like "Samples/*") {
+                    $folderName = "/samples/"
+                }
+                elseif ($relativePathFromRoot -like "benchmarks/*") {
+                    $folderName = "/benchmarks/"
+                }
+                else {
+                    continue
+                }
+            }
+
+            if ([string]::IsNullOrWhiteSpace($folderName)) {
+                continue
+            }
+
+            if (-not $folderNodesByName.ContainsKey($folderName)) {
+                $newFolderNode = $doc.CreateElement("Folder")
+                $null = $newFolderNode.SetAttribute("Name", $folderName)
+                $null = $solutionNode.AppendChild($newFolderNode)
+                $folderNodesByName[$folderName] = $newFolderNode
+            }
+
+            $projectNode = $projectNodesByFullPath[$projectFullPath]
+            $folderNode = $folderNodesByName[$folderName]
+
+            if ($projectNode.ParentNode -ne $folderNode) {
+                $null = $projectNode.ParentNode.RemoveChild($projectNode)
+                $null = $folderNode.AppendChild($projectNode)
+            }
+        }
+
+        $doc.Save($slnxPath)
     }
-
-    $doc = [xml]::new()
-    $doc.Load($slnxPath)
-
-    $solutionNode = $doc.Solution
-    if (-not $solutionNode) {
-        return
+    catch {
+        throw "ApplySolutionFolders failed for '$slnxPath': $($_.Exception.Message)"
     }
-
-    $folderNodesByName = @{}
-    foreach ($folderNode in @($solutionNode.Folder)) {
-        $folderNodesByName[$folderNode.Name] = $folderNode
-    }
-
-    $projectNodesByRelativePath = @{}
-    foreach ($projectNode in $doc.SelectNodes("//Project")) {
-        $projectPath = $projectNode.Path
-        if ($projectPath) {
-            $projectNodesByRelativePath[$projectPath] = $projectNode
-        }
-    }
-
-    foreach ($projectPath in $projectsToAdd) {
-        if ([string]::IsNullOrWhiteSpace($projectPath)) {
-            continue
-        }
-
-        $folderName = $null
-        if (-not $solutionFolderByProjectPath.TryGetValue($projectPath, [ref]$folderName)) {
-            continue
-        }
-
-        if ([string]::IsNullOrWhiteSpace($folderName)) {
-            continue
-        }
-
-        $relativePath = ConvertToRelativePath $projectPath
-        if ([string]::IsNullOrWhiteSpace($relativePath)) {
-            continue
-        }
-        $projectNode = $null
-        if (-not $projectNodesByRelativePath.TryGetValue($relativePath, [ref]$projectNode)) {
-            continue
-        }
-
-        $folderNode = $null
-        if (-not $folderNodesByName.TryGetValue($folderName, [ref]$folderNode)) {
-            $newFolderNode = $doc.CreateElement("Folder")
-            $null = $newFolderNode.SetAttribute("Name", $folderName)
-            $null = $solutionNode.AppendChild($newFolderNode)
-            $folderNodesByName[$folderName] = $newFolderNode
-            $folderNode = $newFolderNode
-        }
-
-        if ($projectNode.ParentNode -ne $folderNode) {
-            $null = $projectNode.ParentNode.RemoveChild($projectNode)
-            $null = $folderNode.AppendChild($projectNode)
-        }
-    }
-
-    $doc.Save($slnxPath)
 }
 
 $srcProjects = GetProjectFiles $SrcRootPath

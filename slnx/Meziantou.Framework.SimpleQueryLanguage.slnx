@@ -1,4 +1,8 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.SimpleQueryLanguage/Meziantou.Framework.SimpleQueryLanguage.csproj" />
-  <Project Path="../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/Meziantou.Framework.SimpleQueryLanguage.Tests.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/Meziantou.Framework.SimpleQueryLanguage.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.SimpleQueryLanguage/Meziantou.Framework.SimpleQueryLanguage.csproj" />
+  </Folder>
 </Solution>

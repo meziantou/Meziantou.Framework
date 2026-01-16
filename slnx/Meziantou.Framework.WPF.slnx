@@ -1,4 +1,8 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
-  <Project Path="../tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -1,5 +1,9 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
-  <Project Path="../tests/Meziantou.Framework.Unix.ControlGroups.Tests/Meziantou.Framework.Unix.ControlGroups.Tests.csproj" />
-  <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Unix.ControlGroups.Tests/Meziantou.Framework.Unix.ControlGroups.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  </Folder>
 </Solution>

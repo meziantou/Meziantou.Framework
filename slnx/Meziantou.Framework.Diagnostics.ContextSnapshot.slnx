@@ -1,4 +1,8 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.Diagnostics.ContextSnapshot/Meziantou.Framework.Diagnostics.ContextSnapshot.csproj" />
-  <Project Path="../tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests.csproj" />
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Diagnostics.ContextSnapshot/Meziantou.Framework.Diagnostics.ContextSnapshot.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests.csproj" />
+  </Folder>
 </Solution>

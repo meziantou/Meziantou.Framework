@@ -1,5 +1,9 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.ObjectMethodExecutor/Meziantou.Framework.ObjectMethodExecutor.csproj" />
-  <Project Path="../tests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests.fsproj" />
-  <Project Path="../tests/Meziantou.Framework.ObjectMethodExecutor.Tests/Meziantou.Framework.ObjectMethodExecutor.Tests.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests.fsproj" />
+    <Project Path="../tests/Meziantou.Framework.ObjectMethodExecutor.Tests/Meziantou.Framework.ObjectMethodExecutor.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.ObjectMethodExecutor/Meziantou.Framework.ObjectMethodExecutor.csproj" />
+  </Folder>
 </Solution>

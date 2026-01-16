@@ -1,5 +1,9 @@
 <Solution>
-  <Project Path="../src/Meziantou.Framework.Win32.Lsa/Meziantou.Framework.Win32.Lsa.csproj" />
-  <Project Path="../tests/Meziantou.Framework.Win32.Lsa.Tests/Meziantou.Framework.Win32.Lsa.Tests.csproj" />
-  <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Win32.Lsa/Meziantou.Framework.Win32.Lsa.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Win32.Lsa.Tests/Meziantou.Framework.Win32.Lsa.Tests.csproj" />
+  </Folder>
 </Solution>

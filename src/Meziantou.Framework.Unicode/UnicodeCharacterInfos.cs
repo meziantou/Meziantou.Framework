@@ -54,6 +54,7 @@ internal static partial class UnicodeCharacterInfos
             var simpleUppercaseMapping = ReadInt32(stream);
             var simpleLowercaseMapping = ReadInt32(stream);
             var simpleTitlecaseMapping = ReadInt32(stream);
+            var emojiProperties = ReadByte(stream);
 
             var rune = new Rune(runeValue);
             var block = UnicodeBlocks.GetBlock(runeValue);
@@ -74,7 +75,8 @@ internal static partial class UnicodeCharacterInfos
                 isoComment: GetString(strings, isoCommentIndex),
                 simpleUppercaseMapping: simpleUppercaseMapping,
                 simpleLowercaseMapping: simpleLowercaseMapping,
-                simpleTitlecaseMapping: simpleTitlecaseMapping);
+                simpleTitlecaseMapping: simpleTitlecaseMapping,
+                emojiProperties: emojiProperties);
 
             entries.TryAdd(info.Rune, info);
         }

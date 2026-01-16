@@ -5,6 +5,7 @@ public readonly struct UnicodeCharacterInfo
 {
     private readonly sbyte _decimalDigitValue;
     private readonly sbyte _digitValue;
+    private readonly byte _emojiProperties;
 
     internal UnicodeCharacterInfo(
         Rune rune,
@@ -22,7 +23,8 @@ public readonly struct UnicodeCharacterInfo
         string? isoComment,
         int simpleUppercaseMapping,
         int simpleLowercaseMapping,
-        int simpleTitlecaseMapping)
+        int simpleTitlecaseMapping,
+        byte emojiProperties)
     {
         Rune = rune;
         Name = name;
@@ -40,6 +42,7 @@ public readonly struct UnicodeCharacterInfo
         SimpleUppercaseMapping = TryCreateRune(simpleUppercaseMapping);
         SimpleLowercaseMapping = TryCreateRune(simpleLowercaseMapping);
         SimpleTitlecaseMapping = TryCreateRune(simpleTitlecaseMapping);
+        _emojiProperties = emojiProperties;
 
         static Rune? TryCreateRune(int value)
         {
@@ -97,4 +100,22 @@ public readonly struct UnicodeCharacterInfo
 
     /// <summary>Gets the simple titlecase mapping.</summary>
     public Rune? SimpleTitlecaseMapping { get; }
+
+    /// <summary>Gets a value indicating whether the character has the Emoji property.</summary>
+    public bool IsEmoji => (_emojiProperties & 0x01) != 0;
+
+    /// <summary>Gets a value indicating whether the character has the Emoji_Presentation property.</summary>
+    public bool HasEmojiPresentation => (_emojiProperties & 0x02) != 0;
+
+    /// <summary>Gets a value indicating whether the character has the Emoji_Modifier property.</summary>
+    public bool IsEmojiModifier => (_emojiProperties & 0x04) != 0;
+
+    /// <summary>Gets a value indicating whether the character has the Emoji_Modifier_Base property.</summary>
+    public bool IsEmojiModifierBase => (_emojiProperties & 0x08) != 0;
+
+    /// <summary>Gets a value indicating whether the character has the Emoji_Component property.</summary>
+    public bool IsEmojiComponent => (_emojiProperties & 0x10) != 0;
+
+    /// <summary>Gets a value indicating whether the character has the Extended_Pictographic property.</summary>
+    public bool IsExtendedPictographic => (_emojiProperties & 0x20) != 0;
 }

@@ -10,6 +10,7 @@ using Meziantou.Framework.Versioning;
 const string ConfusablesUrl = "https://www.unicode.org/Public/UCD/latest/security/confusables.txt";
 const string UnicodeDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt";
 const string BlocksUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt";
+const string EmojiDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt";
 
 var updated = false;
 if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Exists(path / ".git"), out var root))
@@ -19,6 +20,7 @@ var outputPath = root / "src" / "Meziantou.Framework.Unicode";
 var confusableOutputFilePath = outputPath / "Unicode.Confusables.g.cs";
 var unicodeCharacterInfosFilePath = outputPath / "UnicodeCharacterInfos.g.cs";
 var unicodeBlocksFilePath = outputPath / "UnicodeBlocks.g.cs";
+var emojiDataFilePath = outputPath / "UnicodeEmoji.g.cs";
 var unicodeDataPath = outputPath / "Resources" / "UnicodeData.bin.gz";
 var csprojPath = root / "src" / "Meziantou.Framework.Unicode" / "Meziantou.Framework.Unicode.csproj";
 
@@ -27,6 +29,7 @@ await WriteConfusableCharactersFile(confusableEntries, confusablesLastModified);
 var blockRanges = await LoadBlocksRanges();
 await WriteUnicodeBlocksFile(blockRanges);
 await WriteUnicodeCharacterInfosFile(blockRanges);
+await WriteEmojiDataFile();
 
 // Update project version
 if (updated)
@@ -84,7 +87,7 @@ static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEnt
     return (entries.Values.ToList(), lastModified);
 }
 
-static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries()
+static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries(Dictionary<int, EmojiProperties> emojiPropertiesMap)
 {
     using var response = await SharedHttpClient.Instance.GetAsync(UnicodeDataUrl);
     response.EnsureSuccessStatusCode();
@@ -118,6 +121,7 @@ static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries()
         var simpleUppercaseMapping = ParseHexOrDefault(fields[12]);
         var simpleLowercaseMapping = ParseHexOrDefault(fields[13]);
         var simpleTitlecaseMapping = ParseHexOrDefault(fields[14]);
+        emojiPropertiesMap.TryGetValue(codePoint, out var emojiProps);
 
         if (!Rune.TryCreate(codePoint, out var rune))
             continue;
@@ -142,7 +146,8 @@ static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries()
                     isoComment,
                     simpleUppercaseMapping,
                     simpleLowercaseMapping,
-                    simpleTitlecaseMapping));
+                    simpleTitlecaseMapping,
+                    emojiProps));
             continue;
         }
 
@@ -156,7 +161,8 @@ static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries()
                 if (!Rune.TryCreate(value, out var rangeRune))
                     continue;
 
-                entries.Add(pendingRange.Entry with { Rune = rangeRune });
+                emojiPropertiesMap.TryGetValue(value, out var rangeEmojiProps);
+                entries.Add(pendingRange.Entry with { Rune = rangeRune, EmojiProperties = rangeEmojiProps });
             }
 
             pendingRange = null;
@@ -178,7 +184,8 @@ static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries()
             isoComment,
             simpleUppercaseMapping,
             simpleLowercaseMapping,
-            simpleTitlecaseMapping));
+            simpleTitlecaseMapping,
+            emojiProps));
     }
 
     if (pendingRange is not null)
@@ -226,9 +233,92 @@ static async Task<List<(int Start, int End, string Name)>> LoadBlocksRanges()
     return blockRanges;
 }
 
+static async Task<Dictionary<int, EmojiProperties>> LoadEmojiProperties()
+{
+    using var response = await SharedHttpClient.Instance.GetAsync(EmojiDataUrl);
+    response.EnsureSuccessStatusCode();
+
+    var content = await response.Content.ReadAsStringAsync();
+    var emojiData = new Dictionary<int, EmojiProperties>();
+
+    foreach (var rawLine in content.Split('\n'))
+    {
+        var line = rawLine.Trim();
+        if (line.Length == 0 || line.StartsWith('#'))
+            continue;
+
+        var commentIndex = line.IndexOf('#', StringComparison.Ordinal);
+        if (commentIndex >= 0)
+        {
+            line = line[..commentIndex].Trim();
+        }
+
+        if (line.Length == 0)
+            continue;
+
+        var parts = line.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length < 2)
+            continue;
+
+        var propertyName = parts[1];
+        var property = propertyName switch
+        {
+            "Emoji" => EmojiProperties.Emoji,
+            "Emoji_Presentation" => EmojiProperties.EmojiPresentation,
+            "Emoji_Modifier" => EmojiProperties.EmojiModifier,
+            "Emoji_Modifier_Base" => EmojiProperties.EmojiModifierBase,
+            "Emoji_Component" => EmojiProperties.EmojiComponent,
+            "Extended_Pictographic" => EmojiProperties.ExtendedPictographic,
+            _ => EmojiProperties.None,
+        };
+
+        if (property == EmojiProperties.None)
+            continue;
+
+        var codePointRange = parts[0];
+        if (codePointRange.Contains("..", StringComparison.Ordinal))
+        {
+            var rangeParts = codePointRange.Split("..", StringSplitOptions.TrimEntries);
+            if (rangeParts.Length == 2 &&
+                int.TryParse(rangeParts[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var start) &&
+                int.TryParse(rangeParts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var end))
+            {
+                for (var codePoint = start; codePoint <= end; codePoint++)
+                {
+                    if (emojiData.TryGetValue(codePoint, out var existing))
+                    {
+                        emojiData[codePoint] = existing | property;
+                    }
+                    else
+                    {
+                        emojiData[codePoint] = property;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (int.TryParse(codePointRange, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var codePoint))
+            {
+                if (emojiData.TryGetValue(codePoint, out var existing))
+                {
+                    emojiData[codePoint] = existing | property;
+                }
+                else
+                {
+                    emojiData[codePoint] = property;
+                }
+            }
+        }
+    }
+
+    return emojiData;
+}
+
 async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)> blockRanges)
 {
-    var unicodeDataEntries = await LoadUnicodeDataEntries();
+    var emojiProperties = await LoadEmojiProperties();
+    var unicodeDataEntries = await LoadUnicodeDataEntries(emojiProperties);
     var unicodeDataBytes = BuildUnicodeDataBinary(unicodeDataEntries);
     if (WriteBinaryIfChanged(unicodeDataPath, unicodeDataBytes))
         updated = true;
@@ -335,7 +425,8 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
             GetStringIndex(entry.IsoComment),
             entry.SimpleUppercaseMapping,
             entry.SimpleLowercaseMapping,
-            entry.SimpleTitlecaseMapping));
+            entry.SimpleTitlecaseMapping,
+            entry.EmojiProperties));
     }
 
     var maxStringLength = strings.Count == 0 ? 0 : strings.Max(s => s.Length);
@@ -374,6 +465,7 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
                 WriteInt32(stream, entry.SimpleUppercaseMapping);
                 WriteInt32(stream, entry.SimpleLowercaseMapping);
                 WriteInt32(stream, entry.SimpleTitlecaseMapping);
+                WriteByte(stream, (byte)entry.EmojiProperties);
             }
         }
 
@@ -563,6 +655,103 @@ static void WriteByte(Stream stream, byte value)
     stream.WriteByte(value);
 }
 
+async Task WriteEmojiDataFile()
+{
+    var result = $$"""
+    // <auto-generated />
+    // Emoji data source: {{EmojiDataUrl}}
+    
+    #nullable enable
+    
+    using System.Text;
+    
+    namespace Meziantou.Framework;
+    
+    /// <summary>Provides emoji-related query methods for Unicode characters.</summary>
+    public static class UnicodeEmoji
+    {
+        /// <summary>Determines whether the specified rune has the Emoji property.</summary>
+        /// <param name="rune">The rune to check.</param>
+        /// <returns><see langword="true"/> if the rune has the Emoji property; otherwise, <see langword="false"/>.</returns>
+        public static bool IsEmoji(Rune rune)
+        {
+            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
+                return false;
+    
+            return info.IsEmoji;
+        }
+    
+        /// <summary>Determines whether the specified code point has the Emoji property.</summary>
+        /// <param name="codePoint">The code point to check.</param>
+        /// <returns><see langword="true"/> if the code point has the Emoji property; otherwise, <see langword="false"/>.</returns>
+        public static bool IsEmoji(int codePoint)
+        {
+            return Rune.TryCreate(codePoint, out var rune) && IsEmoji(rune);
+        }
+    
+        /// <summary>Determines whether the specified rune has the Emoji_Presentation property.</summary>
+        /// <param name="rune">The rune to check.</param>
+        /// <returns><see langword="true"/> if the rune has the Emoji_Presentation property; otherwise, <see langword="false"/>.</returns>
+        public static bool HasEmojiPresentation(Rune rune)
+        {
+            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
+                return false;
+    
+            return info.HasEmojiPresentation;
+        }
+    
+        /// <summary>Determines whether the specified rune has the Emoji_Modifier property.</summary>
+        /// <param name="rune">The rune to check.</param>
+        /// <returns><see langword="true"/> if the rune has the Emoji_Modifier property; otherwise, <see langword="false"/>.</returns>
+        public static bool IsEmojiModifier(Rune rune)
+        {
+            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
+                return false;
+    
+            return info.IsEmojiModifier;
+        }
+    
+        /// <summary>Determines whether the specified rune has the Emoji_Modifier_Base property.</summary>
+        /// <param name="rune">The rune to check.</param>
+        /// <returns><see langword="true"/> if the rune has the Emoji_Modifier_Base property; otherwise, <see langword="false"/>.</returns>
+        public static bool IsEmojiModifierBase(Rune rune)
+        {
+            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
+                return false;
+    
+            return info.IsEmojiModifierBase;
+        }
+    
+        /// <summary>Determines whether the specified rune has the Emoji_Component property.</summary>
+        /// <param name="rune">The rune to check.</param>
+        /// <returns><see langword="true"/> if the rune has the Emoji_Component property; otherwise, <see langword="false"/>.</returns>
+        public static bool IsEmojiComponent(Rune rune)
+        {
+            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
+                return false;
+    
+            return info.IsEmojiComponent;
+        }
+    
+        /// <summary>Determines whether the specified rune has the Extended_Pictographic property.</summary>
+        /// <param name="rune">The rune to check.</param>
+        /// <returns><see langword="true"/> if the rune has the Extended_Pictographic property; otherwise, <see langword="false"/>.</returns>
+        public static bool IsExtendedPictographic(Rune rune)
+        {
+            if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
+                return false;
+    
+            return info.IsExtendedPictographic;
+        }
+    }
+    """.ReplaceLineEndings("\n");
+
+    if (await WriteTextIfChanged(emojiDataFilePath, result))
+    {
+        updated = true;
+    }
+}
+
 async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string confusablesLastModified)
 {
     var sb = new StringBuilder();
@@ -691,6 +880,18 @@ internal sealed record Entry(Rune Source, string Target);
 
 internal sealed record PendingRange(int Start, UnicodeDataEntry Entry);
 
+[Flags]
+internal enum EmojiProperties : byte
+{
+    None = 0,
+    Emoji = 1 << 0,
+    EmojiPresentation = 1 << 1,
+    EmojiModifier = 1 << 2,
+    EmojiModifierBase = 1 << 3,
+    EmojiComponent = 1 << 4,
+    ExtendedPictographic = 1 << 5,
+}
+
 internal sealed record UnicodeDataEntry(
     Rune Rune,
     string Name,
@@ -706,7 +907,8 @@ internal sealed record UnicodeDataEntry(
     string? IsoComment,
     int SimpleUppercaseMapping,
     int SimpleLowercaseMapping,
-    int SimpleTitlecaseMapping);
+    int SimpleTitlecaseMapping,
+    EmojiProperties EmojiProperties);
 
 internal sealed record SerializedUnicodeDataEntry(
 int RuneValue,
@@ -723,4 +925,5 @@ int Unicode1NameIndex,
 int IsoCommentIndex,
 int SimpleUppercaseMapping,
 int SimpleLowercaseMapping,
-int SimpleTitlecaseMapping);
+int SimpleTitlecaseMapping,
+EmojiProperties EmojiProperties);

@@ -113,4 +113,60 @@ public sealed class UnicodeTests
         Assert.False(Unicode.TryGetCharacterInfo('\uD800', out var surrogateInfo));
         Assert.Equal(default, surrogateInfo);
     }
+
+    [Fact]
+    public void IsEmoji_ReturnsExpectedValue()
+    {
+        Assert.True(UnicodeEmoji.IsEmoji(new Rune(0x1F600)));
+        Assert.True(UnicodeEmoji.IsEmoji(0x1F600));
+        Assert.False(UnicodeEmoji.IsEmoji(new Rune('A')));
+    }
+
+    [Fact]
+    public void HasEmojiPresentation_ReturnsExpectedValue()
+    {
+        Assert.True(UnicodeEmoji.HasEmojiPresentation(new Rune(0x1F600)));
+        Assert.False(UnicodeEmoji.HasEmojiPresentation(new Rune('A')));
+    }
+
+    [Fact]
+    public void IsEmojiModifier_ReturnsExpectedValue()
+    {
+        Assert.True(UnicodeEmoji.IsEmojiModifier(new Rune(0x1F3FB)));
+        Assert.False(UnicodeEmoji.IsEmojiModifier(new Rune('A')));
+    }
+
+    [Fact]
+    public void IsEmojiModifierBase_ReturnsExpectedValue()
+    {
+        Assert.True(UnicodeEmoji.IsEmojiModifierBase(new Rune(0x1F44B)));
+        Assert.False(UnicodeEmoji.IsEmojiModifierBase(new Rune('A')));
+    }
+
+    [Fact]
+    public void IsEmojiComponent_ReturnsExpectedValue()
+    {
+        Assert.True(UnicodeEmoji.IsEmojiComponent(new Rune(0x0023)));
+        Assert.False(UnicodeEmoji.IsEmojiComponent(new Rune('A')));
+    }
+
+    [Fact]
+    public void IsExtendedPictographic_ReturnsExpectedValue()
+    {
+        Assert.True(UnicodeEmoji.IsExtendedPictographic(new Rune(0x1F600)));
+        Assert.False(UnicodeEmoji.IsExtendedPictographic(new Rune('A')));
+    }
+
+    [Fact]
+    public void GetCharacterInfo_IncludesEmojiProperties()
+    {
+        var info = Unicode.GetCharacterInfo(new Rune(0x1F600));
+
+        Assert.NotNull(info);
+        Assert.True(info.Value.IsEmoji);
+        Assert.True(info.Value.HasEmojiPresentation);
+        Assert.True(info.Value.IsExtendedPictographic);
+        Assert.False(info.Value.IsEmojiModifier);
+        Assert.False(info.Value.IsEmojiModifierBase);
+    }
 }

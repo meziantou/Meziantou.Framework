@@ -18,12 +18,15 @@ if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Ex
 var outputPath = root / "src" / "Meziantou.Framework.Unicode";
 var confusableOutputFilePath = outputPath / "Unicode.Confusables.g.cs";
 var unicodeCharacterInfosFilePath = outputPath / "UnicodeCharacterInfos.g.cs";
+var unicodeBlocksFilePath = outputPath / "UnicodeBlocks.g.cs";
 var unicodeDataPath = outputPath / "Resources" / "UnicodeData.bin.gz";
 var csprojPath = root / "src" / "Meziantou.Framework.Unicode" / "Meziantou.Framework.Unicode.csproj";
 
 var (confusableEntries, confusablesLastModified) = await LoadConfusablesEntries();
 await WriteConfusableCharactersFile(confusableEntries, confusablesLastModified);
-await WriteUnicodeCharacterInfosFile();
+var blockRanges = await LoadBlocksRanges();
+await WriteUnicodeBlocksFile(blockRanges);
+await WriteUnicodeCharacterInfosFile(blockRanges);
 
 // Update project version
 if (updated)
@@ -184,13 +187,13 @@ static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries()
     return entries;
 }
 
-static async Task<List<(int Start, int End, UnicodeBlock Block)>> LoadBlocksRanges()
+static async Task<List<(int Start, int End, string Name)>> LoadBlocksRanges()
 {
     using var response = await SharedHttpClient.Instance.GetAsync(BlocksUrl);
     response.EnsureSuccessStatusCode();
 
     var content = await response.Content.ReadAsStringAsync();
-    var blockRanges = new List<(int Start, int End, UnicodeBlock Block)>();
+    var blockRanges = new List<(int Start, int End, string Name)>();
 
     foreach (var rawLine in content.Split('\n'))
     {
@@ -217,74 +220,16 @@ static async Task<List<(int Start, int End, UnicodeBlock Block)>> LoadBlocksRang
         }
 
         var blockName = parts[1];
-        var block = ParseUnicodeBlock(blockName);
-
-        blockRanges.Add((start, end, block));
+        blockRanges.Add((start, end, blockName));
     }
 
     return blockRanges;
 }
 
-static UnicodeBlock GetBlockForCodePoint(int codePoint, List<(int Start, int End, UnicodeBlock Block)> blockRanges)
+async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)> blockRanges)
 {
-    // Binary search - Unicode Blocks.txt is ordered by start position
-    var left = 0;
-    var right = blockRanges.Count - 1;
-
-    while (left <= right)
-    {
-        var mid = left + (right - left) / 2;
-        var (start, end, block) = blockRanges[mid];
-
-        if (codePoint < start)
-        {
-            right = mid - 1;
-        }
-        else if (codePoint > end)
-        {
-            left = mid + 1;
-        }
-        else
-        {
-            return block;
-        }
-    }
-
-    return UnicodeBlock.Unknown;
-}
-
-static UnicodeBlock ParseUnicodeBlock(string name)
-{
-    // Convert block name to enum name by removing all non-alphanumeric characters
-    // This handles spaces, hyphens, apostrophes, and any other special characters
-    // Using fixed-size Span to avoid allocations. Most block names are under 100 chars.
-    const int MaxBlockNameLength = 128; // Sufficient for all known Unicode block names
-    Span<char> buffer = stackalloc char[MaxBlockNameLength];
-    var length = 0;
-    
-    foreach (var c in name)
-    {
-        if (char.IsLetterOrDigit(c) && length < MaxBlockNameLength)
-        {
-            buffer[length++] = c;
-        }
-    }
-    
-    var enumName = new string(buffer[..length]);
-
-    if (Enum.TryParse<UnicodeBlock>(enumName, ignoreCase: true, out var result))
-        return result;
-
-    // Log warning for unmapped blocks (helps with debugging if Unicode adds new blocks)
-    Console.WriteLine($"Warning: Could not map block '{name}' to UnicodeBlock enum, using Unknown");
-    return UnicodeBlock.Unknown;
-}
-
-async Task WriteUnicodeCharacterInfosFile()
-{
-    var blockRanges = await LoadBlocksRanges();
     var unicodeDataEntries = await LoadUnicodeDataEntries();
-    var unicodeDataBytes = BuildUnicodeDataBinary(unicodeDataEntries, blockRanges);
+    var unicodeDataBytes = BuildUnicodeDataBinary(unicodeDataEntries);
     if (WriteBinaryIfChanged(unicodeDataPath, unicodeDataBytes))
         updated = true;
 
@@ -367,7 +312,7 @@ static string EscapeString(string value)
     return sb.ToString();
 }
 
-static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries, List<(int Start, int End, UnicodeBlock Block)> blockRanges)
+static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
 {
     var stringIndex = new Dictionary<string, int>(StringComparer.Ordinal);
     var strings = new List<string>();
@@ -375,14 +320,11 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries, List<(int S
 
     foreach (var entry in entries)
     {
-        var block = GetBlockForCodePoint(entry.Rune.Value, blockRanges);
-        
         serialized.Add(new SerializedUnicodeDataEntry(
             entry.Rune.Value,
             GetStringIndex(entry.Name),
             entry.Category,
             entry.BidiCategory,
-            block,
             entry.CanonicalCombiningClass,
             GetStringIndex(entry.DecompositionMapping),
             entry.DecimalDigitValue,
@@ -421,7 +363,6 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries, List<(int S
                 WriteStringIndex(stream, entry.NameIndex);
                 WriteByte(stream, (byte)entry.Category);
                 WriteByte(stream, (byte)entry.BidiCategory);
-                WriteUInt16(stream, (ushort)entry.Block);
                 WriteByte(stream, entry.CanonicalCombiningClass);
                 WriteStringIndex(stream, entry.DecompositionIndex);
                 WriteSByte(stream, entry.DecimalDigitValue);
@@ -679,6 +620,80 @@ async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string c
     }
 }
 
+async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockRanges)
+{
+    var sb = new StringBuilder();
+    
+    // Generate property for each block
+    foreach (var (start, end, name) in blockRanges.OrderBy(b => b.Start))
+    {
+        var propertyName = ToPropertyName(name);
+        sb.AppendLine($"    /// <summary>{name} (U+{start:X4}..U+{end:X4}).</summary>");
+        sb.AppendLine($"    public static UnicodeBlock {propertyName} {{ get; }} = UnicodeBlock.CreateInternal(\"{name}\", new UnicodeRange(0x{start:X}, 0x{end:X}));");
+        sb.AppendLine();
+    }
+
+    // Generate GetBlock method with binary search
+    sb.AppendLine("    /// <summary>Gets the Unicode block for a code point.</summary>");
+    sb.AppendLine("    /// <param name=\"codePoint\">The code point.</param>");
+    sb.AppendLine("    /// <returns>The Unicode block, or <see cref=\"Unknown\"/> if not found.</returns>");
+    sb.AppendLine("    public static UnicodeBlock GetBlock(int codePoint)");
+    sb.AppendLine("    {");
+    sb.AppendLine("        // Binary search - blocks are ordered by start position");
+    
+    // Generate switch expression with ranges for better performance
+    sb.AppendLine("        return codePoint switch");
+    sb.AppendLine("        {");
+    
+    foreach (var (start, end, name) in blockRanges.OrderBy(b => b.Start))
+    {
+        var propertyName = ToPropertyName(name);
+        sb.AppendLine($"            >= 0x{start:X} and <= 0x{end:X} => {propertyName},");
+    }
+    
+    sb.AppendLine("            _ => Unknown,");
+    sb.AppendLine("        };");
+    sb.AppendLine("    }");
+    sb.AppendLine();
+    sb.AppendLine("    /// <summary>Gets the Unicode block for a rune.</summary>");
+    sb.AppendLine("    /// <param name=\"rune\">The rune.</param>");
+    sb.AppendLine("    /// <returns>The Unicode block, or <see cref=\"Unknown\"/> if not found.</returns>");
+    sb.AppendLine("    public static UnicodeBlock GetBlock(Rune rune) => GetBlock(rune.Value);");
+    
+    var result = $$"""
+    // <auto-generated />
+    namespace Meziantou.Framework;
+
+    /// <summary>Provides access to all Unicode blocks.</summary>
+    public static class UnicodeBlocks
+    {
+        /// <summary>Unknown or unassigned block.</summary>
+        public static UnicodeBlock Unknown { get; } = UnicodeBlock.CreateInternal("Unknown", new UnicodeRange(0, 0));
+
+    {{sb.ToString().TrimEnd('\n')}}
+    }
+    """.ReplaceLineEndings("\n");
+
+    if (await WriteTextIfChanged(unicodeBlocksFilePath, result))
+    {
+        updated = true;
+    }
+    
+    static string ToPropertyName(string blockName)
+    {
+        // Convert block name to property name by removing all non-alphanumeric characters
+        var sb = new StringBuilder();
+        foreach (var c in blockName)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                sb.Append(c);
+            }
+        }
+        return sb.ToString();
+    }
+}
+
 internal sealed record Entry(Rune Source, string Target);
 
 internal sealed record PendingRange(int Start, UnicodeDataEntry Entry);
@@ -701,19 +716,18 @@ internal sealed record UnicodeDataEntry(
     int SimpleTitlecaseMapping);
 
 internal sealed record SerializedUnicodeDataEntry(
-    int RuneValue,
-    int NameIndex,
-    UnicodeCategory Category,
-    UnicodeBidirectionalCategory BidiCategory,
-    UnicodeBlock Block,
-    byte CanonicalCombiningClass,
-    int DecompositionIndex,
-    sbyte DecimalDigitValue,
-    sbyte DigitValue,
-    int NumericIndex,
-    bool Mirrored,
-    int Unicode1NameIndex,
-    int IsoCommentIndex,
-    int SimpleUppercaseMapping,
-    int SimpleLowercaseMapping,
-    int SimpleTitlecaseMapping);
+int RuneValue,
+int NameIndex,
+UnicodeCategory Category,
+UnicodeBidirectionalCategory BidiCategory,
+byte CanonicalCombiningClass,
+int DecompositionIndex,
+sbyte DecimalDigitValue,
+sbyte DigitValue,
+int NumericIndex,
+bool Mirrored,
+int Unicode1NameIndex,
+int IsoCommentIndex,
+int SimpleUppercaseMapping,
+int SimpleLowercaseMapping,
+int SimpleTitlecaseMapping);

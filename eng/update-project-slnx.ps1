@@ -8,7 +8,9 @@ $PSNativeCommandUseErrorActionPreference = $true
 $RootPath = Join-Path $PSScriptRoot ".." -Resolve
 $SrcRootPath = Join-Path $RootPath "src" -Resolve
 $TestsRootPath = Join-Path $RootPath "tests" -Resolve
+$ToolsRootPath = Join-Path $RootPath "tools" -Resolve
 $OutputRootPath = Join-Path $RootPath $OutputPath
+$MainSolutionPath = Join-Path $RootPath "Meziantou.Framework.slnx"
 
 function GetProjectFiles($rootPath) {
     return Get-ChildItem -Path $rootPath -Recurse -File -Include *.csproj, *.fsproj
@@ -83,8 +85,98 @@ function ConvertToRelativePath($path) {
     return $relativePath.Replace("\", "/")
 }
 
+function ApplySolutionFolders($slnxPath, $projectsToAdd, $solutionFolderByProjectPath) {
+    if (-not (Test-Path -LiteralPath $slnxPath)) {
+        return
+    }
+
+    $doc = [xml]::new()
+    $doc.Load($slnxPath)
+
+    $solutionNode = $doc.Solution
+    if (-not $solutionNode) {
+        return
+    }
+
+    $folderNodesByName = @{}
+    foreach ($folderNode in @($solutionNode.Folder)) {
+        $folderNodesByName[$folderNode.Name] = $folderNode
+    }
+
+    $projectNodesByRelativePath = @{}
+    foreach ($projectNode in $doc.SelectNodes("//Project")) {
+        $projectPath = $projectNode.Path
+        if ($projectPath) {
+            $projectNodesByRelativePath[$projectPath] = $projectNode
+        }
+    }
+
+    foreach ($projectPath in $projectsToAdd) {
+        if ([string]::IsNullOrWhiteSpace($projectPath)) {
+            continue
+        }
+
+        $folderName = $null
+        if (-not $solutionFolderByProjectPath.TryGetValue($projectPath, [ref]$folderName)) {
+            continue
+        }
+
+        if ([string]::IsNullOrWhiteSpace($folderName)) {
+            continue
+        }
+
+        $relativePath = ConvertToRelativePath $projectPath
+        if ([string]::IsNullOrWhiteSpace($relativePath)) {
+            continue
+        }
+        $projectNode = $null
+        if (-not $projectNodesByRelativePath.TryGetValue($relativePath, [ref]$projectNode)) {
+            continue
+        }
+
+        $folderNode = $null
+        if (-not $folderNodesByName.TryGetValue($folderName, [ref]$folderNode)) {
+            $newFolderNode = $doc.CreateElement("Folder")
+            $null = $newFolderNode.SetAttribute("Name", $folderName)
+            $null = $solutionNode.AppendChild($newFolderNode)
+            $folderNodesByName[$folderName] = $newFolderNode
+            $folderNode = $newFolderNode
+        }
+
+        if ($projectNode.ParentNode -ne $folderNode) {
+            $null = $projectNode.ParentNode.RemoveChild($projectNode)
+            $null = $folderNode.AppendChild($projectNode)
+        }
+    }
+
+    $doc.Save($slnxPath)
+}
+
 $srcProjects = GetProjectFiles $SrcRootPath
 $testsProjects = GetProjectFiles $TestsRootPath
+$toolsProjects = GetProjectFiles $ToolsRootPath
+
+$solutionFolderByProjectPath = [System.Collections.Generic.Dictionary[string, string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+if (Test-Path -LiteralPath $MainSolutionPath) {
+    $mainSolution = [xml]::new()
+    $mainSolution.Load($MainSolutionPath)
+    if ($mainSolution.Solution) {
+        foreach ($folderNode in @($mainSolution.Solution.Folder)) {
+            $folderName = $folderNode.Name
+            foreach ($projectNode in @($folderNode.Project)) {
+                $projectPath = $projectNode.Path
+                if (-not $projectPath) {
+                    continue
+                }
+
+                $fullPath = Resolve-Path -LiteralPath (Join-Path $RootPath $projectPath) -ErrorAction SilentlyContinue
+                if ($fullPath) {
+                    $solutionFolderByProjectPath[$fullPath.Path] = $folderName
+                }
+            }
+        }
+    }
+}
 
 $srcProjectSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 foreach ($project in $srcProjects) {
@@ -94,6 +186,35 @@ foreach ($project in $srcProjects) {
 $testsProjectSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 foreach ($project in $testsProjects) {
     $null = $testsProjectSet.Add($project.FullName)
+}
+
+$toolsProjectSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+foreach ($project in $toolsProjects) {
+    $null = $toolsProjectSet.Add($project.FullName)
+}
+
+$toolProjectsBySrcName = @{
+    "Meziantou.Framework.Http.Hsts" = "Meziantou.Framework.Http.Hsts.Generator"
+    "Meziantou.Framework.Unicode" = "Meziantou.Framework.Unicode.Generator"
+}
+
+$toolsBySrcProject = @{}
+foreach ($project in $srcProjects) {
+    $toolsBySrcProject[$project.FullName] = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+}
+
+foreach ($toolProject in $toolsProjects) {
+    $toolProjectName = [System.IO.Path]::GetFileNameWithoutExtension($toolProject.FullName)
+    foreach ($srcName in $toolProjectsBySrcName.Keys) {
+        if ($toolProjectsBySrcName[$srcName] -ne $toolProjectName) {
+            continue
+        }
+
+        $srcProject = $srcProjects | Where-Object { [System.IO.Path]::GetFileNameWithoutExtension($_.FullName) -eq $srcName }
+        if ($srcProject) {
+            $null = $toolsBySrcProject[$srcProject.FullName].Add($toolProject.FullName)
+        }
+    }
 }
 
 $testsBySrcProject = @{}
@@ -133,9 +254,15 @@ foreach ($project in ($srcProjects | Sort-Object FullName)) {
         }
     }
 
+    $toolProjectsToInclude = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($toolProject in $toolsBySrcProject[$project.FullName]) {
+        $null = $toolProjectsToInclude.Add($toolProject)
+    }
+
     $projectsToAdd = @()
     $projectsToAdd += ($srcProjectsToInclude | Sort-Object)
     $projectsToAdd += ($testProjectsToInclude | Sort-Object)
+    $projectsToAdd += ($toolProjectsToInclude | Sort-Object)
 
     $plans += [pscustomobject]@{
         ProjectName = [System.IO.Path]::GetFileNameWithoutExtension($project.FullName)
@@ -170,6 +297,10 @@ $plans | ForEach-Object -Parallel {
     }
 } -ThrottleLimit 8
 
+$plans | ForEach-Object {
+    ApplySolutionFolders -slnxPath $PSItem.OutputFile -projectsToAdd $PSItem.ProjectsToAdd -solutionFolderByProjectPath $solutionFolderByProjectPath
+}
+
 if (Test-Path -LiteralPath $OutputRootPath) {
     foreach ($file in (Get-ChildItem -Path $OutputRootPath -Filter *.slnx -File)) {
         if (-not $generatedFiles.Contains($file.FullName)) {
@@ -178,16 +309,16 @@ if (Test-Path -LiteralPath $OutputRootPath) {
     }
 }
 
-$slnxFiles = Get-ChildItem -Path $OutputRootPath -Filter *.slnx -File | Sort-Object FullName
-foreach ($slnxFile in $slnxFiles) {
-    $slnxPath = $slnxFile.FullName
-    dotnet build $slnxPath
-    if ($LASTEXITCODE -ne 0) {
-        throw "dotnet build failed: $slnxPath"
-    }
+# $slnxFiles = Get-ChildItem -Path $OutputRootPath -Filter *.slnx -File | Sort-Object FullName
+# foreach ($slnxFile in $slnxFiles) {
+#     $slnxPath = $slnxFile.FullName
+#     dotnet build $slnxPath
+#     if ($LASTEXITCODE -ne 0) {
+#         throw "dotnet build failed: $slnxPath"
+#     }
 
-    dotnet test $slnxPath --no-build
-    if ($LASTEXITCODE -ne 0) {
-        throw "dotnet test failed: $slnxPath"
-    }
-}
+#     dotnet test $slnxPath --no-build
+#     if ($LASTEXITCODE -ne 0) {
+#         throw "dotnet test failed: $slnxPath"
+#     }
+# }

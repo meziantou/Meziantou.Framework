@@ -1,6 +1,9 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework;
 
 /// <summary>Represents a range of Unicode code points.</summary>
+[StructLayout(LayoutKind.Auto)]
 public readonly struct UnicodeRange : IEquatable<UnicodeRange>
 {
     /// <summary>Gets the first code point in the range (inclusive).</summary>
@@ -24,7 +27,7 @@ public readonly struct UnicodeRange : IEquatable<UnicodeRange>
             throw new ArgumentOutOfRangeException(nameof(end));
 
         if (start > end)
-            throw new ArgumentException("Start must be less than or equal to end.");
+            throw new ArgumentException("Start must be less than or equal to end.", nameof(end));
 
         Start = start;
         End = end;

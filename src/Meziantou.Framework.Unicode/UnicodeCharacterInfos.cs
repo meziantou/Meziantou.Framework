@@ -43,7 +43,6 @@ internal static partial class UnicodeCharacterInfos
             var nameIndex = ReadStringIndex(stream);
             var category = (UnicodeCategory)ReadByte(stream);
             var bidiCategory = (UnicodeBidirectionalCategory)ReadByte(stream);
-            var block = (UnicodeBlock)ReadUInt16(stream);
             var canonicalCombiningClass = ReadByte(stream);
             var decompositionIndex = ReadStringIndex(stream);
             var decimalDigitValue = ReadSByte(stream);
@@ -56,8 +55,11 @@ internal static partial class UnicodeCharacterInfos
             var simpleLowercaseMapping = ReadInt32(stream);
             var simpleTitlecaseMapping = ReadInt32(stream);
 
+            var rune = new Rune(runeValue);
+            var block = UnicodeBlocks.GetBlock(runeValue);
+
             var info = new UnicodeCharacterInfo(
-                rune: new Rune(runeValue),
+                rune: rune,
                 name: GetString(strings, nameIndex) ?? string.Empty,
                 category: category,
                 bidiCategory: bidiCategory,
@@ -134,13 +136,6 @@ internal static partial class UnicodeCharacterInfos
         Span<byte> buffer = stackalloc byte[4];
         stream.ReadExactly(buffer);
         return BinaryPrimitives.ReadInt32LittleEndian(buffer);
-    }
-
-    private static ushort ReadUInt16(Stream stream)
-    {
-        Span<byte> buffer = stackalloc byte[2];
-        stream.ReadExactly(buffer);
-        return BinaryPrimitives.ReadUInt16LittleEndian(buffer);
     }
 
     private static byte ReadByte(Stream stream)

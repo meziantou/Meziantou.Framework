@@ -58,6 +58,7 @@ public sealed class UnicodeTests
         Assert.Equal("LATIN CAPITAL LETTER A", info.Value.Name);
         Assert.Equal(UnicodeCategory.UppercaseLetter, info.Value.Category);
         Assert.Equal(UnicodeBidirectionalCategory.LeftToRight, info.Value.BidiCategory);
+        Assert.Equal("Basic Latin", info.Value.Block.Name);
 
         var digitInfo = Unicode.GetCharacterInfo(new Rune('0'));
 
@@ -111,19 +112,5 @@ public sealed class UnicodeTests
 
         Assert.False(Unicode.TryGetCharacterInfo('\uD800', out var surrogateInfo));
         Assert.Equal(default, surrogateInfo);
-    }
-
-    [Fact]
-    public void GetCharacterInfo_IncludesBlockProperty()
-    {
-        // This test verifies that the Block property exists on UnicodeCharacterInfo
-        // Note: The actual block data will be populated after running the generator
-        var info = Unicode.GetCharacterInfo(new Rune('A'));
-        if (info.HasValue)
-        {
-            // Block property should exist (even if not yet populated with real data)
-            var block = info.Value.Block;
-            Assert.True(Enum.IsDefined(typeof(UnicodeBlock), block));
-        }
     }
 }

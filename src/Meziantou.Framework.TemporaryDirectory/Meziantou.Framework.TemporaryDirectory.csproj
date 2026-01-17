@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net472'">
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" />
   </ItemGroup>
 
 </Project>

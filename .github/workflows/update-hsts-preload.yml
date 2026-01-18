@@ -30,7 +30,9 @@ jobs:
             git add .
             git commit -m "Update HSTS preload list"
             git push origin update-hsts-preload --force
-            gh pr create --title "Update HSTS preload list" --body "Update HSTS preload list" --base main
+            $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            $body = "Update HSTS preload list`n`nCreated by: $runUrl"
+            gh pr create --title "Update HSTS preload list" --body $body --base main
           }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

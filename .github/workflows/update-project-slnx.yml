@@ -45,12 +45,14 @@ jobs:
           git push origin generated/update-project-slnx --force
 
           Start-Sleep -Seconds 5
+          $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          $body = "Update per-project solutions`n`nCreated by: $runUrl"
           $openPr = gh pr list --repo meziantou/meziantou.framework --head generated/update-project-slnx --json number | ConvertFrom-Json
           if ($openPr) {
-            gh pr edit $openPr.number --title "Update per-project solutions" --body "Update per-project solutions"
+            gh pr edit $openPr.number --title "Update per-project solutions" --body $body
           }
           else {
-            gh pr create --title "Update per-project solutions" --body "Update per-project solutions" --base main --head generated/update-project-slnx
+            gh pr create --title "Update per-project solutions" --body $body --base main --head generated/update-project-slnx
           }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

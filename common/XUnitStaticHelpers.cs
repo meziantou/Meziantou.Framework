@@ -1,5 +1,6 @@
 namespace TestUtilities;
 
+[SuppressMessage("Design", "MA0182: Internal type is never used")]
 internal static class XUnitStaticHelpers
 {
     private const int DefaultRetryCount = 10;

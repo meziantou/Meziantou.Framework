@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Description>Helpers to manipulate Uri</Description>
-    <Version>1.0.16</Version>
+    <Version>1.0.17</Version>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
 

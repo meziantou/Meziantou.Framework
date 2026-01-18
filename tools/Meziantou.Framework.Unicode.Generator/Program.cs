@@ -436,6 +436,8 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
     if (strings.Count > 65536 - 1)
         throw new InvalidOperationException("Too many strings: " + strings.Count);
 
+    Console.WriteLine($"Serialized {serialized.Count} UnicodeData entries with {strings.Count} unique strings (max length: {maxStringLength})");
+
     using (var compressed = new MemoryStream())
     {
         using (var stream = new System.IO.Compression.GZipStream(compressed, System.IO.Compression.CompressionLevel.SmallestSize, leaveOpen: true))

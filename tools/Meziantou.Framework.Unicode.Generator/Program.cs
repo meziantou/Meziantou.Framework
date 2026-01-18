@@ -51,15 +51,20 @@ return 0;
 
 static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEntries()
 {
+    Console.WriteLine($"  Downloading from: {ConfusablesUrl}");
     using var response = await SharedHttpClient.Instance.GetAsync(ConfusablesUrl);
     response.EnsureSuccessStatusCode();
 
     var lastModified = response.Content.Headers.LastModified?.ToString("O", CultureInfo.InvariantCulture) ?? "unknown";
+    Console.WriteLine($"  Last modified: {lastModified}");
     var content = await response.Content.ReadAsStringAsync();
 
     var entries = new Dictionary<Rune, Entry>();
+    var lineCount = 0;
+    var processedLines = 0;
     foreach (var rawLine in content.Split('\n'))
     {
+        lineCount++;
         var line = rawLine.Trim();
         if (line.Length == 0 || line.StartsWith('#'))
             continue;
@@ -82,22 +87,29 @@ static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEnt
 
         if (!entries.TryAdd(source, new Entry(source, target)))
             throw new InvalidOperationException("Duplicated source mapping: U+" + source.Value.ToString("X", CultureInfo.InvariantCulture));
+
+        processedLines++;
     }
 
+    Console.WriteLine($"  Loaded {entries.Count} confusable mappings from {lineCount} lines ({processedLines} data lines)");
     return (entries.Values.ToList(), lastModified);
 }
 
 static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries(Dictionary<int, EmojiProperties> emojiPropertiesMap)
 {
+    Console.WriteLine($"Loading Unicode character data...");
+    Console.WriteLine($"  Downloading from: {UnicodeDataUrl}");
     using var response = await SharedHttpClient.Instance.GetAsync(UnicodeDataUrl);
     response.EnsureSuccessStatusCode();
 
     var content = await response.Content.ReadAsStringAsync();
     var entries = new List<UnicodeDataEntry>();
     PendingRange? pendingRange = null;
+    var lineCount = 0;
 
     foreach (var rawLine in content.Split('\n'))
     {
+        lineCount++;
         var line = rawLine.Trim();
         if (line.Length == 0)
             continue;
@@ -191,19 +203,24 @@ static async Task<List<UnicodeDataEntry>> LoadUnicodeDataEntries(Dictionary<int,
     if (pendingRange is not null)
         throw new InvalidOperationException("UnicodeData range start without end: " + pendingRange.Entry.Name);
 
+    Console.WriteLine($"  Loaded {entries.Count} character entries from {lineCount} lines");
     return entries;
 }
 
 static async Task<List<(int Start, int End, string Name)>> LoadBlocksRanges()
 {
+    Console.WriteLine($"Loading Unicode blocks...");
+    Console.WriteLine($"  Downloading from: {BlocksUrl}");
     using var response = await SharedHttpClient.Instance.GetAsync(BlocksUrl);
     response.EnsureSuccessStatusCode();
 
     var content = await response.Content.ReadAsStringAsync();
     var blockRanges = new List<(int Start, int End, string Name)>();
+    var lineCount = 0;
 
     foreach (var rawLine in content.Split('\n'))
     {
+        lineCount++;
         var line = rawLine.Trim();
         if (line.Length == 0 || line.StartsWith('#'))
             continue;
@@ -230,19 +247,25 @@ static async Task<List<(int Start, int End, string Name)>> LoadBlocksRanges()
         blockRanges.Add((start, end, blockName));
     }
 
+    Console.WriteLine($"  Loaded {blockRanges.Count} Unicode blocks from {lineCount} lines");
     return blockRanges;
 }
 
 static async Task<Dictionary<int, EmojiProperties>> LoadEmojiProperties()
 {
+    Console.WriteLine($"Loading emoji properties...");
+    Console.WriteLine($"  Downloading from: {EmojiDataUrl}");
     using var response = await SharedHttpClient.Instance.GetAsync(EmojiDataUrl);
     response.EnsureSuccessStatusCode();
 
     var content = await response.Content.ReadAsStringAsync();
     var emojiData = new Dictionary<int, EmojiProperties>();
+    var lineCount = 0;
+    var processedLines = 0;
 
     foreach (var rawLine in content.Split('\n'))
     {
+        lineCount++;
         var line = rawLine.Trim();
         if (line.Length == 0 || line.StartsWith('#'))
             continue;
@@ -275,6 +298,7 @@ static async Task<Dictionary<int, EmojiProperties>> LoadEmojiProperties()
         if (property == EmojiProperties.None)
             continue;
 
+        processedLines++;
         var codePointRange = parts[0];
         if (codePointRange.Contains("..", StringComparison.Ordinal))
         {
@@ -312,6 +336,7 @@ static async Task<Dictionary<int, EmojiProperties>> LoadEmojiProperties()
         }
     }
 
+    Console.WriteLine($"  Loaded emoji properties for {emojiData.Count} code points from {lineCount} lines ({processedLines} data lines)");
     return emojiData;
 }
 
@@ -329,8 +354,24 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
     if (maxNameLengthPowerOfTwo > 256)
         throw new InvalidOperationException("Max character name length exceeds 256: " + maxNameLengthPowerOfTwo);
 
+    var emojiCount = unicodeDataEntries.Count(e => e.EmojiProperties != EmojiProperties.None);
+    var compressedSize = unicodeDataBytes.Length;
+    var compressionRatio = unicodeDataEntries.Count > 0 ? (double)compressedSize / (unicodeDataEntries.Count * 50) : 0;
+
     var content = $$"""
         // <auto-generated />
+        // Generated from Unicode Character Database
+        // Data source: {{UnicodeDataUrl}}
+        // Binary resource: UnicodeData.bin.gz
+        // Statistics:
+        //   - Total characters: {{unicodeDataEntries.Count.ToString(CultureInfo.InvariantCulture)}}
+        //   - Emoji characters: {{emojiCount.ToString(CultureInfo.InvariantCulture)}}
+        //   - Compressed size: {{compressedSize.ToString("N0", CultureInfo.InvariantCulture)}} bytes ({{compressionRatio:P1}} of uncompressed)
+        //   - Max character name length: {{maxNameLength.ToString(CultureInfo.InvariantCulture)}} chars
+        // 
+        // Specification: https://www.unicode.org/reports/tr44/
+        // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
+        
         namespace Meziantou.Framework;
         internal static partial class UnicodeCharacterInfos
         {
@@ -408,6 +449,27 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
     var strings = new List<string>();
     var serialized = new List<SerializedUnicodeDataEntry>(entries.Count);
 
+    // First pass: collect all unique strings
+    foreach (var entry in entries)
+    {
+        CollectString(entry.Name);
+        CollectString(entry.DecompositionMapping);
+        CollectString(entry.NumericValue);
+        CollectString(entry.Unicode1Name);
+        CollectString(entry.IsoComment);
+    }
+
+    // Sort strings for stable binary output
+    strings.Sort(StringComparer.Ordinal);
+
+    // Rebuild string index with sorted positions
+    stringIndex.Clear();
+    for (var i = 0; i < strings.Count; i++)
+    {
+        stringIndex[strings[i]] = i;
+    }
+
+    // Second pass: create serialized entries with correct sorted indices
     foreach (var entry in entries)
     {
         serialized.Add(new SerializedUnicodeDataEntry(
@@ -474,19 +536,24 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
         return compressed.ToArray();
     }
 
+    void CollectString(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return;
+
+        if (!stringIndex.ContainsKey(value))
+        {
+            stringIndex.Add(value, strings.Count);
+            strings.Add(value);
+        }
+    }
+
     int GetStringIndex(string? value)
     {
         if (string.IsNullOrEmpty(value))
             return -1;
 
-        if (!stringIndex.TryGetValue(value, out var index))
-        {
-            index = strings.Count;
-            strings.Add(value);
-            stringIndex.Add(value, index);
-        }
-
-        return index;
+        return stringIndex[value];
     }
 }
 
@@ -659,9 +726,28 @@ static void WriteByte(Stream stream, byte value)
 
 async Task WriteEmojiDataFile()
 {
+    var emojiProperties = await LoadEmojiProperties();
+    var emojiCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.Emoji));
+    var emojiPresentationCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.EmojiPresentation));
+    var modifierCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.EmojiModifier));
+    var modifierBaseCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.EmojiModifierBase));
+    var componentCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.EmojiComponent));
+    var pictographicCount = emojiProperties.Count(kvp => kvp.Value.HasFlag(EmojiProperties.ExtendedPictographic));
+
     var result = $$"""
     // <auto-generated />
-    // Emoji data source: {{EmojiDataUrl}}
+    // Generated from Unicode Emoji data
+    // Data source: {{EmojiDataUrl}}
+    // Statistics:
+    //   - Emoji: {{emojiCount}} code points
+    //   - Emoji_Presentation: {{emojiPresentationCount}} code points
+    //   - Emoji_Modifier: {{modifierCount}} code points
+    //   - Emoji_Modifier_Base: {{modifierBaseCount}} code points
+    //   - Emoji_Component: {{componentCount}} code points
+    //   - Extended_Pictographic: {{pictographicCount}} code points
+    // 
+    // Specification: https://www.unicode.org/reports/tr51/
+    // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
     
     #nullable enable
     
@@ -670,6 +756,10 @@ async Task WriteEmojiDataFile()
     namespace Meziantou.Framework;
     
     /// <summary>Provides emoji-related query methods for Unicode characters.</summary>
+    /// <remarks>
+    /// This class provides methods to check various emoji properties defined in Unicode Technical Standard #51.
+    /// For more information, see: https://www.unicode.org/reports/tr51/
+    /// </remarks>
     public static class UnicodeEmoji
     {
         /// <summary>Determines whether the specified rune has the Emoji property.</summary>
@@ -766,10 +856,22 @@ async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string c
         sb.Append("\",\n");
     }
 
+    var multiCharMappings = confusableEntries.Count(e => e.Target.EnumerateRunes().Count() > 1);
+    var singleCharMappings = confusableEntries.Count - multiCharMappings;
+
     var result = $$"""
     // <auto-generated />
-    // Confusables data source: {{ConfusablesUrl}}
+    // Generated from Unicode Security Confusables data
+    // Data source: {{ConfusablesUrl}}
     // Last modified: {{confusablesLastModified}}
+    // Statistics:
+    //   - Total confusable mappings: {{confusableEntries.Count.ToString(CultureInfo.InvariantCulture)}}
+    //   - Single-character replacements: {{singleCharMappings.ToString(CultureInfo.InvariantCulture)}}
+    //   - Multi-character replacements: {{multiCharMappings.ToString(CultureInfo.InvariantCulture)}}
+    // 
+    // Specification: https://www.unicode.org/reports/tr39/
+    // Purpose: Helps detect visually confusable characters that may be used in security attacks
+    // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
 
     #nullable enable
 
@@ -807,15 +909,18 @@ async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string c
 async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockRanges)
 {
     var sb = new StringBuilder();
-    
+
     // Generate property for each block
     foreach (var (start, end, name) in blockRanges.OrderBy(b => b.Start))
     {
         var propertyName = ToPropertyName(name);
-        sb.AppendLine($"    /// <summary>{name} (U+{start:X4}..U+{end:X4}).</summary>");
-        sb.AppendLine($"    public static UnicodeBlock {propertyName} {{ get; }} = UnicodeBlock.CreateInternal(\"{name}\", new UnicodeRange(0x{start:X}, 0x{end:X}));");
+        var codePointCount = end - start + 1;
+        sb.AppendLine(CultureInfo.InvariantCulture, $"    /// <summary>{name} (U+{start:X4}..U+{end:X4}, {codePointCount:N0} code points).</summary>");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"    public static UnicodeBlock {propertyName} {{ get; }} = UnicodeBlock.CreateInternal(\"{name}\", new UnicodeRange(0x{start:X}, 0x{end:X}));");
         sb.AppendLine();
     }
+
+    var totalCodePoints = blockRanges.Sum(b => b.End - b.Start + 1);
 
     // Generate GetBlock method with binary search
     sb.AppendLine("    /// <summary>Gets the Unicode block for a code point.</summary>");
@@ -823,18 +928,17 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     sb.AppendLine("    /// <returns>The Unicode block, or <see cref=\"Unknown\"/> if not found.</returns>");
     sb.AppendLine("    public static UnicodeBlock GetBlock(int codePoint)");
     sb.AppendLine("    {");
-    sb.AppendLine("        // Binary search - blocks are ordered by start position");
-    
+
     // Generate switch expression with ranges for better performance
     sb.AppendLine("        return codePoint switch");
     sb.AppendLine("        {");
-    
+
     foreach (var (start, end, name) in blockRanges.OrderBy(b => b.Start))
     {
         var propertyName = ToPropertyName(name);
         sb.AppendLine($"            >= 0x{start:X} and <= 0x{end:X} => {propertyName},");
     }
-    
+
     sb.AppendLine("            _ => Unknown,");
     sb.AppendLine("        };");
     sb.AppendLine("    }");
@@ -843,12 +947,25 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     sb.AppendLine("    /// <param name=\"rune\">The rune.</param>");
     sb.AppendLine("    /// <returns>The Unicode block, or <see cref=\"Unknown\"/> if not found.</returns>");
     sb.AppendLine("    public static UnicodeBlock GetBlock(Rune rune) => GetBlock(rune.Value);");
-    
+
     var result = $$"""
     // <auto-generated />
+    // Generated from Unicode Block data
+    // Data source: {{BlocksUrl}}
+    // Statistics:
+    //   - Total blocks: {{blockRanges.Count.ToString(CultureInfo.InvariantCulture)}}
+    //   - Total code points in blocks: {{totalCodePoints.ToString("N0", CultureInfo.InvariantCulture)}}
+    // 
+    // Specification: https://www.unicode.org/reports/tr44/#Blocks.txt
+    // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
+    
     namespace Meziantou.Framework;
 
     /// <summary>Provides access to all Unicode blocks.</summary>
+    /// <remarks>
+    /// Unicode blocks are named ranges of consecutive code points.
+    /// For more information, see: https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt
+    /// </remarks>
     public static class UnicodeBlocks
     {
         /// <summary>Unknown or unassigned block.</summary>
@@ -862,7 +979,7 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     {
         updated = true;
     }
-    
+
     static string ToPropertyName(string blockName)
     {
         // Convert block name to property name by removing all non-alphanumeric characters

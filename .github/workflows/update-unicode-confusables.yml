@@ -30,7 +30,9 @@ jobs:
             git add .
             git commit -m "Update Unicode confusables data"
             git push origin update-unicode-confusables --force
-            gh pr create --title "Update Unicode confusables data" --body "Update Unicode confusables data" --base main
+            $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            $body = "Update Unicode confusables data`n`nCreated by: $runUrl"
+            gh pr create --title "Update Unicode confusables data" --body $body --base main
           }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

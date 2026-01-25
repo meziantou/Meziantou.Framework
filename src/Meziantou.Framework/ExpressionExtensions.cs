@@ -3,8 +3,16 @@ using System.Linq.Expressions;
 
 namespace Meziantou.Framework;
 
-public static class ExpressionExtensions
+#if PUBLIC_EXPRESSIONEXTENSIONS
+public
+#else
+internal
+#endif
+static class ExpressionExtensions
 {
+    /// <summary>
+    /// Combines two expressions with a logical AND, properly rebinding parameters.
+    /// </summary>
     public static Expression<Func<T, bool>> AndAlso<T>(this Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
     {
         ArgumentNullException.ThrowIfNull(expr1);
@@ -23,6 +31,9 @@ public static class ExpressionExtensions
         return Expression.Lambda<Func<T, bool>>(Expression.AndAlso(left, right), parameter);
     }
 
+    /// <summary>
+    /// Combines two expressions with a logical OR, properly rebinding parameters.
+    /// </summary>
     public static Expression<Func<T, bool>> OrElse<T>(this Expression<Func<T, bool>> expr1, Expression<Func<T, bool>> expr2)
     {
         ArgumentNullException.ThrowIfNull(expr1);
@@ -39,6 +50,14 @@ public static class ExpressionExtensions
         Debug.Assert(left is not null, "left is null");
         Debug.Assert(right is not null, "right is null");
         return Expression.Lambda<Func<T, bool>>(Expression.OrElse(left, right), parameter);
+    }
+
+    /// <summary>
+    /// Negates an expression.
+    /// </summary>
+    public static Expression<Func<T, bool>> Negate<T>(this Expression<Func<T, bool>> expression)
+    {
+        return Expression.Lambda<Func<T, bool>>(Expression.Not(expression.Body), expression.Parameters);
     }
 
     private sealed class ReplaceExpressionVisitor : ExpressionVisitor

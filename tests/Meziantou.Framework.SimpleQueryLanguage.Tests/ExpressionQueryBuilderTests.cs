@@ -158,6 +158,6 @@ public sealed class ExpressionQueryBuilderTests
     {
         public int Int32Value { get; set; }
         public long Int64Value { get; set; }
-        public string? StringValue { get; set; }
+        public string StringValue { get; set; }
     }
 }

@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework/ExpressionExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.SimpleQueryLanguage.Tests" />
   </ItemGroup>
 

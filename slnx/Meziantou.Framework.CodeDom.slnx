@@ -4,7 +4,7 @@
     <Project Path="../tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="../src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
     <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
+    <Project Path="../src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
   </Folder>
 </Solution>

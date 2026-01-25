@@ -5,7 +5,7 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Description>C# wrapper for Windows RestartManager</Description>
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
   </PropertyGroup>
 
 </Project>

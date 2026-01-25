@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Description>One-way serializer to a human readable format</Description>
-    <Version>2.4.16</Version>
+    <Version>2.4.17</Version>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">

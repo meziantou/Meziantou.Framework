@@ -5,7 +5,7 @@
 // Statistics:
 //   - Total characters: 297334
 //   - Emoji characters: 1537
-//   - Compressed size: 992,905 bytes (6.7% of uncompressed)
+//   - Compressed size: 992,905 bytes (6.7 % of uncompressed)
 //   - Max character name length: 88 chars
 // 
 // Specification: https://www.unicode.org/reports/tr44/

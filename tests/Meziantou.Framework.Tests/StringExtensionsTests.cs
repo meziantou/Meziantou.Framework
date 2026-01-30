@@ -24,6 +24,17 @@ public class StringExtensionsTests
     }
 
     [Theory]
+    [InlineData(null, null, true)]
+    [InlineData("", "", true)]
+    [InlineData("abc", "abc", true)]
+    [InlineData("abc", "aBc", true)]
+    [InlineData("aabc", "abc", false)]
+    public void StaticEqualsIgnoreCase(string a, string b, bool expectedResult)
+    {
+        Assert.Equal(expectedResult, String.EqualsIgnoreCase(a, b));
+    }
+
+    [Theory]
     [InlineData("", "", true)]
     [InlineData("abc", "abc", true)]
     [InlineData("abc", "aBc", true)]

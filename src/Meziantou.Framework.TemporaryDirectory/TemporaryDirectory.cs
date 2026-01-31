@@ -253,13 +253,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         await IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None).ConfigureAwait(false);
 
         // Release the lock file and delete the parent directory
-#if NETCOREAPP3_1_OR_GREATER
         await _lockFile.DisposeAsync().ConfigureAwait(false);
-#elif NETSTANDARD2_0 || NET472
-        _lockFile.Dispose();
-#else
-#error Platform not supported
-#endif
         await IOUtilities.DeleteAsync(new DirectoryInfo(_path), CancellationToken.None).ConfigureAwait(false);
     }
 

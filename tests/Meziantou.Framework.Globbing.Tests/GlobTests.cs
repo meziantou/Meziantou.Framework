@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Globbing.Tests;
 
 public class GlobTests

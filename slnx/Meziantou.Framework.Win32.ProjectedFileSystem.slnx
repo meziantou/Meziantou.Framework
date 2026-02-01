@@ -1,9 +1,9 @@
 <Solution>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
-  </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.ProjectedFileSystem/Meziantou.Framework.Win32.ProjectedFileSystem.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
   </Folder>
 </Solution>

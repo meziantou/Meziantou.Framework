@@ -289,9 +289,18 @@ foreach ($project in ($srcProjects | Sort-Object FullName)) {
     }
 
     $projectsToAdd = @()
-    $projectsToAdd += ($srcProjectsToInclude | Sort-Object)
-    $projectsToAdd += ($testProjectsToInclude | Sort-Object)
-    $projectsToAdd += ($toolProjectsToInclude | Sort-Object)
+    # Sort using ordinal comparison for deterministic results
+    $srcList = [System.Collections.Generic.List[string]]::new($srcProjectsToInclude)
+    $srcList.Sort([System.StringComparer]::Ordinal)
+    $projectsToAdd += $srcList
+
+    $testList = [System.Collections.Generic.List[string]]::new($testProjectsToInclude)
+    $testList.Sort([System.StringComparer]::Ordinal)
+    $projectsToAdd += $testList
+
+    $toolList = [System.Collections.Generic.List[string]]::new($toolProjectsToInclude)
+    $toolList.Sort([System.StringComparer]::Ordinal)
+    $projectsToAdd += $toolList
 
     $plans += [pscustomobject]@{
         ProjectName = [System.IO.Path]::GetFileNameWithoutExtension($project.FullName)

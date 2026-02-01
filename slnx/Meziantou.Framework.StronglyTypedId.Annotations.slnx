@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="../src/Meziantou.Framework.StronglyTypedId.Interfaces/Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
     <Project Path="../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
+    <Project Path="../src/Meziantou.Framework.StronglyTypedId.Interfaces/Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
     <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Project Path="../src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
   </Folder>

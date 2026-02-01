@@ -4,8 +4,8 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
-    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="../tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />

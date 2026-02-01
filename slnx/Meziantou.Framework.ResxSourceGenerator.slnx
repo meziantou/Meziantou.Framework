@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/tests/">
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
     <Project Path="../tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj" />

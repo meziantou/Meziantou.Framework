@@ -1,11 +1,11 @@
 <Solution>
-  <Folder Name="/tests/">
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
-    <Project Path="../tests/Meziantou.Framework.Csv.Tests/Meziantou.Framework.Csv.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
-  </Folder>
   <Folder Name="/src/">
-    <Project Path="../src/Meziantou.Framework.TypeConverter/Meziantou.Framework.TypeConverter.csproj" />
     <Project Path="../src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
+    <Project Path="../src/Meziantou.Framework.TypeConverter/Meziantou.Framework.TypeConverter.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Csv.Tests/Meziantou.Framework.Csv.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+    <Project Path="../tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
   </Folder>
 </Solution>

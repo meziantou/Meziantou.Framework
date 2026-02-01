@@ -174,6 +174,36 @@ function ApplySolutionFolders($slnxPath, $projectsToAdd, $solutionFolderByProjec
             }
         }
 
+        # Sort folders by name using ordinal comparison
+        $folders = [System.Collections.Generic.List[System.Xml.XmlElement]]::new()
+        foreach ($folderNode in @($solutionNode.Folder)) {
+            $null = $folders.Add($folderNode)
+            $null = $solutionNode.RemoveChild($folderNode)
+        }
+        $folders.Sort([System.Comparison[System.Xml.XmlElement]] {
+            param($a, $b)
+            [System.StringComparer]::Ordinal.Compare($a.Name, $b.Name)
+        })
+        foreach ($folder in $folders) {
+            $null = $solutionNode.AppendChild($folder)
+        }
+
+        # Sort projects within each folder by path using ordinal comparison
+        foreach ($folderNode in @($solutionNode.Folder)) {
+            $projects = [System.Collections.Generic.List[System.Xml.XmlElement]]::new()
+            foreach ($projectNode in @($folderNode.Project)) {
+                $null = $projects.Add($projectNode)
+                $null = $folderNode.RemoveChild($projectNode)
+            }
+            $projects.Sort([System.Comparison[System.Xml.XmlElement]] {
+                param($a, $b)
+                [System.StringComparer]::Ordinal.Compare($a.Path, $b.Path)
+            })
+            foreach ($project in $projects) {
+                $null = $folderNode.AppendChild($project)
+            }
+        }
+
         $doc.Save($slnxPath)
     }
     catch {
@@ -289,9 +319,18 @@ foreach ($project in ($srcProjects | Sort-Object FullName)) {
     }
 
     $projectsToAdd = @()
-    $projectsToAdd += ($srcProjectsToInclude | Sort-Object)
-    $projectsToAdd += ($testProjectsToInclude | Sort-Object)
-    $projectsToAdd += ($toolProjectsToInclude | Sort-Object)
+    # Sort using ordinal comparison for deterministic results
+    $srcList = [System.Collections.Generic.List[string]]::new($srcProjectsToInclude)
+    $srcList.Sort([System.StringComparer]::Ordinal)
+    $projectsToAdd += $srcList
+
+    $testList = [System.Collections.Generic.List[string]]::new($testProjectsToInclude)
+    $testList.Sort([System.StringComparer]::Ordinal)
+    $projectsToAdd += $testList
+
+    $toolList = [System.Collections.Generic.List[string]]::new($toolProjectsToInclude)
+    $toolList.Sort([System.StringComparer]::Ordinal)
+    $projectsToAdd += $toolList
 
     $plans += [pscustomobject]@{
         ProjectName = [System.IO.Path]::GetFileNameWithoutExtension($project.FullName)

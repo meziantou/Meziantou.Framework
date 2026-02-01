@@ -2,6 +2,7 @@
 #pragma warning disable MA0047 // Declare types in namespaces
 #pragma warning disable MA0048 // File name must match type name
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework;
@@ -44,6 +45,45 @@ if (updated)
     await using var writer = XmlWriter.Create(csprojPath, xws);
     await doc.SaveAsync(writer, CancellationToken.None);
     Console.WriteLine("The file has been updated");
+
+    // Print git diff to show what changed
+    try
+    {
+        using var gitProcess = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = "diff --no-pager",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                WorkingDirectory = root,
+            },
+        };
+
+        gitProcess.Start();
+        var output = await gitProcess.StandardOutput.ReadToEndAsync();
+        var error = await gitProcess.StandardError.ReadToEndAsync();
+        await gitProcess.WaitForExitAsync();
+
+        if (!string.IsNullOrWhiteSpace(output))
+        {
+            await Console.Out.WriteLineAsync();
+            await Console.Out.WriteLineAsync("Git diff:");
+            await Console.Out.WriteLineAsync(output);
+        }
+
+        if (!string.IsNullOrWhiteSpace(error))
+        {
+            await Console.Error.WriteLineAsync(error);
+        }
+    }
+    catch (Exception ex)
+    {
+        await Console.Error.WriteLineAsync($"Failed to run git diff: {ex.Message}");
+    }
+
     return 1;
 }
 

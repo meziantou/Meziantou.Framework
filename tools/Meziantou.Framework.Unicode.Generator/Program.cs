@@ -63,11 +63,13 @@ if (updated)
         };
 
         gitProcess.Start();
-        var output = await gitProcess.StandardOutput.ReadToEndAsync();
-        var error = await gitProcess.StandardError.ReadToEndAsync();
+        var outputTask = gitProcess.StandardOutput.ReadToEndAsync();
+        var errorTask = gitProcess.StandardError.ReadToEndAsync();
         await gitProcess.WaitForExitAsync();
+        var output = await outputTask;
+        var error = await errorTask;
 
-        if (!string.IsNullOrWhiteSpace(output))
+        if (gitProcess.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
         {
             await Console.Out.WriteLineAsync();
             await Console.Out.WriteLineAsync("Git diff:");

@@ -1,10 +1,10 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="../src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
-    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
-    <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />

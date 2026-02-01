@@ -1,26 +1,26 @@
 <Solution>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
-    <Project Path="../tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tests/Meziantou.Framework.NuGetPackageValidation.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
-  </Folder>
   <Folder Name="/src/">
-    <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
-    <Project Path="../src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
-    <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
-    <Project Path="../src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
-    <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
-    <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
-    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
-    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
     <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
+    <Project Path="../src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
+    <Project Path="../src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
+    <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
+    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
+    <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tests/Meziantou.Framework.NuGetPackageValidation.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
 </Solution>

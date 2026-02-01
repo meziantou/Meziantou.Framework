@@ -1,13 +1,13 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
-    <Project Path="../src/Meziantou.Framework.StronglyTypedId.Interfaces/Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
-    <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Project Path="../src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
+    <Project Path="../src/Meziantou.Framework.StronglyTypedId.Interfaces/Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
+    <Project Path="../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
+    <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
     <Project Path="../tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
   <Folder Name="/tests/SourceGenerators/">
     <Project Path="../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />

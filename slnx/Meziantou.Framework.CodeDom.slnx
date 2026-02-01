@@ -1,10 +1,10 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Project Path="../src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
+    <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
     <Project Path="../tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
 </Solution>

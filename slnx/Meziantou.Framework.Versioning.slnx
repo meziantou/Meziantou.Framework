@@ -1,8 +1,8 @@
 <Solution>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.Versioning.Tests/Meziantou.Framework.Versioning.Tests.csproj" />
-  </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Versioning.Tests/Meziantou.Framework.Versioning.Tests.csproj" />
   </Folder>
 </Solution>

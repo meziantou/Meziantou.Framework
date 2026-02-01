@@ -54,7 +54,7 @@ if (updated)
             StartInfo = new ProcessStartInfo
             {
                 FileName = "git",
-                Arguments = "diff --no-pager",
+                Arguments = "diff",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

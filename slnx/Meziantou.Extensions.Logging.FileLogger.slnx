@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Extensions.Logging.FileLogger.Tests/Meziantou.Extensions.Logging.FileLogger.Tests.csproj" />
+  </Folder>
+</Solution>

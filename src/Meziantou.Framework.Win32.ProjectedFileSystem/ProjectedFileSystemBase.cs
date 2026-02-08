@@ -231,7 +231,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
     protected virtual ProjectedFileSystemEntry? GetEntry(string path)
     {
         var directory = Path.GetDirectoryName(path);
-        return GetEntries(directory ?? "").FirstOrDefault(entry => CompareFileName(entry.Name, path) == 0);
+        var fileName = Path.GetFileName(path);
+        return GetEntries(directory ?? "").FirstOrDefault(entry => CompareFileName(entry.Name, fileName) == 0);
     }
 
     /// <summary>When overridden in a derived class, opens a stream to read the content of a file at the specified path.</summary>
@@ -332,7 +333,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 #pragma warning disable CA2000 // Dispose objects before losing scope (ownHandle: false)
         var hr = NativeMethods.PrjWritePlaceholderInfo(
                     new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false),
-                    entry.Name,
+                    callbackData.FilePathName, // Use the full relative path from the callback, not just the entry name
                     in info,
                     (uint)Marshal.SizeOf(info));
 #pragma warning restore CA2000
@@ -347,75 +348,97 @@ public abstract class ProjectedFileSystemBase : IDisposable
         if (stream is null)
             return HResult.E_FILENOTFOUND;
 
-        ulong writeStartOffset;
-        uint writeLength;
+        // Seek to the requested offset
+        if (byteOffset > 0)
+        {
+            if (stream.CanSeek)
+            {
+                stream.Seek((long)byteOffset, SeekOrigin.Begin);
+            }
+            else
+            {
+                // For non-seekable streams, manually read and discard bytes to advance to the offset.
+                // Note: this may be slow for large offsets since all preceding bytes must be read and discarded.
+                var bytesToSkip = (long)byteOffset;
+                var skipBuffer = new byte[Math.Min(bytesToSkip, 4096)];
+                while (bytesToSkip > 0)
+                {
+                    var toRead = (int)Math.Min(bytesToSkip, skipBuffer.Length);
+                    var skipped = stream.Read(skipBuffer, 0, toRead);
+                    if (skipped == 0)
+                        break;
+                    bytesToSkip -= skipped;
+                }
+            }
+        }
 
         using var safeHandle = new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false);
 
         var maxBufferSize = (uint)BufferSize;
-        if (length <= maxBufferSize)
-        {
-            // The range requested in the callback is less than the buffer size, so we can return
-            // the data in a single call, without doing any alignment calculations.
-            writeStartOffset = byteOffset;
-            writeLength = length;
-        }
-        else
+        uint writeLength;
+        uint alignment = 1;
+
+        if (length > maxBufferSize)
         {
             var hr = NativeMethods.PrjGetVirtualizationInstanceInfo(safeHandle, out var instanceInfo);
             if (!hr.IsSuccess)
                 return hr;
-
-            // The first transfer will start at the beginning of the requested range,
-            // which is guaranteed to have the correct alignment.
-            writeStartOffset = byteOffset;
-
-            // Ensure our transfer size is aligned to the device alignment, and is
-            // no larger than buffer size (note this assumes the device alignment is less than buffer size).
-            var writeEndOffset = BlockAlignTruncate(writeStartOffset + maxBufferSize, instanceInfo.WriteAlignment);
-            Debug.Assert(writeEndOffset > 0);
-            Debug.Assert(writeEndOffset > writeStartOffset);
-
-            writeLength = (uint)(writeEndOffset - writeStartOffset);
+            alignment = instanceInfo.WriteAlignment;
         }
 
         // Allocate a buffer that adheres to the needed memory alignment.
-        var writeBuffer = NativeMethods.PrjAllocateAlignedBuffer(safeHandle, writeLength);
+        var bufferSize = Math.Min(length, maxBufferSize);
+        var writeBuffer = NativeMethods.PrjAllocateAlignedBuffer(safeHandle, bufferSize);
         if (writeBuffer == IntPtr.Zero)
             return HResult.E_OUTOFMEMORY;
 
-        var data = new byte[writeLength];
-        do
+        var data = new byte[bufferSize];
+        var currentOffset = byteOffset;
+        var remainingLength = length;
+
+        try
         {
-            var read = stream.Read(data, 0, data.Length);
-
-            Marshal.Copy(data, 0, IntPtr.Add(writeBuffer, (int)writeStartOffset), read);
-
-            // Write the data to the file in the local file system.
-            var hr = NativeMethods.PrjWriteFileData(safeHandle,
-                                  callbackData.DataStreamId,
-                                  writeBuffer,
-                                  writeStartOffset,
-                                  writeLength);
-
-            if (!hr.IsSuccess)
+            while (remainingLength > 0)
             {
-                NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
-                return hr;
+                // Calculate how much to write in this iteration
+                writeLength = Math.Min(remainingLength, bufferSize);
+
+                // For alignment, truncate to alignment boundary (except for last chunk)
+                if (remainingLength > writeLength && alignment > 1)
+                {
+                    var alignedEnd = BlockAlignTruncate(currentOffset + writeLength, alignment);
+                    if (alignedEnd > currentOffset)
+                    {
+                        writeLength = (uint)(alignedEnd - currentOffset);
+                    }
+                }
+
+                var read = stream.Read(data, 0, (int)writeLength);
+                if (read == 0)
+                    break;
+
+                Marshal.Copy(data, 0, writeBuffer, read);
+
+                // Write the data to the file in the local file system.
+                var hr = NativeMethods.PrjWriteFileData(safeHandle,
+                    callbackData.DataStreamId,
+                    writeBuffer,
+                    currentOffset,
+                    (uint)read);
+
+                if (!hr.IsSuccess)
+                    return hr;
+
+                currentOffset += (uint)read;
+                remainingLength -= (uint)read;
             }
 
-            // The length parameter to the callback is guaranteed to be either
-            // correctly aligned or to result in a write to the end of the file.
-            length -= writeLength;
-            if (length < writeLength)
-            {
-                writeLength = length;
-            }
+            return HResult.S_OK;
         }
-        while (writeLength > 0);
-
-        NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
-        return HResult.S_OK;
+        finally
+        {
+            NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
+        }
     }
 
     private static ulong BlockAlignTruncate(ulong p, uint v)

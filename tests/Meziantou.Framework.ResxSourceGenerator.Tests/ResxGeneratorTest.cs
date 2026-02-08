@@ -235,7 +235,7 @@ public sealed class ResxGeneratorTest
                 var prop = typeof(OptionProvider).GetProperty(key);
                 if (prop != null)
                 {
-                    var propValue = (string?)prop.GetValue(_optionProvider, null);
+                    var propValue = (string)prop.GetValue(_optionProvider, null);
                     if (propValue is not null)
                     {
                         value = propValue;

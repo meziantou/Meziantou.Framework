@@ -1,5 +1,6 @@
 #pragma warning disable RS0030 // Do not use banned APIs
 #pragma warning disable IDE0250 // Make struct readonly
+#pragma warning disable MA0182 // Unused internal type
 using System.ComponentModel;
 using System.Globalization;
 using System.Numerics;
@@ -427,13 +428,13 @@ public sealed partial class StronglyTypedIdTests
     {
         Assert.Equal("IdString { Value = test }", IdString.FromString("test").ToString());
         Assert.Equal("test", IdString_RawToString.FromString("test").ToString());
-        Assert.Equal("", IdString_RawToString.FromString(null).ToString());
+        Assert.Equal("", IdString_RawToString.FromString(null!).ToString());
     }
 
     [Fact]
     public void Bson_Guid_Class_Null()
     {
-        IdClassGuid instance = null;
+        IdClassGuid? instance = null;
         var clone = BsonClone(instance);
         Assert.Null(clone);
     }

@@ -4,7 +4,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 internal abstract class GitTool : MergeTool
 {
-    protected static readonly Lazy<string> GitPath = new(() => ExecutableFinder.GetFullExecutablePath("git"));
+    protected static readonly Lazy<string?> GitPath = new(() => ExecutableFinder.GetFullExecutablePath("git"));
 
     protected internal static (string Command, string Arguments) ParseCommandFromConfiguration(string value)
     {
@@ -31,7 +31,7 @@ internal abstract class GitTool : MergeTool
         return (value[..space], value[(space + 1)..].TrimStart());
     }
 
-    protected static string? GetGitConfiguration(string workingDirectory, string key)
+    protected static string? GetGitConfiguration(string? workingDirectory, string key)
     {
         var gitPath = GitPath.Value;
         if (gitPath is null)

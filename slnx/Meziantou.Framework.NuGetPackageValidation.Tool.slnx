@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.NuGetPackageValidation.Tool/Meziantou.Framework.NuGetPackageValidation.Tool.csproj" />
+    <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tool.Tests/Meziantou.Framework.NuGetPackageValidation.Tool.Tests.csproj" />
+  </Folder>
+</Solution>

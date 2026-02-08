@@ -3,8 +3,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Parser and evaluator for expressions such as "author:meziantou AND status:opened"</Description>
-    <Version>1.0.7</Version>
+    <Version>1.0.9</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework/ExpressionExtensions.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.SimpleQueryLanguage.Tests" />

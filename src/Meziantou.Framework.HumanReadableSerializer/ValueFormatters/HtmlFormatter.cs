@@ -13,6 +13,12 @@ internal sealed class HtmlFormatter : ValueFormatter
 
     public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
     {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
         try
         {
             var doc = new HtmlDocument();

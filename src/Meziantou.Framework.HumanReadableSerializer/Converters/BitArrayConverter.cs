@@ -1,11 +1,13 @@
 using System.Collections;
+using System.Diagnostics;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class BitArrayConverter : HumanReadableConverter<BitArray>
 {
-    protected override void WriteValue(HumanReadableTextWriter writer, BitArray value, HumanReadableSerializerOptions options)
+    protected override void WriteValue(HumanReadableTextWriter writer, BitArray? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value is not null);
         var str = value.Count <= 128 ? stackalloc char[128] : new char[value.Count];
         for (var i = 0; i < value.Length; i++)
         {

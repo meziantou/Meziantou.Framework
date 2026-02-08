@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Csv;
 /// </example>
 public class CsvRow : IReadOnlyDictionary<string, string?>
 {
-    /// <summary>Gets the columns of the row, or <c>null</c> if the CSV file has no header row.</summary>
+    /// <summary>Gets the columns of the row, or <see langword="null"/> if the CSV file has no header row.</summary>
     public IReadOnlyList<CsvColumn>? Columns { get; }
 
     /// <summary>Gets the values of the row.</summary>
@@ -46,8 +46,8 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
 
     /// <summary>Gets the value of the column with the specified name.</summary>
     /// <param name="columnName">The name of the column.</param>
-    /// <returns>The value of the column, or <c>null</c> if the column is not found.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="columnName"/> is <c>null</c>.</exception>
+    /// <returns>The value of the column, or <see langword="null"/> if the column is not found.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="columnName"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">The CSV file has no header row.</exception>
     public virtual string? this[string columnName]
     {
@@ -69,7 +69,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     /// <summary>Gets the value of the specified column.</summary>
     /// <param name="column">The column.</param>
     /// <returns>The value of the column.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="column"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="column"/> is <see langword="null"/>.</exception>
     public virtual string? this[CsvColumn column]
     {
         get

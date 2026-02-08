@@ -19,7 +19,6 @@
 
   <ItemGroup>
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptConfigurationMode.cs" />
-    <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptConfigurationScope.cs" />
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptConfigurationFile.cs" />
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptConfigurationFileEntry.cs" />
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\ProcessInfo.cs" />

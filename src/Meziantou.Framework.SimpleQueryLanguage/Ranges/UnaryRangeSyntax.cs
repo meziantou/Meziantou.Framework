@@ -4,11 +4,11 @@ internal sealed class UnaryRangeSyntax<T> : RangeSyntax<T>
 {
     internal UnaryRangeSyntax(KeyValueOperator op, T operand)
     {
-        Op = op;
+        Operator = op;
         Operand = operand;
     }
 
-    public KeyValueOperator Op { get; }
+    public KeyValueOperator Operator { get; }
 
     public T Operand { get; }
 
@@ -16,7 +16,7 @@ internal sealed class UnaryRangeSyntax<T> : RangeSyntax<T>
     {
         comparer ??= Comparer<T>.Default;
         var c = comparer.Compare(value, Operand);
-        return Op switch
+        return Operator switch
         {
             KeyValueOperator.EqualTo => c == 0,
             KeyValueOperator.NotEqualTo => c != 0,
@@ -24,13 +24,13 @@ internal sealed class UnaryRangeSyntax<T> : RangeSyntax<T>
             KeyValueOperator.LessThanOrEqual => c <= 0,
             KeyValueOperator.GreaterThan => c > 0,
             KeyValueOperator.GreaterThanOrEqual => c >= 0,
-            _ => throw new InvalidOperationException($"Unexpected operator {Op}"),
+            _ => throw new InvalidOperationException($"Unexpected operator {Operator}"),
         };
     }
 
     public override string ToString()
     {
-        return Op switch
+        return Operator switch
         {
             KeyValueOperator.EqualTo => $"{Operand}",
             KeyValueOperator.NotEqualTo => $"<>{Operand}",
@@ -38,7 +38,7 @@ internal sealed class UnaryRangeSyntax<T> : RangeSyntax<T>
             KeyValueOperator.LessThanOrEqual => $"<={Operand}",
             KeyValueOperator.GreaterThan => $">{Operand}",
             KeyValueOperator.GreaterThanOrEqual => $">={Operand}",
-            _ => throw new InvalidOperationException($"Unexpected operator {Op}"),
+            _ => throw new InvalidOperationException($"Unexpected operator {Operator}"),
         };
     }
 }

@@ -22,7 +22,7 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 /// </example>
 public sealed class XUnitLoggerProvider : ILoggerProvider
 {
-    private readonly ITestOutputHelper _testOutputHelper;
+    private readonly ITestOutputHelper? _testOutputHelper;
     private readonly XUnitLoggerOptions _options;
     private readonly LoggerExternalScopeProvider _scopeProvider = new();
 

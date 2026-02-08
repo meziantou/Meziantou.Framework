@@ -35,15 +35,15 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     public static HstsDomainPolicyCollection Default { get; } = new();
 
     /// <summary>Initializes a new instance of the <see cref="HstsDomainPolicyCollection"/> class.</summary>
-    /// <param name="includePreloadDomains">If <c>true</c>, includes preloaded domains from the Chromium HSTS preload list. Default is <c>true</c>.</param>
+    /// <param name="includePreloadDomains">If <see langword="true"/>, includes preloaded domains from the Chromium HSTS preload list. Default is <see langword="true"/>.</param>
     public HstsDomainPolicyCollection(bool includePreloadDomains = true)
         : this(timeProvider: null, includePreloadDomains)
     {
     }
 
     /// <summary>Initializes a new instance of the <see cref="HstsDomainPolicyCollection"/> class with a custom time provider.</summary>
-    /// <param name="timeProvider">The time provider to use for determining policy expiration. If <c>null</c>, uses <see cref="TimeProvider.System"/>.</param>
-    /// <param name="includePreloadDomains">If <c>true</c>, includes preloaded domains from the Chromium HSTS preload list. Default is <c>true</c>.</param>
+    /// <param name="timeProvider">The time provider to use for determining policy expiration. If <see langword="null"/>, uses <see cref="TimeProvider.System"/>.</param>
+    /// <param name="includePreloadDomains">If <see langword="true"/>, includes preloaded domains from the Chromium HSTS preload list. Default is <see langword="true"/>.</param>
     public HstsDomainPolicyCollection(TimeProvider? timeProvider, bool includePreloadDomains = true)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -79,7 +79,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     /// <summary>Adds or updates an HSTS policy for the specified host with a maximum age.</summary>
     /// <param name="host">The domain host name.</param>
     /// <param name="maxAge">The duration for which the HSTS policy should be in effect.</param>
-    /// <param name="includeSubdomains">If <c>true</c>, the policy applies to all subdomains of the host.</param>
+    /// <param name="includeSubdomains">If <see langword="true"/>, the policy applies to all subdomains of the host.</param>
     public void Add(string host, TimeSpan maxAge, bool includeSubdomains)
     {
         Add(host, _timeProvider.GetUtcNow().Add(maxAge), includeSubdomains);
@@ -88,7 +88,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     /// <summary>Adds or updates an HSTS policy for the specified host with an expiration date.</summary>
     /// <param name="host">The domain host name.</param>
     /// <param name="expiresAt">The date and time when the HSTS policy expires.</param>
-    /// <param name="includeSubdomains">If <c>true</c>, the policy applies to all subdomains of the host.</param>
+    /// <param name="includeSubdomains">If <see langword="true"/>, the policy applies to all subdomains of the host.</param>
     public void Add(string host, DateTimeOffset expiresAt, bool includeSubdomains)
     {
         ArgumentNullException.ThrowIfNull(host);
@@ -113,7 +113,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
     /// <summary>Determines whether an HTTP request to the specified host should be upgraded to HTTPS based on HSTS policies.</summary>
     /// <param name="host">The domain host name to check.</param>
-    /// <returns><c>true</c> if the request should be upgraded to HTTPS; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the request should be upgraded to HTTPS; otherwise, <see langword="false"/>.</returns>
     public bool MustUpgradeRequest(string host)
     {
         ArgumentNullException.ThrowIfNull(host);
@@ -122,7 +122,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
     /// <summary>Determines whether an HTTP request to the specified host should be upgraded to HTTPS based on HSTS policies.</summary>
     /// <param name="host">The domain host name to check.</param>
-    /// <returns><c>true</c> if the request should be upgraded to HTTPS; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the request should be upgraded to HTTPS; otherwise, <see langword="false"/>.</returns>
     public bool MustUpgradeRequest(ReadOnlySpan<char> host)
     {
         var enumerator = new DomainSplitReverseEnumerator(host);

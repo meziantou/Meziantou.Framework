@@ -58,7 +58,7 @@ public class CsvReader
 
     /// <summary>Initializes a new instance of the <see cref="CsvReader"/> class with the specified <see cref="TextReader"/>.</summary>
     /// <param name="textReader">The <see cref="TextReader"/> to read CSV data from.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="textReader"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="textReader"/> is <see langword="null"/>.</exception>
     public CsvReader(TextReader textReader)
     {
         BaseReader = textReader ?? throw new ArgumentNullException(nameof(textReader));
@@ -75,7 +75,7 @@ public class CsvReader
     }
 
     /// <summary>Reads the next row from the CSV data.</summary>
-    /// <returns>A <see cref="CsvRow"/> representing the next row, or <c>null</c> if the end of the stream has been reached.</returns>
+    /// <returns>A <see cref="CsvRow"/> representing the next row, or <see langword="null"/> if the end of the stream has been reached.</returns>
     public async Task<CsvRow?> ReadRowAsync()
     {
         var endOfStream = false;
@@ -217,7 +217,7 @@ public class CsvReader
     }
 
     /// <summary>Creates a <see cref="CsvRow"/> instance. This method can be overridden to create custom row types.</summary>
-    /// <param name="columns">The columns of the row, or <c>null</c> if the CSV file has no header row.</param>
+    /// <param name="columns">The columns of the row, or <see langword="null"/> if the CSV file has no header row.</param>
     /// <param name="values">The values of the row.</param>
     /// <returns>A new <see cref="CsvRow"/> instance.</returns>
     protected virtual CsvRow CreateRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)

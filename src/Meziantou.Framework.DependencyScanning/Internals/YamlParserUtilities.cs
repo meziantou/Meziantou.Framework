@@ -21,7 +21,7 @@ internal static class YamlParserUtilities
         }
     }
 
-    public static YamlNode? GetProperty(YamlNode node, string propertyName, StringComparison stringComparison)
+    public static YamlNode? GetProperty(YamlNode? node, string propertyName, StringComparison stringComparison)
     {
         if (node is YamlMappingNode mapping)
         {
@@ -44,7 +44,7 @@ internal static class YamlParserUtilities
         context.ReportDependency(scanner, name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
     }
 
-    public static void ReportDependencyWithSeparator(DependencyScanner scanner, ScanFileContext context, YamlNode node, DependencyType dependencyType, char versionSeparator)
+    public static void ReportDependencyWithSeparator(DependencyScanner scanner, ScanFileContext context, YamlNode? node, DependencyType dependencyType, char versionSeparator)
     {
         var value = GetScalarValue(node);
         if (value is null)
@@ -92,9 +92,9 @@ internal static class YamlParserUtilities
 
         if (length is null)
         {
-            if (node is YamlScalarNode scalarNode)
+            if (node is YamlScalarNode { Value: { } nodeValue })
             {
-                length = scalarNode.Value.Length - start;
+                length = nodeValue.Length - start;
             }
             else
             {

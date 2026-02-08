@@ -280,7 +280,6 @@ internal ref struct Tokenizer
     /// <remarks>
     /// <see href="https://urlpattern.spec.whatwg.org/#process-a-tokenizing-error">WHATWG URL Pattern Spec - Process a tokenizing error</see>
     /// </remarks>
-    [DoesNotReturn]
     private void ProcessTokenizingError(int nextPosition, int valuePosition)
     {
         if (_policy == TokenizePolicy.Strict)

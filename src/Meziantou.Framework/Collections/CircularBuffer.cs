@@ -244,7 +244,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
             _list = list;
             _index = 0;
             _version = list._version;
-            Current = default;
+            Current = default!;
         }
 
         public readonly void Dispose()
@@ -271,11 +271,11 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             _index = _list.Count + 1;
-            Current = default;
+            Current = default!;
             return false;
         }
 
-        public T Current { readonly get => field!; private set; }
+        public T Current { readonly get => field; private set; }
 
         readonly object? IEnumerator.Current
         {
@@ -296,7 +296,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
             }
 
             _index = 0;
-            Current = default;
+            Current = default!;
         }
     }
 }

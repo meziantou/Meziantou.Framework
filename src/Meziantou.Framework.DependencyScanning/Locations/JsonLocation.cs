@@ -109,8 +109,9 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
                 throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue}'. The file was probably modified since last scan.");
         }
 
-        return currentValue
-            .Remove(StartPosition, Length)
-            .Insert(StartPosition, newValue);
+        if (currentValue is null)
+            throw new DependencyScannerException("Current value is null. The file was probably modified since last scan.");
+
+        return currentValue.Remove(StartPosition, Length).Insert(StartPosition, newValue);
     }
 }

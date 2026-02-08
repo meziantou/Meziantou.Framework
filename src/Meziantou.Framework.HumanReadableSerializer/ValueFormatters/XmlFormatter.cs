@@ -23,6 +23,12 @@ public sealed class XmlFormatter : ValueFormatter
 
     public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
     {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
         try
         {
             var document = XDocument.Parse(value, _options.WriteIndented ? LoadOptions.None : LoadOptions.PreserveWhitespace);

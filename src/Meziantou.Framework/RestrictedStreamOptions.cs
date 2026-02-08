@@ -19,4 +19,7 @@ public sealed record RestrictedStreamOptions
 
     /// <summary>Gets or sets a value indicating whether seeking operations are allowed on the stream.</summary>
     public bool AllowSeeking { get; set; }
+
+    /// <summary>Gets or sets the maximum number of bytes that can be read per read operation. A negative value or 0 means no limit.</summary>
+    public int MaxReadLength { get; set; }
 }

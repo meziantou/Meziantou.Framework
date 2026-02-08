@@ -29,7 +29,7 @@ public sealed class AmsiSession : IDisposable
     /// <summary>Scans a string for malware within this session.</summary>
     /// <param name="payload">The string content to scan.</param>
     /// <param name="contentName">The name or identifier of the content being scanned.</param>
-    /// <returns><c>true</c> if the content is detected as malware; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the content is detected as malware; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="Win32Exception">Thrown when the scan operation fails.</exception>
     public bool IsMalware(string payload, string contentName)
     {
@@ -43,7 +43,7 @@ public sealed class AmsiSession : IDisposable
     /// <summary>Scans a byte buffer for malware within this session.</summary>
     /// <param name="payload">The byte buffer to scan.</param>
     /// <param name="contentName">The name or identifier of the content being scanned.</param>
-    /// <returns><c>true</c> if the content is detected as malware; otherwise, <c>false</c>.</returns>
+    /// <returns><see langword="true"/> if the content is detected as malware; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="Win32Exception">Thrown when the scan operation fails.</exception>
     public bool IsMalware(byte[] payload, string contentName)
     {

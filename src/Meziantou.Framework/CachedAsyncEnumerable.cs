@@ -21,10 +21,10 @@ internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
         var index = 0;
         while (true)
         {
-            var (hasItem, result) = await TryGetItem(index, cancellationToken).ConfigureAwait(false);
-            if (hasItem)
+            var item = await TryGetItem(index, cancellationToken).ConfigureAwait(false);
+            if (item.HasValue)
             {
-                yield return result;
+                yield return item.Value;
                 index++;
             }
             else
@@ -35,11 +35,11 @@ internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
         }
     }
 
-    private async ValueTask<(bool HasItem, T Item)> TryGetItem(int index, CancellationToken cancellationToken)
+    private async ValueTask<Optional<T>> TryGetItem(int index, CancellationToken cancellationToken)
     {
         // if the item is in the cache, use it
         if (index < _cache.Count)
-            return (true, _cache[index]);
+            return new(_cache[index]);
 
         if (_enumerator is null && !_enumerated)
         {
@@ -48,7 +48,7 @@ internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
 
         // If we have already enumerate the whole stream, there is nothing else to do
         if (_enumerated)
-            return (false, default);
+            return new();
 
         // Get the next item and store it to the cache
         Debug.Assert(_enumerator is not null);
@@ -56,7 +56,7 @@ internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
         {
             var result = _enumerator.Current;
             _cache.Add(result);
-            return (true, result);
+            return new(result);
         }
         else
         {
@@ -64,7 +64,7 @@ internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
             await _enumerator.DisposeAsync().ConfigureAwait(false);
             _enumerator = null;
             _enumerated = true;
-            return (false, default);
+            return new(default!);
         }
     }
 

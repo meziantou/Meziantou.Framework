@@ -54,7 +54,7 @@ public static class HumanReadableHttpExtensions
             CustomCondition = data => FilterHeaders(data.Value, requestOptions?.ExcludedHeaderNames),
         });
 
-        if (requestOptions.OmitProtocolVersion)
+        if (requestOptions is not null && requestOptions.OmitProtocolVersion)
         {
             options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.Always });
         }
@@ -71,15 +71,18 @@ public static class HumanReadableHttpExtensions
     private static void ConfigureHttpResponseMessage(HumanReadableSerializerOptions options, HumanReadableHttpResponseMessageOptions? responseOptions)
     {
         // Ignore properties
-        switch (responseOptions.RequestMessageFormat)
+        if (responseOptions is not null)
         {
-            case HttpRequestMessageFormat.NotSerialized:
-                options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.RequestMessage), new HumanReadableIgnoreAttribute());
-                break;
+            switch (responseOptions.RequestMessageFormat)
+            {
+                case HttpRequestMessageFormat.NotSerialized:
+                    options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.RequestMessage), new HumanReadableIgnoreAttribute());
+                    break;
 
-            case HttpRequestMessageFormat.MethodAndUri:
-                options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.RequestMessage), new HumanReadableConverterAttribute(typeof(RequestMessageAsUriConverter)));
-                break;
+                case HttpRequestMessageFormat.MethodAndUri:
+                    options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.RequestMessage), new HumanReadableConverterAttribute(typeof(RequestMessageAsUriConverter)));
+                    break;
+            }
         }
 
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.IsSuccessStatusCode), new HumanReadableIgnoreAttribute());
@@ -98,7 +101,7 @@ public static class HumanReadableHttpExtensions
         });
 #endif
 
-        if (responseOptions.OmitProtocolVersion)
+        if (responseOptions is not null && responseOptions.OmitProtocolVersion)
         {
             options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.WhenWritingDefault });
             options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadableDefaultValueAttribute(HttpVersion.Version11));

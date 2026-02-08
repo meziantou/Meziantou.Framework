@@ -56,7 +56,7 @@ internal static class Utilities
 
     public static string DateTimeToString(DateTime dt)
     {
-        if (dt.Kind == DateTimeKind.Utc)
+        if (dt.Kind is DateTimeKind.Utc)
         {
             return dt.ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture);
         }

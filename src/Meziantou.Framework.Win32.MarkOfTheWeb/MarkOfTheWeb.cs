@@ -81,7 +81,7 @@ public static class MarkOfTheWeb
     /// <summary>Gets the raw content of the Zone.Identifier alternate data stream from a file.</summary>
     /// <param name="filePath">The path to the file to read.</param>
     /// <returns>The content of the Zone.Identifier stream, or <see langword="null"/> if the file does not have zone information.</returns>
-    public static string GetFileZoneContent(string filePath)
+    public static string? GetFileZoneContent(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
 

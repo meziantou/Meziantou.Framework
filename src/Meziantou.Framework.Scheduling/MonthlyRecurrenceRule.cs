@@ -10,21 +10,27 @@ namespace Meziantou.Framework.Scheduling;
 public sealed class MonthlyRecurrenceRule : RecurrenceRule
 {
     /// <summary>Limits occurrences to specific days of the week with optional ordinal positions.</summary>
-    public IList<ByDay> ByWeekDays { get; set; } = new List<ByDay>();
-
-    /// <summary>Limits occurrences to specific days of the month.</summary>
-    public IList<int> ByMonthDays { get; set; } = new List<int>();
-
-    /// <summary>Limits occurrences to specific months.</summary>
-    public IList<Month> ByMonths { get; set; } = new List<Month>();
+    public IList<ByDay> ByWeekDays { get; set; } = [];
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
+        var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
+
         if (IsEmpty(ByMonthDays) && IsEmpty(ByWeekDays))
         {
             while (true)
             {
-                yield return startDate;
+                if (hasTimeFilters)
+                {
+                    foreach (var occurrence in ExpandByTime(startDate))
+                    {
+                        yield return occurrence;
+                    }
+                }
+                else
+                {
+                    yield return startDate;
+                }
                 startDate = startDate.AddMonths(Interval);
             }
         }
@@ -46,12 +52,22 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
                 var resultByMonthDays = ResultByMonthDays(startOfMonth, ByMonthDays);
                 var resultByDays = ResultByWeekDaysInMonth(startOfMonth, ByWeekDays);
 
-                var result = Intersect(resultByDays, resultByMonthDays);
+                var result = Intersect(resultByMonthDays, resultByDays);
                 result = FilterBySetPosition(result.Distinct().Order().ToArray(), BySetPositions);
 
                 foreach (var date in result.Where(d => d >= startDate))
                 {
-                    yield return date;
+                    if (hasTimeFilters)
+                    {
+                        foreach (var occurrence in ExpandByTime(date))
+                        {
+                            yield return occurrence;
+                        }
+                    }
+                    else
+                    {
+                        yield return date;
+                    }
                 }
             }
 
@@ -59,6 +75,29 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
         }
 
         // ReSharper disable once IteratorNeverReturns
+    }
+
+    private IEnumerable<DateTime> ExpandByTime(DateTime date)
+    {
+        var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
+        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
+        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
+
+        var dateOnly = date.Date;
+        foreach (var hour in hours)
+        {
+            foreach (var minute in minutes)
+            {
+                foreach (var second in seconds)
+                {
+                    var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
+                    if (result >= date)
+                    {
+                        yield return result;
+                    }
+                }
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -109,6 +148,24 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
             {
                 sb.Append(";BYDAY=");
                 sb.AppendJoin(',', ByWeekDays);
+            }
+
+            if (!IsEmpty(ByHours))
+            {
+                sb.Append(";BYHOUR=");
+                sb.AppendJoin(',', ByHours);
+            }
+
+            if (!IsEmpty(ByMinutes))
+            {
+                sb.Append(";BYMINUTE=");
+                sb.AppendJoin(',', ByMinutes);
+            }
+
+            if (!IsEmpty(BySeconds))
+            {
+                sb.Append(";BYSECOND=");
+                sb.AppendJoin(',', BySeconds);
             }
 
             if (!IsEmpty(BySetPositions))

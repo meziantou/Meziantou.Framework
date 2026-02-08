@@ -12,7 +12,7 @@ public sealed class CurrentProcessSnapshot : ProcessSnapshot
     }
 
     public string CommandLine { get; } = Environment.CommandLine;
-    public string ProcessPath { get; } = Environment.ProcessPath;
+    public string? ProcessPath { get; } = Environment.ProcessPath;
     public Architecture ProcessArchitecture { get; } = RuntimeInformation.ProcessArchitecture;
     public bool IsPrivilegedProcess { get; } = Environment.IsPrivilegedProcess;
 }

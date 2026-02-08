@@ -11,6 +11,9 @@ internal sealed class ValidationStartupFilter : IStartupFilter
         return app =>
         {
             var options = app.ApplicationServices.GetService<MeziantouServiceDefaultsOptions>();
+            if(options is null)
+                throw new InvalidOperationException($"MeziantouServiceDefaultsOptions is not registered. You must call {nameof(MeziantouServiceDefaults.UseMeziantouConventions)} or {nameof(MeziantouServiceDefaults.TryUseMeziantouConventions)} when configuring the host.");
+
             if (!options.MapCalled)
                 throw new InvalidOperationException($"You must call {nameof(MeziantouServiceDefaults.MapMeziantouDefaultEndpoints)}.");
 

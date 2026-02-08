@@ -1,4 +1,4 @@
-﻿@page "/datagrid"
+@page "/datagrid"
 @inject WeatherForecastClient WeatherForecastClient
 
 <h1>DataGrid</h1>
@@ -11,7 +11,7 @@
 </DataGrid>
 
 @code {
-    private IReadOnlyList<WeatherForecast> data;
+    private IReadOnlyList<WeatherForecast>? data;
 
     protected override async Task OnInitializedAsync()
     {

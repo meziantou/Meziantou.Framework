@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Versioning.Tests;
 
 public class SemanticVersionTests
@@ -91,7 +89,7 @@ public class SemanticVersionTests
         Assert.False(left >= right);
     }
 
-    public static IEnumerable<object[]> Operator_Data()
+    public static TheoryData<SemanticVersion, SemanticVersion> Operator_Data()
     {
         var orderedVersions = new[]
         {
@@ -105,10 +103,13 @@ public class SemanticVersionTests
             new SemanticVersion(1, 0, 0),
         };
 
-        var left = orderedVersions.Take(orderedVersions.Length - 1);
-        var right = orderedVersions.Skip(1);
+        var data = new TheoryData<SemanticVersion, SemanticVersion>();
+        for (var i = 0; i < orderedVersions.Length - 1; i++)
+        {
+            data.Add(orderedVersions[i], orderedVersions[i + 1]);
+        }
 
-        return left.Zip(right, (l, r) => new[] { l, r });
+        return data;
     }
 
     [Theory]

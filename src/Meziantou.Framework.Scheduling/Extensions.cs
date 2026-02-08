@@ -2,14 +2,18 @@ namespace Meziantou.Framework.Scheduling;
 
 internal static class Extensions
 {
-    public static string? GetValue(this IDictionary<string, string> dict, string key, string? defaultValue)
+    public static bool TryGetNonEmptyValue(this IDictionary<string, string> dict, string key, [NotNullWhen(true)] out string? result)
     {
         ArgumentNullException.ThrowIfNull(dict);
 
-        if (dict.TryGetValue(key, out var value))
-            return value;
+        if (dict.TryGetValue(key, out var value) && !string.IsNullOrEmpty(value))
+        {
+            result = value;
+            return true;
+        }
 
-        return defaultValue;
+        result = null;
+        return false;
     }
 
     public static int GetValue(this IDictionary<string, string> dict, string key, int defaultValue)
@@ -70,7 +74,7 @@ internal static class Extensions
             return dt.AddDays(-dt.Day + 1);
         }
 
-        return new DateTime(dt.Year, dt.Month, 1);
+        return new DateTime(dt.Year, dt.Month, 1, 0, 0, 0, dt.Kind);
     }
 
     public static DateTime StartOfYear(DateTime dt)
@@ -86,7 +90,7 @@ internal static class Extensions
         }
         else
         {
-            return new DateTime(dt.Year, 1, 1);
+            return new DateTime(dt.Year, 1, 1, 0, 0, 0, dt.Kind);
         }
     }
 

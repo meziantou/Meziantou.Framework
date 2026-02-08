@@ -6,19 +6,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Description>One-way serializer to a human readable format</Description>
-    <Version>2.4.15</Version>
+    <Version>2.4.17</Version>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="System.Memory" Version="4.6.3" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1" />
-    <PackageReference Include="System.Text.Json" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" />
+    <PackageReference Include="System.Text.Json" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net472'">
     <PackageReference Include="System.Memory" Version="4.6.3" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1" />
-    <PackageReference Include="System.Text.Json" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" />
+    <PackageReference Include="System.Text.Json" Version="10.0.2" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="../Meziantou.Framework.Html/*.cs" LinkBase="Html" Exclude="../Meziantou.Framework.Html/HtmlXmlWriter.cs" />
+    <Compile Include="../Meziantou.Framework.Html/*.cs" LinkBase="Html" Exclude="../Meziantou.Framework.Html/HtmlXmlWriter.cs;../Meziantou.Framework.Html/HtmlNodeExtensions.cs;../Meziantou.Framework.Html/HtmlMicroDataExtensions.cs" />
   </ItemGroup>
 
 </Project>

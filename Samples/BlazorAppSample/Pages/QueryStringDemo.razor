@@ -1,4 +1,4 @@
-﻿@page "/querystring"
+@page "/querystring"
 @inject NavigationManager NavigationManager
 
 <h1>QueryString service!</h1>
@@ -9,7 +9,7 @@
 
 @code {
     [Parameter, SupplyParameterFromQuery]
-    public string Text { get; set; }
+    public string? Text { get; set; }
 
     void UpdateQueryString()
     {

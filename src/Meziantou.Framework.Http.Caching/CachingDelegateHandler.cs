@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 
-namespace HttpCaching;
+namespace Meziantou.Framework.Http;
 
 /// <summary>A delegating handler that caches HTTP responses following RFC 7234.</summary>
 public sealed class CachingDelegateHandler : DelegatingHandler
@@ -115,7 +115,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
 
         // RFC 7233: Range requests should bypass cache
         // Cache doesn't support serving partial content, so forward to origin
-        if (request.Headers.Range != null)
+        if (request.Headers.Range is not null)
         {
             var rangeResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             rangeResponse.RequestMessage ??= request;
@@ -137,7 +137,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         // Try to get a cached response
         var cacheResult = _cache.TryGet(request);
 
-        if (cacheResult != null)
+        if (cacheResult is not null)
         {
             var currentAge = cacheResult.CalculateCurrentAge(requestTime);
             var freshnessLifetime = cacheResult.FreshnessLifetime;
@@ -236,12 +236,12 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             }
 
             // Attempt conditional validation
-            if (cacheResult.ETag != null || cacheResult.LastModified != null)
+            if (cacheResult.ETag is not null || cacheResult.LastModified != null)
             {
                 using var conditionalRequest = CloneRequest(request);
 
                 // RFC 7232 Section 3.2: If-None-Match
-                if (cacheResult.ETag != null)
+                if (cacheResult.ETag is not null)
                 {
                     conditionalRequest.Headers.TryAddWithoutValidation("If-None-Match", cacheResult.ETag);
                 }
@@ -476,7 +476,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
 
-        if (original.Content != null)
+        if (original.Content is not null)
         {
             clone.Content = original.Content;
         }

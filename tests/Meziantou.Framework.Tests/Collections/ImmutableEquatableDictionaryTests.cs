@@ -183,14 +183,14 @@ public sealed class ImmutableEquatableDictionaryTests
         Assert.False(null == dict);
         Assert.True(dict != null);
         Assert.True(null != dict);
-        Assert.False(dict.Equals((object?)null));
+        Assert.False(dict.Equals((object)null));
     }
 
     [Fact]
     public void Equals_BothNull_ShouldReturnTrue()
     {
-        ImmutableEquatableDictionary<string, int>? dict1 = null;
-        ImmutableEquatableDictionary<string, int>? dict2 = null;
+        ImmutableEquatableDictionary<string, int> dict1 = null;
+        ImmutableEquatableDictionary<string, int> dict2 = null;
 
         Assert.True(dict1 == dict2);
         Assert.False(dict1 != dict2);

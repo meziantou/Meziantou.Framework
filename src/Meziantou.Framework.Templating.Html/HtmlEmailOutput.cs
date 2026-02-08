@@ -131,7 +131,7 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
 
     /// <summary>Retrieves the content of a previously captured section.</summary>
     /// <param name="name">The name of the section to retrieve.</param>
-    /// <returns>The decoded content of the section, or <c>null</c> if the section does not exist.</returns>
+    /// <returns>The decoded content of the section, or <see langword="null"/> if the section does not exist.</returns>
     public string? GetSection(string name)
     {
         if (_sections.TryGetValue(name, out var value))

@@ -4,6 +4,7 @@ You MUST make your best effort to ensure your changes satisfy those criteria bef
 
 Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
 Also, do not assume that tests pass just because you did not see any failures in your last test run; verify that all relevant tests were actually run.
+When running tests, you can ignore the warning about "Blame" data collector errors.
 
 In addition to building and testing your changes, you MUST run the following scripts:
 - `./eng/update-bom.ps1`
@@ -30,3 +31,5 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
 - There should be no trailing whitespace in any lines.
 - Add a blank line before XML documentation comments (`///`) when they follow other code (methods, properties, fields, etc.).
+
+Do not consider solution files (sln, slnx) in the slnx folders. These files are automatically generated and only for developers working on the project.

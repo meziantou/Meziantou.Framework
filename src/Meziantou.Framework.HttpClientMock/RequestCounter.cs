@@ -32,7 +32,7 @@ public sealed class RequestCounter(IHttpContextAccessor httpContextAccessor)
     /// <summary>Gets the number of requests made to the specified endpoint.</summary>
     /// <param name="endpoint">The endpoint to get the request count for.</param>
     /// <returns>The number of requests made to the endpoint.</returns>
-    public long Get(Endpoint endpoint) => _endpointCounter.GetValueOrDefault(GetKey(endpoint));
+    public long Get(Endpoint? endpoint) => endpoint is not null ? _endpointCounter.GetValueOrDefault(GetKey(endpoint)) : 0L;
 
     internal void IncrementTotal()
     {
@@ -47,7 +47,7 @@ public sealed class RequestCounter(IHttpContextAccessor httpContextAccessor)
     internal void IncrementEndpoint(HttpContext httpContext)
     {
         var feature = httpContext.Features.Get<IEndpointFeature>();
-        if (feature is not null)
+        if (feature?.Endpoint is not null)
         {
             IncrementEndpoint(feature.Endpoint);
         }
@@ -55,5 +55,5 @@ public sealed class RequestCounter(IHttpContextAccessor httpContextAccessor)
 
     private static Key GetKey(Endpoint endpoint) => new(endpoint.DisplayName, endpoint.RequestDelegate);
 
-    private readonly record struct Key(string Name, RequestDelegate RequestDelegate);
+    private readonly record struct Key(string? Name, RequestDelegate? RequestDelegate);
 }

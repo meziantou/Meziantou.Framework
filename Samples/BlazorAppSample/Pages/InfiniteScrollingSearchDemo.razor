@@ -1,4 +1,4 @@
-﻿@page "/infinite-scrolling-search"
+@page "/infinite-scrolling-search"
 @using System.Globalization
 
 <h1>Infinite scrolling!</h1>
@@ -15,8 +15,8 @@
 </InfiniteScrolling>
 
 @code {
-    InfiniteScrolling<int> InfiniteScrollingInstance;
-    string query = "0";
+    InfiniteScrolling<int>? InfiniteScrollingInstance;
+    string? query = "0";
 
     async Task<IEnumerable<int>> GetItems(InfiniteScrollingItemsProviderRequest request)
     {
@@ -31,7 +31,7 @@
 
     private async Task QueryChanged(ChangeEventArgs e)
     {
-        query = (string)e.Value;
-        await InfiniteScrollingInstance.RefreshDataAsync();
+		query = (string?)e.Value;
+        await InfiniteScrollingInstance!.RefreshDataAsync();
     }
 }

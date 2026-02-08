@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
@@ -43,6 +44,7 @@ internal sealed class AsyncEnumerableKeyValuePairConverterFactory : HumanReadabl
     {
         protected override void WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<KeyValuePair<string, T>>? value, HumanReadableSerializerOptions options)
         {
+            Debug.Assert(value is not null);
             EnumerableKeyValuePairConverter<T>.WriteValueCore(writer, value.ToBlockingEnumerable(), options);
         }
     }

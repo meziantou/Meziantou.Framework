@@ -40,6 +40,7 @@
     <Project Path="src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj" Id="997b1066-b521-4738-977a-b60cc01f15ed" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" Id="75c124f1-5f21-47f5-b05b-7e1334290074" />
+    <Project Path="src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.InMemory/Meziantou.Extensions.Logging.InMemory.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit/Meziantou.Extensions.Logging.Xunit.csproj" />
@@ -88,6 +89,7 @@
     <Project Path="src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="src/Meziantou.Framework.Threading/Meziantou.Framework.Threading.csproj" />
     <Project Path="src/Meziantou.Framework.TypeConverter/Meziantou.Framework.TypeConverter.csproj" />
+    <Project Path="src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" Id="4918958a-08ce-42b0-8c93-b1a84fc48573" />
     <Project Path="src/Meziantou.Framework.Uri/Meziantou.Framework.Uri.csproj" />
     <Project Path="src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
@@ -114,6 +116,7 @@
     <Project Path="tests/Meziantou.AspNetCore.Components.LogViewer.Tests/Meziantou.AspNetCore.Components.LogViewer.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.Tests/Meziantou.AspNetCore.Components.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.Tests/Meziantou.AspNetCore.ServiceDefaults.Tests.csproj" Id="a1514aa2-f75e-4dcc-bf6b-1860a8c44fcb" />
+    <Project Path="tests/Meziantou.Extensions.Logging.FileLogger.Tests/Meziantou.Extensions.Logging.FileLogger.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.InMemory.Tests/Meziantou.Extensions.Logging.InMemory.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.Tests/Meziantou.Extensions.Logging.Xunit.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/Meziantou.Extensions.Logging.Xunit.v3.Tests.csproj" />
@@ -157,6 +160,7 @@
     <Project Path="tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Tests/Meziantou.Framework.Threading.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Unicode.Tests/Meziantou.Framework.Unicode.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Unix.ControlGroups.Tests/Meziantou.Framework.Unix.ControlGroups.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Uri.Tests/Meziantou.Framework.Uri.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ValueStopwatch.Tests/Meziantou.Framework.ValueStopwatch.Tests.csproj" />
@@ -181,5 +185,6 @@
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" />
+    <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
   </Folder>
 </Solution>

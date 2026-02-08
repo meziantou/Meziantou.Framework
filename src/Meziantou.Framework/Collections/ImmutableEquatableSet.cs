@@ -24,7 +24,7 @@ public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<
     public int Count => _values.Count;
     public bool Contains(T item) => _values.Contains(item);
 
-    public bool Equals(ImmutableEquatableSet<T> other)
+    public bool Equals(ImmutableEquatableSet<T>? other)
     {
         if (other is null)
             return false;

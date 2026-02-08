@@ -1,0 +1,43 @@
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # once a week
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/Meziantou.Framework.Unicode.Generator/**'
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update_file:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
+      - run: |
+          dotnet run --project tools/Meziantou.Framework.Unicode.Generator
+          if ($LASTEXITCODE -ne 0) {
+            git config --global user.email "git@meziantou.net"
+            git config --global user.name "meziantou"
+            git checkout -b update-unicode-confusables
+            git add .
+            git commit -m "Update Unicode confusables data"
+            git push origin update-unicode-confusables --force
+            $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            $body = "Update Unicode confusables data`n`nCreated by: $runUrl"
+            gh pr create --title "Update Unicode confusables data" --body $body --base main
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

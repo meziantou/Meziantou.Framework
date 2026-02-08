@@ -1,4 +1,4 @@
-namespace HttpCaching;
+namespace Meziantou.Framework.Http;
 
 /// <summary>
 /// Options for configuring HTTP caching behavior.

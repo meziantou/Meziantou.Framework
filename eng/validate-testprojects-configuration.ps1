@@ -5,6 +5,32 @@ $Errors = $Projs | Foreach-Object -ThrottleLimit 5 -Parallel {
 
     $UtilsPath = Join-Path $using:TestsRootPath "TestUtilities/TestUtilities.csproj" -Resolve
 
+    function Invoke-DotNetBuildWithRetry {
+        param(
+            [string]$ProjectPath,
+            [int]$MaxAttempts = 3,
+            [int]$DelaySeconds = 2
+        )
+
+        $attempt = 0
+        while ($attempt -lt $MaxAttempts) {
+            $attempt++
+            $result = dotnet build --getProperty:TargetFrameworks $ProjectPath
+
+            if ($LASTEXITCODE -eq 0) {
+                return $result
+            }
+
+            if ($attempt -lt $MaxAttempts) {
+                Write-Warning "Attempt $attempt failed for $ProjectPath. Retrying in $DelaySeconds seconds..."
+                Start-Sleep -Seconds $DelaySeconds
+            }
+            else {
+                throw "Failed to get TargetFrameworks for $ProjectPath after $MaxAttempts attempts. Last error: $result"
+            }
+        }
+    }
+
     function SimplifyTfm($Tfm) {
         if ($Tfm.Contains('-')) {
             return $Tfm.Substring(0, $Tfm.IndexOf(('-')))
@@ -15,7 +41,7 @@ $Errors = $Projs | Foreach-Object -ThrottleLimit 5 -Parallel {
 
 
     $Proj = $PSItem
-    $TestProjectTfms = $(dotnet build --getProperty:TargetFrameworks $Proj.FullName).Split(";") | ForEach-Object { SimplifyTfm($_) }
+    $TestProjectTfms = $(Invoke-DotNetBuildWithRetry -ProjectPath $Proj.FullName).Split(";") | ForEach-Object { SimplifyTfm($_) }
 
     [xml]$ProjXml = Get-Content -LiteralPath $Proj.FullName
     # Reference
@@ -32,7 +58,7 @@ $Errors = $Projs | Foreach-Object -ThrottleLimit 5 -Parallel {
             continue;
         }
 
-        $RefTfms = $(dotnet build --getProperty:TargetFrameworks $RefProj).Split(";")
+        $RefTfms = $(Invoke-DotNetBuildWithRetry -ProjectPath $RefProj).Split(";")
         foreach ($RefTfm in $RefTfms) {
             $RefTfm = SimplifyTfm($RefTfm)
             if ($RefTfm -eq "netstandard2.0") {
@@ -42,7 +68,7 @@ $Errors = $Projs | Foreach-Object -ThrottleLimit 5 -Parallel {
             if ($RefTfm -eq "netstandard2.1") {
                 continue;
             }
-            
+
             if ($RefTfm -eq "net462" -and $TestProjectTfms.Contains("net472")) {
                 continue;
             }

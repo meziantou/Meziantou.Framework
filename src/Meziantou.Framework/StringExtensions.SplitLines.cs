@@ -16,7 +16,9 @@ static partial class StringExtensions
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public ref struct LineSplitEnumerator
     {
+#if NET8_0_OR_GREATER
         private static SearchValues<char> NewLineCharacters { get; } = SearchValues.Create(['\r', '\n']);
+#endif
 
         private ReadOnlySpan<char> _str;
 
@@ -34,7 +36,11 @@ static partial class StringExtensions
                 return false;
 
             var span = _str;
+#if NET8_0_OR_GREATER
             var index = span.IndexOfAny(NewLineCharacters);
+#else
+            var index = span.IndexOfAny('\r', '\n');
+#endif
             if (index == -1)
             {
                 _str = [];

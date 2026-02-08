@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace HttpCaching;
+namespace Meziantou.Framework.Http;
 
 internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondaryKey>
 {
@@ -34,7 +34,7 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
         }
 
         ref var headerValue = ref CollectionsMarshal.GetValueRefOrAddDefault(_headers, name, out var exists);
-        if (exists && headerValue != null)
+        if (exists && headerValue is not null)
         {
             headerValue = headerValue + separator + value;
         }

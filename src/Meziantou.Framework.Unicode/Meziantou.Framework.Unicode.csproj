@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework</RootNamespace>
+    <Version>1.0.7</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Unicode helpers for confusable character normalization and character metadata.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\UnicodeData.bin.gz">
+      <LogicalName>Meziantou.Framework.Resources.UnicodeData.bin.gz</LogicalName>
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

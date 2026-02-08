@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Http</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Provide types to cache http response as described in RFC 7234</Description>
   </PropertyGroup>

@@ -176,7 +176,7 @@ public sealed class HttpJsonSerializerTests : SerializerTestsBase
 
     private sealed class CustomStringConverter : HumanReadableConverter<string>
     {
-        protected override void WriteValue(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
+        protected override void WriteValue(HumanReadableTextWriter writer, string value, HumanReadableSerializerOptions options)
         {
             writer.WriteValue("custom-" + value);
         }

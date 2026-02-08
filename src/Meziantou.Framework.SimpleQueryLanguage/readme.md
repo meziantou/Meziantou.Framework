@@ -36,3 +36,38 @@ Examples:
 - `age>=21`
 - `is_open:true free form text`
 - `is_open:true AND NOT "free form text"`
+
+# Expression-based queries for EF Core
+
+The `ExpressionQueryBuilder<T>` class creates `Expression<Func<T, bool>>` objects that can be translated to SQL by Entity Framework Core, allowing you to apply query language filters directly to database queries.
+
+````c#
+// Define a query builder for your entity
+var queryBuilder = new ExpressionQueryBuilder<Person>();
+
+// Add handlers for string properties (uses Contains for partial matching)
+queryBuilder.AddHandler("name", person => person.FullName);
+
+// Add handlers for comparable types (supports range and comparison operators)
+queryBuilder.AddHandler<int>("age", person => person.Age);
+queryBuilder.AddHandler<DateTime>("created", person => person.CreatedAt);
+
+// Optional: handle free-text search across multiple fields
+queryBuilder.SetFreeTextHandler(text =>
+    person => person.FullName.Contains(text) || person.Email.Contains(text));
+
+// Build the query
+var query = queryBuilder.Build("name:john AND age>=21");
+
+// Apply to an IQueryable (e.g., EF Core DbSet)
+var results = await dbContext.People
+    .Apply(query)
+    .ToListAsync();
+````
+
+The `ExpressionQueryBuilder<T>` supports the same query syntax as `QueryBuilder<T>`, including:
+- String matching with `:` operator
+- Comparison operators: `<`, `<=`, `>`, `>=`
+- Range syntax: `age:18..25`
+- Logical operators: `AND`, `OR`, `NOT`
+- Parentheses for grouping

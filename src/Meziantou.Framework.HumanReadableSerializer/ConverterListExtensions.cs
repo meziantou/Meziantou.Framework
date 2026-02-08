@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.HumanReadable;
 
 /// <summary>Provides extension methods for adding converters to a converter list.</summary>
@@ -29,6 +31,7 @@ public static class ConverterListExtensions
 
         protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
         {
+            Debug.Assert(value is not null);
             var str = _converter(value, options);
             writer.WriteValue(str);
         }

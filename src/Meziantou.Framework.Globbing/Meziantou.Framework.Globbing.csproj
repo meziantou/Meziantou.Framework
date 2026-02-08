@@ -3,9 +3,13 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net472</TargetFrameworks>
     <Description>A globbing library for .NET. Can be used to match any string or with System.IO.Enumeration.</Description>
-    <Version>2.0.2</Version>
+    <Version>2.1.0</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Meziantou.Framework\StringExtensions.SplitLines.cs" Link="Internals\StringExtensions.SplitLines.cs" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <PackageReference Include="System.Memory" Version="4.6.3" />

@@ -37,6 +37,12 @@ internal static partial class Program
         rootCommand.SetAction(async (parseResult, cancellationToken) =>
         {
             var paths = parseResult.GetValue(pathsArgument);
+            if(paths is null)
+            {
+                await parseResult.InvocationConfiguration.Error.WriteLineAsync((pathsArgument.Name + " must be set").AsMemory(), cancellationToken).ConfigureAwait(false);
+                return 1;
+            }
+
             var onlyReportErrors = parseResult.GetValue(onlyReportErrorsOptions);
             var options = new NuGetPackageValidationOptions();
 
@@ -83,17 +89,20 @@ internal static partial class Program
                 };
             }
 
-            var packageResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: paths.Length, StringComparer.Ordinal);
-            foreach (var path in paths)
+            var packageResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: paths is null ? 0 : paths.Length, StringComparer.Ordinal);
+            if (paths is not null)
             {
-                var packagePath = FullPath.FromPath(path);
-                if (packageResults.ContainsKey(packagePath))
-                    continue;
+                foreach (var path in paths)
+                {
+                    var packagePath = FullPath.FromPath(path);
+                    if (packageResults.ContainsKey(packagePath))
+                        continue;
 
-                var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, cancellationToken).ConfigureAwait(false);
+                    var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, cancellationToken).ConfigureAwait(false);
 
-                if (!packageResult.IsValid || !onlyReportErrors)
-                    packageResults.Add(packagePath, packageResult);
+                    if (!packageResult.IsValid || !onlyReportErrors)
+                        packageResults.Add(packagePath, packageResult);
+                }
             }
 
             var result = new Result(packageResults);

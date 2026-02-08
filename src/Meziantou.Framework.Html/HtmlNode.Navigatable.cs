@@ -9,22 +9,22 @@ internal
 #endif
 partial class HtmlNode : IXPathNavigable
 {
-    public HtmlNode SelectSingleNode(string xpath)
+    public HtmlNode? SelectSingleNode(string xpath)
     {
         return SelectSingleNode(xpath, nsmgr: null);
     }
 
-    public HtmlNode SelectSingleNode(string xpath, XmlNamespaceManager nsmgr)
+    public HtmlNode? SelectSingleNode(string xpath, XmlNamespaceManager? nsmgr)
     {
         return SelectSingleNode(xpath, nsmgr, HtmlNodeNavigatorOptions.None);
     }
 
-    public HtmlNode SelectSingleNode(string xpath, HtmlNodeNavigatorOptions options)
+    public HtmlNode? SelectSingleNode(string xpath, HtmlNodeNavigatorOptions options)
     {
         return SelectSingleNode(xpath, nsmgr: null, options);
     }
 
-    public HtmlNode SelectSingleNode(string xpath, XmlNamespaceManager nsmgr, HtmlNodeNavigatorOptions options)
+    public HtmlNode? SelectSingleNode(string xpath, XmlNamespaceManager? nsmgr, HtmlNodeNavigatorOptions options)
     {
         return SelectNodes(xpath, nsmgr, options).FirstOrDefault();
     }
@@ -34,7 +34,7 @@ partial class HtmlNode : IXPathNavigable
         return SelectNodes(xpath, nsmgr: null);
     }
 
-    public IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager nsmgr)
+    public IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager? nsmgr)
     {
         return SelectNodes(xpath, nsmgr, HtmlNodeNavigatorOptions.None);
     }
@@ -59,7 +59,7 @@ partial class HtmlNode : IXPathNavigable
         return new HtmlNodeNavigator(OwnerDocument, this, options);
     }
 
-    public virtual IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager namespaceManager, HtmlNodeNavigatorOptions options)
+    public virtual IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager? namespaceManager, HtmlNodeNavigatorOptions options)
     {
         ArgumentNullException.ThrowIfNull(xpath);
 
@@ -76,7 +76,7 @@ partial class HtmlNode : IXPathNavigable
         return list;
     }
 
-    protected virtual IEnumerable<HtmlNode> DoSelectNodes(string xpath, XmlNamespaceManager nsmgr, HtmlNodeNavigatorOptions options)
+    protected virtual IEnumerable<HtmlNode> DoSelectNodes(string xpath, XmlNamespaceManager? nsmgr, HtmlNodeNavigatorOptions options)
     {
         var navigator = CreateNavigator(options);
         if (navigator is null)
@@ -106,11 +106,11 @@ partial class HtmlNode : IXPathNavigable
 
     private sealed class Navigable : IXPathNavigable
     {
-        private readonly HtmlDocument _ownerDocument;
+        private readonly HtmlDocument? _ownerDocument;
         private readonly HtmlNode _node;
         private readonly HtmlNodeNavigatorOptions _options;
 
-        public Navigable(HtmlDocument ownerDocument, HtmlNode node, HtmlNodeNavigatorOptions options)
+        public Navigable(HtmlDocument? ownerDocument, HtmlNode node, HtmlNodeNavigatorOptions options)
         {
             _ownerDocument = ownerDocument;
             _node = node;

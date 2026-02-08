@@ -131,7 +131,7 @@ public sealed class HtmlSanitizer
 
                 if (!IsValidAttribute(attribute.Name))
                 {
-                    htmlElement.RemoveAttribute(attribute.NamespaceUri!, attribute.Name);
+                    htmlElement.RemoveAttribute(attribute.NamespaceUri, attribute.Name);
                 }
                 else if (UriAttributes.Contains(attribute.Name))
                 {

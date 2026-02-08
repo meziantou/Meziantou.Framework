@@ -20,7 +20,7 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
     public int Length => _values.Length;
 
     internal ImmutableEquatableArray(T[] values) => _values = values;
-    public bool Equals(ImmutableEquatableArray<T> other)
+    public bool Equals(ImmutableEquatableArray<T>? other)
     {
         if (other is null)
             return false;
@@ -74,13 +74,13 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
     bool IList.IsReadOnly => true;
     T IReadOnlyList<T>.this[int index] => _values[index];
     T IList<T>.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
-    object IList.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
+    object? IList.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
     void ICollection<T>.CopyTo(T[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
     void ICollection.CopyTo(Array array, int index) => _values.CopyTo(array, index);
     int IList<T>.IndexOf(T item) => _values.AsSpan().IndexOf(item);
-    int IList.IndexOf(object value) => ((IList)_values).IndexOf(value);
+    int IList.IndexOf(object? value) => ((IList)_values).IndexOf(value);
     bool ICollection<T>.Contains(T item) => _values.AsSpan().IndexOf(item) >= 0;
-    bool IList.Contains(object value) => ((IList)_values).Contains(value);
+    bool IList.Contains(object? value) => ((IList)_values).Contains(value);
     bool ICollection.IsSynchronized => false;
     object ICollection.SyncRoot => this;
 
@@ -93,10 +93,10 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
     void ICollection<T>.Clear() => throw new InvalidOperationException();
     void IList<T>.Insert(int index, T item) => throw new InvalidOperationException();
     void IList<T>.RemoveAt(int index) => throw new InvalidOperationException();
-    int IList.Add(object value) => throw new InvalidOperationException();
+    int IList.Add(object? value) => throw new InvalidOperationException();
     void IList.Clear() => throw new InvalidOperationException();
-    void IList.Insert(int index, object value) => throw new InvalidOperationException();
-    void IList.Remove(object value) => throw new InvalidOperationException();
+    void IList.Insert(int index, object? value) => throw new InvalidOperationException();
+    void IList.Remove(object? value) => throw new InvalidOperationException();
     void IList.RemoveAt(int index) => throw new InvalidOperationException();
 
     private sealed class DebugView(ImmutableEquatableArray<T> array)
@@ -115,5 +115,5 @@ public static class ImmutableEquatableArray
         => values.IsEmpty ? ImmutableEquatableArray<T>.Empty : new ImmutableEquatableArray<T>(values.ToArray());
 
     public static ImmutableEquatableArray<T> Create<T>(ImmutableArray<T> values) where T : IEquatable<T>
-        => values.IsEmpty ? ImmutableEquatableArray<T>.Empty : new ImmutableEquatableArray<T>(ImmutableCollectionsMarshal.AsArray(values));
+        => values.IsEmpty ? ImmutableEquatableArray<T>.Empty : new ImmutableEquatableArray<T>(ImmutableCollectionsMarshal.AsArray(values) ?? []);
 }

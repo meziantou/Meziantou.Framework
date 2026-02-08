@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 /// </summary>
 internal static class WmicCpuInfoProvider
 {
-    internal static readonly Lazy<CpuInfo> WmicCpuInfo = new(Load);
+    internal static readonly Lazy<CpuInfo?> WmicCpuInfo = new(Load);
 
     private const string DefaultWmicPath = @"C:\Windows\System32\wbem\WMIC.exe";
 

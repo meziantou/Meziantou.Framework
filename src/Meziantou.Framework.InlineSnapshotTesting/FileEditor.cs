@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
+using System.Diagnostics;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -188,7 +189,9 @@ internal static class FileEditor
                     return;
                 }
 
-                AddFileEdit(context, invocationExpression, potentialMergedExpressions.MaxBy(e => e.Span.Length));
+                var newNode = potentialMergedExpressions.MaxBy(e => e.Span.Length);
+                Debug.Assert(newNode is not null);
+                AddFileEdit(context, invocationExpression, newNode);
             }
         }
     }

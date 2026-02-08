@@ -16,7 +16,7 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
     private readonly HashSet<string>? _excludedHeaderNames;
     private readonly HttpHeaderValueFormatter[] _headerFormatters;
 
-    public HttpHeadersConverter(IEnumerable<string>? excludedHeaderNames, IEnumerable<HttpHeaderValueFormatter> headerFormatters)
+    public HttpHeadersConverter(IEnumerable<string>? excludedHeaderNames, IEnumerable<HttpHeaderValueFormatter>? headerFormatters)
     {
         if (excludedHeaderNames is not null)
             _excludedHeaderNames = new HashSet<string>(excludedHeaderNames, StringComparer.OrdinalIgnoreCase);

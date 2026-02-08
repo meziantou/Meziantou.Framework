@@ -112,6 +112,9 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
 
     public readonly string[]? GetCompilationDefines()
     {
+        if (AssemblyLocation is null)
+            return null;
+
         try
         {
             using var stream = File.OpenRead(AssemblyLocation);

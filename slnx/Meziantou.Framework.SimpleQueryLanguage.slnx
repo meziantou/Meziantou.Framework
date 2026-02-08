@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.SimpleQueryLanguage/Meziantou.Framework.SimpleQueryLanguage.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/Meziantou.Framework.SimpleQueryLanguage.Tests.csproj" />
+  </Folder>
+</Solution>

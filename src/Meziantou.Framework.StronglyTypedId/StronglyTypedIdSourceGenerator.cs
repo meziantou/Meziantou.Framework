@@ -80,6 +80,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             foreach (var attribute in ctx.Attributes)
             {
                 var arguments = attribute.ConstructorArguments;
+                if (attribute.AttributeClass is null)
+                    continue;
+
                 if (arguments.Length != 5 || attribute.AttributeClass.Arity != 1)
                     continue;
 

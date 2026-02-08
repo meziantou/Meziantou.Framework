@@ -234,7 +234,7 @@ public sealed class ProjectedFileSystemTests
             vfs.Start(options: null);
 
             // Step 1: First enumeration - ProjFS queries provider for entries
-            var firstEnum = Directory.GetFileSystemEntries(fullPath).OrderBy(Path.GetFileName).ToList();
+            var firstEnum = Directory.GetFileSystemEntries(fullPath).OrderBy(Path.GetFileName, StringComparer.Ordinal).ToList();
             Assert.Equal(5, firstEnum.Count);
 
             // Step 2: Access each entry to create on-disk placeholders
@@ -246,8 +246,8 @@ public sealed class ProjectedFileSystemTests
             }
 
             // Step 3: Re-enumerate after placeholders exist on disk
-            var secondEnum = Directory.GetFileSystemEntries(fullPath).OrderBy(Path.GetFileName).ToList();
-            var thirdEnum = Directory.GetFileSystemEntries(fullPath).OrderBy(Path.GetFileName).ToList();
+            var secondEnum = Directory.GetFileSystemEntries(fullPath).OrderBy(Path.GetFileName, StringComparer.Ordinal).ToList();
+            var thirdEnum = Directory.GetFileSystemEntries(fullPath).OrderBy(Path.GetFileName, StringComparer.Ordinal).ToList();
 
             // All enumerations should return exactly 5 unique entries
             Assert.Equal(5, secondEnum.Count);
@@ -259,8 +259,8 @@ public sealed class ProjectedFileSystemTests
             Assert.Equal(expectedNames, actualNames);
 
             // Ensure all enumerations are identical (no duplicates creeping in)
-            Assert.True(firstEnum.SequenceEqual(secondEnum), "Second enumeration should match first");
-            Assert.True(secondEnum.SequenceEqual(thirdEnum), "Third enumeration should match second");
+            Assert.True(firstEnum.SequenceEqual(secondEnum, StringComparer.Ordinal), "Second enumeration should match first");
+            Assert.True(secondEnum.SequenceEqual(thirdEnum, StringComparer.Ordinal), "Third enumeration should match second");
         }
         finally
         {

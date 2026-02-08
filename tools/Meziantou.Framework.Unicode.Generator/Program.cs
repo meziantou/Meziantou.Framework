@@ -13,7 +13,7 @@ const string UnicodeDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Uni
 const string BlocksUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt";
 const string EmojiDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt";
 
-var updated = false;
+var outputUpdated = false;
 if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Exists(path / ".git"), out var root))
     throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
 
@@ -33,7 +33,7 @@ await WriteUnicodeCharacterInfosFile(blockRanges);
 await WriteEmojiDataFile();
 
 // Update project version
-if (updated)
+if (outputUpdated)
 {
     var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
@@ -387,8 +387,8 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
     var emojiProperties = await LoadEmojiProperties();
     var unicodeDataEntries = await LoadUnicodeDataEntries(emojiProperties);
     var unicodeDataBytes = BuildUnicodeDataBinary(unicodeDataEntries);
-    if (WriteBinaryIfChanged(unicodeDataPath, unicodeDataBytes))
-        updated = true;
+    if (WriteUnicodeDataBinaryIfChanged(unicodeDataPath, unicodeDataBytes, unicodeDataEntries))
+        outputUpdated = true;
 
     var maxNameLength = unicodeDataEntries.Max(entry => entry.Name.Length);
     var maxNameLengthPowerOfTwo = NextPowerOfTwo(maxNameLength);
@@ -410,10 +410,10 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
         //   - Emoji characters: {{emojiCount}}
         //   - Compressed size: {{compressedSize:N0}} bytes ({{compressionRatio * 100d:F1}}% of uncompressed)
         //   - Max character name length: {{maxNameLength}} chars
-        // 
+        //
         // Specification: https://www.unicode.org/reports/tr44/
         // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
-        
+
         namespace Meziantou.Framework;
         internal static partial class UnicodeCharacterInfos
         {
@@ -422,9 +422,7 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
         """);
 
     if (await WriteTextIfChanged(unicodeCharacterInfosFilePath, content))
-    {
-        updated = true;
-    }
+        outputUpdated = true;
 }
 
 static int NextPowerOfTwo(int value)
@@ -599,13 +597,23 @@ static byte[] BuildUnicodeDataBinary(List<UnicodeDataEntry> entries)
     }
 }
 
-static bool WriteBinaryIfChanged(FullPath filePath, byte[] content)
+static bool WriteUnicodeDataBinaryIfChanged(FullPath filePath, byte[] content, IReadOnlyList<UnicodeDataEntry> entries)
 {
     if (File.Exists(filePath))
     {
         var existing = File.ReadAllBytes(filePath);
         if (existing.AsSpan().SequenceEqual(content))
             return false;
+
+        var existingEntries = ReadUnicodeDataBinary(existing);
+        var diff = DiffUnicodeData(existingEntries, entries);
+        if (!diff.HasChanges)
+        {
+            Console.WriteLine("Unicode data binary differs but no semantic changes were detected. Skipping write.");
+            return false;
+        }
+
+        WriteUnicodeDataDiff(diff);
     }
 
     filePath.CreateParentDirectory();
@@ -613,9 +621,275 @@ static bool WriteBinaryIfChanged(FullPath filePath, byte[] content)
     return true;
 }
 
+static Dictionary<Rune, UnicodeDataEntry> ReadUnicodeDataBinary(byte[] content)
+{
+    using var stream = new MemoryStream(content);
+    using var decompressed = new System.IO.Compression.GZipStream(stream, System.IO.Compression.CompressionMode.Decompress);
+    return ReadUnicodeData(decompressed);
+}
+
+static Dictionary<Rune, UnicodeDataEntry> ReadUnicodeData(Stream stream)
+{
+    var entryCount = Read7BitEncodedInt(stream);
+    var stringCount = Read7BitEncodedInt(stream);
+
+    var strings = new string[stringCount];
+    for (var i = 0; i < strings.Length; i++)
+    {
+        strings[i] = ReadString255LengthMax(stream);
+    }
+
+    var entries = new Dictionary<Rune, UnicodeDataEntry>(capacity: entryCount);
+    for (var i = 0; i < entryCount; i++)
+    {
+        var runeValue = ReadInt32(stream);
+        var nameIndex = ReadStringIndex(stream);
+        var category = (UnicodeCategory)ReadByte(stream);
+        var bidiCategory = (UnicodeBidirectionalCategory)ReadByte(stream);
+        var canonicalCombiningClass = ReadByte(stream);
+        var decompositionIndex = ReadStringIndex(stream);
+        var decimalDigitValue = ReadSByte(stream);
+        var digitValue = ReadSByte(stream);
+        var numericIndex = ReadStringIndex(stream);
+        var mirrored = ReadByte(stream) != 0;
+        var unicode1NameIndex = ReadStringIndex(stream);
+        var isoCommentIndex = ReadStringIndex(stream);
+        var simpleUppercaseMapping = ReadInt32(stream);
+        var simpleLowercaseMapping = ReadInt32(stream);
+        var simpleTitlecaseMapping = ReadInt32(stream);
+        var emojiProperties = (EmojiProperties)ReadByte(stream);
+
+        var rune = new Rune(runeValue);
+        var entry = new UnicodeDataEntry(
+            rune,
+            GetString(strings, nameIndex) ?? string.Empty,
+            category,
+            bidiCategory,
+            canonicalCombiningClass,
+            GetString(strings, decompositionIndex),
+            decimalDigitValue,
+            digitValue,
+            GetString(strings, numericIndex),
+            mirrored,
+            GetString(strings, unicode1NameIndex),
+            GetString(strings, isoCommentIndex),
+            simpleUppercaseMapping,
+            simpleLowercaseMapping,
+            simpleTitlecaseMapping,
+            emojiProperties);
+
+        entries.TryAdd(rune, entry);
+    }
+
+    return entries;
+}
+
+static UnicodeDataDiff DiffUnicodeData(Dictionary<Rune, UnicodeDataEntry> existingEntries, IReadOnlyList<UnicodeDataEntry> newEntries)
+{
+    var newEntriesByRune = new Dictionary<Rune, UnicodeDataEntry>(newEntries.Count);
+    foreach (var entry in newEntries)
+    {
+        newEntriesByRune.TryAdd(entry.Rune, entry);
+    }
+
+    var added = new List<UnicodeDataEntry>();
+    var removed = new List<UnicodeDataEntry>();
+    var changed = new List<UnicodeDataChangedEntry>();
+
+    foreach (var item in newEntriesByRune.OrderBy(entry => entry.Key.Value))
+    {
+        if (!existingEntries.TryGetValue(item.Key, out var existingEntry))
+        {
+            added.Add(item.Value);
+            continue;
+        }
+
+        var differences = GetEntryDifferences(existingEntry, item.Value);
+        if (differences.Count > 0)
+            changed.Add(new UnicodeDataChangedEntry(existingEntry, item.Value, differences));
+    }
+
+    foreach (var item in existingEntries.OrderBy(entry => entry.Key.Value))
+    {
+        if (!newEntriesByRune.ContainsKey(item.Key))
+            removed.Add(item.Value);
+    }
+
+    return new UnicodeDataDiff(added, removed, changed);
+}
+
+static List<string> GetEntryDifferences(UnicodeDataEntry existingEntry, UnicodeDataEntry newEntry)
+{
+    var differences = new List<string>();
+
+    AddDifferenceIfChanged("Name", existingEntry.Name, newEntry.Name);
+    AddDifferenceIfChanged("Category", existingEntry.Category, newEntry.Category);
+    AddDifferenceIfChanged("BidiCategory", existingEntry.BidiCategory, newEntry.BidiCategory);
+    AddDifferenceIfChanged("CanonicalCombiningClass", existingEntry.CanonicalCombiningClass, newEntry.CanonicalCombiningClass);
+    AddDifferenceIfChanged("DecompositionMapping", existingEntry.DecompositionMapping, newEntry.DecompositionMapping);
+    AddDifferenceIfChanged("DecimalDigitValue", existingEntry.DecimalDigitValue, newEntry.DecimalDigitValue);
+    AddDifferenceIfChanged("DigitValue", existingEntry.DigitValue, newEntry.DigitValue);
+    AddDifferenceIfChanged("NumericValue", existingEntry.NumericValue, newEntry.NumericValue);
+    AddDifferenceIfChanged("Mirrored", existingEntry.Mirrored, newEntry.Mirrored);
+    AddDifferenceIfChanged("Unicode1Name", existingEntry.Unicode1Name, newEntry.Unicode1Name);
+    AddDifferenceIfChanged("IsoComment", existingEntry.IsoComment, newEntry.IsoComment);
+    AddDifferenceIfChanged("SimpleUppercaseMapping", existingEntry.SimpleUppercaseMapping, newEntry.SimpleUppercaseMapping);
+    AddDifferenceIfChanged("SimpleLowercaseMapping", existingEntry.SimpleLowercaseMapping, newEntry.SimpleLowercaseMapping);
+    AddDifferenceIfChanged("SimpleTitlecaseMapping", existingEntry.SimpleTitlecaseMapping, newEntry.SimpleTitlecaseMapping);
+    AddDifferenceIfChanged("EmojiProperties", existingEntry.EmojiProperties, newEntry.EmojiProperties);
+
+    return differences;
+
+    void AddDifferenceIfChanged<T>(string name, T existingValue, T newValue)
+    {
+        if (EqualityComparer<T>.Default.Equals(existingValue, newValue))
+            return;
+
+        differences.Add($"{name}: {FormatValue(existingValue)} -> {FormatValue(newValue)}");
+    }
+}
+
+static void WriteUnicodeDataDiff(UnicodeDataDiff diff)
+{
+    Console.WriteLine("Unicode data binary diff (semantic):");
+    Console.WriteLine($"  Added: {diff.Added.Count.ToString(CultureInfo.InvariantCulture)}");
+    Console.WriteLine($"  Removed: {diff.Removed.Count.ToString(CultureInfo.InvariantCulture)}");
+    Console.WriteLine($"  Changed: {diff.Changed.Count.ToString(CultureInfo.InvariantCulture)}");
+
+    WriteEntrySample("Added", diff.Added, FormatEntry);
+    WriteEntrySample("Removed", diff.Removed, FormatEntry);
+    WriteChangedSample(diff.Changed);
+
+    void WriteEntrySample(string label, List<UnicodeDataEntry> entries, Func<UnicodeDataEntry, string> formatter)
+    {
+        const int MaxSamples = 20;
+        if (entries.Count == 0)
+            return;
+
+        Console.WriteLine($"  {label} (first {Math.Min(MaxSamples, entries.Count).ToString(CultureInfo.InvariantCulture)}):");
+        foreach (var entry in entries.Take(MaxSamples))
+        {
+            Console.WriteLine($"    - {formatter(entry)}");
+        }
+
+        if (entries.Count > MaxSamples)
+        {
+            Console.WriteLine($"    ... {(entries.Count - MaxSamples).ToString(CultureInfo.InvariantCulture)} more");
+        }
+    }
+
+    void WriteChangedSample(List<UnicodeDataChangedEntry> entries)
+    {
+        const int MaxSamples = 20;
+        if (entries.Count == 0)
+            return;
+
+        Console.WriteLine($"  Changed (first {Math.Min(MaxSamples, entries.Count).ToString(CultureInfo.InvariantCulture)}):");
+        foreach (var entry in entries.Take(MaxSamples))
+        {
+            Console.WriteLine($"    - {FormatEntry(entry.Current)}: {string.Join(", ", entry.Differences)}");
+        }
+
+        if (entries.Count > MaxSamples)
+        {
+            Console.WriteLine($"    ... {(entries.Count - MaxSamples).ToString(CultureInfo.InvariantCulture)} more");
+        }
+    }
+}
+
+static string FormatEntry(UnicodeDataEntry entry)
+{
+    return string.Create(CultureInfo.InvariantCulture, $"U+{entry.Rune.Value:X4} {entry.Name}");
+}
+
+static string FormatValue<T>(T value)
+{
+    if (value is null)
+        return "<null>";
+
+    if (value is string text)
+        return $"\"{text}\"";
+
+    return Convert.ToString(value, CultureInfo.InvariantCulture) ?? "<null>";
+}
+
+static string? GetString(string[] values, int index)
+{
+    if (index < 0)
+        return null;
+
+    return values[index];
+}
+
+static string ReadString255LengthMax(Stream stream)
+{
+    var length = ReadByte(stream);
+    if (length == 0)
+        return "";
+
+    Span<byte> buffer = stackalloc byte[255];
+    stream.ReadExactly(buffer[..length]);
+    return Encoding.UTF8.GetString(buffer[..length]);
+}
+
+static int Read7BitEncodedInt(Stream stream)
+{
+    var count = 0;
+    var shift = 0;
+    while (true)
+    {
+        var value = stream.ReadByte();
+        if (value < 0)
+            throw new EndOfStreamException();
+
+        count |= (value & 0x7F) << shift;
+        if ((value & 0x80) == 0)
+            break;
+
+        shift += 7;
+        if (shift >= 35)
+            throw new InvalidDataException("Invalid 7-bit encoded integer.");
+    }
+
+    return count;
+}
+
+static int ReadStringIndex(Stream stream)
+{
+    Span<byte> buffer = stackalloc byte[2];
+    stream.ReadExactly(buffer);
+    var value = BinaryPrimitives.ReadUInt16LittleEndian(buffer);
+    return value - 1;
+}
+
+static int ReadInt32(Stream stream)
+{
+    Span<byte> buffer = stackalloc byte[4];
+    stream.ReadExactly(buffer);
+    return BinaryPrimitives.ReadInt32LittleEndian(buffer);
+}
+
+static byte ReadByte(Stream stream)
+{
+    var value = stream.ReadByte();
+    if (value < 0)
+        throw new EndOfStreamException();
+
+    return (byte)value;
+}
+
+static sbyte ReadSByte(Stream stream)
+{
+    var value = stream.ReadByte();
+    if (value < 0)
+        throw new EndOfStreamException();
+
+    return unchecked((sbyte)value);
+}
+
 static async Task<bool> WriteTextIfChanged(FullPath filePath, string content)
 {
-    if (File.Exists(filePath) && (await File.ReadAllTextAsync(filePath)).ReplaceLineEndings("\n") == content)
+    if (File.Exists(filePath) && (await File.ReadAllTextAsync(filePath)).ReplaceLineEndings("\n") == content.ReplaceLineEndings("\n"))
         return false;
 
     filePath.CreateParentDirectory();
@@ -787,16 +1061,16 @@ async Task WriteEmojiDataFile()
     //   - Emoji_Modifier_Base: {{modifierBaseCount}} code points
     //   - Emoji_Component: {{componentCount}} code points
     //   - Extended_Pictographic: {{pictographicCount}} code points
-    // 
+    //
     // Specification: https://www.unicode.org/reports/tr51/
     // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
-    
+
     #nullable enable
-    
+
     using System.Text;
-    
+
     namespace Meziantou.Framework;
-    
+
     /// <summary>Provides emoji-related query methods for Unicode characters.</summary>
     /// <remarks>
     /// This class provides methods to check various emoji properties defined in Unicode Technical Standard #51.
@@ -811,10 +1085,10 @@ async Task WriteEmojiDataFile()
         {
             if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
                 return false;
-    
+
             return info.IsEmoji;
         }
-    
+
         /// <summary>Determines whether the specified code point has the Emoji property.</summary>
         /// <param name="codePoint">The code point to check.</param>
         /// <returns><see langword="true"/> if the code point has the Emoji property; otherwise, <see langword="false"/>.</returns>
@@ -822,7 +1096,7 @@ async Task WriteEmojiDataFile()
         {
             return Rune.TryCreate(codePoint, out var rune) && IsEmoji(rune);
         }
-    
+
         /// <summary>Determines whether the specified rune has the Emoji_Presentation property.</summary>
         /// <param name="rune">The rune to check.</param>
         /// <returns><see langword="true"/> if the rune has the Emoji_Presentation property; otherwise, <see langword="false"/>.</returns>
@@ -830,10 +1104,10 @@ async Task WriteEmojiDataFile()
         {
             if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
                 return false;
-    
+
             return info.HasEmojiPresentation;
         }
-    
+
         /// <summary>Determines whether the specified rune has the Emoji_Modifier property.</summary>
         /// <param name="rune">The rune to check.</param>
         /// <returns><see langword="true"/> if the rune has the Emoji_Modifier property; otherwise, <see langword="false"/>.</returns>
@@ -841,10 +1115,10 @@ async Task WriteEmojiDataFile()
         {
             if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
                 return false;
-    
+
             return info.IsEmojiModifier;
         }
-    
+
         /// <summary>Determines whether the specified rune has the Emoji_Modifier_Base property.</summary>
         /// <param name="rune">The rune to check.</param>
         /// <returns><see langword="true"/> if the rune has the Emoji_Modifier_Base property; otherwise, <see langword="false"/>.</returns>
@@ -852,10 +1126,10 @@ async Task WriteEmojiDataFile()
         {
             if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
                 return false;
-    
+
             return info.IsEmojiModifierBase;
         }
-    
+
         /// <summary>Determines whether the specified rune has the Emoji_Component property.</summary>
         /// <param name="rune">The rune to check.</param>
         /// <returns><see langword="true"/> if the rune has the Emoji_Component property; otherwise, <see langword="false"/>.</returns>
@@ -863,10 +1137,10 @@ async Task WriteEmojiDataFile()
         {
             if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
                 return false;
-    
+
             return info.IsEmojiComponent;
         }
-    
+
         /// <summary>Determines whether the specified rune has the Extended_Pictographic property.</summary>
         /// <param name="rune">The rune to check.</param>
         /// <returns><see langword="true"/> if the rune has the Extended_Pictographic property; otherwise, <see langword="false"/>.</returns>
@@ -874,16 +1148,14 @@ async Task WriteEmojiDataFile()
         {
             if (!UnicodeCharacterInfos.TryGetInfo(rune, out var info))
                 return false;
-    
+
             return info.IsExtendedPictographic;
         }
     }
     """.ReplaceLineEndings("\n");
 
     if (await WriteTextIfChanged(emojiDataFilePath, result))
-    {
-        updated = true;
-    }
+        outputUpdated = true;
 }
 
 async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string confusablesLastModified)
@@ -910,7 +1182,7 @@ async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string c
     //   - Total confusable mappings: {{confusableEntries.Count.ToString(CultureInfo.InvariantCulture)}}
     //   - Single-character replacements: {{singleCharMappings.ToString(CultureInfo.InvariantCulture)}}
     //   - Multi-character replacements: {{multiCharMappings.ToString(CultureInfo.InvariantCulture)}}
-    // 
+    //
     // Specification: https://www.unicode.org/reports/tr39/
     // Purpose: Helps detect visually confusable characters that may be used in security attacks
     // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
@@ -943,9 +1215,7 @@ async Task WriteConfusableCharactersFile(List<Entry> confusableEntries, string c
     """.ReplaceLineEndings("\n");
 
     if (await WriteTextIfChanged(confusableOutputFilePath, result))
-    {
-        updated = true;
-    }
+        outputUpdated = true;
 }
 
 async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockRanges)
@@ -997,10 +1267,10 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     // Statistics:
     //   - Total blocks: {{blockRanges.Count.ToString(CultureInfo.InvariantCulture)}}
     //   - Total code points in blocks: {{totalCodePoints.ToString("N0", CultureInfo.InvariantCulture)}}
-    // 
+    //
     // Specification: https://www.unicode.org/reports/tr44/#Blocks.txt
     // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
-    
+
     namespace Meziantou.Framework;
 
     /// <summary>Provides access to all Unicode blocks.</summary>
@@ -1018,9 +1288,7 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     """.ReplaceLineEndings("\n");
 
     if (await WriteTextIfChanged(unicodeBlocksFilePath, result))
-    {
-        updated = true;
-    }
+        outputUpdated = true;
 
     static string ToPropertyName(string blockName)
     {
@@ -1070,6 +1338,19 @@ internal sealed record UnicodeDataEntry(
     int SimpleLowercaseMapping,
     int SimpleTitlecaseMapping,
     EmojiProperties EmojiProperties);
+
+internal sealed record UnicodeDataChangedEntry(
+    UnicodeDataEntry Previous,
+    UnicodeDataEntry Current,
+    IReadOnlyList<string> Differences);
+
+internal sealed record UnicodeDataDiff(
+    List<UnicodeDataEntry> Added,
+    List<UnicodeDataEntry> Removed,
+    List<UnicodeDataChangedEntry> Changed)
+{
+    public bool HasChanges => Added.Count > 0 || Removed.Count > 0 || Changed.Count > 0;
+}
 
 internal sealed record SerializedUnicodeDataEntry(
 int RuneValue,

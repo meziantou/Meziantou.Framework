@@ -4,7 +4,7 @@
 // Statistics:
 //   - Total blocks: 346
 //   - Total code points in blocks: 303,808
-// 
+//
 // Specification: https://www.unicode.org/reports/tr44/#Blocks.txt
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
 

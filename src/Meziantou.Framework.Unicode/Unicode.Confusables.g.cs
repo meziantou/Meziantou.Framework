@@ -6,7 +6,7 @@
 //   - Total confusable mappings: 6565
 //   - Single-character replacements: 4462
 //   - Multi-character replacements: 2103
-// 
+//
 // Specification: https://www.unicode.org/reports/tr39/
 // Purpose: Helps detect visually confusable characters that may be used in security attacks
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool

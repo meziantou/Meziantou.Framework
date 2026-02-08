@@ -8,7 +8,7 @@
 //   - Emoji_Modifier_Base: 134 code points
 //   - Emoji_Component: 146 code points
 //   - Extended_Pictographic: 2848 code points
-// 
+//
 // Specification: https://www.unicode.org/reports/tr51/
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
 

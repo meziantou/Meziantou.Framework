@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Extensions.Logging.FileLogger.Tests/Meziantou.Extensions.Logging.FileLogger.Tests.csproj" />

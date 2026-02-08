@@ -122,6 +122,14 @@ jobs:
       - name: .NET info
         run: dotnet --info
 
+      - name: Enable ProjFS
+        if: startsWith(matrix.runs-on, 'windows')
+        run: |
+          $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
+          if ($feature.State -ne 'Enabled') {
+            Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
+          }
+
       - name: Build
         run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
 

@@ -458,6 +458,35 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         return false;
     }
 
+    /// <summary>Finds the first ancestor path or self that contains a Git repository.</summary>
+    /// <param name="result">The first matching path, or default if not found.</param>
+    /// <returns><see langword="true"/> if a Git repository is found; otherwise, <see langword="false"/>.</returns>
+    public bool TryFindGitRepositoryRoot(out FullPath result)
+    {
+        var start = this;
+        if (!start.IsEmpty && File.Exists(start._value))
+        {
+            start = start.Parent;
+        }
+
+        return start.TryFindFirstAncestorOrSelf(path =>
+        {
+            var gitPath = path / ".git";
+            return Directory.Exists(gitPath) || File.Exists(gitPath);
+        }, out result);
+    }
+
+    /// <summary>Finds the first ancestor path or self that contains a Git repository.</summary>
+    /// <returns>The first matching path.</returns>
+    /// <exception cref="InvalidOperationException">The Git repository cannot be found.</exception>
+    public FullPath FindRequiredGitRepositoryRoot()
+    {
+        if (TryFindGitRepositoryRoot(out var result))
+            return result;
+
+        throw new InvalidOperationException("Git repository not found.");
+    }
+
     /// <summary>Finds the first ancestor path (excluding self) that matches the specified predicate.</summary>
     /// <param name="predicate">A function to test each ancestor path.</param>
     /// <param name="result">The first matching ancestor path, or default if not found.</param>

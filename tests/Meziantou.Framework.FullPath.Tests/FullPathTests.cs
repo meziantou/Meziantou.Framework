@@ -320,6 +320,47 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void TryFindGitRepositoryRoot()
+    {
+        using var tempDir = TemporaryDirectory.Create();
+        tempDir.CreateDirectory(".git");
+        var subDir = tempDir.CreateDirectory("src/app");
+
+        Assert.True(subDir.TryFindGitRepositoryRoot(out var result));
+        Assert.Equal(tempDir.FullPath, result);
+    }
+
+    [Fact]
+    public void TryFindGitRepositoryRoot_NotFound()
+    {
+        using var tempDir = TemporaryDirectory.Create();
+        var subDir = tempDir.CreateDirectory("src/app");
+
+        Assert.False(subDir.TryFindGitRepositoryRoot(out _));
+    }
+
+    [Fact]
+    public void FindRequiredGitRepositoryRoot()
+    {
+        using var tempDir = TemporaryDirectory.Create();
+        tempDir.CreateDirectory(".git");
+        var subDir = tempDir.CreateDirectory("src/app");
+
+        var result = subDir.FindRequiredGitRepositoryRoot();
+
+        Assert.Equal(tempDir.FullPath, result);
+    }
+
+    [Fact]
+    public void FindRequiredGitRepositoryRoot_NotFound()
+    {
+        using var tempDir = TemporaryDirectory.Create();
+        var subDir = tempDir.CreateDirectory("src/app");
+
+        Assert.Throws<InvalidOperationException>(() => subDir.FindRequiredGitRepositoryRoot());
+    }
+
+    [Fact]
     [RunIf(FactOperatingSystem.Windows)]
     public void KnownFolderTest()
     {

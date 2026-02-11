@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Meziantou.Framework.ChromiumTracing;
 
@@ -30,19 +31,29 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
 
     private readonly bool _streamOwned;
     private readonly Stream _stream;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
     private bool _hasItems;
 
     /// <summary>Initializes a new instance of the <see cref="ChromiumTracingWriter"/> class with the specified stream.</summary>
     /// <param name="stream">The stream to write trace events to.</param>
     public ChromiumTracingWriter(Stream stream)
-        : this(stream, streamOwned: false)
+        : this(stream, streamOwned: false, serializerContext: null)
     {
     }
 
-    private ChromiumTracingWriter(Stream stream, bool streamOwned)
+    /// <summary>Initializes a new instance of the <see cref="ChromiumTracingWriter"/> class with the specified stream and serializer context.</summary>
+    /// <param name="stream">The stream to write trace events to.</param>
+    /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
+    public ChromiumTracingWriter(Stream stream, JsonSerializerContext? serializerContext)
+        : this(stream, streamOwned: false, serializerContext)
+    {
+    }
+
+    private ChromiumTracingWriter(Stream stream, bool streamOwned, JsonSerializerContext? serializerContext)
     {
         _stream = stream;
         _streamOwned = streamOwned;
+        _jsonSerializerOptions = serializerContext is null ? SourceGenerationContext.Default.Options : CreateSerializerOptions(serializerContext);
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to a file at the specified path.</summary>
@@ -51,7 +62,17 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     public static ChromiumTracingWriter Create(string path)
     {
         var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
-        return new ChromiumTracingWriter(fs, streamOwned: true);
+        return new ChromiumTracingWriter(fs, streamOwned: true, serializerContext: null);
+    }
+
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to a file at the specified path.</summary>
+    /// <param name="path">The file path where trace events will be written.</param>
+    /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
+    /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
+    public static ChromiumTracingWriter Create(string path, JsonSerializerContext? serializerContext)
+    {
+        var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+        return new ChromiumTracingWriter(fs, streamOwned: true, serializerContext);
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream.</summary>
@@ -59,7 +80,16 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
     public static ChromiumTracingWriter Create(Stream stream)
     {
-        return Create(stream, streamOwned: true);
+        return Create(stream, streamOwned: true, serializerContext: null);
+    }
+
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream.</summary>
+    /// <param name="stream">The stream to write trace events to.</param>
+    /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
+    /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
+    public static ChromiumTracingWriter Create(Stream stream, JsonSerializerContext? serializerContext)
+    {
+        return Create(stream, streamOwned: true, serializerContext);
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream.</summary>
@@ -68,7 +98,17 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
     public static ChromiumTracingWriter Create(Stream stream, bool streamOwned)
     {
-        return new ChromiumTracingWriter(stream, streamOwned);
+        return new ChromiumTracingWriter(stream, streamOwned, serializerContext: null);
+    }
+
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes to the specified stream.</summary>
+    /// <param name="stream">The stream to write trace events to.</param>
+    /// <param name="streamOwned">Indicates whether the stream should be disposed when the writer is disposed.</param>
+    /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
+    /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
+    public static ChromiumTracingWriter Create(Stream stream, bool streamOwned, JsonSerializerContext? serializerContext)
+    {
+        return new ChromiumTracingWriter(stream, streamOwned, serializerContext);
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes GZip-compressed trace events to a file at the specified path.</summary>
@@ -79,7 +119,19 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     {
         var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
         var gzip = new GZipStream(fs, compressionLevel, leaveOpen: false);
-        return new ChromiumTracingWriter(gzip, streamOwned: true);
+        return new ChromiumTracingWriter(gzip, streamOwned: true, serializerContext: null);
+    }
+
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes GZip-compressed trace events to a file at the specified path.</summary>
+    /// <param name="path">The file path where compressed trace events will be written.</param>
+    /// <param name="compressionLevel">The compression level to use.</param>
+    /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
+    /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
+    public static ChromiumTracingWriter CreateGzip(string path, JsonSerializerContext? serializerContext, CompressionLevel compressionLevel = CompressionLevel.Fastest)
+    {
+        var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+        var gzip = new GZipStream(fs, compressionLevel, leaveOpen: false);
+        return new ChromiumTracingWriter(gzip, streamOwned: true, serializerContext);
     }
 
     /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes GZip-compressed trace events to the specified stream.</summary>
@@ -89,7 +141,18 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     public static ChromiumTracingWriter CreateGzip(Stream stream, CompressionLevel compressionLevel = CompressionLevel.Fastest)
     {
         var gzip = new GZipStream(stream, compressionLevel, leaveOpen: true);
-        return new ChromiumTracingWriter(gzip, streamOwned: true);
+        return new ChromiumTracingWriter(gzip, streamOwned: true, serializerContext: null);
+    }
+
+    /// <summary>Creates a new <see cref="ChromiumTracingWriter"/> that writes GZip-compressed trace events to the specified stream.</summary>
+    /// <param name="stream">The stream to write compressed trace events to.</param>
+    /// <param name="compressionLevel">The compression level to use.</param>
+    /// <param name="serializerContext">The serializer context to combine with the built-in one.</param>
+    /// <returns>A new <see cref="ChromiumTracingWriter"/> instance.</returns>
+    public static ChromiumTracingWriter CreateGzip(Stream stream, JsonSerializerContext? serializerContext, CompressionLevel compressionLevel = CompressionLevel.Fastest)
+    {
+        var gzip = new GZipStream(stream, compressionLevel, leaveOpen: true);
+        return new ChromiumTracingWriter(gzip, streamOwned: true, serializerContext);
     }
 
     /// <summary>Finalizes the JSON array and disposes the underlying stream if owned.</summary>
@@ -115,6 +178,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     /// <param name="tracingEvent">The trace event to write.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous write operation.</returns>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "The json options are guarantee to contains the TypeResolver for events")]
     public async Task WriteEventAsync(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
     {
         if (tracingEvent is null)
@@ -130,7 +194,17 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
             _hasItems = true;
         }
 
-        await JsonSerializer.SerializeAsync(_stream, tracingEvent, tracingEvent.GetType(), SourceGenerationContext.Default, cancellationToken).ConfigureAwait(false);
+        await JsonSerializer.SerializeAsync(_stream, tracingEvent, tracingEvent.GetType(), _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static JsonSerializerOptions CreateSerializerOptions(JsonSerializerContext serializerContext)
+    {
+        var options = new JsonSerializerOptions(SourceGenerationContext.Default.Options)
+        {
+            TypeInfoResolver = JsonTypeInfoResolver.Combine(SourceGenerationContext.Default, serializerContext),
+        };
+
+        return options;
     }
 
     [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = false, IgnoreReadOnlyProperties = false, GenerationMode = JsonSourceGenerationMode.Default)]
@@ -157,6 +231,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     [JsonSerializable(typeof(ChromiumTracingObjectCreatedEvent))]
     [JsonSerializable(typeof(ChromiumTracingObjectDestroyedEvent))]
     [JsonSerializable(typeof(ChromiumTracingObjectSnapshotEvent))]
+    [JsonSerializable(typeof(long))]
     private sealed partial class SourceGenerationContext : JsonSerializerContext
     {
     }

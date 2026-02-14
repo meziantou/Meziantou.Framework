@@ -1,10 +1,5 @@
-using System.Threading.Tasks;
-using Xunit;
-
 namespace Meziantou.Framework.Tests;
 
-// Do not parallelize tests
-[Collection("TemporaryDirectoryTests")]
 public class TemporaryDirectoryTests
 {
     [Fact]
@@ -82,5 +77,51 @@ public class TemporaryDirectoryTests
         await using var dir = TemporaryDirectory.Create();
         var path = dir / "subdir" / "file.txt";
         Assert.Equal(dir.GetFullPath("subdir/file.txt"), path);
+    }
+
+    [Fact]
+    public void TemporaryFileDisposedDeletesFile()
+    {
+        FullPath path;
+        using (var file = TemporaryFile.Create())
+        {
+            path = file.FullPath;
+            File.WriteAllText(file.FullPath, "content");
+            Assert.True(File.Exists(path));
+        }
+
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public async Task TemporaryFileDisposeAsyncDeletesFile()
+    {
+        FullPath path;
+        await using (var file = TemporaryFile.Create())
+        {
+            path = file.FullPath;
+            await File.WriteAllTextAsync(file.FullPath, "content".AsMemory(), XunitCancellationToken);
+            Assert.True(File.Exists(path));
+        }
+
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public void TemporaryFileCreateWithFileName()
+    {
+        using var file = TemporaryFile.Create("custom.txt");
+        var expectedRoot = FullPath.Combine(Path.GetTempPath(), "MezTF");
+        Assert.Equal(expectedRoot, file.FullPath.Parent.Parent);
+        Assert.True(File.Exists(file.FullPath));
+    }
+
+    [Fact]
+    public void TemporaryFileCreateWithFullPath()
+    {
+        var fullPath = FullPath.FromPath(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".tmp"));
+        using var file = TemporaryFile.Create(fullPath);
+        Assert.Equal(fullPath, file.FullPath);
+        Assert.True(File.Exists(fullPath));
     }
 }

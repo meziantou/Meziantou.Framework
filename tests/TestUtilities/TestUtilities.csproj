@@ -13,8 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="xunit.v3.extensibility.core" Version="3.2.2" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageReference Include="System.Reflection.Metadata" Version="10.0.2" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.3" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageReference Include="System.Reflection.Metadata" Version="10.0.3" Condition="'$(TargetFramework)' == 'net472'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">

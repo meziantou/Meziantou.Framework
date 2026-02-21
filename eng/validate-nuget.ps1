@@ -7,7 +7,7 @@ $Generators = @("Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.Fast
 foreach ($Generator in $Generators) {
     Write-Host "Checking $Generator"
 
-    $PackagePath = (Get-ChildItem $env:NuGetDirectory | Where-Object FullName -Match "$Generator.[0-9a-zA-Z.-]+.nupkg").FullName
+    $PackagePath = (Get-ChildItem $env:NuGetDirectory | Where-Object FullName -Match "$Generator\.[0-9][0-9a-zA-Z.-]*\.nupkg").FullName
     $AnnotationPath = Join-Path $PSScriptRoot ".." "src" "$Generator.Annotations" -Resolve
 
     $Tfms = $(dotnet build --getProperty:TargetFrameworks $AnnotationPath).Split(";")
@@ -26,7 +26,7 @@ foreach ($Generator in $Generators) {
 }
 
 # Ensure InlineSnapshot package contains the prompt folder
-$PackagePath = (Get-ChildItem $env:NuGetDirectory | Where-Object FullName -Match "Meziantou.Framework.InlineSnapshotTesting.[0-9a-zA-Z.-]+.nupkg").FullName
+$PackagePath = (Get-ChildItem $env:NuGetDirectory | Where-Object FullName -Match "Meziantou\.Framework\.InlineSnapshotTesting\.[0-9][0-9a-zA-Z.-]*\.nupkg").FullName
 $ZipFile = [IO.Compression.ZipFile]::OpenRead($PackagePath)
 $Entries = $ZipFile.Entries.FullName
 $Entry = $Entries | Where-Object { $_.StartsWith("prompt/") }

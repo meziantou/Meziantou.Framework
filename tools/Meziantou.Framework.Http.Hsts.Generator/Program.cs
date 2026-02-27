@@ -51,7 +51,7 @@ for (var i = 1; i <= maxSegments; i++)
     }
     else
     {
-        sb.Append($"        Load(dict{i.ToString(CultureInfo.InvariantCulture)}, {count.ToString(CultureInfo.InvariantCulture)}, \"{$"preload_{i}.bin"}\");\n");
+        sb.Append($"        Load(dict{i.ToString(CultureInfo.InvariantCulture)}, {count.ToString(CultureInfo.InvariantCulture)}, \"{$"preload_{i}.bin.br"}\");\n");
     }
     sb.Append('\n');
 }
@@ -64,8 +64,8 @@ void AddPreloadData()
             continue;
 
         using var ms = new MemoryStream();
-        using (var gz = new GZipStream(ms, CompressionLevel.SmallestSize))
-        using (var writer = new BinaryWriter(gz))
+        using (var br = new BrotliStream(ms, CompressionLevel.SmallestSize, leaveOpen: true))
+        using (var writer = new BinaryWriter(br))
         {
             foreach (var entry in entryGroup.OrderBy(entry => entry.Name, StringComparer.Ordinal))
             {
@@ -83,11 +83,12 @@ void AddPreloadData()
         }
 
         var array = ms.ToArray();
-        File.WriteAllBytes(outputPath / $"preload_{entryGroup.Key}.bin", array);
+        File.WriteAllBytes(outputPath / $"preload_{entryGroup.Key}.bin.br", array);
     }
 }
 
 Directory.GetFiles(outputPath, "preload_*.bin").ToList().ForEach(File.Delete);
+Directory.GetFiles(outputPath, "preload_*.bin.br").ToList().ForEach(File.Delete);
 AddPreloadData();
 
 var result = $$"""

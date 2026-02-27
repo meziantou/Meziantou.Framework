@@ -16,18 +16,18 @@ partial class HstsDomainPolicyCollection
 
         var dict1 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 61, comparer: StringComparer.OrdinalIgnoreCase);
         _policies[0] = dict1;
-        Load(dict1, 51, "preload_1.bin");
+        Load(dict1, 51, "preload_1.bin.br");
 
         var dict2 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 84515, comparer: StringComparer.OrdinalIgnoreCase);
         _policies[1] = dict2;
-        Load(dict2, 84505, "preload_2.bin");
+        Load(dict2, 84505, "preload_2.bin.br");
 
         var dict3 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 8049, comparer: StringComparer.OrdinalIgnoreCase);
         _policies[2] = dict3;
-        Load(dict3, 8039, "preload_3.bin");
+        Load(dict3, 8039, "preload_3.bin.br");
 
         var dict4 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 161, comparer: StringComparer.OrdinalIgnoreCase);
         _policies[3] = dict4;
-        Load(dict4, 151, "preload_4.bin");
+        Load(dict4, 151, "preload_4.bin.br");
     }
 }

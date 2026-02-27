@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Resources\UnicodeData.bin.gz">
-      <LogicalName>Meziantou.Framework.Resources.UnicodeData.bin.gz</LogicalName>
+    <EmbeddedResource Include="Resources\UnicodeData.bin.br">
+      <LogicalName>Meziantou.Framework.Resources.UnicodeData.bin.br</LogicalName>
       <WithCulture>false</WithCulture>
     </EmbeddedResource>
   </ItemGroup>

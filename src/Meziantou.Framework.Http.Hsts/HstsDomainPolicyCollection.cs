@@ -59,8 +59,8 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     {
         using var stream = typeof(HstsDomainPolicyCollection).Assembly.GetManifestResourceStream(resourceName);
         Debug.Assert(stream is not null);
-        using var gz = new GZipStream(stream, CompressionMode.Decompress);
-        using var reader = new BinaryReader(gz);
+        using var br = new BrotliStream(stream, CompressionMode.Decompress);
+        using var reader = new BinaryReader(br);
         for (var i = 0; i < entryCount; i++)
         {
             var name = reader.ReadString();

@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 
 internal static partial class UnicodeCharacterInfos
 {
-    private const string ResourceName = "Meziantou.Framework.Resources.UnicodeData.bin.gz";
+    private const string ResourceName = "Meziantou.Framework.Resources.UnicodeData.bin.br";
     private static readonly Dictionary<Rune, UnicodeCharacterInfo> CharacterInfo = Create();
 
     public static IReadOnlyCollection<UnicodeCharacterInfo> AllCharacters => CharacterInfo.Values;
@@ -21,7 +21,7 @@ internal static partial class UnicodeCharacterInfos
         if (stream is null)
             throw new InvalidOperationException("Cannot find Unicode data resource: " + ResourceName);
 
-        using var decompressed = new System.IO.Compression.GZipStream(stream, System.IO.Compression.CompressionMode.Decompress);
+        using var decompressed = new System.IO.Compression.BrotliStream(stream, System.IO.Compression.CompressionMode.Decompress);
         return ReadData(decompressed);
     }
 

@@ -14,8 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="*.bin">
+    <EmbeddedResource Include="*.bin.br">
       <LogicalName>%(FileName)%(Extension)</LogicalName>
+      <WithCulture>false</WithCulture>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

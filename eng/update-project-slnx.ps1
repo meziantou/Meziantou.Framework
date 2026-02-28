@@ -85,6 +85,34 @@ function ConvertToRelativePath($path) {
     return $relativePath.Replace("\", "/")
 }
 
+function SaveXmlDocument($doc, $path) {
+    $settings = [System.Xml.XmlWriterSettings]::new()
+    $settings.Encoding = [System.Text.UTF8Encoding]::new($false)
+    $settings.OmitXmlDeclaration = $true
+    $settings.NewLineChars = "`n"
+    $settings.NewLineHandling = [System.Xml.NewLineHandling]::Replace
+    $settings.Indent = $true
+
+    $writer = [System.Xml.XmlWriter]::Create($path, $settings)
+    try {
+        $doc.Save($writer)
+    }
+    finally {
+        $writer.Dispose()
+    }
+}
+
+function NormalizeTextFile($path) {
+    $content = [System.IO.File]::ReadAllText($path)
+    $content = $content.Replace("`r`n", "`n").Replace("`r", "`n")
+
+    if ($content.Length -gt 0 -and -not $content.EndsWith("`n")) {
+        $content += "`n"
+    }
+
+    [System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false))
+}
+
 function ApplySolutionFolders($slnxPath, $projectsToAdd, $solutionFolderByProjectPath) {
     try {
         if (-not (Test-Path -LiteralPath $slnxPath)) {
@@ -204,7 +232,7 @@ function ApplySolutionFolders($slnxPath, $projectsToAdd, $solutionFolderByProjec
             }
         }
 
-        $doc.Save($slnxPath)
+        SaveXmlDocument -doc $doc -path $slnxPath
     }
     catch {
         throw "ApplySolutionFolders failed for '$slnxPath': $($_.Exception.Message)"
@@ -367,6 +395,7 @@ $plans | ForEach-Object -Parallel {
 
 $plans | ForEach-Object {
     ApplySolutionFolders -slnxPath $PSItem.OutputFile -projectsToAdd $PSItem.ProjectsToAdd -solutionFolderByProjectPath $solutionFolderByProjectPath
+    NormalizeTextFile -path $PSItem.OutputFile
 }
 
 if (Test-Path -LiteralPath $OutputRootPath) {

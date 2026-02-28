@@ -4,6 +4,5 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests.csproj" />
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
 </Solution>

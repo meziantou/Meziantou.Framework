@@ -2,14 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>HTTP Basic authentication for ASP.NET Core</Description>
+    <Description>HTTP Basic authentication for ASP.NET Core with support for ASP.NET Core Identity</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
 
 </Project>

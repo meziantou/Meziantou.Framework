@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using System.Security.Claims;
 
 namespace Meziantou.AspNetCore.Authentication.HttpBasic;
 
@@ -29,4 +30,22 @@ public sealed class HttpBasicAuthenticationOptions : AuthenticationSchemeOptions
     /// Gets or sets the delegate used to validate credentials.
     /// </summary>
     public HttpBasicCredentialValidator ValidateCredentials { get; set; } = static (_, _, _) => ValueTask.FromResult(false);
+
+    /// <summary>
+    /// Gets or sets the delegate used to create the <see cref="ClaimsPrincipal"/> for an authenticated user.
+    /// Returning <see langword="null"/> fails authentication.
+    /// </summary>
+    public HttpBasicPrincipalFactory CreatePrincipal { get; set; } = static (_, authenticationScheme, username) => ValueTask.FromResult<ClaimsPrincipal?>(CreateDefaultPrincipal(authenticationScheme, username));
+
+    private static ClaimsPrincipal CreateDefaultPrincipal(string authenticationScheme, string username)
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.NameIdentifier, username),
+        };
+
+        var identity = new ClaimsIdentity(claims, authenticationType: authenticationScheme);
+        return new ClaimsPrincipal(identity);
+    }
 }

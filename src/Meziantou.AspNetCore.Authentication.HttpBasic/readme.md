@@ -4,6 +4,8 @@ ASP.NET Core authentication handler for HTTP Basic authentication.
 
 Credential validation is delegate-based through `options.ValidateCredentials`.
 
+You can also integrate with ASP.NET Core Identity using `AddHttpBasicIdentity<TUser>()`.
+
 ## Usage
 
 ```csharp
@@ -35,6 +37,25 @@ app.MapGet("/", (ClaimsPrincipal user) => $"Hello {user.Identity?.Name}!")
     .RequireAuthorization();
 
 app.Run();
+```
+
+## ASP.NET Core Identity integration
+
+```csharp
+using Meziantou.AspNetCore.Authentication.HttpBasic;
+using Microsoft.AspNetCore.Identity;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddIdentityCore<IdentityUser>()
+                .AddSignInManager();
+
+builder.Services
+    .AddAuthentication(HttpBasicAuthenticationDefaults.AuthenticationScheme)
+    .AddHttpBasicIdentity<IdentityUser>(options =>
+    {
+        options.Realm = "My application";
+    });
 ```
 
 ## Security options

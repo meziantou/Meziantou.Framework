@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.Net.Http.Headers;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
@@ -61,14 +60,10 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         if (!isValid)
             return InvalidUsernameOrPasswordResult;
 
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.NameIdentifier, username),
-        };
+        var principal = await Options.CreatePrincipal.Invoke(Context, Scheme.Name, username).ConfigureAwait(false);
+        if (principal is null)
+            return InvalidUsernameOrPasswordResult;
 
-        var identity = new ClaimsIdentity(claims, authenticationType: Scheme.Name);
-        var principal = new ClaimsPrincipal(identity);
         var ticket = new AuthenticationTicket(principal, Scheme.Name);
         return AuthenticateResult.Success(ticket);
     }

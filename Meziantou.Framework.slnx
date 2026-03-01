@@ -62,6 +62,7 @@
     <Project Path="src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj" />
+    <Project Path="src/Meziantou.Framework.Http.Htpasswd/Meziantou.Framework.Http.Htpasswd.csproj" />
     <Project Path="src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
     <Project Path="src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
@@ -138,6 +139,7 @@
     <Project Path="tests/Meziantou.Framework.HtmlSanitizer.Tests/Meziantou.Framework.HtmlSanitizer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Hsts.Tests/Meziantou.Framework.Http.Hsts.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Http.Htpasswd.Tests/Meziantou.Framework.Http.Htpasswd.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Tests/Meziantou.Framework.Http.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />

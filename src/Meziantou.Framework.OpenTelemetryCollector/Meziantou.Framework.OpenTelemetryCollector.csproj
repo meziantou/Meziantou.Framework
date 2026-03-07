@@ -10,8 +10,8 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Google.Protobuf" Version="3.34.0" />
-    <PackageReference Include="Grpc.AspNetCore" Version="2.68.1" />
-    <PackageReference Include="Grpc.Tools" Version="2.68.1" PrivateAssets="All" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.78.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.78.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

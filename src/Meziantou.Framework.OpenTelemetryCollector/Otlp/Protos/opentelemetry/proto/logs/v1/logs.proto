@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package opentelemetry.proto.logs.v1;
+
+import "opentelemetry/proto/common/v1/common.proto";
+import "opentelemetry/proto/resource/v1/resource.proto";
+
+option csharp_namespace = "OpenTelemetry.Proto.Logs.V1";
+
+message ResourceLogs {
+  opentelemetry.proto.resource.v1.Resource resource = 1;
+  repeated ScopeLogs scope_logs = 2;
+  string schema_url = 3;
+}
+
+message ScopeLogs {
+  opentelemetry.proto.common.v1.InstrumentationScope scope = 1;
+  repeated LogRecord log_records = 2;
+  string schema_url = 3;
+}
+
+message LogRecord {
+  fixed64 time_unix_nano = 1;
+  opentelemetry.proto.common.v1.AnyValue body = 5;
+  repeated opentelemetry.proto.common.v1.KeyValue attributes = 6;
+}

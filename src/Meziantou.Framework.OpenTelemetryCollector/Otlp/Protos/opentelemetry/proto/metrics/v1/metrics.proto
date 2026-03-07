@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package opentelemetry.proto.metrics.v1;
+
+import "opentelemetry/proto/common/v1/common.proto";
+import "opentelemetry/proto/resource/v1/resource.proto";
+
+option csharp_namespace = "OpenTelemetry.Proto.Metrics.V1";
+
+message ResourceMetrics {
+  opentelemetry.proto.resource.v1.Resource resource = 1;
+  repeated ScopeMetrics scope_metrics = 2;
+  string schema_url = 3;
+}
+
+message ScopeMetrics {
+  opentelemetry.proto.common.v1.InstrumentationScope scope = 1;
+  repeated Metric metrics = 2;
+  string schema_url = 3;
+}
+
+message Metric {
+  string name = 1;
+  string description = 2;
+  string unit = 3;
+}

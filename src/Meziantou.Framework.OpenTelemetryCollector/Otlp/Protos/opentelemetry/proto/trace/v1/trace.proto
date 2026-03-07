@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package opentelemetry.proto.trace.v1;
+
+import "opentelemetry/proto/common/v1/common.proto";
+import "opentelemetry/proto/resource/v1/resource.proto";
+
+option csharp_namespace = "OpenTelemetry.Proto.Trace.V1";
+
+message ResourceSpans {
+  opentelemetry.proto.resource.v1.Resource resource = 1;
+  repeated ScopeSpans scope_spans = 2;
+  string schema_url = 3;
+}
+
+message ScopeSpans {
+  opentelemetry.proto.common.v1.InstrumentationScope scope = 1;
+  repeated Span spans = 2;
+  string schema_url = 3;
+}
+
+message Span {
+  bytes trace_id = 1;
+  bytes span_id = 2;
+  string name = 5;
+}

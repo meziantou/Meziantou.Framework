@@ -13,7 +13,12 @@ namespace Meziantou.Framework.Collections;
 /// buffer.Add(4); // [2, 3, 4] - overwrites 1
 /// </code>
 /// </example>
-public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
+#if PUBLIC_CIRCULARBUFFER
+public
+#else
+internal
+#endif
+sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
 {
     private T[] _items;
     private int _startIndex;

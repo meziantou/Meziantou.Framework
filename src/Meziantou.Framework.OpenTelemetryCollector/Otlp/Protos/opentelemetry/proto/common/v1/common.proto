@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package opentelemetry.proto.common.v1;
+
+option csharp_namespace = "OpenTelemetry.Proto.Common.V1";
+
+message AnyValue {
+  oneof value {
+    string string_value = 1;
+    bool bool_value = 2;
+    int64 int_value = 3;
+    double double_value = 4;
+    bytes bytes_value = 5;
+  }
+}
+
+message KeyValue {
+  string key = 1;
+  AnyValue value = 2;
+}
+
+message InstrumentationScope {
+  string name = 1;
+  string version = 2;
+  repeated KeyValue attributes = 3;
+}

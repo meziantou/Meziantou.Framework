@@ -1,0 +1,28 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <Description>OpenTelemetry OTLP collector endpoint abstractions for HTTP and gRPC with configurable receiver mappings</Description>
+    <IsTrimmable>false</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Google.Protobuf" Version="3.34.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.76.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.78.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Otlp\Protos\opentelemetry\proto\common\v1\common.proto" ProtoRoot="Otlp\Protos" GrpcServices="None" />
+    <Protobuf Include="Otlp\Protos\opentelemetry\proto\resource\v1\resource.proto" ProtoRoot="Otlp\Protos" GrpcServices="None" />
+    <Protobuf Include="Otlp\Protos\opentelemetry\proto\logs\v1\logs.proto" ProtoRoot="Otlp\Protos" GrpcServices="None" />
+    <Protobuf Include="Otlp\Protos\opentelemetry\proto\trace\v1\trace.proto" ProtoRoot="Otlp\Protos" GrpcServices="None" />
+    <Protobuf Include="Otlp\Protos\opentelemetry\proto\metrics\v1\metrics.proto" ProtoRoot="Otlp\Protos" GrpcServices="None" />
+    <Protobuf Include="Otlp\Protos\opentelemetry\proto\collector\logs\v1\logs_service.proto" ProtoRoot="Otlp\Protos" GrpcServices="Both" />
+    <Protobuf Include="Otlp\Protos\opentelemetry\proto\collector\trace\v1\trace_service.proto" ProtoRoot="Otlp\Protos" GrpcServices="Both" />
+    <Protobuf Include="Otlp\Protos\opentelemetry\proto\collector\metrics\v1\metrics_service.proto" ProtoRoot="Otlp\Protos" GrpcServices="Both" />
+  </ItemGroup>
+
+</Project>

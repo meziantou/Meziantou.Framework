@@ -4,10 +4,14 @@ using System.Diagnostics;
 namespace Meziantou.Framework.Collections;
 
 [DebuggerDisplay("Count = {Count}")]
-public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>
+#if PUBLIC_APPEND_ONLY_COLLECTION
+public
+#else
+internal
+#endif
+sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, ICollection<T>
 {
     private const int MaxSegmentSize = 8000;
-
     private readonly Lock _lock = new();
     private readonly AppendOnlyCollectionSegment<T> _firstSegment;
     private AppendOnlyCollectionSegment<T> _lastSegment;
@@ -27,6 +31,8 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
     }
 
     public int Count => _count;
+
+    bool ICollection<T>.IsReadOnly => false;
 
     public void Add(T item)
     {
@@ -100,6 +106,35 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
         }
 
         return default;
+    }
+
+    void ICollection<T>.Clear() => throw new NotSupportedException();
+    bool ICollection<T>.Contains(T item) => Contains(x => Equals(x, item));
+    bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
+    void ICollection<T>.CopyTo(T[] array, int arrayIndex)
+    {
+        ArgumentNullException.ThrowIfNull(array);
+        if (array.Rank is not 1)
+            throw new ArgumentException("Array must be single-dimensional", nameof(array));
+
+        if (arrayIndex < 0 || arrayIndex > array.Length)
+            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+
+        var count = Count;
+        if (array.Length - arrayIndex < count)
+            throw new ArgumentException("The number of elements in the source collection is greater than the available space from arrayIndex to the end of the destination array.", nameof(array));
+
+        var segment = _firstSegment;
+        while (segment is not null && count > 0)
+        {
+            var items = segment.Items;
+            var copyCount = Math.Min(items.Length, count);
+            items[..copyCount].CopyTo(array.AsSpan(arrayIndex));
+            arrayIndex += copyCount;
+            count -= copyCount;
+
+            segment = segment.Next;
+        }
     }
 
     public struct Enumerator : IEnumerator<T>

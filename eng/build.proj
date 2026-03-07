@@ -14,4 +14,11 @@
     <ProjectReference Remove="../Samples/Meziantou.Framework.WPF.EnumComboBox/Meziantou.Framework.WPF.EnumComboBox.csproj" />
     <ProjectReference Remove="../Samples/Trimmable.Wpf/Trimmable.Wpf.csproj" />
   </ItemGroup>
+
+  <!-- GRPC tooling doesn't support Linux Arm64 (https://github.com/grpc/grpc/issues/38538) -->
+  <ItemGroup Condition="'$(IsLinuxArm64)' == 'true'">
+    <ProjectReference Remove="../src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
+    <ProjectReference Remove="../src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
+    <ProjectReference Remove="../tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
+  </ItemGroup>
 </Project>

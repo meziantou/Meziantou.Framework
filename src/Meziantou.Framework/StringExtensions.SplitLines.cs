@@ -10,21 +10,37 @@ internal
 #endif
 static partial class StringExtensions
 {
-    public static LineSplitEnumerator SplitLines(this string str) => new(str.AsSpan());
+    public static LineSplitEnumerator SplitLines(this string str) => new(str.AsSpan(), LineBreakMode.Unicode);
+
+    public static LineSplitEnumerator SplitLines(this string str, LineBreakMode lineBreakMode) => new(str.AsSpan(), lineBreakMode);
+
 
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public ref struct LineSplitEnumerator
     {
 #if NET8_0_OR_GREATER
-        private static SearchValues<char> NewLineCharacters { get; } = SearchValues.Create(['\r', '\n']);
+        private static SearchValues<char> StandardLineBreakCharacters { get; } = SearchValues.Create("\r\n");
+        private static SearchValues<char> UnicodeLineBreakCharacters { get; } = SearchValues.Create("\r\n\u0085\u2028\u2029");
+        private static SearchValues<char> UnicodeWithLegacyControlLineBreakCharacters { get; } = SearchValues.Create("\r\n\u0085\u2028\u2029\v\f");
+#else
+        private static ReadOnlySpan<char> StandardLineBreakCharacters => "\r\n";
+        private static ReadOnlySpan<char> UnicodeLineBreakCharacters => "\r\n\u0085\u2028\u2029";
+        private static ReadOnlySpan<char> UnicodeWithLegacyControlLineBreakCharacters => "\r\n\u0085\u2028\u2029\v\f";
 #endif
 
         private ReadOnlySpan<char> _str;
+        private readonly LineBreakMode _lineBreakMode;
 
         public LineSplitEnumerator(ReadOnlySpan<char> str)
+            : this(str, LineBreakMode.Unicode)
+        {
+        }
+
+        public LineSplitEnumerator(ReadOnlySpan<char> str, LineBreakMode lineBreakMode)
         {
             _str = str;
+            _lineBreakMode = lineBreakMode;
             Current = default;
         }
 
@@ -36,11 +52,8 @@ static partial class StringExtensions
                 return false;
 
             var span = _str;
-#if NET8_0_OR_GREATER
-            var index = span.IndexOfAny(NewLineCharacters);
-#else
-            var index = span.IndexOfAny('\r', '\n');
-#endif
+            var newLineCharacters = GetNewLineCharacters(_lineBreakMode);
+            var index = span.IndexOfAny(newLineCharacters);
             if (index == -1)
             {
                 _str = [];
@@ -62,6 +75,20 @@ static partial class StringExtensions
             Current = new LineSplitEntry(span[..index], span.Slice(index, 1));
             _str = span[(index + 1)..];
             return true;
+        }
+
+#if NET8_0_OR_GREATER
+        private static SearchValues<char> GetNewLineCharacters(LineBreakMode lineBreakMode)
+#else
+        private static ReadOnlySpan<char> GetNewLineCharacters(LineBreakMode lineBreakMode)
+#endif
+        {
+            return lineBreakMode switch
+            {
+                LineBreakMode.Standard => StandardLineBreakCharacters,
+                LineBreakMode.UnicodeWithLegacyControls => UnicodeWithLegacyControlLineBreakCharacters,
+                _ => UnicodeLineBreakCharacters,
+            };
         }
 
         public LineSplitEntry Current { get; private set; }
@@ -88,4 +115,17 @@ static partial class StringExtensions
 
         public static implicit operator ReadOnlySpan<char>(LineSplitEntry entry) => entry.Line;
     }
+}
+
+[SuppressMessage("Design", "MA0048:File name must match type name")]
+#if PUBLIC_STRING_EXTENSIONS
+public
+#else
+internal
+#endif
+enum LineBreakMode
+{
+    Standard,
+    Unicode,
+    UnicodeWithLegacyControls,
 }

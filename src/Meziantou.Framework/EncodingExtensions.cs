@@ -5,7 +5,9 @@ namespace Meziantou.Framework;
 /// </summary>
 public static class EncodingExtensions
 {
+#pragma warning disable IDE0052 // Will be fixed in a future version of Roslyn https://github.com/dotnet/roslyn/issues/81986
     private static readonly Encoding Utf8WithoutPreambleEncodingInstance = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+#pragma warning restore IDE0052
 
     extension(Encoding)
     {

@@ -84,7 +84,33 @@ public class StringExtensionsTests
             { "ab\r\ncd", new[] { ("ab", "\r\n"), ("cd", "") } },
             { "ab\rcd", new[] { ("ab", "\r"), ("cd", "") } },
             { "ab\ncd", new[] { ("ab", "\n"), ("cd", "") } },
+            { "ab\u0085cd", new[] { ("ab", "\u0085"), ("cd", "") } },
+            { "ab\u2028cd", new[] { ("ab", "\u2028"), ("cd", "") } },
+            { "ab\u2029cd", new[] { ("ab", "\u2029"), ("cd", "") } },
             { "\ncd", new[] { ("", "\n"), ("cd", "") } },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(SplitLineWithLineBreakModeData))]
+    public void SplitLineSpan_WithLineBreakMode(string str, LineBreakMode lineBreakMode, (string Line, string Separator)[] expected)
+    {
+        var actual = new List<(string, string)>();
+        foreach (var (line, separator) in str.SplitLines(lineBreakMode))
+        {
+            actual.Add((line.ToString(), separator.ToString()));
+        }
+
+        Assert.Equal(expected, actual);
+    }
+
+    public static TheoryData<string, LineBreakMode, (string Line, string Separator)[]> SplitLineWithLineBreakModeData()
+    {
+        return new TheoryData<string, LineBreakMode, (string Line, string Separator)[]>
+        {
+            { "ab\u0085cd\u2028ef\u2029gh\vij\fkl", LineBreakMode.Standard, new[] { ("ab\u0085cd\u2028ef\u2029gh\vij\fkl", "") } },
+            { "ab\u0085cd\u2028ef\u2029gh\vij\fkl", LineBreakMode.Unicode, new[] { ("ab", "\u0085"), ("cd", "\u2028"), ("ef", "\u2029"), ("gh\vij\fkl", "") } },
+            { "ab\u0085cd\u2028ef\u2029gh\vij\fkl", LineBreakMode.UnicodeWithLegacyControls, new[] { ("ab", "\u0085"), ("cd", "\u2028"), ("ef", "\u2029"), ("gh", "\v"), ("ij", "\f"), ("kl", "") } },
         };
     }
 

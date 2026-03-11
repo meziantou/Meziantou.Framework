@@ -117,6 +117,9 @@ static partial class StringExtensions
     }
 }
 
+/// <summary>
+/// Specifies which line break characters are recognized by <c>SplitLines</c>.
+/// </summary>
 [SuppressMessage("Design", "MA0048:File name must match type name")]
 #if PUBLIC_STRING_EXTENSIONS
 public
@@ -125,7 +128,18 @@ internal
 #endif
 enum LineBreakMode
 {
+    /// <summary>
+    /// Uses only CR (<c>\r</c>) and LF (<c>\n</c>) line breaks.
+    /// </summary>
     Standard,
+
+    /// <summary>
+    /// Uses Unicode line breaks: CR (<c>\r</c>), LF (<c>\n</c>), NEL (<c>\u0085</c>), LS (<c>\u2028</c>), and PS (<c>\u2029</c>).
+    /// </summary>
     Unicode,
+
+    /// <summary>
+    /// Uses Unicode line breaks and legacy control characters VT (<c>\v</c>) and FF (<c>\f</c>).
+    /// </summary>
     UnicodeWithLegacyControls,
 }

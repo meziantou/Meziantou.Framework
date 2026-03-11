@@ -30,7 +30,11 @@ static partial class StringExtensions
 #endif
 
         private ReadOnlySpan<char> _str;
-        private readonly LineBreakMode _lineBreakMode;
+#if NET8_0_OR_GREATER
+        private readonly SearchValues<char> _newLineCharacters;
+#else
+        private readonly ReadOnlySpan<char> _newLineCharacters;
+#endif
 
         public LineSplitEnumerator(ReadOnlySpan<char> str)
             : this(str, LineBreakMode.Unicode)
@@ -40,7 +44,7 @@ static partial class StringExtensions
         public LineSplitEnumerator(ReadOnlySpan<char> str, LineBreakMode lineBreakMode)
         {
             _str = str;
-            _lineBreakMode = lineBreakMode;
+            _newLineCharacters = GetNewLineCharacters(lineBreakMode);
             Current = default;
         }
 
@@ -52,8 +56,7 @@ static partial class StringExtensions
                 return false;
 
             var span = _str;
-            var newLineCharacters = GetNewLineCharacters(_lineBreakMode);
-            var index = span.IndexOfAny(newLineCharacters);
+            var index = span.IndexOfAny(_newLineCharacters);
             if (index == -1)
             {
                 _str = [];

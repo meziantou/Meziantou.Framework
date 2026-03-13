@@ -1,7 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
-using Meziantou.Framework.Http;
+using Meziantou.Framework.Http.Caching.InMemory;
+using Meziantou.Framework.Http.Caching.Sqlite;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 

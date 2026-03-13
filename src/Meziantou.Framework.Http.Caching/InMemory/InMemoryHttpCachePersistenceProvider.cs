@@ -147,4 +147,136 @@ public sealed class InMemoryHttpCachePersistenceProvider : IHttpCachePersistence
         _entries.TryRemove(primaryKey, out _);
         return ValueTask.CompletedTask;
     }
+
+    /// <summary>
+    /// Removes expired entries that cannot be reused when stale.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public ValueTask PruneObsoleteEntriesAsync(CancellationToken cancellationToken = default)
+    {
+        return PruneObsoleteEntriesAsync(DateTimeOffset.UtcNow, cancellationToken);
+    }
+
+    /// <summary>
+    /// Removes expired entries that cannot be reused when stale.
+    /// </summary>
+    /// <param name="now">The current time used to evaluate expiration.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public ValueTask PruneObsoleteEntriesAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        foreach (var (primaryKey, _) in _entries)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            while (_entries.TryGetValue(primaryKey, out var bag))
+            {
+                var keptEntries = new List<HttpCachePersistenceEntry>();
+                var deletedEntriesForKey = 0;
+
+                foreach (var entry in bag)
+                {
+                    if (ShouldDelete(entry, now))
+                    {
+                        deletedEntriesForKey++;
+                    }
+                    else
+                    {
+                        keptEntries.Add(entry);
+                    }
+                }
+
+                if (deletedEntriesForKey is 0)
+                    break;
+
+                if (keptEntries.Count is 0)
+                {
+                    if (_entries.TryRemove(new KeyValuePair<string, ConcurrentBag<HttpCachePersistenceEntry>>(primaryKey, bag)))
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+
+                var replacementBag = new ConcurrentBag<HttpCachePersistenceEntry>(keptEntries);
+                if (_entries.TryUpdate(primaryKey, replacementBag, bag))
+                {
+                    break;
+                }
+            }
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    private static bool ShouldDelete(HttpCachePersistenceEntry entry, DateTimeOffset now)
+    {
+        return IsExpired(entry, now) && ShouldDeleteWhenExpired(entry);
+    }
+
+    private static bool ShouldDeleteWhenExpired(HttpCachePersistenceEntry entry)
+    {
+        var cannotBeUsedStale = entry.MustRevalidate || entry.ProxyRevalidate || entry.ResponseNoCache;
+        if (!cannotBeUsedStale)
+            return false;
+
+        return string.IsNullOrEmpty(entry.ETag) && entry.LastModified is null;
+    }
+
+    private static bool IsExpired(HttpCachePersistenceEntry entry, DateTimeOffset now)
+    {
+        var freshnessLifetime = GetFreshnessLifetime(entry);
+        var currentAge = CalculateCurrentAge(entry, now);
+        return currentAge >= freshnessLifetime;
+    }
+
+    private static TimeSpan GetFreshnessLifetime(HttpCachePersistenceEntry entry)
+    {
+        if (entry.SharedMaxAge.HasValue)
+            return entry.SharedMaxAge.Value;
+
+        if (entry.MaxAge.HasValue)
+            return entry.MaxAge.Value;
+
+        if (entry.Expires.HasValue)
+        {
+            var expiresTime = entry.Expires.Value;
+            if (expiresTime == DateTimeOffset.MinValue)
+                return TimeSpan.Zero;
+
+            var freshness = expiresTime - entry.ResponseDate;
+            return freshness > TimeSpan.Zero ? freshness : TimeSpan.Zero;
+        }
+
+        if (entry.LastModified.HasValue)
+        {
+            var age = entry.ResponseDate - entry.LastModified.Value;
+            if (age > TimeSpan.Zero)
+            {
+                return TimeSpan.FromSeconds(age.TotalSeconds * 0.1);
+            }
+        }
+
+        return TimeSpan.Zero;
+    }
+
+    private static TimeSpan CalculateCurrentAge(HttpCachePersistenceEntry entry, DateTimeOffset now)
+    {
+        var correctedInitialAge = CalculateCorrectedInitialAge(entry);
+        var residentTime = now - entry.ResponseTime;
+        return correctedInitialAge + residentTime;
+    }
+
+    private static TimeSpan CalculateCorrectedInitialAge(HttpCachePersistenceEntry entry)
+    {
+        var apparentAge = entry.ResponseTime - entry.ResponseDate;
+        if (apparentAge < TimeSpan.Zero)
+            apparentAge = TimeSpan.Zero;
+
+        var responseDelay = entry.ResponseTime - entry.RequestTime;
+        var correctedAgeValue = entry.AgeValue + responseDelay;
+        return apparentAge > correctedAgeValue ? apparentAge : correctedAgeValue;
+    }
 }

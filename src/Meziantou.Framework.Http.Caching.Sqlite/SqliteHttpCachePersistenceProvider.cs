@@ -194,10 +194,9 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
     /// Removes expired entries that cannot be reused when stale.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The number of deleted entries.</returns>
-    public ValueTask<int> CleanupUnusableEntriesAsync(CancellationToken cancellationToken = default)
+    public ValueTask PruneObsoleteEntriesAsync(CancellationToken cancellationToken = default)
     {
-        return CleanupUnusableEntriesAsync(DateTimeOffset.UtcNow, cancellationToken);
+        return PruneObsoleteEntriesAsync(DateTimeOffset.UtcNow, cancellationToken);
     }
 
     /// <summary>
@@ -205,8 +204,7 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
     /// </summary>
     /// <param name="now">The current time used to evaluate expiration.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The number of deleted entries.</returns>
-    public async ValueTask<int> CleanupUnusableEntriesAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
+    public async ValueTask PruneObsoleteEntriesAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var nowUtcTicks = now.UtcDateTime.Ticks;
@@ -216,7 +214,6 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
         await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
-        var deletedCount = 0;
         await using (var fastDeleteCommand = connection.CreateCommand())
         {
             fastDeleteCommand.Transaction = transaction;
@@ -226,7 +223,7 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
                 "AND StaleAtUtcTicks IS NOT NULL " +
                 "AND StaleAtUtcTicks <= $nowUtcTicks";
             fastDeleteCommand.Parameters.AddWithValue("$nowUtcTicks", nowUtcTicks);
-            deletedCount += await fastDeleteCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            await fastDeleteCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
         var rowsToDelete = new List<long>();
@@ -266,7 +263,7 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
         if (rowsToDelete.Count is 0 && rowsToUpdate.Count is 0)
         {
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-            return deletedCount;
+            return;
         }
 
         if (rowsToDelete.Count > 0)
@@ -279,7 +276,7 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
             foreach (var rowId in rowsToDelete)
             {
                 rowIdParameter.Value = rowId;
-                deletedCount += await deleteCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                await deleteCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -305,7 +302,6 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
         }
 
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-        return deletedCount;
     }
 
     private async ValueTask EnsureInitializedAsync(CancellationToken cancellationToken)

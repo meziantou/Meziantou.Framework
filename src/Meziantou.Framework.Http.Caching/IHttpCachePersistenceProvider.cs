@@ -26,4 +26,13 @@ public interface IHttpCachePersistenceProvider
     /// <param name="primaryKey">The primary cache key.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     ValueTask RemoveEntriesAsync(string primaryKey, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Removes obsolete entries that are expired and cannot be reused when stale.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    ValueTask PruneObsoleteEntriesAsync(CancellationToken cancellationToken = default)
+    {
+        return ValueTask.CompletedTask;
+    }
 }

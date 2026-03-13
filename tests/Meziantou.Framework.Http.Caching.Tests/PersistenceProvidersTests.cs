@@ -216,7 +216,37 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
-    public async Task SqliteProviderCleanupRemovesExpiredUnusableEntries()
+    public async Task InMemoryProviderPruneRemovesExpiredUnusableEntries()
+    {
+        var provider = new InMemoryHttpCachePersistenceProvider();
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: true), CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+        var remainingEntries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+
+        Assert.Empty(remainingEntries);
+    }
+
+    [Fact]
+    public async Task InMemoryProviderPruneKeepsExpiredEntriesThatCanBeRevalidated()
+    {
+        var provider = new InMemoryHttpCachePersistenceProvider();
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: true, eTag: "\"etag\""), CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+        var remainingEntries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+
+        Assert.Single(remainingEntries);
+    }
+
+    [Fact]
+    public async Task SqliteProviderPruneRemovesExpiredUnusableEntries()
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
         var databasePath = Path.Combine(tempDirectory, "http-cache.db");
@@ -232,10 +262,9 @@ public class PersistenceProvidersTests
 
             await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: true), CancellationToken.None);
 
-            var deletedEntries = await provider.CleanupUnusableEntriesAsync(now, CancellationToken.None);
+            await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
             var remainingEntries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
 
-            Assert.Equal(1, deletedEntries);
             Assert.Empty(remainingEntries);
         }
         finally
@@ -248,7 +277,7 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
-    public async Task SqliteProviderCleanupKeepsExpiredEntriesThatCanBeRevalidated()
+    public async Task SqliteProviderPruneKeepsExpiredEntriesThatCanBeRevalidated()
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
         var databasePath = Path.Combine(tempDirectory, "http-cache.db");
@@ -264,10 +293,9 @@ public class PersistenceProvidersTests
 
             await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: true, eTag: "\"etag\""), CancellationToken.None);
 
-            var deletedEntries = await provider.CleanupUnusableEntriesAsync(now, CancellationToken.None);
+            await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
             var remainingEntries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
 
-            Assert.Equal(0, deletedEntries);
             Assert.Single(remainingEntries);
         }
         finally
@@ -280,7 +308,7 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
-    public async Task SqliteProviderCleanupHandlesLegacyRowsWithoutCleanupMetadata()
+    public async Task SqliteProviderPruneHandlesLegacyRowsWithoutCleanupMetadata()
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
         var databasePath = Path.Combine(tempDirectory, "http-cache.db");
@@ -331,10 +359,9 @@ public class PersistenceProvidersTests
             }
 
             using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
-            var deletedEntries = await provider.CleanupUnusableEntriesAsync(now, CancellationToken.None);
+            await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
             var remainingEntries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
 
-            Assert.Equal(1, deletedEntries);
             Assert.Empty(remainingEntries);
         }
         finally

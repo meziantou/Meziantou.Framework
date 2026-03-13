@@ -33,5 +33,5 @@ using var cachingHandler = new CachingDelegateHandler(options);
 using var httpClient = new HttpClient(cachingHandler);
 
 // Optional: remove stale entries that cannot be reused
-await provider.CleanupUnusableEntriesAsync();
+await provider.PruneObsoleteEntriesAsync();
 ```

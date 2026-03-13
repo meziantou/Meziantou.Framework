@@ -11,7 +11,8 @@ dotnet add package Meziantou.Framework.Http.Caching.Sqlite
 ## Usage
 
 ```csharp
-using Meziantou.Framework.Http;
+using Meziantou.Framework.Http.Caching;
+using Meziantou.Framework.Http.Caching.Sqlite;
 using Microsoft.Data.Sqlite;
 
 var connectionStringBuilder = new SqliteConnectionStringBuilder

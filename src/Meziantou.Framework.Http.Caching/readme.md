@@ -30,7 +30,7 @@ dotnet add package Meziantou.Framework.Http.Caching
 ### Basic Usage
 
 ```csharp
-using Meziantou.Framework.Http;
+using Meziantou.Framework.Http.Caching;
 
 // Create the caching handler
 var cachingHandler = new CachingDelegateHandler();
@@ -46,7 +46,7 @@ var response2 = await httpClient.GetAsync("https://api.example.com/data"); // Se
 ### With Custom Inner Handler
 
 ```csharp
-using Meziantou.Framework.Http;
+using Meziantou.Framework.Http.Caching;
 
 var innerHandler = new HttpClientHandler();
 var cachingHandler = new CachingDelegateHandler(innerHandler);
@@ -82,7 +82,7 @@ dotnet add package Meziantou.Framework.Http.Caching.Sqlite
 ```
 
 ```csharp
-using Meziantou.Framework.Http;
+using Meziantou.Framework.Http.Caching;
 
 var persistenceProvider = new InMemoryHttpCachePersistenceProvider();
 await persistenceProvider.LoadFromFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));

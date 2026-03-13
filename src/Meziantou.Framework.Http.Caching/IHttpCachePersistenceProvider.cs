@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 /// <summary>
 /// Provides persistent storage for HTTP cache entries.

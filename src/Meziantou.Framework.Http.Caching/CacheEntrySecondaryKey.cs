@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondaryKey>
 {

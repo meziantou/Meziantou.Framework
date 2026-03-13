@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 internal sealed class HttpCache
 {

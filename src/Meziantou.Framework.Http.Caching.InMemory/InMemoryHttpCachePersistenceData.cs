@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching.InMemory;
 
 internal sealed class InMemoryHttpCachePersistenceData
 {

@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 internal static class ResponseSerializer
 {

@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 internal sealed class CacheEntry
 {

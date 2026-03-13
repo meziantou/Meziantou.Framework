@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching.InMemory;
 
 /// <summary>
 /// Stores HTTP cache entries in-memory and can persist them to a JSON file.

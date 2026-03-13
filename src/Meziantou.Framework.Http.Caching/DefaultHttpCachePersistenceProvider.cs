@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 internal sealed class DefaultHttpCachePersistenceProvider : IHttpCachePersistenceProvider
 {

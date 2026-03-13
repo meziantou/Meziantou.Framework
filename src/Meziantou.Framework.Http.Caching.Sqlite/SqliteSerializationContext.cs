@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching.Sqlite;
 
 [JsonSerializable(typeof(HttpCachePersistenceEntry))]
 [JsonSerializable(typeof(Dictionary<string, string>))]

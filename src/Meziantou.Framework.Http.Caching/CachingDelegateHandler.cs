@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 /// <summary>A delegating handler that caches HTTP responses following RFC 7234.</summary>
 public sealed class CachingDelegateHandler : DelegatingHandler

@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.Data.Sqlite;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching.Sqlite;
 
 /// <summary>
 /// Stores HTTP cache entries in a SQLite database.

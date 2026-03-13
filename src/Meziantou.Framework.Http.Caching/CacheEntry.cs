@@ -133,7 +133,7 @@ internal sealed class CacheEntry
         if (DateTimeOffset.TryParseExact(expiresValue, "dddd, dd-MMM-yy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
             return result;
 
-        // RFC 7231: Try asctime format (obsolete but still used)  
+        // RFC 7231: Try asctime format (obsolete but still used)
         // Format: Sun Nov  6 08:49:37 1994
         if (DateTimeOffset.TryParseExact(expiresValue, "ddd MMM  d HH:mm:ss yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
             return result;
@@ -200,6 +200,62 @@ internal sealed class CacheEntry
     public DateTimeOffset? LastModified { get; private set; }
 
     public byte[] SerializedResponse { get; private set; }
+
+    public HttpCachePersistenceEntry ToPersistenceEntry()
+    {
+        return new HttpCachePersistenceEntry
+        {
+            SecondaryKeyMatchNone = SecondaryKey.IsMatchNone,
+            SecondaryKeyHeaders = SecondaryKey.Headers is null ? null : new Dictionary<string, string>(SecondaryKey.Headers, StringComparer.OrdinalIgnoreCase),
+            RequestTime = RequestTime,
+            ResponseTime = ResponseTime,
+            ResponseDate = ResponseDate,
+            AgeValue = AgeValue,
+            MaxAge = MaxAge,
+            SharedMaxAge = SharedMaxAge,
+            Expires = Expires,
+            MustRevalidate = MustRevalidate,
+            ProxyRevalidate = ProxyRevalidate,
+            ResponseNoCache = ResponseNoCache,
+            Public = Public,
+            Private = Private,
+            NoTransform = NoTransform,
+            Immutable = Immutable,
+            StaleIfError = StaleIfError,
+            ETag = ETag,
+            LastModified = LastModified,
+            SerializedResponse = SerializedResponse,
+        };
+    }
+
+    public static CacheEntry FromPersistenceEntry(HttpCachePersistenceEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        var cacheEntry = new CacheEntry(entry.SerializedResponse.ToArray())
+        {
+            SecondaryKey = CacheEntrySecondaryKey.Create(entry.SecondaryKeyMatchNone, entry.SecondaryKeyHeaders),
+            RequestTime = entry.RequestTime,
+            ResponseTime = entry.ResponseTime,
+            ResponseDate = entry.ResponseDate,
+            AgeValue = entry.AgeValue,
+            MaxAge = entry.MaxAge,
+            SharedMaxAge = entry.SharedMaxAge,
+            Expires = entry.Expires,
+            MustRevalidate = entry.MustRevalidate,
+            ProxyRevalidate = entry.ProxyRevalidate,
+            ResponseNoCache = entry.ResponseNoCache,
+            Public = entry.Public,
+            Private = entry.Private,
+            NoTransform = entry.NoTransform,
+            Immutable = entry.Immutable,
+            StaleIfError = entry.StaleIfError,
+            ETag = entry.ETag,
+            LastModified = entry.LastModified,
+        };
+
+        return cacheEntry;
+    }
 
     /// <summary>Calculates the freshness lifetime per RFC 7234 Section 4.2.1.</summary>
     public TimeSpan FreshnessLifetime

@@ -17,6 +17,7 @@ An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Cac
 - ✅ **Pragma Support**: Handles `Pragma: no-cache` for HTTP/1.0 backward compatibility
 - ✅ **Thread-Safe**: Designed for concurrent access across multiple threads
 - ✅ **Testable**: Supports custom `TimeProvider` for deterministic testing
+- ✅ **Pluggable Persistence**: Supports in-memory persistence (default) and custom providers
 
 ## Installation
 
@@ -63,6 +64,42 @@ services.AddHttpClient("MyApi")
 // Register the handler
 services.AddTransient<CachingDelegateHandler>();
 ```
+
+### With Persistent Cache Storage
+
+Use `CachingOptions.PersistenceProvider` to choose where cache entries are stored.
+
+To use `InMemoryHttpCachePersistenceProvider` with `SaveToFileAsync` / `LoadFromFileAsync`, install:
+
+```bash
+dotnet add package Meziantou.Framework.Http.Caching.InMemory
+```
+
+To use `SqliteHttpCachePersistenceProvider`, install:
+
+```bash
+dotnet add package Meziantou.Framework.Http.Caching.Sqlite
+```
+
+```csharp
+using Meziantou.Framework.Http;
+
+var persistenceProvider = new InMemoryHttpCachePersistenceProvider();
+await persistenceProvider.LoadFromFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
+
+var options = new CachingOptions
+{
+    PersistenceProvider = persistenceProvider,
+};
+
+var cachingHandler = new CachingDelegateHandler(options);
+using var httpClient = new HttpClient(cachingHandler);
+
+// Persist cache to disk when needed
+await persistenceProvider.SaveToFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
+```
+
+You can also provide your own implementation of `IHttpCachePersistenceProvider` to use a database (for example Redis).
 
 ### With Custom TimeProvider (for testing)
 
@@ -192,8 +229,8 @@ var response = await httpClient.SendAsync(request);
 
 ```csharp
 var request = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/data");
-request.Headers.CacheControl = new CacheControlHeaderValue 
-{ 
+request.Headers.CacheControl = new CacheControlHeaderValue
+{
     MaxStale = true,
     MaxStaleLimit = TimeSpan.FromMinutes(5) // Accept up to 5 minutes stale
 };

@@ -20,4 +20,10 @@ public sealed class CachingOptions
     /// Default is null (all responses that meet caching requirements are cached).
     /// </summary>
     public Func<HttpResponseMessage, bool>? ShouldCacheResponse { get; set; }
+
+    /// <summary>
+    /// Gets or sets the persistence provider used to store cache entries.
+    /// Default is an internal in-memory provider.
+    /// </summary>
+    public IHttpCachePersistenceProvider? PersistenceProvider { get; set; }
 }

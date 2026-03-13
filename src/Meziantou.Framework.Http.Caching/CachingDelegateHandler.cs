@@ -103,8 +103,8 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             // RFC 7234 Section 4.4: Invalidation on unsafe methods
             if (!IsMethodSafe(request.Method) && IsSuccessStatusCode(response.StatusCode))
             {
-                _cache.Invalidate(request.RequestUri);
-                InvalidateLocationHeaders(response);
+                await _cache.InvalidateAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
+                await InvalidateLocationHeadersAsync(response, cancellationToken).ConfigureAwait(false);
             }
 
             // Set RequestMessage if it's not already set by the base handler
@@ -135,7 +135,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         }
 
         // Try to get a cached response
-        var cacheResult = _cache.TryGet(request);
+        var cacheResult = await _cache.TryGetAsync(request, cancellationToken).ConfigureAwait(false);
 
         if (cacheResult is not null)
         {
@@ -149,7 +149,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
 
             // RFC 7234 Section 5.2.1.4 & 5.4: no-cache directive or Pragma: no-cache
             // RFC 8246: immutable overrides no-cache when response is still fresh
-            var requiresValidation = !isImmutableAndFresh && 
+            var requiresValidation = !isImmutableAndFresh &&
                                      ((requestCacheControl?.NoCache) is true ||
                                       (hasPragmaNoCache && requestCacheControl is null));
 
@@ -261,6 +261,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                 {
                     // Update cached entry with new headers from 304 response
                     await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
+                    await _cache.PersistEntryAsync(request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
 
                     conditionalResponse.Dispose();
 
@@ -275,7 +276,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
                     if (staleness <= cacheResult.StaleIfError.Value)
                     {
                         conditionalResponse.Dispose();
-                        
+
                         // RFC 7234 Section 5.5: Add Warning headers
                         var warnings = "110 - \"Response is Stale\", 111 - \"Revalidation Failed\"";
                         return CreateCachedResponse(request, cacheResult, currentAge, warnings);
@@ -303,7 +304,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         var freshResponseTime = _timeProvider.GetUtcNow();
 
         await _cache.StoreAsync(request, freshResponse, requestTime, freshResponseTime, cancellationToken).ConfigureAwait(false);
-        
+
         // Set RequestMessage if it's not already set by the base handler
         freshResponse.RequestMessage ??= request;
         return freshResponse;
@@ -337,7 +338,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         return false;
     }
 
-    private void InvalidateLocationHeaders(HttpResponseMessage response)
+    private async ValueTask InvalidateLocationHeadersAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         // RFC 7234 Section 4.4: Invalidate Location and Content-Location URIs
         if (response.Headers.Location != null)
@@ -345,7 +346,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             var locationUri = GetAbsoluteUri(response.RequestMessage?.RequestUri, response.Headers.Location);
             if (locationUri != null && IsSameHost(response.RequestMessage?.RequestUri, locationUri))
             {
-                _cache.Invalidate(locationUri);
+                await _cache.InvalidateAsync(locationUri, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -354,7 +355,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             var contentLocationUri = GetAbsoluteUri(response.RequestMessage?.RequestUri, response.Content.Headers.ContentLocation);
             if (contentLocationUri != null && IsSameHost(response.RequestMessage?.RequestUri, contentLocationUri))
             {
-                _cache.Invalidate(contentLocationUri);
+                await _cache.InvalidateAsync(contentLocationUri, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -386,8 +387,8 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         if (entry.UsesHeuristicExpiration && entry.FreshnessLifetime >= TimeSpan.FromHours(24))
         {
             var warning113 = "113 - \"Heuristic Expiration\"";
-            warningHeaders = warningHeaders is not null 
-                ? $"{warningHeaders}, {warning113}" 
+            warningHeaders = warningHeaders is not null
+                ? $"{warningHeaders}, {warning113}"
                 : warning113;
         }
 
@@ -408,7 +409,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
         {
             response.Headers.Remove("Cache-Control");
             var cacheControl = new CacheControlHeaderValue();
-            
+
             if (entry.MaxAge is not null)
             {
                 cacheControl.MaxAge = entry.MaxAge;
@@ -418,37 +419,37 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             {
                 cacheControl.SharedMaxAge = entry.SharedMaxAge;
             }
-            
+
             if (entry.MustRevalidate)
             {
                 cacheControl.MustRevalidate = true;
             }
-            
+
             if (entry.ProxyRevalidate)
             {
                 cacheControl.ProxyRevalidate = true;
             }
-            
+
             if (entry.ResponseNoCache)
             {
                 cacheControl.NoCache = true;
             }
-            
+
             if (entry.Public)
             {
                 cacheControl.Public = true;
             }
-            
+
             if (entry.Private)
             {
                 cacheControl.Private = true;
             }
-            
+
             if (entry.NoTransform)
             {
                 cacheControl.NoTransform = true;
             }
-            
+
             if (entry.Immutable)
             {
                 cacheControl.Extensions.Add(new NameValueHeaderValue("immutable"));
@@ -458,7 +459,7 @@ public sealed class CachingDelegateHandler : DelegatingHandler
             {
                 cacheControl.Extensions.Add(new NameValueHeaderValue("stale-if-error", ((int)entry.StaleIfError.Value.TotalSeconds).ToString(CultureInfo.InvariantCulture)));
             }
-            
+
             response.Headers.CacheControl = cacheControl;
         }
 

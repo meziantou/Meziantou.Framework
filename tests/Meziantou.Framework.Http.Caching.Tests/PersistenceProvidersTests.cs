@@ -172,7 +172,9 @@ public class PersistenceProvidersTests
     [Fact]
     public async Task SqliteProviderSupportsInMemoryConnectionString()
     {
-        using var provider = new SqliteHttpCachePersistenceProvider(CreateInMemorySqliteConnectionString());
+        var connectionString = CreateInMemorySqliteConnectionString();
+        using var keepAliveConnection = CreateSqliteAnchorConnection(connectionString);
+        using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
 
         var primaryKey = "http://example.com/in-memory";
         var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
@@ -184,9 +186,46 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
+    public async Task SqliteProviderInMemoryConnectionStringCanBeUsedByHttpCache()
+    {
+        var connectionString = CreateInMemorySqliteConnectionString();
+        using var keepAliveConnection = CreateSqliteAnchorConnection(connectionString);
+        var requestCount = 0;
+        using var originHandler = new MockResponseHandler(_ =>
+        {
+            Interlocked.Increment(ref requestCount);
+
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("sqlite-in-memory-content"),
+            };
+
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
+            return response;
+        });
+
+        using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
+        using var cachingHandler = new CachingDelegateHandler(originHandler, new CachingOptions
+        {
+            PersistenceProvider = provider,
+        });
+        using var client = new HttpClient(cachingHandler);
+
+        using var response1 = await client.GetAsync("http://example.com/in-memory-http-cache", CancellationToken.None);
+        using var response2 = await client.GetAsync("http://example.com/in-memory-http-cache", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+        Assert.Equal("sqlite-in-memory-content", await response2.Content.ReadAsStringAsync(CancellationToken.None));
+        Assert.Equal(1, requestCount);
+    }
+
+    [Fact]
     public async Task SqliteProviderSupportsConcurrentOperations()
     {
-        using var provider = new SqliteHttpCachePersistenceProvider(CreateInMemorySqliteConnectionString());
+        var connectionString = CreateInMemorySqliteConnectionString();
+        using var keepAliveConnection = CreateSqliteAnchorConnection(connectionString);
+        using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
         var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
 
         const int EntryCount = 32;
@@ -420,6 +459,13 @@ public class PersistenceProvidersTests
         };
 
         return builder.ToString();
+    }
+
+    private static SqliteConnection CreateSqliteAnchorConnection(string connectionString)
+    {
+        var connection = new SqliteConnection(connectionString);
+        connection.Open();
+        return connection;
     }
 
     private sealed class MockResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : DelegatingHandler

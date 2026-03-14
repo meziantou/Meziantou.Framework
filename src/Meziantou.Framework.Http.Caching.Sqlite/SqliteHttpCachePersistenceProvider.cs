@@ -37,8 +37,6 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
 
     private readonly Lock _initializationLock = new();
     private readonly string _connectionString;
-    private readonly bool _usesInMemoryDatabase;
-    private SqliteConnection? _memoryDatabaseAnchorConnection;
     private Task? _initializationTask;
     private bool _initialized;
 
@@ -50,14 +48,7 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
-        var builder = new SqliteConnectionStringBuilder(connectionString);
-        _usesInMemoryDatabase = IsInMemoryDatabase(builder);
-        _connectionString = builder.ToString();
-    }
-
-    private static bool IsInMemoryDatabase(SqliteConnectionStringBuilder builder)
-    {
-        return builder.Mode is SqliteOpenMode.Memory || string.Equals(builder.DataSource, ":memory:", StringComparison.Ordinal);
+        _connectionString = new SqliteConnectionStringBuilder(connectionString).ToString();
     }
 
     /// <inheritdoc />
@@ -345,12 +336,6 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
     {
         if (_initialized)
             return;
-
-        if (_usesInMemoryDatabase && _memoryDatabaseAnchorConnection is null)
-        {
-            _memoryDatabaseAnchorConnection = new SqliteConnection(_connectionString);
-            await _memoryDatabaseAnchorConnection.OpenAsync(CancellationToken.None).ConfigureAwait(false);
-        }
 
         await using var connection = await OpenConnectionAsync(CancellationToken.None).ConfigureAwait(false);
         await using var command = connection.CreateCommand();
@@ -875,7 +860,5 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
     /// <inheritdoc />
     public void Dispose()
     {
-        _memoryDatabaseAnchorConnection?.Dispose();
-        _memoryDatabaseAnchorConnection = null;
     }
 }

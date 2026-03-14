@@ -2,7 +2,10 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Meziantou.Framework.Http.Caching.InMemory;
+using Meziantou.Framework.Http.Caching.Redis;
 using Meziantou.Framework.Http.Caching.Sqlite;
+using StackExchange.Redis;
+using Testcontainers.Redis;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -238,6 +241,92 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
+    public async Task RedisProviderPersistsEntriesBetweenHandlerInstances()
+    {
+        await using var redisContainer = await StartRedisContainerOrSkipAsync();
+
+        var redisConnectionString = redisContainer.GetConnectionString();
+        var keyPrefix = "meziantou-http-cache-tests:" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+
+        var firstRequestCount = 0;
+        using (var firstOriginHandler = new MockResponseHandler(_ =>
+        {
+            Interlocked.Increment(ref firstRequestCount);
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("redis-persisted-content"),
+            };
+
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
+            return response;
+        }))
+        {
+            using var firstConnection = await ConnectionMultiplexer.ConnectAsync(redisConnectionString);
+            var firstProvider = new RedisHttpCacheStore(firstConnection, keyPrefix: keyPrefix);
+            using var firstCachingHandler = new HttpCachingDelegateHandler(firstOriginHandler, firstProvider);
+            using var firstClient = new HttpClient(firstCachingHandler);
+
+            using var firstResponse = await firstClient.GetAsync("http://example.com/redis-persist", CancellationToken.None);
+            Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+            Assert.Equal("redis-persisted-content", await firstResponse.Content.ReadAsStringAsync(CancellationToken.None));
+        }
+
+        var secondRequestCount = 0;
+        using var secondOriginHandler = new MockResponseHandler(_ =>
+        {
+            Interlocked.Increment(ref secondRequestCount);
+            return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+        });
+
+        using var secondConnection = await ConnectionMultiplexer.ConnectAsync(redisConnectionString);
+        var secondProvider = new RedisHttpCacheStore(secondConnection, keyPrefix: keyPrefix);
+        using var secondCachingHandler = new HttpCachingDelegateHandler(secondOriginHandler, secondProvider);
+        using var secondClient = new HttpClient(secondCachingHandler);
+
+        using var secondResponse = await secondClient.GetAsync("http://example.com/redis-persist", CancellationToken.None);
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        Assert.Equal("redis-persisted-content", await secondResponse.Content.ReadAsStringAsync(CancellationToken.None));
+        Assert.Equal(1, firstRequestCount);
+        Assert.Equal(0, secondRequestCount);
+    }
+
+    [Fact]
+    public async Task RedisProviderPruneRemovesExpiredUnusableEntries()
+    {
+        await using var redisContainer = await StartRedisContainerOrSkipAsync();
+
+        using var connection = await ConnectionMultiplexer.ConnectAsync(redisContainer.GetConnectionString());
+        var provider = new RedisHttpCacheStore(connection, keyPrefix: "meziantou-http-cache-tests:" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: true), CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+        var remainingEntries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+
+        Assert.Empty(remainingEntries);
+    }
+
+    [Fact]
+    public async Task RedisProviderPruneKeepsExpiredEntriesThatCanBeRevalidated()
+    {
+        await using var redisContainer = await StartRedisContainerOrSkipAsync();
+
+        using var connection = await ConnectionMultiplexer.ConnectAsync(redisContainer.GetConnectionString());
+        var provider = new RedisHttpCacheStore(connection, keyPrefix: "meziantou-http-cache-tests:" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var primaryKey = "http://example.com/cleanup";
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: true, eTag: "\"etag\""), CancellationToken.None);
+
+        await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
+        var remainingEntries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+
+        Assert.Single(remainingEntries);
+    }
+
+    [Fact]
     public async Task InMemoryProviderPruneRemovesExpiredUnusableEntries()
     {
         var provider = new InMemoryHttpCacheStore();
@@ -448,6 +537,40 @@ public class PersistenceProvidersTests
         var connection = new SqliteConnection(connectionString);
         connection.Open();
         return connection;
+    }
+
+    private static async Task<RedisContainer> StartRedisContainerOrSkipAsync()
+    {
+        var redisContainer = new RedisBuilder("redis:8.2").Build();
+
+        try
+        {
+            await redisContainer.StartAsync();
+            return redisContainer;
+        }
+        catch (Exception ex) when (IsDockerUnavailable(ex))
+        {
+            await redisContainer.DisposeAsync();
+            throw new Exception("$XunitDynamicSkip$Docker is not available on this machine", ex);
+        }
+    }
+
+    private static bool IsDockerUnavailable(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            var typeName = current.GetType().FullName;
+            if (typeName is not null && typeName.Contains("Docker", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (current.Message.Contains("docker", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (current.Message.Contains("podman", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     private sealed class MockResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : DelegatingHandler

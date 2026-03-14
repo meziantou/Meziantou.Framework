@@ -9,6 +9,7 @@ When running tests, you can ignore the warning about "Blame" data collector erro
 In addition to building and testing your changes, you MUST run the following scripts:
 - `./eng/update-bom.ps1`
 - `./eng/update-readme.ps1`
+- `./eng/update-project-slnx.ps1`
 - `./eng/update-tool-readme.ps1`
 - `./eng/validate-testprojects-configuration.ps1`
 

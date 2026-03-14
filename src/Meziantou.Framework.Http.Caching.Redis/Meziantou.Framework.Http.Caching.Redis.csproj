@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Provide Redis persistence provider for Meziantou.Framework.Http.Caching</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.5" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="StackExchange.Redis" Version="2.12.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
+  </ItemGroup>
+
+</Project>

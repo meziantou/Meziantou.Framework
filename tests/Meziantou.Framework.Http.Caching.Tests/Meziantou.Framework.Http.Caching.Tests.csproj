@@ -10,8 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.4.0" />
+    <PackageReference Include="Testcontainers.Redis" Version="4.11.0" />
   </ItemGroup>
-
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.4" />
@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.InMemory\Meziantou.Framework.Http.Caching.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.Redis\Meziantou.Framework.Http.Caching.Redis.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.Sqlite\Meziantou.Framework.Http.Caching.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
   </ItemGroup>

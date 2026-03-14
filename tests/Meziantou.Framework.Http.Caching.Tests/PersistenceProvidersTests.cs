@@ -1,11 +1,13 @@
 using System.Net;
 using System.Text.Json;
+using DotNet.Testcontainers.Builders;
 using Microsoft.Data.Sqlite;
 using Meziantou.Framework.Http.Caching.InMemory;
 using Meziantou.Framework.Http.Caching.Redis;
 using Meziantou.Framework.Http.Caching.Sqlite;
 using StackExchange.Redis;
 using Testcontainers.Redis;
+using TestUtilities;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -240,10 +242,10 @@ public class PersistenceProvidersTests
         }
     }
 
-    [Fact]
+    [Fact, RunIf(FactOperatingSystem.Linux)]
     public async Task RedisProviderPersistsEntriesBetweenHandlerInstances()
     {
-        await using var redisContainer = await StartRedisContainerOrSkipAsync();
+        await using var redisContainer = await StartRedisContainerAsync();
 
         var redisConnectionString = redisContainer.GetConnectionString();
         var keyPrefix = "meziantou-http-cache-tests:" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
@@ -290,10 +292,10 @@ public class PersistenceProvidersTests
         Assert.Equal(0, secondRequestCount);
     }
 
-    [Fact]
+    [Fact, RunIf(FactOperatingSystem.Linux)]
     public async Task RedisProviderPruneRemovesExpiredUnusableEntries()
     {
-        await using var redisContainer = await StartRedisContainerOrSkipAsync();
+        await using var redisContainer = await StartRedisContainerAsync();
 
         using var connection = await ConnectionMultiplexer.ConnectAsync(redisContainer.GetConnectionString());
         var provider = new RedisHttpCacheStore(connection, keyPrefix: "meziantou-http-cache-tests:" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
@@ -308,10 +310,10 @@ public class PersistenceProvidersTests
         Assert.Empty(remainingEntries);
     }
 
-    [Fact]
+    [Fact, RunIf(FactOperatingSystem.Linux)]
     public async Task RedisProviderPruneKeepsExpiredEntriesThatCanBeRevalidated()
     {
-        await using var redisContainer = await StartRedisContainerOrSkipAsync();
+        await using var redisContainer = await StartRedisContainerAsync();
 
         using var connection = await ConnectionMultiplexer.ConnectAsync(redisContainer.GetConnectionString());
         var provider = new RedisHttpCacheStore(connection, keyPrefix: "meziantou-http-cache-tests:" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
@@ -539,38 +541,11 @@ public class PersistenceProvidersTests
         return connection;
     }
 
-    private static async Task<RedisContainer> StartRedisContainerOrSkipAsync()
+    private static async Task<RedisContainer> StartRedisContainerAsync()
     {
         var redisContainer = new RedisBuilder("redis:8.2").Build();
-
-        try
-        {
-            await redisContainer.StartAsync();
-            return redisContainer;
-        }
-        catch (Exception ex) when (IsDockerUnavailable(ex))
-        {
-            await redisContainer.DisposeAsync();
-            throw new Exception("Docker is not available on this machine", ex);
-        }
-    }
-
-    private static bool IsDockerUnavailable(Exception exception)
-    {
-        for (var current = exception; current is not null; current = current.InnerException)
-        {
-            var typeName = current.GetType().FullName;
-            if (typeName is not null && typeName.Contains("Docker", StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            if (current.Message.Contains("docker", StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            if (current.Message.Contains("podman", StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-
-        return false;
+        await redisContainer.StartAsync();
+        return redisContainer;
     }
 
     private sealed class MockResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : DelegatingHandler

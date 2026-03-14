@@ -70,10 +70,10 @@ internal sealed record PromptContext(string FilePath, string? TestName, ProcessI
                 if (method == null)
                     continue;
 
-                if (factType != null && method.GetCustomAttribute(factType, inherit: true) is not null)
+                if (factType != null && Attribute.IsDefined(method, factType, inherit: true))
                     return method.Name;
 
-                if (theoryType != null && method.GetCustomAttribute(theoryType, inherit: true) is not null)
+                if (theoryType != null && Attribute.IsDefined(method, theoryType, inherit: true))
                     return method.Name;
             }
 

@@ -614,7 +614,7 @@ public sealed class AdvancedCachingTests
     public async Task WhenResponseTooLargeThenNotCached()
     {
         // Test that responses exceeding the maximum size are not cached
-        var options = new CachingOptions { MaximumResponseSize = 1024 * 1024 }; // 1 MB limit
+        var options = new HttpCachingOptions { MaximumResponseSize = 1024 * 1024 }; // 1 MB limit
         await using var context = new HttpTestContext(options);
         var largeContent = new string('x', 2_000_000); // 2MB
         context.AddResponse(HttpStatusCode.OK, largeContent, ("Cache-Control", "max-age=3600"));
@@ -648,7 +648,7 @@ public sealed class AdvancedCachingTests
     public async Task WhenResponseWithinSizeLimitThenCached()
     {
         // Test that responses within the size limit are cached
-        var options = new CachingOptions { MaximumResponseSize = 1024 * 1024 }; // 1 MB limit
+        var options = new HttpCachingOptions { MaximumResponseSize = 1024 * 1024 }; // 1 MB limit
         await using var context = new HttpTestContext(options);
         var smallContent = new string('x', 500_000); // 500 KB
         context.AddResponse(HttpStatusCode.OK, smallContent, ("Cache-Control", "max-age=3600"));
@@ -682,7 +682,7 @@ public sealed class AdvancedCachingTests
     public async Task WhenMaximumResponseSizeNullThenNoSizeLimit()
     {
         // Test that setting MaximumResponseSize to null disables size checking
-        var options = new CachingOptions { MaximumResponseSize = null };
+        var options = new HttpCachingOptions { MaximumResponseSize = null };
         await using var context = new HttpTestContext(options);
         var largeContent = new string('x', 10_000_000); // 10 MB
         context.AddResponse(HttpStatusCode.OK, largeContent, ("Cache-Control", "max-age=3600"));
@@ -717,7 +717,7 @@ public sealed class AdvancedCachingTests
     {
         // Test edge case where response is exactly at the size limit
         // Note: We need a large enough limit to account for serialization overhead (headers, metadata)
-        var options = new CachingOptions { MaximumResponseSize = 2000 };
+        var options = new HttpCachingOptions { MaximumResponseSize = 2000 };
         await using var context = new HttpTestContext(options);
         var content = new string('x', 1000); // Content is 1000 bytes, but serialized will be larger
         context.AddResponse(HttpStatusCode.OK, content, ("Cache-Control", "max-age=3600"));
@@ -752,7 +752,7 @@ public sealed class AdvancedCachingTests
     {
         // Test edge case where response serialized size exceeds the limit
         // We set a limit that's smaller than the serialized response size
-        var options = new CachingOptions { MaximumResponseSize = 500 };
+        var options = new HttpCachingOptions { MaximumResponseSize = 500 };
         await using var context = new HttpTestContext(options);
         var content = new string('x', 400); // Small content, but serialized will exceed 500 bytes
         context.AddResponse(HttpStatusCode.OK, content, ("Cache-Control", "max-age=3600"));
@@ -789,9 +789,9 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenShouldCacheResponseReturnsTrueThenResponseIsCached()
     {
-        var options = new CachingOptions 
+        var options = new HttpCachingOptions 
         { 
-            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK 
+            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK, 
         };
         await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "cacheable-content", ("Cache-Control", "max-age=3600"));
@@ -824,9 +824,9 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenShouldCacheResponseReturnsFalseThenResponseIsNotCached()
     {
-        var options = new CachingOptions 
+        var options = new HttpCachingOptions 
         { 
-            ShouldCacheResponse = response => response.StatusCode != HttpStatusCode.OK 
+            ShouldCacheResponse = response => response.StatusCode != HttpStatusCode.OK, 
         };
         await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "first-response", ("Cache-Control", "max-age=3600"));
@@ -859,9 +859,9 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenShouldCacheResponseFiltersBasedOnStatusCodeThenOnlyMatchingResponsesAreCached()
     {
-        var options = new CachingOptions 
+        var options = new HttpCachingOptions 
         { 
-            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK 
+            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK, 
         };
         await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "ok-response", ("Cache-Control", "max-age=3600"));
@@ -919,9 +919,9 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenShouldCacheResponseFiltersBasedOnHeaderThenOnlyMatchingResponsesAreCached()
     {
-        var options = new CachingOptions 
+        var options = new HttpCachingOptions 
         { 
-            ShouldCacheResponse = response => response.Headers.Contains("X-Cache-This")
+            ShouldCacheResponse = response => response.Headers.Contains("X-Cache-This"),
         };
         await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "cacheable", 
@@ -983,7 +983,7 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenShouldCacheResponseIsNullThenAllCacheableResponsesAreCached()
     {
-        var options = new CachingOptions { ShouldCacheResponse = null };
+        var options = new HttpCachingOptions { ShouldCacheResponse = null };
         await using var context = new HttpTestContext(options);
         context.AddResponse(HttpStatusCode.OK, "cached-response", ("Cache-Control", "max-age=3600"));
 
@@ -1015,10 +1015,10 @@ public sealed class AdvancedCachingTests
     [Fact]
     public async Task WhenShouldCacheResponseCombinedWithMaximumResponseSizeThenBothFiltersApply()
     {
-        var options = new CachingOptions 
+        var options = new HttpCachingOptions 
         { 
             MaximumResponseSize = 1500, // Large enough for small response with headers
-            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK
+            ShouldCacheResponse = response => response.StatusCode == HttpStatusCode.OK,
         };
         await using var context = new HttpTestContext(options);
         

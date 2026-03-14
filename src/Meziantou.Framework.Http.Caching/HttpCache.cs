@@ -1,16 +1,19 @@
-using System.Collections.Concurrent;
 using System.Net;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 internal sealed class HttpCache
 {
-    private readonly ConcurrentDictionary<string, ConcurrentBag<CacheEntry>> _entries = new(StringComparer.Ordinal);
-    private readonly CachingOptions _options;
+    private readonly IHttpCacheStore _persistenceProvider;
+    private readonly HttpCachingOptions _options;
 
-    public HttpCache(CachingOptions? options)
+    public HttpCache(IHttpCacheStore persistenceProvider, HttpCachingOptions options)
     {
-        _options = options ?? new();
+        ArgumentNullException.ThrowIfNull(persistenceProvider);
+        ArgumentNullException.ThrowIfNull(options);
+
+        _persistenceProvider = persistenceProvider;
+        _options = options;
     }
 
     private static string ComputePrimaryKey(Uri? uri)
@@ -18,22 +21,34 @@ internal sealed class HttpCache
         return uri?.GetLeftPart(UriPartial.Query) ?? string.Empty;
     }
 
-    public CacheEntry? TryGet(HttpRequestMessage request)
+    public async ValueTask<CacheEntry?> TryGetAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         if (request.RequestUri == null)
             return null;
 
         var primaryKey = ComputePrimaryKey(request.RequestUri);
-
-        if (!_entries.TryGetValue(primaryKey, out var entries))
+        var persistedEntries = await _persistenceProvider.GetEntriesAsync(primaryKey, cancellationToken).ConfigureAwait(false);
+        if (persistedEntries.Count is 0)
             return null;
 
         // Find the best matching entry considering Vary headers
         CacheEntry? bestMatch = null;
         DateTimeOffset latestDate = DateTimeOffset.MinValue;
 
-        foreach (var entry in entries)
+        foreach (var persistedEntry in persistedEntries)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            CacheEntry entry;
+            try
+            {
+                entry = CacheEntry.FromPersistenceEntry(persistedEntry);
+            }
+            catch
+            {
+                continue;
+            }
+
             // Check secondary key (Vary headers) match
             if (!entry.SecondaryKey.MatchRequest(request))
                 continue;
@@ -49,7 +64,7 @@ internal sealed class HttpCache
         return bestMatch;
     }
 
-    public async Task StoreAsync(HttpRequestMessage request, HttpResponseMessage response, DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
+    public async ValueTask StoreAsync(HttpRequestMessage request, HttpResponseMessage response, DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
     {
         if (request.RequestUri == null)
             return;
@@ -75,32 +90,25 @@ internal sealed class HttpCache
             }
         }
 
-        _entries.AddOrUpdate(
-            primaryKey,
-            _ => new ConcurrentBag<CacheEntry> { entry },
-            (_, bag) =>
-            {
-                // Remove entries with same secondary key
-                var newBag = new ConcurrentBag<CacheEntry>();
-                foreach (var existing in bag)
-                {
-                    if (!existing.SecondaryKey.Equals(entry.SecondaryKey))
-                    {
-                        newBag.Add(existing);
-                    }
-                }
-                newBag.Add(entry);
-                return newBag;
-            });
+        await _persistenceProvider.SetEntryAsync(primaryKey, entry.ToPersistenceEntry(), cancellationToken).ConfigureAwait(false);
     }
 
-    public void Invalidate(Uri? uri)
+    public ValueTask PersistEntryAsync(Uri? uri, CacheEntry entry, CancellationToken cancellationToken)
     {
         if (uri == null)
-            return;
+            return ValueTask.CompletedTask;
 
         var primaryKey = ComputePrimaryKey(uri);
-        _entries.TryRemove(primaryKey, out _);
+        return _persistenceProvider.SetEntryAsync(primaryKey, entry.ToPersistenceEntry(), cancellationToken);
+    }
+
+    public ValueTask InvalidateAsync(Uri? uri, CancellationToken cancellationToken)
+    {
+        if (uri == null)
+            return ValueTask.CompletedTask;
+
+        var primaryKey = ComputePrimaryKey(uri);
+        return _persistenceProvider.RemoveEntriesAsync(primaryKey, cancellationToken);
     }
 
     private static bool IsCacheable(HttpRequestMessage request, HttpResponseMessage response)
@@ -242,7 +250,7 @@ internal sealed class HttpCache
         if (DateTimeOffset.TryParseExact(expiresValue, "dddd, dd-MMM-yy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
             return result;
 
-        // RFC 7231: Try asctime format (obsolete but still used)  
+        // RFC 7231: Try asctime format (obsolete but still used)
         // Format: Sun Nov  6 08:49:37 1994
         if (DateTimeOffset.TryParseExact(expiresValue, "ddd MMM  d HH:mm:ss yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out result))
             return result;

@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http.Caching;
 
 internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondaryKey>
 {
@@ -17,6 +17,21 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
     public CacheEntrySecondaryKey()
     {
         _headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    public bool IsMatchNone => _headers is null;
+
+    public IReadOnlyDictionary<string, string>? Headers => _headers;
+
+    public static CacheEntrySecondaryKey Create(bool matchNone, IReadOnlyDictionary<string, string>? headers)
+    {
+        if (matchNone)
+            return MatchNone;
+
+        if (headers is null || headers.Count is 0)
+            return MatchAll;
+
+        return new CacheEntrySecondaryKey(new Dictionary<string, string>(headers, StringComparer.OrdinalIgnoreCase));
     }
 
     public void Add(string name, string value)

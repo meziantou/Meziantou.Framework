@@ -1,10 +1,9 @@
 using System.Text.Json.Serialization;
 
-namespace Meziantou.Framework.Http.Caching;
+namespace Meziantou.Framework.Http.Caching.InMemory;
 
-[JsonSerializable(typeof(SerializedResponseMessage))]
+[JsonSerializable(typeof(InMemoryHttpCachePersistenceData))]
 [JsonSourceGenerationOptions(WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, PropertyNameCaseInsensitive = false)]
-internal sealed partial class SerializationContext : JsonSerializerContext
+internal sealed partial class InMemorySerializationContext : JsonSerializerContext
 {
-
 }

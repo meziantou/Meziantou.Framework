@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Provide In-memory persistence provider for Meziantou.Framework.Http.Caching</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
+  </ItemGroup>
+
+</Project>

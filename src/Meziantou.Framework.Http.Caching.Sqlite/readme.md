@@ -1,6 +1,6 @@
 # Meziantou.Framework.Http.Caching.Sqlite
 
-SQLite persistence provider for `Meziantou.Framework.Http.Caching`.
+SQLite cache store for `Meziantou.Framework.Http.Caching`.
 
 ## Installation
 
@@ -23,14 +23,9 @@ var connectionStringBuilder = new SqliteConnectionStringBuilder
     Pooling = false,
 };
 
-var provider = new SqliteHttpCachePersistenceProvider(connectionStringBuilder.ToString());
+var provider = new SqliteHttpCacheStore(connectionStringBuilder.ToString());
 
-var options = new CachingOptions
-{
-    PersistenceProvider = provider,
-};
-
-using var cachingHandler = new CachingDelegateHandler(options);
+using var cachingHandler = new HttpCachingDelegateHandler(provider);
 using var httpClient = new HttpClient(cachingHandler);
 
 // Optional: remove stale entries that cannot be reused

@@ -1,10 +1,11 @@
 namespace Meziantou.Framework.Http.Caching;
 
-/// <summary>
-/// Options for configuring HTTP caching behavior.
-/// </summary>
-public sealed class CachingOptions
+/// <summary>Options for configuring HTTP caching behavior.</summary>
+public sealed class HttpCachingOptions
 {
+    /// <summary>Gets or sets the time provider used for time-based cache operations.</summary>
+    public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
+
     /// <summary>
     /// Gets or sets the maximum size in bytes that a response can be to be cached.
     /// Responses larger than this value will not be cached.
@@ -20,10 +21,4 @@ public sealed class CachingOptions
     /// Default is null (all responses that meet caching requirements are cached).
     /// </summary>
     public Func<HttpResponseMessage, bool>? ShouldCacheResponse { get; set; }
-
-    /// <summary>
-    /// Gets or sets the persistence provider used to store cache entries.
-    /// Default is an internal in-memory provider.
-    /// </summary>
-    public IHttpCacheStore? PersistenceProvider { get; set; }
 }

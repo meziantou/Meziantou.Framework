@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using Meziantou.Framework.Http.Caching.InMemory;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -23,7 +24,7 @@ public class ThreadSafetyTests
             return response;
         });
 
-        using var cache = new CachingDelegateHandler(handler);
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore());
         using var httpClient = new HttpClient(cache);
 
         using var request1 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
@@ -49,7 +50,7 @@ public class ThreadSafetyTests
             return response;
         });
 
-        using var cache = new CachingDelegateHandler(handler);
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore());
         using var httpClient = new HttpClient(cache);
 
         var tasks = Enumerable.Range(0, 10)
@@ -81,7 +82,7 @@ public class ThreadSafetyTests
             return response;
         });
 
-        using var cache = new CachingDelegateHandler(handler);
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore());
         using var httpClient = new HttpClient(cache);
 
         var tasks = new List<Task<HttpResponseMessage>>();
@@ -134,7 +135,7 @@ public class ThreadSafetyTests
             return response;
         });
 
-        using var cache = new CachingDelegateHandler(handler);
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore());
         using var httpClient = new HttpClient(cache);
 
         var tasks = new List<Task<HttpResponseMessage>>();
@@ -189,7 +190,7 @@ public class ThreadSafetyTests
             return response2;
         });
 
-        using var cache = new CachingDelegateHandler(handler);
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore());
         using var httpClient = new HttpClient(cache);
 
         using (var response = await httpClient.GetAsync("http://example.com/test", XunitCancellationToken))
@@ -229,7 +230,7 @@ public class ThreadSafetyTests
             return response;
         });
 
-        using var cache = new CachingDelegateHandler(handler);
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore());
         using var httpClient = new HttpClient(cache);
 
         using (var response = await httpClient.GetAsync("http://example.com/test", XunitCancellationToken))
@@ -281,7 +282,7 @@ public class ThreadSafetyTests
             return response;
         });
 
-        using var cache = new CachingDelegateHandler(handler);
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore());
         using var httpClient = new HttpClient(cache);
 
         using (var response = await httpClient.GetAsync("http://example.com/test"))

@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Http.Caching.Sqlite;
 /// <summary>
 /// Stores HTTP cache entries in a SQLite database.
 /// </summary>
-public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistenceProvider, IDisposable
+public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
 {
     private const string SplitColumnsSql =
         "SecondaryKeyMatchNone, " +
@@ -41,10 +41,10 @@ public sealed class SqliteHttpCachePersistenceProvider : IHttpCachePersistencePr
     private bool _initialized;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SqliteHttpCachePersistenceProvider"/> class.
+    /// Initializes a new instance of the <see cref="SqliteHttpCacheStore"/> class.
     /// </summary>
     /// <param name="connectionString">The SQLite connection string.</param>
-    public SqliteHttpCachePersistenceProvider(string connectionString)
+    public SqliteHttpCacheStore(string connectionString)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 

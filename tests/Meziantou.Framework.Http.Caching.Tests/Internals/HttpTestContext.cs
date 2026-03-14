@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.InlineSnapshotTesting;
+using Meziantou.Framework.Http.Caching.InMemory;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
@@ -18,12 +19,12 @@ internal sealed class HttpTestContext : IAsyncDisposable
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public HttpTestContext()
-        : this(new CachingOptions())
+        : this(new HttpCachingOptions())
     {
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
-    public HttpTestContext(CachingOptions options)
+    public HttpTestContext(HttpCachingOptions options)
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseTestServer();
@@ -32,7 +33,8 @@ internal sealed class HttpTestContext : IAsyncDisposable
         _ = _app.StartAsync();
 
         var handler = _app.GetTestServer().CreateHandler();
-        var cache = new CachingDelegateHandler(handler, TimeProvider, options);
+        options.TimeProvider = TimeProvider;
+        var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore(), options);
         _httpClient = new HttpClient(cache, disposeHandler: true);
     }
 

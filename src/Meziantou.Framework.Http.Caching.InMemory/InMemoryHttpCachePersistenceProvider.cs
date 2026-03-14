@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Http.Caching.InMemory;
 /// <summary>
 /// Stores HTTP cache entries in-memory and can persist them to a JSON file.
 /// </summary>
-public sealed class InMemoryHttpCachePersistenceProvider : IHttpCachePersistenceProvider
+public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 {
     private readonly ConcurrentDictionary<string, ConcurrentBag<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
 

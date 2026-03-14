@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace Meziantou.Framework.Http.Caching;
 
-internal sealed class DefaultHttpCachePersistenceProvider : IHttpCachePersistenceProvider
+internal sealed class DefaultHttpCacheStore : IHttpCacheStore
 {
     private readonly ConcurrentDictionary<string, ConcurrentBag<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
 

@@ -1,10 +1,8 @@
 namespace Meziantou.Framework.Http.Caching;
 
-/// <summary>
-/// Represents a persisted HTTP cache entry.
-/// </summary>
+/// <summary>Represents a persisted HTTP cache entry.</summary>
 /// <remarks>
-/// This type is part of <see cref="IHttpCachePersistenceProvider"/> public contract.
+/// This type is part of <see cref="IHttpCacheStore"/> public contract.
 /// It allows custom providers to persist cache metadata without exposing internal cache implementation details.
 /// </remarks>
 public sealed class HttpCachePersistenceEntry
@@ -15,29 +13,19 @@ public sealed class HttpCachePersistenceEntry
     /// </summary>
     public bool SecondaryKeyMatchNone { get; set; }
 
-    /// <summary>
-    /// Gets or sets the normalized vary-based secondary key headers.
-    /// </summary>
+    /// <summary>Gets or sets the normalized vary-based secondary key headers.</summary>
     public Dictionary<string, string>? SecondaryKeyHeaders { get; set; }
 
-    /// <summary>
-    /// Gets or sets the request time.
-    /// </summary>
+    /// <summary>Gets or sets the request time.</summary>
     public DateTimeOffset RequestTime { get; set; }
 
-    /// <summary>
-    /// Gets or sets the response time.
-    /// </summary>
+    /// <summary>Gets or sets the response time.</summary>
     public DateTimeOffset ResponseTime { get; set; }
 
-    /// <summary>
-    /// Gets or sets the response date.
-    /// </summary>
+    /// <summary>Gets or sets the response date.</summary>
     public DateTimeOffset ResponseDate { get; set; }
 
-    /// <summary>
-    /// Gets or sets the age value.
-    /// </summary>
+    /// <summary>Gets or sets the age value.</summary>
     public TimeSpan AgeValue { get; set; }
 
     /// <summary>
@@ -50,9 +38,7 @@ public sealed class HttpCachePersistenceEntry
     /// </summary>
     public TimeSpan? SharedMaxAge { get; set; }
 
-    /// <summary>
-    /// Gets or sets the Expires header value.
-    /// </summary>
+    /// <summary>Gets or sets the Expires header value.</summary>
     public DateTimeOffset? Expires { get; set; }
 
     /// <summary>
@@ -95,24 +81,16 @@ public sealed class HttpCachePersistenceEntry
     /// </summary>
     public TimeSpan? StaleIfError { get; set; }
 
-    /// <summary>
-    /// Gets or sets the ETag validator.
-    /// </summary>
+    /// <summary>Gets or sets the ETag validator.</summary>
     public string? ETag { get; set; }
 
-    /// <summary>
-    /// Gets or sets the Last-Modified validator.
-    /// </summary>
+    /// <summary>Gets or sets the Last-Modified validator.</summary>
     public DateTimeOffset? LastModified { get; set; }
 
-    /// <summary>
-    /// Gets or sets the serialized HTTP response payload.
-    /// </summary>
+    /// <summary>Gets or sets the serialized HTTP response payload.</summary>
     public ReadOnlyMemory<byte> SerializedResponse { get; set; }
 
-    /// <summary>
-    /// Creates a deep clone of the current instance.
-    /// </summary>
+    /// <summary>Creates a deep clone of the current instance.</summary>
     public HttpCachePersistenceEntry Clone()
     {
         return new HttpCachePersistenceEntry
@@ -140,9 +118,7 @@ public sealed class HttpCachePersistenceEntry
         };
     }
 
-    /// <summary>
-    /// Indicates whether two entries share the same secondary key.
-    /// </summary>
+    /// <summary>Indicates whether two entries share the same secondary key.</summary>
     public static bool HasSameSecondaryKey(HttpCachePersistenceEntry left, HttpCachePersistenceEntry right)
     {
         ArgumentNullException.ThrowIfNull(left);

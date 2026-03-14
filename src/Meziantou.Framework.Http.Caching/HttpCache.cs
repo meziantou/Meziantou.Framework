@@ -4,13 +4,16 @@ namespace Meziantou.Framework.Http.Caching;
 
 internal sealed class HttpCache
 {
-    private readonly IHttpCachePersistenceProvider _persistenceProvider;
-    private readonly CachingOptions _options;
+    private readonly IHttpCacheStore _persistenceProvider;
+    private readonly HttpCachingOptions _options;
 
-    public HttpCache(CachingOptions? options)
+    public HttpCache(IHttpCacheStore persistenceProvider, HttpCachingOptions options)
     {
-        _options = options ?? new();
-        _persistenceProvider = _options.PersistenceProvider ?? new DefaultHttpCachePersistenceProvider();
+        ArgumentNullException.ThrowIfNull(persistenceProvider);
+        ArgumentNullException.ThrowIfNull(options);
+
+        _persistenceProvider = persistenceProvider;
+        _options = options;
     }
 
     private static string ComputePrimaryKey(Uri? uri)

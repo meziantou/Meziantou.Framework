@@ -117,7 +117,7 @@ internal sealed class CacheEntry
             return null;
 
         // RFC 7234 Section 5.3: Invalid dates (including "0") are treated as past
-        if (expiresValue is "0" || expiresValue is "-1")
+        if (expiresValue is "0" or "-1")
             return DateTimeOffset.MinValue;
 
         // RFC 7231 Section 7.1.1.1: Try RFC 1123 format first (preferred)

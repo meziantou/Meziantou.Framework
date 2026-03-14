@@ -23,10 +23,7 @@ public class PersistenceProvidersTests
             return response;
         });
 
-        using var cache = new CachingDelegateHandler(handler, new CachingOptions
-        {
-            PersistenceProvider = provider,
-        });
+        using var cache = new HttpCachingDelegateHandler(handler, provider);
         using var httpClient = new HttpClient(cache);
 
         using var response1 = await httpClient.GetAsync("http://example.com/test", CancellationToken.None);
@@ -46,7 +43,7 @@ public class PersistenceProvidersTests
 
         try
         {
-            var firstProvider = new InMemoryHttpCachePersistenceProvider();
+            var firstProvider = new InMemoryHttpCacheStore();
             var firstRequestCount = 0;
             using (var firstOriginHandler = new MockResponseHandler(_ =>
             {
@@ -60,10 +57,7 @@ public class PersistenceProvidersTests
                 return response;
             }))
             {
-                using var firstCachingHandler = new CachingDelegateHandler(firstOriginHandler, new CachingOptions
-                {
-                    PersistenceProvider = firstProvider,
-                });
+                using var firstCachingHandler = new HttpCachingDelegateHandler(firstOriginHandler, firstProvider);
                 using var firstClient = new HttpClient(firstCachingHandler);
 
                 using var firstResponse = await firstClient.GetAsync("http://example.com/persist", CancellationToken.None);
@@ -73,7 +67,7 @@ public class PersistenceProvidersTests
 
             await firstProvider.SaveToFileAsync(filePath, CancellationToken.None);
 
-            var secondProvider = new InMemoryHttpCachePersistenceProvider();
+            var secondProvider = new InMemoryHttpCacheStore();
             await secondProvider.LoadFromFileAsync(filePath, CancellationToken.None);
 
             var secondRequestCount = 0;
@@ -83,10 +77,7 @@ public class PersistenceProvidersTests
                 return new HttpResponseMessage(HttpStatusCode.InternalServerError);
             });
 
-            using var secondCachingHandler = new CachingDelegateHandler(secondOriginHandler, new CachingOptions
-            {
-                PersistenceProvider = secondProvider,
-            });
+            using var secondCachingHandler = new HttpCachingDelegateHandler(secondOriginHandler, secondProvider);
             using var secondClient = new HttpClient(secondCachingHandler);
 
             using var secondResponse = await secondClient.GetAsync("http://example.com/persist", CancellationToken.None);
@@ -128,11 +119,8 @@ public class PersistenceProvidersTests
                 return response;
             }))
             {
-                using var firstProvider = new SqliteHttpCachePersistenceProvider(connectionString);
-                using var firstCachingHandler = new CachingDelegateHandler(firstOriginHandler, new CachingOptions
-                {
-                    PersistenceProvider = firstProvider,
-                });
+                using var firstProvider = new SqliteHttpCacheStore(connectionString);
+                using var firstCachingHandler = new HttpCachingDelegateHandler(firstOriginHandler, firstProvider);
                 using var firstClient = new HttpClient(firstCachingHandler);
 
                 using var firstResponse = await firstClient.GetAsync("http://example.com/sqlite-persist", CancellationToken.None);
@@ -147,11 +135,8 @@ public class PersistenceProvidersTests
                 return new HttpResponseMessage(HttpStatusCode.InternalServerError);
             });
 
-            using var secondProvider = new SqliteHttpCachePersistenceProvider(connectionString);
-            using var secondCachingHandler = new CachingDelegateHandler(secondOriginHandler, new CachingOptions
-            {
-                PersistenceProvider = secondProvider,
-            });
+            using var secondProvider = new SqliteHttpCacheStore(connectionString);
+            using var secondCachingHandler = new HttpCachingDelegateHandler(secondOriginHandler, secondProvider);
             using var secondClient = new HttpClient(secondCachingHandler);
 
             using var secondResponse = await secondClient.GetAsync("http://example.com/sqlite-persist", CancellationToken.None);
@@ -174,7 +159,7 @@ public class PersistenceProvidersTests
     {
         var connectionString = CreateInMemorySqliteConnectionString();
         using var keepAliveConnection = CreateSqliteAnchorConnection(connectionString);
-        using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
+        using var provider = new SqliteHttpCacheStore(connectionString);
 
         var primaryKey = "http://example.com/in-memory";
         var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
@@ -204,11 +189,8 @@ public class PersistenceProvidersTests
             return response;
         });
 
-        using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
-        using var cachingHandler = new CachingDelegateHandler(originHandler, new CachingOptions
-        {
-            PersistenceProvider = provider,
-        });
+        using var provider = new SqliteHttpCacheStore(connectionString);
+        using var cachingHandler = new HttpCachingDelegateHandler(originHandler, provider);
         using var client = new HttpClient(cachingHandler);
 
         using var response1 = await client.GetAsync("http://example.com/in-memory-http-cache", CancellationToken.None);
@@ -225,7 +207,7 @@ public class PersistenceProvidersTests
     {
         var connectionString = CreateInMemorySqliteConnectionString();
         using var keepAliveConnection = CreateSqliteAnchorConnection(connectionString);
-        using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
+        using var provider = new SqliteHttpCacheStore(connectionString);
         var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
 
         const int EntryCount = 32;
@@ -258,7 +240,7 @@ public class PersistenceProvidersTests
     [Fact]
     public async Task InMemoryProviderPruneRemovesExpiredUnusableEntries()
     {
-        var provider = new InMemoryHttpCachePersistenceProvider();
+        var provider = new InMemoryHttpCacheStore();
         var primaryKey = "http://example.com/cleanup";
         var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
 
@@ -273,7 +255,7 @@ public class PersistenceProvidersTests
     [Fact]
     public async Task InMemoryProviderPruneKeepsExpiredEntriesThatCanBeRevalidated()
     {
-        var provider = new InMemoryHttpCachePersistenceProvider();
+        var provider = new InMemoryHttpCacheStore();
         var primaryKey = "http://example.com/cleanup";
         var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
 
@@ -298,7 +280,7 @@ public class PersistenceProvidersTests
         {
             Directory.CreateDirectory(tempDirectory);
 
-            using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
+            using var provider = new SqliteHttpCacheStore(connectionString);
 
             await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: true), CancellationToken.None);
 
@@ -329,7 +311,7 @@ public class PersistenceProvidersTests
         {
             Directory.CreateDirectory(tempDirectory);
 
-            using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
+            using var provider = new SqliteHttpCacheStore(connectionString);
 
             await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: true, eTag: "\"etag\""), CancellationToken.None);
 
@@ -398,7 +380,7 @@ public class PersistenceProvidersTests
                 }
             }
 
-            using var provider = new SqliteHttpCachePersistenceProvider(connectionString);
+            using var provider = new SqliteHttpCacheStore(connectionString);
             await provider.PruneObsoleteEntriesAsync(now, CancellationToken.None);
             var remainingEntries = await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
 
@@ -476,9 +458,9 @@ public class PersistenceProvidersTests
         }
     }
 
-    private sealed class SpyPersistenceProvider : IHttpCachePersistenceProvider
+    private sealed class SpyPersistenceProvider : IHttpCacheStore
     {
-        private readonly InMemoryHttpCachePersistenceProvider _innerProvider = new();
+        private readonly InMemoryHttpCacheStore _innerProvider = new();
 
         public int GetEntriesCallCount => _getEntriesCallCount;
         public int SetEntryCallCount => _setEntryCallCount;

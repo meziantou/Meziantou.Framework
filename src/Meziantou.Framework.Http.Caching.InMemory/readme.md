@@ -1,6 +1,6 @@
 # Meziantou.Framework.Http.Caching.InMemory
 
-In-memory persistence provider for `Meziantou.Framework.Http.Caching`.
+In-memory cache store for `Meziantou.Framework.Http.Caching`.
 
 ## Installation
 
@@ -14,17 +14,12 @@ dotnet add package Meziantou.Framework.Http.Caching.InMemory
 using Meziantou.Framework.Http.Caching;
 using Meziantou.Framework.Http.Caching.InMemory;
 
-var persistenceProvider = new InMemoryHttpCachePersistenceProvider();
+var persistenceProvider = new InMemoryHttpCacheStore();
 
 // Optional: restore data from a previous session
 await persistenceProvider.LoadFromFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
 
-var options = new CachingOptions
-{
-    PersistenceProvider = persistenceProvider,
-};
-
-using var cachingHandler = new CachingDelegateHandler(options);
+using var cachingHandler = new HttpCachingDelegateHandler(persistenceProvider);
 using var httpClient = new HttpClient(cachingHandler);
 
 // Optional: remove stale entries that cannot be reused

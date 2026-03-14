@@ -4,90 +4,39 @@ using System.Net.Http.Headers;
 namespace Meziantou.Framework.Http.Caching;
 
 /// <summary>A delegating handler that caches HTTP responses following RFC 7234.</summary>
-public sealed class CachingDelegateHandler : DelegatingHandler
+public sealed class HttpCachingDelegateHandler : DelegatingHandler
 {
     private readonly HttpCache _cache;
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class.
+    /// Initializes a new instance of the <see cref="HttpCachingDelegateHandler"/> class.
     /// </summary>
-    public CachingDelegateHandler()
-        : this(TimeProvider.System)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with a time provider.
-    /// </summary>
-    /// <param name="timeProvider">The time provider to use for time-based operations.</param>
-    public CachingDelegateHandler(TimeProvider timeProvider)
-        : this(timeProvider, options: null)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with caching options.
-    /// </summary>
+    /// <param name="store">The cache store used to persist entries.</param>
     /// <param name="options">The caching options.</param>
-    public CachingDelegateHandler(CachingOptions? options)
-        : this(TimeProvider.System, options)
+    public HttpCachingDelegateHandler(IHttpCacheStore store, HttpCachingOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(store);
+        var resolvedOptions = options ?? new();
+
+        _timeProvider = resolvedOptions.TimeProvider;
+        _cache = new HttpCache(store, resolvedOptions);
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with a time provider and caching options.
-    /// </summary>
-    /// <param name="timeProvider">The time provider to use for time-based operations.</param>
-    /// <param name="options">The caching options.</param>
-    public CachingDelegateHandler(TimeProvider timeProvider, CachingOptions? options)
-    {
-        ArgumentNullException.ThrowIfNull(timeProvider);
-        _timeProvider = timeProvider;
-        _cache = new HttpCache(options);
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with an inner handler.
+    /// Initializes a new instance of the <see cref="HttpCachingDelegateHandler"/> class with an inner handler.
     /// </summary>
     /// <param name="innerHandler">The inner handler.</param>
-    public CachingDelegateHandler(HttpMessageHandler innerHandler)
-        : this(innerHandler, TimeProvider.System)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with an inner handler and time provider.
-    /// </summary>
-    /// <param name="innerHandler">The inner handler.</param>
-    /// <param name="timeProvider">The time provider to use for time-based operations.</param>
-    public CachingDelegateHandler(HttpMessageHandler innerHandler, TimeProvider timeProvider)
-        : this(innerHandler, timeProvider, options: null)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with an inner handler and caching options.
-    /// </summary>
-    /// <param name="innerHandler">The inner handler.</param>
+    /// <param name="store">The cache store used to persist entries.</param>
     /// <param name="options">The caching options.</param>
-    public CachingDelegateHandler(HttpMessageHandler innerHandler, CachingOptions? options)
-        : this(innerHandler, TimeProvider.System, options)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="CachingDelegateHandler"/> class with an inner handler, time provider, and caching options.
-    /// </summary>
-    /// <param name="innerHandler">The inner handler.</param>
-    /// <param name="timeProvider">The time provider to use for time-based operations.</param>
-    /// <param name="options">The caching options.</param>
-    public CachingDelegateHandler(HttpMessageHandler innerHandler, TimeProvider timeProvider, CachingOptions? options)
+    public HttpCachingDelegateHandler(HttpMessageHandler innerHandler, IHttpCacheStore store, HttpCachingOptions? options = null)
         : base(innerHandler)
     {
-        ArgumentNullException.ThrowIfNull(timeProvider);
-        _timeProvider = timeProvider;
-        _cache = new HttpCache(options);
+        ArgumentNullException.ThrowIfNull(store);
+        var resolvedOptions = options ?? new();
+
+        _timeProvider = resolvedOptions.TimeProvider;
+        _cache = new HttpCache(store, resolvedOptions);
     }
 
     /// <inheritdoc />

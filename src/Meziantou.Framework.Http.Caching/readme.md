@@ -4,7 +4,7 @@ An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Cac
 
 ## What is it?
 
-`Meziantou.Framework.Http.Caching` provides a `CachingDelegateHandler` that intercepts HTTP requests and caches responses according to standard HTTP caching rules. It automatically handles cache storage, validation, freshness calculation, and cache invalidation, reducing network traffic and improving application performance.
+`Meziantou.Framework.Http.Caching` provides a `HttpCachingDelegateHandler` that intercepts HTTP requests and caches responses according to standard HTTP caching rules. It automatically handles cache storage, validation, freshness calculation, and cache invalidation, reducing network traffic and improving application performance.
 
 ## Features
 
@@ -17,12 +17,18 @@ An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Cac
 - ✅ **Pragma Support**: Handles `Pragma: no-cache` for HTTP/1.0 backward compatibility
 - ✅ **Thread-Safe**: Designed for concurrent access across multiple threads
 - ✅ **Testable**: Supports custom `TimeProvider` for deterministic testing
-- ✅ **Pluggable Persistence**: Supports in-memory persistence (default) and custom providers
+- ✅ **Pluggable Persistence**: Supports in-memory persistence and custom stores
 
 ## Installation
 
 ```bash
 dotnet add package Meziantou.Framework.Http.Caching
+```
+
+For the in-memory samples below, also install:
+
+```bash
+dotnet add package Meziantou.Framework.Http.Caching.InMemory
 ```
 
 ## Usage
@@ -31,9 +37,11 @@ dotnet add package Meziantou.Framework.Http.Caching
 
 ```csharp
 using Meziantou.Framework.Http.Caching;
+using Meziantou.Framework.Http.Caching.InMemory;
 
 // Create the caching handler
-var cachingHandler = new CachingDelegateHandler();
+var cacheStore = new InMemoryHttpCacheStore();
+var cachingHandler = new HttpCachingDelegateHandler(cacheStore);
 
 // Create HttpClient with the caching handler
 using var httpClient = new HttpClient(cachingHandler);
@@ -47,9 +55,11 @@ var response2 = await httpClient.GetAsync("https://api.example.com/data"); // Se
 
 ```csharp
 using Meziantou.Framework.Http.Caching;
+using Meziantou.Framework.Http.Caching.InMemory;
 
 var innerHandler = new HttpClientHandler();
-var cachingHandler = new CachingDelegateHandler(innerHandler);
+var cacheStore = new InMemoryHttpCacheStore();
+var cachingHandler = new HttpCachingDelegateHandler(innerHandler, cacheStore);
 
 using var httpClient = new HttpClient(cachingHandler);
 var response = await httpClient.GetAsync("https://api.example.com/data");
@@ -58,24 +68,27 @@ var response = await httpClient.GetAsync("https://api.example.com/data");
 ### With Dependency Injection
 
 ```csharp
-services.AddHttpClient("MyApi")
-    .AddHttpMessageHandler<CachingDelegateHandler>();
+using Meziantou.Framework.Http.Caching;
+using Meziantou.Framework.Http.Caching.InMemory;
 
-// Register the handler
-services.AddTransient<CachingDelegateHandler>();
+services.AddSingleton<IHttpCacheStore, InMemoryHttpCacheStore>();
+services.AddTransient<HttpCachingDelegateHandler>();
+
+services.AddHttpClient("MyApi")
+    .AddHttpMessageHandler<HttpCachingDelegateHandler>();
 ```
 
 ### With Persistent Cache Storage
 
-Use `CachingOptions.PersistenceProvider` to choose where cache entries are stored.
+Pass an `IHttpCacheStore` to `HttpCachingDelegateHandler` to choose where cache entries are stored.
 
-To use `InMemoryHttpCachePersistenceProvider` with `SaveToFileAsync` / `LoadFromFileAsync`, install:
+To use `InMemoryHttpCacheStore` with `SaveToFileAsync` / `LoadFromFileAsync`, install:
 
 ```bash
 dotnet add package Meziantou.Framework.Http.Caching.InMemory
 ```
 
-To use `SqliteHttpCachePersistenceProvider`, install:
+To use `SqliteHttpCacheStore`, install:
 
 ```bash
 dotnet add package Meziantou.Framework.Http.Caching.Sqlite
@@ -83,31 +96,39 @@ dotnet add package Meziantou.Framework.Http.Caching.Sqlite
 
 ```csharp
 using Meziantou.Framework.Http.Caching;
+using Meziantou.Framework.Http.Caching.InMemory;
 
-var persistenceProvider = new InMemoryHttpCachePersistenceProvider();
-await persistenceProvider.LoadFromFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
+var cacheStore = new InMemoryHttpCacheStore();
+await cacheStore.LoadFromFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
 
-var options = new CachingOptions
+var options = new HttpCachingOptions
 {
-    PersistenceProvider = persistenceProvider,
+    MaximumResponseSize = 5 * 1024 * 1024,
 };
 
-var cachingHandler = new CachingDelegateHandler(options);
+var cachingHandler = new HttpCachingDelegateHandler(cacheStore, options);
 using var httpClient = new HttpClient(cachingHandler);
 
 // Persist cache to disk when needed
-await persistenceProvider.SaveToFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
+await cacheStore.SaveToFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
 ```
 
-You can also provide your own implementation of `IHttpCachePersistenceProvider` to use a database (for example Redis).
+You can also provide your own implementation of `IHttpCacheStore` to use a database (for example Redis).
 
 ### With Custom TimeProvider (for testing)
 
 ```csharp
+using Meziantou.Framework.Http.Caching;
+using Meziantou.Framework.Http.Caching.InMemory;
 using Microsoft.Extensions.Time.Testing;
 
 var fakeTimeProvider = new FakeTimeProvider();
-var cachingHandler = new CachingDelegateHandler(fakeTimeProvider);
+var cacheStore = new InMemoryHttpCacheStore();
+var options = new HttpCachingOptions
+{
+    TimeProvider = fakeTimeProvider,
+};
+var cachingHandler = new HttpCachingDelegateHandler(cacheStore, options);
 
 using var httpClient = new HttpClient(cachingHandler);
 
@@ -212,7 +233,7 @@ This is particularly useful for versioned resources (e.g., `/assets/script.v123.
 
 ## Thread Safety
 
-The `CachingDelegateHandler` is thread-safe and can be used concurrently across multiple threads. The internal cache implementation ensures that concurrent requests to the same URL are properly coordinated.
+The `HttpCachingDelegateHandler` is thread-safe and can be used concurrently across multiple threads. The internal cache implementation ensures that concurrent requests to the same URL are properly coordinated.
 
 ## Examples
 

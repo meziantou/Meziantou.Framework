@@ -94,6 +94,12 @@ To use `SqliteHttpCacheStore`, install:
 dotnet add package Meziantou.Framework.Http.Caching.Sqlite
 ```
 
+To use `RedisHttpCacheStore`, install:
+
+```bash
+dotnet add package Meziantou.Framework.Http.Caching.Redis
+```
+
 ```csharp
 using Meziantou.Framework.Http.Caching;
 using Meziantou.Framework.Http.Caching.InMemory;
@@ -113,7 +119,7 @@ using var httpClient = new HttpClient(cachingHandler);
 await cacheStore.SaveToFileAsync(Path.Combine(AppContext.BaseDirectory, "http-cache.json"));
 ```
 
-You can also provide your own implementation of `IHttpCacheStore` to use a database (for example Redis).
+You can also provide your own implementation of `IHttpCacheStore` if you need a custom storage backend.
 
 ### With Custom TimeProvider (for testing)
 

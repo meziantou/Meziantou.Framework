@@ -45,12 +45,11 @@ internal static class TypeUtils
         }
         else
         {
-            if (type.GenericParameterAttributes == GenericParameterAttributes.Covariant)
+            if (type.GenericParameterAttributes is GenericParameterAttributes.Covariant)
             {
                 sb.Append("out ");
             }
-
-            if (type.GenericParameterAttributes == GenericParameterAttributes.Contravariant)
+            else if (type.GenericParameterAttributes is GenericParameterAttributes.Contravariant)
             {
                 sb.Append("in ");
             }

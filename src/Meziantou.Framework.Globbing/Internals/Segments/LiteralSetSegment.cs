@@ -7,8 +7,11 @@ internal sealed class LiteralSetSegment : Segment
     public LiteralSetSegment(string[] values, bool ignoreCase)
     {
         Values = values;
+        IgnoreCase = ignoreCase;
         _comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
+
+    public bool IgnoreCase { get; }
 
     public string[] Values { get; }
 

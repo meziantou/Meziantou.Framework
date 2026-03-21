@@ -7,10 +7,13 @@ internal sealed class LiteralSegment : Segment
     public LiteralSegment(string value, bool ignoreCase)
     {
         Value = value;
+        IgnoreCase = ignoreCase;
         _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
 
-    public string Value { get; private set; }
+    public bool IgnoreCase { get; }
+
+    public string Value { get; }
 
     public override bool IsMatch(ref PathReader pathReader)
     {

@@ -166,6 +166,45 @@ internal ref struct PathReader
         _currentSegmentLength = 0;
     }
 
+    public bool TryConsumePathSuffix(string[] segments, StringComparison comparison)
+    {
+        ReadOnlySpan<char> currentText = CurrentText;
+        ReadOnlySpan<char> filename = _filename;
+
+        for (var i = segments.Length - 1; i >= 0; i--)
+        {
+            ReadOnlySpan<char> currentSegment;
+            if (!filename.IsEmpty)
+            {
+                currentSegment = filename;
+                filename = [];
+            }
+            else
+            {
+                if (currentText.IsEmpty)
+                    return false;
+
+                var endSegmentIndex = currentText.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                if (endSegmentIndex == -1)
+                {
+                    currentSegment = currentText;
+                    currentText = [];
+                }
+                else
+                {
+                    currentSegment = currentText[(endSegmentIndex + 1)..];
+                    currentText = currentText[..endSegmentIndex];
+                }
+            }
+
+            if (!currentSegment.Equals(segments[i].AsSpan(), comparison))
+                return false;
+        }
+
+        ConsumeToEnd();
+        return true;
+    }
+
     public static bool IsPathSeparator(char c)
     {
         return c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;

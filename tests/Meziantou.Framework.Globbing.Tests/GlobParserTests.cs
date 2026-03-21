@@ -93,9 +93,7 @@ public class GlobParserTests
         var segments = GetSegments("src/**/**/a/b");
         Assert.Collection(segments,
             item => Assert.IsType<LiteralSegment>(item),
-            item => Assert.IsType<RecursiveMatchAllSegment>(item),
-            item => Assert.IsType<LiteralSegment>(item),
-            item => Assert.IsType<LiteralSegment>(item));
+            item => Assert.IsType<PathSuffixSegment>(item));
     }
 
     [Fact]
@@ -105,6 +103,15 @@ public class GlobParserTests
         Assert.Collection(segments,
             item => Assert.IsType<LiteralSegment>(item),
             item => Assert.IsType<LastSegment>(item));
+    }
+
+    [Fact]
+    public void OptimizeMatchPathSuffix()
+    {
+        var segments = GetSegments("a/**/b/c");
+        Assert.Collection(segments,
+            item => Assert.IsType<LiteralSegment>(item),
+            item => Assert.IsType<PathSuffixSegment>(item));
     }
 
     [Fact]

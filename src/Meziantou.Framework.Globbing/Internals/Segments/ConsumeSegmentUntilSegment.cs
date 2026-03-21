@@ -4,9 +4,23 @@ internal sealed class ConsumeSegmentUntilSegment : Segment
 {
     private readonly char[] _characters;
 
-    public ConsumeSegmentUntilSegment(char[] characters)
+    public ConsumeSegmentUntilSegment(char[] characters, bool ignoreCase)
     {
-        _characters = characters;
+        if (!ignoreCase)
+        {
+            _characters = characters;
+            return;
+        }
+
+        var expandedCharacters = new HashSet<char>();
+        foreach (var character in characters)
+        {
+            expandedCharacters.Add(character);
+            expandedCharacters.Add(char.ToLowerInvariant(character));
+            expandedCharacters.Add(char.ToUpperInvariant(character));
+        }
+
+        _characters = [.. expandedCharacters];
     }
 
     public override bool IsMatch(ref PathReader pathReader)

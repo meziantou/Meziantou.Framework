@@ -7,8 +7,11 @@ internal sealed class CharacterSetSegment : Segment
     public CharacterSetSegment(string set, bool ignoreCase)
     {
         Set = set;
+        IgnoreCase = ignoreCase;
         _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
+
+    public bool IgnoreCase { get; }
 
     public string Set { get; }
 

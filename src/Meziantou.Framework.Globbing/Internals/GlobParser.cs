@@ -329,6 +329,41 @@ internal static class GlobParser
     private static Glob CreateGlob(List<Segment> segments, bool exclude, bool ignoreCase, GlobMatchType matchType)
     {
         // Optimize segments
+        if (segments.Count >= 3)
+        {
+            for (var i = segments.Count - 3; i >= 0; i--)
+            {
+                if (segments[i] is not RecursiveMatchAllSegment)
+                    continue;
+
+                var suffixLength = segments.Count - i - 1;
+                if (suffixLength < 2)
+                    continue;
+
+                var suffix = new List<string>(suffixLength);
+                var isFixedSuffix = true;
+                for (var j = 0; j < suffixLength; j++)
+                {
+                    if (segments[i + j + 1] is LiteralSegment literal)
+                    {
+                        suffix.Add(literal.Value);
+                    }
+                    else
+                    {
+                        isFixedSuffix = false;
+                        break;
+                    }
+                }
+
+                if (isFixedSuffix)
+                {
+                    segments.RemoveRange(i, suffixLength + 1);
+                    segments.Insert(i, new PathSuffixSegment([.. suffix], ignoreCase));
+                    break;
+                }
+            }
+        }
+
         if (segments.Count >= 2)
         {
             if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is MatchAllSegment) // **/*
@@ -368,28 +403,49 @@ internal static class GlobParser
 
     private static Segment CreateRangeSubsegment(List<CharacterRange> ranges, bool inverse, bool ignoreCase)
     {
-        var singleCharRanges = ranges.Where(r => r.IsSingleCharacterRange).Select(r => r.Min).ToArray();
-        var rangeCharRanges = ranges.Where(r => !r.IsSingleCharacterRange).ToArray();
-
-        if (singleCharRanges.Length > 0)
+        List<char>? singleCharRanges = null;
+        List<CharacterRange>? rangeCharRanges = null;
+        foreach (var range in ranges)
         {
-            if (rangeCharRanges.Length == 0)
-                return CreateCharacterSet(singleCharRanges, inverse, ignoreCase);
+            if (range.IsSingleCharacterRange)
+            {
+                singleCharRanges ??= [];
+                singleCharRanges.Add(range.Min);
+            }
+            else
+            {
+                rangeCharRanges ??= [];
+                rangeCharRanges.Add(range);
+            }
         }
-        else if (rangeCharRanges.Length == 1)
+
+        if (singleCharRanges is not null)
+        {
+            if (rangeCharRanges is null)
+                return CreateCharacterSet([.. singleCharRanges], inverse, ignoreCase);
+        }
+        else if (rangeCharRanges is not null && rangeCharRanges.Count == 1)
         {
             return CreateCharacterRange(rangeCharRanges[0], ignoreCase, inverse);
         }
 
         // Inverse flags is set on the combination
-        var segments = rangeCharRanges.Select(r => CreateCharacterRange(r, ignoreCase, inverse: false));
-
-        if (singleCharRanges.Length > 0)
+        var segments = new List<Segment>(
+            (rangeCharRanges?.Count ?? 0) + (singleCharRanges is null ? 0 : 1));
+        if (singleCharRanges is not null)
         {
-            segments = segments.Prepend(CreateCharacterSet(singleCharRanges, inverse: false, ignoreCase));
+            segments.Add(CreateCharacterSet([.. singleCharRanges], inverse: false, ignoreCase));
         }
 
-        return new OrSegment(segments.ToArray(), inverse);
+        if (rangeCharRanges is not null)
+        {
+            foreach (var range in rangeCharRanges)
+            {
+                segments.Add(CreateCharacterRange(range, ignoreCase, inverse: false));
+            }
+        }
+
+        return new OrSegment([.. segments], inverse);
     }
 
     private static Segment CreateCharacterSet(char[] set, bool inverse, bool ignoreCase)
@@ -469,14 +525,43 @@ internal static class GlobParser
                 if (parts[i] is MatchAllSubSegment)
                 {
                     var next = parts[i + 1];
-                    var nextCharacters = next switch
+                    List<char>? nextCharacters = null;
+                    switch (next)
                     {
-                        LiteralSegment literal => [literal.Value[0]],
-                        CharacterSetSegment characterSet => characterSet.Set.ToList(),
-                        CharacterRangeSegment characterRange when characterRange.Range.Length < 3 => characterRange.Range.EnumerateCharacters().ToList(),
-                        LiteralSetSegment literalSet => literalSet.Values.Where(v => v.Length > 0).Select(v => v[0]).ToList(),
-                        _ => null,
-                    };
+                        case LiteralSegment literal when literal.Value.Length > 0:
+                            nextCharacters = [literal.Value[0]];
+                            break;
+
+                        case CharacterSetSegment characterSet:
+                            nextCharacters = [];
+                            foreach (var character in characterSet.Set)
+                            {
+                                nextCharacters.Add(character);
+                            }
+
+                            break;
+
+                        case CharacterRangeSegment characterRange when characterRange.Range.Length < 3:
+                            nextCharacters = [];
+                            for (var c = characterRange.Range.Min; c <= characterRange.Range.Max; c++)
+                            {
+                                nextCharacters.Add(c);
+                            }
+
+                            break;
+
+                        case LiteralSetSegment literalSet:
+                            nextCharacters = [];
+                            foreach (var value in literalSet.Values)
+                            {
+                                if (value.Length > 0)
+                                {
+                                    nextCharacters.Add(value[0]);
+                                }
+                            }
+
+                            break;
+                    }
 
                     if (nextCharacters is not null)
                     {
@@ -486,7 +571,7 @@ internal static class GlobParser
                             nextCharacters.Add(Path.AltDirectorySeparatorChar);
                         }
 
-                        parts.Insert(i, new ConsumeSegmentUntilSegment(nextCharacters.ToArray()));
+                        parts.Insert(i, new ConsumeSegmentUntilSegment([.. nextCharacters], ignoreCase));
                         i++;
                     }
                 }

@@ -149,6 +149,8 @@ public class GlobTests
     [InlineData("[#!]*", @"#test3")]
     [InlineData("[#!]*", "#this is a comment")]
     [InlineData("a/**/b", "a/b")]
+    [InlineData("a/**/b/c", "a/b/c")]
+    [InlineData("a/**/b/c", "a/x/y/b/c")]
     [InlineData("**/*", "a")]
     [InlineData("**/*", "a/b")]
     [InlineData("**/*/", "a/b/")]
@@ -223,6 +225,7 @@ public class GlobTests
     [InlineData("\\[ab\\]", "[Ab]")]
     [InlineData("{a\\,,b}", "A,")]
     [InlineData("{a\\,,b}", "B")]
+    [InlineData("*abc", "ZABC")]
     public void MatchIgnoreCase(string pattern, string path)
     {
         var glob = Glob.Parse(pattern, GlobOptions.IgnoreCase);
@@ -275,6 +278,7 @@ public class GlobTests
     [InlineData("**/*", "a/b/")]
     [InlineData("**/test", "test/")]
     [InlineData("**/test", "a/test/")]
+    [InlineData("a/**/b/c", "a/x/y/b/d")]
     public void DoesNotMatch(string pattern, string path)
     {
         var isDirectory = path.EndsWith('/');

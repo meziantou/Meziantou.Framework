@@ -184,9 +184,16 @@ public sealed class Glob : IGlobEvaluatable
                 if (IsMatchCore(pathReader, remainingPatternSegments))
                     return true;
 
+                var hasAnchor = TryGetSegmentAnchor(remainingPatternSegments[0], out var segmentAnchor);
                 pathReader.ConsumeSegment();
                 while (!pathReader.IsEndOfPath)
                 {
+                    if (hasAnchor && !segmentAnchor.Contains(pathReader.CurrentText))
+                    {
+                        pathReader.ConsumeSegment();
+                        continue;
+                    }
+
                     if (IsMatchCore(pathReader, remainingPatternSegments))
                         return true;
 
@@ -249,6 +256,90 @@ public sealed class Glob : IGlobEvaluatable
     private static bool ShouldRecurse(Segment patternSegment)
     {
         return patternSegment.IsRecursiveMatchAll;
+    }
+
+    private static bool TryGetSegmentAnchor(Segment segment, out SegmentAnchor anchor)
+    {
+        switch (segment)
+        {
+            case LiteralSegment literal when literal.Value.Length > 0:
+                anchor = new SegmentAnchor(CreateCharacterSet([literal.Value[0]], literal.IgnoreCase));
+                return true;
+
+            case StartsWithSegment startsWith when startsWith.Value.Length > 0:
+                anchor = new SegmentAnchor(CreateCharacterSet([startsWith.Value[0]], startsWith.IgnoreCase));
+                return true;
+
+            case CharacterSetSegment set:
+                anchor = new SegmentAnchor(CreateCharacterSet(set.Set.AsSpan(), set.IgnoreCase));
+                return true;
+
+            case CharacterRangeSegment range when range.Range.Length <= 8:
+            {
+                var characters = new char[range.Range.Length];
+                var index = 0;
+                for (var c = range.Range.Min; c <= range.Range.Max; c++)
+                {
+                    characters[index] = c;
+                    index++;
+                }
+
+                anchor = new SegmentAnchor(characters);
+                return true;
+            }
+
+            case LiteralSetSegment literalSet:
+            {
+                var characters = new List<char>(literalSet.Values.Length);
+                foreach (var value in literalSet.Values)
+                {
+                    if (value.Length > 0)
+                    {
+                        characters.Add(value[0]);
+                    }
+                }
+
+                if (characters.Count == 0)
+                    break;
+
+                anchor = new SegmentAnchor(CreateCharacterSet([.. characters], literalSet.IgnoreCase));
+                return true;
+            }
+        }
+
+        anchor = default;
+        return false;
+
+        static char[] CreateCharacterSet(ReadOnlySpan<char> characters, bool ignoreCase)
+        {
+            if (!ignoreCase)
+                return characters.ToArray();
+
+            var result = new HashSet<char>();
+            foreach (var character in characters)
+            {
+                result.Add(character);
+                result.Add(char.ToLowerInvariant(character));
+                result.Add(char.ToUpperInvariant(character));
+            }
+
+            return [.. result];
+        }
+    }
+
+    private readonly struct SegmentAnchor
+    {
+        private readonly char[] _characters;
+
+        public SegmentAnchor(char[] characters)
+        {
+            _characters = characters;
+        }
+
+        public bool Contains(ReadOnlySpan<char> currentText)
+        {
+            return !currentText.IsEmpty && Array.IndexOf(_characters, currentText[0]) >= 0;
+        }
     }
 
     public override string ToString()

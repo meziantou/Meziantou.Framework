@@ -295,6 +295,60 @@ public class GlobTests
         Assert.False(globi.IsMatch(directoryName, fileName, itemType));
     }
 
+    // Corpus source: https://raw.githubusercontent.com/git/git/master/t/t3070-wildmatch.sh
+    [Theory]
+    [InlineData("*[al]?", "ball")]
+    [InlineData("t[a-g]n", "ten")]
+    [InlineData("a[]]b", "a]b")]
+    [InlineData("a[]-]b", "a-b")]
+    [InlineData("a[]-]b", "a]b")]
+    [InlineData("foo/**/bar", "foo/baz/bar")]
+    [InlineData("foo/**/**/bar", "foo/b/a/z/bar")]
+    [InlineData("**/foo", "bar/baz/foo")]
+    [InlineData("**/bar/*/*", "deep/foo/bar/baz/x")]
+    [InlineData("*/*/*", "foo/bba/arr")]
+    [InlineData("**/*X*/**/*i", "ab/cXd/efXg/hi")]
+    public void Match_FromGitWildMatchCorpus(string pattern, string path)
+    {
+        var isDirectory = path.EndsWith('/');
+        var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
+        var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
+        var fileName = Path.GetFileName(pathWithoutEndingSlash);
+        var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
+
+        var glob = Glob.Parse(pattern, GlobOptions.None);
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(directoryName, fileName, itemType));
+    }
+
+    // Corpus source: https://raw.githubusercontent.com/git/git/master/t/t3070-wildmatch.sh
+    [Theory]
+    [InlineData("*f", "foo")]
+    [InlineData("[ten]", "ten")]
+    [InlineData("t[!a-g]n", "ten")]
+    [InlineData("a[]-]b", "aab")]
+    [InlineData("foo*bar", "foo/baz/bar")]
+    [InlineData("foo?bar", "foo/bar")]
+    [InlineData("*/foo", "bar/baz/foo")]
+    [InlineData("**/bar*", "foo/bar/baz")]
+    [InlineData("**/bar/*", "deep/foo/bar")]
+    [InlineData("**/bar/*", "deep/foo/bar/baz/")]
+    [InlineData("**/bar**", "foo/bar/baz")]
+    [InlineData("*/bar/**", "deep/foo/bar/baz/x")]
+    [InlineData("*X*i", "ab/cXd/efXg/hi")]
+    public void DoesNotMatch_FromGitWildMatchCorpus(string pattern, string path)
+    {
+        var isDirectory = path.EndsWith('/');
+        var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
+        var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
+        var fileName = Path.GetFileName(pathWithoutEndingSlash);
+        var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
+
+        var glob = Glob.Parse(pattern, GlobOptions.None);
+        Assert.False(glob.IsMatch(path));
+        Assert.False(glob.IsMatch(directoryName, fileName, itemType));
+    }
+
     [Theory]
     [InlineData("literal1", "LITERAL1")]
     [InlineData("*ral*", "LITERAL1")]
@@ -510,6 +564,50 @@ public class GlobTests
         Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
         Assert.False(globi.IsMatch(path));
         Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+    }
+
+    // Corpus source: https://raw.githubusercontent.com/git/git/master/Documentation/gitignore.adoc
+    [Theory]
+    [InlineData("hello.*", "hello.txt")]
+    [InlineData("hello.*", "a/hello.java")]
+    [InlineData("/hello.*", "hello.c")]
+    [InlineData("foo/", "foo/bar.txt")]
+    [InlineData("foo/*", "foo/test.json")]
+    [InlineData("foo/*", "foo/bar")]
+    [InlineData("doc/frotz", "doc/frotz")]
+    [InlineData("/doc/frotz", "doc/frotz")]
+    public void MatchGit_FromGitIgnoreDocumentationExamples(string pattern, string path)
+    {
+        var isDirectory = path.EndsWith('/');
+        var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
+        var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
+        var fileName = Path.GetFileName(pathWithoutEndingSlash);
+        var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
+
+        var glob = Glob.Parse(pattern, GlobOptions.Git);
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(directoryName, fileName, itemType));
+    }
+
+    // Corpus source: https://raw.githubusercontent.com/git/git/master/Documentation/gitignore.adoc
+    [Theory]
+    [InlineData("/hello.*", "a/hello.java")]
+    [InlineData("foo/", "foo")]
+    [InlineData("foo/*", "foo/bar/hello.c")]
+    [InlineData("foo/*", "a/foo/bar")]
+    [InlineData("doc/frotz", "a/doc/frotz")]
+    [InlineData("/doc/frotz", "a/doc/frotz")]
+    public void DoesNotMatchGit_FromGitIgnoreDocumentationExamples(string pattern, string path)
+    {
+        var isDirectory = path.EndsWith('/');
+        var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
+        var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
+        var fileName = Path.GetFileName(pathWithoutEndingSlash);
+        var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
+
+        var glob = Glob.Parse(pattern, GlobOptions.Git);
+        Assert.False(glob.IsMatch(path));
+        Assert.False(glob.IsMatch(directoryName, fileName, itemType));
     }
 
     private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult)

@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Json</RootNamespace>
+    <Description>An implementation of JSONPath (RFC 9535) for System.Text.Json.</Description>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.JsonPath.Tests" />
+  </ItemGroup>
+
+</Project>

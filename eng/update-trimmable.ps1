@@ -6,14 +6,23 @@ $TrimmableCsprojPath = Join-Path $RootPath "Samples" "Trimmable" "Trimmable.cspr
 $TrimmableWpfCsprojPath = Join-Path $RootPath "Samples" "Trimmable.Wpf" "Trimmable.Wpf.csproj"
 $TrimmableDir = Split-Path $TrimmableCsprojPath
 
-# Find all IsTrimmable=true projects in src/
+# Find all IsTrimmable=true projects in src/ (excluding those with SkipTrimmableSample=true)
 $TrimmableProjects = @()
 $SrcProjects = Get-ChildItem $SrcPath -Filter *.csproj -Recurse
 foreach ($Proj in $SrcProjects) {
     [xml]$ProjXml = Get-Content -LiteralPath $Proj.FullName
     foreach ($PropertyGroup in $ProjXml.Project.PropertyGroup) {
         if ($PropertyGroup.IsTrimmable -eq "true") {
-            $TrimmableProjects += $Proj
+            $skip = $false
+            foreach ($pg in $ProjXml.Project.PropertyGroup) {
+                if ($pg.SkipTrimmableValidation -eq "true") {
+                    $skip = $true
+                    break
+                }
+            }
+            if (-not $skip) {
+                $TrimmableProjects += $Proj
+            }
             break
         }
     }

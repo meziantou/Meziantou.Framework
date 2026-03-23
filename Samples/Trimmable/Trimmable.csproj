@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Authentication.HttpBasic\Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Components.WebAssembly\Meziantou.AspNetCore.Components.WebAssembly.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Mvc\Meziantou.AspNetCore.Mvc.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Bcrypt\Meziantou.Framework.Bcrypt.csproj" />
@@ -46,7 +45,6 @@
 
   <ItemGroup>
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Authentication.HttpBasic" />
-    <TrimmerRootAssembly Include="Meziantou.AspNetCore.Components.WebAssembly" />
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Mvc" />
     <TrimmerRootAssembly Include="Meziantou.Framework" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Bcrypt" />

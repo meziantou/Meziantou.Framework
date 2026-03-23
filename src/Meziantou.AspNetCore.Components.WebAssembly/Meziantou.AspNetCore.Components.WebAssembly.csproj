@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.0.22</Version>
     <IsTrimmable>true</IsTrimmable>
+    <SkipTrimmableValidation>true</SkipTrimmableValidation>
     <Description>Services for Blazor WebAssembly</Description>
 
     <!-- https://github.com/dotnet/aspnetcore/issues/42200 -->

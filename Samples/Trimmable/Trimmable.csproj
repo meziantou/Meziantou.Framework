@@ -1,4 +1,4 @@
-﻿<Project Sdk="Meziantou.NET.Sdk">
+<Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -11,7 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Authentication.HttpBasic\Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Components.WebAssembly\Meziantou.AspNetCore.Components.WebAssembly.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Mvc\Meziantou.AspNetCore.Mvc.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Bcrypt\Meziantou.Framework.Bcrypt.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.CodeDom\Meziantou.Framework.CodeDom.csproj" />
@@ -20,22 +24,32 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Csv\Meziantou.Framework.Csv.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http\Meziantou.Framework.Http.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.InMemory\Meziantou.Framework.Http.Caching.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.Redis\Meziantou.Framework.Http.Caching.Redis.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.Sqlite\Meziantou.Framework.Http.Caching.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Hsts\Meziantou.Framework.Http.Hsts.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Htpasswd\Meziantou.Framework.Http.Htpasswd.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Scheduling\Meziantou.Framework.Scheduling.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.SensitiveData\Meziantou.Framework.SensitiveData.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.SingleInstance\Meziantou.Framework.SingleInstance.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Slug\Meziantou.Framework.Slug.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Threading\Meziantou.Framework.Threading.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <TrimmerRootAssembly Include="Meziantou.AspNetCore.Authentication.HttpBasic" />
+    <TrimmerRootAssembly Include="Meziantou.AspNetCore.Components.WebAssembly" />
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Mvc" />
     <TrimmerRootAssembly Include="Meziantou.Framework" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Bcrypt" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ByteSize" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ChromiumTracing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.CodeDom" />
@@ -44,13 +58,21 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Csv" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Globbing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Http.Caching" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Http.Caching.InMemory" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Http.Caching.Redis" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Http.Caching.Sqlite" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Hsts" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Http.Htpasswd" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.RelativeDate" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Scheduling" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.SensitiveData" />
     <TrimmerRootAssembly Include="Meziantou.Framework.SingleInstance" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Slug" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryDirectory" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Threading" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Unicode" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Uri" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStopwatch" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />

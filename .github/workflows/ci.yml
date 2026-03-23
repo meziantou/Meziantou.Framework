@@ -50,6 +50,13 @@ jobs:
       - name: Validate
         run: .\eng\validate-testprojects-configuration.ps1
 
+  validate_trimmable_projects:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate
+        run: ./eng/update-trimmable.ps1
+
   create_nuget:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -215,7 +222,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-24.04
-    needs: [ validate_bom, validate_readme, validate_test_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
+    needs: [ validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
     permissions:
       contents: read
       id-token: write

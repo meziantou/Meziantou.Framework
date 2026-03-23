@@ -763,6 +763,9 @@ internal static class JsonPathEvaluator
     private static List<JsonNode?> EvaluateFunctionAsNodes(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
     {
         // Currently no built-in functions return NodesType
+        _ = func;
+        _ = currentNode;
+        _ = root;
         return [];
     }
 

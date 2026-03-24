@@ -335,6 +335,72 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
     }
 
     [Fact]
+    public async Task DotNetFileBasedAppDependencies()
+    {
+        const string Original =
+            "#!/usr/bin/env dotnet\n" +
+            "#:sdk Microsoft.NET.Sdk.Web\n" +
+            "#:sdk Aspire.AppHost.Sdk@13.0.2\n" +
+            "#:package Newtonsoft.Json\n" +
+            "#:package Serilog@3.1.1\n" +
+            "#:package Spectre.Console@*\n" +
+            "#:project ../SharedLibrary/SharedLibrary.csproj\n" +
+            "#:property TargetFramework=net10.0\n" +
+            "\n" +
+            "Console.WriteLine(\"Hello, World!\");\n";
+
+        const string Expected =
+            "#!/usr/bin/env dotnet\n" +
+            "#:sdk dummy1\n" +
+            "#:sdk dummy2@2.0.0\n" +
+            "#:package dummy3\n" +
+            "#:package dummy4@2.0.0\n" +
+            "#:package dummy5@2.0.0\n" +
+            "#:project dummy6\n" +
+            "#:property TargetFramework=2.0.0\n" +
+            "\n" +
+            "Console.WriteLine(\"Hello, World!\");\n";
+
+        AddFile("app.cs", Original);
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "Microsoft.NET.Sdk.Web", null, 0, 0),
+            (DependencyType.NuGet, "Aspire.AppHost.Sdk", "13.0.2", 3, 26),
+            (DependencyType.NuGet, "Newtonsoft.Json", null, 0, 0),
+            (DependencyType.NuGet, "Serilog", "3.1.1", 5, 19),
+            (DependencyType.NuGet, "Spectre.Console", "*", 6, 27),
+            (DependencyType.MSBuildProjectReference, "../SharedLibrary/SharedLibrary.csproj", null, 0, 0),
+            (DependencyType.DotNetTargetFramework, null, "net10.0", 8, 28));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("app.cs", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task DotNetFileBasedAppDependencies_WithComments()
+    {
+        const string Original =
+            "// This is a file-based app\n" +
+            "#:package Serilog@3.1.1\n" +
+            "\n" +
+            "Console.WriteLine(\"Hello\");\n";
+
+        const string Expected =
+            "// This is a file-based app\n" +
+            "#:package dummy1@2.0.0\n" +
+            "\n" +
+            "Console.WriteLine(\"Hello\");\n";
+
+        AddFile("app.cs", Original);
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "Serilog", "3.1.1", 2, 19));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("app.cs", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
     public async Task PackagesConfigDependencies()
     {
         const string Original = """

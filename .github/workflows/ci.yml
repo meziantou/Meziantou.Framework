@@ -23,6 +23,20 @@ defaults:
     shell: pwsh
 
 jobs:
+  build_eng_scripts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
+      - name: Build eng scripts
+        run: |
+          Get-ChildItem ./eng/*.cs | ForEach-Object {
+            Write-Host "Building $_"
+            dotnet build $_
+            if ($LASTEXITCODE -ne 0) { throw "Failed to build $_" }
+          }
+
   validate_bom:
     runs-on: ubuntu-24.04
     steps:
@@ -224,7 +238,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-24.04
-    needs: [ validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
+    needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
     permissions:
       contents: read
       id-token: write

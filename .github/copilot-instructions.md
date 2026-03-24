@@ -12,6 +12,7 @@ In addition to building and testing your changes, you MUST run the following scr
 - `./eng/update-project-slnx.ps1`
 - `./eng/update-tool-readme.ps1`
 - `./eng/validate-testprojects-configuration.ps1`
+- `./eng/update-trimmable.ps1`
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 

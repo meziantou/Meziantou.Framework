@@ -38,12 +38,12 @@ public sealed class RunIfAttribute : BeforeAfterTestAttribute
         if (globalizationMode != FactInvariantGlobalizationMode.Any)
         {
             var isEnabled = IsGlobalizationInvariant();
-            if (globalizationMode == FactInvariantGlobalizationMode.Enabled && !isEnabled)
+            if (globalizationMode is FactInvariantGlobalizationMode.Enabled && !isEnabled)
             {
                 return "Does not run in non-invariant globalization mode";
             }
 
-            if (globalizationMode == FactInvariantGlobalizationMode.Disabled && isEnabled)
+            if (globalizationMode is FactInvariantGlobalizationMode.Disabled && isEnabled)
             {
                 return "Does not run in invariant globalization mode";
             }

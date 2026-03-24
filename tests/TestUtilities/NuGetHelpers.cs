@@ -71,7 +71,7 @@ public static class NuGetHelpers
             var result = new List<string>();
             foreach (var dll in dlls)
             {
-                if (Path.GetFileName(dll) == "System.EnterpriseServices.Wrapper.dll")
+                if (Path.GetFileName(dll) is "System.EnterpriseServices.Wrapper.dll")
                     continue;
 
                 try

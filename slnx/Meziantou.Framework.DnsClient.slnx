@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  </Folder>
+</Solution>

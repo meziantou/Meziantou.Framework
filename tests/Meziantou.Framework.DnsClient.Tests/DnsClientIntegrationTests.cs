@@ -2,6 +2,7 @@ using System.Net;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Response.Records;
+using TestUtilities;
 
 namespace Meziantou.Framework.DnsClient.Tests;
 
@@ -15,6 +16,21 @@ public sealed class DnsClientIntegrationTests
         return new DnsClient(url, DnsClientProtocol.Https);
     }
 
+    private static Task<DnsResponseMessage> QueryWithRetryAsync(DnsClient client, string domain, DnsQueryType queryType, DnsQueryClass queryClass = DnsQueryClass.IN)
+    {
+        return XUnitStaticHelpers.Retry(() => client.QueryAsync(domain, queryType, queryClass, XUnitStaticHelpers.XunitCancellationToken));
+    }
+
+    private static Task<DnsResponseMessage> ReverseLookupWithRetryAsync(DnsClient client, IPAddress ipAddress)
+    {
+        return XUnitStaticHelpers.Retry(() => client.ReverseLookupAsync(ipAddress, XUnitStaticHelpers.XunitCancellationToken));
+    }
+
+    private static Task<DnsResponseMessage> SendWithRetryAsync(DnsClient client, DnsQueryMessage query)
+    {
+        return XUnitStaticHelpers.Retry(() => client.SendAsync(query, XUnitStaticHelpers.XunitCancellationToken));
+    }
+
     private static async Task<DnsResponseMessage> QueryWithFallbackAsync(
         DnsQueryType type,
         string domain = "example.com",
@@ -24,12 +40,12 @@ public sealed class DnsClientIntegrationTests
         try
         {
             using var client = CreateDoHClient(CloudflareDoH);
-            response = await client.QueryAsync(domain, type, queryClass, CancellationToken.None);
+            response = await QueryWithRetryAsync(client, domain, type, queryClass);
         }
         catch
         {
             using var fallback = CreateDoHClient(Quad9DoH);
-            response = await fallback.QueryAsync(domain, type, queryClass, CancellationToken.None);
+            response = await QueryWithRetryAsync(fallback, domain, type, queryClass);
         }
 
         return response;
@@ -162,7 +178,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_RecursionDesired()
     {
         using var client = CreateDoHClient();
-        var response = await client.QueryAsync("example.com", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.True(response.Header.RecursionDesired);
         Assert.True(response.Header.RecursionAvailable);
@@ -172,7 +188,7 @@ public sealed class DnsClientIntegrationTests
     public async Task ReverseLookup_IPv4()
     {
         using var client = CreateDoHClient();
-        var response = await client.ReverseLookupAsync(IPAddress.Parse("1.1.1.1"));
+        var response = await ReverseLookupWithRetryAsync(client, IPAddress.Parse("1.1.1.1"));
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         var ptrRecords = response.Answers.OfType<DnsPtrRecord>().ToList();
@@ -185,7 +201,7 @@ public sealed class DnsClientIntegrationTests
     public async Task ReverseLookup_IPv6()
     {
         using var client = CreateDoHClient();
-        var response = await client.ReverseLookupAsync(IPAddress.Parse("2606:4700:4700::1111"));
+        var response = await ReverseLookupWithRetryAsync(client, IPAddress.Parse("2606:4700:4700::1111"));
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         var ptrRecords = response.Answers.OfType<DnsPtrRecord>().ToList();
@@ -196,7 +212,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_IDN_Unicode()
     {
         using var client = CreateDoHClient();
-        var response = await client.QueryAsync("münchen.de", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "münchen.de", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
     }
@@ -205,7 +221,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_Punycode()
     {
         using var client = CreateDoHClient();
-        var response = await client.QueryAsync("xn--mnchen-3ya.de", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "xn--mnchen-3ya.de", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
     }
@@ -229,7 +245,7 @@ public sealed class DnsClientIntegrationTests
             DnssecOk = true,
         };
 
-        var response = await client.SendAsync(query);
+        var response = await SendWithRetryAsync(client, query);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         // Cloudflare should set AD flag for DNSSEC-signed domains when queried with DO flag
@@ -255,7 +271,7 @@ public sealed class DnsClientIntegrationTests
             DnssecOk = true,
         };
 
-        var response = await client.SendAsync(query);
+        var response = await SendWithRetryAsync(client, query);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         var dnskeyRecords = response.Answers.OfType<DnsDnskeyRecord>().ToList();
@@ -286,7 +302,7 @@ public sealed class DnsClientIntegrationTests
             DnssecOk = true,
         };
 
-        var response = await client.SendAsync(query);
+        var response = await SendWithRetryAsync(client, query);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         var dsRecords = response.Answers.OfType<DnsDsRecord>().ToList();
@@ -311,7 +327,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_WithDnsOverHttps_Quad9()
     {
         using var client = CreateDoHClient(Quad9DoH);
-        var response = await client.QueryAsync("example.com", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.NotEmpty(response.Answers);
@@ -321,7 +337,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_DefaultClassIsIN()
     {
         using var client = CreateDoHClient();
-        var response = await client.QueryAsync("example.com", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.Single(response.Questions);
@@ -332,7 +348,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_MultipleAnswers()
     {
         using var client = CreateDoHClient();
-        var response = await client.QueryAsync("google.com", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "google.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.NotEmpty(response.Answers);
@@ -357,7 +373,7 @@ public sealed class DnsClientIntegrationTests
             DnssecOk = true,
         };
 
-        var response = await client.SendAsync(query);
+        var response = await SendWithRetryAsync(client, query);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         // With DO flag, response should include RRSIG records
@@ -389,7 +405,7 @@ public sealed class DnsClientIntegrationTests
             DnssecOk = true,
         };
 
-        var response = await client.SendAsync(query);
+        var response = await SendWithRetryAsync(client, query);
 
         // For NXDOMAIN with DNSSEC, authority section should contain SOA and possibly NSEC/NSEC3 records
         Assert.Equal(DnsResponseCode.NameError, response.Header.ResponseCode);
@@ -400,7 +416,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_UDP()
     {
         using var client = new DnsClient("1.1.1.1", DnsClientProtocol.Udp);
-        var response = await client.QueryAsync("example.com", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.NotEmpty(response.Answers);
@@ -410,7 +426,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_TCP()
     {
         using var client = new DnsClient("1.1.1.1", DnsClientProtocol.Tcp);
-        var response = await client.QueryAsync("example.com", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.NotEmpty(response.Answers);
@@ -420,7 +436,7 @@ public sealed class DnsClientIntegrationTests
     public async Task Query_DoT()
     {
         using var client = new DnsClient("1.1.1.1", DnsClientProtocol.Tls);
-        var response = await client.QueryAsync("example.com", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.NotEmpty(response.Answers);
@@ -434,7 +450,7 @@ public sealed class DnsClientIntegrationTests
             return;
 
         using var client = new DnsClient("dns.adguard-dns.com", DnsClientProtocol.Quic);
-        var response = await client.QueryAsync("example.com", DnsQueryType.A);
+        var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.NotEmpty(response.Answers);

@@ -612,7 +612,7 @@ public sealed class DnsServerIntegrationTests
         using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
 
-        return ((IPEndPoint)socket.LocalEndPoint!).Port;
+        return ((IPEndPoint)socket.LocalEndPoint).Port;
     }
 
     private static int GetAvailableTcpPort()

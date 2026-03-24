@@ -64,7 +64,6 @@ internal static class DnsMessageEncoder
         if (data.Length < 12)
             throw new DnsProtocolException("DNS message is too short (minimum 12 bytes for header).");
 
-        var fullMessage = data;
         var reader = new DnsWireReader(data);
 
         // Header
@@ -104,14 +103,14 @@ internal static class DnsMessageEncoder
         response.Questions = questions;
 
         // Answer, Authority, Additional sections
-        response.Answers = ReadRecords(ref reader, fullMessage, header.AnswerCount);
-        response.Authorities = ReadRecords(ref reader, fullMessage, header.AuthorityCount);
-        response.AdditionalRecords = ReadRecords(ref reader, fullMessage, header.AdditionalCount);
+        response.Answers = ReadRecords(ref reader, header.AnswerCount);
+        response.Authorities = ReadRecords(ref reader, header.AuthorityCount);
+        response.AdditionalRecords = ReadRecords(ref reader, header.AdditionalCount);
 
         return response;
     }
 
-    private static List<DnsRecord> ReadRecords(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage, ushort count)
+    private static List<DnsRecord> ReadRecords(ref DnsWireReader reader, ushort count)
     {
         var records = new List<DnsRecord>(count);
         for (var i = 0; i < count; i++)
@@ -123,7 +122,7 @@ internal static class DnsMessageEncoder
             var rdLength = reader.ReadUInt16();
 
             var rdataStart = reader.Position;
-            var record = ParseRecord(ref reader, fullMessage, type, rdLength);
+            var record = ParseRecord(ref reader, type, rdLength);
 
             record.Name = name;
             record.RecordType = type;
@@ -144,30 +143,30 @@ internal static class DnsMessageEncoder
         return records;
     }
 
-    private static DnsRecord ParseRecord(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage, DnsQueryType type, ushort rdLength)
+    private static DnsRecord ParseRecord(ref DnsWireReader reader, DnsQueryType type, ushort rdLength)
     {
         return type switch
         {
             DnsQueryType.A => ParseARecord(ref reader),
             DnsQueryType.AAAA => ParseAaaaRecord(ref reader),
             DnsQueryType.CNAME => ParseCnameRecord(ref reader),
-            DnsQueryType.MX => ParseMxRecord(ref reader, fullMessage),
+            DnsQueryType.MX => ParseMxRecord(ref reader),
             DnsQueryType.NS => ParseNsRecord(ref reader),
             DnsQueryType.PTR => ParsePtrRecord(ref reader),
             DnsQueryType.SOA => ParseSoaRecord(ref reader),
-            DnsQueryType.SRV => ParseSrvRecord(ref reader, fullMessage),
+            DnsQueryType.SRV => ParseSrvRecord(ref reader),
             DnsQueryType.TXT => ParseTxtRecord(ref reader, rdLength),
             DnsQueryType.CAA => ParseCaaRecord(ref reader, rdLength),
-            DnsQueryType.NAPTR => ParseNaptrRecord(ref reader, fullMessage),
+            DnsQueryType.NAPTR => ParseNaptrRecord(ref reader),
             DnsQueryType.DNSKEY => ParseDnskeyRecord(ref reader, rdLength),
             DnsQueryType.DS => ParseDsRecord(ref reader, rdLength),
-            DnsQueryType.RRSIG => ParseRrsigRecord(ref reader, fullMessage, rdLength),
-            DnsQueryType.NSEC => ParseNsecRecord(ref reader, fullMessage, rdLength),
+            DnsQueryType.RRSIG => ParseRrsigRecord(ref reader, rdLength),
+            DnsQueryType.NSEC => ParseNsecRecord(ref reader, rdLength),
             DnsQueryType.NSEC3 => ParseNsec3Record(ref reader, rdLength),
             DnsQueryType.NSEC3PARAM => ParseNsec3ParamRecord(ref reader),
             DnsQueryType.TLSA => ParseTlsaRecord(ref reader, rdLength),
             DnsQueryType.SSHFP => ParseSshfpRecord(ref reader, rdLength),
-            DnsQueryType.SVCB or DnsQueryType.HTTPS => ParseSvcbRecord(ref reader, fullMessage, rdLength),
+            DnsQueryType.SVCB or DnsQueryType.HTTPS => ParseSvcbRecord(ref reader, rdLength),
             DnsQueryType.LOC => ParseLocRecord(ref reader),
             DnsQueryType.HINFO => ParseHinfoRecord(ref reader),
             DnsQueryType.RP => ParseRpRecord(ref reader),
@@ -195,7 +194,7 @@ internal static class DnsMessageEncoder
         return new DnsCnameRecord { CanonicalName = reader.ReadDomainName() };
     }
 
-    private static DnsMxRecord ParseMxRecord(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage)
+    private static DnsMxRecord ParseMxRecord(ref DnsWireReader reader)
     {
         return new DnsMxRecord
         {
@@ -228,7 +227,7 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsSrvRecord ParseSrvRecord(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage)
+    private static DnsSrvRecord ParseSrvRecord(ref DnsWireReader reader)
     {
         return new DnsSrvRecord
         {
@@ -255,7 +254,6 @@ internal static class DnsMessageEncoder
 
     private static DnsCaaRecord ParseCaaRecord(ref DnsWireReader reader, ushort rdLength)
     {
-        var startPosition = reader.Position;
         var flags = reader.ReadByte();
         var tagLength = reader.ReadByte();
         var tag = Encoding.ASCII.GetString(reader.ReadBytes(tagLength));
@@ -265,7 +263,7 @@ internal static class DnsMessageEncoder
         return new DnsCaaRecord { Flags = flags, Tag = tag, Value = value };
     }
 
-    private static DnsNaptrRecord ParseNaptrRecord(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage)
+    private static DnsNaptrRecord ParseNaptrRecord(ref DnsWireReader reader)
     {
         var order = reader.ReadUInt16();
         var preference = reader.ReadUInt16();
@@ -320,7 +318,7 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsRrsigRecord ParseRrsigRecord(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage, ushort rdLength)
+    private static DnsRrsigRecord ParseRrsigRecord(ref DnsWireReader reader, ushort rdLength)
     {
         var startPosition = reader.Position;
         var typeCovered = (DnsQueryType)reader.ReadUInt16();
@@ -348,7 +346,7 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsNsecRecord ParseNsecRecord(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage, ushort rdLength)
+    private static DnsNsecRecord ParseNsecRecord(ref DnsWireReader reader, ushort rdLength)
     {
         var startPosition = reader.Position;
         var nextDomainName = reader.ReadDomainName();
@@ -424,7 +422,7 @@ internal static class DnsMessageEncoder
         };
     }
 
-    private static DnsSvcbRecord ParseSvcbRecord(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage, ushort rdLength)
+    private static DnsSvcbRecord ParseSvcbRecord(ref DnsWireReader reader, ushort rdLength)
     {
         var startPosition = reader.Position;
         var priority = reader.ReadUInt16();

@@ -1,10 +1,6 @@
-using Meziantou.Framework.DnsClient.Query;
-
 namespace Meziantou.Framework.DnsClient.Response;
 
-/// <summary>
-/// Represents a DNS response message received from a DNS server.
-/// </summary>
+/// <summary>Represents a DNS response message received from a DNS server.</summary>
 public sealed class DnsResponseMessage
 {
     internal DnsResponseMessage(DnsResponseHeader header)

@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Query;
 
-/// <summary>
-/// Represents a DNS query message to be sent to a DNS server.
-/// </summary>
+/// <summary>Represents a DNS query message to be sent to a DNS server.</summary>
 public sealed class DnsQueryMessage
 {
     /// <summary>Gets or sets the query identifier. A random value is generated if not set.</summary>

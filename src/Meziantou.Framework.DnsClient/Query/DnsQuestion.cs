@@ -2,9 +2,7 @@ using Meziantou.Framework.DnsClient.Query;
 
 namespace Meziantou.Framework.DnsClient;
 
-/// <summary>
-/// Represents a DNS question in the question section of a DNS message.
-/// </summary>
+/// <summary>Represents a DNS question in the question section of a DNS message.</summary>
 public sealed class DnsQuestion
 {
     /// <summary>

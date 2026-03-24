@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient;
 
-/// <summary>
-/// Specifies the DNS transport protocol to use for queries.
-/// </summary>
+/// <summary>Specifies the DNS transport protocol to use for queries.</summary>
 public enum DnsClientProtocol
 {
     /// <summary>DNS over UDP (RFC 1035), port 53.</summary>

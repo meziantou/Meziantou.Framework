@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Meziantou.Framework.DnsClient.Protocol;
 
@@ -61,7 +60,7 @@ internal ref struct DnsWireWriter
 
     public void WriteDomainName(string name)
     {
-        if (string.IsNullOrEmpty(name) || name == ".")
+        if (string.IsNullOrEmpty(name) || name is ".")
         {
             WriteByte(0);
             return;

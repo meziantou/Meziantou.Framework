@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS TLSA record for DANE certificate association (RFC 6698).
-/// </summary>
+/// <summary>Represents a DNS TLSA record for DANE certificate association (RFC 6698).</summary>
 public sealed class DnsTlsaRecord : DnsRecord
 {
     /// <summary>Gets the certificate usage field (0-3).</summary>

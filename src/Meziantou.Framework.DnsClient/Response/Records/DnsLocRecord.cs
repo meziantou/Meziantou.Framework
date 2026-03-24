@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS LOC record for location information (RFC 1876).
-/// </summary>
+/// <summary>Represents a DNS LOC record for location information (RFC 1876).</summary>
 public sealed class DnsLocRecord : DnsRecord
 {
     /// <summary>Gets the version (must be 0).</summary>

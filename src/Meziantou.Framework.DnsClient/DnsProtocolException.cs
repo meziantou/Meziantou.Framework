@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient;
 
-/// <summary>
-/// Represents an error in the DNS wire protocol.
-/// </summary>
+/// <summary>Represents an error in the DNS wire protocol.</summary>
 public sealed class DnsProtocolException : Exception
 {
     public DnsProtocolException()

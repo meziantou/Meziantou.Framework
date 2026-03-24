@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.DnsClient.Helpers;
 
 internal static class IdnHelper

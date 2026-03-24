@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Response.Records;

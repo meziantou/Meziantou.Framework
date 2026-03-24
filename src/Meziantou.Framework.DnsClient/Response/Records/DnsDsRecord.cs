@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS DS record for delegation signer (RFC 4034, DNSSEC).
-/// </summary>
+/// <summary>Represents a DNS DS record for delegation signer (RFC 4034, DNSSEC).</summary>
 public sealed class DnsDsRecord : DnsRecord
 {
     /// <summary>Gets the key tag of the referenced DNSKEY record.</summary>

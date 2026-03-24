@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS SSHFP record for SSH key fingerprints (RFC 4255).
-/// </summary>
+/// <summary>Represents a DNS SSHFP record for SSH key fingerprints (RFC 4255).</summary>
 public sealed class DnsSshfpRecord : DnsRecord
 {
     /// <summary>Gets the algorithm number (1=RSA, 2=DSS, 3=ECDSA, 4=Ed25519, 6=Ed448).</summary>

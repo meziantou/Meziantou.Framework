@@ -3,14 +3,10 @@ using Meziantou.Framework.DnsClient.Response.Records;
 
 namespace Meziantou.Framework.DnsClient.Response;
 
-/// <summary>
-/// Provides extension methods for working with DNS records.
-/// </summary>
+/// <summary>Provides extension methods for working with DNS records.</summary>
 public static class DnsRecordExtensions
 {
-    /// <summary>
-    /// Returns all IP addresses from A and AAAA records in the collection.
-    /// </summary>
+    /// <summary>Returns all IP addresses from A and AAAA records in the collection.</summary>
     public static IEnumerable<IPAddress> GetIPAddresses(this IEnumerable<DnsRecord> records)
     {
         foreach (var record in records)
@@ -26,9 +22,7 @@ public static class DnsRecordExtensions
         }
     }
 
-    /// <summary>
-    /// Returns all IPv4 addresses from A records in the collection.
-    /// </summary>
+    /// <summary>Returns all IPv4 addresses from A records in the collection.</summary>
     public static IEnumerable<IPAddress> GetIPv4Addresses(this IEnumerable<DnsRecord> records)
     {
         foreach (var record in records)
@@ -40,9 +34,7 @@ public static class DnsRecordExtensions
         }
     }
 
-    /// <summary>
-    /// Returns all IPv6 addresses from AAAA records in the collection.
-    /// </summary>
+    /// <summary>Returns all IPv6 addresses from AAAA records in the collection.</summary>
     public static IEnumerable<IPAddress> GetIPv6Addresses(this IEnumerable<DnsRecord> records)
     {
         foreach (var record in records)

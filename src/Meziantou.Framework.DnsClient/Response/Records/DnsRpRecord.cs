@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS RP record for responsible person (RFC 1183).
-/// </summary>
+/// <summary>Represents a DNS RP record for responsible person (RFC 1183).</summary>
 public sealed class DnsRpRecord : DnsRecord
 {
     /// <summary>Gets the mailbox domain name of the responsible person.</summary>

@@ -2,9 +2,7 @@ using Meziantou.Framework.DnsClient.Query;
 
 namespace Meziantou.Framework.DnsClient.Response;
 
-/// <summary>
-/// Base class for all DNS resource records.
-/// </summary>
+/// <summary>Base class for all DNS resource records.</summary>
 public abstract class DnsRecord
 {
     /// <summary>Gets the domain name this record belongs to.</summary>

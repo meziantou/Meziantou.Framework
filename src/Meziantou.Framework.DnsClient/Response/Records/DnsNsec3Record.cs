@@ -2,9 +2,7 @@ using Meziantou.Framework.DnsClient.Query;
 
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS NSEC3 record for hashed authenticated denial of existence (RFC 5155, DNSSEC).
-/// </summary>
+/// <summary>Represents a DNS NSEC3 record for hashed authenticated denial of existence (RFC 5155, DNSSEC).</summary>
 public sealed class DnsNsec3Record : DnsRecord
 {
     /// <summary>Gets the hash algorithm.</summary>

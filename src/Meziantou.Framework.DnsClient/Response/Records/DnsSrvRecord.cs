@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS SRV record containing service location information (RFC 2782).
-/// </summary>
+/// <summary>Represents a DNS SRV record containing service location information (RFC 2782).</summary>
 public sealed class DnsSrvRecord : DnsRecord
 {
     /// <summary>Gets the priority. Lower values are preferred.</summary>

@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Query;
 
-/// <summary>
-/// Represents EDNS(0) options for a DNS query (RFC 6891).
-/// </summary>
+/// <summary>Represents EDNS(0) options for a DNS query (RFC 6891).</summary>
 public sealed class DnsEdnsOptions
 {
     /// <summary>Gets or sets the maximum UDP payload size the client can handle. Default is 4096.</summary>

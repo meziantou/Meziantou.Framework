@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS NSEC3PARAM record (RFC 5155, DNSSEC).
-/// </summary>
+/// <summary>Represents a DNS NSEC3PARAM record (RFC 5155, DNSSEC).</summary>
 public sealed class DnsNsec3ParamRecord : DnsRecord
 {
     /// <summary>Gets the hash algorithm.</summary>

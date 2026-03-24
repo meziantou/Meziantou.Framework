@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS CAA record for certification authority authorization (RFC 8659).
-/// </summary>
+/// <summary>Represents a DNS CAA record for certification authority authorization (RFC 8659).</summary>
 public sealed class DnsCaaRecord : DnsRecord
 {
     /// <summary>Gets the flags byte.</summary>

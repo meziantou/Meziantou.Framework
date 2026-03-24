@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS URI record (RFC 7553).
-/// </summary>
+/// <summary>Represents a DNS URI record (RFC 7553).</summary>
 public sealed class DnsUriRecord : DnsRecord
 {
     /// <summary>Gets the priority. Lower values are preferred.</summary>

@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS NAPTR record for naming authority pointer (RFC 3403).
-/// </summary>
+/// <summary>Represents a DNS NAPTR record for naming authority pointer (RFC 3403).</summary>
 public sealed class DnsNaptrRecord : DnsRecord
 {
     /// <summary>Gets the order value.</summary>

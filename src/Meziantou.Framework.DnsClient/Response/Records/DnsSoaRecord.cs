@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS SOA record containing start of authority information (RFC 1035).
-/// </summary>
+/// <summary>Represents a DNS SOA record containing start of authority information (RFC 1035).</summary>
 public sealed class DnsSoaRecord : DnsRecord
 {
     /// <summary>Gets the primary name server domain name.</summary>

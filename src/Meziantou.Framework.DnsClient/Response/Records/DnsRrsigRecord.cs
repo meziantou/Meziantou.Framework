@@ -2,9 +2,7 @@ using Meziantou.Framework.DnsClient.Query;
 
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS RRSIG record for DNSSEC signature (RFC 4034).
-/// </summary>
+/// <summary>Represents a DNS RRSIG record for DNSSEC signature (RFC 4034).</summary>
 public sealed class DnsRrsigRecord : DnsRecord
 {
     /// <summary>Gets the type of the RRset that is covered by this signature.</summary>

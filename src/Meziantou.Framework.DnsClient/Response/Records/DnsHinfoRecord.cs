@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS HINFO record for host information (RFC 1035).
-/// </summary>
+/// <summary>Represents a DNS HINFO record for host information (RFC 1035).</summary>
 public sealed class DnsHinfoRecord : DnsRecord
 {
     /// <summary>Gets the CPU type string.</summary>

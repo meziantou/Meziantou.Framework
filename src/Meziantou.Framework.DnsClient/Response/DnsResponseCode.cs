@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response;
 
-/// <summary>
-/// Specifies DNS response codes as defined in various RFCs.
-/// </summary>
+/// <summary>Specifies DNS response codes as defined in various RFCs.</summary>
 [SuppressMessage("Design", "CA1027:Mark enums with FlagsAttribute")]
 public enum DnsResponseCode : ushort
 {

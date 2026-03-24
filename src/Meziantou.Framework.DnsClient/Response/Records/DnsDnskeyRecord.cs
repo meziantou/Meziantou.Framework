@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS DNSKEY record (RFC 4034, DNSSEC).
-/// </summary>
+/// <summary>Represents a DNS DNSKEY record (RFC 4034, DNSSEC).</summary>
 public sealed class DnsDnskeyRecord : DnsRecord
 {
     /// <summary>Gets the flags. Bit 7 is the Zone Key flag, bit 15 is the Secure Entry Point flag.</summary>

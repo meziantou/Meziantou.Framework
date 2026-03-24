@@ -2,9 +2,7 @@ using Meziantou.Framework.DnsClient.Query;
 
 namespace Meziantou.Framework.DnsClient.Response;
 
-/// <summary>
-/// Represents the header of a DNS response message.
-/// </summary>
+/// <summary>Represents the header of a DNS response message.</summary>
 public sealed class DnsResponseHeader
 {
     /// <summary>Gets the query identifier.</summary>

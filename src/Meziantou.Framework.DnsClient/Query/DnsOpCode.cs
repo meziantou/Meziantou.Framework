@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Query;
 
-/// <summary>
-/// Specifies the DNS operation code (RFC 1035).
-/// </summary>
+/// <summary>Specifies the DNS operation code (RFC 1035).</summary>
 [SuppressMessage("Design", "CA1027:Mark enums with FlagsAttribute")]
 public enum DnsOpCode : byte
 {

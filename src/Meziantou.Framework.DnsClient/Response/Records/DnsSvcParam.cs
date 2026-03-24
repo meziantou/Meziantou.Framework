@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a service parameter in a SVCB/HTTPS record.
-/// </summary>
+/// <summary>Represents a service parameter in a SVCB/HTTPS record.</summary>
 public sealed class DnsSvcParam
 {
     /// <summary>Gets the parameter key.</summary>

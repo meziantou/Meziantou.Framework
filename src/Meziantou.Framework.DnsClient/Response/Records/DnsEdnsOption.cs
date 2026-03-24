@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents an EDNS option in an OPT record.
-/// </summary>
+/// <summary>Represents an EDNS option in an OPT record.</summary>
 public sealed class DnsEdnsOption
 {
     /// <summary>Gets the option code.</summary>

@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Query;
 
-/// <summary>
-/// Specifies DNS query classes as defined in RFC 1035.
-/// </summary>
+/// <summary>Specifies DNS query classes as defined in RFC 1035.</summary>
 public enum DnsQueryClass : ushort
 {
     /// <summary>Internet (RFC 1035).</summary>

@@ -8,9 +8,7 @@ using Meziantou.Framework.DnsClient.Transport;
 
 namespace Meziantou.Framework.DnsClient;
 
-/// <summary>
-/// A DNS client supporting UDP, TCP, DNS over TLS, DNS over HTTPS, DNS over QUIC, DNSSEC, EDNS, IDN, and reverse lookups.
-/// </summary>
+/// <summary>A DNS client supporting UDP, TCP, DNS over TLS, DNS over HTTPS, DNS over QUIC, DNSSEC, EDNS, IDN, and reverse lookups.</summary>
 [SuppressMessage("Naming", "MA0049:Type name should not match containing namespace")]
 public sealed class DnsClient : IDisposable
 {
@@ -43,9 +41,7 @@ public sealed class DnsClient : IDisposable
         _transport = CreateTransport(server, protocol, _options);
     }
 
-    /// <summary>
-    /// Sends a DNS query for the specified domain name and record type.
-    /// </summary>
+    /// <summary>Sends a DNS query for the specified domain name and record type.</summary>
     /// <param name="name">The domain name to query. Unicode names are automatically converted to punycode.</param>
     /// <param name="type">The DNS record type to query.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
@@ -55,9 +51,7 @@ public sealed class DnsClient : IDisposable
         return QueryAsync(name, type, DnsQueryClass.IN, cancellationToken);
     }
 
-    /// <summary>
-    /// Sends a DNS query for the specified domain name, record type, and class.
-    /// </summary>
+    /// <summary>Sends a DNS query for the specified domain name, record type, and class.</summary>
     /// <param name="name">The domain name to query. Unicode names are automatically converted to punycode.</param>
     /// <param name="type">The DNS record type to query.</param>
     /// <param name="queryClass">The DNS query class.</param>
@@ -85,9 +79,7 @@ public sealed class DnsClient : IDisposable
         return SendAsync(query, cancellationToken);
     }
 
-    /// <summary>
-    /// Performs a reverse DNS lookup for the specified IP address.
-    /// </summary>
+    /// <summary>Performs a reverse DNS lookup for the specified IP address.</summary>
     /// <param name="address">The IP address to look up (IPv4 or IPv6).</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The DNS response message containing PTR records.</returns>
@@ -97,9 +89,7 @@ public sealed class DnsClient : IDisposable
         return QueryAsync(reverseDomain, DnsQueryType.PTR, DnsQueryClass.IN, cancellationToken);
     }
 
-    /// <summary>
-    /// Sends a DNS query message and returns the response.
-    /// </summary>
+    /// <summary>Sends a DNS query message and returns the response.</summary>
     /// <param name="message">The DNS query message to send.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The DNS response message.</returns>
@@ -230,7 +220,7 @@ public sealed class DnsClient : IDisposable
                 return new IPEndPoint(hostAddress, port);
 
             var addresses = Dns.GetHostAddresses(host);
-            if (addresses.Length == 0)
+            if (addresses.Length is 0)
                 throw new ArgumentException($"Could not resolve host: {host}", nameof(server));
 
             return new IPEndPoint(addresses[0], port);
@@ -238,7 +228,7 @@ public sealed class DnsClient : IDisposable
 
         // Resolve hostname
         var resolved = Dns.GetHostAddresses(server);
-        if (resolved.Length == 0)
+        if (resolved.Length is 0)
             throw new ArgumentException($"Could not resolve host: {server}", nameof(server));
 
         return new IPEndPoint(resolved[0], defaultPort);
@@ -257,14 +247,14 @@ public sealed class DnsClient : IDisposable
                 return (host, new IPEndPoint(hostAddress, port));
 
             var addresses = Dns.GetHostAddresses(host);
-            if (addresses.Length == 0)
+            if (addresses.Length is 0)
                 throw new ArgumentException($"Could not resolve host: {host}", nameof(server));
 
             return (host, new IPEndPoint(addresses[0], port));
         }
 
         var resolved = Dns.GetHostAddresses(server);
-        if (resolved.Length == 0)
+        if (resolved.Length is 0)
             throw new ArgumentException($"Could not resolve host: {server}", nameof(server));
 
         return (server, new IPEndPoint(resolved[0], defaultPort));

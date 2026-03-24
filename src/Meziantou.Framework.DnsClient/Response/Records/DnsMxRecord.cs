@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DnsClient.Response.Records;
 
-/// <summary>
-/// Represents a DNS MX record containing mail exchange information (RFC 1035).
-/// </summary>
+/// <summary>Represents a DNS MX record containing mail exchange information (RFC 1035).</summary>
 public sealed class DnsMxRecord : DnsRecord
 {
     /// <summary>Gets the preference value. Lower values are preferred.</summary>

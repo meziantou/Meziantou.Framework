@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Meziantou.Framework.DnsClient.Protocol;
 
@@ -100,14 +99,14 @@ internal ref struct DnsWireReader
         {
             var length = message[position];
 
-            if (length == 0)
+            if (length is 0)
             {
                 position++;
                 break;
             }
 
             // Check for compression pointer (top 2 bits set)
-            if ((length & 0xC0) == 0xC0)
+            if ((length & 0xC0) is 0xC0)
             {
                 if (++pointerCount > maxPointers)
                     throw new DnsProtocolException("Too many compression pointers in domain name (possible loop).");

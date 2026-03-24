@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text;
 
 namespace Meziantou.Framework.DnsClient.Helpers;
 

@@ -12,7 +12,7 @@ public sealed class JsonPathEvaluateTests
         var path = JsonPath.Parse("$");
         var result = path.Evaluate(doc);
         Assert.Single(result);
-        Assert.Equal("$", result[0].NormalizedPath);
+        Assert.Equal("$", result[0].Path);
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public sealed class JsonPathEvaluateTests
         var result = path.Evaluate(doc);
         Assert.Single(result);
         Assert.Equal("hello", result[0].Value!.GetValue<string>());
-        Assert.Equal("$['a']", result[0].NormalizedPath);
+        Assert.Equal("$['a']", result[0].Path);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class JsonPathEvaluateTests
         var result = path.Evaluate(doc);
         Assert.Single(result);
         Assert.Equal("b", result[0].Value!.GetValue<string>());
-        Assert.Equal("$[1]", result[0].NormalizedPath);
+        Assert.Equal("$[1]", result[0].Path);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class JsonPathEvaluateTests
         var result = path.Evaluate(doc);
         Assert.Single(result);
         Assert.Equal("c", result[0].Value!.GetValue<string>());
-        Assert.Equal("$[2]", result[0].NormalizedPath);
+        Assert.Equal("$[2]", result[0].Path);
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public sealed class JsonPathEvaluateTests
         var result = path.Evaluate(default(JsonNode));
         Assert.Single(result);
         Assert.Null(result[0].Value);
-        Assert.Equal("$", result[0].NormalizedPath);
+        Assert.Equal("$", result[0].Path);
     }
 
     [Fact]
@@ -274,23 +274,23 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
-    public void Evaluate_NormalizedPath_Object()
+    public void Evaluate_Path_Object()
     {
         var doc = JsonNode.Parse("""{"a": {"b": 1}}""");
         var path = JsonPath.Parse("$.a.b");
         var result = path.Evaluate(doc);
         Assert.Single(result);
-        Assert.Equal("$['a']['b']", result[0].NormalizedPath);
+        Assert.Equal("$['a']['b']", result[0].Path);
     }
 
     [Fact]
-    public void Evaluate_NormalizedPath_Array()
+    public void Evaluate_Path_Array()
     {
         var doc = JsonNode.Parse("""[0, 1, 2]""");
         var path = JsonPath.Parse("$[1]");
         var result = path.Evaluate(doc);
         Assert.Single(result);
-        Assert.Equal("$[1]", result[0].NormalizedPath);
+        Assert.Equal("$[1]", result[0].Path);
     }
 
     [Fact]
@@ -363,13 +363,13 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
-    public void Evaluate_NormalizedPath_SpecialChars()
+    public void Evaluate_Path_SpecialChars()
     {
         var doc = JsonNode.Parse("""{"a'b": 1}""");
         var path = JsonPath.Parse("$[\"a'b\"]");
         var result = path.Evaluate(doc);
         Assert.Single(result);
-        Assert.Equal("$['a\\'b']", result[0].NormalizedPath);
+        Assert.Equal("$['a\\'b']", result[0].Path);
     }
 
     [Fact]

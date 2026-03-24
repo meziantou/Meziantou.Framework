@@ -17,7 +17,7 @@ var path = JsonPath.Parse("$.store.book[*].title");
 var result = path.Evaluate(document);
 foreach (var match in result)
 {
-    Console.WriteLine($"{match.NormalizedPath}: {match.Value}");
+    Console.WriteLine($"{match.Path}: {match.Value}");
     // $['store']['book'][0]['title']: A
     // $['store']['book'][1]['title']: B
 }

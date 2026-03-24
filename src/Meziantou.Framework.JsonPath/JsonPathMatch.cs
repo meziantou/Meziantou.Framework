@@ -5,10 +5,10 @@ namespace Meziantou.Framework.Json;
 /// <summary>Represents a single node matched by a JSONPath evaluation.</summary>
 public readonly struct JsonPathMatch
 {
-    internal JsonPathMatch(JsonNode? value, string normalizedPath)
+    internal JsonPathMatch(JsonNode? value, string path)
     {
         Value = value;
-        NormalizedPath = normalizedPath;
+        Path = path;
     }
 
     /// <summary>
@@ -19,5 +19,5 @@ public readonly struct JsonPathMatch
     /// <summary>
     /// Gets the normalized path of the matched node (e.g. <c>$['store']['book'][0]</c>).
     /// </summary>
-    public string NormalizedPath { get; }
+    public string Path { get; }
 }

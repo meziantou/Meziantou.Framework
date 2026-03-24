@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <ItemGroup>
-    <ProjectReference Include="../**/*.*proj" />
+    <ProjectReference Include="../**/*.*proj" Exclude="../eng/*.*proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOsPlatform('Windows')) == false">

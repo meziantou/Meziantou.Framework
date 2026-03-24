@@ -1,3 +1,4 @@
+#:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -5,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
+using Meziantou.Framework;
 
 if (args.Length > 0 && args[0] is "--help" or "-h")
 {
@@ -14,7 +16,7 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
     return 0;
 }
 
-var rootPath = Path.GetFullPath(Path.Combine(GetScriptDirectory(), ".."));
+var rootPath = GetRepositoryRoot();
 var srcPath = Path.Combine(rootPath, "src");
 var trimmableCsprojPath = Path.Combine(rootPath, "Samples", "Trimmable", "Trimmable.csproj");
 var trimmableWpfCsprojPath = Path.Combine(rootPath, "Samples", "Trimmable.Wpf", "Trimmable.Wpf.csproj");
@@ -131,5 +133,5 @@ if (normalizedExisting != newContent)
 Console.WriteLine("Samples/Trimmable/Trimmable.csproj is up-to-date");
 return 0;
 
-static string GetScriptDirectory([CallerFilePath] string? path = null)
-    => Path.GetDirectoryName(path)!;
+static string GetRepositoryRoot([CallerFilePath] string? path = null)
+    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();

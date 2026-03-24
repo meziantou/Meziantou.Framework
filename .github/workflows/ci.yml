@@ -40,8 +40,6 @@ jobs:
         uses: ./.github/setup-dotnet
       - name: Validate Readme
         run: dotnet run ./eng/update-readme.cs
-      - name: Validate Tool Readme
-        run: dotnet run ./eng/update-tool-readme.cs
 
   validate_test_projects:
     runs-on: windows-2025

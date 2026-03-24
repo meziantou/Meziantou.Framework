@@ -1,6 +1,8 @@
+#:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using Meziantou.Framework;
 
 if (args.Length > 0 && args[0] is "--help" or "-h")
 {
@@ -10,7 +12,7 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
     return 0;
 }
 
-var rootPath = Path.GetFullPath(Path.Combine(GetScriptDirectory(), ".."));
+var rootPath = GetRepositoryRoot();
 var srcRootPath = Path.Combine(rootPath, "src");
 var editedFiles = 0;
 
@@ -37,5 +39,5 @@ foreach (var ext in extensions)
 
 return editedFiles;
 
-static string GetScriptDirectory([CallerFilePath] string? path = null)
-    => Path.GetDirectoryName(path)!;
+static string GetRepositoryRoot([CallerFilePath] string? path = null)
+    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();

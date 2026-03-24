@@ -1,3 +1,4 @@
+#:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -5,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Meziantou.Framework;
 
 if (args.Length > 0 && args[0] is "--help" or "-h")
 {
@@ -18,7 +20,7 @@ var nugetDirectory = Environment.GetEnvironmentVariable("NuGetDirectory")
     ?? throw new InvalidOperationException("NuGetDirectory environment variable is not set");
 var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "";
 
-var rootPath = Path.GetFullPath(Path.Combine(GetScriptDirectory(), ".."));
+var rootPath = GetRepositoryRoot();
 
 // Validate source generator packages
 var generators = new[] { "Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.FastEnumToStringGenerator" };
@@ -142,5 +144,5 @@ static int RunProcessWithExitCode(string fileName, string[] arguments)
     return process.ExitCode;
 }
 
-static string GetScriptDirectory([CallerFilePath] string? path = null)
-    => Path.GetDirectoryName(path)!;
+static string GetRepositoryRoot([CallerFilePath] string? path = null)
+    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();

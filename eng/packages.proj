@@ -2,10 +2,4 @@
   <ItemGroup>
     <ProjectReference Include="../src/**/*.*proj" />
   </ItemGroup>
-
-  <!-- GRPC tooling doesn't support Linux Arm64 (https://github.com/grpc/grpc/issues/38538) -->
-  <ItemGroup Condition="'$(IsLinuxArm64)' == 'true'">
-    <ProjectReference Remove="../src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
-    <ProjectReference Remove="../src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
-  </ItemGroup>
 </Project>

@@ -10,7 +10,6 @@ In addition to building and testing your changes, you MUST run the following scr
 - `dotnet run ./eng/update-bom.cs`
 - `dotnet run ./eng/update-readme.cs`
 - `dotnet run ./eng/update-project-slnx.cs`
-- `dotnet run ./eng/update-tool-readme.cs`
 - `dotnet run ./eng/validate-testprojects-configuration.cs`
 - `dotnet run ./eng/update-trimmable.cs`
 

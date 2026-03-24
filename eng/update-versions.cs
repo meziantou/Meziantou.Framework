@@ -1,3 +1,4 @@
+#:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,6 +8,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Xml;
+using System.Xml.Linq;
+using Meziantou.Framework;
 
 var createPullRequest = false;
 var numberOfCommits = 50;
@@ -37,7 +40,7 @@ var skippedCommits = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     "c4ac0bdd868a37b37e2eddd6ae99b7b888f3fd29",
 };
 
-var rootPath = Path.GetFullPath(Path.Combine(GetScriptDirectory(), ".."));
+var rootPath = GetRepositoryRoot();
 var srcPath = Path.Combine(rootPath, "src");
 
 // Get recent commits
@@ -435,8 +438,8 @@ static void RunProcess(string fileName, string[] arguments)
     }
 }
 
-static string GetScriptDirectory([CallerFilePath] string? path = null)
-    => Path.GetDirectoryName(path)!;
+static string GetRepositoryRoot([CallerFilePath] string? path = null)
+    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
 
 class CsprojInfo
 {

@@ -1,3 +1,4 @@
+#:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Meziantou.Framework;
 
 if (args.Length > 0 && args[0] is "--help" or "-h")
 {
@@ -16,7 +18,7 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
     return 0;
 }
 
-var rootPath = Path.GetFullPath(Path.Combine(GetScriptDirectory(), ".."));
+var rootPath = GetRepositoryRoot();
 var testsRootPath = Path.Combine(rootPath, "tests");
 var utilsPath = Path.GetFullPath(Path.Combine(testsRootPath, "TestUtilities", "TestUtilities.csproj"));
 
@@ -120,5 +122,5 @@ static string[] DotNetBuildGetTfmsWithRetry(string projectPath, int maxAttempts 
     return []; // unreachable
 }
 
-static string GetScriptDirectory([CallerFilePath] string? path = null)
-    => Path.GetDirectoryName(path)!;
+static string GetRepositoryRoot([CallerFilePath] string? path = null)
+    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();

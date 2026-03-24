@@ -1,3 +1,4 @@
+#:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using Meziantou.Framework;
 
 var outputPath = "slnx";
 for (var i = 0; i < args.Length; i++)
@@ -25,7 +27,7 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-var rootPath = Path.GetFullPath(Path.Combine(GetScriptDirectory(), ".."));
+var rootPath = GetRepositoryRoot();
 var srcRootPath = Path.Combine(rootPath, "src");
 var testsRootPath = Path.Combine(rootPath, "tests");
 var toolsRootPath = Path.Combine(rootPath, "tools");
@@ -455,8 +457,8 @@ static void RunProcess(string fileName, string[] arguments, bool captureOutput =
     }
 }
 
-static string GetScriptDirectory([CallerFilePath] string? path = null)
-    => Path.GetDirectoryName(path)!;
+static string GetRepositoryRoot([CallerFilePath] string? path = null)
+    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
 
 class SlnxPlan
 {

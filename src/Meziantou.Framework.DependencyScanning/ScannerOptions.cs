@@ -23,6 +23,7 @@ public sealed class ScannerOptions
     [
         new AzureDevOpsScanner(),
         new DockerfileDependencyScanner(),
+        new DotNetFileBasedAppDependencyScanner(),
         new DotNetGlobalJsonDependencyScanner(),
         new DotNetToolManifestDependencyScanner(),
         new GitHubActionsScanner(),

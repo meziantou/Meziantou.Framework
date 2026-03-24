@@ -7,5 +7,6 @@ public sealed class DnsSvcParam
     public ushort Key { get; set; }
 
     /// <summary>Gets or sets the parameter value.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] Value { get; set; } = [];
 }

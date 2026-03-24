@@ -4,5 +4,6 @@ namespace Meziantou.Framework.DnsServer.Protocol.Records;
 public sealed class DnsUnknownRecordData : DnsResourceRecordData
 {
     /// <summary>Gets or sets the raw record data.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] Data { get; set; } = [];
 }

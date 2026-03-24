@@ -13,5 +13,6 @@ public sealed class DnsDnskeyRecordData : DnsResourceRecordData
     public byte Algorithm { get; set; }
 
     /// <summary>Gets or sets the public key data.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] PublicKey { get; set; } = [];
 }

@@ -10,7 +10,6 @@ internal static class DnsMessageEncoder
         if (data.Length < 12)
             throw new DnsProtocolException("DNS message is too short (minimum 12 bytes for header).");
 
-        var fullMessage = data;
         var reader = new DnsWireReader(data);
 
         var message = new DnsMessage
@@ -42,9 +41,9 @@ internal static class DnsMessageEncoder
             message.Questions.Add(new DnsQuestion(name, type, queryClass));
         }
 
-        ReadRecordsInto(message.Answers, ref reader, fullMessage, answerCount);
-        ReadRecordsInto(message.Authorities, ref reader, fullMessage, authorityCount);
-        ReadRecordsInto(message.AdditionalRecords, ref reader, fullMessage, additionalCount);
+        ReadRecordsInto(message.Answers, ref reader, answerCount);
+        ReadRecordsInto(message.Authorities, ref reader, authorityCount);
+        ReadRecordsInto(message.AdditionalRecords, ref reader, additionalCount);
 
         // Extract EDNS from additional records
         for (var i = message.AdditionalRecords.Count - 1; i >= 0; i--)
@@ -139,14 +138,14 @@ internal static class DnsMessageEncoder
             writer.WriteUInt16(0); // placeholder for RDLENGTH
 
             var rdataStart = writer.Position;
-            WriteRecordData(ref writer, record.Type, record.Data);
+            WriteRecordData(ref writer, record.Data);
             var rdLength = writer.Position - rdataStart;
 
             writer.WriteUInt16At((ushort)rdLength, rdLengthPosition);
         }
     }
 
-    private static void WriteRecordData(ref DnsWireWriter writer, DnsQueryType type, DnsResourceRecordData? data)
+    private static void WriteRecordData(ref DnsWireWriter writer, DnsResourceRecordData? data)
     {
         if (data is null)
             return;
@@ -336,7 +335,7 @@ internal static class DnsMessageEncoder
         }
     }
 
-    private static void ReadRecordsInto(IList<DnsResourceRecord> records, ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage, ushort count)
+    private static void ReadRecordsInto(IList<DnsResourceRecord> records, ref DnsWireReader reader, ushort count)
     {
         for (var i = 0; i < count; i++)
         {
@@ -347,7 +346,7 @@ internal static class DnsMessageEncoder
             var rdLength = reader.ReadUInt16();
 
             var rdataStart = reader.Position;
-            var data = ParseRecordData(ref reader, fullMessage, type, rdLength);
+            var data = ParseRecordData(ref reader, type, rdLength);
 
             var consumed = reader.Position - rdataStart;
             if (consumed < rdLength)
@@ -366,7 +365,7 @@ internal static class DnsMessageEncoder
         }
     }
 
-    private static DnsResourceRecordData ParseRecordData(ref DnsWireReader reader, ReadOnlySpan<byte> fullMessage, DnsQueryType type, ushort rdLength)
+    private static DnsResourceRecordData ParseRecordData(ref DnsWireReader reader, DnsQueryType type, ushort rdLength)
     {
         return type switch
         {

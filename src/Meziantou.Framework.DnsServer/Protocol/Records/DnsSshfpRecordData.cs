@@ -10,5 +10,6 @@ public sealed class DnsSshfpRecordData : DnsResourceRecordData
     public byte FingerprintType { get; set; }
 
     /// <summary>Gets or sets the fingerprint data.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] Fingerprint { get; set; } = [];
 }

@@ -13,5 +13,6 @@ public sealed class DnsNsec3ParamRecordData : DnsResourceRecordData
     public ushort Iterations { get; set; }
 
     /// <summary>Gets or sets the salt.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] Salt { get; set; } = [];
 }

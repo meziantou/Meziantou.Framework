@@ -13,5 +13,6 @@ public sealed class DnsTlsaRecordData : DnsResourceRecordData
     public byte MatchingType { get; set; }
 
     /// <summary>Gets or sets the certificate association data.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] CertificateAssociationData { get; set; } = [];
 }

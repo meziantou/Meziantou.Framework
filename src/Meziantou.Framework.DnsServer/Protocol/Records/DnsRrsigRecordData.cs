@@ -28,5 +28,6 @@ public sealed class DnsRrsigRecordData : DnsResourceRecordData
     public string SignerName { get; set; } = "";
 
     /// <summary>Gets or sets the signature data.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] Signature { get; set; } = [];
 }

@@ -13,5 +13,6 @@ public sealed class DnsDsRecordData : DnsResourceRecordData
     public byte DigestType { get; set; }
 
     /// <summary>Gets or sets the digest data.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] Digest { get; set; } = [];
 }

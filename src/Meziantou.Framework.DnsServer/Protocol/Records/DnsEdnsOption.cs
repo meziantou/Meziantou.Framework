@@ -7,5 +7,6 @@ public sealed class DnsEdnsOption
     public ushort Code { get; set; }
 
     /// <summary>Gets or sets the option data.</summary>
+    [SuppressMessage("Performance", "CA1819:Properties should not return arrays")]
     public byte[] Data { get; set; } = [];
 }

@@ -1,0 +1,146 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+
+if (args.Length > 0 && args[0] is "--help" or "-h")
+{
+    Console.WriteLine("Usage: dotnet run validate-nuget.cs");
+    Console.WriteLine("Validates built NuGet packages for correctness.");
+    Console.WriteLine("Requires NuGetDirectory and GITHUB_TOKEN environment variables.");
+    return 0;
+}
+
+var nugetDirectory = Environment.GetEnvironmentVariable("NuGetDirectory")
+    ?? throw new InvalidOperationException("NuGetDirectory environment variable is not set");
+var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "";
+
+var rootPath = Path.GetFullPath(Path.Combine(GetScriptDirectory(), ".."));
+
+// Validate source generator packages
+var generators = new[] { "Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.FastEnumToStringGenerator" };
+foreach (var generator in generators)
+{
+    Console.WriteLine($"Checking {generator}");
+
+    var packagePattern = new Regex($@"{Regex.Escape(generator)}\.[0-9][0-9a-zA-Z.\-]*\.nupkg$");
+    var packagePath = Directory.EnumerateFiles(nugetDirectory)
+        .FirstOrDefault(f => packagePattern.IsMatch(f))
+        ?? throw new InvalidOperationException($"Package not found for {generator}");
+
+    var annotationPath = Path.Combine(rootPath, "src", $"{generator}.Annotations");
+    var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
+
+    using (var zipFile = ZipFile.OpenRead(packagePath))
+    {
+        var entries = zipFile.Entries.Select(e => e.FullName).ToList();
+        foreach (var tfm in tfms)
+        {
+            var hasEntry = entries.Any(e => e.StartsWith($"lib/{tfm}/"));
+            if (!hasEntry)
+            {
+                Console.Error.WriteLine($"ERROR: Package does not contain a lib/{tfm}/ entry");
+                return 1;
+            }
+        }
+    }
+}
+
+// Ensure InlineSnapshot package contains the prompt folder
+{
+    var packagePattern = new Regex(@"Meziantou\.Framework\.InlineSnapshotTesting\.[0-9][0-9a-zA-Z.\-]*\.nupkg$");
+    var packagePath = Directory.EnumerateFiles(nugetDirectory)
+        .FirstOrDefault(f => packagePattern.IsMatch(f))
+        ?? throw new InvalidOperationException("InlineSnapshotTesting package not found");
+
+    using var zipFile = ZipFile.OpenRead(packagePath);
+    var hasPrompt = zipFile.Entries.Any(e => e.FullName.StartsWith("prompt/"));
+    if (!hasPrompt)
+    {
+        Console.Error.WriteLine("ERROR: Package does not contain a prompt/ entry");
+        return 1;
+    }
+}
+
+// General validation
+Console.WriteLine("Validating NuGet packages");
+RunProcess("dotnet", ["tool", "update", "Meziantou.Framework.NuGetPackageValidation.Tool", "--global", "--no-cache", "--add-source", nugetDirectory]);
+
+var nupkgFiles = Directory.GetFiles(nugetDirectory, "*.nupkg");
+var validateArgs = new[] { "meziantou.validate-nuget-package" }
+    .Concat(nupkgFiles)
+    .Concat(["--excluded-rules", "ReadmeMustBeSet,TagsMustBeSet", "--excluded-rule-ids", "52", $"--github-token={githubToken}", "--only-report-errors"])
+    .ToArray();
+
+var exitCode = RunProcessWithExitCode(validateArgs[0], validateArgs[1..]);
+if (exitCode != 0)
+{
+    return 1;
+}
+
+return 0;
+
+static string RunAndCapture(string fileName, string[] arguments)
+{
+    var psi = new ProcessStartInfo(fileName)
+    {
+        RedirectStandardOutput = true,
+        UseShellExecute = false,
+    };
+    foreach (var arg in arguments)
+    {
+        psi.ArgumentList.Add(arg);
+    }
+
+    using var process = Process.Start(psi)!;
+    var output = process.StandardOutput.ReadToEnd();
+    process.WaitForExit();
+    if (process.ExitCode != 0)
+    {
+        throw new InvalidOperationException($"Process '{fileName} {string.Join(' ', arguments)}' exited with code {process.ExitCode}");
+    }
+
+    return output;
+}
+
+static void RunProcess(string fileName, string[] arguments)
+{
+    var psi = new ProcessStartInfo(fileName)
+    {
+        UseShellExecute = false,
+    };
+    foreach (var arg in arguments)
+    {
+        psi.ArgumentList.Add(arg);
+    }
+
+    using var process = Process.Start(psi)!;
+    process.WaitForExit();
+    if (process.ExitCode != 0)
+    {
+        throw new InvalidOperationException($"Process '{fileName} {string.Join(' ', arguments)}' exited with code {process.ExitCode}");
+    }
+}
+
+static int RunProcessWithExitCode(string fileName, string[] arguments)
+{
+    var psi = new ProcessStartInfo(fileName)
+    {
+        UseShellExecute = false,
+    };
+    foreach (var arg in arguments)
+    {
+        psi.ArgumentList.Add(arg);
+    }
+
+    using var process = Process.Start(psi)!;
+    process.WaitForExit();
+
+    return process.ExitCode;
+}
+
+static string GetScriptDirectory([CallerFilePath] string? path = null)
+    => Path.GetDirectoryName(path)!;

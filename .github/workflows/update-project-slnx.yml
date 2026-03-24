@@ -24,7 +24,7 @@ jobs:
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - name: Generate per-project solutions
-        run: ./eng/update-project-slnx.ps1
+        run: dotnet run ./eng/update-project-slnx.cs
       - name: Create pull request if needed
         run: |
           $changes = git status --porcelain

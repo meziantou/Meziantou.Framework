@@ -7,12 +7,12 @@ Also, do not assume that tests pass just because you did not see any failures in
 When running tests, you can ignore the warning about "Blame" data collector errors.
 
 In addition to building and testing your changes, you MUST run the following scripts:
-- `./eng/update-bom.ps1`
-- `./eng/update-readme.ps1`
-- `./eng/update-project-slnx.ps1`
-- `./eng/update-tool-readme.ps1`
-- `./eng/validate-testprojects-configuration.ps1`
-- `./eng/update-trimmable.ps1`
+- `dotnet run ./eng/update-bom.cs`
+- `dotnet run ./eng/update-readme.cs`
+- `dotnet run ./eng/update-project-slnx.cs`
+- `dotnet run ./eng/update-tool-readme.cs`
+- `dotnet run ./eng/validate-testprojects-configuration.cs`
+- `dotnet run ./eng/update-trimmable.cs`
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 

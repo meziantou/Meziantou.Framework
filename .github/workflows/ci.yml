@@ -27,8 +27,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - name: Validate Code
-        run: ./eng/update-bom.ps1
+        run: dotnet run ./eng/update-bom.cs
 
   validate_readme:
     runs-on: ubuntu-24.04
@@ -37,9 +39,9 @@ jobs:
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - name: Validate Readme
-        run: ./eng/update-readme.ps1
+        run: dotnet run ./eng/update-readme.cs
       - name: Validate Tool Readme
-        run: ./eng/update-tool-readme.ps1
+        run: dotnet run ./eng/update-tool-readme.cs
 
   validate_test_projects:
     runs-on: windows-2025
@@ -48,14 +50,16 @@ jobs:
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - name: Validate
-        run: .\eng\validate-testprojects-configuration.ps1
+        run: dotnet run ./eng/validate-testprojects-configuration.cs
 
   validate_trimmable_projects:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - name: Validate
-        run: ./eng/update-trimmable.ps1
+        run: dotnet run ./eng/update-trimmable.cs
 
   create_nuget:
     runs-on: ubuntu-24.04
@@ -96,7 +100,7 @@ jobs:
           name: nuget
           path: ${{ env.NuGetDirectory }}
       - name: Validate NuGet packages
-        run: .\eng\validate-nuget.ps1
+        run: dotnet run ./eng/validate-nuget.cs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -1,12 +1,10 @@
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework;
 
@@ -71,7 +69,9 @@ if (File.Exists(mainSolutionPath))
 
 var srcProjectSet = new HashSet<string>(srcProjects, StringComparer.OrdinalIgnoreCase);
 var testsProjectSet = new HashSet<string>(testsProjects, StringComparer.OrdinalIgnoreCase);
-var toolsProjectSet = new HashSet<string>(toolsProjects, StringComparer.OrdinalIgnoreCase);
+
+// Cache for parsed project references
+var projectReferencesCache = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
 // Tool → src project mappings
 var toolProjectsBySrcName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -79,6 +79,12 @@ var toolProjectsBySrcName = new Dictionary<string, string>(StringComparer.Ordina
     ["Meziantou.Framework.Http.Hsts"] = "Meziantou.Framework.Http.Hsts.Generator",
     ["Meziantou.Framework.Unicode"] = "Meziantou.Framework.Unicode.Generator",
 };
+
+var srcProjectByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+foreach (var project in srcProjects)
+{
+    srcProjectByName[Path.GetFileNameWithoutExtension(project)] = project;
+}
 
 var toolsBySrcProject = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 foreach (var project in srcProjects)
@@ -94,8 +100,7 @@ foreach (var toolProject in toolsProjects)
         if (!string.Equals(toolName, toolProjectName, StringComparison.OrdinalIgnoreCase))
             continue;
 
-        var srcProject = srcProjects.FirstOrDefault(p => string.Equals(Path.GetFileNameWithoutExtension(p), srcName, StringComparison.OrdinalIgnoreCase));
-        if (srcProject is not null)
+        if (srcProjectByName.TryGetValue(srcName, out var srcProject))
         {
             toolsBySrcProject[srcProject].Add(toolProject);
         }
@@ -123,83 +128,60 @@ if (!Directory.Exists(outputRootPath))
 }
 
 var generatedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-var plans = new List<SlnxPlan>();
+
+// Set of all known projects for unrestricted transitive closure
+var allProjectSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+allProjectSet.UnionWith(srcProjectSet);
+allProjectSet.UnionWith(testsProjectSet);
+allProjectSet.UnionWith(toolsProjects);
 
 foreach (var project in srcProjects.OrderBy(p => p, StringComparer.Ordinal))
 {
     var fileName = $"{Path.GetFileNameWithoutExtension(project)}.slnx";
     var outputFile = Path.Combine(outputRootPath, fileName);
+    generatedFiles.Add(outputFile);
 
-    var srcProjectsToInclude = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { project };
+    // Seed with the src project and its direct src transitive deps
+    var allProjectsToInclude = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { project };
     foreach (var dependency in GetTransitiveReferences(project, srcProjectSet))
     {
-        srcProjectsToInclude.Add(dependency);
+        allProjectsToInclude.Add(dependency);
     }
 
-    var testProjectsToInclude = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    // Add test projects and their transitive test deps
     foreach (var testProject in testsBySrcProject[project])
     {
-        testProjectsToInclude.Add(testProject);
+        allProjectsToInclude.Add(testProject);
         foreach (var dependency in GetTransitiveReferences(testProject, testsProjectSet))
         {
-            testProjectsToInclude.Add(dependency);
+            allProjectsToInclude.Add(dependency);
         }
     }
 
-    var toolProjectsToInclude = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    // Add tool projects
     foreach (var toolProject in toolsBySrcProject[project])
     {
-        toolProjectsToInclude.Add(toolProject);
+        allProjectsToInclude.Add(toolProject);
     }
 
-    var projectsToAdd = new List<string>();
-    projectsToAdd.AddRange(srcProjectsToInclude.OrderBy(p => p, StringComparer.Ordinal));
-    projectsToAdd.AddRange(testProjectsToInclude.OrderBy(p => p, StringComparer.Ordinal));
-    projectsToAdd.AddRange(toolProjectsToInclude.OrderBy(p => p, StringComparer.Ordinal));
-
-    plans.Add(new SlnxPlan
+    // Expand: include all transitive src deps of every included project
+    // (mimics `dotnet sln add` which resolves full ProjectReference chains)
+    var expanded = new HashSet<string>(allProjectsToInclude, StringComparer.OrdinalIgnoreCase);
+    foreach (var included in allProjectsToInclude)
     {
-        ProjectName = Path.GetFileNameWithoutExtension(project),
-        OutputFile = outputFile,
-        ProjectsToAdd = projectsToAdd,
-    });
-
-    generatedFiles.Add(outputFile);
-}
-
-// Create solution files sequentially (dotnet new sln)
-foreach (var plan in plans)
-{
-    if (File.Exists(plan.OutputFile))
-    {
-        File.Delete(plan.OutputFile);
+        foreach (var dep in GetTransitiveReferences(included, allProjectSet))
+        {
+            expanded.Add(dep);
+        }
     }
 
-    RunProcess("dotnet", ["new", "sln", "-n", plan.ProjectName, "-o", Path.GetDirectoryName(plan.OutputFile)!, "--force"], captureOutput: true);
-}
+    // Group projects by folder
+    var projectsByFolder = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+    AddProjectsToFolders(projectsByFolder, expanded);
 
-// Add projects in parallel with throttle limit
-var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 8 };
-Parallel.ForEach(plans, parallelOptions, plan =>
-{
-    if (!File.Exists(plan.OutputFile))
-    {
-        throw new InvalidOperationException($"Solution file not found: {plan.OutputFile}");
-    }
-
-    if (plan.ProjectsToAdd.Count > 0)
-    {
-        var addArgs = new List<string> { "sln", plan.OutputFile, "add" };
-        addArgs.AddRange(plan.ProjectsToAdd);
-        RunProcess("dotnet", addArgs.ToArray(), captureOutput: true);
-    }
-});
-
-// Apply solution folders and normalize
-foreach (var plan in plans)
-{
-    ApplySolutionFolders(plan.OutputFile, solutionFolderByProjectPath);
-    NormalizeTextFile(plan.OutputFile);
+    // Generate .slnx XML directly
+    var content = GenerateSlnx(outputFile, projectsByFolder);
+    WriteIfChanged(outputFile, content);
 }
 
 // Clean up stale .slnx files
@@ -231,10 +213,14 @@ List<string> GetProjectFiles(string rootDir)
 
 List<string> GetProjectReferences(string projectPath)
 {
+    if (projectReferencesCache.TryGetValue(projectPath, out var cached))
+        return cached;
+
+    List<string> references;
     try
     {
         var doc = XDocument.Load(projectPath);
-        var references = new List<string>();
+        references = [];
         foreach (var projRef in doc.Descendants("ProjectReference"))
         {
             var include = projRef.Attribute("Include")?.Value;
@@ -247,13 +233,14 @@ List<string> GetProjectReferences(string projectPath)
 
             references.Add(Path.GetFullPath(candidatePath));
         }
-
-        return references;
     }
     catch
     {
-        return [];
+        references = [];
     }
+
+    projectReferencesCache[projectPath] = references;
+    return references;
 }
 
 List<string> GetProjectReferencesInSet(string projectPath, HashSet<string> projectSet)
@@ -285,184 +272,80 @@ HashSet<string> GetTransitiveReferences(string projectPath, HashSet<string> proj
     return result;
 }
 
-string ConvertToRelativePath(string path)
+string GetFolderForProject(string projectFullPath)
 {
-    return Path.GetRelativePath(rootPath, path).Replace('\\', '/');
+    if (solutionFolderByProjectPath.TryGetValue(projectFullPath, out var folderName))
+        return folderName;
+
+    var relativePathFromRoot = Path.GetRelativePath(rootPath, projectFullPath).Replace('\\', '/');
+    return relativePathFromRoot switch
+    {
+        _ when relativePathFromRoot.StartsWith("src/") => "/src/",
+        _ when relativePathFromRoot.StartsWith("tests/SourceGenerators/") => "/tests/SourceGenerators/",
+        _ when relativePathFromRoot.StartsWith("tests/") => "/tests/",
+        _ when relativePathFromRoot.StartsWith("tools/") => "/tools/",
+        _ when relativePathFromRoot.StartsWith("Samples/") => "/samples/",
+        _ when relativePathFromRoot.StartsWith("benchmarks/") => "/benchmarks/",
+        _ => "/other/",
+    };
 }
 
-void NormalizeTextFile(string path)
+void AddProjectsToFolders(Dictionary<string, List<string>> projectsByFolder, HashSet<string> projects)
 {
-    var content = File.ReadAllText(path);
-    content = content.Replace("\r\n", "\n").Replace("\r", "\n");
-
-    if (content.Length > 0 && !content.EndsWith('\n'))
+    foreach (var project in projects)
     {
-        content += "\n";
+        var folder = GetFolderForProject(project);
+        if (!projectsByFolder.TryGetValue(folder, out var list))
+        {
+            list = [];
+            projectsByFolder[folder] = list;
+        }
+
+        list.Add(project);
+    }
+}
+
+string GenerateSlnx(string outputFile, Dictionary<string, List<string>> projectsByFolder)
+{
+    var outputDir = Path.GetDirectoryName(outputFile)!;
+    var sb = new StringBuilder();
+    sb.Append("<Solution>\n");
+
+    foreach (var folder in projectsByFolder.Keys.OrderBy(f => f, StringComparer.Ordinal))
+    {
+        var projects = projectsByFolder[folder];
+        sb.Append("  <Folder Name=\"").Append(folder).Append("\">\n");
+
+        var relativePaths = new List<string>(projects.Count);
+        foreach (var project in projects)
+        {
+            relativePaths.Add(Path.GetRelativePath(outputDir, project).Replace('\\', '/'));
+        }
+
+        relativePaths.Sort(StringComparer.Ordinal);
+        foreach (var relativePath in relativePaths)
+        {
+            sb.Append("    <Project Path=\"").Append(relativePath).Append("\" />\n");
+        }
+
+        sb.Append("  </Folder>\n");
+    }
+
+    sb.Append("</Solution>\n");
+    return sb.ToString();
+}
+
+void WriteIfChanged(string path, string content)
+{
+    if (File.Exists(path))
+    {
+        var existing = File.ReadAllText(path);
+        if (string.Equals(existing, content, StringComparison.Ordinal))
+            return;
     }
 
     File.WriteAllText(path, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 }
 
-void ApplySolutionFolders(string slnxPath, Dictionary<string, string> folderMapping)
-{
-    if (!File.Exists(slnxPath))
-        return;
-
-    var solutionDirectory = Path.GetDirectoryName(slnxPath)!;
-    var doc = new XmlDocument();
-    doc.Load(slnxPath);
-
-    var solutionNode = doc.DocumentElement;
-    if (solutionNode is null)
-        return;
-
-    // Build folder nodes map
-    var folderNodesByName = new Dictionary<string, XmlElement>(StringComparer.Ordinal);
-    foreach (XmlElement folderNode in solutionNode.SelectNodes("Folder")!)
-    {
-        var name = folderNode.GetAttribute("Name");
-        if (!string.IsNullOrWhiteSpace(name))
-        {
-            folderNodesByName[name] = folderNode;
-        }
-    }
-
-    // Build project nodes map by full path
-    var projectNodesByFullPath = new Dictionary<string, XmlElement>(StringComparer.OrdinalIgnoreCase);
-    foreach (XmlElement projectNode in doc.SelectNodes("//Project")!)
-    {
-        var projectPath = projectNode.GetAttribute("Path");
-        if (string.IsNullOrEmpty(projectPath))
-            continue;
-
-        var fullPath = Path.GetFullPath(Path.Combine(solutionDirectory, projectPath));
-        if (File.Exists(fullPath))
-        {
-            projectNodesByFullPath[fullPath] = projectNode;
-        }
-    }
-
-    foreach (var (projectFullPath, projectNode) in projectNodesByFullPath)
-    {
-        if (string.IsNullOrWhiteSpace(projectFullPath))
-            continue;
-
-        string? folderName = null;
-        if (!folderMapping.TryGetValue(projectFullPath, out folderName))
-        {
-            var relativePathFromRoot = ConvertToRelativePath(projectFullPath);
-            folderName = relativePathFromRoot switch
-            {
-                _ when relativePathFromRoot.StartsWith("src/") => "/src/",
-                _ when relativePathFromRoot.StartsWith("tests/SourceGenerators/") => "/tests/SourceGenerators/",
-                _ when relativePathFromRoot.StartsWith("tests/") => "/tests/",
-                _ when relativePathFromRoot.StartsWith("tools/") => "/tools/",
-                _ when relativePathFromRoot.StartsWith("Samples/") => "/samples/",
-                _ when relativePathFromRoot.StartsWith("benchmarks/") => "/benchmarks/",
-                _ => null,
-            };
-        }
-
-        if (string.IsNullOrWhiteSpace(folderName))
-            continue;
-
-        if (!folderNodesByName.TryGetValue(folderName, out var folderNode))
-        {
-            folderNode = doc.CreateElement("Folder");
-            folderNode.SetAttribute("Name", folderName);
-            solutionNode.AppendChild(folderNode);
-            folderNodesByName[folderName] = folderNode;
-        }
-
-        if (projectNode.ParentNode != folderNode)
-        {
-            projectNode.ParentNode!.RemoveChild(projectNode);
-            folderNode.AppendChild(projectNode);
-        }
-    }
-
-    // Sort folders by name (ordinal)
-    var folders = new List<XmlElement>();
-    foreach (XmlElement folderNode in solutionNode.SelectNodes("Folder")!)
-    {
-        folders.Add(folderNode);
-        solutionNode.RemoveChild(folderNode);
-    }
-
-    folders.Sort((a, b) => string.Compare(a.GetAttribute("Name"), b.GetAttribute("Name"), StringComparison.Ordinal));
-    foreach (var folder in folders)
-    {
-        solutionNode.AppendChild(folder);
-    }
-
-    // Sort projects within each folder by path (ordinal)
-    foreach (XmlElement folderNode in solutionNode.SelectNodes("Folder")!)
-    {
-        var projects = new List<XmlElement>();
-        foreach (XmlElement projectNode in folderNode.SelectNodes("Project")!)
-        {
-            projects.Add(projectNode);
-            folderNode.RemoveChild(projectNode);
-        }
-
-        projects.Sort((a, b) => string.Compare(a.GetAttribute("Path"), b.GetAttribute("Path"), StringComparison.Ordinal));
-        foreach (var project in projects)
-        {
-            folderNode.AppendChild(project);
-        }
-    }
-
-    SaveXmlDocument(doc, slnxPath);
-}
-
-void SaveXmlDocument(XmlDocument doc, string path)
-{
-    var settings = new XmlWriterSettings
-    {
-        Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-        OmitXmlDeclaration = true,
-        NewLineChars = "\n",
-        NewLineHandling = NewLineHandling.Replace,
-        Indent = true,
-    };
-
-    using var writer = XmlWriter.Create(path, settings);
-    doc.Save(writer);
-}
-
-static void RunProcess(string fileName, string[] arguments, bool captureOutput = false)
-{
-    var psi = new ProcessStartInfo(fileName)
-    {
-        UseShellExecute = false,
-        RedirectStandardOutput = captureOutput,
-        RedirectStandardError = captureOutput,
-    };
-    foreach (var arg in arguments)
-    {
-        psi.ArgumentList.Add(arg);
-    }
-
-    using var process = Process.Start(psi)!;
-    if (captureOutput)
-    {
-        process.StandardOutput.ReadToEnd();
-        process.StandardError.ReadToEnd();
-    }
-
-    process.WaitForExit();
-    if (process.ExitCode != 0)
-    {
-        throw new InvalidOperationException($"Process '{fileName} {string.Join(' ', arguments)}' exited with code {process.ExitCode}");
-    }
-}
-
 static string GetRepositoryRoot([CallerFilePath] string? path = null)
     => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
-
-class SlnxPlan
-{
-    public required string ProjectName { get; set; }
-    public required string OutputFile { get; set; }
-    public required List<string> ProjectsToAdd { get; set; }
-}

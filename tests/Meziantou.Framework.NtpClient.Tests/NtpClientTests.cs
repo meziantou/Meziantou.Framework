@@ -1,6 +1,7 @@
 #nullable enable
 using System.Net;
 using Meziantou.Framework.Ntp;
+using TestUtilities;
 
 namespace Meziantou.Framework.Ntp.Tests;
 
@@ -74,7 +75,8 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         }
     }
 
-    [Fact]
+    // https://github.com/actions/runner-images/issues/11939
+    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
     public async Task Query_V4_ReturnsValidResponse()
     {
         var response = await QueryWithFallbackAsync(NtpVersion.V4);
@@ -85,7 +87,8 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         Assert.True(response.ReceiveTimestamp > DateTimeOffset.UnixEpoch);
     }
 
-    [Fact]
+    // https://github.com/actions/runner-images/issues/11939
+    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
     public async Task Query_V3_ReturnsValidResponse()
     {
         var response = await QueryWithFallbackAsync(NtpVersion.V3);
@@ -95,7 +98,8 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         Assert.True(response.TransmitTimestamp > DateTimeOffset.UnixEpoch);
     }
 
-    [Fact]
+    // https://github.com/actions/runner-images/issues/11939
+    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
     public async Task Query_ClockOffset_IsReasonable()
     {
         var response = await QueryWithFallbackAsync();
@@ -104,7 +108,8 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         Assert.True(Math.Abs(response.ClockOffset.TotalMinutes) < 1, $"Clock offset was {response.ClockOffset}");
     }
 
-    [Fact]
+    // https://github.com/actions/runner-images/issues/11939
+    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
     public async Task Query_RoundTripDelay_IsPositive()
     {
         var response = await QueryWithFallbackAsync();
@@ -114,7 +119,8 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         Assert.True(response.RoundTripDelay < TimeSpan.FromSeconds(5), $"Round-trip delay was {response.RoundTripDelay}");
     }
 
-    [Fact]
+    // https://github.com/actions/runner-images/issues/11939
+    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
     public async Task Query_LeapIndicator_IsValid()
     {
         var response = await QueryWithFallbackAsync();
@@ -122,7 +128,8 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         Assert.True(Enum.IsDefined(response.LeapIndicator));
     }
 
-    [Fact]
+    // https://github.com/actions/runner-images/issues/11939
+    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
     public async Task Query_ReferenceTimestamp_IsRecent()
     {
         var response = await QueryWithFallbackAsync();
@@ -132,7 +139,8 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         Assert.True(age < TimeSpan.FromDays(1), $"Reference timestamp age was {age}");
     }
 
-    [Fact]
+    // https://github.com/actions/runner-images/issues/11939
+    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
     public async Task Query_TimeGoogle_ReturnsValidResponse()
     {
         await LogDnsResolutionAsync(["time.google.com"]);
@@ -143,7 +151,8 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         Assert.True(response.TransmitTimestamp > DateTimeOffset.UnixEpoch);
     }
 
-    [Fact]
+    // https://github.com/actions/runner-images/issues/11939
+    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
     public async Task Query_PoolNtpOrg_ReturnsValidResponse()
     {
         await LogDnsResolutionAsync(["pool.ntp.org"]);

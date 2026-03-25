@@ -17,10 +17,10 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
 }
 
 var rootPath = GetRepositoryRoot();
-var srcPath = Path.Combine(rootPath, "src");
-var trimmableCsprojPath = Path.Combine(rootPath, "Samples", "Trimmable", "Trimmable.csproj");
-var trimmableWpfCsprojPath = Path.Combine(rootPath, "Samples", "Trimmable.Wpf", "Trimmable.Wpf.csproj");
-var trimmableDir = Path.GetDirectoryName(trimmableCsprojPath)!;
+var srcPath = rootPath / "src";
+var trimmableCsprojPath = rootPath / "Samples" / "Trimmable" / "Trimmable.csproj";
+var trimmableWpfCsprojPath = rootPath / "Samples" / "Trimmable.Wpf" / "Trimmable.Wpf.csproj";
+var trimmableDir = trimmableCsprojPath.Parent;
 
 // Find all IsTrimmable=true projects (excluding SkipTrimmableValidation=true)
 var trimmableProjects = new List<string>();
@@ -43,13 +43,13 @@ var wpfReferencedProjectNames = new HashSet<string>(StringComparer.OrdinalIgnore
 if (File.Exists(trimmableWpfCsprojPath))
 {
     var wpfDoc = XDocument.Load(trimmableWpfCsprojPath);
-    var wpfDir = Path.GetDirectoryName(trimmableWpfCsprojPath)!;
+    var wpfDir = trimmableWpfCsprojPath.Parent;
     foreach (var projRef in wpfDoc.Descendants("ProjectReference"))
     {
         var include = projRef.Attribute("Include")?.Value;
         if (include is not null)
         {
-            var refFullPath = Path.GetFullPath(Path.Combine(wpfDir, include));
+            string refFullPath = wpfDir / include;
             wpfReferencedProjectNames.Add(Path.GetFileNameWithoutExtension(refFullPath));
         }
     }
@@ -80,7 +80,7 @@ sb.Append($"  <ItemGroup>{lf}");
 
 foreach (var proj in projectsForTrimmable)
 {
-    var relativePath = Path.GetRelativePath(trimmableDir, proj).Replace('/', '\\');
+    var relativePath = FullPath.FromPath(proj).MakePathRelativeTo(trimmableDir).Replace('/', '\\');
     sb.Append($"    <ProjectReference Include=\"{relativePath}\" />{lf}");
 }
 

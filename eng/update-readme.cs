@@ -15,7 +15,7 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
 }
 
 var rootPath = GetRepositoryRoot();
-var srcRootPath = Path.Combine(rootPath, "src");
+var srcRootPath = rootPath / "src";
 
 var nugetReadmeTask = Task.Run(UpdateNuGetReadme);
 var toolReadmeTask = Task.Run(UpdateToolReadmes);
@@ -35,7 +35,7 @@ return 0;
 
 int UpdateNuGetReadme()
 {
-    var readmePath = Path.Combine(rootPath, "README.md");
+    var readmePath = rootPath / "README.md";
 
     // Enumerate all .csproj files under src/, sorted by file name (without extension)
     var csprojFiles = new List<string>(Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories));
@@ -58,10 +58,10 @@ int UpdateNuGetReadme()
         var fileName = Path.GetFileNameWithoutExtension(csproj);
         sb.Append($"| {fileName} | [![NuGet](https://img.shields.io/nuget/v/{fileName}.svg)](https://www.nuget.org/packages/{fileName}/) |");
 
-        var packageReadmePath = Path.Combine(Path.GetDirectoryName(csproj)!, "readme.md");
+        var packageReadmePath = FullPath.FromPath(csproj).Parent / "readme.md";
         if (File.Exists(packageReadmePath))
         {
-            var relativePath = Path.GetRelativePath(rootPath, packageReadmePath).Replace('\\', '/');
+            var relativePath = packageReadmePath.MakePathRelativeTo(rootPath).Replace('\\', '/');
             sb.Append($" [readme]({relativePath}) |\n");
         }
         else
@@ -115,7 +115,7 @@ int UpdateNuGetReadme()
 int UpdateToolReadmes()
 {
     // Read the latest TFM from Directory.Build.props so we don't hardcode "net10.0"
-    var directoryBuildProps = XDocument.Load(Path.Combine(rootPath, "Directory.Build.props"));
+    var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
     var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value;
 
     var toolProjects = new List<(string Csproj, string? ToolName, string ToolReadme)>();
@@ -131,7 +131,7 @@ int UpdateToolReadmes()
 
         var toolName = doc.Root?.Descendants("ToolCommandName").FirstOrDefault()?.Value;
 
-        var toolReadme = Path.Combine(Path.GetDirectoryName(csproj)!, "readme.md");
+        var toolReadme = FullPath.FromPath(csproj).Parent / "readme.md";
         if (!File.Exists(toolReadme))
         {
             Console.Error.WriteLine($"ERROR: Tool {csproj} does not have a readme.md file");

@@ -15,7 +15,7 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
 }
 
 var rootPath = GetRepositoryRoot();
-var srcRootPath = Path.Combine(rootPath, "src");
+var srcRootPath = rootPath / "src";
 var editedFiles = 0;
 
 var extensions = new[] { "*.cs", "*.csproj", "*.fsproj", "*.proj", "*.props", "*.targets", "*.save", "*.slnx", "*.ps1", "*.yml", "*.yaml", "*.md", "*.json" };

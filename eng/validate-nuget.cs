@@ -33,7 +33,7 @@ foreach (var generator in generators)
         .FirstOrDefault(f => packagePattern.IsMatch(f))
         ?? throw new InvalidOperationException($"Package not found for {generator}");
 
-    var annotationPath = Path.Combine(rootPath, "src", $"{generator}.Annotations");
+    var annotationPath = rootPath / "src" / $"{generator}.Annotations";
     var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
 
     using (var zipFile = ZipFile.OpenRead(packagePath))

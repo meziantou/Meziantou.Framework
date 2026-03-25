@@ -43,7 +43,7 @@ var skippedCommits = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 };
 
 var rootPath = GetRepositoryRoot();
-var srcPath = Path.Combine(rootPath, "src");
+var srcPath = rootPath / "src";
 
 // Get recent commits
 var commits = RunAndCapture("git", ["log", $"--pretty=format:%H", "-n", numberOfCommits.ToString(CultureInfo.InvariantCulture)])
@@ -335,12 +335,11 @@ bool IncrementVersion(string csprojPath)
 
 string? GetCsproj(string relativePath)
 {
-    var fullPath = Path.Combine(rootPath, relativePath);
-    var current = fullPath;
-    while (current is not null)
+    var current = rootPath / relativePath;
+    while (!current.IsEmpty)
     {
-        var parent = Path.GetDirectoryName(current);
-        if (parent is not null && Directory.Exists(parent))
+        var parent = current.Parent;
+        if (!parent.IsEmpty && Directory.Exists(parent))
         {
             var csprojFiles = Directory.GetFiles(parent, "*.csproj");
             if (csprojFiles.Length > 0)
@@ -367,7 +366,7 @@ List<string> GetProjectReferences(string csprojPath)
             if (string.IsNullOrEmpty(include))
                 continue;
 
-            var referencedProject = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(csprojPath)!, include));
+            string referencedProject = FullPath.FromPath(csprojPath).Parent / include;
             if (File.Exists(referencedProject) && referencedProject.StartsWith(srcPath, StringComparison.OrdinalIgnoreCase))
             {
                 result.Add(referencedProject);

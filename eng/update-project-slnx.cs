@@ -26,11 +26,11 @@ for (var i = 0; i < args.Length; i++)
 }
 
 var rootPath = GetRepositoryRoot();
-var srcRootPath = Path.Combine(rootPath, "src");
-var testsRootPath = Path.Combine(rootPath, "tests");
-var toolsRootPath = Path.Combine(rootPath, "tools");
-var outputRootPath = Path.Combine(rootPath, outputPath);
-var mainSolutionPath = Path.Combine(rootPath, "Meziantou.Framework.slnx");
+var srcRootPath = rootPath / "src";
+var testsRootPath = rootPath / "tests";
+var toolsRootPath = rootPath / "tools";
+var outputRootPath = rootPath / outputPath;
+var mainSolutionPath = rootPath / "Meziantou.Framework.slnx";
 
 // Get all project files
 var srcProjects = GetProjectFiles(srcRootPath);
@@ -57,7 +57,7 @@ if (File.Exists(mainSolutionPath))
                 if (projectPath is null)
                     continue;
 
-                var fullPath = Path.GetFullPath(Path.Combine(rootPath, projectPath));
+                string fullPath = rootPath / projectPath;
                 if (File.Exists(fullPath))
                 {
                     solutionFolderByProjectPath[fullPath] = folderName;
@@ -138,7 +138,7 @@ allProjectSet.UnionWith(toolsProjects);
 foreach (var project in srcProjects.OrderBy(p => p, StringComparer.Ordinal))
 {
     var fileName = $"{Path.GetFileNameWithoutExtension(project)}.slnx";
-    var outputFile = Path.Combine(outputRootPath, fileName);
+    var outputFile = outputRootPath / fileName;
     generatedFiles.Add(outputFile);
 
     // Seed with the src project and its direct src transitive deps
@@ -227,11 +227,11 @@ List<string> GetProjectReferences(string projectPath)
             if (string.IsNullOrEmpty(include))
                 continue;
 
-            var candidatePath = Path.Combine(Path.GetDirectoryName(projectPath)!, include);
+            var candidatePath = FullPath.FromPath(projectPath).Parent / include;
             if (!File.Exists(candidatePath))
                 continue;
 
-            references.Add(Path.GetFullPath(candidatePath));
+            references.Add(candidatePath);
         }
     }
     catch
@@ -277,7 +277,7 @@ string GetFolderForProject(string projectFullPath)
     if (solutionFolderByProjectPath.TryGetValue(projectFullPath, out var folderName))
         return folderName;
 
-    var relativePathFromRoot = Path.GetRelativePath(rootPath, projectFullPath).Replace('\\', '/');
+    var relativePathFromRoot = FullPath.FromPath(projectFullPath).MakePathRelativeTo(rootPath).Replace('\\', '/');
     return relativePathFromRoot switch
     {
         _ when relativePathFromRoot.StartsWith("src/", StringComparison.Ordinal) => "/src/",
@@ -307,7 +307,7 @@ void AddProjectsToFolders(Dictionary<string, List<string>> projectsByFolder, Has
 
 string GenerateSlnx(string outputFile, Dictionary<string, List<string>> projectsByFolder)
 {
-    var outputDir = Path.GetDirectoryName(outputFile)!;
+    var outputDir = FullPath.FromPath(outputFile).Parent;
     var sb = new StringBuilder();
     sb.Append("<Solution>\n");
 
@@ -319,7 +319,7 @@ string GenerateSlnx(string outputFile, Dictionary<string, List<string>> projects
         var relativePaths = new List<string>(projects.Count);
         foreach (var project in projects)
         {
-            relativePaths.Add(Path.GetRelativePath(outputDir, project).Replace('\\', '/'));
+            relativePaths.Add(FullPath.FromPath(project).MakePathRelativeTo(outputDir).Replace('\\', '/'));
         }
 
         relativePaths.Sort(StringComparer.Ordinal);

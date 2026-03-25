@@ -19,8 +19,8 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
 }
 
 var rootPath = GetRepositoryRoot();
-var testsRootPath = Path.Combine(rootPath, "tests");
-var utilsPath = Path.GetFullPath(Path.Combine(testsRootPath, "TestUtilities", "TestUtilities.csproj"));
+var testsRootPath = rootPath / "tests";
+var utilsPath = testsRootPath / "TestUtilities" / "TestUtilities.csproj";
 
 var testProjects = Directory.GetFiles(testsRootPath, "*.csproj", SearchOption.AllDirectories);
 var errors = new ConcurrentBag<string>();
@@ -35,11 +35,11 @@ await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
         .ToList();
 
     var doc = XDocument.Load(proj);
-    var projDir = Path.GetDirectoryName(proj)!;
+    var projDir = FullPath.FromPath(proj).Parent;
     var references = doc.Descendants("ProjectReference")
         .Select(e => e.Attribute("Include")?.Value)
         .Where(v => v is not null)
-        .Select(v => Path.GetFullPath(Path.Combine(projDir, v!)))
+        .Select(v => (string)(projDir / v!))
         .ToList();
 
     foreach (var refProj in references)

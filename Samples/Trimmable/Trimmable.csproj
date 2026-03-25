@@ -31,6 +31,8 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Hsts\Meziantou.Framework.Http.Hsts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Htpasswd\Meziantou.Framework.Http.Htpasswd.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Scheduling\Meziantou.Framework.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.SensitiveData\Meziantou.Framework.SensitiveData.csproj" />
@@ -65,6 +67,8 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Hsts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Htpasswd" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
     <TrimmerRootAssembly Include="Meziantou.Framework.RelativeDate" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Scheduling" />
     <TrimmerRootAssembly Include="Meziantou.Framework.SensitiveData" />

@@ -14,4 +14,7 @@ public sealed class NtpClientOptions
 
     /// <summary>Gets or sets the NTP protocol version to use. Default is <see cref="NtpVersion.V4"/>.</summary>
     public NtpVersion Version { get; set; } = NtpVersion.V4;
+
+    /// <summary>Gets or sets the timeout for a single NTP query. Default is 5 seconds. Use <see cref="System.Threading.Timeout.InfiniteTimeSpan"/> for no timeout.</summary>
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 }

@@ -44,9 +44,13 @@ public sealed class NtpClient : IDisposable
         activity?.SetTag("ntp.server", _server);
         activity?.SetTag("ntp.version", (int)_options.Version);
 
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(_options.Timeout);
+        var linkedToken = timeoutCts.Token;
+
         try
         {
-            var endpoint = await ResolveEndpointAsync(cancellationToken).ConfigureAwait(false);
+            var endpoint = await ResolveEndpointAsync(linkedToken).ConfigureAwait(false);
 
             var request = NtpPacket.CreateClientRequest(_options.Version);
             request.TransmitTimestamp = DateTimeOffset.UtcNow;
@@ -57,7 +61,7 @@ public sealed class NtpClient : IDisposable
             using var client = new UdpClient(endpoint.AddressFamily);
             await client.SendAsync(requestBuffer, requestBuffer.Length, endpoint).ConfigureAwait(false);
 
-            var result = await client.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+            var result = await client.ReceiveAsync(linkedToken).ConfigureAwait(false);
             var destinationTimestamp = DateTimeOffset.UtcNow;
 
             var responsePacket = NtpPacket.Decode(result.Buffer);

@@ -1,0 +1,10 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>An NTP server that responds to NTP time queries (supports NTPv3 and NTPv4)</Description>
+  </PropertyGroup>
+
+</Project>

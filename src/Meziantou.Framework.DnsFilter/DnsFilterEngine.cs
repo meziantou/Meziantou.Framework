@@ -370,13 +370,13 @@ public sealed class DnsFilterEngine
         // Remove $badfilter from the original rule text to find what it targets
         // e.g., "||example.com^$badfilter" → "||example.com^"
         // e.g., "||example.com^$important,badfilter" → "||example.com^$important"
-        const string badfilterStr = "badfilter";
-        var idx = originalText.LastIndexOf(badfilterStr, StringComparison.OrdinalIgnoreCase);
+        const string BadfilterStr = "badfilter";
+        var idx = originalText.LastIndexOf(BadfilterStr, StringComparison.OrdinalIgnoreCase);
         if (idx < 0)
             return originalText;
 
         var before = originalText[..idx];
-        var after = originalText[(idx + badfilterStr.Length)..];
+        var after = originalText[(idx + BadfilterStr.Length)..];
 
         // Remove trailing/leading comma
         if (before.EndsWith(','))

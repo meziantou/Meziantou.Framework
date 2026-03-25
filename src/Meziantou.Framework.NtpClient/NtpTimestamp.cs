@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 
-namespace Meziantou.Framework.NtpClient;
+namespace Meziantou.Framework.Ntp;
 
 /// <summary>
 /// Provides conversion between NTP 64-bit timestamps and <see cref="DateTimeOffset"/>.

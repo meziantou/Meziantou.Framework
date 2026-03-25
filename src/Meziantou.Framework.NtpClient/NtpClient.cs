@@ -2,13 +2,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Meziantou.Framework.NtpClient;
+namespace Meziantou.Framework.Ntp;
 
 /// <summary>
 /// An NTP client for querying NTP servers to retrieve accurate network time.
 /// Supports NTPv3 and NTPv4.
 /// </summary>
-[SuppressMessage("Naming", "MA0049:Type name should not match containing namespace")]
 public sealed class NtpClient : IDisposable
 {
     private readonly string _server;

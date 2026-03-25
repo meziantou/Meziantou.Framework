@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.NtpClient;
+namespace Meziantou.Framework.Ntp;
 
 /// <summary>
 /// Specifies the NTP protocol version to use.

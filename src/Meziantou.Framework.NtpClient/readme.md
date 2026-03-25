@@ -13,7 +13,7 @@ An NTP client library for querying NTP servers to retrieve accurate network time
 ## Usage
 
 ```c#
-using Meziantou.Framework.NtpClient;
+using Meziantou.Framework.Ntp;
 
 // Query an NTP server using NTPv4 (default)
 using var client = new NtpClient("pool.ntp.org");

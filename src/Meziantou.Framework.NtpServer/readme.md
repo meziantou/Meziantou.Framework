@@ -12,7 +12,7 @@ An NTP server that responds to NTP time queries. Supports NTPv3 and NTPv4.
 ## Usage
 
 ```c#
-using Meziantou.Framework.NtpServer;
+using Meziantou.Framework.Ntp;
 
 // Start an NTP server on a random port
 using var server = new NtpServer(new NtpServerOptions { Port = 0 });

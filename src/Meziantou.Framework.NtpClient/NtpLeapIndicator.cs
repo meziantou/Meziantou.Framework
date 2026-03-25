@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.NtpClient;
+namespace Meziantou.Framework.Ntp;
 
 /// <summary>
 /// Indicates the leap second warning from the NTP server.

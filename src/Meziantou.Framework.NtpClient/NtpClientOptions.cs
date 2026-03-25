@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Meziantou.Framework.NtpClient;
+namespace Meziantou.Framework.Ntp;
 
 /// <summary>
 /// Configuration options for <see cref="NtpClient"/>.

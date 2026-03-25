@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.NtpClient;
+namespace Meziantou.Framework.Ntp;
 
 /// <summary>
 /// Represents a 48-byte NTP packet as defined in RFC 5905.

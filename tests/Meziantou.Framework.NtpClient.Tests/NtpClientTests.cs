@@ -1,12 +1,12 @@
-using TestUtilities;
+using Meziantou.Framework.Ntp;
 
-namespace Meziantou.Framework.NtpClient.Tests;
+namespace Meziantou.Framework.Ntp.Tests;
 
 public sealed class NtpClientTests
 {
     private static Task<NtpResponse> QueryWithRetryAsync(NtpClient client)
     {
-        return XUnitStaticHelpers.Retry(() => client.QueryAsync(XUnitStaticHelpers.XunitCancellationToken));
+        return Retry(() => client.QueryAsync(XunitCancellationToken));
     }
 
     private static async Task<NtpResponse> QueryWithFallbackAsync(NtpVersion version = NtpVersion.V4)

@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Meziantou.Framework.NtpServer;
+namespace Meziantou.Framework.Ntp;
 
 internal static class NtpServerTelemetry
 {

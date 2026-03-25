@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.NtpServer;
+namespace Meziantou.Framework.Ntp;
 
 /// <summary>
 /// Configuration options for <see cref="NtpServer"/>.

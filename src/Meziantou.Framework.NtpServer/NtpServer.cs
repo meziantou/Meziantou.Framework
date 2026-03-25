@@ -3,13 +3,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Meziantou.Framework.NtpServer;
+namespace Meziantou.Framework.Ntp;
 
 /// <summary>
 /// An NTP server that responds to NTP time queries.
 /// Supports NTPv3 and NTPv4, mirroring the version sent by the client.
 /// </summary>
-[SuppressMessage("Naming", "MA0049:Type name should not match containing namespace")]
 public sealed class NtpServer : IDisposable
 {
     private const int PacketSize = 48;

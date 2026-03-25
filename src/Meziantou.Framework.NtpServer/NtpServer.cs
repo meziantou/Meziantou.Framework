@@ -17,7 +17,6 @@ public sealed class NtpServer : IDisposable
 
     private readonly NtpServerOptions _options;
     private UdpClient? _udpClient;
-    private Task? _listenTask;
     private CancellationTokenSource? _cts;
 
     /// <summary>
@@ -43,7 +42,7 @@ public sealed class NtpServer : IDisposable
         _udpClient = new UdpClient(new IPEndPoint(IPAddress.Loopback, _options.Port));
         Port = ((IPEndPoint)_udpClient.Client.LocalEndPoint!).Port;
 
-        _listenTask = ListenAsync(_cts.Token);
+        _ = ListenAsync(_cts.Token);
 
         return Task.CompletedTask;
     }

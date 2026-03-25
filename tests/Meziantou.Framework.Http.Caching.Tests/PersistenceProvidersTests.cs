@@ -543,7 +543,7 @@ public class PersistenceProvidersTests
 
     private static async Task<RedisContainer> StartRedisContainerAsync()
     {
-        const int maxRetries = 3;
+        const int MaxRetries = 3;
         for (var i = 0; ; i++)
         {
             var redisContainer = new RedisBuilder("redis:8.2").Build();
@@ -552,7 +552,7 @@ public class PersistenceProvidersTests
                 await redisContainer.StartAsync();
                 return redisContainer;
             }
-            catch when (i < maxRetries)
+            catch when (i < MaxRetries)
             {
                 await redisContainer.DisposeAsync();
                 await Task.Delay(1000);

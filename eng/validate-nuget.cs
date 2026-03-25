@@ -1,10 +1,10 @@
+#:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Meziantou.Framework;
 
@@ -28,12 +28,12 @@ foreach (var generator in generators)
 {
     Console.WriteLine($"Checking {generator}");
 
-    var packagePattern = new Regex($@"{Regex.Escape(generator)}\.[0-9][0-9a-zA-Z.\-]*\.nupkg$");
+    var packagePattern = new Regex($@"{Regex.Escape(generator)}\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
     var packagePath = Directory.EnumerateFiles(nugetDirectory)
         .FirstOrDefault(f => packagePattern.IsMatch(f))
         ?? throw new InvalidOperationException($"Package not found for {generator}");
 
-    var annotationPath = Path.Combine(rootPath, "src", $"{generator}.Annotations");
+    var annotationPath = rootPath / "src" / $"{generator}.Annotations";
     var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
 
     using (var zipFile = ZipFile.OpenRead(packagePath))
@@ -41,7 +41,7 @@ foreach (var generator in generators)
         var entries = zipFile.Entries.Select(e => e.FullName).ToList();
         foreach (var tfm in tfms)
         {
-            var hasEntry = entries.Any(e => e.StartsWith($"lib/{tfm}/"));
+            var hasEntry = entries.Any(e => e.StartsWith($"lib/{tfm}/", StringComparison.Ordinal));
             if (!hasEntry)
             {
                 Console.Error.WriteLine($"ERROR: Package does not contain a lib/{tfm}/ entry");
@@ -53,13 +53,13 @@ foreach (var generator in generators)
 
 // Ensure InlineSnapshot package contains the prompt folder
 {
-    var packagePattern = new Regex(@"Meziantou\.Framework\.InlineSnapshotTesting\.[0-9][0-9a-zA-Z.\-]*\.nupkg$");
+    var packagePattern = new Regex(@"Meziantou\.Framework\.InlineSnapshotTesting\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
     var packagePath = Directory.EnumerateFiles(nugetDirectory)
         .FirstOrDefault(f => packagePattern.IsMatch(f))
         ?? throw new InvalidOperationException("InlineSnapshotTesting package not found");
 
     using var zipFile = ZipFile.OpenRead(packagePath);
-    var hasPrompt = zipFile.Entries.Any(e => e.FullName.StartsWith("prompt/"));
+    var hasPrompt = zipFile.Entries.Any(e => e.FullName.StartsWith("prompt/", StringComparison.Ordinal));
     if (!hasPrompt)
     {
         Console.Error.WriteLine("ERROR: Package does not contain a prompt/ entry");
@@ -144,5 +144,4 @@ static int RunProcessWithExitCode(string fileName, string[] arguments)
     return process.ExitCode;
 }
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

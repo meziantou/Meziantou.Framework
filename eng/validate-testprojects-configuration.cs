@@ -1,3 +1,4 @@
+#:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Collections.Concurrent;
@@ -5,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -19,8 +19,8 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
 }
 
 var rootPath = GetRepositoryRoot();
-var testsRootPath = Path.Combine(rootPath, "tests");
-var utilsPath = Path.GetFullPath(Path.Combine(testsRootPath, "TestUtilities", "TestUtilities.csproj"));
+var testsRootPath = rootPath / "tests";
+var utilsPath = testsRootPath / "TestUtilities" / "TestUtilities.csproj";
 
 var testProjects = Directory.GetFiles(testsRootPath, "*.csproj", SearchOption.AllDirectories);
 var errors = new ConcurrentBag<string>();
@@ -35,11 +35,11 @@ await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
         .ToList();
 
     var doc = XDocument.Load(proj);
-    var projDir = Path.GetDirectoryName(proj)!;
+    var projDir = FullPath.FromPath(proj).Parent;
     var references = doc.Descendants("ProjectReference")
         .Select(e => e.Attribute("Include")?.Value)
         .Where(v => v is not null)
-        .Select(v => Path.GetFullPath(Path.Combine(projDir, v!)))
+        .Select(v => (string)(projDir / v!))
         .ToList();
 
     foreach (var refProj in references)
@@ -59,10 +59,10 @@ await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
             if (refTfm is "netstandard2.0" or "netstandard2.1")
                 continue;
 
-            if (refTfm == "net462" && testProjectTfms.Contains("net472"))
+            if (refTfm == "net462" && testProjectTfms.Contains("net472", StringComparer.Ordinal))
                 continue;
 
-            if (!testProjectTfms.Contains(refTfm))
+            if (!testProjectTfms.Contains(refTfm, StringComparer.Ordinal))
             {
                 var errorMsg = $"Project {proj} does not target {refTfm}, but it references {refProj} which does. ({string.Join(", ", testProjectTfms)}) != ({string.Join(", ", refTfms)})";
                 Console.Error.WriteLine($"ERROR: {errorMsg}");
@@ -81,7 +81,7 @@ return 0;
 
 static string SimplifyTfm(string tfm)
 {
-    var dashIndex = tfm.IndexOf('-');
+    var dashIndex = tfm.IndexOf('-', StringComparison.Ordinal);
     return dashIndex >= 0 ? tfm[..dashIndex] : tfm;
 }
 
@@ -122,5 +122,4 @@ static string[] DotNetBuildGetTfmsWithRetry(string projectPath, int maxAttempts 
     return []; // unreachable
 }
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

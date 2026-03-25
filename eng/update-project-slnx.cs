@@ -1,9 +1,9 @@
+#:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
 using Meziantou.Framework;
@@ -26,11 +26,11 @@ for (var i = 0; i < args.Length; i++)
 }
 
 var rootPath = GetRepositoryRoot();
-var srcRootPath = Path.Combine(rootPath, "src");
-var testsRootPath = Path.Combine(rootPath, "tests");
-var toolsRootPath = Path.Combine(rootPath, "tools");
-var outputRootPath = Path.Combine(rootPath, outputPath);
-var mainSolutionPath = Path.Combine(rootPath, "Meziantou.Framework.slnx");
+var srcRootPath = rootPath / "src";
+var testsRootPath = rootPath / "tests";
+var toolsRootPath = rootPath / "tools";
+var outputRootPath = rootPath / outputPath;
+var mainSolutionPath = rootPath / "Meziantou.Framework.slnx";
 
 // Get all project files
 var srcProjects = GetProjectFiles(srcRootPath);
@@ -57,7 +57,7 @@ if (File.Exists(mainSolutionPath))
                 if (projectPath is null)
                     continue;
 
-                var fullPath = Path.GetFullPath(Path.Combine(rootPath, projectPath));
+                string fullPath = rootPath / projectPath;
                 if (File.Exists(fullPath))
                 {
                     solutionFolderByProjectPath[fullPath] = folderName;
@@ -138,7 +138,7 @@ allProjectSet.UnionWith(toolsProjects);
 foreach (var project in srcProjects.OrderBy(p => p, StringComparer.Ordinal))
 {
     var fileName = $"{Path.GetFileNameWithoutExtension(project)}.slnx";
-    var outputFile = Path.Combine(outputRootPath, fileName);
+    var outputFile = outputRootPath / fileName;
     generatedFiles.Add(outputFile);
 
     // Seed with the src project and its direct src transitive deps
@@ -227,11 +227,11 @@ List<string> GetProjectReferences(string projectPath)
             if (string.IsNullOrEmpty(include))
                 continue;
 
-            var candidatePath = Path.Combine(Path.GetDirectoryName(projectPath)!, include);
+            var candidatePath = FullPath.FromPath(projectPath).Parent / include;
             if (!File.Exists(candidatePath))
                 continue;
 
-            references.Add(Path.GetFullPath(candidatePath));
+            references.Add(candidatePath);
         }
     }
     catch
@@ -277,15 +277,15 @@ string GetFolderForProject(string projectFullPath)
     if (solutionFolderByProjectPath.TryGetValue(projectFullPath, out var folderName))
         return folderName;
 
-    var relativePathFromRoot = Path.GetRelativePath(rootPath, projectFullPath).Replace('\\', '/');
+    var relativePathFromRoot = FullPath.FromPath(projectFullPath).MakePathRelativeTo(rootPath).Replace('\\', '/');
     return relativePathFromRoot switch
     {
-        _ when relativePathFromRoot.StartsWith("src/") => "/src/",
-        _ when relativePathFromRoot.StartsWith("tests/SourceGenerators/") => "/tests/SourceGenerators/",
-        _ when relativePathFromRoot.StartsWith("tests/") => "/tests/",
-        _ when relativePathFromRoot.StartsWith("tools/") => "/tools/",
-        _ when relativePathFromRoot.StartsWith("Samples/") => "/samples/",
-        _ when relativePathFromRoot.StartsWith("benchmarks/") => "/benchmarks/",
+        _ when relativePathFromRoot.StartsWith("src/", StringComparison.Ordinal) => "/src/",
+        _ when relativePathFromRoot.StartsWith("tests/SourceGenerators/", StringComparison.Ordinal) => "/tests/SourceGenerators/",
+        _ when relativePathFromRoot.StartsWith("tests/", StringComparison.Ordinal) => "/tests/",
+        _ when relativePathFromRoot.StartsWith("tools/", StringComparison.Ordinal) => "/tools/",
+        _ when relativePathFromRoot.StartsWith("Samples/", StringComparison.Ordinal) => "/samples/",
+        _ when relativePathFromRoot.StartsWith("benchmarks/", StringComparison.Ordinal) => "/benchmarks/",
         _ => "/other/",
     };
 }
@@ -307,7 +307,7 @@ void AddProjectsToFolders(Dictionary<string, List<string>> projectsByFolder, Has
 
 string GenerateSlnx(string outputFile, Dictionary<string, List<string>> projectsByFolder)
 {
-    var outputDir = Path.GetDirectoryName(outputFile)!;
+    var outputDir = FullPath.FromPath(outputFile).Parent;
     var sb = new StringBuilder();
     sb.Append("<Solution>\n");
 
@@ -319,7 +319,7 @@ string GenerateSlnx(string outputFile, Dictionary<string, List<string>> projects
         var relativePaths = new List<string>(projects.Count);
         foreach (var project in projects)
         {
-            relativePaths.Add(Path.GetRelativePath(outputDir, project).Replace('\\', '/'));
+            relativePaths.Add(FullPath.FromPath(project).MakePathRelativeTo(outputDir).Replace('\\', '/'));
         }
 
         relativePaths.Sort(StringComparer.Ordinal);
@@ -347,5 +347,4 @@ void WriteIfChanged(string path, string content)
     File.WriteAllText(path, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 }
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

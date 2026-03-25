@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Ntp.Tests;
 
 public sealed class NtpServerTests : IAsyncLifetime
 {
-    private NtpServer _server = null!;
+    private NtpServer _server = null;
 
     public async ValueTask InitializeAsync()
     {

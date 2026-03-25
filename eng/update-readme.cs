@@ -155,11 +155,11 @@ int UpdateToolReadmes()
         helpText = helpText.TrimEnd(' ', '\t', '\r', '\n');
         if (!string.IsNullOrEmpty(project.ToolName))
         {
-            helpText = helpText.Replace(Path.GetFileNameWithoutExtension(project.Csproj), project.ToolName);
+            helpText = helpText.Replace(Path.GetFileNameWithoutExtension(project.Csproj), project.ToolName, StringComparison.Ordinal);
         }
 
         var toolReadmeContent = File.ReadAllText(project.ToolReadme);
-        var pattern = new Regex("(?<=<!-- help -->)(.*?)(?=<!-- help -->)", RegexOptions.Singleline);
+        var pattern = new Regex("(?<=<!-- help -->)(.*?)(?=<!-- help -->)", RegexOptions.Singleline | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
         var newToolReadmeContent = pattern.Replace(toolReadmeContent, $"\n```\n{helpText}\n```\n");
         newToolReadmeContent = newToolReadmeContent.TrimEnd(' ', '\t', '\r', '\n');
 

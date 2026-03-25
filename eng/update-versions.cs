@@ -3,10 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
@@ -30,7 +32,7 @@ for (var i = 0; i < args.Length; i++)
             createPullRequest = true;
             break;
         case "--number-of-commits" when i + 1 < args.Length:
-            numberOfCommits = int.Parse(args[++i]);
+            numberOfCommits = int.Parse(args[++i], CultureInfo.InvariantCulture);
             break;
     }
 }
@@ -45,7 +47,7 @@ var rootPath = GetRepositoryRoot();
 var srcPath = Path.Combine(rootPath, "src");
 
 // Get recent commits
-var commits = RunAndCapture("git", ["log", $"--pretty=format:%H", "-n", numberOfCommits.ToString()])
+var commits = RunAndCapture("git", ["log", $"--pretty=format:%H", "-n", numberOfCommits.ToString(CultureInfo.InvariantCulture)])
     .Split('\n', StringSplitOptions.RemoveEmptyEntries)
     .Select(c => c.Trim().Trim('\''))
     .ToArray();
@@ -116,11 +118,11 @@ foreach (var commit in commits)
 
     var changes = RunAndCapture("git", ["diff", "--name-only", commit, $"{commit}~1"])
         .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-        .Where(c => c.StartsWith("src/"))
+        .Where(c => c.StartsWith("src/", StringComparison.Ordinal))
         .ToArray();
 
     // Process csproj files first to check for version changes
-    foreach (var change in changes.Where(c => c.EndsWith(".csproj")))
+    foreach (var change in changes.Where(c => c.EndsWith(".csproj", StringComparison.Ordinal)))
     {
         string previousContent;
         try
@@ -226,11 +228,11 @@ foreach (var (csproj, info) in projectsToUpdate.OrderBy(kv => kv.Key, StringComp
         }
         else
         {
-            foreach (var commit in info.Commits.Distinct())
+            foreach (var commit in info.Commits.Distinct(StringComparer.Ordinal))
             {
                 var message = RunAndCapture("git", ["log", "--format=%B", "-n", "1", commit]);
-                message = System.Text.RegularExpressions.Regex.Replace(message, @"\r?\n", "\n");
-                message = System.Text.RegularExpressions.Regex.Replace(message, @"\s+", " ");
+                message = Regex.Replace(message, @"\r?\n", "\n", RegexOptions.NonBacktracking);
+                message = Regex.Replace(message, @"\s+", " ", RegexOptions.NonBacktracking);
                 message = message.Replace("Co-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>", "", StringComparison.OrdinalIgnoreCase);
                 message = message.Trim();
                 prMessage.Append($"- {commit}: {message}\n");
@@ -261,10 +263,10 @@ if (updated)
         var openPrJson = RunAndCapture("gh", ["pr", "list", "--repo", "meziantou/meziantou.framework", "--head", "generated/bump-package-versions", "--json", "number"]);
 
         // Simple JSON parsing — look for "number": <digits>
-        var numberMatch = System.Text.RegularExpressions.Regex.Match(openPrJson, @"""number""\s*:\s*(\d+)");
+        var numberMatch = Regex.Match(openPrJson, @"""number""\s*:\s*(?<number>\d+)", RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture);
         if (numberMatch.Success)
         {
-            var prNumber = numberMatch.Groups[1].Value;
+            var prNumber = numberMatch.Groups["number"].Value;
             Console.WriteLine($"Editing existing pull request {prNumber}");
             RunProcess("gh", ["pr", "edit", prNumber, "--title", "Bump package versions", "--body", prBody]);
         }
@@ -287,8 +289,8 @@ return 0;
 string? GetVersion(string fileContent)
 {
     // Strip BOM-like artifacts
-    fileContent = fileContent.Replace("\uFEFF", "");
-    var xmlStart = fileContent.IndexOf('<');
+    fileContent = fileContent.Replace("\uFEFF", "", StringComparison.Ordinal);
+    var xmlStart = fileContent.IndexOf('<', StringComparison.Ordinal);
     if (xmlStart > 0)
     {
         fileContent = fileContent[xmlStart..];
@@ -325,7 +327,7 @@ bool IncrementVersion(string csprojPath)
     var versionNode = versionNodes[0]!;
     var version = versionNode.InnerText;
     var parts = version.Split('.');
-    parts[^1] = (int.Parse(parts[^1]) + 1).ToString();
+    parts[^1] = (int.Parse(parts[^1], CultureInfo.InvariantCulture) + 1).ToString(CultureInfo.InvariantCulture);
     versionNode.InnerText = string.Join('.', parts);
 
     doc.Save(csprojPath);
@@ -442,13 +444,13 @@ static void RunProcess(string fileName, string[] arguments)
 static string GetRepositoryRoot([CallerFilePath] string? path = null)
     => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
 
-class CsprojInfo
+sealed class CsprojInfo
 {
     public List<string> Commits { get; } = [];
     public bool StopProcessing { get; set; }
 }
 
-class ProjectUpdateInfo
+sealed class ProjectUpdateInfo
 {
     public List<string> Commits { get; init; } = [];
     public bool UpdatedDueToDependency { get; init; }

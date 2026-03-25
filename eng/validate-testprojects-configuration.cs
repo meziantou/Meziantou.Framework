@@ -60,10 +60,10 @@ await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
             if (refTfm is "netstandard2.0" or "netstandard2.1")
                 continue;
 
-            if (refTfm == "net462" && testProjectTfms.Contains("net472"))
+            if (refTfm == "net462" && testProjectTfms.Contains("net472", StringComparer.Ordinal))
                 continue;
 
-            if (!testProjectTfms.Contains(refTfm))
+            if (!testProjectTfms.Contains(refTfm, StringComparer.Ordinal))
             {
                 var errorMsg = $"Project {proj} does not target {refTfm}, but it references {refProj} which does. ({string.Join(", ", testProjectTfms)}) != ({string.Join(", ", refTfms)})";
                 Console.Error.WriteLine($"ERROR: {errorMsg}");
@@ -82,7 +82,7 @@ return 0;
 
 static string SimplifyTfm(string tfm)
 {
-    var dashIndex = tfm.IndexOf('-');
+    var dashIndex = tfm.IndexOf('-', StringComparison.Ordinal);
     return dashIndex >= 0 ? tfm[..dashIndex] : tfm;
 }
 

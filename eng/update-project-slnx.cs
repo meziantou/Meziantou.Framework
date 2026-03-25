@@ -281,12 +281,12 @@ string GetFolderForProject(string projectFullPath)
     var relativePathFromRoot = Path.GetRelativePath(rootPath, projectFullPath).Replace('\\', '/');
     return relativePathFromRoot switch
     {
-        _ when relativePathFromRoot.StartsWith("src/") => "/src/",
-        _ when relativePathFromRoot.StartsWith("tests/SourceGenerators/") => "/tests/SourceGenerators/",
-        _ when relativePathFromRoot.StartsWith("tests/") => "/tests/",
-        _ when relativePathFromRoot.StartsWith("tools/") => "/tools/",
-        _ when relativePathFromRoot.StartsWith("Samples/") => "/samples/",
-        _ when relativePathFromRoot.StartsWith("benchmarks/") => "/benchmarks/",
+        _ when relativePathFromRoot.StartsWith("src/", StringComparison.Ordinal) => "/src/",
+        _ when relativePathFromRoot.StartsWith("tests/SourceGenerators/", StringComparison.Ordinal) => "/tests/SourceGenerators/",
+        _ when relativePathFromRoot.StartsWith("tests/", StringComparison.Ordinal) => "/tests/",
+        _ when relativePathFromRoot.StartsWith("tools/", StringComparison.Ordinal) => "/tools/",
+        _ when relativePathFromRoot.StartsWith("Samples/", StringComparison.Ordinal) => "/samples/",
+        _ when relativePathFromRoot.StartsWith("benchmarks/", StringComparison.Ordinal) => "/benchmarks/",
         _ => "/other/",
     };
 }

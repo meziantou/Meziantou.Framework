@@ -114,7 +114,7 @@ if (File.Exists(trimmableCsprojPath))
     existingContent = Encoding.UTF8.GetString(existingBytes, offset, existingBytes.Length - offset);
 }
 
-var normalizedExisting = existingContent.Replace("\r\n", "\n");
+var normalizedExisting = existingContent.Replace("\r\n", "\n", StringComparison.Ordinal);
 
 if (normalizedExisting != newContent)
 {

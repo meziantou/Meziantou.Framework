@@ -4,7 +4,6 @@
     <Project Path="../src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj" />
     <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>

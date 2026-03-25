@@ -1,7 +1,6 @@
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 using Meziantou.Framework;
 using System.Text.RegularExpressions;
@@ -220,5 +219,4 @@ static void RunProcess(string fileName, string[] arguments)
     process.WaitForExit();
 }
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

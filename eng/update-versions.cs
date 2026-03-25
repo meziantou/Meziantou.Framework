@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -441,16 +440,15 @@ static void RunProcess(string fileName, string[] arguments)
     }
 }
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
 
-sealed class CsprojInfo
+internal sealed class CsprojInfo
 {
     public List<string> Commits { get; } = [];
     public bool StopProcessing { get; set; }
 }
 
-sealed class ProjectUpdateInfo
+internal sealed class ProjectUpdateInfo
 {
     public List<string> Commits { get; init; } = [];
     public bool UpdatedDueToDependency { get; init; }

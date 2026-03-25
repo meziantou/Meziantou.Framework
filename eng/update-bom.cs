@@ -3,7 +3,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using Meziantou.Framework;
 
@@ -41,5 +40,4 @@ Parallel.ForEach(files, file =>
 
 return editedFiles;
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

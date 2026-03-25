@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Meziantou.Framework;
 
@@ -145,5 +144,4 @@ static int RunProcessWithExitCode(string fileName, string[] arguments)
     return process.ExitCode;
 }
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

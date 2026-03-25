@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -123,5 +122,4 @@ static string[] DotNetBuildGetTfmsWithRetry(string projectPath, int maxAttempts 
     return []; // unreachable
 }
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

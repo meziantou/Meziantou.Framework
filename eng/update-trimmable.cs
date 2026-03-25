@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
 using Meziantou.Framework;
@@ -134,5 +133,4 @@ if (normalizedExisting != newContent)
 Console.WriteLine("Samples/Trimmable/Trimmable.csproj is up-to-date");
 return 0;
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml.Linq;
 using Meziantou.Framework;
@@ -348,5 +347,4 @@ void WriteIfChanged(string path, string content)
     File.WriteAllText(path, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 }
 
-static string GetRepositoryRoot([CallerFilePath] string? path = null)
-    => FullPath.FromPath(Path.GetDirectoryName(path)!).FindRequiredGitRepositoryRoot();
+static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

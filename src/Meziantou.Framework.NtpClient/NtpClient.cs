@@ -50,26 +50,44 @@ public sealed class NtpClient : IDisposable
 
         try
         {
-            var endpoint = await ResolveEndpointAsync(linkedToken).ConfigureAwait(false);
+            var endpoints = await ResolveEndpointsAsync(linkedToken).ConfigureAwait(false);
 
-            var request = NtpPacket.CreateClientRequest(_options.Version);
-            request.TransmitTimestamp = DateTimeOffset.UtcNow;
+            List<Exception>? exceptions = null;
+            foreach (var endpoint in endpoints)
+            {
+                try
+                {
+                    var request = NtpPacket.CreateClientRequest(_options.Version);
+                    request.TransmitTimestamp = DateTimeOffset.UtcNow;
 
-            var requestBuffer = new byte[NtpPacket.PacketSize];
-            request.Encode(requestBuffer);
+                    var requestBuffer = new byte[NtpPacket.PacketSize];
+                    request.Encode(requestBuffer);
 
-            using var client = new UdpClient(endpoint.AddressFamily);
-            await client.SendAsync(requestBuffer, requestBuffer.Length, endpoint).ConfigureAwait(false);
+                    using var client = new UdpClient(endpoint.AddressFamily);
+                    await client.SendAsync(requestBuffer, requestBuffer.Length, endpoint).ConfigureAwait(false);
 
-            var result = await client.ReceiveAsync(linkedToken).ConfigureAwait(false);
-            var destinationTimestamp = DateTimeOffset.UtcNow;
+                    var result = await client.ReceiveAsync(linkedToken).ConfigureAwait(false);
+                    var destinationTimestamp = DateTimeOffset.UtcNow;
 
-            var responsePacket = NtpPacket.Decode(result.Buffer);
+                    var responsePacket = NtpPacket.Decode(result.Buffer);
 
-            activity?.SetTag("ntp.stratum", responsePacket.Stratum);
-            activity?.SetStatus(ActivityStatusCode.Ok);
+                    activity?.SetTag("ntp.stratum", responsePacket.Stratum);
+                    activity?.SetTag("ntp.address_family", endpoint.AddressFamily.ToString());
+                    activity?.SetStatus(ActivityStatusCode.Ok);
 
-            return new NtpResponse(responsePacket, destinationTimestamp);
+                    return new NtpResponse(responsePacket, destinationTimestamp);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    (exceptions ??= []).Add(ex);
+                }
+            }
+
+            throw new AggregateException($"Failed to query NTP server '{_server}' on all resolved addresses", exceptions!);
         }
         catch (Exception ex)
         {
@@ -84,15 +102,15 @@ public sealed class NtpClient : IDisposable
         // No persistent resources to dispose; UdpClient is created per-query.
     }
 
-    private async ValueTask<IPEndPoint> ResolveEndpointAsync(CancellationToken cancellationToken)
+    private async ValueTask<IPEndPoint[]> ResolveEndpointsAsync(CancellationToken cancellationToken)
     {
         if (IPAddress.TryParse(_server, out var address))
-            return new IPEndPoint(address, _options.Port);
+            return [new IPEndPoint(address, _options.Port)];
 
         var addresses = await Dns.GetHostAddressesAsync(_server, cancellationToken).ConfigureAwait(false);
         if (addresses.Length is 0)
             throw new InvalidOperationException($"Could not resolve host: {_server}");
 
-        return new IPEndPoint(addresses[0], _options.Port);
+        return Array.ConvertAll(addresses, a => new IPEndPoint(a, _options.Port));
     }
 }

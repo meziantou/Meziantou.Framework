@@ -1,32 +1,77 @@
+#nullable enable
+using System.Net;
 using Meziantou.Framework.Ntp;
 
 namespace Meziantou.Framework.Ntp.Tests;
 
-public sealed class NtpClientTests
+public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
 {
-    private static Task<NtpResponse> QueryWithRetryAsync(NtpClient client)
+    private const int RetryCount = 3;
+
+    private static NtpClientOptions CreateTestOptions(NtpVersion version = NtpVersion.V4)
     {
-        return Retry(() => client.QueryAsync(XunitCancellationToken));
+        return new NtpClientOptions { Version = version, Timeout = TimeSpan.FromSeconds(2) };
     }
 
-    private static async Task<NtpResponse> QueryWithFallbackAsync(NtpVersion version = NtpVersion.V4)
+    private async Task<NtpResponse> QueryWithRetryAsync(NtpClient client, string server)
+    {
+        for (var i = RetryCount; i >= 0; i--)
+        {
+            try
+            {
+                return await client.QueryAsync(XunitCancellationToken);
+            }
+            catch (Exception ex) when (i > 0)
+            {
+                testOutputHelper.WriteLine($"Attempt {RetryCount - i + 1} for {server} failed: {ex.GetType().Name}: {ex.Message}");
+                await Task.Delay(50, XunitCancellationToken);
+            }
+        }
+
+        throw new InvalidOperationException("unreachable");
+    }
+
+    private async Task<NtpResponse> QueryWithFallbackAsync(NtpVersion version = NtpVersion.V4)
     {
         string[] servers = ["time.google.com", "pool.ntp.org", "time.cloudflare.com"];
+        await LogDnsResolutionAsync(servers);
+
+        List<Exception> exceptions = [];
 
         foreach (var server in servers)
         {
             try
             {
-                using var client = new NtpClient(server, new NtpClientOptions { Version = version });
-                return await QueryWithRetryAsync(client);
+                using var client = new NtpClient(server, CreateTestOptions(version));
+                var response = await QueryWithRetryAsync(client, server);
+                testOutputHelper.WriteLine($"Successfully queried {server}");
+                return response;
             }
-            catch when (server != servers[^1])
+            catch (Exception ex)
             {
+                testOutputHelper.WriteLine($"Server {server} failed after retries: {ex.GetType().Name}: {ex.Message}");
+                exceptions.Add(ex);
             }
         }
 
-        using var lastClient = new NtpClient(servers[^1], new NtpClientOptions { Version = version });
-        return await QueryWithRetryAsync(lastClient);
+        throw new AggregateException("All NTP servers are unreachable", exceptions);
+    }
+
+    private async Task LogDnsResolutionAsync(string[] servers)
+    {
+        foreach (var server in servers)
+        {
+            try
+            {
+                var addresses = await Dns.GetHostAddressesAsync(server, XunitCancellationToken);
+                var formatted = string.Join(", ", addresses.Select(a => $"{a} ({a.AddressFamily})"));
+                testOutputHelper.WriteLine($"DNS resolution for {server}: [{formatted}]");
+            }
+            catch (Exception ex)
+            {
+                testOutputHelper.WriteLine($"DNS resolution for {server} failed: {ex.Message}");
+            }
+        }
     }
 
     [Fact]
@@ -90,8 +135,9 @@ public sealed class NtpClientTests
     [Fact]
     public async Task Query_TimeGoogle_ReturnsValidResponse()
     {
-        using var client = new NtpClient("time.google.com");
-        var response = await QueryWithRetryAsync(client);
+        await LogDnsResolutionAsync(["time.google.com"]);
+        using var client = new NtpClient("time.google.com", CreateTestOptions());
+        var response = await QueryWithRetryAsync(client, "time.google.com");
 
         Assert.True(response.Stratum > 0);
         Assert.True(response.TransmitTimestamp > DateTimeOffset.UnixEpoch);
@@ -100,8 +146,9 @@ public sealed class NtpClientTests
     [Fact]
     public async Task Query_PoolNtpOrg_ReturnsValidResponse()
     {
-        using var client = new NtpClient("pool.ntp.org");
-        var response = await QueryWithRetryAsync(client);
+        await LogDnsResolutionAsync(["pool.ntp.org"]);
+        using var client = new NtpClient("pool.ntp.org", CreateTestOptions());
+        var response = await QueryWithRetryAsync(client, "pool.ntp.org");
 
         Assert.True(response.Stratum > 0);
         Assert.True(response.TransmitTimestamp > DateTimeOffset.UnixEpoch);

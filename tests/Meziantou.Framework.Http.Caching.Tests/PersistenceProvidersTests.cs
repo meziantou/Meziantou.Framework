@@ -543,9 +543,21 @@ public class PersistenceProvidersTests
 
     private static async Task<RedisContainer> StartRedisContainerAsync()
     {
-        var redisContainer = new RedisBuilder("redis:8.2").Build();
-        await redisContainer.StartAsync();
-        return redisContainer;
+        const int MaxRetries = 3;
+        for (var i = 0; ; i++)
+        {
+            var redisContainer = new RedisBuilder("redis:8.2").Build();
+            try
+            {
+                await redisContainer.StartAsync();
+                return redisContainer;
+            }
+            catch when (i < MaxRetries)
+            {
+                await redisContainer.DisposeAsync();
+                await Task.Delay(1000);
+            }
+        }
     }
 
     private sealed class MockResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : DelegatingHandler

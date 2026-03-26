@@ -39,13 +39,14 @@
     <Project Path="src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
-    <Project Path="src/Meziantou.AspNetCore.OpenTelemetry.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
+    <Project Path="src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj" Id="997b1066-b521-4738-977a-b60cc01f15ed" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" Id="75c124f1-5f21-47f5-b05b-7e1334290074" />
     <Project Path="src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.InMemory/Meziantou.Extensions.Logging.InMemory.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit/Meziantou.Extensions.Logging.Xunit.csproj" />
+    <Project Path="src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
     <Project Path="src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
     <Project Path="src/Meziantou.Framework.ChromiumTracing/Meziantou.Framework.ChromiumTracing.csproj" />
     <Project Path="src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
@@ -54,6 +55,9 @@
     <Project Path="src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
     <Project Path="src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
     <Project Path="src/Meziantou.Framework.Diagnostics.ContextSnapshot/Meziantou.Framework.Diagnostics.ContextSnapshot.csproj" />
+    <Project Path="src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
+    <Project Path="src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
+    <Project Path="src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumToStringGenerator.Annotations/Meziantou.Framework.FastEnumToStringGenerator.Annotations.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
@@ -62,6 +66,9 @@
     <Project Path="src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
     <Project Path="src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
+    <Project Path="src/Meziantou.Framework.Http.Caching.InMemory/Meziantou.Framework.Http.Caching.InMemory.csproj" />
+    <Project Path="src/Meziantou.Framework.Http.Caching.Redis/Meziantou.Framework.Http.Caching.Redis.csproj" />
+    <Project Path="src/Meziantou.Framework.Http.Caching.Sqlite/Meziantou.Framework.Http.Caching.Sqlite.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Htpasswd/Meziantou.Framework.Http.Htpasswd.csproj" />
     <Project Path="src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
@@ -75,6 +82,9 @@
       <BuildDependency Project="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" />
       <BuildDependency Project="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" />
     </Project>
+    <Project Path="src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <Project Path="src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
+    <Project Path="src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
     <Project Path="src/Meziantou.Framework.NuGetPackageValidation.Tool/Meziantou.Framework.NuGetPackageValidation.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
     <Project Path="src/Meziantou.Framework.ObjectMethodExecutor/Meziantou.Framework.ObjectMethodExecutor.csproj" />
@@ -120,12 +130,13 @@
     <Project Path="tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.LogViewer.Tests/Meziantou.AspNetCore.Components.LogViewer.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.Tests/Meziantou.AspNetCore.Components.Tests.csproj" />
-    <Project Path="tests/Meziantou.AspNetCore.OpenTelemetry.Tests/Meziantou.AspNetCore.OpenTelemetry.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.Tests/Meziantou.AspNetCore.ServiceDefaults.Tests.csproj" Id="a1514aa2-f75e-4dcc-bf6b-1860a8c44fcb" />
     <Project Path="tests/Meziantou.Extensions.Logging.FileLogger.Tests/Meziantou.Extensions.Logging.FileLogger.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.InMemory.Tests/Meziantou.Extensions.Logging.InMemory.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.Tests/Meziantou.Extensions.Logging.Xunit.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/Meziantou.Extensions.Logging.Xunit.v3.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Bcrypt.Tests/Meziantou.Framework.Bcrypt.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ByteSize.Tests/Meziantou.Framework.ByteSize.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ChromiumTracing.Tests/Meziantou.Framework.ChromiumTracing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
@@ -134,6 +145,9 @@
     <Project Path="tests/Meziantou.Framework.Csv.Tests/Meziantou.Framework.Csv.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.DnsFilter.Tests/Meziantou.Framework.DnsFilter.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FastEnumToStringGenerator.Tests/Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
@@ -149,6 +163,9 @@
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.NtpClient.Tests/Meziantou.Framework.NtpClient.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.NtpServer.Tests/Meziantou.Framework.NtpServer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NuGetPackageValidation.Tests/Meziantou.Framework.NuGetPackageValidation.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NuGetPackageValidation.Tool.Tests/Meziantou.Framework.NuGetPackageValidation.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests.fsproj" />

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework;
 
@@ -196,6 +197,9 @@ if (Directory.Exists(outputRootPath))
     }
 }
 
+// Update main solution file to include all projects and remove stale entries
+UpdateMainSolution();
+
 return 0;
 
 // ── Helper methods ──
@@ -348,3 +352,137 @@ void WriteIfChanged(string path, string content)
 }
 
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
+
+void UpdateMainSolution()
+{
+    // Collect all project files from all directories
+    var allDiskProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var dir in new[] { "src", "tests", "tools", "Samples", "benchmarks" })
+    {
+        allDiskProjects.UnionWith(GetProjectFiles(rootPath / dir));
+    }
+
+    if (!File.Exists(mainSolutionPath))
+        return;
+
+    var doc = XDocument.Load(mainSolutionPath);
+    var solutionElement = doc.Root;
+    if (solutionElement is null)
+        return;
+
+    var projectsInSlnx = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    // Remove stale project entries (project in slnx but file doesn't exist on disk)
+    foreach (var folderElement in solutionElement.Elements("Folder"))
+    {
+        foreach (var projectElement in folderElement.Elements("Project").ToList())
+        {
+            var projectPath = projectElement.Attribute("Path")?.Value;
+            if (projectPath is null)
+                continue;
+
+            string fullPath = rootPath / projectPath;
+            if (File.Exists(fullPath))
+            {
+                projectsInSlnx.Add(fullPath);
+            }
+            else
+            {
+                projectElement.Remove();
+            }
+        }
+    }
+
+    // Add missing projects
+    foreach (var projectOnDisk in allDiskProjects)
+    {
+        if (projectsInSlnx.Contains(projectOnDisk))
+            continue;
+
+        var relativePath = FullPath.FromPath(projectOnDisk).MakePathRelativeTo(rootPath).Replace('\\', '/');
+        var folderName = GetMainSlnxFolder(relativePath);
+
+        var folderElement = solutionElement.Elements("Folder")
+            .FirstOrDefault(f => string.Equals(f.Attribute("Name")?.Value, folderName, StringComparison.Ordinal));
+
+        if (folderElement is null)
+        {
+            folderElement = new XElement("Folder", new XAttribute("Name", folderName));
+            solutionElement.Add(folderElement);
+        }
+
+        folderElement.Add(new XElement("Project", new XAttribute("Path", relativePath)));
+    }
+
+    // Sort elements within each folder: File elements first, then Project elements,
+    // each group sorted by Path (OrdinalIgnoreCase). Folder order is preserved.
+    foreach (var folderElement in solutionElement.Elements("Folder"))
+    {
+        var fileElements = folderElement.Elements("File").ToList();
+        var projectElements = folderElement.Elements("Project").ToList();
+
+        foreach (var elem in fileElements)
+            elem.Remove();
+        foreach (var elem in projectElements)
+            elem.Remove();
+
+        foreach (var fileElem in fileElements.OrderBy(f => f.Attribute("Path")?.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            folderElement.Add(fileElem);
+        }
+
+        foreach (var projElem in projectElements.OrderBy(p => p.Attribute("Path")?.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            folderElement.Add(projElem);
+        }
+    }
+
+    // Save with proper formatting
+    var settings = new XmlWriterSettings
+    {
+        Indent = true,
+        IndentChars = "  ",
+        OmitXmlDeclaration = true,
+        NewLineChars = "\n",
+        NewLineHandling = NewLineHandling.Replace,
+    };
+
+    using var sw = new StringWriter();
+    using (var writer = XmlWriter.Create(sw, settings))
+    {
+        doc.Save(writer);
+    }
+
+    WriteIfChanged(mainSolutionPath, sw.ToString() + "\n");
+}
+
+string GetMainSlnxFolder(string relativePath)
+{
+    if (relativePath.StartsWith("src/", StringComparison.Ordinal))
+        return "/src/";
+
+    if (relativePath.StartsWith("tests/", StringComparison.Ordinal))
+    {
+        var subPath = relativePath["tests/".Length..];
+        var slashIndex = subPath.IndexOf('/', StringComparison.Ordinal);
+        if (slashIndex > 0)
+        {
+            var folderName = subPath[..slashIndex];
+            if (folderName.Contains("GeneratorTests", StringComparison.OrdinalIgnoreCase))
+                return "/tests/SourceGenerators/";
+        }
+
+        return "/tests/";
+    }
+
+    if (relativePath.StartsWith("tools/", StringComparison.Ordinal))
+        return "/tools/";
+
+    if (relativePath.StartsWith("Samples/", StringComparison.Ordinal))
+        return "/samples/";
+
+    if (relativePath.StartsWith("benchmarks/", StringComparison.Ordinal))
+        return "/benchmarks/";
+
+    return "/other/";
+}

@@ -20,18 +20,6 @@
     <Project Path="Samples/Trimmable.Wpf/Trimmable.Wpf.csproj" />
     <Project Path="Samples/Trimmable/Trimmable.csproj" />
   </Folder>
-  <Folder Name="/Solution Items/">
-    <File Path=".editorconfig" />
-    <File Path=".gitattributes" />
-    <File Path=".github/workflows/ci.yml" />
-    <File Path=".gitignore" />
-    <File Path="Directory.Build.props" />
-    <File Path="Directory.Build.targets" />
-    <File Path="eng/build.proj" />
-    <File Path="eng/npm.targets" />
-    <File Path="global.json" />
-    <File Path="README.md" />
-  </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
     <Project Path="src/Meziantou.AspNetCore.Authentication.HttpBasic/Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
@@ -39,7 +27,6 @@
     <Project Path="src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
-    <Project Path="src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj" Id="997b1066-b521-4738-977a-b60cc01f15ed" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" Id="75c124f1-5f21-47f5-b05b-7e1334290074" />
     <Project Path="src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
@@ -65,10 +52,10 @@
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
     <Project Path="src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
-    <Project Path="src/Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Caching.InMemory/Meziantou.Framework.Http.Caching.InMemory.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Caching.Redis/Meziantou.Framework.Http.Caching.Redis.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Caching.Sqlite/Meziantou.Framework.Http.Caching.Sqlite.csproj" />
+    <Project Path="src/Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Htpasswd/Meziantou.Framework.Http.Htpasswd.csproj" />
     <Project Path="src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
@@ -77,7 +64,6 @@
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
-    <Project Path="src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj">
       <BuildDependency Project="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" />
       <BuildDependency Project="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" />
@@ -88,6 +74,8 @@
     <Project Path="src/Meziantou.Framework.NuGetPackageValidation.Tool/Meziantou.Framework.NuGetPackageValidation.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
     <Project Path="src/Meziantou.Framework.ObjectMethodExecutor/Meziantou.Framework.ObjectMethodExecutor.csproj" />
+    <Project Path="src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
+    <Project Path="src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
     <Project Path="src/Meziantou.Framework.RelativeDate/Meziantou.Framework.RelativeDate.csproj" />
     <Project Path="src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.Scheduling/Meziantou.Framework.Scheduling.csproj" />
@@ -130,7 +118,6 @@
     <Project Path="tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.LogViewer.Tests/Meziantou.AspNetCore.Components.LogViewer.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.Tests/Meziantou.AspNetCore.Components.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.Tests/Meziantou.AspNetCore.ServiceDefaults.Tests.csproj" Id="a1514aa2-f75e-4dcc-bf6b-1860a8c44fcb" />
     <Project Path="tests/Meziantou.Extensions.Logging.FileLogger.Tests/Meziantou.Extensions.Logging.FileLogger.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.InMemory.Tests/Meziantou.Extensions.Logging.InMemory.Tests.csproj" />
@@ -170,6 +157,7 @@
     <Project Path="tests/Meziantou.Framework.NuGetPackageValidation.Tool.Tests/Meziantou.Framework.NuGetPackageValidation.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests/Meziantou.Framework.ObjectMethodExecutor.FSharpTests.fsproj" />
     <Project Path="tests/Meziantou.Framework.ObjectMethodExecutor.Tests/Meziantou.Framework.ObjectMethodExecutor.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.RelativeDate.Tests/Meziantou.Framework.RelativeDate.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Scheduling.Tests/Meziantou.Framework.Scheduling.Tests.csproj" />

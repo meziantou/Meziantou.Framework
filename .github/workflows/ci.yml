@@ -144,10 +144,12 @@ jobs:
 
       - name: Generate delta build file
         if: github.event_name == 'pull_request'
-        continue-on-error: true
         run: |
           dotnet tool install --global Meziantou.DeltaBuild
-          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --traversal-after-import eng/build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
+          $BaseCommit = git merge-base "origin/${{ github.event.pull_request.base.ref }}" HEAD
+          Write-Host "Base commit: $BaseCommit"
+          Write-Host "Head commit: HEAD"
+          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --base-commit $BaseCommit --head-commit HEAD --traversal-after-import eng/build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
 
       - name: Compute build project
         id: build-project

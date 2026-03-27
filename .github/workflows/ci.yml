@@ -135,9 +135,31 @@ jobs:
           $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ case(github.event_name == 'pull_request', 0, 1) }}
       - run: git config --global protocol.file.allow always
+
       - name: Setup .NET
         uses: ./.github/setup-dotnet
+
+      - name: Generate delta build file
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          dotnet tool install --global Meziantou.DeltaBuild
+          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --traversal-after-import eng/build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
+
+      - name: Compute build project
+        id: build-project
+        run: |
+          if (Test-Path eng/delta.proj) {
+            Write-Host "Using delta build file:"
+            Get-Content eng/delta.proj
+            "project=eng/delta.proj" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "Using full build file: eng/build.proj"
+            "project=eng/build.proj" >> $env:GITHUB_OUTPUT
+          }
 
       - name: PATH
         run: echo $env:PATH
@@ -154,13 +176,13 @@ jobs:
           }
 
       - name: Build
-        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
 
       - name: List environment variables
         run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
-        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
+        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v7
         if: always()

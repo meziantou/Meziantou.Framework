@@ -149,7 +149,7 @@ jobs:
           $BaseCommit = git merge-base "origin/${{ github.event.pull_request.base.ref }}" HEAD
           Write-Host "Base commit: $BaseCommit"
           Write-Host "Head commit: HEAD"
-          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --base-commit $BaseCommit --head-commit HEAD --traversal-after-import eng/build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
+          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --base-commit $BaseCommit --head-commit HEAD --traversal-after-import build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
 
       - name: Compute build project
         id: build-project

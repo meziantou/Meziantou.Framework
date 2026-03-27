@@ -7,6 +7,22 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class SensitiveDataTests
 {
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(31)]
+    public void RevealToString_VariousLengths(int length)
+    {
+        var expected = new string('a', length);
+
+        using var data = SensitiveData.Create(expected);
+        Assert.Equal(length, data.GetLength());
+        Assert.Equal(expected, data.RevealToString());
+    }
+
     [Fact]
     public void RevealToString()
     {
@@ -22,6 +38,58 @@ public sealed class SensitiveDataTests
         Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
         Assert.Throws<ObjectDisposedException>(() => data.RevealInto(new char[1]));
         Assert.Throws<ObjectDisposedException>(() => data.RevealAndUse("", (span, arg) => { }));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(31)]
+    public void RevealToArray_ByteArrayVariousLengths(int length)
+    {
+        var expected = new byte[length];
+        for (var i = 0; i < expected.Length; i++)
+        {
+            expected[i] = (byte)i;
+        }
+
+        using var data = SensitiveData.Create(expected);
+        Assert.Equal(expected, data.RevealToArray());
+    }
+
+    [Fact]
+    public void RevealAndUse_CallbackThrows_DoesNotPreventLaterReveal()
+    {
+        using var data = SensitiveData.Create("foo");
+
+        Assert.Throws<InvalidOperationException>(() => data.RevealAndUse(arg: "", static (span, arg) => throw new InvalidOperationException()));
+        Assert.Equal("foo", data.RevealToString());
+    }
+
+    [Fact]
+    public void Clone_CreatesIndependentCopy()
+    {
+        var original = SensitiveData.Create("foo");
+        using var clone = original.Clone();
+
+        original.Dispose();
+
+        Assert.Equal("foo", clone.RevealToString());
+    }
+
+    [Fact]
+    public void UnixPaths_CanRevealStringAndByteArray()
+    {
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+            return;
+
+        using var text = SensitiveData.Create("unix");
+        using var bytes = SensitiveData.Create(new byte[] { 1, 2, 3, 4 });
+
+        Assert.Equal("unix", text.RevealToString());
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, bytes.RevealToArray());
     }
 
     [Fact]

@@ -17,4 +17,9 @@
     <ProjectReference Remove="../src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
     <ProjectReference Remove="../tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Remove="../Samples/Trimmable/Trimmable.csproj" />
+    <ProjectReference Remove="../Samples/Trimmable.Wpf/Trimmable.Wpf.csproj" />
+  </ItemGroup>
 </Project>

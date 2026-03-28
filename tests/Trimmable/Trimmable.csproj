@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(LatestTargetFramework)</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
 
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <PublishTrimmed>true</PublishTrimmed>

@@ -17,8 +17,8 @@
     <Project Path="samples/Meziantou.Framework.WPF.CollectionSamples/Meziantou.Framework.WPF.CollectionSamples.csproj" />
     <Project Path="samples/Meziantou.Framework.WPF.EnumComboBox/Meziantou.Framework.WPF.EnumComboBox.csproj" />
     <Project Path="samples/SingleInstanceConsoleAppSample/SingleInstanceConsoleAppSample.csproj" />
-    <Project Path="samples/Trimmable.Wpf/Trimmable.Wpf.csproj" />
-    <Project Path="samples/Trimmable/Trimmable.csproj" />
+    <Project Path="tests/Trimmable.Wpf/Trimmable.Wpf.csproj" />
+    <Project Path="tests/Trimmable/Trimmable.csproj" />
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />

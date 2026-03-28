@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(LatestTargetFramework)-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
     <Nullable>enable</Nullable>
 
     <TrimmerSingleWarn>false</TrimmerSingleWarn>

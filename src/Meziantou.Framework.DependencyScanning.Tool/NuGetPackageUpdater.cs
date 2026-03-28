@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -7,23 +8,55 @@ using Meziantou.Framework.DependencyScanning;
 using NuGet.Common;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal sealed class NuGetPackageUpdater : PackageUpdater
 {
+    private const string NuGetOrgSource = "https://api.nuget.org/v3/index.json";
+
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.NuGet;
+
+    protected override async IAsyncEnumerable<string> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var dependencyLocation = dependency.VersionLocation?.FilePath ?? dependency.NameLocation?.FilePath;
+        if (dependencyLocation is null || dependency.Name is null)
+            yield break;
+
+        var resolution = NuGetPackageSourceResolver.Resolve(FullPath.FromPath(dependencyLocation), dependency.Name);
+        IReadOnlyList<string> sources;
+        if (resolution.PackageSources.Count > 0)
+        {
+            sources = resolution.PackageSources;
+        }
+        else if (resolution.HasSourceMappings)
+        {
+            sources = [];
+        }
+        else if (resolution.AllConfiguredSources.Count > 0)
+        {
+            sources = resolution.AllConfiguredSources;
+        }
+        else
+        {
+            sources = [NuGetOrgSource];
+        }
+
+        foreach (var source in sources)
+        {
+            await foreach (var version in GetVersionsFromSourceAsync(source, dependency.Name, cancellationToken).ConfigureAwait(false))
+            {
+                yield return version;
+            }
+        }
+    }
 
     public override async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using var cache = new SourceCacheContext { NoCache = true };
-        var repository = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
-
-        var resource = await repository.GetResourceAsync<FindPackageByIdResource>(cancellationToken).ConfigureAwait(false);
-        var versions = await resource.GetAllVersionsAsync(packageName, cache, NullLogger.Instance, cancellationToken).ConfigureAwait(false);
-        foreach (var version in versions)
+        await foreach (var version in GetVersionsFromSourceAsync(NuGetOrgSource, packageName, cancellationToken).ConfigureAwait(false))
         {
-            yield return version.ToString();
+            yield return version;
         }
     }
 
@@ -54,6 +87,23 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
                     Console.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
                 }
             }
+        }
+    }
+
+    private static async IAsyncEnumerable<string> GetVersionsFromSourceAsync(string sourceUrl, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using var cache = new SourceCacheContext { NoCache = true };
+        var repository = Repository.Factory.GetCoreV3(sourceUrl);
+        var resource = await repository.GetResourceAsync<FindPackageByIdResource>(cancellationToken).ConfigureAwait(false);
+
+        if (resource is null)
+            yield break;
+
+        IEnumerable<NuGetVersion> versions = await resource.GetAllVersionsAsync(packageName, cache, NullLogger.Instance, cancellationToken).ConfigureAwait(false);
+
+        foreach (var version in versions)
+        {
+            yield return version.ToString();
         }
     }
 }

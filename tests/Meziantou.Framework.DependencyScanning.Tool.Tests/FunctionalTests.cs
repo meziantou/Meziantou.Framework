@@ -92,10 +92,10 @@ public sealed class FunctionalTests
         Assert.Equal(0, result);
 
         var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
-        var dockerDependency = Assert.Single(dependencies.Where(static dep => dep.Type is DependencyType.DockerImage));
+        var dockerDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.DockerImage);
         Assert.True(SemanticVersion.Parse(dockerDependency.Version!) > SemanticVersion.Parse("1.27.1"));
 
-        var nugetDependency = Assert.Single(dependencies.Where(static dep => dep.Type is DependencyType.NuGet));
+        var nugetDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.NuGet);
         Assert.Equal("1.0.0", nugetDependency.Version);
     }
 

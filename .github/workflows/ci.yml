@@ -247,14 +247,18 @@ jobs:
         with:
           pattern: test-results-*-coverage
           path: test-results
+      # Delta builds can legitimately produce no .coverage files. In that case,
+      # skip merge commands and allow the upload step to warn instead of failing.
       - name: Merge coverage files (format coverage)
+        if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
         run: dotnet-coverage merge --output test-result.coverage --output-format coverage (Get-ChildItem test-results -Recurse -Filter "*.coverage")
       - name: Merge coverage files (format cobertura)
+        if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
         run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
       - uses: actions/upload-artifact@v7
         with:
           name: code-coverage
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 3
           path: |
             test-result.coverage

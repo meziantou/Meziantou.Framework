@@ -135,9 +135,33 @@ jobs:
           $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ case(github.event_name == 'pull_request', 0, 1) }}
       - run: git config --global protocol.file.allow always
+
       - name: Setup .NET
         uses: ./.github/setup-dotnet
+
+      - name: Generate delta build file
+        if: github.event_name == 'pull_request'
+        run: |
+          dotnet tool install --global Meziantou.DeltaBuild
+          $BaseCommit = git merge-base "origin/${{ github.event.pull_request.base.ref }}" HEAD
+          Write-Host "Base commit: $BaseCommit"
+          Write-Host "Head commit: HEAD"
+          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --base-commit $BaseCommit --head-commit HEAD --traversal-after-import build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
+
+      - name: Compute build project
+        id: build-project
+        run: |
+          if (Test-Path eng/delta.proj) {
+            Write-Host "Using delta build file:"
+            Get-Content eng/delta.proj
+            "project=eng/delta.proj" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "Using full build file: eng/build.proj"
+            "project=eng/build.proj" >> $env:GITHUB_OUTPUT
+          }
 
       - name: PATH
         run: echo $env:PATH
@@ -154,19 +178,19 @@ jobs:
           }
 
       - name: Build
-        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
 
       - name: List environment variables
         run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
-        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
+        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: error
+          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
           retention-days: 3
           path: |
             !**/*.coverage
@@ -177,7 +201,7 @@ jobs:
         if: always()
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
-          if-no-files-found: error
+          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
           retention-days: 3
           path: |
             **/*.coverage
@@ -223,14 +247,18 @@ jobs:
         with:
           pattern: test-results-*-coverage
           path: test-results
+      # Delta builds can legitimately produce no .coverage files. In that case,
+      # skip merge commands and allow the upload step to warn instead of failing.
       - name: Merge coverage files (format coverage)
+        if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
         run: dotnet-coverage merge --output test-result.coverage --output-format coverage (Get-ChildItem test-results -Recurse -Filter "*.coverage")
       - name: Merge coverage files (format cobertura)
+        if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
         run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
       - uses: actions/upload-artifact@v7
         with:
           name: code-coverage
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 3
           path: |
             test-result.coverage

@@ -71,6 +71,35 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task FilterDependencyType_DockerImage()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("Dockerfile"), """
+            FROM nginx:1.27.1
+            """, XunitCancellationToken);
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("a.csproj"), """
+            <Project>
+                <ItemGroup>
+                    <PackageReference Include="Meziantou.Framework" Version="1.0.0" />
+                </ItemGroup>
+            </Project>
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "DockerImage"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
+        var dockerDependency = Assert.Single(dependencies.Where(static dep => dep.Type is DependencyType.DockerImage));
+        Assert.True(SemanticVersion.Parse(dockerDependency.Version!) > SemanticVersion.Parse("1.27.1"));
+
+        var nugetDependency = Assert.Single(dependencies.Where(static dep => dep.Type is DependencyType.NuGet));
+        Assert.Equal("1.0.0", nugetDependency.Version);
+    }
+
+    [Fact]
     public async Task ListDependenciesAsJson()
     {
         await using var tempDir = TemporaryDirectory.Create();

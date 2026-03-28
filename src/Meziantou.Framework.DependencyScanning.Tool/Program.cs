@@ -114,7 +114,7 @@ internal static class Program
 
     private static Option<DependencyType[]?> CreateDependencyTypesOption() => new("--dependency-type")
     {
-        Description = $"Dependency types to include. Available values: {string.Join(", ", [nameof(DependencyType.NuGet), nameof(DependencyType.DotNetSdk), nameof(DependencyType.Npm)])}",
+        Description = $"Dependency types to include. Available values: {string.Join(", ", Enum.GetNames<DependencyType>())}",
         CustomParser = ParseDependencyTypes,
     };
 
@@ -164,6 +164,7 @@ internal static class Program
 
         PackageUpdater[] updaters =
         [
+            new DockerPackageUpdater(),
             new NpmPackageUpdater(),
             new NuGetPackageUpdater(),
             new DotNetSdkUpdater(),

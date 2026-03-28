@@ -357,7 +357,7 @@ void UpdateMainSolution()
 {
     // Collect all project files from all directories
     var allDiskProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    foreach (var dir in new[] { "src", "tests", "tools", "Samples", "benchmarks" })
+    foreach (var dir in new[] { "src", "tests", "tools", "samples", "benchmarks" })
     {
         allDiskProjects.UnionWith(GetProjectFiles(rootPath / dir));
     }

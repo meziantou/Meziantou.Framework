@@ -18,8 +18,8 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
 
 var rootPath = GetRepositoryRoot();
 var srcPath = rootPath / "src";
-var trimmableCsprojPath = rootPath / "Samples" / "Trimmable" / "Trimmable.csproj";
-var trimmableWpfCsprojPath = rootPath / "Samples" / "Trimmable.Wpf" / "Trimmable.Wpf.csproj";
+var trimmableCsprojPath = rootPath / "samples" / "Trimmable" / "Trimmable.csproj";
+var trimmableWpfCsprojPath = rootPath / "samples" / "Trimmable.Wpf" / "Trimmable.Wpf.csproj";
 var trimmableDir = trimmableCsprojPath.Parent;
 
 // Find all IsTrimmable=true projects (excluding SkipTrimmableValidation=true)

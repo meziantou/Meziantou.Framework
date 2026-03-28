@@ -288,7 +288,7 @@ string GetFolderForProject(string projectFullPath)
         _ when relativePathFromRoot.StartsWith("tests/SourceGenerators/", StringComparison.Ordinal) => "/tests/SourceGenerators/",
         _ when relativePathFromRoot.StartsWith("tests/", StringComparison.Ordinal) => "/tests/",
         _ when relativePathFromRoot.StartsWith("tools/", StringComparison.Ordinal) => "/tools/",
-        _ when relativePathFromRoot.StartsWith("Samples/", StringComparison.Ordinal) => "/samples/",
+        _ when relativePathFromRoot.StartsWith("samples/", StringComparison.Ordinal) => "/samples/",
         _ when relativePathFromRoot.StartsWith("benchmarks/", StringComparison.Ordinal) => "/benchmarks/",
         _ => "/other/",
     };
@@ -357,7 +357,7 @@ void UpdateMainSolution()
 {
     // Collect all project files from all directories
     var allDiskProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    foreach (var dir in new[] { "src", "tests", "tools", "Samples", "benchmarks" })
+    foreach (var dir in new[] { "src", "tests", "tools", "samples", "benchmarks" })
     {
         allDiskProjects.UnionWith(GetProjectFiles(rootPath / dir));
     }
@@ -478,7 +478,7 @@ string GetMainSlnxFolder(string relativePath)
     if (relativePath.StartsWith("tools/", StringComparison.Ordinal))
         return "/tools/";
 
-    if (relativePath.StartsWith("Samples/", StringComparison.Ordinal))
+    if (relativePath.StartsWith("samples/", StringComparison.Ordinal))
         return "/samples/";
 
     if (relativePath.StartsWith("benchmarks/", StringComparison.Ordinal))

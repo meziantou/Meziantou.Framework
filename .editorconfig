@@ -51,5 +51,5 @@ dotnet_diagnostic.IDE0130.severity = none
 
 dotnet_diagnostic.MFA001.severity = silent
 
-[Samples/**/*.cs]
+[samples/**/*.cs]
 dotnet_diagnostic.CA1852.severity = none

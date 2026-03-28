@@ -218,7 +218,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
-      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
+      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained samples/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
     runs-on: windows-2025
@@ -231,7 +231,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
-      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
+      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained samples/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   merge_coverage:
     runs-on: ubuntu-24.04

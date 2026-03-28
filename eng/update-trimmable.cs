@@ -11,15 +11,15 @@ using Meziantou.Framework;
 if (args.Length > 0 && args[0] is "--help" or "-h")
 {
     Console.WriteLine("Usage: dotnet run update-trimmable.cs");
-    Console.WriteLine("Regenerates Samples/Trimmable/Trimmable.csproj with all trimmable projects.");
+    Console.WriteLine("Regenerates samples/Trimmable/Trimmable.csproj with all trimmable projects.");
     Console.WriteLine("Exit code 1 if the file was not up-to-date.");
     return 0;
 }
 
 var rootPath = GetRepositoryRoot();
 var srcPath = rootPath / "src";
-var trimmableCsprojPath = rootPath / "Samples" / "Trimmable" / "Trimmable.csproj";
-var trimmableWpfCsprojPath = rootPath / "Samples" / "Trimmable.Wpf" / "Trimmable.Wpf.csproj";
+var trimmableCsprojPath = rootPath / "samples" / "Trimmable" / "Trimmable.csproj";
+var trimmableWpfCsprojPath = rootPath / "samples" / "Trimmable.Wpf" / "Trimmable.Wpf.csproj";
 var trimmableDir = trimmableCsprojPath.Parent;
 
 // Find all IsTrimmable=true projects (excluding SkipTrimmableValidation=true)
@@ -118,7 +118,7 @@ var normalizedExisting = existingContent.Replace("\r\n", "\n", StringComparison.
 if (normalizedExisting != newContent)
 {
     File.WriteAllText(trimmableCsprojPath, newContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-    Console.WriteLine("WARNING: Samples/Trimmable/Trimmable.csproj was not up-to-date");
+    Console.WriteLine("WARNING: samples/Trimmable/Trimmable.csproj was not up-to-date");
 
     var psi = new System.Diagnostics.ProcessStartInfo("git", ["--no-pager", "diff", trimmableCsprojPath])
     {
@@ -130,7 +130,7 @@ if (normalizedExisting != newContent)
     return 1;
 }
 
-Console.WriteLine("Samples/Trimmable/Trimmable.csproj is up-to-date");
+Console.WriteLine("samples/Trimmable/Trimmable.csproj is up-to-date");
 return 0;
 
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

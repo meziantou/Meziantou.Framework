@@ -4,21 +4,21 @@
     <Project Path="benchmarks/GlobbingBenchmarks/GlobbingBenchmarks.csproj" />
   </Folder>
   <Folder Name="/samples/">
-    <Project Path="Samples/BlazorAppSample/BlazorAppSample.csproj" />
-    <Project Path="Samples/DependencyScannerSample/DependencyScannerSample.csproj" />
-    <Project Path="Samples/Meziantou.Framework.Http.HstsSample/Meziantou.Framework.Http.HstsSample.csproj" />
-    <Project Path="Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj" />
-    <Project Path="Samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />
-    <Project Path="Samples/Meziantou.Framework.Win32.AccessTokenConsole/Meziantou.Framework.Win32.AccessTokenConsole.csproj" />
-    <Project Path="Samples/Meziantou.Framework.Win32.ChangeJournal.Sample/Meziantou.Framework.Win32.ChangeJournal.Sample.csproj" />
-    <Project Path="Samples/Meziantou.Framework.Win32.CredentialManagerConsole/Meziantou.Framework.Win32.CredentialManagerConsole.csproj" />
-    <Project Path="Samples/Meziantou.Framework.Win32.DialogsSamples/Meziantou.Framework.Win32.DialogsSamples.csproj" />
-    <Project Path="Samples/Meziantou.Framework.Win32.RecentDocumentsConsole/Meziantou.Framework.Win32.RecentDocumentsConsole.csproj" />
-    <Project Path="Samples/Meziantou.Framework.WPF.CollectionSamples/Meziantou.Framework.WPF.CollectionSamples.csproj" />
-    <Project Path="Samples/Meziantou.Framework.WPF.EnumComboBox/Meziantou.Framework.WPF.EnumComboBox.csproj" />
-    <Project Path="Samples/SingleInstanceConsoleAppSample/SingleInstanceConsoleAppSample.csproj" />
-    <Project Path="Samples/Trimmable.Wpf/Trimmable.Wpf.csproj" />
-    <Project Path="Samples/Trimmable/Trimmable.csproj" />
+    <Project Path="samples/BlazorAppSample/BlazorAppSample.csproj" />
+    <Project Path="samples/DependencyScannerSample/DependencyScannerSample.csproj" />
+    <Project Path="samples/Meziantou.Framework.Http.HstsSample/Meziantou.Framework.Http.HstsSample.csproj" />
+    <Project Path="samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj" />
+    <Project Path="samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />
+    <Project Path="samples/Meziantou.Framework.Win32.AccessTokenConsole/Meziantou.Framework.Win32.AccessTokenConsole.csproj" />
+    <Project Path="samples/Meziantou.Framework.Win32.ChangeJournal.Sample/Meziantou.Framework.Win32.ChangeJournal.Sample.csproj" />
+    <Project Path="samples/Meziantou.Framework.Win32.CredentialManagerConsole/Meziantou.Framework.Win32.CredentialManagerConsole.csproj" />
+    <Project Path="samples/Meziantou.Framework.Win32.DialogsSamples/Meziantou.Framework.Win32.DialogsSamples.csproj" />
+    <Project Path="samples/Meziantou.Framework.Win32.RecentDocumentsConsole/Meziantou.Framework.Win32.RecentDocumentsConsole.csproj" />
+    <Project Path="samples/Meziantou.Framework.WPF.CollectionSamples/Meziantou.Framework.WPF.CollectionSamples.csproj" />
+    <Project Path="samples/Meziantou.Framework.WPF.EnumComboBox/Meziantou.Framework.WPF.EnumComboBox.csproj" />
+    <Project Path="samples/SingleInstanceConsoleAppSample/SingleInstanceConsoleAppSample.csproj" />
+    <Project Path="samples/Trimmable.Wpf/Trimmable.Wpf.csproj" />
+    <Project Path="samples/Trimmable/Trimmable.csproj" />
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />

@@ -13,7 +13,7 @@ internal abstract class PackageUpdater
 
         SemanticVersion? maxVersion = null;
         string? rawMaxVersion = null;
-        await foreach (var version in GetVersionsAsync(dependency.Name, cancellationToken).ConfigureAwait(false))
+        await foreach (var version in GetVersionsAsync(dependency, cancellationToken).ConfigureAwait(false))
         {
             var parsedVersion = ParseVersion(version);
             if (parsedVersion is null)
@@ -34,6 +34,11 @@ internal abstract class PackageUpdater
 
         await dependency.UpdateVersionAsync(rawMaxVersion, cancellationToken).ConfigureAwait(false);
         return rawMaxVersion;
+    }
+
+    protected virtual IAsyncEnumerable<string> GetVersionsAsync(Dependency dependency, CancellationToken cancellationToken)
+    {
+        return GetVersionsAsync(dependency.Name!, cancellationToken);
     }
 
     public abstract IAsyncEnumerable<string> GetVersionsAsync(string packageName, CancellationToken cancellationToken);

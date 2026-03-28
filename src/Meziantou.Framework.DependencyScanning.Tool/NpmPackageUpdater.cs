@@ -15,7 +15,7 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 internal sealed class NpmPackageUpdater : PackageUpdater
 {
     private static readonly HttpClient HttpClient = new();
-    private static readonly Uri RegistryUri = new("https://registry.npmjs.org");
+    private static readonly Uri DefaultRegistryUri = new("https://registry.npmjs.org/");
     private static readonly JsonSerializerOptions DefaultJsonOptions = new()
     {
         Converters =
@@ -39,9 +39,30 @@ internal sealed class NpmPackageUpdater : PackageUpdater
         return base.ParseVersion(value);
     }
 
+    protected override async IAsyncEnumerable<string> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var dependencyLocation = dependency.VersionLocation?.FilePath ?? dependency.NameLocation?.FilePath;
+        if (dependencyLocation is null || dependency.Name is null)
+            yield break;
+
+        var registry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(dependencyLocation), dependency.Name);
+        await foreach (var version in GetVersionsFromRegistryAsync(registry, dependency.Name, cancellationToken).ConfigureAwait(false))
+        {
+            yield return version;
+        }
+    }
+
     public override async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var packageUri = new Uri(RegistryUri, packageName);
+        await foreach (var version in GetVersionsFromRegistryAsync(DefaultRegistryUri, packageName, cancellationToken).ConfigureAwait(false))
+        {
+            yield return version;
+        }
+    }
+
+    private static async IAsyncEnumerable<string> GetVersionsFromRegistryAsync(Uri registryUri, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var packageUri = new Uri(registryUri, packageName);
         using var packageResponse = await HttpClient.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         if (packageResponse.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest)
             yield break;

@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+    <Version>1.0.0</Version>
+    <Description>CLI tool to update dependencies in source repositories</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NuGet.Protocol" Version="7.3.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework\Meziantou.Framework.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.DependencyScanning\Meziantou.Framework.DependencyScanning.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
+  </ItemGroup>
+
+</Project>

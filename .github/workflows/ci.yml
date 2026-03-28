@@ -190,7 +190,7 @@ jobs:
         if: always()
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: error
+          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
           retention-days: 3
           path: |
             !**/*.coverage
@@ -201,7 +201,7 @@ jobs:
         if: always()
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
-          if-no-files-found: error
+          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
           retention-days: 3
           path: |
             **/*.coverage

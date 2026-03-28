@@ -10,6 +10,7 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>full</TrimMode>
+    <ExcludeFromGeneratedSlnx>true</ExcludeFromGeneratedSlnx>
   </PropertyGroup>
 
   <ItemGroup>

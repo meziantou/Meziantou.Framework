@@ -16,11 +16,20 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
     return 0;
 }
 
-var nugetDirectory = Environment.GetEnvironmentVariable("NuGetDirectory")
-    ?? throw new InvalidOperationException("NuGetDirectory environment variable is not set");
+var nugetDirectory = FullPath.FromPath(
+    Environment.GetEnvironmentVariable("NuGetDirectory")
+        ?? throw new InvalidOperationException("NuGetDirectory environment variable is not set"));
 var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "";
+var isDeltaBuild = Environment.GetEnvironmentVariable("NUGET_VALIDATION_IS_DELTA") is "true" or "1";
 
 var rootPath = GetRepositoryRoot();
+var nupkgFiles = Directory.GetFiles(nugetDirectory, "*.nupkg");
+
+if (isDeltaBuild && nupkgFiles.Length == 0)
+{
+    Console.WriteLine("Delta build produced no NuGet package. Skipping validation.");
+    return 0;
+}
 
 // Validate source generator packages
 var generators = new[] { "Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.FastEnumToStringGenerator" };
@@ -30,8 +39,17 @@ foreach (var generator in generators)
 
     var packagePattern = new Regex($@"{Regex.Escape(generator)}\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
     var packagePath = Directory.EnumerateFiles(nugetDirectory)
-        .FirstOrDefault(f => packagePattern.IsMatch(f))
-        ?? throw new InvalidOperationException($"Package not found for {generator}");
+        .FirstOrDefault(f => packagePattern.IsMatch(f));
+    if (packagePath is null)
+    {
+        if (isDeltaBuild)
+        {
+            Console.WriteLine($"Skipping {generator} validation because package is absent in delta build output.");
+            continue;
+        }
+
+        throw new InvalidOperationException($"Package not found for {generator}");
+    }
 
     var annotationPath = rootPath / "src" / $"{generator}.Annotations";
     var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
@@ -55,23 +73,45 @@ foreach (var generator in generators)
 {
     var packagePattern = new Regex(@"Meziantou\.Framework\.InlineSnapshotTesting\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
     var packagePath = Directory.EnumerateFiles(nugetDirectory)
-        .FirstOrDefault(f => packagePattern.IsMatch(f))
-        ?? throw new InvalidOperationException("InlineSnapshotTesting package not found");
-
-    using var zipFile = ZipFile.OpenRead(packagePath);
-    var hasPrompt = zipFile.Entries.Any(e => e.FullName.StartsWith("prompt/", StringComparison.Ordinal));
-    if (!hasPrompt)
+        .FirstOrDefault(f => packagePattern.IsMatch(f));
+    if (packagePath is null)
     {
-        Console.Error.WriteLine("ERROR: Package does not contain a prompt/ entry");
-        return 1;
+        if (isDeltaBuild)
+        {
+            Console.WriteLine("Skipping InlineSnapshotTesting prompt folder validation because package is absent in delta build output.");
+        }
+        else
+        {
+            throw new InvalidOperationException("InlineSnapshotTesting package not found");
+        }
+    }
+    else
+    {
+        using var zipFile = ZipFile.OpenRead(packagePath);
+        var hasPrompt = zipFile.Entries.Any(e => e.FullName.StartsWith("prompt/", StringComparison.Ordinal));
+        if (!hasPrompt)
+        {
+            Console.Error.WriteLine("ERROR: Package does not contain a prompt/ entry");
+            return 1;
+        }
     }
 }
 
 // General validation
 Console.WriteLine("Validating NuGet packages");
+if (nupkgFiles.Length == 0)
+{
+    if (isDeltaBuild)
+    {
+        Console.WriteLine("No NuGet packages to validate in delta build output.");
+        return 0;
+    }
+
+    throw new InvalidOperationException("No NuGet packages found to validate");
+}
+
 RunProcess("dotnet", ["tool", "update", "Meziantou.Framework.NuGetPackageValidation.Tool", "--global", "--no-cache", "--add-source", nugetDirectory]);
 
-var nupkgFiles = Directory.GetFiles(nugetDirectory, "*.nupkg");
 var validateArgs = new[] { "meziantou.validate-nuget-package" }
     .Concat(nupkgFiles)
     .Concat(["--excluded-rules", "ReadmeMustBeSet,TagsMustBeSet", "--excluded-rule-ids", "52", $"--github-token={githubToken}", "--only-report-errors"])

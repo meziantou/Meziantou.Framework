@@ -135,7 +135,7 @@ internal static class NuGetPackageSourceResolver
 
     private static bool GlobMatch(string text, string pattern)
     {
-        var regexPattern = "^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$";
+        var regexPattern = "^" + Regex.Escape(pattern).Replace("\\*", ".*", StringComparison.Ordinal) + "$";
         return Regex.IsMatch(text, regexPattern, OperatingSystem.IsWindows() ? RegexOptions.IgnoreCase : RegexOptions.None, TimeSpan.FromSeconds(1));
     }
 
@@ -147,5 +147,3 @@ internal static class NuGetPackageSourceResolver
         }
     }
 }
-
-internal sealed record NuGetSourceResolution(IReadOnlyList<string> PackageSources, IReadOnlyList<string> AllConfiguredSources, bool HasSourceMappings);

@@ -93,7 +93,7 @@ internal static class NpmPackageSourceResolver
         if (!packageName.StartsWith('@'))
             return null;
 
-        var index = packageName.IndexOf('/');
+        var index = packageName.IndexOf('/', StringComparison.Ordinal);
         if (index <= 1)
             return null;
 

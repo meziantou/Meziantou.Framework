@@ -76,15 +76,43 @@ jobs:
   create_nuget:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      is-delta: ${{ steps.package-project.outputs.is-delta }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ case(github.event_name == 'pull_request', 0, 1) }}
+      - run: git config --global protocol.file.allow always
       - name: Setup .NET
         uses: ./.github/setup-dotnet
-      - run: dotnet build eng/packages.proj --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
+      - name: Generate delta build file
+        if: github.event_name == 'pull_request'
+        run: |
+          dotnet tool install --global Meziantou.DeltaBuild
+          Meziantou.DeltaBuild generate --input eng/packages.proj --output eng/packages.delta.proj --traversal-after-import build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
+      - name: Compute package project
+        id: package-project
+        run: |
+          if (Test-Path eng/packages.delta.proj) {
+            Write-Host "Using delta build file:"
+            Get-Content eng/packages.delta.proj
+            "project=eng/packages.delta.proj" >> $env:GITHUB_OUTPUT
+            "is-delta=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "Using full build file: eng/packages.proj"
+            "project=eng/packages.proj" >> $env:GITHUB_OUTPUT
+            "is-delta=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-taskdialog.binlog
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-notificationtray.binlog
 
-      - run: dotnet pack eng/packages.proj --configuration Release /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
+      - name: Prepare NuGet artifact directory
+        run: |
+          New-Item -ItemType Directory -Path "${{ env.NuGetDirectory }}" -Force | Out-Null
+          Set-Content -Path "${{ env.NuGetDirectory }}/artifact-placeholder.txt" -Value "placeholder"
+      - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -115,6 +143,7 @@ jobs:
         run: dotnet run ./eng/validate-nuget.cs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_VALIDATION_IS_DELTA: ${{ needs.create_nuget.outputs.is-delta }}
 
   build_and_test:
     runs-on: ${{ matrix.runs-on }}
@@ -146,10 +175,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           dotnet tool install --global Meziantou.DeltaBuild
-          $BaseCommit = git merge-base "origin/${{ github.event.pull_request.base.ref }}" HEAD
-          Write-Host "Base commit: $BaseCommit"
-          Write-Host "Head commit: HEAD"
-          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --base-commit $BaseCommit --head-commit HEAD --traversal-after-import build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
+          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --traversal-after-import build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
 
       - name: Compute build project
         id: build-project

@@ -17,8 +17,6 @@
     <Project Path="samples/Meziantou.Framework.WPF.CollectionSamples/Meziantou.Framework.WPF.CollectionSamples.csproj" />
     <Project Path="samples/Meziantou.Framework.WPF.EnumComboBox/Meziantou.Framework.WPF.EnumComboBox.csproj" />
     <Project Path="samples/SingleInstanceConsoleAppSample/SingleInstanceConsoleAppSample.csproj" />
-    <Project Path="tests/Trimmable.Wpf/Trimmable.Wpf.csproj" />
-    <Project Path="tests/Trimmable/Trimmable.csproj" />
   </Folder>
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
@@ -191,6 +189,8 @@
     <Project Path="tests/Meziantou.Framework.Win32.RestartManager.Tests/Meziantou.Framework.Win32.RestartManager.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <Project Path="tests/TestUtilities/TestUtilities.csproj" />
+    <Project Path="tests/Trimmable.Wpf/Trimmable.Wpf.csproj" />
+    <Project Path="tests/Trimmable/Trimmable.csproj" />
   </Folder>
   <Folder Name="/tests/SourceGenerators/">
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests.csproj" />

@@ -331,6 +331,28 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void TryFindGitRepositoryRoot_Worktree()
+    {
+        using var tempDir = TemporaryDirectory.Create();
+        tempDir.CreateTextFile(".git", "gitdir: C:/main-repo/.git/worktrees/sample-worktree");
+        var subDir = tempDir.CreateDirectory("src/app");
+
+        Assert.True(subDir.TryFindGitRepositoryRoot(out var result));
+        Assert.Equal(tempDir.FullPath, result);
+    }
+
+    [Fact]
+    public void TryFindGitRepositoryRoot_Worktree_FromFilePath()
+    {
+        using var tempDir = TemporaryDirectory.Create();
+        tempDir.CreateTextFile(".git", "gitdir: C:/main-repo/.git/worktrees/sample-worktree");
+        var filePath = tempDir.CreateEmptyFile("src/app/readme.txt");
+
+        Assert.True(filePath.TryFindGitRepositoryRoot(out var result));
+        Assert.Equal(tempDir.FullPath, result);
+    }
+
+    [Fact]
     public void TryFindGitRepositoryRoot_NotFound()
     {
         using var tempDir = TemporaryDirectory.Create();
@@ -344,6 +366,18 @@ public sealed class FullPathTests
     {
         using var tempDir = TemporaryDirectory.Create();
         tempDir.CreateDirectory(".git");
+        var subDir = tempDir.CreateDirectory("src/app");
+
+        var result = subDir.FindRequiredGitRepositoryRoot();
+
+        Assert.Equal(tempDir.FullPath, result);
+    }
+
+    [Fact]
+    public void FindRequiredGitRepositoryRoot_Worktree()
+    {
+        using var tempDir = TemporaryDirectory.Create();
+        tempDir.CreateTextFile(".git", "gitdir: C:/main-repo/.git/worktrees/sample-worktree");
         var subDir = tempDir.CreateDirectory("src/app");
 
         var result = subDir.FindRequiredGitRepositoryRoot();

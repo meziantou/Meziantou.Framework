@@ -35,5 +35,6 @@ Options:
 
 Commands:
   update  Update dependencies
+  list    List dependencies
 ```
 <!-- help -->

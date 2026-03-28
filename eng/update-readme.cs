@@ -123,8 +123,7 @@ int UpdateToolReadmes()
     foreach (var csproj in Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories))
     {
         var doc = XDocument.Load(csproj);
-        var packAsTool = doc.Root?.Descendants("PackAsTool").FirstOrDefault()?.Value;
-        if (!string.Equals(packAsTool, "true", StringComparison.OrdinalIgnoreCase))
+        if (!IsExecutableProject(csproj, latestTfm))
         {
             continue;
         }
@@ -202,6 +201,30 @@ static string RunProcessAndCaptureOutput(string fileName, string[] arguments)
     }
 
     return output;
+}
+
+static bool IsExecutableProject(string csproj, string? targetFramework)
+{
+    string[] arguments = targetFramework is null
+        ? ["msbuild", csproj, "-nologo", "-v:q", "-getProperty:OutputKind", "-getProperty:OutputType"]
+        : ["msbuild", csproj, "-nologo", "-v:q", "-p:TargetFramework=" + targetFramework, "-getProperty:OutputKind", "-getProperty:OutputType"];
+
+    var output = RunProcessAndCaptureOutput("dotnet", arguments);
+    var outputKind = ExtractMsBuildPropertyValue(output, "OutputKind");
+    if (!string.IsNullOrEmpty(outputKind))
+    {
+        return string.Equals(outputKind, "Exe", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(outputKind, "ConsoleApplication", StringComparison.OrdinalIgnoreCase);
+    }
+
+    var outputType = ExtractMsBuildPropertyValue(output, "OutputType");
+    return string.Equals(outputType, "Exe", StringComparison.OrdinalIgnoreCase);
+}
+
+static string? ExtractMsBuildPropertyValue(string output, string propertyName)
+{
+    var match = Regex.Match(output, $"\"{Regex.Escape(propertyName)}\"\\s*:\\s*\"(?<value>[^\"]*)\"", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
+    return match.Success ? match.Groups["value"].Value : null;
 }
 
 static void RunProcess(string fileName, string[] arguments)

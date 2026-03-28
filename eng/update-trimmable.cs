@@ -75,6 +75,7 @@ sb.Append(lf);
 sb.Append($"    <TrimmerSingleWarn>false</TrimmerSingleWarn>{lf}");
 sb.Append($"    <PublishTrimmed>true</PublishTrimmed>{lf}");
 sb.Append($"    <TrimMode>full</TrimMode>{lf}");
+sb.Append($"    <ExcludeFromGeneratedSlnx>true</ExcludeFromGeneratedSlnx>{lf}");
 sb.Append($"  </PropertyGroup>{lf}");
 sb.Append(lf);
 sb.Append($"  <ItemGroup>{lf}");

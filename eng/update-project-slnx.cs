@@ -115,7 +115,7 @@ foreach (var project in srcProjects)
     testsBySrcProject[project] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 }
 
-foreach (var testProject in testsProjects)
+foreach (var testProject in testsProjects.Where(project => !IsExcludedProject(project)))
 {
     foreach (var reference in GetProjectReferencesInSet(testProject, srcProjectSet))
     {
@@ -454,6 +454,25 @@ void UpdateMainSolution()
     }
 
     WriteIfChanged(mainSolutionPath, sw.ToString() + "\n");
+}
+
+bool IsExcludedProject(string projectPath)
+{
+    var value = GetProjectProperty(projectPath, "ExcludeFromGeneratedSlnx");
+    return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+}
+
+string? GetProjectProperty(string projectPath, string propertyName)
+{
+    try
+    {
+        var doc = XDocument.Load(projectPath);
+        return doc.Root?.Descendants(propertyName).FirstOrDefault()?.Value;
+    }
+    catch
+    {
+        return null;
+    }
 }
 
 string GetMainSlnxFolder(string relativePath)

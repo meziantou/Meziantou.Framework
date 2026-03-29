@@ -8,6 +8,20 @@ internal sealed class DnsProxyOptions
 
     public int HttpPort { get; set; } = 5080;
 
+    public int DnsOverHttpsPort { get; set; }
+
+    public int DnsOverTlsPort { get; set; }
+
+    public int DnsOverQuicPort { get; set; }
+
+    public string DnsOverHttpsPath { get; set; } = "/dns-query";
+
+    public string? CertificatePath { get; set; }
+
+    public string? CertificatePassword { get; set; }
+
+    public bool HasSecureServerListenerConfigured => DnsOverHttpsPort > 0 || DnsOverTlsPort > 0 || DnsOverQuicPort > 0;
+
     public int DiagnosticsHistoryCapacity { get; set; } = 10_000;
 
     public TimeSpan FilterRefreshInterval { get; set; } = TimeSpan.FromMinutes(30);

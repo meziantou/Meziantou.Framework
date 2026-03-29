@@ -18,6 +18,11 @@ public sealed class DiagnosticsPageRendererTests
         {
             DnsPort = 5353,
             HttpPort = 5090,
+            DnsOverHttpsPort = 5443,
+            DnsOverHttpsPath = "/dns-query",
+            DnsOverTlsPort = 5853,
+            DnsOverQuicPort = 8853,
+            CertificatePath = "certs/proxy.pfx",
             FilterRefreshInterval = TimeSpan.FromMinutes(5),
             Filters = [],
             Rewrites = [],
@@ -61,6 +66,11 @@ public sealed class DiagnosticsPageRendererTests
 
         Assert.Contains("<span class='mono'>DnsPort</span>: 5353", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>HttpPort</span>: 5090", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>DnsOverHttpsPort</span>: 5443", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>DnsOverHttpsPath</span>: /dns-query", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>DnsOverTlsPort</span>: 5853", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>DnsOverQuicPort</span>: 8853", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>CertificatePath</span>: certs/proxy.pfx", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>FilterRefreshInterval</span>: 00:05:00", html, StringComparison.Ordinal);
         Assert.Contains("example.com A 1.2.3.4", html, StringComparison.Ordinal);
     }

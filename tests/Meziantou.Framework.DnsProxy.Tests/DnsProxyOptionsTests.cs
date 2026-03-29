@@ -13,6 +13,13 @@ public sealed class DnsProxyOptionsTests
 
         Assert.Equal(5053, options.DnsPort);
         Assert.Equal(5080, options.HttpPort);
+        Assert.Equal(0, options.DnsOverHttpsPort);
+        Assert.Equal("/dns-query", options.DnsOverHttpsPath);
+        Assert.Equal(0, options.DnsOverTlsPort);
+        Assert.Equal(0, options.DnsOverQuicPort);
+        Assert.True(string.IsNullOrEmpty(options.CertificatePath));
+        Assert.True(string.IsNullOrEmpty(options.CertificatePassword));
+        Assert.False(options.HasSecureServerListenerConfigured);
         Assert.Equal(10_000, options.DiagnosticsHistoryCapacity);
         Assert.Equal(TimeSpan.FromMinutes(30), options.FilterRefreshInterval);
         Assert.Collection(options.Filters,
@@ -45,6 +52,15 @@ public sealed class DnsProxyOptionsTests
                 Assert.Equal("dns.nextdns.io", item.Endpoint);
                 Assert.Equal("Quic", item.Protocol);
             });
+    }
+
+    [Fact]
+    public void DnsProxyOptions_HasSecureServerListenerConfigured_WhenAnySecurePortIsSet()
+    {
+        Assert.False(new DnsProxyOptions().HasSecureServerListenerConfigured);
+        Assert.True(new DnsProxyOptions { DnsOverHttpsPort = 443 }.HasSecureServerListenerConfigured);
+        Assert.True(new DnsProxyOptions { DnsOverTlsPort = 853 }.HasSecureServerListenerConfigured);
+        Assert.True(new DnsProxyOptions { DnsOverQuicPort = 853 }.HasSecureServerListenerConfigured);
     }
 
     [Fact]

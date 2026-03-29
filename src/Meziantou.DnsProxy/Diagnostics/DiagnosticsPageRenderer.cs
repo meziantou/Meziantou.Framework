@@ -33,6 +33,11 @@ internal static class DiagnosticsPageRenderer
         stringBuilder.Append("<ul>");
         stringBuilder.Append("<li><span class='mono'>DnsPort</span>: ").Append(HtmlEncode(options.DnsPort.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>HttpPort</span>: ").Append(HtmlEncode(options.HttpPort.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>DnsOverHttpsPort</span>: ").Append(HtmlEncode(options.DnsOverHttpsPort.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>DnsOverHttpsPath</span>: ").Append(HtmlEncode(string.IsNullOrWhiteSpace(options.DnsOverHttpsPath) ? "/dns-query" : options.DnsOverHttpsPath)).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>DnsOverTlsPort</span>: ").Append(HtmlEncode(options.DnsOverTlsPort.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>DnsOverQuicPort</span>: ").Append(HtmlEncode(options.DnsOverQuicPort.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>CertificatePath</span>: ").Append(HtmlEncode(options.CertificatePath ?? string.Empty)).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>FilterRefreshInterval</span>: ").Append(HtmlEncode(options.FilterRefreshInterval.ToString())).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>DiagnosticsHistoryCapacity</span>: ").Append(HtmlEncode(options.DiagnosticsHistoryCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>Upstreams</span>: ").Append(HtmlEncode(string.Join(", ", upstreams.Select(u => u.DisplayName)))).Append("</li>");

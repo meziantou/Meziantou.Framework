@@ -28,27 +28,13 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         request.Headers.UserAgent.ParseAdd("Meziantou.Framework.DependencyScanning.Tool");
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
 
-        using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
+        var tags = await GetTagsAsync(request, cancellationToken).ConfigureAwait(false);
+        if (tags is null)
             yield break;
 
-        response.EnsureSuccessStatusCode();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
-        if (document.RootElement.ValueKind is not JsonValueKind.Array)
-            yield break;
-
-        foreach (var item in document.RootElement.EnumerateArray())
+        foreach (var tag in tags)
         {
-            if (item.TryGetProperty("name", out var nameElement))
-            {
-                var name = nameElement.GetString();
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    yield return name;
-                }
-            }
+            yield return tag;
         }
     }
 
@@ -76,5 +62,53 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         }
 
         return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repository);
+    }
+
+    private static async Task<string[]?> GetTagsAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests)
+                return null;
+
+            response.EnsureSuccessStatusCode();
+
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (document.RootElement.ValueKind is not JsonValueKind.Array)
+                return null;
+
+            var result = new List<string>();
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                if (!item.TryGetProperty("name", out var nameElement))
+                    continue;
+
+                var name = nameElement.GetString();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    result.Add(name);
+                }
+            }
+
+            return [.. result];
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }

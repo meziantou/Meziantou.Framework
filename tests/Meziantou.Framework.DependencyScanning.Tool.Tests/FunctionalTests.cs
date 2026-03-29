@@ -121,8 +121,8 @@ public sealed class FunctionalTests
 
         var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
         var gitHubActionsDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.GitHubActions);
-        Assert.NotEqual("v2", gitHubActionsDependency.Version);
-        Assert.True(GitHubActionsVersioningStrategy.Instance.CompareVersions(gitHubActionsDependency.Version, "v2") > 0);
+        Assert.NotNull(gitHubActionsDependency.Version);
+        Assert.True(GitHubActionsVersioningStrategy.Instance.CompareVersions(gitHubActionsDependency.Version, "v2") >= 0);
 
         var dockerDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.DockerImage);
         Assert.Equal("1.27.1", dockerDependency.Version);

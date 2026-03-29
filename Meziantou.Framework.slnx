@@ -6,6 +6,7 @@
   <Folder Name="/samples/">
     <Project Path="samples/BlazorAppSample/BlazorAppSample.csproj" />
     <Project Path="samples/DependencyScannerSample/DependencyScannerSample.csproj" />
+    <Project Path="samples/Meziantou.DnsProxy/Meziantou.DnsProxy.csproj" />
     <Project Path="samples/Meziantou.Framework.Http.HstsSample/Meziantou.Framework.Http.HstsSample.csproj" />
     <Project Path="samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />

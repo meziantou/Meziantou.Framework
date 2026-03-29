@@ -25,6 +25,7 @@ defaults:
 jobs:
   build_eng_scripts:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
@@ -39,6 +40,7 @@ jobs:
 
   validate_bom:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
@@ -48,6 +50,7 @@ jobs:
 
   validate_readme:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
@@ -57,6 +60,7 @@ jobs:
 
   validate_test_projects:
     runs-on: windows-2025
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
@@ -66,6 +70,7 @@ jobs:
 
   validate_trimmable_projects:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET

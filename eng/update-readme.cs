@@ -128,6 +128,17 @@ int UpdateToolReadmes()
             continue;
         }
 
+        var referencesSystemCommandLine = doc.Root?
+            .Descendants("PackageReference")
+            .Any(static node => string.Equals(
+                node.Attribute("Include")?.Value ?? node.Attribute("Update")?.Value,
+                "System.CommandLine",
+                StringComparison.OrdinalIgnoreCase)) is true;
+        if (!referencesSystemCommandLine)
+        {
+            continue;
+        }
+
         var toolName = doc.Root?.Descendants("ToolCommandName").FirstOrDefault()?.Value;
 
         var toolReadme = FullPath.FromPath(csproj).Parent / "readme.md";
@@ -141,15 +152,16 @@ int UpdateToolReadmes()
     }
 
     var editedFiles = 0;
-
-    Parallel.ForEach(toolProjects, project =>
+    Parallel.ForEach(
+        source: toolProjects,
+        body: project =>
     {
         Console.WriteLine($"Processing {project.Csproj}");
 
         string[] runArgs = latestTfm is not null
             ? ["run", "--project", project.Csproj, "--framework", latestTfm, "--", "--help"]
             : ["run", "--project", project.Csproj, "--", "--help"];
-        var helpText = RunProcessAndCaptureOutput("dotnet", runArgs);
+        var helpText = RunProcessAndCaptureOutput("dotnet", runArgs, timeout: TimeSpan.FromMinutes(2));
         helpText = helpText.TrimEnd(' ', '\t', '\r', '\n');
         if (!string.IsNullOrEmpty(project.ToolName))
         {
@@ -179,11 +191,13 @@ int UpdateToolReadmes()
     return 0;
 }
 
-static string RunProcessAndCaptureOutput(string fileName, string[] arguments)
+static string RunProcessAndCaptureOutput(string fileName, string[] arguments, TimeSpan? timeout = null)
 {
+    var effectiveTimeout = timeout ?? TimeSpan.FromMinutes(2);
     var psi = new ProcessStartInfo(fileName)
     {
         RedirectStandardOutput = true,
+        RedirectStandardError = true,
         UseShellExecute = false,
         Environment = { ["TERM"] = "dumb" },
     };
@@ -193,11 +207,19 @@ static string RunProcessAndCaptureOutput(string fileName, string[] arguments)
     }
 
     using var process = Process.Start(psi)!;
-    var output = process.StandardOutput.ReadToEnd();
-    process.WaitForExit();
-    if (process.ExitCode != 0)
+    var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+    var standardErrorTask = process.StandardError.ReadToEndAsync();
+    if (!process.WaitForExit((int)effectiveTimeout.TotalMilliseconds))
     {
-        throw new InvalidOperationException($"Process '{fileName} {string.Join(' ', arguments)}' exited with code {process.ExitCode}");
+        process.Kill(entireProcessTree: true);
+        throw new TimeoutException($"Process '{fileName} {string.Join(' ', arguments)}' did not complete within {effectiveTimeout}.");
+    }
+
+    var output = standardOutputTask.GetAwaiter().GetResult();
+    var error = standardErrorTask.GetAwaiter().GetResult();
+    if (process.ExitCode is not 0)
+    {
+        throw new InvalidOperationException($"Process '{fileName} {string.Join(' ', arguments)}' exited with code {process.ExitCode}.{Environment.NewLine}{error}");
     }
 
     return output;

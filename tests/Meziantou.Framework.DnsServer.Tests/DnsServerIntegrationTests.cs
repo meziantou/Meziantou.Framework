@@ -340,51 +340,13 @@ public sealed class DnsServerIntegrationTests
     public async Task AllProtocols_SingleServer_CanHandleUdpTcpDoTAndDoH()
     {
         using var certificate = CreateSelfSignedCertificate();
-        var udpPort = GetAvailableUdpPort();
-        var tcpPort = GetAvailableTcpPort();
-        var tlsPort = GetAvailableTcpPort();
-
-        var builder = WebApplication.CreateBuilder();
-        // UseUrls is ignored when Kestrel has explicit Listen calls (from AddTcpListener/AddTlsListener),
-        // so we must add an explicit HTTP endpoint via ConfigureKestrel.
-        builder.WebHost.ConfigureKestrel(kestrel =>
-        {
-            kestrel.Listen(IPAddress.Loopback, 0);
-        });
-        builder.AddDnsServer(options =>
-        {
-            options.AddUdpListener(udpPort, IPAddress.Loopback);
-            options.AddTcpListener(tcpPort, IPAddress.Loopback);
-            options.AddTlsListener(tlsPort, certificate, IPAddress.Loopback);
-        });
-
-        await using var app = builder.Build();
-        app.MapDnsHandler(async (context, ct) =>
-        {
-            var response = context.CreateResponse();
-            if (context.Query.Questions.Count > 0)
-            {
-                var question = context.Query.Questions[0];
-                response.Answers.Add(new DnsResourceRecord
-                {
-                    Name = question.Name,
-                    Type = DnsQueryType.A,
-                    Class = DnsQueryClass.IN,
-                    TimeToLive = 300,
-                    Data = new DnsARecordData { Address = IPAddress.Parse("10.0.0.1") },
-                });
-            }
-
-            return response;
-        });
-        app.MapDnsOverHttps("/dns-query");
-
-        await app.StartAsync();
+        var server = await StartAllProtocolsServerAsync(certificate, includeQuic: false);
+        await using var app = server.App;
 
         try
         {
             // Query via UDP
-            using var udpClient = new ClientDns.DnsClient($"127.0.0.1:{udpPort}", ClientDns.DnsClientProtocol.Udp);
+            using var udpClient = new ClientDns.DnsClient($"127.0.0.1:{server.UdpPort}", ClientDns.DnsClientProtocol.Udp);
             var udpResponse = await udpClient.QueryAsync("udp.example.com", ClientDns.Query.DnsQueryType.A);
 
             Assert.True(udpResponse.Header.IsResponse);
@@ -393,7 +355,7 @@ public sealed class DnsServerIntegrationTests
             Assert.Equal(IPAddress.Parse("10.0.0.1"), udpRecord.Address);
 
             // Query via TCP
-            using var tcpClient = new ClientDns.DnsClient($"127.0.0.1:{tcpPort}", ClientDns.DnsClientProtocol.Tcp);
+            using var tcpClient = new ClientDns.DnsClient($"127.0.0.1:{server.TcpPort}", ClientDns.DnsClientProtocol.Tcp);
             var tcpResponse = await tcpClient.QueryAsync("tcp.example.com", ClientDns.Query.DnsQueryType.A);
 
             Assert.True(tcpResponse.Header.IsResponse);
@@ -402,7 +364,7 @@ public sealed class DnsServerIntegrationTests
             Assert.Equal(IPAddress.Parse("10.0.0.1"), tcpRecord.Address);
 
             // Query via DNS over TLS (raw SslStream to bypass cert validation with self-signed cert)
-            await AssertDnsOverTls(tlsPort);
+            await AssertDnsOverTls(server.TlsPort);
 
             // Query via DoH (POST)
             var httpAddress = app.Urls.First(u => u.StartsWith("http://", StringComparison.Ordinal));
@@ -436,51 +398,14 @@ public sealed class DnsServerIntegrationTests
             return;
 
         using var certificate = CreateSelfSignedCertificate();
-        var udpPort = GetAvailableUdpPort();
-        var tcpPort = GetAvailableTcpPort();
-        var tlsPort = GetAvailableTcpPort();
-        var quicPort = GetAvailableUdpPort();
-
-        var builder = WebApplication.CreateBuilder();
-        builder.WebHost.ConfigureKestrel(kestrel =>
-        {
-            kestrel.Listen(IPAddress.Loopback, 0);
-        });
-        builder.AddDnsServer(options =>
-        {
-            options.AddUdpListener(udpPort, IPAddress.Loopback);
-            options.AddTcpListener(tcpPort, IPAddress.Loopback);
-            options.AddTlsListener(tlsPort, certificate, IPAddress.Loopback);
-            options.AddQuicListener(quicPort, certificate, IPAddress.Loopback);
-        });
-
-        await using var app = builder.Build();
-        app.MapDnsHandler(async (context, ct) =>
-        {
-            var response = context.CreateResponse();
-            if (context.Query.Questions.Count > 0)
-            {
-                var question = context.Query.Questions[0];
-                response.Answers.Add(new DnsResourceRecord
-                {
-                    Name = question.Name,
-                    Type = DnsQueryType.A,
-                    Class = DnsQueryClass.IN,
-                    TimeToLive = 300,
-                    Data = new DnsARecordData { Address = IPAddress.Parse("10.0.0.1") },
-                });
-            }
-
-            return response;
-        });
-        app.MapDnsOverHttps("/dns-query");
-
-        await app.StartAsync();
+        var server = await StartAllProtocolsServerAsync(certificate, includeQuic: true);
+        await using var app = server.App;
+        var quicPort = server.QuicPort ?? throw new InvalidOperationException("QUIC listener port was not configured.");
 
         try
         {
             // Query via UDP
-            using var udpClient = new ClientDns.DnsClient($"127.0.0.1:{udpPort}", ClientDns.DnsClientProtocol.Udp);
+            using var udpClient = new ClientDns.DnsClient($"127.0.0.1:{server.UdpPort}", ClientDns.DnsClientProtocol.Udp);
             var udpResponse = await udpClient.QueryAsync("udp.example.com", ClientDns.Query.DnsQueryType.A);
 
             Assert.True(udpResponse.Header.IsResponse);
@@ -489,7 +414,7 @@ public sealed class DnsServerIntegrationTests
             Assert.Equal(IPAddress.Parse("10.0.0.1"), udpRecord.Address);
 
             // Query via TCP
-            using var tcpClient = new ClientDns.DnsClient($"127.0.0.1:{tcpPort}", ClientDns.DnsClientProtocol.Tcp);
+            using var tcpClient = new ClientDns.DnsClient($"127.0.0.1:{server.TcpPort}", ClientDns.DnsClientProtocol.Tcp);
             var tcpResponse = await tcpClient.QueryAsync("tcp.example.com", ClientDns.Query.DnsQueryType.A);
 
             Assert.True(tcpResponse.Header.IsResponse);
@@ -498,7 +423,7 @@ public sealed class DnsServerIntegrationTests
             Assert.Equal(IPAddress.Parse("10.0.0.1"), tcpRecord.Address);
 
             // Query via DNS over TLS
-            await AssertDnsOverTls(tlsPort);
+            await AssertDnsOverTls(server.TlsPort);
 
             // Query via DNS over QUIC
             await AssertDnsOverQuic(quicPort);
@@ -565,6 +490,82 @@ public sealed class DnsServerIntegrationTests
     }
 #endif
 
+    private static async Task<AllProtocolsServer> StartAllProtocolsServerAsync(X509Certificate2 certificate, bool includeQuic)
+    {
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var udpPort = GetAvailableUdpPort();
+            var tcpPort = GetAvailableTcpPort();
+            var tlsPort = GetAvailableTcpPort();
+            int? quicPort = includeQuic ? GetAvailableUdpPort() : null;
+
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.ConfigureKestrel(kestrel =>
+            {
+                // UseUrls is ignored when Kestrel has explicit Listen calls.
+                kestrel.Listen(IPAddress.Loopback, 0);
+            });
+            builder.AddDnsServer(options =>
+            {
+                options.AddUdpListener(udpPort, IPAddress.Loopback);
+                options.AddTcpListener(tcpPort, IPAddress.Loopback);
+                options.AddTlsListener(tlsPort, certificate, IPAddress.Loopback);
+                if (quicPort is int actualQuicPort)
+                {
+                    options.AddQuicListener(actualQuicPort, certificate, IPAddress.Loopback);
+                }
+            });
+
+            var app = builder.Build();
+            app.MapDnsHandler(async (context, ct) =>
+            {
+                var response = context.CreateResponse();
+                if (context.Query.Questions.Count > 0)
+                {
+                    var question = context.Query.Questions[0];
+                    response.Answers.Add(new DnsResourceRecord
+                    {
+                        Name = question.Name,
+                        Type = DnsQueryType.A,
+                        Class = DnsQueryClass.IN,
+                        TimeToLive = 300,
+                        Data = new DnsARecordData { Address = IPAddress.Parse("10.0.0.1") },
+                    });
+                }
+
+                return response;
+            });
+            app.MapDnsOverHttps("/dns-query");
+
+            try
+            {
+                await app.StartAsync();
+                return new AllProtocolsServer(app, udpPort, tcpPort, tlsPort, quicPort);
+            }
+            catch (IOException exception) when (attempt < 4 && IsAddressAlreadyInUse(exception))
+            {
+                await app.DisposeAsync();
+            }
+        }
+
+        throw new IOException("Failed to bind test listeners after multiple retries due to port conflicts.");
+    }
+
+    private static bool IsAddressAlreadyInUse(Exception exception)
+    {
+        if (exception is SocketException socketException && socketException.SocketErrorCode == SocketError.AddressAlreadyInUse)
+        {
+            return true;
+        }
+
+        if (exception.Message.Contains("address already in use", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return exception.InnerException is not null && IsAddressAlreadyInUse(exception.InnerException);
+    }
+
     [SuppressMessage("Security", "CA5359:Do Not Disable Certificate Validation")]
     private static async Task AssertDnsOverTls(int tlsPort)
     {
@@ -615,6 +616,8 @@ public sealed class DnsServerIntegrationTests
 
         return ((IPEndPoint)socket.LocalEndPoint).Port;
     }
+
+    private sealed record AllProtocolsServer(WebApplication App, int UdpPort, int TcpPort, int TlsPort, int? QuicPort);
 
     private static int GetAvailableTcpPort()
     {

@@ -1,0 +1,25 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <Version>1.0.0</Version>
+    <Description>DNS proxy service with filtering and diagnostics UI</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.DnsClient\Meziantou.Framework.DnsClient.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.DnsServer\Meziantou.Framework.DnsServer.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.DnsFilter\Meziantou.Framework.DnsFilter.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.DnsProxy.Tests" />
+  </ItemGroup>
+
+</Project>

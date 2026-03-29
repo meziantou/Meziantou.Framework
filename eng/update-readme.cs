@@ -155,10 +155,6 @@ int UpdateToolReadmes()
     var editedFiles = 0;
     Parallel.ForEach(
         source: toolProjects,
-        parallelOptions: new ParallelOptions
-        {
-            MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount / 2, 1, 4),
-        },
         body: project =>
     {
         Console.WriteLine($"Processing {project.Csproj}");

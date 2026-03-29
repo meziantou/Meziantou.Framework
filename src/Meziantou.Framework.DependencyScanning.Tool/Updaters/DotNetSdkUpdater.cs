@@ -10,6 +10,7 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 internal sealed class DotNetSdkUpdater : PackageUpdater
 {
     private static readonly HttpClient HttpClient = new();
+    public override VersioningStrategy VersioningStrategy { get; set; } = SemanticVersioningStrategy.Strict;
 
     public override async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

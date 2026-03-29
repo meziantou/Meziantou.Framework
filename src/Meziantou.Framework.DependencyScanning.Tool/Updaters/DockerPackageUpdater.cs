@@ -8,13 +8,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Meziantou.Framework;
 using Meziantou.Framework.DependencyScanning;
-using NuGet.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal sealed class DockerPackageUpdater : PackageUpdater
 {
     private static readonly HttpClient HttpClient = new();
+    public override VersioningStrategy VersioningStrategy { get; set; } = DockerVersioningStrategy.Instance;
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.DockerImage;
 
@@ -58,20 +58,6 @@ internal sealed class DockerPackageUpdater : PackageUpdater
     }
 
     public override Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken) => Task.CompletedTask;
-
-    protected override SemanticVersion? ParseVersion(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return null;
-
-        var candidate = value;
-        if (candidate.StartsWith('v'))
-        {
-            candidate = candidate[1..];
-        }
-
-        return base.ParseVersion(candidate);
-    }
 
     private static string NormalizePackageName(string packageName)
     {

@@ -8,7 +8,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Meziantou.Framework;
 using Meziantou.Framework.DependencyScanning;
-using NuGet.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool;
 
@@ -23,21 +22,9 @@ internal sealed class NpmPackageUpdater : PackageUpdater
             new NpmPackageRepositoryJsonConverter(),
         },
     };
+    public override VersioningStrategy VersioningStrategy { get; set; } = NpmVersioningStrategy.Instance;
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.Npm;
-
-    protected override SemanticVersion? ParseVersion(string? value)
-    {
-        if (value is null)
-            return null;
-
-        if (value is ['~' or '^', .. var version])
-        {
-            value = version;
-        }
-
-        return base.ParseVersion(value);
-    }
 
     protected override async IAsyncEnumerable<string> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {

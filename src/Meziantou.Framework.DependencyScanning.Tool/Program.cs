@@ -164,6 +164,7 @@ internal static class Program
 
         PackageUpdater[] updaters =
         [
+            new GitHubActionsUpdater(),
             new DockerPackageUpdater(),
             new NpmPackageUpdater(),
             new NuGetPackageUpdater(),

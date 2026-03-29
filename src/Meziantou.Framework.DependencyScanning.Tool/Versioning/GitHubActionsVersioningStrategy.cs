@@ -1,4 +1,5 @@
 using System.Text;
+using System.Globalization;
 using Meziantou.Framework.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool;
@@ -41,10 +42,13 @@ internal sealed class GitHubActionsVersioningStrategy : VersioningStrategy
         if (currentComponentCount != candidateComponentCount)
             return false;
 
+        if (current is null || candidate is null)
+            return false;
+
         if (candidate <= current)
             return false;
 
-        if (!current!.IsPrerelease && candidate!.IsPrerelease)
+        if (!current.IsPrerelease && candidate.IsPrerelease)
             return false;
 
         if (candidate.IsPrerelease && current.IsPrerelease && (candidate.Major, candidate.Minor, candidate.Patch) != (current.Major, current.Minor, current.Patch))
@@ -74,7 +78,7 @@ internal sealed class GitHubActionsVersioningStrategy : VersioningStrategy
         if (componentCount is < 1 or > 3)
             return false;
 
-        if (numericPart.Split('.').Any(static part => !int.TryParse(part, out _)))
+        if (numericPart.Split('.').Any(static part => !int.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out _)))
             return false;
 
         var normalizedVersion = NormalizeToThreeComponents(value, componentCount);

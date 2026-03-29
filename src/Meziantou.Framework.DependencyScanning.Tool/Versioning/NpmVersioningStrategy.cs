@@ -36,10 +36,13 @@ internal sealed class NpmVersioningStrategy : VersioningStrategy
         if (!TryGetSemanticVersion(candidateVersion, out var candidate, out _))
             return false;
 
+        if (current is null || candidate is null)
+            return false;
+
         if (candidate <= current)
             return false;
 
-        if (!current!.IsPrerelease && candidate!.IsPrerelease)
+        if (!current.IsPrerelease && candidate.IsPrerelease)
             return false;
 
         if (candidate.IsPrerelease && current.IsPrerelease && (candidate.Major, candidate.Minor, candidate.Patch) != (current.Major, current.Minor, current.Patch))

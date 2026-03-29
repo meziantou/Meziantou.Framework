@@ -59,13 +59,13 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         owner = string.Empty;
         repository = string.Empty;
 
-        var separatorIndex = value.IndexOf('/');
+        var separatorIndex = value.IndexOf('/', StringComparison.Ordinal);
         if (separatorIndex <= 0 || separatorIndex >= value.Length - 1)
             return false;
 
         owner = value[..separatorIndex];
         var remaining = value[(separatorIndex + 1)..];
-        var secondSeparatorIndex = remaining.IndexOf('/');
+        var secondSeparatorIndex = remaining.IndexOf('/', StringComparison.Ordinal);
         if (secondSeparatorIndex < 0)
         {
             repository = remaining;

@@ -11,47 +11,47 @@ public sealed class DnsProxyIntegrationTests
     [Fact]
     public async Task Proxy_StartsWithCustomConfiguration_AndProcessesRequests()
     {
-        const int dnsPort = 0;
-        const int httpPort = 5080;
-        const string filterRefreshInterval = "00:10:00";
-        const string dnsPortVariableName = "DnsProxy__DnsPort";
-        const string httpPortVariableName = "DnsProxy__HttpPort";
-        const string filterRefreshIntervalVariableName = "DnsProxy__FilterRefreshInterval";
-        const string upstream0ProtocolVariableName = "DnsProxy__Upstreams__0__Protocol";
-        const string upstream0EndpointVariableName = "DnsProxy__Upstreams__0__Endpoint";
-        const string upstream0UseHttp3VariableName = "DnsProxy__Upstreams__0__UseHttp3";
-        const string upstream1ProtocolVariableName = "DnsProxy__Upstreams__1__Protocol";
-        const string upstream1EndpointVariableName = "DnsProxy__Upstreams__1__Endpoint";
-        const string upstream1UseHttp3VariableName = "DnsProxy__Upstreams__1__UseHttp3";
-        const string upstream2ProtocolVariableName = "DnsProxy__Upstreams__2__Protocol";
-        const string upstream2EndpointVariableName = "DnsProxy__Upstreams__2__Endpoint";
-        const string upstream2UseHttp3VariableName = "DnsProxy__Upstreams__2__UseHttp3";
+        const int DnsPort = 0;
+        const int HttpPort = 5080;
+        const string FilterRefreshInterval = "00:10:00";
+        const string DnsPortVariableName = "DnsProxy__DnsPort";
+        const string HttpPortVariableName = "DnsProxy__HttpPort";
+        const string FilterRefreshIntervalVariableName = "DnsProxy__FilterRefreshInterval";
+        const string Upstream0ProtocolVariableName = "DnsProxy__Upstreams__0__Protocol";
+        const string Upstream0EndpointVariableName = "DnsProxy__Upstreams__0__Endpoint";
+        const string Upstream0UseHttp3VariableName = "DnsProxy__Upstreams__0__UseHttp3";
+        const string Upstream1ProtocolVariableName = "DnsProxy__Upstreams__1__Protocol";
+        const string Upstream1EndpointVariableName = "DnsProxy__Upstreams__1__Endpoint";
+        const string Upstream1UseHttp3VariableName = "DnsProxy__Upstreams__1__UseHttp3";
+        const string Upstream2ProtocolVariableName = "DnsProxy__Upstreams__2__Protocol";
+        const string Upstream2EndpointVariableName = "DnsProxy__Upstreams__2__Endpoint";
+        const string Upstream2UseHttp3VariableName = "DnsProxy__Upstreams__2__UseHttp3";
 
-        var previousDnsPort = Environment.GetEnvironmentVariable(dnsPortVariableName);
-        var previousHttpPort = Environment.GetEnvironmentVariable(httpPortVariableName);
-        var previousFilterRefreshInterval = Environment.GetEnvironmentVariable(filterRefreshIntervalVariableName);
-        var previousUpstream0Protocol = Environment.GetEnvironmentVariable(upstream0ProtocolVariableName);
-        var previousUpstream0Endpoint = Environment.GetEnvironmentVariable(upstream0EndpointVariableName);
-        var previousUpstream0UseHttp3 = Environment.GetEnvironmentVariable(upstream0UseHttp3VariableName);
-        var previousUpstream1Protocol = Environment.GetEnvironmentVariable(upstream1ProtocolVariableName);
-        var previousUpstream1Endpoint = Environment.GetEnvironmentVariable(upstream1EndpointVariableName);
-        var previousUpstream1UseHttp3 = Environment.GetEnvironmentVariable(upstream1UseHttp3VariableName);
-        var previousUpstream2Protocol = Environment.GetEnvironmentVariable(upstream2ProtocolVariableName);
-        var previousUpstream2Endpoint = Environment.GetEnvironmentVariable(upstream2EndpointVariableName);
-        var previousUpstream2UseHttp3 = Environment.GetEnvironmentVariable(upstream2UseHttp3VariableName);
+        var previousDnsPort = Environment.GetEnvironmentVariable(DnsPortVariableName);
+        var previousHttpPort = Environment.GetEnvironmentVariable(HttpPortVariableName);
+        var previousFilterRefreshInterval = Environment.GetEnvironmentVariable(FilterRefreshIntervalVariableName);
+        var previousUpstream0Protocol = Environment.GetEnvironmentVariable(Upstream0ProtocolVariableName);
+        var previousUpstream0Endpoint = Environment.GetEnvironmentVariable(Upstream0EndpointVariableName);
+        var previousUpstream0UseHttp3 = Environment.GetEnvironmentVariable(Upstream0UseHttp3VariableName);
+        var previousUpstream1Protocol = Environment.GetEnvironmentVariable(Upstream1ProtocolVariableName);
+        var previousUpstream1Endpoint = Environment.GetEnvironmentVariable(Upstream1EndpointVariableName);
+        var previousUpstream1UseHttp3 = Environment.GetEnvironmentVariable(Upstream1UseHttp3VariableName);
+        var previousUpstream2Protocol = Environment.GetEnvironmentVariable(Upstream2ProtocolVariableName);
+        var previousUpstream2Endpoint = Environment.GetEnvironmentVariable(Upstream2EndpointVariableName);
+        var previousUpstream2UseHttp3 = Environment.GetEnvironmentVariable(Upstream2UseHttp3VariableName);
 
-        Environment.SetEnvironmentVariable(dnsPortVariableName, dnsPort.ToString(CultureInfo.InvariantCulture));
-        Environment.SetEnvironmentVariable(httpPortVariableName, httpPort.ToString(CultureInfo.InvariantCulture));
-        Environment.SetEnvironmentVariable(filterRefreshIntervalVariableName, filterRefreshInterval);
-        Environment.SetEnvironmentVariable(upstream0ProtocolVariableName, "Https");
-        Environment.SetEnvironmentVariable(upstream0EndpointVariableName, "https://1.1.1.1/dns-query");
-        Environment.SetEnvironmentVariable(upstream0UseHttp3VariableName, bool.FalseString);
-        Environment.SetEnvironmentVariable(upstream1ProtocolVariableName, "Https");
-        Environment.SetEnvironmentVariable(upstream1EndpointVariableName, "https://9.9.9.9/dns-query");
-        Environment.SetEnvironmentVariable(upstream1UseHttp3VariableName, bool.FalseString);
-        Environment.SetEnvironmentVariable(upstream2ProtocolVariableName, "Https");
-        Environment.SetEnvironmentVariable(upstream2EndpointVariableName, "https://dns.nextdns.io/dns-query");
-        Environment.SetEnvironmentVariable(upstream2UseHttp3VariableName, bool.FalseString);
+        Environment.SetEnvironmentVariable(DnsPortVariableName, DnsPort.ToString(CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable(HttpPortVariableName, HttpPort.ToString(CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable(FilterRefreshIntervalVariableName, FilterRefreshInterval);
+        Environment.SetEnvironmentVariable(Upstream0ProtocolVariableName, "Https");
+        Environment.SetEnvironmentVariable(Upstream0EndpointVariableName, "https://1.1.1.1/dns-query");
+        Environment.SetEnvironmentVariable(Upstream0UseHttp3VariableName, bool.FalseString);
+        Environment.SetEnvironmentVariable(Upstream1ProtocolVariableName, "Https");
+        Environment.SetEnvironmentVariable(Upstream1EndpointVariableName, "https://9.9.9.9/dns-query");
+        Environment.SetEnvironmentVariable(Upstream1UseHttp3VariableName, bool.FalseString);
+        Environment.SetEnvironmentVariable(Upstream2ProtocolVariableName, "Https");
+        Environment.SetEnvironmentVariable(Upstream2EndpointVariableName, "https://dns.nextdns.io/dns-query");
+        Environment.SetEnvironmentVariable(Upstream2UseHttp3VariableName, bool.FalseString);
 
         try
         {
@@ -59,9 +59,9 @@ public sealed class DnsProxyIntegrationTests
             var webClient = factory.CreateClient();
             var html = await webClient.GetStringAsync("/");
 
-            Assert.Contains($"<span class='mono'>DnsPort</span>: {dnsPort}", html, StringComparison.Ordinal);
-            Assert.Contains($"<span class='mono'>HttpPort</span>: {httpPort}", html, StringComparison.Ordinal);
-            Assert.Contains($"<span class='mono'>FilterRefreshInterval</span>: {filterRefreshInterval}", html, StringComparison.Ordinal);
+            Assert.Contains($"<span class='mono'>DnsPort</span>: {DnsPort}", html, StringComparison.Ordinal);
+            Assert.Contains($"<span class='mono'>HttpPort</span>: {HttpPort}", html, StringComparison.Ordinal);
+            Assert.Contains($"<span class='mono'>FilterRefreshInterval</span>: {FilterRefreshInterval}", html, StringComparison.Ordinal);
 
             var query = CreateAQuery("localhost", id: 0x1234);
             using var request = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
@@ -81,18 +81,18 @@ public sealed class DnsProxyIntegrationTests
         }
         finally
         {
-            Environment.SetEnvironmentVariable(dnsPortVariableName, previousDnsPort);
-            Environment.SetEnvironmentVariable(httpPortVariableName, previousHttpPort);
-            Environment.SetEnvironmentVariable(filterRefreshIntervalVariableName, previousFilterRefreshInterval);
-            Environment.SetEnvironmentVariable(upstream0ProtocolVariableName, previousUpstream0Protocol);
-            Environment.SetEnvironmentVariable(upstream0EndpointVariableName, previousUpstream0Endpoint);
-            Environment.SetEnvironmentVariable(upstream0UseHttp3VariableName, previousUpstream0UseHttp3);
-            Environment.SetEnvironmentVariable(upstream1ProtocolVariableName, previousUpstream1Protocol);
-            Environment.SetEnvironmentVariable(upstream1EndpointVariableName, previousUpstream1Endpoint);
-            Environment.SetEnvironmentVariable(upstream1UseHttp3VariableName, previousUpstream1UseHttp3);
-            Environment.SetEnvironmentVariable(upstream2ProtocolVariableName, previousUpstream2Protocol);
-            Environment.SetEnvironmentVariable(upstream2EndpointVariableName, previousUpstream2Endpoint);
-            Environment.SetEnvironmentVariable(upstream2UseHttp3VariableName, previousUpstream2UseHttp3);
+            Environment.SetEnvironmentVariable(DnsPortVariableName, previousDnsPort);
+            Environment.SetEnvironmentVariable(HttpPortVariableName, previousHttpPort);
+            Environment.SetEnvironmentVariable(FilterRefreshIntervalVariableName, previousFilterRefreshInterval);
+            Environment.SetEnvironmentVariable(Upstream0ProtocolVariableName, previousUpstream0Protocol);
+            Environment.SetEnvironmentVariable(Upstream0EndpointVariableName, previousUpstream0Endpoint);
+            Environment.SetEnvironmentVariable(Upstream0UseHttp3VariableName, previousUpstream0UseHttp3);
+            Environment.SetEnvironmentVariable(Upstream1ProtocolVariableName, previousUpstream1Protocol);
+            Environment.SetEnvironmentVariable(Upstream1EndpointVariableName, previousUpstream1Endpoint);
+            Environment.SetEnvironmentVariable(Upstream1UseHttp3VariableName, previousUpstream1UseHttp3);
+            Environment.SetEnvironmentVariable(Upstream2ProtocolVariableName, previousUpstream2Protocol);
+            Environment.SetEnvironmentVariable(Upstream2EndpointVariableName, previousUpstream2Endpoint);
+            Environment.SetEnvironmentVariable(Upstream2UseHttp3VariableName, previousUpstream2UseHttp3);
         }
     }
 

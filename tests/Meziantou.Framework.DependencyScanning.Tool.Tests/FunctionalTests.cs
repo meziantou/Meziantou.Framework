@@ -100,6 +100,35 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task FilterDependencyType_GitHubActions()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/sample.yml"), """
+            jobs:
+              test:
+                steps:
+                  - uses: actions/checkout@v2
+            """, XunitCancellationToken);
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile("Dockerfile"), """
+            FROM nginx:1.27.1
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath, "--dependency-type", "GitHubActions"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(tempDir.FullPath, options: null, XunitCancellationToken);
+        var gitHubActionsDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.GitHubActions);
+        Assert.NotEqual("v2", gitHubActionsDependency.Version);
+        Assert.True(GitHubActionsVersioningStrategy.Instance.CompareVersions(gitHubActionsDependency.Version, "v2") > 0);
+
+        var dockerDependency = Assert.Single(dependencies, static dep => dep.Type is DependencyType.DockerImage);
+        Assert.Equal("1.27.1", dockerDependency.Version);
+    }
+
+    [Fact]
     public async Task ListDependenciesAsJson()
     {
         await using var tempDir = TemporaryDirectory.Create();
@@ -464,6 +493,70 @@ public sealed class FunctionalTests
         var registry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(packageFile), "left-pad");
 
         Assert.Equal("https://root.registry/", registry.ToString());
+    }
+
+    [Fact]
+    public void NpmVersioningStrategy_GetUpdateReferenceText_PreservesPrefix()
+    {
+        var strategy = NpmVersioningStrategy.Instance;
+
+        Assert.Equal("^2.0.0", strategy.GetUpdateReferenceText("^1.0.0", "2.0.0"));
+        Assert.Equal("~2.0.0", strategy.GetUpdateReferenceText("~1.0.0", "2.0.0"));
+        Assert.Equal("2.0.0", strategy.GetUpdateReferenceText("1.0.0", "2.0.0"));
+    }
+
+    [Theory]
+    [InlineData("1.0.0-alpine", "1.0.1-alpine", true)]
+    [InlineData("1.0.0-alpine", "1.0.1-slim", false)]
+    [InlineData("1.0.0", "1.0.1-alpine", false)]
+    [InlineData("1.0.0", "1.1.0", true)]
+    public void DockerVersioningStrategy_IsCompatibleVersion(string currentVersion, string candidateVersion, bool expectedResult)
+    {
+        var strategy = DockerVersioningStrategy.Instance;
+
+        Assert.Equal(expectedResult, strategy.IsCompatibleVersion(currentVersion, candidateVersion));
+    }
+
+    [Theory]
+    [InlineData("1.0.0", "1.1.0", -1)]
+    [InlineData("1.1.0", "1.0.0", 1)]
+    [InlineData("1.0.0", "1.0.0", 0)]
+    public void NuGetVersioningStrategy_CompareVersions(string x, string y, int expectedSign)
+    {
+        var strategy = NuGetVersioningStrategy.Instance;
+
+        var result = strategy.CompareVersions(x, y);
+        Assert.Equal(expectedSign, Math.Sign(result));
+    }
+
+    [Theory]
+    [InlineData("v1.0.0", true)]
+    [InlineData("1.0.0", true)]
+    [InlineData("latest", false)]
+    public void SemanticVersioningStrategy_PrefixAllowed_IsSupportedVersion(string version, bool expectedResult)
+    {
+        var strategy = SemanticVersioningStrategy.PrefixAllowed;
+
+        Assert.Equal(expectedResult, strategy.IsSupportedVersion(version));
+    }
+
+    [Theory]
+    [InlineData("1", "2", true)]
+    [InlineData("1.0", "2.0", true)]
+    [InlineData("1.0.0", "2.0.0", true)]
+    [InlineData("v1", "v2", true)]
+    [InlineData("v1.0", "v2.0", true)]
+    [InlineData("v1.0.0", "v2.0.0", true)]
+    [InlineData("v1.0", "v2", false)]
+    [InlineData("v1", "v2.0.0", false)]
+    [InlineData("1.0", "2", false)]
+    [InlineData("1", "2.0", false)]
+    [InlineData("1", "v2", false)]
+    public void GitHubActionsVersioningStrategy_IsCompatibleVersion(string currentVersion, string candidateVersion, bool expectedResult)
+    {
+        var strategy = GitHubActionsVersioningStrategy.Instance;
+
+        Assert.Equal(expectedResult, strategy.IsCompatibleVersion(currentVersion, candidateVersion));
     }
 
     private static async Task<IReadOnlyList<Dependency>> ScanDependencies(TemporaryDirectory temporaryDirectory)

@@ -192,8 +192,9 @@ int UpdateToolReadmes()
     return 0;
 }
 
-static string RunProcessAndCaptureOutput(string fileName, string[] arguments, TimeSpan timeout)
+static string RunProcessAndCaptureOutput(string fileName, string[] arguments, TimeSpan? timeout = null)
 {
+    var effectiveTimeout = timeout ?? TimeSpan.FromMinutes(2);
     var psi = new ProcessStartInfo(fileName)
     {
         RedirectStandardOutput = true,
@@ -209,10 +210,10 @@ static string RunProcessAndCaptureOutput(string fileName, string[] arguments, Ti
     using var process = Process.Start(psi)!;
     var standardOutputTask = process.StandardOutput.ReadToEndAsync();
     var standardErrorTask = process.StandardError.ReadToEndAsync();
-    if (!process.WaitForExit((int)timeout.TotalMilliseconds))
+    if (!process.WaitForExit((int)effectiveTimeout.TotalMilliseconds))
     {
         process.Kill(entireProcessTree: true);
-        throw new TimeoutException($"Process '{fileName} {string.Join(' ', arguments)}' did not complete within {timeout}.");
+        throw new TimeoutException($"Process '{fileName} {string.Join(' ', arguments)}' did not complete within {effectiveTimeout}.");
     }
 
     var output = standardOutputTask.GetAwaiter().GetResult();

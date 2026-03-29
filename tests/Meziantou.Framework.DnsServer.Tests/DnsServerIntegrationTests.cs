@@ -13,6 +13,7 @@ using Meziantou.Framework.DnsServer.Protocol.Wire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using TestUtilities;
 using Xunit;
 using ClientDns = Meziantou.Framework.DnsClient;
 
@@ -56,7 +57,7 @@ public sealed class DnsServerIntegrationTests
         try
         {
             using var client = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp);
-            var response = await client.QueryAsync("test.example.com", ClientDns.Query.DnsQueryType.A);
+            var response = await XUnitStaticHelpers.Retry(() => client.QueryAsync("test.example.com", ClientDns.Query.DnsQueryType.A, XUnitStaticHelpers.XunitCancellationToken));
 
             Assert.True(response.Header.IsResponse);
             Assert.Equal(ClientDns.Response.DnsResponseCode.NoError, response.Header.ResponseCode);

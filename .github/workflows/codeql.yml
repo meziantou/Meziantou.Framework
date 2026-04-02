@@ -36,7 +36,7 @@ jobs:
           - language: csharp
             build-mode: manual
           - language: javascript-typescript
-            build-mode: autobuild
+            build-mode: none
 
     steps:
       - uses: actions/checkout@v6
@@ -52,10 +52,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-
-      - name: Autobuild
-        if: matrix.build-mode == 'autobuild'
-        uses: github/codeql-action/autobuild@v3
 
       - name: Build
         if: matrix.build-mode == 'manual'

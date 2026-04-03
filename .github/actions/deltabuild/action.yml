@@ -1,0 +1,94 @@
+name: DeltaBuild
+description: Generate a delta traversal project using Meziantou.DeltaBuild
+
+inputs:
+  input-project:
+    description: Input traversal project path
+    required: true
+  output-project:
+    description: Output delta project path
+    required: true
+  traversal-after-import:
+    description: Project imported after traversal project references
+    required: false
+    default: build.platform-exclusions.proj
+  full-rebuild-triggers:
+    description: |
+      Newline-separated list of full rebuild trigger globs or paths.
+      Each entry is passed as --full-rebuild-trigger.
+    required: false
+    default: ""
+  run-generate:
+    description: Whether to run DeltaBuild generation
+    required: false
+    default: "true"
+  default-project:
+    description: Fallback project path when the delta project is not generated
+    required: false
+    default: ""
+
+outputs:
+  project:
+    description: Project path to build (delta project if generated; fallback otherwise)
+    value: ${{ steps.compute-project.outputs.project }}
+  is-delta:
+    description: Whether the returned project is a generated delta project
+    value: ${{ steps.compute-project.outputs.is-delta }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install DeltaBuild
+      if: ${{ inputs.run-generate == 'true' }}
+      shell: pwsh
+      run: dotnet tool install --global Meziantou.DeltaBuild
+
+    - name: Generate delta project
+      id: generate-delta
+      if: ${{ inputs.run-generate == 'true' }}
+      shell: pwsh
+      env:
+        INPUT_PROJECT: ${{ inputs.input-project }}
+        OUTPUT_PROJECT: ${{ inputs.output-project }}
+        TRAVERSAL_AFTER_IMPORT: ${{ inputs.traversal-after-import }}
+        FULL_REBUILD_TRIGGERS: ${{ inputs.full-rebuild-triggers }}
+      run: |
+        $arguments = @(
+          "generate"
+          "--input", $env:INPUT_PROJECT
+          "--output", $env:OUTPUT_PROJECT
+          "--traversal-after-import", $env:TRAVERSAL_AFTER_IMPORT
+        )
+
+        $env:FULL_REBUILD_TRIGGERS -split "`n" | ForEach-Object {
+          $trigger = $_.Trim()
+          if ($trigger) {
+            $arguments += @("--full-rebuild-trigger", $trigger)
+          }
+        }
+
+        & Meziantou.DeltaBuild @arguments
+
+    - name: Compute output project
+      id: compute-project
+      shell: pwsh
+      env:
+        INPUT_PROJECT: ${{ inputs.input-project }}
+        OUTPUT_PROJECT: ${{ inputs.output-project }}
+        DEFAULT_PROJECT: ${{ inputs.default-project }}
+      run: |
+        $fallbackProject = $env:DEFAULT_PROJECT
+        if (-not $fallbackProject) {
+          $fallbackProject = $env:INPUT_PROJECT
+        }
+
+        if (Test-Path $env:OUTPUT_PROJECT) {
+          Write-Host "Using delta build file:"
+          Get-Content $env:OUTPUT_PROJECT
+          "project=$($env:OUTPUT_PROJECT)" >> $env:GITHUB_OUTPUT
+          "is-delta=true" >> $env:GITHUB_OUTPUT
+        } else {
+          Write-Host "Using full build file: $fallbackProject"
+          "project=$fallbackProject" >> $env:GITHUB_OUTPUT
+          "is-delta=false" >> $env:GITHUB_OUTPUT
+        }

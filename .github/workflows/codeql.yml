@@ -1,0 +1,78 @@
+name: CodeQL
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '35 2 * * 0' # weekly
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ case(github.event_name == 'pull_request', 0, 1) }}
+
+      - run: git config --global protocol.file.allow always
+
+      - name: Setup .NET
+        if: matrix.language == 'csharp'
+        uses: ./.github/setup-dotnet
+
+      - name: Resolve build project
+        if: matrix.language == 'csharp'
+        id: build-project
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          output-project: eng/delta.proj
+          default-project: eng/build.proj
+          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
+          full-rebuild-triggers: |
+            .github/workflows/codeql.yml
+            eng/**/*.proj
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Build
+        if: matrix.build-mode == 'manual'
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release /p:IsLinuxArm64=false
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}

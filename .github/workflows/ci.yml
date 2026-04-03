@@ -91,23 +91,16 @@ jobs:
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - name: Generate delta build file
-        if: github.event_name == 'pull_request'
         id: package-project
         uses: ./.github/actions/deltabuild
         with:
           input-project: eng/packages.proj
           output-project: eng/packages.delta.proj
           default-project: eng/packages.proj
+          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
-
-      - name: Set package project
-        if: github.event_name != 'pull_request'
-        id: package-project
-        run: |
-          "project=eng/packages.proj" >> $env:GITHUB_OUTPUT
-          "is-delta=false" >> $env:GITHUB_OUTPUT
 
       - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-taskdialog.binlog
@@ -177,22 +170,16 @@ jobs:
         uses: ./.github/setup-dotnet
 
       - name: Generate delta build file
-        if: github.event_name == 'pull_request'
         id: build-project
         uses: ./.github/actions/deltabuild
         with:
           input-project: eng/build.proj
           output-project: eng/delta.proj
           default-project: eng/build.proj
+          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
-
-      - name: Set build project
-        if: github.event_name != 'pull_request'
-        id: build-project
-        run: |
-          "project=eng/build.proj" >> $env:GITHUB_OUTPUT
 
       - name: PATH
         run: echo $env:PATH

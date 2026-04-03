@@ -92,22 +92,22 @@ jobs:
         uses: ./.github/setup-dotnet
       - name: Generate delta build file
         if: github.event_name == 'pull_request'
-        run: |
-          dotnet tool install --global Meziantou.DeltaBuild
-          Meziantou.DeltaBuild generate --input eng/packages.proj --output eng/packages.delta.proj --traversal-after-import build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
-      - name: Compute package project
+        id: package-project
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/packages.proj
+          output-project: eng/packages.delta.proj
+          default-project: eng/packages.proj
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+
+      - name: Set package project
+        if: github.event_name != 'pull_request'
         id: package-project
         run: |
-          if (Test-Path eng/packages.delta.proj) {
-            Write-Host "Using delta build file:"
-            Get-Content eng/packages.delta.proj
-            "project=eng/packages.delta.proj" >> $env:GITHUB_OUTPUT
-            "is-delta=true" >> $env:GITHUB_OUTPUT
-          } else {
-            Write-Host "Using full build file: eng/packages.proj"
-            "project=eng/packages.proj" >> $env:GITHUB_OUTPUT
-            "is-delta=false" >> $env:GITHUB_OUTPUT
-          }
+          "project=eng/packages.proj" >> $env:GITHUB_OUTPUT
+          "is-delta=false" >> $env:GITHUB_OUTPUT
 
       - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-taskdialog.binlog
@@ -178,21 +178,21 @@ jobs:
 
       - name: Generate delta build file
         if: github.event_name == 'pull_request'
-        run: |
-          dotnet tool install --global Meziantou.DeltaBuild
-          Meziantou.DeltaBuild generate --input eng/build.proj --output eng/delta.proj --traversal-after-import build.platform-exclusions.proj --full-rebuild-trigger ".github/workflows/ci.yml" --full-rebuild-trigger "eng/**/*.proj"
+        id: build-project
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          output-project: eng/delta.proj
+          default-project: eng/build.proj
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
 
-      - name: Compute build project
+      - name: Set build project
+        if: github.event_name != 'pull_request'
         id: build-project
         run: |
-          if (Test-Path eng/delta.proj) {
-            Write-Host "Using delta build file:"
-            Get-Content eng/delta.proj
-            "project=eng/delta.proj" >> $env:GITHUB_OUTPUT
-          } else {
-            Write-Host "Using full build file: eng/build.proj"
-            "project=eng/build.proj" >> $env:GITHUB_OUTPUT
-          }
+          "project=eng/build.proj" >> $env:GITHUB_OUTPUT
 
       - name: PATH
         run: echo $env:PATH

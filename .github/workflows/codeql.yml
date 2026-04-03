@@ -41,11 +41,26 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ case(github.event_name == 'pull_request', 0, 1) }}
+
+      - run: git config --global protocol.file.allow always
 
       - name: Setup .NET
         if: matrix.language == 'csharp'
         uses: ./.github/setup-dotnet
+
+      - name: Resolve build project
+        if: matrix.language == 'csharp'
+        id: build-project
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          output-project: eng/delta.proj
+          default-project: eng/build.proj
+          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
+          full-rebuild-triggers: |
+            .github/workflows/codeql.yml
+            eng/**/*.proj
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -55,7 +70,7 @@ jobs:
 
       - name: Build
         if: matrix.build-mode == 'manual'
-        run: dotnet build ./eng/build.proj --configuration Release /p:IsLinuxArm64=false
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release /p:IsLinuxArm64=false
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

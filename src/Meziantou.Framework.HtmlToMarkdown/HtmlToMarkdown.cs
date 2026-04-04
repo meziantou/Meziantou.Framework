@@ -4,13 +4,21 @@ using AngleSharp.Html.Parser;
 
 namespace Meziantou.Framework;
 
+/// <summary>Converts HTML fragments to Markdown text.</summary>
 public static class HtmlToMarkdown
 {
+    /// <summary>Converts an HTML fragment to Markdown using default options.</summary>
+    /// <param name="html">The HTML fragment to convert.</param>
+    /// <returns>The converted Markdown text.</returns>
     public static string Convert(string html)
     {
         return Convert(html, new HtmlToMarkdownOptions());
     }
 
+    /// <summary>Converts an HTML fragment to Markdown using the specified options.</summary>
+    /// <param name="html">The HTML fragment to convert.</param>
+    /// <param name="options">The conversion options.</param>
+    /// <returns>The converted Markdown text.</returns>
     public static string Convert(string html, HtmlToMarkdownOptions options)
     {
         if (string.IsNullOrWhiteSpace(html))

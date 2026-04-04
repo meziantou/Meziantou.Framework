@@ -4,6 +4,8 @@ namespace Meziantou.Framework;
 
 internal static class MyersDiff
 {
+    private const int StackAllocationThreshold = 128;
+
     internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer)
     {
         return Compute(left.AsSpan(), right.AsSpan(), comparer);
@@ -11,13 +13,21 @@ internal static class MyersDiff
 
     internal static DiffComputationResult Compute(ReadOnlySpan<string> left, ReadOnlySpan<string> right, IEqualityComparer<string> comparer)
     {
-        const int StackAllocationThreshold = 128;
-
         var h = new Dictionary<string, int>(left.Length + right.Length, comparer);
-        var dataLeft = new DiffData(DiffCodes(left, h));
-        var dataRight = new DiffData(DiffCodes(right, h));
+        var leftCodesBuffer = left.Length <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[left.Length];
+        var rightCodesBuffer = right.Length <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[right.Length];
+        var leftCodes = leftCodesBuffer[..left.Length];
+        var rightCodes = rightCodesBuffer[..right.Length];
+        leftCodes.Clear();
+        rightCodes.Clear();
 
-        var max = dataLeft.Length + dataRight.Length + 1;
+        DiffCodes(left, h, leftCodes);
+        DiffCodes(right, h, rightCodes);
+
+        var leftModified = new bool[left.Length];
+        var rightModified = new bool[right.Length];
+
+        var max = left.Length + right.Length + 1;
         var vectorLength = (2 * max) + 2;
 
         var downVectorBuffer = vectorLength <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[vectorLength];
@@ -28,17 +38,16 @@ internal static class MyersDiff
         var upVector = upVectorBuffer[..vectorLength];
         upVector.Clear();
 
-        LongCommonSubsequence(dataLeft, 0, dataLeft.Length, dataRight, 0, dataRight.Length, downVector, upVector);
+        LongCommonSubsequence(leftCodes, leftModified, 0, leftCodes.Length, rightCodes, rightModified, 0, rightCodes.Length, downVector, upVector);
 
-        Optimize(dataLeft);
-        Optimize(dataRight);
-        return new DiffComputationResult(dataLeft.ToModifiedArray(), dataRight.ToModifiedArray());
+        Optimize(leftCodes, leftModified);
+        Optimize(rightCodes, rightModified);
+        return new DiffComputationResult(leftModified, rightModified);
     }
 
-    private static int[] DiffCodes(ReadOnlySpan<string> chunks, Dictionary<string, int> h)
+    private static void DiffCodes(ReadOnlySpan<string> chunks, Dictionary<string, int> h, Span<int> codes)
     {
         var lastUsedCode = h.Count;
-        var codes = new int[chunks.Length];
 
         for (var i = 0; i < chunks.Length; i++)
         {
@@ -54,30 +63,28 @@ internal static class MyersDiff
                 codes[i] = value;
             }
         }
-
-        return codes;
     }
 
-    private static void Optimize(DiffData data)
+    private static void Optimize(ReadOnlySpan<int> data, bool[] modified)
     {
         var startPos = 0;
-        while (startPos < data.Length)
+        while (startPos < modified.Length)
         {
-            while (startPos < data.Length && !data.Modified[startPos])
+            while (startPos < modified.Length && !modified[startPos])
             {
                 startPos++;
             }
 
             var endPos = startPos;
-            while (endPos < data.Length && data.Modified[endPos])
+            while (endPos < modified.Length && modified[endPos])
             {
                 endPos++;
             }
 
-            if (endPos < data.Length && data.Data[startPos] == data.Data[endPos])
+            if (endPos < modified.Length && data[startPos] == data[endPos])
             {
-                data.Modified[startPos] = false;
-                data.Modified[endPos] = true;
+                modified[startPos] = false;
+                modified[endPos] = true;
             }
             else
             {
@@ -86,7 +93,7 @@ internal static class MyersDiff
         }
     }
 
-    private static SMSRD ShortestMiddleSnake(DiffData dataLeft, int lowerLeft, int upperLeft, DiffData dataRight, int lowerRight, int upperRight, Span<int> downVector, Span<int> upVector)
+    private static SMSRD ShortestMiddleSnake(ReadOnlySpan<int> dataLeft, int lowerLeft, int upperLeft, ReadOnlySpan<int> dataRight, int lowerRight, int upperRight, Span<int> downVector, Span<int> upVector)
     {
         var max = dataLeft.Length + dataRight.Length + 1;
 
@@ -124,7 +131,7 @@ internal static class MyersDiff
 
                 var y = x - k;
 
-                while (x < upperLeft && y < upperRight && dataLeft.Data[x] == dataRight.Data[y])
+                while (x < upperLeft && y < upperRight && dataLeft[x] == dataRight[y])
                 {
                     x++;
                     y++;
@@ -159,7 +166,7 @@ internal static class MyersDiff
 
                 var y = x - k;
 
-                while (x > lowerLeft && y > lowerRight && dataLeft.Data[x - 1] == dataRight.Data[y - 1])
+                while (x > lowerLeft && y > lowerRight && dataLeft[x - 1] == dataRight[y - 1])
                 {
                     x--;
                     y--;
@@ -180,15 +187,25 @@ internal static class MyersDiff
         throw new InvalidOperationException("Diff algorithm failed to find a middle snake.");
     }
 
-    private static void LongCommonSubsequence(DiffData dataLeft, int lowerLeft, int upperLeft, DiffData dataRight, int lowerRight, int upperRight, Span<int> downVector, Span<int> upVector)
+    private static void LongCommonSubsequence(
+        ReadOnlySpan<int> dataLeft,
+        bool[] leftModified,
+        int lowerLeft,
+        int upperLeft,
+        ReadOnlySpan<int> dataRight,
+        bool[] rightModified,
+        int lowerRight,
+        int upperRight,
+        Span<int> downVector,
+        Span<int> upVector)
     {
-        while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft.Data[lowerLeft] == dataRight.Data[lowerRight])
+        while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft[lowerLeft] == dataRight[lowerRight])
         {
             lowerLeft++;
             lowerRight++;
         }
 
-        while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft.Data[upperLeft - 1] == dataRight.Data[upperRight - 1])
+        while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft[upperLeft - 1] == dataRight[upperRight - 1])
         {
             --upperLeft;
             --upperRight;
@@ -198,21 +215,21 @@ internal static class MyersDiff
         {
             while (lowerRight < upperRight)
             {
-                dataRight.Modified[lowerRight++] = true;
+                rightModified[lowerRight++] = true;
             }
         }
         else if (lowerRight == upperRight)
         {
             while (lowerLeft < upperLeft)
             {
-                dataLeft.Modified[lowerLeft++] = true;
+                leftModified[lowerLeft++] = true;
             }
         }
         else
         {
             var smsrd = ShortestMiddleSnake(dataLeft, lowerLeft, upperLeft, dataRight, lowerRight, upperRight, downVector, upVector);
-            LongCommonSubsequence(dataLeft, lowerLeft, smsrd.X, dataRight, lowerRight, smsrd.Y, downVector, upVector);
-            LongCommonSubsequence(dataLeft, smsrd.X, upperLeft, dataRight, smsrd.Y, upperRight, downVector, upVector);
+            LongCommonSubsequence(dataLeft, leftModified, lowerLeft, smsrd.X, dataRight, rightModified, lowerRight, smsrd.Y, downVector, upVector);
+            LongCommonSubsequence(dataLeft, leftModified, smsrd.X, upperLeft, dataRight, rightModified, smsrd.Y, upperRight, downVector, upVector);
         }
     }
 
@@ -221,24 +238,5 @@ internal static class MyersDiff
     {
         public int X;
         public int Y;
-    }
-
-    private sealed class DiffData
-    {
-        internal DiffData(int[] initData)
-        {
-            Data = initData;
-            Length = initData.Length;
-            Modified = new bool[initData.Length];
-        }
-
-        internal int Length { get; }
-        internal int[] Data { get; }
-        internal bool[] Modified { get; }
-
-        internal bool[] ToModifiedArray()
-        {
-            return Modified;
-        }
     }
 }

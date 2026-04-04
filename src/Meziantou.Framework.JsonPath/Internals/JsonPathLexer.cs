@@ -334,9 +334,9 @@ internal ref struct JsonPathLexer
         }
 
         var hex = _input.Slice(_position, 4);
-        if (!int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var value))
+        if (!TryParseInt32Hex(hex, out var value))
         {
-            throw new FormatException($"Invalid hex digits '{new string(hex)}' at position {_position}.");
+            throw new FormatException($"Invalid hex digits '{hex.ToString()}' at position {_position}.");
         }
 
         _position += 4;
@@ -424,15 +424,15 @@ internal ref struct JsonPathLexer
         if (isIntegerLiteral && !isNegativeZero)
         {
             // Try to parse as long for integer values (index/slice selectors need exact integers)
-            if (long.TryParse(numberSpan, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var longValue))
+            if (TryParseInt64(numberSpan, out var longValue))
             {
                 return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, longValue, isIntegerLiteral: true);
             }
         }
 
-        if (!double.TryParse(numberSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
+        if (!TryParseDouble(numberSpan, out var doubleValue))
         {
-            throw new FormatException($"Invalid number '{new string(numberSpan)}' at position {pos}.");
+            throw new FormatException($"Invalid number '{numberSpan.ToString()}' at position {pos}.");
         }
 
         return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, doubleValue, isIntegerLiteral: false);
@@ -463,7 +463,7 @@ internal ref struct JsonPathLexer
             return new JsonPathToken(JsonPathTokenKind.Null, pos);
         }
 
-        return new JsonPathToken(JsonPathTokenKind.Identifier, pos, new string(text));
+        return new JsonPathToken(JsonPathTokenKind.Identifier, pos, text.ToString());
     }
 
     private void SkipWhitespace()
@@ -475,6 +475,33 @@ internal ref struct JsonPathLexer
     }
 
     private static bool IsBlank(char ch) => ch is ' ' or '\t' or '\n' or '\r';
+
+    private static bool TryParseInt32Hex(ReadOnlySpan<char> value, out int result)
+    {
+#if NETSTANDARD2_0
+        return int.TryParse(value.ToString(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result);
+#else
+        return int.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result);
+#endif
+    }
+
+    private static bool TryParseInt64(ReadOnlySpan<char> value, out long result)
+    {
+#if NETSTANDARD2_0
+        return long.TryParse(value.ToString(), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out result);
+#else
+        return long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out result);
+#endif
+    }
+
+    private static bool TryParseDouble(ReadOnlySpan<char> value, out double result)
+    {
+#if NETSTANDARD2_0
+        return double.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+#else
+        return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+#endif
+    }
 
     /// <summary>name-first = ALPHA / "_" / %x80-D7FF / %xE000-10FFFF</summary>
     internal static bool IsNameFirst(char ch) => ch is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or '_' or (>= '\x80' and <= '\uD7FF') or (>= '\uE000');

@@ -60,6 +60,106 @@ public sealed class TextDiffTests
         new("Identical", "same", "same", HasDifferences: false),
     ];
 
+    private static readonly IReadOnlyList<AlgorithmCase> AlgorithmSpecificCorpus =
+    [
+        new(
+            "Myers repeated anchors",
+            TextDiffAlgorithm.Myers,
+            JoinLines("A", "B", "A", "C"),
+            JoinLines("A", "A", "B", "C"),
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "C"),
+            ]),
+        new(
+            "Patience repeated anchors",
+            TextDiffAlgorithm.Patience,
+            JoinLines("A", "B", "A", "C"),
+            JoinLines("A", "A", "B", "C"),
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "C"),
+            ]),
+        new(
+            "Histogram repeated anchors",
+            TextDiffAlgorithm.Histogram,
+            JoinLines("A", "B", "A", "C"),
+            JoinLines("A", "A", "B", "C"),
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "C"),
+            ]),
+        new(
+            "Hunt-Szymanski repeated anchors",
+            TextDiffAlgorithm.HuntSzymanski,
+            JoinLines("A", "B", "A", "C"),
+            JoinLines("A", "A", "B", "C"),
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "A\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "B\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "C"),
+            ]),
+        new(
+            "Myers swap middle lines",
+            TextDiffAlgorithm.Myers,
+            JoinLines("a", "b", "c", "d"),
+            JoinLines("a", "c", "b", "d"),
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "a\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "b\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "d"),
+            ]),
+        new(
+            "Patience swap middle lines",
+            TextDiffAlgorithm.Patience,
+            JoinLines("a", "b", "c", "d"),
+            JoinLines("a", "c", "b", "d"),
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "a\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "b\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "b\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "d"),
+            ]),
+        new(
+            "Histogram swap middle lines",
+            TextDiffAlgorithm.Histogram,
+            JoinLines("a", "b", "c", "d"),
+            JoinLines("a", "c", "b", "d"),
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "a\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "b\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "d"),
+            ]),
+        new(
+            "Hunt-Szymanski swap middle lines",
+            TextDiffAlgorithm.HuntSzymanski,
+            JoinLines("a", "b", "c", "d"),
+            JoinLines("a", "c", "b", "d"),
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "a\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "b\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, "b\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "d"),
+            ]),
+    ];
+
     public static IEnumerable<object[]> AllAlgorithms()
     {
         foreach (var algorithm in Enum.GetValues<TextDiffAlgorithm>())
@@ -76,6 +176,14 @@ public sealed class TextDiffTests
             {
                 yield return new object[] { algorithm, testCase.Name, testCase.OldText, testCase.NewText, testCase.HasDifferences };
             }
+        }
+    }
+
+    public static IEnumerable<object[]> AlgorithmSpecificCases()
+    {
+        foreach (var testCase in AlgorithmSpecificCorpus)
+        {
+            yield return new object[] { testCase.Algorithm, testCase.Name, testCase.OldText, testCase.NewText, testCase.ExpectedEntries };
         }
     }
 
@@ -145,6 +253,16 @@ public sealed class TextDiffTests
         Assert.Equal(hasDifferences, result.HasDifferences);
         Assert.Equal(oldText, ReconstructOldText(result));
         Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Theory]
+    [MemberData(nameof(AlgorithmSpecificCases))]
+    public void ComputeDiff_AlgorithmSpecificCases_ProducesExpectedEntries(TextDiffAlgorithm algorithm, string _, string oldText, string newText, TextDiffEntry[] expectedEntries)
+    {
+        var options = new TextDiffOptions { Algorithm = algorithm };
+        var result = Diff.ComputeDiff(oldText, newText, options);
+
+        Assert.Equal(expectedEntries, result.Entries);
     }
 
     [Theory]
@@ -522,4 +640,5 @@ public sealed class TextDiffTests
     private static string JoinLines(params string[] lines) => string.Join('\n', lines);
 
     private sealed record DiffCorpusCase(string Name, string OldText, string NewText, bool HasDifferences);
+    private sealed record AlgorithmCase(string Name, TextDiffAlgorithm Algorithm, string OldText, string NewText, TextDiffEntry[] ExpectedEntries);
 }

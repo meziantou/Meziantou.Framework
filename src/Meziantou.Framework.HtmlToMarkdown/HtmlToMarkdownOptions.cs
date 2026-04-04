@@ -19,34 +19,3 @@ public sealed class HtmlToMarkdownOptions
     public UnknownElementHandling UnknownElementHandling { get; set; }
         = UnknownElementHandling.PassThrough;
 }
-
-public enum EmphasisMarker
-{
-    Asterisk,
-    Underscore,
-}
-
-public enum HeadingStyle
-{
-    Atx,
-    Setext,
-}
-
-public enum CodeBlockStyle
-{
-    Fenced,
-    Indented,
-}
-
-public enum LineBreakStyle
-{
-    TrailingSpaces,
-    Backslash,
-}
-
-public enum UnknownElementHandling
-{
-    PassThrough,
-    Strip,
-    StripKeepContent,
-}

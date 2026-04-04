@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework;
 
 public class TextChunker
@@ -11,35 +13,33 @@ public class TextChunker
 
     private sealed class LineChunker : TextChunker
     {
+        private static SearchValues<char> NewLineCharacters { get; } = SearchValues.Create("\r\n\u0085\u2028\u2029");
+
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
             var lines = new List<string>();
             var start = 0;
 
-            for (var i = 0; i < value.Length; i++)
+            while (start < value.Length)
             {
-                var c = value[i];
-                if (c == '\r')
+                var lineEndIndex = value[start..].IndexOfAny(NewLineCharacters);
+                if (lineEndIndex < 0)
                 {
-                    var end = i + 1 < value.Length && value[i + 1] == '\n' ? i + 2 : i + 1;
-                    lines.Add(value[start..end].ToString());
-                    start = end;
-                    if (end > i + 1)
-                    {
-                        i++; // skip \n after \r
-                    }
+                    break;
                 }
-                else if (c == '\n' || c == '\u0085' || c == '\u2028' || c == '\u2029')
+
+                var separatorStart = start + lineEndIndex;
+                var end = separatorStart + 1;
+                if (value[separatorStart] == '\r' && end < value.Length && value[end] == '\n')
                 {
-                    lines.Add(value[start..(i + 1)].ToString());
-                    start = i + 1;
+                    end++;
                 }
+
+                lines.Add(value[start..end].ToString());
+                start = end;
             }
 
-            if (start <= value.Length)
-            {
-                lines.Add(value[start..].ToString());
-            }
+            lines.Add(value[start..].ToString());
 
             return lines;
         }

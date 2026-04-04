@@ -1,5 +1,7 @@
 extern alias TextDiffLib;
 
+using System.Text;
+
 using Diff = TextDiffLib::Meziantou.Framework.TextDiff;
 using TextDiffLib::Meziantou.Framework;
 using Xunit;
@@ -8,11 +10,72 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class TextDiffTests
 {
+    private static readonly IReadOnlyList<DiffCorpusCase> LineCorpus =
+    [
+        new("Identical text", JoinLines("alpha", "beta"), JoinLines("alpha", "beta"), HasDifferences: false),
+        new("Insert in the middle", JoinLines("line1", "line3"), JoinLines("line1", "line2", "line3"), HasDifferences: true),
+        new("Delete from the beginning", JoinLines("line1", "line2", "line3"), JoinLines("line3"), HasDifferences: true),
+        new("Repeated anchors", JoinLines("A", "B", "A", "C"), JoinLines("A", "A", "B", "C"), HasDifferences: true),
+        new("Different line endings", "line1\r\nline2\r\nline3", "line1\nline2\nline3", HasDifferences: true),
+        new("GNU diffutils sample", JoinLines(
+            "The Way that can be told of is not the eternal Way;",
+            "The name that can be named is not the eternal name.",
+            "The Nameless is the origin of Heaven and Earth;",
+            "The Named is the mother of all things.",
+            "Therefore let there always be non-being,",
+            "  so we may see their subtlety,",
+            "And let there always be being,",
+            "  so we may see their outcome.",
+            "The two are the same,",
+            "But after they are produced,",
+            "  they have different names."),
+            JoinLines(
+                "The Nameless is the origin of Heaven and Earth;",
+                "The named is the mother of all things.",
+                "",
+                "Therefore let there always be non-being,",
+                "  so we may see their subtlety,",
+                "And let there always be being,",
+                "  so we may see their outcome.",
+                "The two are the same,",
+                "But after they are produced,",
+                "  they have different names.",
+                "They both may be called deep and profound.",
+                "Deeper and more profound,",
+                "The door of all subtleties!"),
+            HasDifferences: true),
+    ];
+
+    private static readonly IReadOnlyList<DiffCorpusCase> WordCorpus =
+    [
+        new("Insert adjective", "the quick fox", "the quick brown fox", HasDifferences: true),
+        new("Delete word", "hello beautiful world", "hello world", HasDifferences: true),
+        new("Identical", "same words", "same words", HasDifferences: false),
+    ];
+
+    private static readonly IReadOnlyList<DiffCorpusCase> CharacterCorpus =
+    [
+        new("Single character replacement", "abc", "adc", HasDifferences: true),
+        new("Prefix insertion", "abc", "xabc", HasDifferences: true),
+        new("Identical", "same", "same", HasDifferences: false),
+    ];
+
     public static IEnumerable<object[]> AllAlgorithms()
     {
         foreach (var algorithm in Enum.GetValues<TextDiffAlgorithm>())
         {
             yield return new object[] { algorithm };
+        }
+    }
+
+    public static IEnumerable<object[]> AllAlgorithmsLineCorpus()
+    {
+        foreach (var algorithm in Enum.GetValues<TextDiffAlgorithm>())
+        {
+            foreach (var testCase in LineCorpus)
+            {
+                yield return new object[] { algorithm, testCase.Name, testCase.OldText, testCase.NewText, testCase.HasDifferences };
+            }
         }
     }
 
@@ -70,6 +133,62 @@ public sealed class TextDiffTests
         var result = Diff.ComputeDiff("  HELLO  \r\n  WORLD  ", "hello\nworld", options);
 
         Assert.False(result.HasDifferences);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithmsLineCorpus))]
+    public void ComputeDiff_AllAlgorithms_LineCorpus_ReconstructsOldAndNewText(TextDiffAlgorithm algorithm, string _, string oldText, string newText, bool hasDifferences)
+    {
+        var options = new TextDiffOptions { Algorithm = algorithm };
+        var result = Diff.ComputeDiff(oldText, newText, options);
+
+        Assert.Equal(hasDifferences, result.HasDifferences);
+        Assert.Equal(oldText, ReconstructOldText(result));
+        Assert.Equal(newText, ReconstructNewText(result));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_AllAlgorithms_WordCorpus_ReconstructsOldAndNewText(TextDiffAlgorithm algorithm)
+    {
+        foreach (var testCase in WordCorpus)
+        {
+            var options = new TextDiffOptions { Algorithm = algorithm, Chunker = TextChunker.Words };
+            var result = Diff.ComputeDiff(testCase.OldText, testCase.NewText, options);
+
+            Assert.Equal(testCase.HasDifferences, result.HasDifferences);
+            Assert.Equal(testCase.OldText, ReconstructOldText(result));
+            Assert.Equal(testCase.NewText, ReconstructNewText(result));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_AllAlgorithms_CharacterCorpus_ReconstructsOldAndNewText(TextDiffAlgorithm algorithm)
+    {
+        foreach (var testCase in CharacterCorpus)
+        {
+            var options = new TextDiffOptions { Algorithm = algorithm, Chunker = TextChunker.Characters };
+            var result = Diff.ComputeDiff(testCase.OldText, testCase.NewText, options);
+
+            Assert.Equal(testCase.HasDifferences, result.HasDifferences);
+            Assert.Equal(testCase.OldText, ReconstructOldText(result));
+            Assert.Equal(testCase.NewText, ReconstructNewText(result));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void ComputeDiff_AllAlgorithms_GnuDiffCorpus_ContainsExpectedChanges(TextDiffAlgorithm algorithm)
+    {
+        var testCase = LineCorpus.Single(c => c.Name == "GNU diffutils sample");
+        var options = new TextDiffOptions { Algorithm = algorithm };
+        var result = Diff.ComputeDiff(testCase.OldText, testCase.NewText, options);
+
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Span.SequenceEqual("The Way that can be told of is not the eternal Way;\n"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Span.SequenceEqual("The name that can be named is not the eternal name.\n"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("The named is the mother of all things.\n"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("The door of all subtleties!"));
     }
 
     [Fact]
@@ -361,4 +480,36 @@ public sealed class TextDiffTests
         Assert.Equal("b", chunks[1]);
         Assert.Equal("c", chunks[2]);
     }
+
+    private static string ReconstructOldText(TextDiffResult result)
+    {
+        var sb = new StringBuilder();
+        foreach (var entry in result.Entries)
+        {
+            if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Delete)
+            {
+                sb.Append(entry.Text.Span);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string ReconstructNewText(TextDiffResult result)
+    {
+        var sb = new StringBuilder();
+        foreach (var entry in result.Entries)
+        {
+            if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
+            {
+                sb.Append(entry.Text.Span);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string JoinLines(params string[] lines) => string.Join('\n', lines);
+
+    private sealed record DiffCorpusCase(string Name, string OldText, string NewText, bool HasDifferences);
 }

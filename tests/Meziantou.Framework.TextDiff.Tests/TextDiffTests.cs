@@ -398,10 +398,7 @@ public sealed class TextDiffTests
 
         var text = result.ToString();
 
-        Assert.StartsWith("Differences: 2\n", text, StringComparison.Ordinal);
-        Assert.Contains("Equal: line1\n", text, StringComparison.Ordinal);
-        Assert.Contains("Delete: line2\n", text, StringComparison.Ordinal);
-        Assert.Contains("Insert: line3\n", text, StringComparison.Ordinal);
+        Assert.Equal("Insertions: 1, Deletions: 1, Equals: 2", text);
     }
 
     // Custom TextChunker

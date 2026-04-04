@@ -11,6 +11,6 @@
   </ItemGroup>
 
   <Target Name="BuildTaskDialogPrompt" BeforeTargets="Build" Condition="'$(IsCrossTargetingBuild)' == 'true' and $([MSBuild]::IsOsPlatform('Windows'))">
-    <MSBuild Projects="..\..\src\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="..\..\src\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
   </Target>
 </Project>

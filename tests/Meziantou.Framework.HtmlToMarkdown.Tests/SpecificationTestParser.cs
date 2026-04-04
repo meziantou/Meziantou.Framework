@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.HtmlToMarkdownTests;
 
-internal static class MarkdigTestParser
+internal static class SpecificationTestParser
 {
     public static List<MarkdigTestCase> Parse(string content, string fileName)
     {

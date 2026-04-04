@@ -3,14 +3,14 @@ using Xunit.Sdk;
 
 namespace Meziantou.Framework.HtmlToMarkdownTests;
 
-public sealed class MarkdigSpecTests
+public sealed class MarkdownRoundTrippingTests
 {
     private static readonly Lazy<List<MarkdigTestCase>> AllCases = new(LoadAllCases);
 
     private static List<MarkdigTestCase> LoadAllCases()
     {
         var cases = new List<MarkdigTestCase>();
-        var assembly = typeof(MarkdigSpecTests).Assembly;
+        var assembly = typeof(MarkdownRoundTrippingTests).Assembly;
 
         // Find all embedded .md resources in the Specs folder
         var prefix = "Meziantou.Framework.HtmlToMarkdownTests.TestData.Specs.";
@@ -25,7 +25,7 @@ public sealed class MarkdigSpecTests
             // Extract filename: e.g., "PipeTableSpecs.md" from full resource name
             var fileName = resourceName[prefix.Length..];
 
-            cases.AddRange(MarkdigTestParser.Parse(content, fileName));
+            cases.AddRange(SpecificationTestParser.Parse(content, fileName));
         }
 
         return cases;

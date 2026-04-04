@@ -105,8 +105,15 @@ internal static class Symlink
 
         private static class Interop
         {
-            [DllImport("libc", EntryPoint = "readlink", SetLastError = true)]
-            internal static extern nint ReadLink([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[] buffer, nuint bufferSize);
+            internal static nint ReadLink(string path, byte[] buffer, nuint bufferSize)
+            {
+                var utf8Path = Encoding.UTF8.GetBytes(path + '\0');
+                return ReadLinkCore(utf8Path, buffer, bufferSize);
+            }
+
+            [DllImport("libc", EntryPoint = "readlink", SetLastError = true, ExactSpelling = true)]
+            [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+            private static extern nint ReadLinkCore(byte[] path, byte[] buffer, nuint bufferSize);
         }
     }
 #endif

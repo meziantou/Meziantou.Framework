@@ -462,10 +462,18 @@ public sealed class FullPathTests
 #if NETCOREAPP3_1_OR_GREATER
         else
         {
-            Assert.Equal(0, Mono.Unix.Native.Syscall.symlink(target, source));
+            if (CreateUnixSymbolicLink(target, source) != 0)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
         }
 #endif
     }
+
+#if NETCOREAPP3_1_OR_GREATER
+    [DllImport("libc", EntryPoint = "symlink", SetLastError = true)]
+    private static extern int CreateUnixSymbolicLink([MarshalAs(UnmanagedType.LPUTF8Str)] string targetPath, [MarshalAs(UnmanagedType.LPUTF8Str)] string linkPath);
+#endif
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.I1)]

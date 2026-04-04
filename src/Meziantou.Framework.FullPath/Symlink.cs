@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Meziantou.Framework;
 
@@ -47,17 +48,16 @@ internal static class Symlink
     {
         internal static bool TryGetSymLinkTarget(string path, [NotNullWhen(true)] out string? target)
         {
-            var symbolicLinkInfo = new Mono.Unix.UnixSymbolicLinkInfo(path);
-            if (symbolicLinkInfo.IsSymbolicLink)
+            if (TryReadLink(path, out var linkTarget))
             {
                 var root = Path.GetDirectoryName(path);
                 if (root is null)
                 {
-                    target = symbolicLinkInfo.ContentsPath;
+                    target = linkTarget;
                 }
                 else
                 {
-                    target = Path.Combine(root, symbolicLinkInfo.ContentsPath);
+                    target = Path.Combine(root, linkTarget);
                 }
 
                 return true;
@@ -69,8 +69,44 @@ internal static class Symlink
 
         internal static bool IsSymbolicLink(string path)
         {
-            var symbolicLinkInfo = new Mono.Unix.UnixSymbolicLinkInfo(path);
-            return symbolicLinkInfo.IsSymbolicLink;
+            return TryReadLink(path, out _);
+        }
+
+        private static bool TryReadLink(string path, [NotNullWhen(true)] out string? target)
+        {
+            var bufferSize = 256;
+            while (true)
+            {
+                var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
+                {
+                    var bytesRead = Interop.ReadLink(path, buffer, (nuint)buffer.Length);
+                    if (bytesRead < 0)
+                    {
+                        target = null;
+                        return false;
+                    }
+
+                    if (bytesRead >= buffer.Length)
+                    {
+                        bufferSize = checked(buffer.Length * 2);
+                        continue;
+                    }
+
+                    target = Encoding.UTF8.GetString(buffer, 0, (int)bytesRead);
+                    return true;
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+        }
+
+        private static class Interop
+        {
+            [DllImport("libc", EntryPoint = "readlink", SetLastError = true)]
+            internal static extern nint ReadLink([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[] buffer, nuint bufferSize);
         }
     }
 #endif

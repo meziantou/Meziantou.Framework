@@ -18,7 +18,7 @@ public sealed class CommonMarkSpecTests
             throw new InvalidOperationException("Could not find embedded resource 'commonmark-spec-0.31.2.json'");
         }
 
-        return JsonSerializer.Deserialize<List<CommonMarkSpecTestCase>>(stream)!;
+        return JsonSerializer.Deserialize<List<CommonMarkSpecTestCase>>(stream);
     }
 
     public static TheoryData<CommonMarkSpecTestCase> GetTestCases()

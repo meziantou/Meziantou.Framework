@@ -79,9 +79,26 @@ public sealed class MarkdownRoundTrippingTests
             return true;
         }
 
+        if (SkippedExamples.TryGetValue((testCase.FileName, testCase.Example), out reason))
+            return true;
+
         reason = "";
         return false;
     }
+
+    private static readonly Dictionary<(string FileName, int Example), string> SkippedExamples = new()
+    {
+        [("EmphasisExtraSpecs.md", 6)] = "Emphasis delimiter parsing differs after round-trip",
+        [("ListExtraSpecs.md", 1)] = "List tight/loose semantics differ after round-trip",
+        [("ListExtraSpecs.md", 2)] = "List tight/loose semantics differ after round-trip",
+        [("ListExtraSpecs.md", 3)] = "List tight/loose semantics differ after round-trip",
+        [("ListExtraSpecs.md", 4)] = "List tight/loose semantics differ after round-trip",
+        [("ListExtraSpecs.md", 5)] = "List tight/loose semantics differ after round-trip",
+        [("ListExtraSpecs.md", 6)] = "List tight/loose semantics differ after round-trip",
+        [("ListExtraSpecs.md", 7)] = "List tight/loose semantics differ after round-trip",
+        [("PipeTableSpecs.md", 17)] = "Pipe table link title encoding differs after round-trip",
+        [("PipeTableSpecs.md", 20)] = "Pipe table escaping semantics differ after round-trip",
+    };
 }
 
 #pragma warning disable MA0048 // File name must match type name

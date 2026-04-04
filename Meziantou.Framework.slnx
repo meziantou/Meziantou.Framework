@@ -52,6 +52,7 @@
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
     <Project Path="src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
+    <Project Path="src/Meziantou.Framework.HtmlToMarkdown/Meziantou.Framework.HtmlToMarkdown.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Caching.InMemory/Meziantou.Framework.Http.Caching.InMemory.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Caching.Redis/Meziantou.Framework.Http.Caching.Redis.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Caching.Sqlite/Meziantou.Framework.Http.Caching.Sqlite.csproj" />
@@ -144,6 +145,7 @@
     <Project Path="tests/Meziantou.Framework.Html.Tests/Meziantou.Framework.Html.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HtmlSanitizer.Tests/Meziantou.Framework.HtmlSanitizer.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.HtmlToMarkdown.Tests/Meziantou.Framework.HtmlToMarkdown.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Hsts.Tests/Meziantou.Framework.Http.Hsts.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Htpasswd.Tests/Meziantou.Framework.Http.Htpasswd.Tests.csproj" />

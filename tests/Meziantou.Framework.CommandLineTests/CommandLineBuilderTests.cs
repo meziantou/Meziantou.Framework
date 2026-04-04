@@ -104,8 +104,8 @@ public class CommandLineBuilderTests
 
     private static FullPath? TryFindArgumentPrinterPath(FullPath outputPath, List<FullPath> testedPaths)
     {
-        const string fileName = "ArgumentsPrinter.dll";
-        foreach (var candidatePath in GetCandidatePaths(outputPath, fileName))
+        const string FileName = "ArgumentsPrinter.dll";
+        foreach (var candidatePath in GetCandidatePaths(outputPath, FileName))
         {
             if (!testedPaths.Contains(candidatePath))
             {
@@ -156,7 +156,12 @@ public class CommandLineBuilderTests
         psi.ArgumentList.Add(configuration);
         psi.ArgumentList.Add("--nologo");
 
-        using var process = Process.Start(psi)!;
+        using var process = Process.Start(psi);
+        if (process is null)
+        {
+            throw new XunitException("Cannot start dotnet process to build ArgumentsPrinter project");
+        }
+
         var output = process.StandardOutput.ReadToEnd();
         var error = process.StandardError.ReadToEnd();
         process.WaitForExit();

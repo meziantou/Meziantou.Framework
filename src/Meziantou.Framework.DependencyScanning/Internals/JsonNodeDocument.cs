@@ -92,7 +92,7 @@ internal sealed class JsonNodeDocument
             {
                 if (contexts.TryPeek(out var context))
                 {
-                    context.PendingPropertyName = reader.GetString()!;
+                    context.PendingPropertyName = reader.GetString();
                 }
 
                 continue;
@@ -284,5 +284,3 @@ internal sealed class JsonNodeDocument
         public static PathComponent FromName(string name) => new(name);
     }
 }
-
-internal readonly record struct JsonNodeMatch(JsonNode? Node, string Path, LineInfo LineInfo);

@@ -68,18 +68,22 @@ public class CommandLineBuilderTests
     {
         var fileName = "ArgumentsPrinter.dll";
         var testedPaths = new List<FullPath>();
+        var targetFrameworks = new[] { "net10.0", "net9.0", "net8.0" };
 
         var configurations = new[] { "debug", "release" };
         foreach (var configuration in configurations)
         {
-            var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_net8.0" / fileName;
-            if (File.Exists(path))
+            foreach (var targetFramework in targetFrameworks)
             {
-                _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");
-                return path;
-            }
+                var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_{targetFramework}" / fileName;
+                if (File.Exists(path))
+                {
+                    _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");
+                    return path;
+                }
 
-            testedPaths.Add(path);
+                testedPaths.Add(path);
+            }
         }
 
         var existingFiles = new List<string>();

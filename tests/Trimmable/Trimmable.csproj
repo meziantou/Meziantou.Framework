@@ -42,6 +42,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.SingleInstance\Meziantou.Framework.SingleInstance.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Slug\Meziantou.Framework.Slug.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TextDiff\Meziantou.Framework.TextDiff.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Threading\Meziantou.Framework.Threading.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
@@ -79,6 +80,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.SingleInstance" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Slug" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryDirectory" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.TextDiff" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Threading" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Unicode" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Uri" />

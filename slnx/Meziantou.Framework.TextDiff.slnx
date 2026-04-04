@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.TextDiff.Tests/Meziantou.Framework.TextDiff.Tests.csproj" />
+  </Folder>
+</Solution>

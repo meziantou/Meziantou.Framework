@@ -1,0 +1,13 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TextDiff\Meziantou.Framework.TextDiff.csproj">
+      <Aliases>TextDiffLib</Aliases>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

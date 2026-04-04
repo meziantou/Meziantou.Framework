@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework;
 
 internal static class PatienceDiff
@@ -109,14 +111,14 @@ internal static class PatienceDiff
 
     private static Dictionary<string, int> FindUniquePositions(string[] values, int start, int end, IEqualityComparer<string> comparer)
     {
-        const int duplicate = -1;
+        const int Duplicate = -1;
         var result = new Dictionary<string, int>(comparer);
         for (var i = start; i < end; i++)
         {
             var current = values[i];
             if (result.TryGetValue(current, out _))
             {
-                result[current] = duplicate;
+                result[current] = Duplicate;
             }
             else
             {
@@ -182,5 +184,6 @@ internal static class PatienceDiff
         return low;
     }
 
+    [StructLayout(LayoutKind.Auto)]
     private readonly record struct Anchor(int LeftIndex, int RightIndex);
 }

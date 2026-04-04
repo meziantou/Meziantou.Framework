@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework;
 
 internal static class HistogramDiff
@@ -141,5 +143,6 @@ internal static class HistogramDiff
         return result;
     }
 
+    [StructLayout(LayoutKind.Auto)]
     private readonly record struct Anchor(int LeftIndex, int RightIndex);
 }

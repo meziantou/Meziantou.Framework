@@ -115,7 +115,7 @@ public sealed class TextDiffTests
         var result = Diff.ComputeDiff("line1\nline3", "line1\nline2\nline3", options);
 
         Assert.True(result.HasDifferences);
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("line2\n"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Equals("line2\n", StringComparison.Ordinal));
     }
 
     [Theory]
@@ -185,10 +185,10 @@ public sealed class TextDiffTests
         var options = new TextDiffOptions { Algorithm = algorithm };
         var result = Diff.ComputeDiff(testCase.OldText, testCase.NewText, options);
 
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Span.SequenceEqual("The Way that can be told of is not the eternal Way;\n"));
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Span.SequenceEqual("The name that can be named is not the eternal name.\n"));
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("The named is the mother of all things.\n"));
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("The door of all subtleties!"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Equals("The Way that can be told of is not the eternal Way;\n", StringComparison.Ordinal));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Equals("The name that can be named is not the eternal name.\n", StringComparison.Ordinal));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Equals("The named is the mother of all things.\n", StringComparison.Ordinal));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Equals("The door of all subtleties!", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -197,7 +197,7 @@ public sealed class TextDiffTests
         var result = Diff.ComputeDiff("line1\nline3", "line1\nline2\nline3");
 
         Assert.True(result.HasDifferences);
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("line2\n"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Equals("line2\n", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -206,7 +206,7 @@ public sealed class TextDiffTests
         var result = Diff.ComputeDiff("line1\nline2\nline3", "line1\nline3");
 
         Assert.True(result.HasDifferences);
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Span.SequenceEqual("line2\n"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Equals("line2\n", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -215,8 +215,8 @@ public sealed class TextDiffTests
         var result = Diff.ComputeDiff("line1\noriginal\nline3", "line1\nmodified\nline3");
 
         Assert.True(result.HasDifferences);
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Span.SequenceEqual("original\n"));
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("modified\n"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Equals("original\n", StringComparison.Ordinal));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Equals("modified\n", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -254,7 +254,7 @@ public sealed class TextDiffTests
         var result = Diff.ComputeDiff("hello world", "hello beautiful world", options);
 
         Assert.True(result.HasDifferences);
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("beautiful"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Equals("beautiful", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public sealed class TextDiffTests
         var result = Diff.ComputeDiff("hello beautiful world", "hello world", options);
 
         Assert.True(result.HasDifferences);
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Span.SequenceEqual("beautiful"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Equals("beautiful", StringComparison.Ordinal));
     }
 
     // Character-level tests
@@ -275,8 +275,8 @@ public sealed class TextDiffTests
         var result = Diff.ComputeDiff("abc", "adc", options);
 
         Assert.True(result.HasDifferences);
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Span.SequenceEqual("b"));
-        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Span.SequenceEqual("d"));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Delete && e.Text.Equals("b", StringComparison.Ordinal));
+        Assert.Contains(result.Entries, e => e.Operation == TextDiffOperation.Insert && e.Text.Equals("d", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -379,16 +379,29 @@ public sealed class TextDiffTests
     [Fact]
     public void TextDiffEntry_Equality()
     {
-        var a = new TextDiffEntry(TextDiffOperation.Equal, "hello".AsMemory());
-        var b = new TextDiffEntry(TextDiffOperation.Equal, "hello".AsMemory());
-        var c = new TextDiffEntry(TextDiffOperation.Insert, "hello".AsMemory());
-        var d = new TextDiffEntry(TextDiffOperation.Equal, "world".AsMemory());
+        var a = new TextDiffEntry(TextDiffOperation.Equal, "hello");
+        var b = new TextDiffEntry(TextDiffOperation.Equal, "hello");
+        var c = new TextDiffEntry(TextDiffOperation.Insert, "hello");
+        var d = new TextDiffEntry(TextDiffOperation.Equal, "world");
 
         Assert.Equal(a, b);
         Assert.NotEqual(a, c);
         Assert.NotEqual(a, d);
         Assert.True(a == b);
         Assert.True(a != c);
+    }
+
+    [Fact]
+    public void TextDiffResult_ToString_ContainsSummaryAndOperations()
+    {
+        var result = Diff.ComputeDiff("line1\nline2\n", "line1\nline3\n");
+
+        var text = result.ToString();
+
+        Assert.StartsWith("Differences: 2\n", text, StringComparison.Ordinal);
+        Assert.Contains("Equal: line1\n", text, StringComparison.Ordinal);
+        Assert.Contains("Delete: line2\n", text, StringComparison.Ordinal);
+        Assert.Contains("Insert: line3\n", text, StringComparison.Ordinal);
     }
 
     // Custom TextChunker
@@ -488,7 +501,7 @@ public sealed class TextDiffTests
         {
             if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Delete)
             {
-                sb.Append(entry.Text.Span);
+                sb.Append(entry.Text);
             }
         }
 
@@ -502,7 +515,7 @@ public sealed class TextDiffTests
         {
             if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
             {
-                sb.Append(entry.Text.Span);
+                sb.Append(entry.Text);
             }
         }
 

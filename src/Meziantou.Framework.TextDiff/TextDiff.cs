@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework;
 
 public static class TextDiff
@@ -47,7 +45,7 @@ public static class TextDiff
             if (lineLeft < diff.LeftLength && !diff.LeftModified[lineLeft]
                 && lineRight < diff.RightLength && !diff.RightModified[lineRight])
             {
-                entries.Add(new TextDiffEntry(TextDiffOperation.Equal, oldChunks[lineLeft].AsMemory()));
+                entries.Add(new TextDiffEntry(TextDiffOperation.Equal, oldChunks[lineLeft]));
                 lineLeft++;
                 lineRight++;
             }
@@ -55,14 +53,14 @@ public static class TextDiff
             {
                 while (lineLeft < diff.LeftLength && (lineRight >= diff.RightLength || diff.LeftModified[lineLeft]))
                 {
-                    entries.Add(new TextDiffEntry(TextDiffOperation.Delete, oldChunks[lineLeft].AsMemory()));
+                    entries.Add(new TextDiffEntry(TextDiffOperation.Delete, oldChunks[lineLeft]));
                     lineLeft++;
                     hasDifferences = true;
                 }
 
                 while (lineRight < diff.RightLength && (lineLeft >= diff.LeftLength || diff.RightModified[lineRight]))
                 {
-                    entries.Add(new TextDiffEntry(TextDiffOperation.Insert, newChunks[lineRight].AsMemory()));
+                    entries.Add(new TextDiffEntry(TextDiffOperation.Insert, newChunks[lineRight]));
                     lineRight++;
                     hasDifferences = true;
                 }
@@ -74,29 +72,7 @@ public static class TextDiff
 
     private static string NormalizeLineEndings(string text)
     {
-        var sb = new StringBuilder(text.Length);
-        for (var i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (c == '\r')
-            {
-                sb.Append('\n');
-                if (i + 1 < text.Length && text[i + 1] == '\n')
-                {
-                    i++;
-                }
-            }
-            else if (c is '\u0085' or '\u2028' or '\u2029')
-            {
-                sb.Append('\n');
-            }
-            else
-            {
-                sb.Append(c);
-            }
-        }
-
-        return sb.ToString();
+        return text.ReplaceLineEndings("\n");
     }
 
     private static string[] ToArray(IEnumerable<string> source)
@@ -112,8 +88,40 @@ public static class TextDiff
 
     private sealed class WhitespaceTrimmingComparer(StringComparer inner) : IEqualityComparer<string>
     {
-        public bool Equals(string? x, string? y) => inner.Equals(x?.Trim(), y?.Trim());
+        private readonly StringComparison _comparison = inner == StringComparer.OrdinalIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
-        public int GetHashCode(string obj) => inner.GetHashCode(obj.Trim());
+        public bool Equals(string? x, string? y)
+        {
+            if (x is null)
+                return y is null;
+
+            if (y is null)
+                return false;
+
+            return Trim(x.AsSpan()).Equals(Trim(y.AsSpan()), _comparison);
+        }
+
+        public int GetHashCode(string obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            return string.GetHashCode(Trim(obj.AsSpan()), _comparison);
+        }
+
+        private static ReadOnlySpan<char> Trim(ReadOnlySpan<char> value)
+        {
+            var start = 0;
+            while (start < value.Length && char.IsWhiteSpace(value[start]))
+            {
+                start++;
+            }
+
+            var end = value.Length - 1;
+            while (end >= start && char.IsWhiteSpace(value[end]))
+            {
+                end--;
+            }
+
+            return value[start..(end + 1)];
+        }
     }
 }

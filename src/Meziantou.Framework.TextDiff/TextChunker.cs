@@ -47,30 +47,35 @@ public class TextChunker
 
     private sealed class WordChunker : TextChunker
     {
+        private static SearchValues<char> WhiteSpaceCharacters { get; } = SearchValues.Create("\t\n\v\f\r\u0020\u0085\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000");
+
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
             var words = new List<string>();
             var start = 0;
 
-            for (var i = 0; i < value.Length; i++)
+            while (start < value.Length)
             {
-                if (char.IsWhiteSpace(value[i]))
+                var whiteSpaceOffset = value[start..].IndexOfAny(WhiteSpaceCharacters);
+                if (whiteSpaceOffset < 0)
                 {
-                    if (i > start)
-                    {
-                        words.Add(value[start..i].ToString());
-                    }
-
-                    // Add whitespace as its own chunk
-                    var wsStart = i;
-                    while (i + 1 < value.Length && char.IsWhiteSpace(value[i + 1]))
-                    {
-                        i++;
-                    }
-
-                    words.Add(value[wsStart..(i + 1)].ToString());
-                    start = i + 1;
+                    break;
                 }
+
+                var whiteSpaceStart = start + whiteSpaceOffset;
+                if (whiteSpaceStart > start)
+                {
+                    words.Add(value[start..whiteSpaceStart].ToString());
+                }
+
+                var whiteSpaceEnd = whiteSpaceStart + 1;
+                while (whiteSpaceEnd < value.Length && WhiteSpaceCharacters.Contains(value[whiteSpaceEnd]))
+                {
+                    whiteSpaceEnd++;
+                }
+
+                words.Add(value[whiteSpaceStart..whiteSpaceEnd].ToString());
+                start = whiteSpaceEnd;
             }
 
             if (start < value.Length)

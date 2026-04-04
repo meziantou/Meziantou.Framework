@@ -49,14 +49,7 @@ var result = TextDiff.ComputeDiff(oldText, newText, options);
 
 Available algorithms:
 
-- `TextDiffAlgorithm.Myers` (default)
-- `TextDiffAlgorithm.Patience`
-- `TextDiffAlgorithm.Histogram`
-- `TextDiffAlgorithm.HuntSzymanski`
-
-### When to use each algorithm
-
-- `Myers`: best default when you want a high-quality, shortest-edit-script style diff.
-- `Patience`: best for human-readable output in reviews, even if edits are not always minimal.
-- `Histogram`: good practical choice for large or repetitive texts when performance is important.
-- `HuntSzymanski`: useful for large inputs with relatively sparse matches.
+- `TextDiffAlgorithm.Myers` (default): best default when you want a high-quality, shortest-edit-script style diff.
+- `TextDiffAlgorithm.Patience`: best for human-readable output in reviews, even if edits are not always minimal.
+- `TextDiffAlgorithm.Histogram`: good practical choice for large or repetitive texts when performance is important.
+- `TextDiffAlgorithm.HuntSzymanski`: useful for large inputs with relatively sparse matches.

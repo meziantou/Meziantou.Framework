@@ -10,7 +10,7 @@ internal static class DiffAlgorithmDispatcher
             TextDiffAlgorithm.Patience => PatienceDiff.Compute(left, right, comparer),
             TextDiffAlgorithm.Histogram => HistogramDiff.Compute(left, right, comparer),
             TextDiffAlgorithm.HuntSzymanski => HuntSzymanskiDiff.Compute(left, right, comparer),
-            _ => throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, message: null),
         };
     }
 }

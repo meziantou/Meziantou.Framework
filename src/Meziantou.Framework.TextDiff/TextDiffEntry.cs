@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct TextDiffEntry : IEquatable<TextDiffEntry>
 {
-    public TextDiffEntry(TextDiffOperation operation, ReadOnlyMemory<char> text)
+    public TextDiffEntry(TextDiffOperation operation, string text)
     {
         Operation = operation;
         Text = text;
@@ -13,10 +13,10 @@ public readonly struct TextDiffEntry : IEquatable<TextDiffEntry>
 
     public TextDiffOperation Operation { get; }
 
-    public ReadOnlyMemory<char> Text { get; }
+    public string Text { get; }
 
     public bool Equals(TextDiffEntry other)
-        => Operation == other.Operation && Text.Span.SequenceEqual(other.Text.Span);
+        => Operation == other.Operation && Text == other.Text;
 
     public override bool Equals(object? obj)
         => obj is TextDiffEntry other && Equals(other);
@@ -25,7 +25,7 @@ public readonly struct TextDiffEntry : IEquatable<TextDiffEntry>
     {
         var hash = new HashCode();
         hash.Add(Operation);
-        hash.AddBytes(MemoryMarshal.AsBytes(Text.Span));
+        hash.Add(Text);
         return hash.ToHashCode();
     }
 

@@ -79,12 +79,11 @@ internal static class PatienceDiff
         bool[] leftModified,
         bool[] rightModified)
     {
-        var leftSlice = new string[leftEnd - leftStart];
-        var rightSlice = new string[rightEnd - rightStart];
-        Array.Copy(left, leftStart, leftSlice, 0, leftSlice.Length);
-        Array.Copy(right, rightStart, rightSlice, 0, rightSlice.Length);
+        var subDiff = MyersDiff.Compute(
+            left.AsSpan(leftStart, leftEnd - leftStart),
+            right.AsSpan(rightStart, rightEnd - rightStart),
+            comparer);
 
-        var subDiff = MyersDiff.Compute(leftSlice, rightSlice, comparer);
         DiffAlgorithmHelpers.ApplySubDiff(subDiff, leftModified, leftStart, rightModified, rightStart);
     }
 
@@ -131,12 +130,18 @@ internal static class PatienceDiff
 
     private static List<Anchor> LongestIncreasingSubsequenceByRight(List<Anchor> pairs)
     {
-        var tails = new int[pairs.Count];
-        var previous = new int[pairs.Count];
-        Array.Fill(previous, -1);
+        const int StackAllocationThreshold = 128;
+
+        var count = pairs.Count;
+        var tailsBuffer = count <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[count];
+        var previousBuffer = count <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[count];
+
+        var tails = tailsBuffer[..count];
+        var previous = previousBuffer[..count];
+        previous.Fill(-1);
         var length = 0;
 
-        for (var i = 0; i < pairs.Count; i++)
+        for (var i = 0; i < count; i++)
         {
             var position = LowerBoundByRight(pairs, tails, length, pairs[i].RightIndex);
             if (position > 0)
@@ -163,7 +168,7 @@ internal static class PatienceDiff
         return result;
     }
 
-    private static int LowerBoundByRight(List<Anchor> pairs, int[] tails, int length, int rightIndex)
+    private static int LowerBoundByRight(List<Anchor> pairs, ReadOnlySpan<int> tails, int length, int rightIndex)
     {
         var low = 0;
         var high = length;

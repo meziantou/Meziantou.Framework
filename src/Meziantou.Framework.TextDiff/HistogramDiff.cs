@@ -69,12 +69,11 @@ internal static class HistogramDiff
         bool[] leftModified,
         bool[] rightModified)
     {
-        var leftSlice = new string[leftEnd - leftStart];
-        var rightSlice = new string[rightEnd - rightStart];
-        Array.Copy(left, leftStart, leftSlice, 0, leftSlice.Length);
-        Array.Copy(right, rightStart, rightSlice, 0, rightSlice.Length);
+        var subDiff = MyersDiff.Compute(
+            left.AsSpan(leftStart, leftEnd - leftStart),
+            right.AsSpan(rightStart, rightEnd - rightStart),
+            comparer);
 
-        var subDiff = MyersDiff.Compute(leftSlice, rightSlice, comparer);
         DiffAlgorithmHelpers.ApplySubDiff(subDiff, leftModified, leftStart, rightModified, rightStart);
     }
 

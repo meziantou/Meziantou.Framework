@@ -6,13 +6,27 @@ internal static class MyersDiff
 {
     internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer)
     {
+        return Compute(left.AsSpan(), right.AsSpan(), comparer);
+    }
+
+    internal static DiffComputationResult Compute(ReadOnlySpan<string> left, ReadOnlySpan<string> right, IEqualityComparer<string> comparer)
+    {
+        const int StackAllocationThreshold = 128;
+
         var h = new Dictionary<string, int>(left.Length + right.Length, comparer);
         var dataLeft = new DiffData(DiffCodes(left, h));
         var dataRight = new DiffData(DiffCodes(right, h));
 
         var max = dataLeft.Length + dataRight.Length + 1;
-        var downVector = new int[(2 * max) + 2];
-        var upVector = new int[(2 * max) + 2];
+        var vectorLength = (2 * max) + 2;
+
+        var downVectorBuffer = vectorLength <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[vectorLength];
+        var downVector = downVectorBuffer[..vectorLength];
+        downVector.Clear();
+
+        var upVectorBuffer = vectorLength <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[vectorLength];
+        var upVector = upVectorBuffer[..vectorLength];
+        upVector.Clear();
 
         LongCommonSubsequence(dataLeft, 0, dataLeft.Length, dataRight, 0, dataRight.Length, downVector, upVector);
 
@@ -21,7 +35,7 @@ internal static class MyersDiff
         return new DiffComputationResult(dataLeft.ToModifiedArray(), dataRight.ToModifiedArray());
     }
 
-    private static int[] DiffCodes(string[] chunks, Dictionary<string, int> h)
+    private static int[] DiffCodes(ReadOnlySpan<string> chunks, Dictionary<string, int> h)
     {
         var lastUsedCode = h.Count;
         var codes = new int[chunks.Length];
@@ -72,7 +86,7 @@ internal static class MyersDiff
         }
     }
 
-    private static SMSRD ShortestMiddleSnake(DiffData dataLeft, int lowerLeft, int upperLeft, DiffData dataRight, int lowerRight, int upperRight, int[] downVector, int[] upVector)
+    private static SMSRD ShortestMiddleSnake(DiffData dataLeft, int lowerLeft, int upperLeft, DiffData dataRight, int lowerRight, int upperRight, Span<int> downVector, Span<int> upVector)
     {
         var max = dataLeft.Length + dataRight.Length + 1;
 
@@ -166,7 +180,7 @@ internal static class MyersDiff
         throw new InvalidOperationException("Diff algorithm failed to find a middle snake.");
     }
 
-    private static void LongCommonSubsequence(DiffData dataLeft, int lowerLeft, int upperLeft, DiffData dataRight, int lowerRight, int upperRight, int[] downVector, int[] upVector)
+    private static void LongCommonSubsequence(DiffData dataLeft, int lowerLeft, int upperLeft, DiffData dataRight, int lowerRight, int upperRight, Span<int> downVector, Span<int> upVector)
     {
         while (lowerLeft < upperLeft && lowerRight < upperRight && dataLeft.Data[lowerLeft] == dataRight.Data[lowerRight])
         {
@@ -215,7 +229,7 @@ internal static class MyersDiff
         {
             Data = initData;
             Length = initData.Length;
-            Modified = new bool[initData.Length + 2];
+            Modified = new bool[initData.Length];
         }
 
         internal int Length { get; }
@@ -224,9 +238,7 @@ internal static class MyersDiff
 
         internal bool[] ToModifiedArray()
         {
-            var result = new bool[Length];
-            Array.Copy(Modified, 0, result, 0, Length);
-            return result;
+            return Modified;
         }
     }
 }

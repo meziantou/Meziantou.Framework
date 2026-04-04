@@ -89,6 +89,7 @@
     <Project Path="src/Meziantou.Framework.Templating.Html/Meziantou.Framework.Templating.Html.csproj" />
     <Project Path="src/Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />
     <Project Path="src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <Project Path="src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
     <Project Path="src/Meziantou.Framework.Threading/Meziantou.Framework.Threading.csproj" />
     <Project Path="src/Meziantou.Framework.TypeConverter/Meziantou.Framework.TypeConverter.csproj" />
     <Project Path="src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
@@ -172,6 +173,7 @@
     <Project Path="tests/Meziantou.Framework.Templating.Tests/Meziantou.Framework.Templating.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.TextDiff.Tests/Meziantou.Framework.TextDiff.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Tests/Meziantou.Framework.Threading.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Unicode.Tests/Meziantou.Framework.Unicode.Tests.csproj" />

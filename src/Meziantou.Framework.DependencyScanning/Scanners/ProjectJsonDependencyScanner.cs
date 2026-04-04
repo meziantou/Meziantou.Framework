@@ -1,7 +1,7 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Locations;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
@@ -19,44 +19,49 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
     {
         try
         {
-            using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-            using var jsonReader = new JsonTextReader(sr);
-            var doc = await JToken.ReadFromAsync(jsonReader, context.CancellationToken).ConfigureAwait(false);
-            foreach (var deps in doc.SelectTokens("$..dependencies").Concat(doc.SelectTokens("$.tools")).OfType<JObject>())
-            {
-                foreach (var dep in deps.Properties())
-                {
-                    JToken valueElement = dep;
-                    var packageName = dep.Name;
-                    string? version;
-                    if (dep.Value.Type == JTokenType.String)
-                    {
-                        version = dep.Value.Value<string>();
-                        valueElement = dep.Value;
-                    }
-                    else if (dep.Value.Type == JTokenType.Object)
-                    {
-                        var token = dep.Value.SelectToken("$.version");
-                        if (token is null)
-                            continue;
-
-                        version = token.Value<string>();
-                        valueElement = token;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    if (version is not null)
-                    {
-                        context.ReportDependency(this, packageName, version, DependencyType.NuGet, nameLocation: new NonUpdatableLocation(context), versionLocation: new JsonLocation(context, valueElement));
-                    }
-                }
-            }
+            var doc = await JsonNodeDocument.ParseAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
+            ScanDependencies(context, doc, "$..dependencies");
+            ScanDependencies(context, doc, "$.tools");
         }
         catch (JsonException)
         {
+        }
+    }
+
+    private void ScanDependencies(ScanFileContext context, JsonNodeDocument doc, string path)
+    {
+        foreach (var depsMatch in doc.Select(path))
+        {
+            if (depsMatch.Node is not JsonObject deps)
+                continue;
+
+            foreach (var dep in deps)
+            {
+                var valuePath = JsonNodeDocument.AppendPropertyPath(depsMatch.Path, dep.Key);
+                var packageName = dep.Key;
+                string? version;
+                var versionPath = valuePath;
+                if (dep.Value is JsonValue dependencyValue && dependencyValue.TryGetValue<string>(out var stringVersion))
+                {
+                    version = stringVersion;
+                }
+                else if (dep.Value is JsonObject dependencyObject && dependencyObject.TryGetPropertyValue("version", out var versionNode) && versionNode is JsonValue versionValue && versionValue.TryGetValue<string>(out var objectVersion))
+                {
+                    version = objectVersion;
+                    versionPath = JsonNodeDocument.AppendPropertyPath(valuePath, "version");
+                }
+                else
+                {
+                    continue;
+                }
+
+                if (version is not null)
+                {
+                    context.ReportDependency(this, packageName, version, DependencyType.NuGet,
+                        nameLocation: new NonUpdatableLocation(context),
+                        versionLocation: new JsonLocation(context, versionPath, doc.GetLineInfo(versionPath)));
+                }
+            }
         }
     }
 }

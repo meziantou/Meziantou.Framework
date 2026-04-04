@@ -1,6 +1,7 @@
 using Meziantou.Framework.DependencyScanning.Internals;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Meziantou.Framework.Json;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Meziantou.Framework.DependencyScanning;
 
@@ -8,13 +9,13 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
 {
     private readonly LineInfo _lineInfo;
 
-    internal JsonLocation(ScanFileContext context, JToken token)
-        : this(context.FileSystem, context.FullPath, LineInfo.FromJToken(token), token.Path, -1, -1)
+    internal JsonLocation(ScanFileContext context, string jsonPath, LineInfo lineInfo)
+        : this(context.FileSystem, context.FullPath, lineInfo, jsonPath, -1, -1)
     {
     }
 
-    internal JsonLocation(ScanFileContext context, JToken token, int column, int length)
-        : this(context.FileSystem, context.FullPath, LineInfo.FromJToken(token), token.Path, column, length)
+    internal JsonLocation(ScanFileContext context, string jsonPath, LineInfo lineInfo, int column, int length)
+        : this(context.FileSystem, context.FullPath, lineInfo, jsonPath, column, length)
     {
 
     }
@@ -50,25 +51,21 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
                 text = await textReader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            var jobject = JObject.Parse(text);
-            if (jobject.SelectToken(JsonPath) is JValue token)
+            var root = JsonNodeDocument.ParseNode(text);
+            var matches = Meziantou.Framework.Json.JsonPath.Parse(JsonPath).Evaluate(root);
+            if (matches.Count > 0 && matches[0].Value is JsonValue token && token.TryGetValue<string>(out var tokenValue))
             {
-                if (token.Value is not string tokenValue)
-                    throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
-
-                token.Value = UpdateTextValue(tokenValue, oldValue, newValue);
+                token.ReplaceWith(JsonValue.Create(UpdateTextValue(tokenValue, oldValue, newValue)));
 
                 stream.SetLength(0);
 
                 var textWriter = StreamUtilities.CreateWriter(stream, encoding);
                 try
                 {
-                    using var jsonWriter = new JsonTextWriter(textWriter)
+                    await textWriter.WriteAsync(root.ToJsonString(new JsonSerializerOptions
                     {
-                        Formatting = Formatting.Indented,
-                    };
-
-                    await jobject.WriteToAsync(jsonWriter, cancellationToken).ConfigureAwait(false);
+                        WriteIndented = true,
+                    })).ConfigureAwait(false);
 
                 }
                 finally

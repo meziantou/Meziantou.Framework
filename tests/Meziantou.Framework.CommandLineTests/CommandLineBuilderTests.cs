@@ -6,6 +6,7 @@ namespace Meziantou.Framework.CommandLineTests;
 
 public class CommandLineBuilderTests
 {
+    private static readonly Lazy<FullPath> ArgumentPrinterPath = new(ResolveArgumentPrinterPath);
     private readonly ITestOutputHelper _testOutputHelper;
 
     public CommandLineBuilderTests(ITestOutputHelper testOutputHelper)
@@ -66,38 +67,103 @@ public class CommandLineBuilderTests
 
     private FullPath GetArgumentPrinterPath()
     {
-        var fileName = "ArgumentsPrinter.dll";
+        var path = ArgumentPrinterPath.Value;
+        _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");
+        return path;
+    }
+
+    private static FullPath ResolveArgumentPrinterPath()
+    {
+        var rootPath = FullPath.CurrentDirectory() / ".." / ".." / ".." / "..";
+        var outputPath = rootPath / "artifacts" / "bin" / "ArgumentsPrinter";
         var testedPaths = new List<FullPath>();
-        var targetFrameworks = new[] { "net10.0", "net9.0", "net8.0" };
 
-        var configurations = new[] { "debug", "release" };
-        foreach (var configuration in configurations)
+        var path = TryFindArgumentPrinterPath(outputPath, testedPaths);
+        if (path is not null)
         {
-            foreach (var targetFramework in targetFrameworks)
-            {
-                var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_{targetFramework}" / fileName;
-                if (File.Exists(path))
-                {
-                    _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");
-                    return path;
-                }
+            return path.Value;
+        }
 
-                testedPaths.Add(path);
-            }
+        BuildArgumentsPrinter(rootPath);
+
+        path = TryFindArgumentPrinterPath(outputPath, testedPaths);
+        if (path is not null)
+        {
+            return path.Value;
         }
 
         var existingFiles = new List<string>();
-        foreach (var testedPath in testedPaths)
+        if (Directory.Exists(outputPath))
         {
-            var path = testedPath.Parent;
-            if (Directory.Exists(path))
-            {
-                existingFiles.AddRange(Directory.GetFiles(path, "*", SearchOption.AllDirectories));
-            }
+            existingFiles.AddRange(Directory.GetFiles(outputPath, "*", SearchOption.AllDirectories));
         }
 
         existingFiles.Sort(StringComparer.Ordinal);
         throw new XunitException($"File not found:\n{string.Join('\n', testedPaths)}\n. List of existing files:\n{string.Join('\n', existingFiles)}\nHave you built the ArgumentsPrinter project?");
+    }
+
+    private static FullPath? TryFindArgumentPrinterPath(FullPath outputPath, List<FullPath> testedPaths)
+    {
+        const string fileName = "ArgumentsPrinter.dll";
+        foreach (var candidatePath in GetCandidatePaths(outputPath, fileName))
+        {
+            if (!testedPaths.Contains(candidatePath))
+            {
+                testedPaths.Add(candidatePath);
+            }
+
+            if (File.Exists(candidatePath))
+            {
+                return candidatePath;
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<FullPath> GetCandidatePaths(FullPath outputPath, string fileName)
+    {
+        var currentOutputFolder = Path.GetFileName(Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory));
+        if (!string.IsNullOrEmpty(currentOutputFolder))
+        {
+            yield return outputPath / currentOutputFolder / fileName;
+        }
+
+        if (Directory.Exists(outputPath))
+        {
+            foreach (var directory in Directory.EnumerateDirectories(outputPath))
+            {
+                yield return FullPath.FromPath(directory) / fileName;
+            }
+        }
+    }
+
+    private static void BuildArgumentsPrinter(FullPath rootPath)
+    {
+        var currentOutputFolder = Path.GetFileName(Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory));
+        var configuration = currentOutputFolder?.StartsWith("release_", StringComparison.OrdinalIgnoreCase) is true ? "Release" : "Debug";
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+        psi.ArgumentList.Add("build");
+        psi.ArgumentList.Add(rootPath / "tests" / "ArgumentsPrinter" / "ArgumentsPrinter.csproj");
+        psi.ArgumentList.Add("--configuration");
+        psi.ArgumentList.Add(configuration);
+        psi.ArgumentList.Add("--nologo");
+
+        using var process = Process.Start(psi)!;
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        if (process.ExitCode is not 0)
+        {
+            throw new XunitException($"Cannot build ArgumentsPrinter project\n{output}\n{error}");
+        }
     }
 
     private void ValidateArguments(string fileName, string arguments, string[] expectedArguments)

@@ -830,7 +830,7 @@ internal static class JsonPathEvaluator
             var fullPattern = $"^(?:{regex})$";
             return Regex.IsMatch(str, fullPattern, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
         }
-        catch (RegexParseException)
+        catch (ArgumentException)
         {
             return false;
         }
@@ -860,7 +860,7 @@ internal static class JsonPathEvaluator
             var regex = ConvertIRegexpToRegex(pattern);
             return Regex.IsMatch(str, regex, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
         }
-        catch (RegexParseException)
+        catch (ArgumentException)
         {
             return false;
         }

@@ -18,4 +18,5 @@
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptConfigurationScope.cs" Link="PromptConfigurationScope.cs" />
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptResult.cs" Link="PromptResult.cs" />
   </ItemGroup>
+
 </Project>

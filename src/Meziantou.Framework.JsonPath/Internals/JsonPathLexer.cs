@@ -336,7 +336,7 @@ internal ref struct JsonPathLexer
         var hex = _input.Slice(_position, 4);
         if (!int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var value))
         {
-            throw new FormatException($"Invalid hex digits '{new string(hex)}' at position {_position}.");
+            throw new FormatException($"Invalid hex digits '{hex}' at position {_position}.");
         }
 
         _position += 4;
@@ -432,7 +432,7 @@ internal ref struct JsonPathLexer
 
         if (!double.TryParse(numberSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
         {
-            throw new FormatException($"Invalid number '{new string(numberSpan)}' at position {pos}.");
+            throw new FormatException($"Invalid number '{numberSpan}' at position {pos}.");
         }
 
         return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, doubleValue, isIntegerLiteral: false);
@@ -463,7 +463,7 @@ internal ref struct JsonPathLexer
             return new JsonPathToken(JsonPathTokenKind.Null, pos);
         }
 
-        return new JsonPathToken(JsonPathTokenKind.Identifier, pos, new string(text));
+        return new JsonPathToken(JsonPathTokenKind.Identifier, pos, text.ToString());
     }
 
     private void SkipWhitespace()

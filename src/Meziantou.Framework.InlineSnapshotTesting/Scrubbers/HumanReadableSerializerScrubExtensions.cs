@@ -3,9 +3,9 @@ using System.Text.Json.Nodes;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using Json.Path;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
+using Meziantou.Framework.Json;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -204,7 +204,7 @@ public static class HumanReadableSerializerScrubExtensions
             }
 
             var result = _path.Evaluate(node);
-            foreach (var match in result.Matches)
+            foreach (var match in result)
             {
                 Debug.Assert(match.Value is not null);
                 var scrubValue = _scrubber(match.Value);

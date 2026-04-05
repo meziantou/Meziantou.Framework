@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using TestUtilities;
 using Xunit.Sdk;
 
@@ -116,7 +117,8 @@ public class CommandLineBuilderTests
         var errors = process.StandardError.ReadToEnd();
         Assert.True(string.IsNullOrEmpty(errors));
 
-        var actualArguments = process.StandardOutput.ReadToEnd().Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+        var standardOutput = process.StandardOutput.ReadToEnd();
+        var actualArguments = JsonSerializer.Deserialize<string[]>(standardOutput) ?? throw new XunitException("Cannot deserialize arguments as JSON");
         _testOutputHelper.WriteLine("----------");
         foreach (var arg in actualArguments)
         {

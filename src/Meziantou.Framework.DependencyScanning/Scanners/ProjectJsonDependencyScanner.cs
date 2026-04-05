@@ -23,7 +23,7 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
             if (doc.GetRootObject() is not JsonObject root)
                 return;
 
-            ScanDependencies(context, EnumerateDependencyObjects(doc, root));
+            ScanDependencies(context, EnumerateDependencyObjects(root));
             if (JsonNodeDocument.TryGetObject(root, "tools", out var tools))
             {
                 ScanDependencies(context, [tools]);
@@ -42,7 +42,7 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
             {
                 var packageName = dep.Key;
                 string? version;
-                string? versionPath = null;
+                string? versionPath;
                 if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion) && dep.Value is not null)
                 {
                     version = stringVersion;
@@ -68,7 +68,7 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private IEnumerable<JsonObject> EnumerateDependencyObjects(JsonNodeDocument doc, JsonNode? node)
+    private static IEnumerable<JsonObject> EnumerateDependencyObjects(JsonNode? node)
     {
         if (node is JsonObject jsonObject)
         {
@@ -77,9 +77,9 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
                 yield return dependencies;
             }
 
-            foreach (var property in doc.GetProperties(jsonObject))
+            foreach (var property in JsonNodeDocument.GetProperties(jsonObject))
             {
-                foreach (var child in EnumerateDependencyObjects(doc, property.Value))
+                foreach (var child in EnumerateDependencyObjects(property.Value))
                 {
                     yield return child;
                 }
@@ -87,9 +87,9 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
         }
         else if (node is JsonArray jsonArray)
         {
-            foreach (var item in doc.GetArray(jsonArray))
+            foreach (var item in JsonNodeDocument.GetArray(jsonArray))
             {
-                foreach (var child in EnumerateDependencyObjects(doc, item))
+                foreach (var child in EnumerateDependencyObjects(item))
                 {
                     yield return child;
                 }

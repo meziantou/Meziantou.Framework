@@ -35,7 +35,7 @@ internal sealed class JsonNodeDocument
         return Root as JsonObject;
     }
 
-    public IEnumerable<(string Name, JsonNode? Value)> GetProperties(JsonObject jsonObject)
+    public static IEnumerable<(string Name, JsonNode? Value)> GetProperties(JsonObject jsonObject)
     {
         foreach (var property in jsonObject)
         {
@@ -43,7 +43,7 @@ internal sealed class JsonNodeDocument
         }
     }
 
-    public IEnumerable<JsonNode?> GetArray(JsonArray jsonArray)
+    public static IEnumerable<JsonNode?> GetArray(JsonArray jsonArray)
     {
         foreach (var item in jsonArray)
         {

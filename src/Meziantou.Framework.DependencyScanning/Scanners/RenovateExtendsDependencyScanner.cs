@@ -47,12 +47,12 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
             if (doc.GetRootObject() is not JsonObject root)
                 return;
 
-            HandleExtendableElement(context, doc, root);
+            HandleExtendableElement(context, root);
             if (JsonNodeDocument.TryGetArray(root, "packageRules", out var packageRules))
             {
-                foreach (var rule in doc.GetArray(packageRules))
+                foreach (var rule in JsonNodeDocument.GetArray(packageRules))
                 {
-                    HandleExtendableElement(context, doc, rule);
+                    HandleExtendableElement(context, rule);
                 }
             }
         }
@@ -61,11 +61,11 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
         }
     }
 
-    private void HandleExtendableElement(ScanFileContext context, JsonNodeDocument doc, JsonNode? token)
+    private void HandleExtendableElement(ScanFileContext context, JsonNode? token)
     {
         if (token is JsonObject obj && JsonNodeDocument.TryGetArray(obj, "extends", out var extends))
         {
-            foreach (var item in doc.GetArray(extends))
+            foreach (var item in JsonNodeDocument.GetArray(extends))
             {
                 if (item is null || !JsonNodeDocument.TryGetString(item, out var value))
                     continue;

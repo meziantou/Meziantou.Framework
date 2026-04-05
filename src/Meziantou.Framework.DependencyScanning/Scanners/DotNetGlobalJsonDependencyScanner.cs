@@ -37,7 +37,7 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
         if (!JsonNodeDocument.TryGetObject(root, "msbuild-sdks", out var sdks))
             return;
 
-        foreach (var sdk in doc.GetProperties(sdks))
+        foreach (var sdk in JsonNodeDocument.GetProperties(sdks))
         {
             if (sdk.Value is not null && JsonNodeDocument.TryGetString(sdk.Value, out var sdkVersion))
             {

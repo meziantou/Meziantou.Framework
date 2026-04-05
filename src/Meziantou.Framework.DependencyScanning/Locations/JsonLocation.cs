@@ -94,6 +94,9 @@ internal sealed class JsonLocation : Location
 
         if (oldValue is not null)
         {
+            if (currentValue is null)
+                throw new DependencyScannerException("Current value is null. The file was probably modified since last scan.");
+
             if (TryReplaceAtFixedPosition(currentValue, oldValue, newValue, out var replacedValue))
                 return replacedValue;
 

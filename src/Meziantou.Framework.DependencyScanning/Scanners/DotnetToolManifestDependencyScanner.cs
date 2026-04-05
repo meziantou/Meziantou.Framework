@@ -26,7 +26,7 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
             if (!JsonNodeDocument.TryGetObject(root, "tools", out var tools))
                 return;
 
-            foreach (var dep in doc.GetProperties(tools))
+            foreach (var dep in JsonNodeDocument.GetProperties(tools))
             {
                 var packageName = dep.Name;
                 string? version;

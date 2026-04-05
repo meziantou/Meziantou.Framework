@@ -1,19 +1,9 @@
-using System.Diagnostics;
-using System.Text.Json;
 using TestUtilities;
-using Xunit.Sdk;
 
 namespace Meziantou.Framework.CommandLineTests;
 
-public class CommandLineBuilderTests
+public class CommandLineBuilderTests(ArgumentPrinterClassFixture argumentPrinterFixture) : IClassFixture<ArgumentPrinterClassFixture>
 {
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    public CommandLineBuilderTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-    }
-
     public static TheoryData<string, string> GetArguments()
     {
         var result = new TheoryData<string, string>();
@@ -38,98 +28,19 @@ public class CommandLineBuilderTests
 
     [Theory]
     [MemberData(nameof(GetArguments))]
-    public void WindowsQuotedArgument_Test(string value, string expected)
+    public async Task WindowsQuotedArgument_Test(string value, string expected)
     {
         var args = CommandLineBuilder.WindowsQuotedArgument(value);
-        var path = GetArgumentPrinterPath();
-
-        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
-        ValidateArguments(dotnetPath, "\"" + path + "\" " + args, [expected]);
+        var actualArguments = await argumentPrinterFixture.RoundtripArguments(args);
+        Assert.Equal([expected], actualArguments);
     }
 
     [Theory, RunIf(FactOperatingSystem.Windows)]
     [MemberData(nameof(GetArguments))]
-    public void WindowsCmdArgument_Test(string value, string expected)
+    public async Task WindowsCmdArgument_Test(string value, string expected)
     {
         var args = CommandLineBuilder.WindowsCmdArgument(value);
-        var batPath = FullPath.Combine(Path.GetTempPath(), Guid.NewGuid() + ".cmd");
-
-        var path = GetArgumentPrinterPath();
-        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
-        var fileContent = $"\"{dotnetPath}\" \"{path}\" {args}";
-        File.WriteAllText(batPath, fileContent);
-
-        var cmdArguments = "/Q /C \"" + batPath + "\"";
-
-        _testOutputHelper.WriteLine($"Executing 'cmd.exe' '{cmdArguments}' with batch content:\n{fileContent}");
-        ValidateArguments("cmd.exe", cmdArguments, [expected]);
-    }
-
-    private FullPath GetArgumentPrinterPath()
-    {
-        var fileName = "ArgumentsPrinter.dll";
-        var testedPaths = new List<FullPath>();
-        var targetFrameworks = new[] { "net10.0", "net9.0", "net8.0" };
-
-        var configurations = new[] { "debug", "release" };
-        foreach (var configuration in configurations)
-        {
-            foreach (var targetFramework in targetFrameworks)
-            {
-                var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_{targetFramework}" / fileName;
-                if (File.Exists(path))
-                {
-                    _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");
-                    return path;
-                }
-
-                testedPaths.Add(path);
-            }
-        }
-
-        var existingFiles = new List<string>();
-        foreach (var testedPath in testedPaths)
-        {
-            var path = testedPath.Parent;
-            if (Directory.Exists(path))
-            {
-                existingFiles.AddRange(Directory.GetFiles(path, "*", SearchOption.AllDirectories));
-            }
-        }
-
-        existingFiles.Sort(StringComparer.Ordinal);
-        throw new XunitException($"File not found:\n{string.Join('\n', testedPaths)}\n. List of existing files:\n{string.Join('\n', existingFiles)}\nHave you built the ArgumentsPrinter project?");
-    }
-
-    private void ValidateArguments(string fileName, string arguments, string[] expectedArguments)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = fileName,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
-        // https://github.com/Microsoft/vstest/issues/1263
-        psi.EnvironmentVariables["COR_ENABLE_PROFILING"] = "0";
-
-        _testOutputHelper.WriteLine($"Executing '{fileName}' '{arguments}'");
-        using var process = Process.Start(psi);
-        process.WaitForExit();
-
-        var errors = process.StandardError.ReadToEnd();
-        Assert.True(string.IsNullOrEmpty(errors));
-
-        var standardOutput = process.StandardOutput.ReadToEnd();
-        var actualArguments = JsonSerializer.Deserialize<string[]>(standardOutput) ?? throw new XunitException("Cannot deserialize arguments as JSON");
-        _testOutputHelper.WriteLine("----------");
-        foreach (var arg in actualArguments)
-        {
-            _testOutputHelper.WriteLine(arg);
-        }
-
-        Assert.Equal(0, process.ExitCode);
-        Assert.Equal(expectedArguments, actualArguments);
+        var actualArguments = await argumentPrinterFixture.RoundtripCmdArguments(args);
+        Assert.Equal([expected], actualArguments);
     }
 }

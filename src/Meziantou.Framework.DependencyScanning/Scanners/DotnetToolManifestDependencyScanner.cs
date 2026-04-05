@@ -20,37 +20,46 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
         try
         {
             var doc = await JsonNodeDocument.ParseAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-            foreach (var toolsMatch in doc.Select("$.tools"))
-            {
-                if (toolsMatch.Node is not JsonObject deps)
-                    continue;
+            if (doc.GetRootObject() is not JsonObject root)
+                return;
 
-                foreach (var dep in deps)
+            if (!doc.TryGetObject(root, "tools", "$", out var tools, out var toolsPath))
+                return;
+
+            foreach (var dep in doc.GetProperties(tools, toolsPath))
+            {
+                var packageName = dep.Name;
+                string? version;
+                var versionPath = dep.Path;
+
+                if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
                 {
-                    var valuePath = JsonNodeDocument.AppendPropertyPath(toolsMatch.Path, dep.Key);
-                    var packageName = dep.Key;
-                    string? version;
-                    var versionPath = valuePath;
-                    if (dep.Value is JsonValue dependencyValue && dependencyValue.TryGetValue<string>(out var stringVersion))
-                    {
-                        version = stringVersion;
-                    }
-                    else if (dep.Value is JsonObject dependencyObject && dependencyObject.TryGetPropertyValue("version", out var versionNode) && versionNode is JsonValue versionValue && versionValue.TryGetValue<string>(out var objectVersion))
-                    {
-                        version = objectVersion;
-                        versionPath = JsonNodeDocument.AppendPropertyPath(valuePath, "version");
-                    }
-                    else
+                    version = stringVersion;
+                }
+                else if (dep.Value is JsonObject dependencyObject)
+                {
+                    if (!doc.TryGetProperty(dependencyObject, "version", dep.Path, out var versionNode, out versionPath))
                     {
                         continue;
                     }
 
-                    if (version is not null)
+                    if (!JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
                     {
-                        context.ReportDependency(this, packageName, version, DependencyType.NuGet,
-                            nameLocation: new NonUpdatableLocation(context),
-                            versionLocation: new JsonLocation(context, versionPath, doc.GetLineInfo(versionPath)));
+                        continue;
                     }
+
+                    version = objectVersion;
+                }
+                else
+                {
+                    continue;
+                }
+
+                if (version is not null)
+                {
+                    context.ReportDependency(this, packageName, version, DependencyType.NuGet,
+                        nameLocation: new NonUpdatableLocation(context),
+                        versionLocation: new JsonLocation(context, versionPath, doc.GetLineInfo(versionPath)));
                 }
             }
         }

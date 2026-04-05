@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Meziantou.Framework.Json;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
@@ -43,19 +43,71 @@ internal sealed class JsonNodeDocument
         return JsonNode.Parse(text, nodeOptions: null, documentOptions: JsonDocumentOptions) ?? throw new JsonException("Expected a JSON value.");
     }
 
-    public IEnumerable<JsonNodeMatch> Select(string expression)
+    public JsonObject? GetRootObject()
     {
-        var path = JsonPath.Parse(expression);
-        return Select(path);
+        return Root as JsonObject;
     }
 
-    public IEnumerable<JsonNodeMatch> Select(JsonPath path)
+    public IEnumerable<(string Name, JsonNode? Value, string Path)> GetProperties(JsonObject jsonObject, string path)
     {
-        var matches = path.Evaluate(Root);
-        foreach (var match in matches)
+        foreach (var property in jsonObject)
         {
-            yield return new JsonNodeMatch(match.Value, match.Path, GetLineInfo(match.Path));
+            var propertyPath = AppendPropertyPath(path, property.Key);
+            yield return (property.Key, property.Value, propertyPath);
         }
+    }
+
+    public IEnumerable<(JsonNode? Value, int Index, string Path)> GetArray(JsonArray jsonArray, string path)
+    {
+        for (var index = 0; index < jsonArray.Count; index++)
+        {
+            var itemPath = AppendArrayIndexPath(path, index);
+            yield return (jsonArray[index], index, itemPath);
+        }
+    }
+
+    public bool TryGetProperty(JsonObject jsonObject, string propertyName, string path, out JsonNode? value, out string propertyPath)
+    {
+        propertyPath = AppendPropertyPath(path, propertyName);
+        return jsonObject.TryGetPropertyValue(propertyName, out value);
+    }
+
+    public bool TryGetObject(JsonObject jsonObject, string propertyName, string path, [NotNullWhen(true)] out JsonObject? value, out string propertyPath)
+    {
+        propertyPath = AppendPropertyPath(path, propertyName);
+        if (jsonObject.TryGetPropertyValue(propertyName, out var node) && node is JsonObject jsonObjectValue)
+        {
+            value = jsonObjectValue;
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    public bool TryGetArray(JsonObject jsonObject, string propertyName, string path, [NotNullWhen(true)] out JsonArray? value, out string propertyPath)
+    {
+        propertyPath = AppendPropertyPath(path, propertyName);
+        if (jsonObject.TryGetPropertyValue(propertyName, out var node) && node is JsonArray jsonArrayValue)
+        {
+            value = jsonArrayValue;
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    public static bool TryGetString(JsonNode? node, [NotNullWhen(true)] out string? value)
+    {
+        if (node is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var stringValue))
+        {
+            value = stringValue;
+            return true;
+        }
+
+        value = null;
+        return false;
     }
 
     public LineInfo GetLineInfo(string path)
@@ -66,12 +118,12 @@ internal sealed class JsonNodeDocument
         return default;
     }
 
-    public static string AppendPropertyPath(string path, string propertyName)
+    private static string AppendPropertyPath(string path, string propertyName)
     {
         return string.Create(CultureInfo.InvariantCulture, $"{path}['{EscapePropertyName(propertyName)}']");
     }
 
-    public static string AppendArrayIndexPath(string path, int index)
+    private static string AppendArrayIndexPath(string path, int index)
     {
         return string.Create(CultureInfo.InvariantCulture, $"{path}[{index}]");
     }

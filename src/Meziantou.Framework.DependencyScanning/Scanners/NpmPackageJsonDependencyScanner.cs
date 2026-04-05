@@ -8,12 +8,12 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 /// <summary>Scans npm package.json files for JavaScript package dependencies.</summary>
 public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 {
-    private static readonly string[] DependencySectionPaths =
+    private static readonly string[] DependencySectionPropertyNames =
     [
-        "$.dependencies",
-        "$.devDependencies",
-        "$.peerDependencies",
-        "$.optionaldependencies",
+        "dependencies",
+        "devDependencies",
+        "peerDependencies",
+        "optionaldependencies",
     ];
 
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Npm];
@@ -28,14 +28,14 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
         try
         {
             var doc = await JsonNodeDocument.ParseAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-            foreach (var dependencySectionPath in DependencySectionPaths)
+            if (doc.GetRootObject() is not JsonObject root)
+                return;
+
+            foreach (var dependencySectionPropertyName in DependencySectionPropertyNames)
             {
-                foreach (var depsMatch in doc.Select(dependencySectionPath))
+                if (doc.TryGetObject(root, dependencySectionPropertyName, "$", out var deps, out var depsPath))
                 {
-                    if (depsMatch.Node is JsonObject deps)
-                    {
-                        await ScanDependenciesAsync(context, doc, deps, depsMatch.Path).ConfigureAwait(false);
-                    }
+                    await ScanDependenciesAsync(context, doc, deps, depsPath).ConfigureAwait(false);
                 }
             }
         }
@@ -46,26 +46,24 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 
     private ValueTask ScanDependenciesAsync(ScanFileContext context, JsonNodeDocument doc, JsonObject deps, string depsPath)
     {
-        foreach (var dep in deps)
+        foreach (var dep in doc.GetProperties(deps, depsPath))
         {
             if (dep.Value is null)
                 continue;
 
-            var packageName = dep.Key;
-            var valuePath = JsonNodeDocument.AppendPropertyPath(depsPath, dep.Key);
+            var packageName = dep.Name;
+            var valuePath = dep.Path;
             string? version = null;
-            if (dep.Value is JsonValue dependencyValue && dependencyValue.TryGetValue<string>(out var stringVersion))
+            if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
             {
                 version = stringVersion;
             }
             else if (dep.Value is JsonObject dependencyObject)
             {
-                if (dependencyObject.TryGetPropertyValue("version", out var versionNode) && versionNode is JsonValue versionValue)
+                if (doc.TryGetProperty(dependencyObject, "version", dep.Path, out var versionNode, out var versionPath) && JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
                 {
-                    if (versionValue.TryGetValue<string>(out var objectVersion))
-                    {
-                        version = objectVersion;
-                    }
+                    version = objectVersion;
+                    valuePath = versionPath;
                 }
             }
             else

@@ -44,18 +44,15 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
         try
         {
             var doc = await JsonNodeDocument.ParseAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
+            if (doc.GetRootObject() is not JsonObject root)
+                return;
 
-            HandleExtendableElement(context, doc, "$", doc.Root);
-            if (doc.Root is JsonObject root)
+            HandleExtendableElement(context, doc, "$", root);
+            if (doc.TryGetArray(root, "packageRules", "$", out var packageRules, out var packageRulesPath))
             {
-                var packageRulesPath = JsonNodeDocument.AppendPropertyPath("$", "packageRules");
-                var packageRules = root["packageRules"] as JsonArray;
-                if (packageRules is not null)
+                foreach (var rule in doc.GetArray(packageRules, packageRulesPath))
                 {
-                    for (var index = 0; index < packageRules.Count; index++)
-                    {
-                        HandleExtendableElement(context, doc, JsonNodeDocument.AppendArrayIndexPath(packageRulesPath, index), packageRules[index]);
-                    }
+                    HandleExtendableElement(context, doc, rule.Path, rule.Value);
                 }
             }
         }
@@ -66,44 +63,38 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
 
     private void HandleExtendableElement(ScanFileContext context, JsonNodeDocument doc, string path, JsonNode? token)
     {
-        if (token is JsonObject obj && obj.TryGetPropertyValue("extends", out var extends))
+        if (token is JsonObject obj && doc.TryGetArray(obj, "extends", path, out var extends, out var extendsPath))
         {
-            if (extends is JsonArray array)
+            foreach (var item in doc.GetArray(extends, extendsPath))
             {
-                var extendsPath = JsonNodeDocument.AppendPropertyPath(path, "extends");
-                for (var index = 0; index < array.Count; index++)
-                {
-                    var item = array[index];
-                    var itemPath = JsonNodeDocument.AppendArrayIndexPath(extendsPath, index);
-                    if (item is not JsonValue itemValue || !itemValue.TryGetValue<string>(out var value))
-                        continue;
+                if (!JsonNodeDocument.TryGetString(item.Value, out var value))
+                    continue;
 
-                    if (!string.IsNullOrEmpty(value))
+                if (!string.IsNullOrEmpty(value))
+                {
+                    // parse name#ref
+                    var hashIndex = value.IndexOf('#', StringComparison.Ordinal);
+                    if (hashIndex >= 0)
                     {
-                        // parse name#ref
-                        var hashIndex = value.IndexOf('#', StringComparison.Ordinal);
-                        if (hashIndex >= 0)
-                        {
-                            var name = value[..hashIndex];
-                            var version = value[(hashIndex + 1)..];
-                            context.ReportDependency(
-                                this,
-                                name: name,
-                                version: version,
-                                type: DependencyType.RenovateConfiguration,
-                                nameLocation: new JsonLocation(context, itemPath, doc.GetLineInfo(itemPath), 0, name.Length),
-                                versionLocation: new JsonLocation(context, itemPath, doc.GetLineInfo(itemPath), hashIndex + 1, version.Length));
-                        }
-                        else
-                        {
-                            context.ReportDependency(
-                                this,
-                                name: value,
-                                version: null,
-                                type: DependencyType.RenovateConfiguration,
-                                nameLocation: new JsonLocation(context, itemPath, doc.GetLineInfo(itemPath)),
-                                versionLocation: null);
-                        }
+                        var name = value[..hashIndex];
+                        var version = value[(hashIndex + 1)..];
+                        context.ReportDependency(
+                            this,
+                            name: name,
+                            version: version,
+                            type: DependencyType.RenovateConfiguration,
+                            nameLocation: new JsonLocation(context, item.Path, doc.GetLineInfo(item.Path), 0, name.Length),
+                            versionLocation: new JsonLocation(context, item.Path, doc.GetLineInfo(item.Path), hashIndex + 1, version.Length));
+                    }
+                    else
+                    {
+                        context.ReportDependency(
+                            this,
+                            name: value,
+                            version: null,
+                            type: DependencyType.RenovateConfiguration,
+                            nameLocation: new JsonLocation(context, item.Path, doc.GetLineInfo(item.Path)),
+                            versionLocation: null);
                     }
                 }
             }

@@ -31,34 +31,39 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
 
     private void ExtractMsBuildSdks(ScanFileContext context, JsonNodeDocument doc)
     {
-        foreach (var sdksMatch in doc.Select("$['msbuild-sdks']"))
-        {
-            if (sdksMatch.Node is not JsonObject sdks)
-                continue;
+        if (doc.GetRootObject() is not JsonObject root)
+            return;
 
-            foreach (var sdk in sdks)
+        if (!doc.TryGetObject(root, "msbuild-sdks", "$", out var sdks, out var sdksPath))
+            return;
+
+        foreach (var sdk in doc.GetProperties(sdks, sdksPath))
+        {
+            if (JsonNodeDocument.TryGetString(sdk.Value, out var sdkVersion))
             {
-                if (sdk.Value is JsonValue sdkValue && sdkValue.TryGetValue<string>(out var sdkVersion))
-                {
-                    var sdkVersionPath = JsonNodeDocument.AppendPropertyPath(sdksMatch.Path, sdk.Key);
-                    context.ReportDependency(this, sdk.Key, sdkVersion, DependencyType.NuGet,
-                        nameLocation: new NonUpdatableLocation(context),
-                        versionLocation: new JsonLocation(context, sdkVersionPath, doc.GetLineInfo(sdkVersionPath)));
-                }
+                context.ReportDependency(this, sdk.Name, sdkVersion, DependencyType.NuGet,
+                    nameLocation: new NonUpdatableLocation(context),
+                    versionLocation: new JsonLocation(context, sdk.Path, doc.GetLineInfo(sdk.Path)));
             }
         }
     }
 
     private void ExtractSdk(ScanFileContext context, JsonNodeDocument doc)
     {
-        foreach (var sdkMatch in doc.Select("$.sdk.version"))
-        {
-            if (sdkMatch.Node is not JsonValue sdkVersion || !sdkVersion.TryGetValue<string>(out var version))
-                continue;
+        if (doc.GetRootObject() is not JsonObject root)
+            return;
 
-            context.ReportDependency(this, name: null, version, DependencyType.DotNetSdk,
-                nameLocation: null,
-                versionLocation: new JsonLocation(context, sdkMatch.Path, sdkMatch.LineInfo));
-        }
+        if (!doc.TryGetObject(root, "sdk", "$", out var sdk, out var sdkPath))
+            return;
+
+        if (!doc.TryGetProperty(sdk, "version", sdkPath, out var versionNode, out var versionPath))
+            return;
+
+        if (!JsonNodeDocument.TryGetString(versionNode, out var version))
+            return;
+
+        context.ReportDependency(this, name: null, version, DependencyType.DotNetSdk,
+            nameLocation: null,
+            versionLocation: new JsonLocation(context, versionPath, doc.GetLineInfo(versionPath)));
     }
 }

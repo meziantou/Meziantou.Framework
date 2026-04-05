@@ -7,7 +7,8 @@ namespace Meziantou.Framework.CommandLineTests;
 
 public sealed class ArgumentPrinterClassFixture
 {
-    private static readonly Semaphore BuildSemaphore = new(initialCount: 1, maximumCount: 1, name: "Meziantou.Framework.CommandLineTests.ArgumentPrinterClassFixture.Build");
+    private static readonly SemaphoreSlim BuildSemaphore = new(1, 1);
+    private static readonly FullPath BuildLockFilePath = FullPath.GetTempPath() / "meziantou-framework-commandline-tests-argumentsprinter.lock";
     private static bool s_isBuilt;
 
     private readonly string _dotnetPath;
@@ -54,9 +55,13 @@ public sealed class ArgumentPrinterClassFixture
         if (s_isBuilt)
             return;
 
-        BuildSemaphore.WaitOne();
+        await BuildSemaphore.WaitAsync();
         try
         {
+            if (s_isBuilt)
+                return;
+
+            await using var buildLock = await AcquireBuildLockAsync();
             if (s_isBuilt)
                 return;
 
@@ -115,6 +120,21 @@ public sealed class ArgumentPrinterClassFixture
             StandardOutput: await stdoutTask,
             StandardError: await stderrTask,
             ExitCode: process.ExitCode);
+    }
+
+    private static async ValueTask<FileStream> AcquireBuildLockAsync()
+    {
+        while (true)
+        {
+            try
+            {
+                return new FileStream(BuildLockFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException)
+            {
+                await Task.Delay(100);
+            }
+        }
     }
 
     private sealed record ProcessResult(string StandardOutput, string StandardError, int ExitCode);

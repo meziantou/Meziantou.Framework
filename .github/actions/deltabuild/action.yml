@@ -73,13 +73,9 @@ runs:
             "samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj"
             "src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj"
             "src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj"
-            "src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj"
             "src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj"
             "tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj"
           )
-          if ($env:RUNNER_OS -eq "Windows") {
-            $inlineSnapshotTestingProjects += "tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.csproj"
-          }
 
           $argumentPrinterProjects = @(
             "tests/ArgumentsPrinter/ArgumentsPrinter.csproj"

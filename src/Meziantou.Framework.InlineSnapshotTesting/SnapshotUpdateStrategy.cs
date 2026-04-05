@@ -30,9 +30,6 @@ public abstract class SnapshotUpdateStrategy
     {
         get
         {
-            if (TaskDialogPrompt.IsSupported())
-                return new PromptStrategy(new TaskDialogPrompt());
-
             return MergeTool;
         }
     }

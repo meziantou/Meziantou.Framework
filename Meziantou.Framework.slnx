@@ -62,13 +62,8 @@
     <Project Path="src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
     <Project Path="src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
-    <Project Path="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" />
-    <Project Path="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
-    <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj">
-      <BuildDependency Project="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" />
-      <BuildDependency Project="src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" />
-    </Project>
+    <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
     <Project Path="src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
@@ -153,7 +148,6 @@
     <Project Path="tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NtpClient.Tests/Meziantou.Framework.NtpClient.Tests.csproj" />

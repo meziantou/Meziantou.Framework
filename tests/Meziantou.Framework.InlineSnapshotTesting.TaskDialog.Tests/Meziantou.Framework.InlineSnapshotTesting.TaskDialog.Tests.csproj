@@ -3,15 +3,10 @@
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472;net48</TargetFrameworks>
     <UseWPF>true</UseWPF>
-    <TestTfmsInParallel>false</TestTfmsInParallel>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
-
-  <Target Name="BuildTaskDialogPrompt" BeforeTargets="Build" Condition="'$(IsCrossTargetingBuild)' == 'true' and $([MSBuild]::IsOsPlatform('Windows'))">
-    <MSBuild Projects="..\..\src\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
-  </Target>
 </Project>

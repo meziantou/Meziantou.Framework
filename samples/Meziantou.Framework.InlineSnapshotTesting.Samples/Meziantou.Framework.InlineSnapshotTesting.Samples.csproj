@@ -16,8 +16,4 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildTaskDialogPrompt" BeforeTargets="Build" Condition="$([MSBuild]::IsOsPlatform('Windows'))">
-    <MSBuild Projects="..\..\src\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
-  </Target>
-
 </Project>

@@ -47,12 +47,12 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
             if (doc.GetRootObject() is not JsonObject root)
                 return;
 
-            HandleExtendableElement(context, doc, "$", root);
-            if (doc.TryGetArray(root, "packageRules", "$", out var packageRules, out var packageRulesPath))
+            HandleExtendableElement(context, doc, root);
+            if (JsonNodeDocument.TryGetArray(root, "packageRules", out var packageRules))
             {
-                foreach (var rule in doc.GetArray(packageRules, packageRulesPath))
+                foreach (var rule in doc.GetArray(packageRules))
                 {
-                    HandleExtendableElement(context, doc, rule.Path, rule.Value);
+                    HandleExtendableElement(context, doc, rule);
                 }
             }
         }
@@ -61,17 +61,19 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
         }
     }
 
-    private void HandleExtendableElement(ScanFileContext context, JsonNodeDocument doc, string path, JsonNode? token)
+    private void HandleExtendableElement(ScanFileContext context, JsonNodeDocument doc, JsonNode? token)
     {
-        if (token is JsonObject obj && doc.TryGetArray(obj, "extends", path, out var extends, out var extendsPath))
+        if (token is JsonObject obj && JsonNodeDocument.TryGetArray(obj, "extends", out var extends))
         {
-            foreach (var item in doc.GetArray(extends, extendsPath))
+            foreach (var item in doc.GetArray(extends))
             {
-                if (!JsonNodeDocument.TryGetString(item.Value, out var value))
+                if (item is null || !JsonNodeDocument.TryGetString(item, out var value))
                     continue;
 
                 if (!string.IsNullOrEmpty(value))
                 {
+                    var itemPath = item.GetPath();
+
                     // parse name#ref
                     var hashIndex = value.IndexOf('#', StringComparison.Ordinal);
                     if (hashIndex >= 0)
@@ -83,8 +85,8 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
                             name: name,
                             version: version,
                             type: DependencyType.RenovateConfiguration,
-                            nameLocation: new JsonLocation(context, item.Path, doc.GetLineInfo(item.Path), 0, name.Length),
-                            versionLocation: new JsonLocation(context, item.Path, doc.GetLineInfo(item.Path), hashIndex + 1, version.Length));
+                            nameLocation: new JsonLocation(context, itemPath, 0, name.Length),
+                            versionLocation: new JsonLocation(context, itemPath, hashIndex + 1, version.Length));
                     }
                     else
                     {
@@ -93,7 +95,7 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
                             name: value,
                             version: null,
                             type: DependencyType.RenovateConfiguration,
-                            nameLocation: new JsonLocation(context, item.Path, doc.GetLineInfo(item.Path)),
+                            nameLocation: new JsonLocation(context, itemPath),
                             versionLocation: null);
                     }
                 }

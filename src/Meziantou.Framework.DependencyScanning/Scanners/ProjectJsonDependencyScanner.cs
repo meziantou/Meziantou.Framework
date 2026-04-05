@@ -23,10 +23,10 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
             if (doc.GetRootObject() is not JsonObject root)
                 return;
 
-            ScanDependencies(context, doc, EnumerateDependencyObjects(doc, root, "$"));
-            if (doc.TryGetObject(root, "tools", "$", out var tools, out var toolsPath))
+            ScanDependencies(context, EnumerateDependencyObjects(doc, root));
+            if (JsonNodeDocument.TryGetObject(root, "tools", out var tools))
             {
-                ScanDependencies(context, doc, [(Dependencies: tools, Path: toolsPath)]);
+                ScanDependencies(context, [tools]);
             }
         }
         catch (JsonException)
@@ -34,51 +34,52 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private void ScanDependencies(ScanFileContext context, JsonNodeDocument doc, IEnumerable<(JsonObject Dependencies, string Path)> dependencyObjects)
+    private void ScanDependencies(ScanFileContext context, IEnumerable<JsonObject> dependencyObjects)
     {
-        foreach (var depsMatch in dependencyObjects)
+        foreach (var dependencies in dependencyObjects)
         {
-            foreach (var dep in doc.GetProperties(depsMatch.Dependencies, depsMatch.Path))
+            foreach (var dep in dependencies)
             {
-                var packageName = dep.Name;
+                var packageName = dep.Key;
                 string? version;
-                var versionPath = dep.Path;
-                if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
+                string? versionPath = null;
+                if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion) && dep.Value is not null)
                 {
                     version = stringVersion;
+                    versionPath = dep.Value.GetPath();
                 }
-                else if (dep.Value is JsonObject dependencyObject && doc.TryGetProperty(dependencyObject, "version", dep.Path, out var versionNode, out var objectVersionPath) && JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
+                else if (dep.Value is JsonObject dependencyObject && JsonNodeDocument.TryGetProperty(dependencyObject, "version", out var versionNode) && versionNode is not null && JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
                 {
                     version = objectVersion;
-                    versionPath = objectVersionPath;
+                    versionPath = versionNode.GetPath();
                 }
                 else
                 {
                     continue;
                 }
 
-                if (version is not null)
+                if (version is not null && versionPath is not null)
                 {
                     context.ReportDependency(this, packageName, version, DependencyType.NuGet,
                         nameLocation: new NonUpdatableLocation(context),
-                        versionLocation: new JsonLocation(context, versionPath, doc.GetLineInfo(versionPath)));
+                        versionLocation: new JsonLocation(context, versionPath));
                 }
             }
         }
     }
 
-    private IEnumerable<(JsonObject Dependencies, string Path)> EnumerateDependencyObjects(JsonNodeDocument doc, JsonNode? node, string path)
+    private IEnumerable<JsonObject> EnumerateDependencyObjects(JsonNodeDocument doc, JsonNode? node)
     {
         if (node is JsonObject jsonObject)
         {
-            foreach (var property in doc.GetProperties(jsonObject, path))
+            if (JsonNodeDocument.TryGetObject(jsonObject, "dependencies", out var dependencies))
             {
-                if (property.Name == "dependencies" && property.Value is JsonObject dependencies)
-                {
-                    yield return (dependencies, property.Path);
-                }
+                yield return dependencies;
+            }
 
-                foreach (var child in EnumerateDependencyObjects(doc, property.Value, property.Path))
+            foreach (var property in doc.GetProperties(jsonObject))
+            {
+                foreach (var child in EnumerateDependencyObjects(doc, property.Value))
                 {
                     yield return child;
                 }
@@ -86,9 +87,9 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
         }
         else if (node is JsonArray jsonArray)
         {
-            foreach (var item in doc.GetArray(jsonArray, path))
+            foreach (var item in doc.GetArray(jsonArray))
             {
-                foreach (var child in EnumerateDependencyObjects(doc, item.Value, item.Path))
+                foreach (var child in EnumerateDependencyObjects(doc, item))
                 {
                     yield return child;
                 }

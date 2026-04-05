@@ -23,43 +23,45 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
             if (doc.GetRootObject() is not JsonObject root)
                 return;
 
-            if (!doc.TryGetObject(root, "tools", "$", out var tools, out var toolsPath))
+            if (!JsonNodeDocument.TryGetObject(root, "tools", out var tools))
                 return;
 
-            foreach (var dep in doc.GetProperties(tools, toolsPath))
+            foreach (var dep in doc.GetProperties(tools))
             {
                 var packageName = dep.Name;
                 string? version;
-                var versionPath = dep.Path;
+                string? versionPath = null;
 
-                if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
+                if (dep.Value is not null && JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
                 {
                     version = stringVersion;
+                    versionPath = dep.Value.GetPath();
                 }
                 else if (dep.Value is JsonObject dependencyObject)
                 {
-                    if (!doc.TryGetProperty(dependencyObject, "version", dep.Path, out var versionNode, out versionPath))
+                    if (!JsonNodeDocument.TryGetProperty(dependencyObject, "version", out var versionNode))
                     {
                         continue;
                     }
 
-                    if (!JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
+                    if (versionNode is null || !JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
                     {
                         continue;
                     }
 
                     version = objectVersion;
+                    versionPath = versionNode.GetPath();
                 }
                 else
                 {
                     continue;
                 }
 
-                if (version is not null)
+                if (version is not null && versionPath is not null)
                 {
                     context.ReportDependency(this, packageName, version, DependencyType.NuGet,
                         nameLocation: new NonUpdatableLocation(context),
-                        versionLocation: new JsonLocation(context, versionPath, doc.GetLineInfo(versionPath)));
+                        versionLocation: new JsonLocation(context, versionPath));
                 }
             }
         }

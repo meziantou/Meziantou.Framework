@@ -33,9 +33,9 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 
             foreach (var dependencySectionPropertyName in DependencySectionPropertyNames)
             {
-                if (doc.TryGetObject(root, dependencySectionPropertyName, "$", out var deps, out var depsPath))
+                if (JsonNodeDocument.TryGetObject(root, dependencySectionPropertyName, out var deps))
                 {
-                    await ScanDependenciesAsync(context, doc, deps, depsPath).ConfigureAwait(false);
+                    await ScanDependenciesAsync(context, deps).ConfigureAwait(false);
                 }
             }
         }
@@ -44,26 +44,27 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private ValueTask ScanDependenciesAsync(ScanFileContext context, JsonNodeDocument doc, JsonObject deps, string depsPath)
+    private ValueTask ScanDependenciesAsync(ScanFileContext context, JsonObject deps)
     {
-        foreach (var dep in doc.GetProperties(deps, depsPath))
+        foreach (var dep in deps)
         {
             if (dep.Value is null)
                 continue;
 
-            var packageName = dep.Name;
-            var valuePath = dep.Path;
+            var packageName = dep.Key;
+            string? valuePath = null;
             string? version = null;
             if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
             {
                 version = stringVersion;
+                valuePath = dep.Value.GetPath();
             }
             else if (dep.Value is JsonObject dependencyObject)
             {
-                if (doc.TryGetProperty(dependencyObject, "version", dep.Path, out var versionNode, out var versionPath) && JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
+                if (JsonNodeDocument.TryGetProperty(dependencyObject, "version", out var versionNode) && versionNode is not null && JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
                 {
                     version = objectVersion;
-                    valuePath = versionPath;
+                    valuePath = versionNode.GetPath();
                 }
             }
             else
@@ -74,11 +75,11 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
             if (version is null)
                 continue;
 
-            if (dep.Value is not null)
+            if (valuePath is not null)
             {
                 context.ReportDependency(this, packageName, version, DependencyType.Npm,
                     nameLocation: new NonUpdatableLocation(context),
-                    versionLocation: new JsonLocation(context, valuePath, doc.GetLineInfo(valuePath)));
+                    versionLocation: new JsonLocation(context, valuePath));
             }
         }
 

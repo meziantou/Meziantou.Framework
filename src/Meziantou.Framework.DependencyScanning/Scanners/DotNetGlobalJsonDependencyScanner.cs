@@ -34,16 +34,16 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
         if (doc.GetRootObject() is not JsonObject root)
             return;
 
-        if (!doc.TryGetObject(root, "msbuild-sdks", "$", out var sdks, out var sdksPath))
+        if (!JsonNodeDocument.TryGetObject(root, "msbuild-sdks", out var sdks))
             return;
 
-        foreach (var sdk in doc.GetProperties(sdks, sdksPath))
+        foreach (var sdk in doc.GetProperties(sdks))
         {
-            if (JsonNodeDocument.TryGetString(sdk.Value, out var sdkVersion))
+            if (sdk.Value is not null && JsonNodeDocument.TryGetString(sdk.Value, out var sdkVersion))
             {
                 context.ReportDependency(this, sdk.Name, sdkVersion, DependencyType.NuGet,
                     nameLocation: new NonUpdatableLocation(context),
-                    versionLocation: new JsonLocation(context, sdk.Path, doc.GetLineInfo(sdk.Path)));
+                    versionLocation: new JsonLocation(context, sdk.Value.GetPath()));
             }
         }
     }
@@ -53,17 +53,17 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
         if (doc.GetRootObject() is not JsonObject root)
             return;
 
-        if (!doc.TryGetObject(root, "sdk", "$", out var sdk, out var sdkPath))
+        if (!JsonNodeDocument.TryGetObject(root, "sdk", out var sdk))
             return;
 
-        if (!doc.TryGetProperty(sdk, "version", sdkPath, out var versionNode, out var versionPath))
+        if (!JsonNodeDocument.TryGetProperty(sdk, "version", out var versionNode))
             return;
 
-        if (!JsonNodeDocument.TryGetString(versionNode, out var version))
+        if (versionNode is null || !JsonNodeDocument.TryGetString(versionNode, out var version))
             return;
 
         context.ReportDependency(this, name: null, version, DependencyType.DotNetSdk,
             nameLocation: null,
-            versionLocation: new JsonLocation(context, versionPath, doc.GetLineInfo(versionPath)));
+            versionLocation: new JsonLocation(context, versionNode.GetPath()));
     }
 }

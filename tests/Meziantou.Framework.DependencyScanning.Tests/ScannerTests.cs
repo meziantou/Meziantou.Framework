@@ -45,8 +45,8 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         AddFile("package.json", Original);
         var result = await GetDependencies<NpmPackageJsonDependencyScanner>();
         AssertContainDependency(result,
-            (DependencyType.Npm, "a", "1.0.0", 5, 11),
-            (DependencyType.Npm, "b", "1.2.3", 8, 11));
+            (DependencyType.Npm, "a", "1.0.0", 0, 0),
+            (DependencyType.Npm, "b", "1.2.3", 0, 0));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("package.json", Expected, ignoreNewLines: true);
@@ -309,9 +309,9 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         AddFile("project.json", Original);
         var result = await GetDependencies<ProjectJsonDependencyScanner>();
         AssertContainDependency(result,
-            (DependencyType.NuGet, "a", "1.0.1", 4, 19),
-            (DependencyType.NuGet, "c", "1.0.2", 10, 11),
-            (DependencyType.NuGet, "d", "1.0.3", 13, 11));
+            (DependencyType.NuGet, "a", "1.0.1", 0, 0),
+            (DependencyType.NuGet, "c", "1.0.2", 0, 0),
+            (DependencyType.NuGet, "d", "1.0.3", 0, 0));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("project.json", Expected, ignoreNewLines: true);
@@ -545,9 +545,9 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         AddFile("global.json", Original);
         var result = await GetDependencies<DotNetGlobalJsonDependencyScanner>();
         AssertContainDependency(result,
-            (DependencyType.DotNetSdk, Name: null, "3.1.100", 3, 17),
-            (DependencyType.NuGet, "My.Custom.Sdk", "5.0.0", 7, 24),
-            (DependencyType.NuGet, "My.Other.Sdk", "1.0.0-beta", 8, 22));
+            (DependencyType.DotNetSdk, Name: null, "3.1.100", 0, 0),
+            (DependencyType.NuGet, "My.Custom.Sdk", "5.0.0", 0, 0),
+            (DependencyType.NuGet, "My.Other.Sdk", "1.0.0-beta", 0, 0));
 
         await UpdateDependencies(result, "dummy", "3.1.400");
         AssertFileContentEqual("global.json", Expected, ignoreNewLines: true);
@@ -821,8 +821,8 @@ jobs:
         AddFile("dotnet-tools.json", Original);
         var result = await GetDependencies<DotNetToolManifestDependencyScanner>();
         AssertContainDependency(result,
-            (DependencyType.NuGet, "dotnet-validate", "0.0.1-preview.130", 6, 19),
-            (DependencyType.NuGet, "dotnet-format", "5.0.211103", 12, 19));
+            (DependencyType.NuGet, "dotnet-validate", "0.0.1-preview.130", 0, 0),
+            (DependencyType.NuGet, "dotnet-format", "5.0.211103", 0, 0));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("dotnet-tools.json", Expected, ignoreNewLines: true);

@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
-    <ProjectReference Include="..\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
   </ItemGroup>
 
 </Project>

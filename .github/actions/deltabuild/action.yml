@@ -52,7 +52,6 @@ runs:
         OUTPUT_PROJECT: ${{ inputs.output-project }}
         TRAVERSAL_AFTER_IMPORT: ${{ inputs.traversal-after-import }}
         FULL_REBUILD_TRIGGERS: ${{ inputs.full-rebuild-triggers }}
-        DELTABUILD_IMPLICIT_DEPENDENCIES: true
       run: |
         $arguments = @(
           "generate"
@@ -65,6 +64,35 @@ runs:
           $trigger = $_.Trim()
           if ($trigger) {
             $arguments += @("--full-rebuild-trigger", $trigger)
+          }
+        }
+
+        $normalizedInputProject = $env:INPUT_PROJECT.Replace('\', '/')
+        if ($normalizedInputProject -eq "eng/build.proj") {
+          $inlineSnapshotTestingProjects = @(
+            "samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj"
+            "src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj"
+            "src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj"
+            "src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj"
+            "src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj"
+            "tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj"
+          )
+          if ($env:RUNNER_OS -eq "Windows") {
+            $inlineSnapshotTestingProjects += "tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.csproj"
+          }
+
+          $argumentPrinterProjects = @(
+            "tests/ArgumentsPrinter/ArgumentsPrinter.csproj"
+            "tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj"
+          )
+
+          $projectBundles = @(
+            ($inlineSnapshotTestingProjects -join ",")
+            ($argumentPrinterProjects -join ",")
+          )
+
+          foreach ($bundle in $projectBundles) {
+            $arguments += @("--project-bundle", $bundle)
           }
         }
 

@@ -1,4 +1,1 @@
-foreach (var argument in args)
-{
-    Console.WriteLine(argument);
-}
+Console.Write(System.Text.Json.JsonSerializer.Serialize(args));

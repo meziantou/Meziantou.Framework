@@ -52,7 +52,6 @@ runs:
         OUTPUT_PROJECT: ${{ inputs.output-project }}
         TRAVERSAL_AFTER_IMPORT: ${{ inputs.traversal-after-import }}
         FULL_REBUILD_TRIGGERS: ${{ inputs.full-rebuild-triggers }}
-        DELTABUILD_IMPLICIT_DEPENDENCIES: true
       run: |
         $arguments = @(
           "generate"

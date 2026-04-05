@@ -1,8 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Linq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
@@ -17,22 +15,6 @@ internal readonly struct LineInfo : IEquatable<LineInfo>
 
     public int LineNumber { get; }
     public int LinePosition { get; }
-
-    public static LineInfo FromJToken(JToken token)
-    {
-        var propertyLineInfo = (IJsonLineInfo)token;
-        if (propertyLineInfo.HasLineInfo())
-        {
-            if (token.Type == JTokenType.String)
-            {
-                return new LineInfo(propertyLineInfo.LineNumber, propertyLineInfo.LinePosition - ((string)token!).Length);
-            }
-
-            return new LineInfo(propertyLineInfo.LineNumber, propertyLineInfo.LinePosition);
-        }
-
-        return default;
-    }
 
     public static LineInfo FromXObject(XObject obj)
     {

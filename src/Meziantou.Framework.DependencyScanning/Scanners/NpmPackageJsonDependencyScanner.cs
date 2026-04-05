@@ -1,13 +1,21 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Locations;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 /// <summary>Scans npm package.json files for JavaScript package dependencies.</summary>
 public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 {
+    private static readonly string[] DependencySectionPropertyNames =
+    [
+        "dependencies",
+        "devDependencies",
+        "peerDependencies",
+        "optionaldependencies",
+    ];
+
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Npm];
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
@@ -19,32 +27,16 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
     {
         try
         {
-            using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-            using var jsonReader = new JsonTextReader(sr);
-            var doc = await JToken.ReadFromAsync(jsonReader, context.CancellationToken).ConfigureAwait(false);
+            var doc = await JsonNodeDocument.ParseAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
+            if (doc.GetRootObject() is not JsonObject root)
+                return;
 
-            // https://docs.npmjs.com/files/package.json#dependencies
-            foreach (var deps in doc.SelectTokens("$.dependencies").OfType<JObject>())
+            foreach (var dependencySectionPropertyName in DependencySectionPropertyNames)
             {
-                await ScanDependenciesAsync(context, deps).ConfigureAwait(false);
-            }
-
-            // https://docs.npmjs.com/files/package.json#devdependencies
-            foreach (var deps in doc.SelectTokens("$.devDependencies").OfType<JObject>())
-            {
-                await ScanDependenciesAsync(context, deps).ConfigureAwait(false);
-            }
-
-            // https://docs.npmjs.com/files/package.json#peerdependencies
-            foreach (var deps in doc.SelectTokens("$.peerDependencies").OfType<JObject>())
-            {
-                await ScanDependenciesAsync(context, deps).ConfigureAwait(false);
-            }
-
-            // https://docs.npmjs.com/files/package.json#optionaldependencies
-            foreach (var deps in doc.SelectTokens("$.optionaldependencies").OfType<JObject>())
-            {
-                await ScanDependenciesAsync(context, deps).ConfigureAwait(false);
+                if (JsonNodeDocument.TryGetObject(root, dependencySectionPropertyName, out var deps))
+                {
+                    await ScanDependenciesAsync(context, deps).ConfigureAwait(false);
+                }
             }
         }
         catch (JsonException)
@@ -52,31 +44,27 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private ValueTask ScanDependenciesAsync(ScanFileContext context, JObject deps)
+    private ValueTask ScanDependenciesAsync(ScanFileContext context, JsonObject deps)
     {
-        foreach (var dep in deps.Properties())
+        foreach (var dep in deps)
         {
             if (dep.Value is null)
                 continue;
 
-            var packageName = dep.Name;
+            var packageName = dep.Key;
+            string? valuePath = null;
             string? version = null;
-            if (dep.Value.Type == JTokenType.String)
+            if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
             {
-                if (dep.Value is not null)
-                {
-                    version = dep.Value.Value<string>();
-                }
+                version = stringVersion;
+                valuePath = dep.Value.GetPath();
             }
-            else if (dep.Value.Type == JTokenType.Object)
+            else if (dep.Value is JsonObject dependencyObject)
             {
-                if (dep.Value is not null)
+                if (JsonNodeDocument.TryGetProperty(dependencyObject, "version", out var versionNode) && versionNode is not null && JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
                 {
-                    var token = dep.Value.SelectToken("$.version");
-                    if (token is not null)
-                    {
-                        version = token.Value<string>();
-                    }
+                    version = objectVersion;
+                    valuePath = versionNode.GetPath();
                 }
             }
             else
@@ -87,11 +75,11 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
             if (version is null)
                 continue;
 
-            if (dep.Value is not null)
+            if (valuePath is not null)
             {
                 context.ReportDependency(this, packageName, version, DependencyType.Npm,
                     nameLocation: new NonUpdatableLocation(context),
-                    versionLocation: new JsonLocation(context, dep.Value));
+                    versionLocation: new JsonLocation(context, valuePath));
             }
         }
 

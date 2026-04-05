@@ -1,28 +1,25 @@
 using Meziantou.Framework.DependencyScanning.Internals;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Meziantou.Framework.DependencyScanning;
 
-internal sealed class JsonLocation : Location, ILocationLineInfo
+internal sealed class JsonLocation : Location
 {
-    private readonly LineInfo _lineInfo;
-
-    internal JsonLocation(ScanFileContext context, JToken token)
-        : this(context.FileSystem, context.FullPath, LineInfo.FromJToken(token), token.Path, -1, -1)
+    internal JsonLocation(ScanFileContext context, string jsonPath)
+        : this(context.FileSystem, context.FullPath, jsonPath, -1, -1)
     {
     }
 
-    internal JsonLocation(ScanFileContext context, JToken token, int column, int length)
-        : this(context.FileSystem, context.FullPath, LineInfo.FromJToken(token), token.Path, column, length)
+    internal JsonLocation(ScanFileContext context, string jsonPath, int column, int length)
+        : this(context.FileSystem, context.FullPath, jsonPath, column, length)
     {
 
     }
 
-    internal JsonLocation(IFileSystem fileSystem, string filePath, LineInfo lineInfo, string jsonPath, int column, int length)
+    internal JsonLocation(IFileSystem fileSystem, string filePath, string jsonPath, int column, int length)
         : base(fileSystem, filePath)
     {
-        _lineInfo = lineInfo;
         JsonPath = jsonPath;
         StartPosition = column;
         Length = length;
@@ -33,8 +30,6 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
     public int Length { get; }
 
     public override bool IsUpdatable => true;
-    int ILocationLineInfo.LineNumber => _lineInfo.LineNumber;
-    int ILocationLineInfo.LinePosition => _lineInfo.LinePosition + Math.Clamp(StartPosition, 0, int.MaxValue);
 
     protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
@@ -50,25 +45,20 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
                 text = await textReader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            var jobject = JObject.Parse(text);
-            if (jobject.SelectToken(JsonPath) is JValue token)
+            var root = JsonNodeDocument.ParseNode(text);
+            if (FindNodeByPath(root, JsonPath) is JsonValue token && token.TryGetValue<string>(out var tokenValue))
             {
-                if (token.Value is not string tokenValue)
-                    throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
-
-                token.Value = UpdateTextValue(tokenValue, oldValue, newValue);
+                token.ReplaceWith(JsonValue.Create(UpdateTextValue(tokenValue, oldValue, newValue)));
 
                 stream.SetLength(0);
 
                 var textWriter = StreamUtilities.CreateWriter(stream, encoding);
                 try
                 {
-                    using var jsonWriter = new JsonTextWriter(textWriter)
+                    await textWriter.WriteAsync(root.ToJsonString(new JsonSerializerOptions
                     {
-                        Formatting = Formatting.Indented,
-                    };
-
-                    await jobject.WriteToAsync(jsonWriter, cancellationToken).ConfigureAwait(false);
+                        WriteIndented = true,
+                    })).ConfigureAwait(false);
 
                 }
                 finally
@@ -89,7 +79,7 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
 
     public override string ToString()
     {
-        return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{JsonPath}:{_lineInfo}");
+        return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{JsonPath}");
     }
 
     private string UpdateTextValue(string? currentValue, string? oldValue, string newValue)
@@ -104,14 +94,64 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
 
         if (oldValue is not null)
         {
-            var slicedCurrentValue = currentValue.AsSpan().Slice(StartPosition, Length);
-            if (!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
-                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue}'. The file was probably modified since last scan.");
+            if (currentValue is null)
+                throw new DependencyScannerException("Current value is null. The file was probably modified since last scan.");
+
+            if (TryReplaceAtFixedPosition(currentValue, oldValue, newValue, out var replacedValue))
+                return replacedValue;
+
+            var index = currentValue.IndexOf(oldValue, StringComparison.Ordinal);
+            if (index >= 0)
+                return currentValue.Remove(index, oldValue.Length).Insert(index, newValue);
+
+            throw new DependencyScannerException($"Expected value '{oldValue}' was not found in the current value '{currentValue}'. The file was probably modified since last scan.");
         }
 
         if (currentValue is null)
             throw new DependencyScannerException("Current value is null. The file was probably modified since last scan.");
 
         return currentValue.Remove(StartPosition, Length).Insert(StartPosition, newValue);
+
+        bool TryReplaceAtFixedPosition(string sourceValue, string expectedValue, string replacement, out string result)
+        {
+            result = default!;
+            if (StartPosition < 0 || Length < 0)
+                return false;
+
+            if (StartPosition > sourceValue.Length || StartPosition + Length > sourceValue.Length)
+                return false;
+
+            var slicedCurrentValue = sourceValue.AsSpan().Slice(StartPosition, Length);
+            if (!slicedCurrentValue.Equals(expectedValue, StringComparison.Ordinal))
+                return false;
+
+            result = sourceValue.Remove(StartPosition, Length).Insert(StartPosition, replacement);
+            return true;
+        }
+    }
+
+    private static JsonNode? FindNodeByPath(JsonNode root, string path)
+    {
+        if (string.Equals(root.GetPath(), path, StringComparison.Ordinal))
+            return root;
+
+        if (root is JsonObject jsonObject)
+        {
+            foreach (var property in jsonObject)
+            {
+                if (property.Value is not null && FindNodeByPath(property.Value, path) is JsonNode node)
+                    return node;
+            }
+        }
+        else if (root is JsonArray jsonArray)
+        {
+            foreach (var item in jsonArray)
+            {
+                if (item is not null && FindNodeByPath(item, path) is JsonNode node)
+                    return node;
+            }
+        }
+
+        return null;
     }
 }

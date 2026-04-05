@@ -1,7 +1,7 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Locations;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
@@ -19,9 +19,7 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
     {
         try
         {
-            using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-            using var jsonReader = new JsonTextReader(sr);
-            var doc = await JToken.ReadFromAsync(jsonReader, context.CancellationToken).ConfigureAwait(false);
+            var doc = await JsonNodeDocument.ParseAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
 
             ExtractSdk(context, doc);
             ExtractMsBuildSdks(context, doc);
@@ -31,32 +29,41 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private void ExtractMsBuildSdks(ScanFileContext context, JToken doc)
+    private void ExtractMsBuildSdks(ScanFileContext context, JsonNodeDocument doc)
     {
-        var sdksToken = doc.SelectToken("$.msbuild-sdks");
-        if (sdksToken is JObject sdks)
+        if (doc.GetRootObject() is not JsonObject root)
+            return;
+
+        if (!JsonNodeDocument.TryGetObject(root, "msbuild-sdks", out var sdks))
+            return;
+
+        foreach (var sdk in JsonNodeDocument.GetProperties(sdks))
         {
-            foreach (var sdk in sdks.Properties())
+            if (sdk.Value is not null && JsonNodeDocument.TryGetString(sdk.Value, out var sdkVersion))
             {
-                var sdkVersion = sdk.Value.Value<string>();
-                if (sdkVersion is not null)
-                {
-                    context.ReportDependency(this, sdk.Name, sdkVersion, DependencyType.NuGet,
-                        nameLocation: new NonUpdatableLocation(context),
-                        versionLocation: new JsonLocation(context, sdk.Value));
-                }
+                context.ReportDependency(this, sdk.Name, sdkVersion, DependencyType.NuGet,
+                    nameLocation: new NonUpdatableLocation(context),
+                    versionLocation: new JsonLocation(context, sdk.Value.GetPath()));
             }
         }
     }
 
-    private void ExtractSdk(ScanFileContext context, JToken doc)
+    private void ExtractSdk(ScanFileContext context, JsonNodeDocument doc)
     {
-        var token = doc.SelectToken("$.sdk.version");
-        if (token?.Value<string>() is string version)
-        {
-            context.ReportDependency(this, name: null, version, DependencyType.DotNetSdk,
-                nameLocation: null,
-                versionLocation: new JsonLocation(context, token));
-        }
+        if (doc.GetRootObject() is not JsonObject root)
+            return;
+
+        if (!JsonNodeDocument.TryGetObject(root, "sdk", out var sdk))
+            return;
+
+        if (!JsonNodeDocument.TryGetProperty(sdk, "version", out var versionNode))
+            return;
+
+        if (versionNode is null || !JsonNodeDocument.TryGetString(versionNode, out var version))
+            return;
+
+        context.ReportDependency(this, name: null, version, DependencyType.DotNetSdk,
+            nameLocation: null,
+            versionLocation: new JsonLocation(context, versionNode.GetPath()));
     }
 }

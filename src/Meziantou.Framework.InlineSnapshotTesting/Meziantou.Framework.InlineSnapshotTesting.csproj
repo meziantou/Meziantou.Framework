@@ -26,8 +26,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOsPlatform('Windows'))">
-    <ProjectReference Include="../Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=net8.0" />
-    <ProjectReference Include="../Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=net8.0" />
+    <ProjectReference Include="../Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=net8.0-windows" />
+    <ProjectReference Include="../Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=net8.0-windows" />
   </ItemGroup>
 
   <ItemGroup>

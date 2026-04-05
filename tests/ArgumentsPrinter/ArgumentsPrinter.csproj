@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <TargetFramework>$(LatestTargetFramework)</TargetFramework>
     <RollForward>LatestMajor</RollForward>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
   </PropertyGroup>

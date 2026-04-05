@@ -41,7 +41,7 @@ runs:
     - name: Install DeltaBuild
       if: ${{ inputs.run-generate == 'true' }}
       shell: pwsh
-      run: dotnet tool install --global Meziantou.DeltaBuild --version 1.2.0
+      run: dotnet tool install --global Meziantou.DeltaBuild
 
     - name: Generate delta project
       id: generate-delta

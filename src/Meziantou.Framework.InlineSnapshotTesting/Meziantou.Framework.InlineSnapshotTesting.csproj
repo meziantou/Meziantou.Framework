@@ -24,11 +24,6 @@
     <ProjectReference Include="..\Meziantou.Framework.HumanReadableSerializer\Meziantou.Framework.HumanReadableSerializer.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DELTABUILD_IMPLICIT_DEPENDENCIES)' == 'true'">
-    <ProjectReference Include="..\Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray\Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
-    <ProjectReference Include="..\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog\Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="DiffEngine" Version="19.1.2" />
     <PackageReference Include="JsonPath.Net" Version="3.0.2" />

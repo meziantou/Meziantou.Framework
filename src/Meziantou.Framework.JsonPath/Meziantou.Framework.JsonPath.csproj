@@ -1,12 +1,17 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Json</RootNamespace>
     <Description>An implementation of JSONPath (RFC 9535) for System.Text.Json.</Description>
     <Version>1.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
+
+  <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="System.Text.Json" Version="10.0.5" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.JsonPath.Tests" />

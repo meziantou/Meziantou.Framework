@@ -25,7 +25,7 @@
     <ProjectReference Include="..\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOsPlatform('Windows'))">
     <ProjectReference Include="../Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>

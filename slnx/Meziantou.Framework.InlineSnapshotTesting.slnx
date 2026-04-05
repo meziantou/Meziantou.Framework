@@ -13,7 +13,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>

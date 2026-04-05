@@ -69,34 +69,6 @@ foreach (var generator in generators)
     }
 }
 
-// Ensure InlineSnapshot package contains the prompt folder
-{
-    var packagePattern = new Regex(@"Meziantou\.Framework\.InlineSnapshotTesting\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
-    var packagePath = Directory.EnumerateFiles(nugetDirectory)
-        .FirstOrDefault(f => packagePattern.IsMatch(f));
-    if (packagePath is null)
-    {
-        if (isDeltaBuild)
-        {
-            Console.WriteLine("Skipping InlineSnapshotTesting prompt folder validation because package is absent in delta build output.");
-        }
-        else
-        {
-            throw new InvalidOperationException("InlineSnapshotTesting package not found");
-        }
-    }
-    else
-    {
-        using var zipFile = ZipFile.OpenRead(packagePath);
-        var hasPrompt = zipFile.Entries.Any(e => e.FullName.StartsWith("prompt/", StringComparison.Ordinal));
-        if (!hasPrompt)
-        {
-            Console.Error.WriteLine("ERROR: Package does not contain a prompt/ entry");
-            return 1;
-        }
-    }
-}
-
 // General validation
 Console.WriteLine("Validating NuGet packages");
 if (nupkgFiles.Length == 0)

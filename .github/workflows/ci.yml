@@ -103,8 +103,6 @@ jobs:
             eng/**/*.proj
 
       - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
-      - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-taskdialog.binlog
-      - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-notificationtray.binlog
 
       - name: Prepare NuGet artifact directory
         run: |

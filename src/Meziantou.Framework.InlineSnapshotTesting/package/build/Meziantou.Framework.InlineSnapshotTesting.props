@@ -1,8 +1,0 @@
-<Project>
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)/../prompt/*" Visible="False">
-      <Link>%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-</Project>

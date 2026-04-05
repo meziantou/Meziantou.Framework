@@ -5,20 +5,6 @@ using TestUtilities;
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class InlineSnapshotSettingsTests
 {
-    [Fact, RunIf(FactOperatingSystem.Windows)]
-    public void UpdateStrategy_Windows_Prompt()
-    {
-        var settings = new InlineSnapshotSettings();
-        Assert.IsType<PromptStrategy>(settings.SnapshotUpdateStrategy);
-    }
-
-    [Fact, RunIf(FactOperatingSystem.All & ~FactOperatingSystem.Windows)]
-    public void UpdateStrategy_NonWindows_Prompt()
-    {
-        var settings = new InlineSnapshotSettings();
-        Assert.IsType<MergeToolStrategy>(settings.SnapshotUpdateStrategy);
-    }
-
     [Fact]
     public void Clone()
     {

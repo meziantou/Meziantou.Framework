@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.Versioning;
 using System.Text.Json;
 using TestUtilities;
 using Xunit.Sdk;
@@ -8,7 +7,7 @@ namespace Meziantou.Framework.CommandLineTests;
 
 public sealed class ArgumentPrinterClassFixture
 {
-    private static readonly SemaphoreSlim BuildSemaphore = new(1, 1);
+    private static readonly Semaphore BuildSemaphore = new(initialCount: 1, maximumCount: 1, name: "Meziantou.Framework.CommandLineTests.ArgumentPrinterClassFixture.Build");
     private static bool s_isBuilt;
 
     private readonly string _dotnetPath;
@@ -55,7 +54,7 @@ public sealed class ArgumentPrinterClassFixture
         if (s_isBuilt)
             return;
 
-        await BuildSemaphore.WaitAsync();
+        BuildSemaphore.WaitOne();
         try
         {
             if (s_isBuilt)

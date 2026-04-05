@@ -9,7 +9,7 @@ namespace Meziantou.Framework.CommandLineTests;
 public sealed class ArgumentPrinterClassFixture
 {
     private static readonly SemaphoreSlim BuildSemaphore = new(1, 1);
-    private static bool _isBuilt;
+    private static bool s_isBuilt;
 
     private readonly string _dotnetPath;
     private readonly FullPath _projectPath;
@@ -52,19 +52,19 @@ public sealed class ArgumentPrinterClassFixture
 
     private async ValueTask EnsureBuiltAsync()
     {
-        if (_isBuilt)
+        if (s_isBuilt)
             return;
 
         await BuildSemaphore.WaitAsync();
         try
         {
-            if (_isBuilt)
+            if (s_isBuilt)
                 return;
 
             var processArguments = $"build \"{_projectPath}\" --nologo";
             var result = await ExecuteProcessAsync(_dotnetPath, processArguments);
             EnsureSucceeded(result, _dotnetPath, processArguments, throwOnErrorOutput: false);
-            _isBuilt = true;
+            s_isBuilt = true;
         }
         finally
         {

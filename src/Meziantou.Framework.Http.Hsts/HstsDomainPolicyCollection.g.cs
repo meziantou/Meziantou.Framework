@@ -10,8 +10,8 @@ partial class HstsDomainPolicyCollection
 {
     private void LoadPreloadDomains()
     {
-        // HSTS preload data source: https://raw.githubusercontent.com/chromium/chromium/a1f12e95d2cca1ba95602a46071565e3b0ffd9db/net/http/transport_security_state_static.json
-        // Commit date: 2026-03-06T21:26:06.0000000+00:00
+        // HSTS preload data source: https://raw.githubusercontent.com/chromium/chromium/8119b584658ad61e21550dcf2762e22be182a4b2/net/http/transport_security_state_static.json
+        // Commit date: 2026-04-02T20:09:05.0000000+00:00
         CollectionsMarshal.SetCount(_policies, 4);
 
         var dict1 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 61, comparer: StringComparer.OrdinalIgnoreCase);

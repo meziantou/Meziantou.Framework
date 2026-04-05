@@ -24,8 +24,4 @@
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\ProcessInfo.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DELTABUILD_IMPLICIT_DEPENDENCIES)' == 'true'">
-    <ProjectReference Include="..\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
-  </ItemGroup>
-
 </Project>

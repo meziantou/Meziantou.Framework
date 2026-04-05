@@ -478,29 +478,17 @@ internal ref struct JsonPathLexer
 
     private static bool TryParseInt32Hex(ReadOnlySpan<char> value, out int result)
     {
-#if NETSTANDARD2_0
-        return int.TryParse(value.ToString(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result);
-#else
         return int.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result);
-#endif
     }
 
     private static bool TryParseInt64(ReadOnlySpan<char> value, out long result)
     {
-#if NETSTANDARD2_0
-        return long.TryParse(value.ToString(), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out result);
-#else
         return long.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out result);
-#endif
     }
 
     private static bool TryParseDouble(ReadOnlySpan<char> value, out double result)
     {
-#if NETSTANDARD2_0
-        return double.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
-#else
         return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
-#endif
     }
 
     /// <summary>name-first = ALPHA / "_" / %x80-D7FF / %xE000-10FFFF</summary>

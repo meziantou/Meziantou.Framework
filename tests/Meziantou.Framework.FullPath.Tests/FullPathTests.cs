@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using TestUtilities;
 using Xunit;
@@ -462,10 +463,26 @@ public sealed class FullPathTests
 #if NETCOREAPP3_1_OR_GREATER
         else
         {
-            Assert.Equal(0, Mono.Unix.Native.Syscall.symlink(target, source));
+            if (CreateUnixSymbolicLink(target, source) != 0)
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
         }
 #endif
     }
+
+#if NETCOREAPP3_1_OR_GREATER
+    private static int CreateUnixSymbolicLink(string targetPath, string linkPath)
+    {
+        var utf8TargetPath = Encoding.UTF8.GetBytes(targetPath + '\0');
+        var utf8LinkPath = Encoding.UTF8.GetBytes(linkPath + '\0');
+        return CreateUnixSymbolicLinkCore(utf8TargetPath, utf8LinkPath);
+    }
+
+    [DllImport("libc", EntryPoint = "symlink", SetLastError = true, ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+    private static extern int CreateUnixSymbolicLinkCore(byte[] targetPath, byte[] linkPath);
+#endif
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.I1)]

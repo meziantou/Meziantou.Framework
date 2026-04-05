@@ -72,7 +72,6 @@ runs:
           $inlineSnapshotTestingProjects = @(
             "samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj"
             "src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj"
-            "src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray.csproj"
             "src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj"
             "tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj"
           )

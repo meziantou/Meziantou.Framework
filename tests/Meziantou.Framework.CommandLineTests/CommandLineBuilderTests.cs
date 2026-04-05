@@ -2,15 +2,8 @@ using TestUtilities;
 
 namespace Meziantou.Framework.CommandLineTests;
 
-public class CommandLineBuilderTests : IClassFixture<ArgumentPrinterClassFixture>
+public class CommandLineBuilderTests(ArgumentPrinterClassFixture argumentPrinterFixture) : IClassFixture<ArgumentPrinterClassFixture>
 {
-    private readonly ArgumentPrinterClassFixture _argumentPrinterFixture;
-
-    public CommandLineBuilderTests(ArgumentPrinterClassFixture argumentPrinterFixture)
-    {
-        _argumentPrinterFixture = argumentPrinterFixture;
-    }
-
     public static TheoryData<string, string> GetArguments()
     {
         var result = new TheoryData<string, string>();
@@ -38,7 +31,7 @@ public class CommandLineBuilderTests : IClassFixture<ArgumentPrinterClassFixture
     public async Task WindowsQuotedArgument_Test(string value, string expected)
     {
         var args = CommandLineBuilder.WindowsQuotedArgument(value);
-        var actualArguments = await _argumentPrinterFixture.RoundtripArguments(args);
+        var actualArguments = await argumentPrinterFixture.RoundtripArguments(args);
         Assert.Equal([expected], actualArguments);
     }
 
@@ -47,7 +40,7 @@ public class CommandLineBuilderTests : IClassFixture<ArgumentPrinterClassFixture
     public async Task WindowsCmdArgument_Test(string value, string expected)
     {
         var args = CommandLineBuilder.WindowsCmdArgument(value);
-        var actualArguments = await _argumentPrinterFixture.RoundtripCmdArguments(args);
+        var actualArguments = await argumentPrinterFixture.RoundtripCmdArguments(args);
         Assert.Equal([expected], actualArguments);
     }
 }

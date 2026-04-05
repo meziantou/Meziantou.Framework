@@ -81,14 +81,8 @@ runs:
             $inlineSnapshotTestingProjects += "tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.csproj"
           }
 
-          $argumentPrinterProjects = @(
-            "tests/ArgumentsPrinter/ArgumentsPrinter.csproj"
-            "tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj"
-          )
-
           $projectBundles = @(
             ($inlineSnapshotTestingProjects -join ",")
-            ($argumentPrinterProjects -join ",")
           )
 
           foreach ($bundle in $projectBundles) {

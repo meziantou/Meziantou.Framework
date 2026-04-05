@@ -47,6 +47,8 @@
     <Project Path="src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumToStringGenerator.Annotations/Meziantou.Framework.FastEnumToStringGenerator.Annotations.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj" />
+    <Project Path="src/Meziantou.Framework.FixedString.Generator/Meziantou.Framework.FixedString.Generator.csproj" />
+    <Project Path="src/Meziantou.Framework.FixedString/Meziantou.Framework.FixedString.csproj" />
     <Project Path="src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
@@ -135,6 +137,8 @@
     <Project Path="tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FastEnumToStringGenerator.Tests/Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.FixedString.Generator.Tests/Meziantou.Framework.FixedString.Generator.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.FixedString.Tests/Meziantou.Framework.FixedString.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tests/Meziantou.Framework.Html.Tests.csproj" />

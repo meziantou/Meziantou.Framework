@@ -92,18 +92,6 @@ public sealed class ArgumentPrinterClassFixture
         }
     }
 
-    private static string GetCurrentTargetFramework()
-    {
-        var frameworkName = AppContext.TargetFrameworkName ?? throw new XunitException("Cannot determine current target framework");
-        var parsedFramework = new FrameworkName(frameworkName);
-        if (!string.Equals(parsedFramework.Identifier, ".NETCoreApp", StringComparison.Ordinal))
-        {
-            throw new XunitException($"Unsupported target framework '{frameworkName}'");
-        }
-
-        return $"net{parsedFramework.Version.Major}.{parsedFramework.Version.Minor}";
-    }
-
     private static async ValueTask<ProcessResult> ExecuteProcessAsync(string fileName, string arguments)
     {
         var psi = new ProcessStartInfo

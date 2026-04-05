@@ -1,11 +1,13 @@
 #pragma warning disable CA1034 // Nested types should not be visible
 #pragma warning disable CA1819 // Properties should not return arrays
 #pragma warning disable MA0101 // String contains an implicit end of line character
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.Loader;
 using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using TestUtilities;
 
 namespace Meziantou.Framework.StronglyTypedId.Tests;
@@ -85,6 +87,20 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         return (runResult, outputCompilation, result.Success ? outputStream.ToArray() : null, pdbStream.ToArray());
     }
 
+    private static async Task<ImmutableArray<Diagnostic>> Analyze(string sourceText)
+    {
+        var compilation = await CreateCompilation(sourceText,
+        [
+            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
+            new NuGetReference("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/"),
+        ]);
+
+        var analyzerOptions = new AnalyzerOptions(ImmutableArray<AdditionalText>.Empty);
+        var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(new StronglyTypedIdAnalyzer());
+        var compilationWithAnalyzers = compilation.WithAnalyzers(analyzers, new CompilationWithAnalyzersOptions(analyzerOptions, onAnalyzerException: null, concurrentAnalysis: true, logAnalyzerExecutionTime: false, reportSuppressedDiagnostics: false));
+        return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
+    }
+
     [Fact]
     public async Task GenerateStructInNamespaceAndClass()
     {
@@ -151,6 +167,22 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             """;
 
         await TestGeneratedAssembly(sourceCode, typeName: null, type => { }, mustGenerateTrees: false);
+    }
+
+    [Fact]
+    public async Task UnsupportedType_ReportedByAnalyzer()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.TimeSpan))]
+            public partial struct Test { }
+            """;
+
+        var result = await GenerateFiles(sourceCode, mustCompile: false);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Empty(result.GeneratorResult.GeneratedTrees);
+
+        var diagnostics = await Analyze(sourceCode);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFSTID0001", diag.Id));
     }
 
     [Fact]

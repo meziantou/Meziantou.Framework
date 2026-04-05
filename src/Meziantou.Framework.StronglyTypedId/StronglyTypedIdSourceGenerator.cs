@@ -17,14 +17,6 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
     private const string PropertyName = "Value";
     private const string PropertyAsStringName = "ValueAsString";
 
-    private static readonly DiagnosticDescriptor UnsupportedType = new(
-        id: "MFSTID0001",
-        title: "Not supported type",
-        messageFormat: "The type '{0}' is not supported",
-        category: "StronglyTypedId",
-        DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var nonGenericTypes = context.SyntaxProvider
@@ -75,7 +67,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             }
         }
 
-        static object? GetGenericSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
+        static AttributeInfo? GetGenericSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
         {
             foreach (var attribute in ctx.Attributes)
             {
@@ -93,7 +85,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             return null;
         }
 
-        static object? GetNonGenericSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
+        static AttributeInfo? GetNonGenericSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
         {
             foreach (var attribute in ctx.Attributes)
             {
@@ -108,7 +100,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             return null;
         }
 
-        static object? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, ITypeSymbol type, ReadOnlySpan<TypedConstant> arguments, CancellationToken cancellationToken)
+        static AttributeInfo? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, ITypeSymbol type, ReadOnlySpan<TypedConstant> arguments, CancellationToken cancellationToken)
         {
             var semanticModel = ctx.SemanticModel;
 
@@ -160,12 +152,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
                 if (idType is IdType.Unknown)
                 {
-                    return new DiagnosticInfo()
-                    {
-                        Descriptor = UnsupportedType,
-                        Location = attributeSyntax.GetLocation(),
-                        MessageArgs = [type.ToDisplayString()],
-                    };
+                    return null;
                 }
 
                 return new AttributeInfo(
@@ -184,16 +171,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
     }
 
-    private static void Execute(SourceProductionContext context, object semanticContext)
+    private static void Execute(SourceProductionContext context, AttributeInfo attribute)
     {
-        if (semanticContext is DiagnosticInfo diagnostic)
-        {
-            context.ReportDiagnostic(diagnostic.CreateDiagnostic());
-            return;
-        }
-
-        var attribute = (AttributeInfo)semanticContext;
-
         var writer = new CSharpGeneratedFileWriter();
 
         // Write debug info
@@ -337,7 +316,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
     }
 
-    private static IdType GetIdType(Compilation compilation, ITypeSymbol symbol)
+    internal static IdType GetIdType(Compilation compilation, ITypeSymbol symbol)
     {
         var result = symbol.SpecialType switch
         {
@@ -844,7 +823,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         MongoDB_Bson_Serialization = 0x8,
     }
 
-    private enum IdType
+    internal enum IdType
     {
         Unknown,
         System_Boolean,
@@ -875,43 +854,4 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public PartialTypeContext? Parent { get; set; }
     }
 
-    /// <summary>
-    /// Descriptor for diagnostic instances using structural equality comparison.
-    /// Provides a work-around for https://github.com/dotnet/roslyn/issues/68291.
-    /// </summary>
-    private readonly struct DiagnosticInfo : IEquatable<DiagnosticInfo>
-    {
-        public DiagnosticDescriptor Descriptor { get; init; }
-        public object?[] MessageArgs { get; init; }
-        public Location? Location { get; init; }
-
-        public Diagnostic CreateDiagnostic()
-            => Diagnostic.Create(Descriptor, Location, MessageArgs);
-
-        public override readonly bool Equals(object? obj) => obj is DiagnosticInfo info && Equals(info);
-        public readonly bool Equals(DiagnosticInfo other)
-        {
-            return Descriptor.Equals(other.Descriptor) &&
-                MessageArgs.SequenceEqual(other.MessageArgs) &&
-                Location == other.Location;
-        }
-
-        public override readonly int GetHashCode()
-        {
-            var hashCode = Descriptor.GetHashCode();
-            foreach (var messageArg in MessageArgs)
-            {
-                hashCode = Combine(hashCode, messageArg?.GetHashCode() ?? 0);
-            }
-
-            hashCode = Combine(hashCode, Location?.GetHashCode() ?? 0);
-            return hashCode;
-        }
-
-        private static int Combine(int h1, int h2)
-        {
-            var rol5 = ((uint)h1 << 5) | ((uint)h1 >> 27);
-            return ((int)rol5 + h1) ^ h2;
-        }
-    }
 }

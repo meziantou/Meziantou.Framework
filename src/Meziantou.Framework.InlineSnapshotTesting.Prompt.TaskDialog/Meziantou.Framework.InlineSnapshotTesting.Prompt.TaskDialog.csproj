@@ -18,4 +18,8 @@
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptConfigurationScope.cs" Link="PromptConfigurationScope.cs" />
     <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptResult.cs" Link="PromptResult.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(DELTABUILD_IMPLICIT_DEPENDENCIES)' == 'true'">
+    <ProjectReference Include="..\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" ReferenceOutputAssembly="false" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
 </Project>

@@ -261,9 +261,9 @@ public sealed class ResxGeneratorTest
         private sealed class Options : AnalyzerConfigOptions
         {
             private readonly OptionProvider _optionProvider;
-            private readonly string? _path;
+            private readonly string _path;
 
-            public Options(OptionProvider optionProvider, string? path = null)
+            public Options(OptionProvider optionProvider, string path = null)
             {
                 _optionProvider = optionProvider;
                 _path = path;

@@ -26,7 +26,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder16 value = $"Hello {"World"}";
 
-        Assert.Equal("Hello World", value.ToString());
+        Assert.Equal("Hello World", value.ToString(null, null));
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public sealed class FixedStringBuilderTests
     {
         FixedStringBuilder8 value = $"{1,4}";
 
-        Assert.Equal("   1", value.ToString());
+        Assert.Equal("   1", value.ToString(null, null));
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class FixedStringBuilderTests
         var value = new FixedStringBuilder8("12345678");
 
         Assert.Equal(FixedStringBuilder8.MaxLength, value.Length);
-        Assert.Equal("12345678", value.ToString());
+        Assert.Equal("12345678", value.ToString(null, null));
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public sealed class FixedStringBuilderTests
         FixedStringBuilder8 a = "AbC";
         FixedStringBuilder8 b = "aBc";
 
-        Assert.False(a.Equals(b));
+        Assert.False(a.Equals(b, StringComparison.Ordinal));
         Assert.True(a.Equals(b, StringComparison.OrdinalIgnoreCase));
     }
 }

@@ -48,13 +48,13 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
             .ForAttributeWithMetadataName(
                 fullyQualifiedMetadataName: "FixedStringBuilderAttribute",
                 predicate: static (syntaxNode, _) => syntaxNode is StructDeclarationSyntax,
-                transform: static (ctx, cancellationToken) => GetTarget(ctx, cancellationToken))
+                transform: static (ctx, _) => GetTarget(ctx))
             .Where(static item => item is not null);
 
         context.RegisterSourceOutput(candidates, static (context, target) => Generate(context, target!));
     }
 
-    private static FixedStringTypeInfo? GetTarget(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken)
+    private static FixedStringTypeInfo? GetTarget(GeneratorAttributeSyntaxContext context)
     {
         if (context.TargetNode is not StructDeclarationSyntax declaration)
             return null;
@@ -143,6 +143,7 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
             implementedInterfaces.Add($"global::Meziantou.Framework.FixedStringBuilder.IFixedString<{fullTypeName}>");
         }
 
+        AppendLine("[global::System.Runtime.InteropServices.StructLayout(global::System.Runtime.InteropServices.LayoutKind.Sequential)]");
         AppendLine("[global::System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]");
         AppendLine($"{GetAccessibility(target.Type.DeclaredAccessibility)} partial struct {target.Type.Name}{GetTypeParameters(target.Type)} : {string.Join(", ", implementedInterfaces)}");
         AppendLine("{");
@@ -152,13 +153,13 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine();
 
         AppendLine("private short _length;");
-        AppendLine("#pragma warning disable CS0169");
+        AppendLine("#pragma warning disable CS0169, CS0649");
         for (var i = 0; i < target.Length; i++)
         {
             AppendLine($"private char _c{i};");
         }
 
-        AppendLine("#pragma warning restore CS0169");
+        AppendLine("#pragma warning restore CS0169, CS0649");
         AppendLine();
 
         AppendLine($"public {simpleTypeName}(int literalLength, int formattedCount)");
@@ -277,6 +278,10 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         AppendLine($"public bool Equals({simpleTypeName} other) => _length == other._length && AsSpan().SequenceEqual(other.AsSpan());");
         AppendLine();
         AppendLine($"public bool Equals({simpleTypeName} other, StringComparison comparison) => new string(AsSpan()).Equals(new string(other.AsSpan()), comparison);");
+        AppendLine();
+        AppendLine($"public static bool operator ==({simpleTypeName} left, {simpleTypeName} right) => left.Equals(right);");
+        AppendLine();
+        AppendLine($"public static bool operator !=({simpleTypeName} left, {simpleTypeName} right) => !left.Equals(right);");
         AppendLine();
 
         AppendLine("public override bool Equals(object? obj) => obj is " + simpleTypeName + " other && Equals(other);");

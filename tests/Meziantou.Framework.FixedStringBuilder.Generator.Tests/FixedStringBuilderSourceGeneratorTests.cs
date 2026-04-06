@@ -16,7 +16,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     [Fact]
     public async Task GeneratesFixedStringFromAttribute()
     {
-        const string source = """
+        const string Source = """
             [FixedStringBuilderAttribute(10)]
             public partial struct FixedStringBuilder10
             {
@@ -43,7 +43,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
             }
             """;
 
-        var (runResult, compilation) = await GenerateAsync(source);
+        var (runResult, compilation) = await GenerateAsync(Source);
         Assert.Empty(runResult.Diagnostics);
         Assert.Single(runResult.Results);
         Assert.Equal(3, runResult.Results[0].GeneratedSources.Length);
@@ -79,7 +79,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     [Fact]
     public async Task ImplementsIFixedStringWhenInterfaceExists()
     {
-        const string source = """
+        const string Source = """
             namespace Meziantou.Framework.FixedStringBuilder
             {
                 public interface IFixedString
@@ -113,7 +113,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
             }
             """;
 
-        var (runResult, compilation) = await GenerateAsync(source);
+        var (runResult, compilation) = await GenerateAsync(Source);
         Assert.Empty(runResult.Diagnostics);
 
         var generatedCode = string.Join("\n", runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
@@ -139,14 +139,14 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     [Fact]
     public async Task AnalyzerReportsMissingValue()
     {
-        const string source = """
+        const string Source = """
             [FixedStringBuilderAttribute]
             public partial struct Sample
             {
             }
             """;
 
-        var diagnostics = await AnalyzeAsync(source);
+        var diagnostics = await AnalyzeAsync(Source);
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("MFFSG0001", diagnostic.Id);
     }
@@ -154,14 +154,14 @@ public sealed class FixedStringBuilderSourceGeneratorTests
     [Fact]
     public async Task AnalyzerReportsNonIntegerValue()
     {
-        const string source = """
+        const string Source = """
             [FixedStringBuilderAttribute("10")]
             public partial struct Sample
             {
             }
             """;
 
-        var diagnostics = await AnalyzeAsync(source);
+        var diagnostics = await AnalyzeAsync(Source);
         var diagnostic = Assert.Single(diagnostics);
         Assert.Equal("MFFSG0002", diagnostic.Id);
     }

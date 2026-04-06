@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Xunit;
 
@@ -56,6 +57,49 @@ public class AvatarGeneratorTests
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
         InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="aB"><circle cx="32" cy="32" r="32" fill="#cfdade"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">aB</text></svg>""");
+    }
+
+    [Fact]
+    public void CreateSvg_ExtractBigram_UsesUnicodeComposedCharacter()
+    {
+        var svg = AvatarGenerator.CreateSvg("Éric Doe", new AvatarOptions());
+
+        Assert.Equal("ÉD", GetRenderedBigram(svg));
+    }
+
+    [Fact]
+    public void CreateSvg_ExtractBigram_UsesUnicodeDecomposedCharacterAsSingleTextElement()
+    {
+        var svg = AvatarGenerator.CreateSvg("E\u0301ric Doe", new AvatarOptions());
+        var bigram = GetRenderedBigram(svg);
+
+        Assert.Equal("E\u0301D", bigram);
+        Assert.Equal(2, new StringInfo(bigram).LengthInTextElements);
+    }
+
+    [Fact]
+    public void CreateSvg_ExtractBigram_HandlesGraphemeCluster()
+    {
+        var svg = AvatarGenerator.CreateSvg("👩🏽‍💻 Smith", new AvatarOptions());
+        var bigram = GetRenderedBigram(svg);
+
+        Assert.Equal("👩🏽‍💻S", bigram);
+        Assert.Equal(2, new StringInfo(bigram).LengthInTextElements);
+    }
+
+    [Fact]
+    public void CreateSvg_UsesExplicitBigram_GraphemeCluster()
+    {
+        var options = new AvatarOptions
+        {
+            Bigram = "👨‍👩‍👧‍👦",
+        };
+
+        var svg = AvatarGenerator.CreateSvg("John Doe", options);
+        var bigram = GetRenderedBigram(svg);
+
+        Assert.Equal("👨‍👩‍👧‍👦", bigram);
+        Assert.Equal(1, new StringInfo(bigram).LengthInTextElements);
     }
 
     [Theory]
@@ -184,6 +228,20 @@ public class AvatarGeneratorTests
         Assert.True(endIndex > startIndex);
 
         return svg[startIndex..endIndex];
+    }
+
+    private static string GetRenderedBigram(string svg)
+    {
+        var textStart = svg.IndexOf("<text ", StringComparison.Ordinal);
+        Assert.True(textStart >= 0);
+
+        textStart = svg.IndexOf('>', textStart);
+        Assert.True(textStart >= 0);
+
+        var textEnd = svg.IndexOf("</text>", textStart, StringComparison.Ordinal);
+        Assert.True(textEnd > textStart);
+
+        return svg[(textStart + 1)..textEnd];
     }
 
     private static double GetContrastRatio(string firstColor, string secondColor)

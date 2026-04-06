@@ -116,57 +116,80 @@ public static class AvatarGenerator
 
         if (words.Length > 1)
         {
-            var first = GetFirstRune(words[0]);
-            var last = GetFirstRune(words[^1]);
+            var first = GetFirstTextElement(words[0]);
+            var last = GetFirstTextElement(words[^1]);
             return string.Concat(first, last);
         }
 
-        return TakeFirstRunes(words[0], maxRunes: 2);
+        return TakeFirstTextElements(words[0], maxTextElements: 2);
     }
 
     private static string ValidateBigram(string bigram)
     {
-        var runeCount = 0;
-        foreach (var rune in bigram.EnumerateRunes())
+        var textElementCount = 0;
+        var enumerator = StringInfo.GetTextElementEnumerator(bigram);
+        while (enumerator.MoveNext())
         {
-            if (Rune.IsWhiteSpace(rune))
+            var textElement = enumerator.GetTextElement();
+            if (ContainsWhiteSpace(textElement))
                 throw new ArgumentException("The explicit bigram must not contain whitespace.", nameof(bigram));
 
-            runeCount++;
-            if (runeCount > 2)
+            textElementCount++;
+            if (textElementCount > 2)
                 throw new ArgumentException("The explicit bigram must contain 1 or 2 characters.", nameof(bigram));
         }
 
-        if (runeCount == 0)
+        if (textElementCount == 0)
             throw new ArgumentException("The explicit bigram must contain 1 or 2 characters.", nameof(bigram));
 
         return bigram;
     }
 
-    private static string TakeFirstRunes(string text, int maxRunes)
+    private static string TakeFirstTextElements(string text, int maxTextElements)
     {
-        var sb = new StringBuilder(capacity: maxRunes * 2);
-        var index = 0;
-        foreach (var rune in text.EnumerateRunes())
-        {
-            sb.Append(rune);
-            index++;
-            if (index == maxRunes)
-                break;
-        }
-
-        if (sb.Length == 0)
+        var enumerator = StringInfo.GetTextElementEnumerator(text);
+        if (!enumerator.MoveNext())
             throw new ArgumentException("The value must contain at least one character.", nameof(text));
 
-        return sb.ToString();
+        var textElementCount = 1;
+        while (textElementCount < maxTextElements && enumerator.MoveNext())
+        {
+            textElementCount++;
+        }
+
+        if (textElementCount < maxTextElements)
+            return text;
+
+        var endIndex = text.Length;
+        if (enumerator.MoveNext())
+            endIndex = enumerator.ElementIndex;
+
+        return text[..endIndex];
     }
 
-    private static Rune GetFirstRune(string text)
+    private static string GetFirstTextElement(string text)
+    {
+        var enumerator = StringInfo.GetTextElementEnumerator(text);
+        if (!enumerator.MoveNext())
+            throw new ArgumentException("The value must contain at least one character.", nameof(text));
+
+        var startIndex = enumerator.ElementIndex;
+        var endIndex = text.Length;
+        if (enumerator.MoveNext())
+            endIndex = enumerator.ElementIndex;
+
+        return text[startIndex..endIndex];
+    }
+
+    private static bool ContainsWhiteSpace(string text)
     {
         foreach (var rune in text.EnumerateRunes())
-            return rune;
+        {
+            if (Rune.IsWhiteSpace(rune))
+                return true;
+        }
 
-        throw new ArgumentException("The value must contain at least one character.", nameof(text));
+        return false;
     }
 
     private static string Escape(string value)

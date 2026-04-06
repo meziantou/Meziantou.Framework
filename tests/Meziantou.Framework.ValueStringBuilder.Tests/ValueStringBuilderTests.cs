@@ -88,8 +88,10 @@ public class ValueStringBuilderTests
     public void AppendInterpolatedStringSupportsProvider()
     {
         using var sb = new ValueStringBuilder(initialCapacity: 2);
+        var provider = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
+        provider.NumberDecimalSeparator = ",";
 
-        sb.Append(CultureInfo.GetCultureInfo("fr-FR"), $"{12.5m:0.0}");
+        sb.Append(provider, $"{12.5m:0.0}");
 
         Assert.Equal("12,5", sb.ToString());
     }

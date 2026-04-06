@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Generate deterministic avatar SVG images from names and bigrams</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Hashing" Version="10.0.5" />
+  </ItemGroup>
+
+</Project>

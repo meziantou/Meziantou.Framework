@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Authentication.HttpBasic\Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Mvc\Meziantou.AspNetCore.Mvc.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Avatar\Meziantou.Framework.Avatar.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Bcrypt\Meziantou.Framework.Bcrypt.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj" />
@@ -56,6 +57,7 @@
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Authentication.HttpBasic" />
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Mvc" />
     <TrimmerRootAssembly Include="Meziantou.Framework" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Avatar" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Bcrypt" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ByteSize" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ChromiumTracing" />

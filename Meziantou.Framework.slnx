@@ -32,6 +32,7 @@
     <Project Path="src/Meziantou.Extensions.Logging.InMemory/Meziantou.Extensions.Logging.InMemory.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit/Meziantou.Extensions.Logging.Xunit.csproj" />
+    <Project Path="src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
     <Project Path="src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
     <Project Path="src/Meziantou.Framework.ChromiumTracing/Meziantou.Framework.ChromiumTracing.csproj" />
@@ -122,6 +123,7 @@
     <Project Path="tests/Meziantou.Extensions.Logging.InMemory.Tests/Meziantou.Extensions.Logging.InMemory.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.Tests/Meziantou.Extensions.Logging.Xunit.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/Meziantou.Extensions.Logging.Xunit.v3.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bcrypt.Tests/Meziantou.Framework.Bcrypt.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ByteSize.Tests/Meziantou.Framework.ByteSize.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ChromiumTracing.Tests/Meziantou.Framework.ChromiumTracing.Tests.csproj" />

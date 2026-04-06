@@ -3,7 +3,12 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
-public ref partial struct ValueStringBuilder
+#if PUBLIC_VALUESTRINGBUILDER
+public
+#else
+internal
+#endif
+ref partial struct ValueStringBuilder
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
     [InterpolatedStringHandler]

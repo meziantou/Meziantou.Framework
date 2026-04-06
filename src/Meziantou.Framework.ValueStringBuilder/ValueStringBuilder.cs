@@ -6,7 +6,12 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework;
 
 // https://github.com/dotnet/runtime/blob/main/src/libraries/Common/src/System/Text/ValueStringBuilder.cs
-public ref partial struct ValueStringBuilder
+#if PUBLIC_VALUESTRINGBUILDER
+public
+#else
+internal
+#endif
+ref partial struct ValueStringBuilder
 {
     private char[]? _arrayToReturnToPool;
     private Span<char> _chars;

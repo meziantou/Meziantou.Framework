@@ -1,7 +1,12 @@
 namespace Meziantou.Framework;
 
 // https://github.com/dotnet/runtime/blob/main/src/libraries/Common/src/System/Text/ValueStringBuilder.AppendSpanFormattable.cs
-public ref partial struct ValueStringBuilder
+#if PUBLIC_VALUESTRINGBUILDER
+public
+#else
+internal
+#endif
+ref partial struct ValueStringBuilder
 {
 #if NET6_0_OR_GREATER
     public void AppendSpanFormattable<T>(T value, string? format = null, IFormatProvider? provider = null) where T : ISpanFormattable

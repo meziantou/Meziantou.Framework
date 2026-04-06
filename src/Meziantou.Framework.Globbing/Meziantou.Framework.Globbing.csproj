@@ -9,10 +9,10 @@
 
   <ItemGroup>
     <Compile Include="..\Meziantou.Framework\StringExtensions.SplitLines.cs" Link="Internals\StringExtensions.SplitLines.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Meziantou.Framework.ValueStringBuilder\Meziantou.Framework.ValueStringBuilder.csproj" />
+    <Compile Include="..\Meziantou.Framework.ValueStringBuilder\ValueStringBuilder.cs" Link="Internals\ValueStringBuilder\ValueStringBuilder.cs" />
+    <Compile Include="..\Meziantou.Framework.ValueStringBuilder\ValueStringBuilder.AppendInterpolatedStringHandler.cs" Link="Internals\ValueStringBuilder\ValueStringBuilder.AppendInterpolatedStringHandler.cs" />
+    <Compile Include="..\Meziantou.Framework.ValueStringBuilder\ValueStringBuilder.AppendSpanFormattable.cs" Link="Internals\ValueStringBuilder\ValueStringBuilder.AppendSpanFormattable.cs" />
+    <Compile Include="..\Meziantou.Framework.ValueStringBuilder\ValueStringBuilder.Rune.cs" Link="Internals\ValueStringBuilder\ValueStringBuilder.Rune.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">

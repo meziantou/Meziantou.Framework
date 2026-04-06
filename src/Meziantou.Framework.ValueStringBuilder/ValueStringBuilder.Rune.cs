@@ -4,7 +4,12 @@ using System.Text;
 namespace Meziantou.Framework;
 
 // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.Uri/src/System/ValueStringBuilderExtensions.cs
-public ref partial struct ValueStringBuilder
+#if PUBLIC_VALUESTRINGBUILDER
+public
+#else
+internal
+#endif
+ref partial struct ValueStringBuilder
 {
 #if NET6_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

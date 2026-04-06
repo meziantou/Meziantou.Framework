@@ -3,32 +3,32 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Meziantou.Framework.FixedString.Generator;
+namespace Meziantou.Framework.FixedStringBuilder.Generator;
 
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
-public sealed class FixedStringAttributeAnalyzer : DiagnosticAnalyzer
+public sealed class FixedStringBuilderAttributeAnalyzer : DiagnosticAnalyzer
 {
     internal static readonly DiagnosticDescriptor MissingOrInvalidArgumentCount = new(
         id: "MFFSG0001",
-        title: "FixedStringAttribute requires one argument",
-        messageFormat: "FixedStringAttribute must have a single integer argument.",
-        category: "FixedStringGenerator",
+        title: "FixedStringBuilderAttribute requires one argument",
+        messageFormat: "FixedStringBuilderAttribute must have a single integer argument.",
+        category: "FixedStringBuilderGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     internal static readonly DiagnosticDescriptor ArgumentMustBeInt = new(
         id: "MFFSG0002",
-        title: "FixedStringAttribute argument type is invalid",
-        messageFormat: "FixedStringAttribute argument must be an integer constant.",
-        category: "FixedStringGenerator",
+        title: "FixedStringBuilderAttribute argument type is invalid",
+        messageFormat: "FixedStringBuilderAttribute argument must be an integer constant.",
+        category: "FixedStringBuilderGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     internal static readonly DiagnosticDescriptor LengthMustBePositive = new(
         id: "MFFSG0003",
-        title: "FixedStringAttribute length must be positive",
-        messageFormat: "FixedStringAttribute length must be greater than 0.",
-        category: "FixedStringGenerator",
+        title: "FixedStringBuilderAttribute length must be positive",
+        messageFormat: "FixedStringBuilderAttribute length must be greater than 0.",
+        category: "FixedStringBuilderGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -61,7 +61,7 @@ public sealed class FixedStringAttributeAnalyzer : DiagnosticAnalyzer
 
                     var symbolInfo = semanticModel.GetSymbolInfo(attributeSyntax, context.CancellationToken).Symbol as IMethodSymbol;
                     if (symbolInfo is not null &&
-                        (symbolInfo.ContainingType.Name is not "FixedStringAttribute" || !symbolInfo.ContainingType.ContainingNamespace.IsGlobalNamespace))
+                        (symbolInfo.ContainingType.Name is not "FixedStringBuilderAttribute" || !symbolInfo.ContainingType.ContainingNamespace.IsGlobalNamespace))
                     {
                         continue;
                     }
@@ -100,6 +100,6 @@ public sealed class FixedStringAttributeAnalyzer : DiagnosticAnalyzer
             _ => null,
         };
 
-        return name is "FixedString" or "FixedStringAttribute";
+        return name is "FixedStringBuilder" or "FixedStringBuilderAttribute";
     }
 }

@@ -1,30 +1,30 @@
 using System;
-using Meziantou.Framework.FixedString;
+using Meziantou.Framework.FixedStringBuilder;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
-public sealed class FixedStringTests
+public sealed class FixedStringBuilderTests
 {
     [Fact]
     public void MaxLengthValues()
     {
-        Assert.Equal(8, FixedString8.MaxLength);
-        Assert.Equal(16, FixedString16.MaxLength);
-        Assert.Equal(32, FixedString32.MaxLength);
-        Assert.Equal(64, FixedString64.MaxLength);
+        Assert.Equal(8, FixedStringBuilder8.MaxLength);
+        Assert.Equal(16, FixedStringBuilder16.MaxLength);
+        Assert.Equal(32, FixedStringBuilder32.MaxLength);
+        Assert.Equal(64, FixedStringBuilder64.MaxLength);
     }
 
     [Fact]
     public void StringCtorThrowsWhenValueIsTooLong()
     {
-        Assert.Throws<ArgumentException>(() => new FixedString8("123456789"));
+        Assert.Throws<ArgumentException>(() => new FixedStringBuilder8("123456789"));
     }
 
     [Fact]
     public void InterpolatedStringBuildsExpectedText()
     {
-        FixedString16 value = $"Hello {"World"}";
+        FixedStringBuilder16 value = $"Hello {"World"}";
 
         Assert.Equal("Hello World", value.ToString());
     }
@@ -32,7 +32,7 @@ public sealed class FixedStringTests
     [Fact]
     public void InterpolatedAlignmentPadsLeft()
     {
-        FixedString8 value = $"{1,4}";
+        FixedStringBuilder8 value = $"{1,4}";
 
         Assert.Equal("   1", value.ToString());
     }
@@ -40,7 +40,7 @@ public sealed class FixedStringTests
     [Fact]
     public void TryFormatWritesCharacters()
     {
-        FixedString16 value = "abc";
+        FixedStringBuilder16 value = "abc";
         Span<char> buffer = stackalloc char[16];
 
         Assert.True(value.TryFormat(buffer, out var charsWritten, default, null));
@@ -51,11 +51,11 @@ public sealed class FixedStringTests
     [Fact]
     public void GetUnsafeFullSpanReturnsFixedCapacity()
     {
-        FixedString8 value = "abc";
+        FixedStringBuilder8 value = "abc";
         var fixedString = (IFixedString)value;
         var span = fixedString.GetUnsafeFullSpan();
 
-        Assert.Equal(FixedString8.MaxLength, span.Length);
+        Assert.Equal(FixedStringBuilder8.MaxLength, span.Length);
         Assert.Equal('a', span[0]);
         Assert.Equal('b', span[1]);
         Assert.Equal('c', span[2]);
@@ -64,16 +64,16 @@ public sealed class FixedStringTests
     [Fact]
     public void StringCtorStoresValueWhenLengthIsExact()
     {
-        var value = new FixedString8("12345678");
+        var value = new FixedStringBuilder8("12345678");
 
-        Assert.Equal(FixedString8.MaxLength, value.Length);
+        Assert.Equal(FixedStringBuilder8.MaxLength, value.Length);
         Assert.Equal("12345678", value.ToString());
     }
 
     [Fact]
     public void AppendLiteralThrowsWhenValueIsTooLong()
     {
-        var value = new FixedString8("12345678");
+        var value = new FixedStringBuilder8("12345678");
 
         Assert.Throws<ArgumentException>(() => value.AppendLiteral("9"));
     }
@@ -81,7 +81,7 @@ public sealed class FixedStringTests
     [Fact]
     public void AppendFormattedThrowsWhenValueIsTooLong()
     {
-        var value = new FixedString8(0, 1);
+        var value = new FixedStringBuilder8(0, 1);
 
         Assert.Throws<ArgumentException>(() => value.AppendFormatted(123456789));
     }
@@ -91,7 +91,7 @@ public sealed class FixedStringTests
     {
         Assert.Throws<ArgumentException>(() =>
         {
-            FixedString8 _ = $"{1,9}";
+            FixedStringBuilder8 _ = $"{1,9}";
         });
     }
 
@@ -100,7 +100,17 @@ public sealed class FixedStringTests
     {
         Assert.Throws<ArgumentException>(() =>
         {
-            FixedString8 _ = $"123456789";
+            FixedStringBuilder8 _ = $"123456789";
         });
+    }
+
+    [Fact]
+    public void EqualsSupportsStringComparison()
+    {
+        FixedStringBuilder8 a = "AbC";
+        FixedStringBuilder8 b = "aBc";
+
+        Assert.False(a.Equals(b));
+        Assert.True(a.Equals(b, StringComparison.OrdinalIgnoreCase));
     }
 }

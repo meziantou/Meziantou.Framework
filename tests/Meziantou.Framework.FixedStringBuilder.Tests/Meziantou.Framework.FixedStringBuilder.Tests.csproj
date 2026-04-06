@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.FixedString\Meziantou.Framework.FixedString.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FixedStringBuilder\Meziantou.Framework.FixedStringBuilder.csproj" />
   </ItemGroup>
 
 </Project>

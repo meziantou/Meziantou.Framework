@@ -1,15 +1,15 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using Meziantou.Framework.FixedString.Generator;
+using Meziantou.Framework.FixedStringBuilder.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using TestUtilities;
 using Xunit;
 
-namespace Meziantou.Framework.FixedString.Generator.Tests;
+namespace Meziantou.Framework.FixedStringBuilder.Generator.Tests;
 
-public sealed class FixedStringSourceGeneratorTests
+public sealed class FixedStringBuilderSourceGeneratorTests
 {
     private static readonly CSharpParseOptions ParseOptions = new(LanguageVersion.Preview);
 
@@ -17,8 +17,8 @@ public sealed class FixedStringSourceGeneratorTests
     public async Task GeneratesFixedStringFromAttribute()
     {
         const string source = """
-            [FixedStringAttribute(10)]
-            public partial struct FixedString10
+            [FixedStringBuilderAttribute(10)]
+            public partial struct FixedStringBuilder10
             {
             }
 
@@ -26,19 +26,19 @@ public sealed class FixedStringSourceGeneratorTests
             {
                 public static string GetValue()
                 {
-                    FixedString10 value = "0123456789";
+                    FixedStringBuilder10 value = "0123456789";
                     return value.ToString();
                 }
 
                 public static int GetLength()
                 {
-                    FixedString10 value = "0123456789";
+                    FixedStringBuilder10 value = "0123456789";
                     return value.Length;
                 }
 
                 public static void CreateTooLong()
                 {
-                    FixedString10 _ = "0123456789ABC";
+                    FixedStringBuilder10 _ = "0123456789ABC";
                 }
             }
             """;
@@ -49,9 +49,12 @@ public sealed class FixedStringSourceGeneratorTests
         Assert.Equal(3, runResult.Results[0].GeneratedSources.Length);
 
         var allGeneratedSources = string.Join("\n", runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
-        Assert.Contains("internal partial class FixedStringAttribute", allGeneratedSources, StringComparison.Ordinal);
+        Assert.Contains("internal partial class FixedStringBuilderAttribute", allGeneratedSources, StringComparison.Ordinal);
         Assert.Contains("internal sealed partial class EmbeddedAttribute", allGeneratedSources, StringComparison.Ordinal);
-        Assert.Contains("public static int MaxLength", allGeneratedSources, StringComparison.Ordinal);
+        Assert.Contains("public static int MaxLength => 10;", allGeneratedSources, StringComparison.Ordinal);
+        Assert.Contains("private char _c0;", allGeneratedSources, StringComparison.Ordinal);
+        Assert.Contains("public readonly ReadOnlySpan<char> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in _c0), _length);", allGeneratedSources, StringComparison.Ordinal);
+        Assert.Contains("public bool Equals(FixedStringBuilder10 other, StringComparison comparison)", allGeneratedSources, StringComparison.Ordinal);
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);
@@ -77,7 +80,7 @@ public sealed class FixedStringSourceGeneratorTests
     public async Task ImplementsIFixedStringWhenInterfaceExists()
     {
         const string source = """
-            namespace Meziantou.Framework.FixedString
+            namespace Meziantou.Framework.FixedStringBuilder
             {
                 public interface IFixedString
                 {
@@ -93,18 +96,18 @@ public sealed class FixedStringSourceGeneratorTests
                 }
             }
 
-            [FixedStringAttribute(4)]
-            public partial struct FixedString4
+            [FixedStringBuilderAttribute(4)]
+            public partial struct FixedStringBuilder4
             {
             }
 
             public static class Harness
             {
-                public static bool ImplementsGenericInterface() => default(FixedString4) is Meziantou.Framework.FixedString.IFixedString<FixedString4>;
+                public static bool ImplementsGenericInterface() => default(FixedStringBuilder4) is Meziantou.Framework.FixedStringBuilder.IFixedString<FixedStringBuilder4>;
 
                 public static int GetUnsafeSpanLength()
                 {
-                    Meziantou.Framework.FixedString.IFixedString value = default(FixedString4);
+                    Meziantou.Framework.FixedStringBuilder.IFixedString value = default(FixedStringBuilder4);
                     return value.GetUnsafeFullSpan().Length;
                 }
             }
@@ -114,8 +117,8 @@ public sealed class FixedStringSourceGeneratorTests
         Assert.Empty(runResult.Diagnostics);
 
         var generatedCode = string.Join("\n", runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
-        Assert.Contains("global::Meziantou.Framework.FixedString.IFixedString<global::FixedString4>", generatedCode, StringComparison.Ordinal);
-        Assert.Contains("global::Meziantou.Framework.FixedString.IFixedString.GetUnsafeFullSpan() => AsUnsafeFullSpan();", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString<global::FixedStringBuilder4>", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => AsUnsafeFullSpan();", generatedCode, StringComparison.Ordinal);
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);
@@ -137,7 +140,7 @@ public sealed class FixedStringSourceGeneratorTests
     public async Task AnalyzerReportsMissingValue()
     {
         const string source = """
-            [FixedStringAttribute]
+            [FixedStringBuilderAttribute]
             public partial struct Sample
             {
             }
@@ -152,7 +155,7 @@ public sealed class FixedStringSourceGeneratorTests
     public async Task AnalyzerReportsNonIntegerValue()
     {
         const string source = """
-            [FixedStringAttribute("10")]
+            [FixedStringBuilderAttribute("10")]
             public partial struct Sample
             {
             }
@@ -169,7 +172,7 @@ public sealed class FixedStringSourceGeneratorTests
     public async Task AnalyzerReportsNonPositiveValue(string length)
     {
         var source = $$"""
-            [FixedStringAttribute({{length}})]
+            [FixedStringBuilderAttribute({{length}})]
             public partial struct Sample
             {
             }
@@ -190,7 +193,7 @@ public sealed class FixedStringSourceGeneratorTests
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
 
-        ISourceGenerator generator = new FixedStringSourceGenerator().AsSourceGenerator();
+        ISourceGenerator generator = new FixedStringBuilderSourceGenerator().AsSourceGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create([generator], parseOptions: ParseOptions);
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
@@ -201,7 +204,7 @@ public sealed class FixedStringSourceGeneratorTests
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source)
     {
         var (_, compilation) = await GenerateAsync(source);
-        var analyzer = new FixedStringAttributeAnalyzer();
+        var analyzer = new FixedStringBuilderAttributeAnalyzer();
         var diagnostics = await compilation
             .WithAnalyzers([analyzer])
             .GetAnalyzerDiagnosticsAsync();

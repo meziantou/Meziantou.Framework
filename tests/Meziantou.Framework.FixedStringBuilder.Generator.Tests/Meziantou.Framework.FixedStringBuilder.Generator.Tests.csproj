@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.FixedString.Generator\Meziantou.Framework.FixedString.Generator.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FixedStringBuilder.Generator\Meziantou.Framework.FixedStringBuilder.Generator.csproj" />
     <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="5.3.0" />
   </ItemGroup>

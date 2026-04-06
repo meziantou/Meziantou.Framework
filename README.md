@@ -15,6 +15,7 @@
 | Meziantou.Extensions.Logging.Xunit | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Extensions.Logging.Xunit.svg)](https://www.nuget.org/packages/Meziantou.Extensions.Logging.Xunit/) | [readme](src/Meziantou.Extensions.Logging.Xunit/readme.md) |
 | Meziantou.Extensions.Logging.Xunit.v3 | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Extensions.Logging.Xunit.v3.svg)](https://www.nuget.org/packages/Meziantou.Extensions.Logging.Xunit.v3/) | [readme](src/Meziantou.Extensions.Logging.Xunit.v3/readme.md) |
 | Meziantou.Framework | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.svg)](https://www.nuget.org/packages/Meziantou.Framework/) | |
+| Meziantou.Framework.Avatar | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Avatar.svg)](https://www.nuget.org/packages/Meziantou.Framework.Avatar/) | |
 | Meziantou.Framework.Bcrypt | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Bcrypt.svg)](https://www.nuget.org/packages/Meziantou.Framework.Bcrypt/) | [readme](src/Meziantou.Framework.Bcrypt/readme.md) |
 | Meziantou.Framework.ByteSize | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ByteSize.svg)](https://www.nuget.org/packages/Meziantou.Framework.ByteSize/) | [readme](src/Meziantou.Framework.ByteSize/readme.md) |
 | Meziantou.Framework.ChromiumTracing | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ChromiumTracing.svg)](https://www.nuget.org/packages/Meziantou.Framework.ChromiumTracing/) | [readme](src/Meziantou.Framework.ChromiumTracing/readme.md) |

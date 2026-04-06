@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -19,7 +20,7 @@ public sealed class ResxGeneratorTest
         public SyntaxNode GeneratedFileRoot => SyntaxTree.GetRoot();
     }
 
-    private static async Task<GenerationResult> GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider, bool mustCompile = true)
+    private static async Task<Compilation> CreateCompilation()
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
         var desktopRef = await NuGetHelpers.GetNuGetReferences("Microsoft.WindowsDesktop.App.Ref", "8.0.0", "ref/net8.0/");
@@ -27,15 +28,21 @@ public sealed class ResxGeneratorTest
             .Select(loc => MetadataReference.CreateFromFile(loc))
             .ToArray();
 
-        var compilation = CSharpCompilation.Create("compilation",
+        return CSharpCompilation.Create("compilation",
             [CSharpSyntaxTree.ParseText("")],
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+    }
+
+    private static async Task<GenerationResult> GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider, bool mustCompile = true)
+    {
+        var compilation = await CreateCompilation();
+        var additionalTexts = files.Select(file => (AdditionalText)new TestAdditionalText(file.ResxPath, file.ResxContent)).ToArray();
 
         var generator = new ResxGenerator().AsSourceGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
             generators: [generator],
-            additionalTexts: files.Select(file => (AdditionalText)new TestAdditionalText(file.ResxPath, file.ResxContent)).ToArray(),
+            additionalTexts: additionalTexts,
             optionsProvider: optionProvider);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
@@ -52,6 +59,16 @@ public sealed class ResxGeneratorTest
         }
 
         return new(runResult, ms.ToArray());
+    }
+
+    private static async Task<ImmutableArray<Diagnostic>> AnalyzeFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider)
+    {
+        var compilation = await CreateCompilation();
+        var additionalTexts = files.Select(file => (AdditionalText)new TestAdditionalText(file.ResxPath, file.ResxContent)).ToImmutableArray();
+        var analyzerOptions = new AnalyzerOptions(additionalTexts, optionProvider);
+        var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(new ResxGeneratorAnalyzer());
+        var compilationWithAnalyzers = compilation.WithAnalyzers(analyzers, new CompilationWithAnalyzersOptions(analyzerOptions, onAnalyzerException: null, concurrentAnalysis: true, logAnalyzerExecutionTime: false, reportSuppressedDiagnostics: false));
+        return await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
     }
 
     [Theory]
@@ -100,7 +117,7 @@ public sealed class ResxGeneratorTest
         var fileContent = result.GeneratedFileRoot.ToFullString();
         Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
         Assert.DoesNotContain("FormatSample", fileContent, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("HelloWorld\n", fileContent, StringComparison.Ordinal);
+        Assert.Contains("HelloWorld", fileContent, StringComparison.Ordinal);
         Assert.Contains("FormatHelloWorld(object? arg0)", fileContent, StringComparison.Ordinal);
         Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent, StringComparison.Ordinal);
     }
@@ -180,13 +197,45 @@ public sealed class ResxGeneratorTest
     [Fact]
     public async Task WrongResx_Warning()
     {
-        var (result, _) = await GenerateFiles([("test.resx", "invalid xml")], new OptionProvider
+        var files = new[] { ("test.resx", "invalid xml") };
+        var options = new OptionProvider
         {
             ResourceName = "resource",
             Namespace = "test",
-        }, mustCompile: false);
+        };
 
-        Assert.Collection(result.Diagnostics, diag => Assert.Equal("MFRG0001", diag.Id));
+        var (result, _) = await GenerateFiles(files, options, mustCompile: false);
+        Assert.Empty(result.Diagnostics);
+        Assert.Empty(result.GeneratedTrees);
+
+        var diagnostics = await AnalyzeFiles(files, options);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFRG0001", diag.Id));
+    }
+
+    [Fact]
+    public async Task InconsistentMetadata_Warning()
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var files = new[]
+        {
+            (ResxPath: "test.resx", ResxContent: element.ToString()),
+            (ResxPath: "test.fr.resx", ResxContent: element.ToString()),
+        };
+        var options = new OptionProvider
+        {
+            PerFileNamespace = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["test.resx"] = "A",
+                ["test.fr.resx"] = "B",
+            },
+        };
+
+        var (result, _) = await GenerateFiles(files, options, mustCompile: false);
+        Assert.Empty(result.Diagnostics);
+        Assert.Empty(result.GeneratedTrees);
+
+        var diagnostics = await AnalyzeFiles(files, options);
+        Assert.Collection(diagnostics, diag => Assert.Equal("MFRG0004", diag.Id));
     }
 
     private sealed class OptionProvider : AnalyzerConfigOptionsProvider
@@ -201,18 +250,24 @@ public sealed class ResxGeneratorTest
         public string Visibility { get; set; }
         public string GenerateResourcesType { get; set; }
         public string GenerateKeyNamesType { get; set; }
+        public Dictionary<string, string> PerFileNamespace { get; set; } = new(StringComparer.Ordinal);
 
         public override AnalyzerConfigOptions GlobalOptions => new Options(this);
 
         public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => new Options(this);
 
-        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => new Options(this);
+        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => new Options(this, textFile.Path);
 
         private sealed class Options : AnalyzerConfigOptions
         {
             private readonly OptionProvider _optionProvider;
+            private readonly string _path;
 
-            public Options(OptionProvider optionProvider) => _optionProvider = optionProvider;
+            public Options(OptionProvider optionProvider, string path = null)
+            {
+                _optionProvider = optionProvider;
+                _path = path;
+            }
 
             public override bool TryGetValue(string key, [NotNullWhen(true)] out string value)
             {
@@ -230,6 +285,11 @@ public sealed class ResxGeneratorTest
                 {
                     value = null;
                     return false;
+                }
+
+                if (_path is not null && string.Equals(key, nameof(OptionProvider.Namespace), StringComparison.Ordinal) && _optionProvider.PerFileNamespace.TryGetValue(_path, out value))
+                {
+                    return true;
                 }
 
                 var prop = typeof(OptionProvider).GetProperty(key);

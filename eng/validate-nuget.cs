@@ -52,6 +52,12 @@ foreach (var generator in generators)
     }
 
     var annotationPath = rootPath / "src" / $"{generator}.Annotations";
+    if (!Directory.Exists(annotationPath))
+    {
+        Console.WriteLine($"Skipping lib/ validation for {generator} because annotation project is absent.");
+        continue;
+    }
+
     var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
 
     using (var zipFile = ZipFile.OpenRead(packagePath))

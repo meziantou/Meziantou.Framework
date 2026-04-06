@@ -69,7 +69,7 @@ public static class AvatarGenerator
             sb.Append(halfSizeString);
             sb.Append("\" fill=\"");
             sb.Append(escapedBackgroundColor);
-            sb.Append("\" />");
+            sb.Append("\"/>");
         }
         else if (shape == AvatarShape.Square)
         {
@@ -79,14 +79,14 @@ public static class AvatarGenerator
             sb.Append(sizeString);
             sb.Append("\" fill=\"");
             sb.Append(escapedBackgroundColor);
-            sb.Append("\" />");
+            sb.Append("\"/>");
         }
         else
         {
             throw new ArgumentOutOfRangeException(nameof(shape), shape, "Unsupported avatar shape.");
         }
 
-        sb.Append("<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" alignment-baseline=\"middle\" dy=\"0.05em\" fill=\"");
+        sb.Append("<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" alignment-baseline=\"middle\" dy=\".05em\" fill=\"");
         sb.Append(escapedForegroundColor);
         sb.Append("\" font-family=\"monospace\" font-weight=\"700\" font-size=\"");
         sb.Append(fontSizeString);

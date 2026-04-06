@@ -10,7 +10,7 @@ public class AvatarGeneratorTests
     {
         var svg = AvatarGenerator.CreateSvg("John Doe", new AvatarOptions());
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public class AvatarGeneratorTests
     {
         var svg = AvatarGenerator.CreateSvg("John Michael Doe", new AvatarOptions());
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#1abc9c" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#1abc9c"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public class AvatarGeneratorTests
     {
         var svg = AvatarGenerator.CreateSvg("JD", new AvatarOptions());
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#34495e" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#ffffff" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#34495e"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#ffffff" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public class AvatarGeneratorTests
     {
         var svg = AvatarGenerator.CreateSvg("John", new AvatarOptions());
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Jo"><circle cx="32" cy="32" r="32" fill="#27ae60" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">Jo</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Jo"><circle cx="32" cy="32" r="32" fill="#27ae60"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">Jo</text></svg>""");
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public class AvatarGeneratorTests
     {
         var svg = AvatarGenerator.CreateSvg("J", new AvatarOptions());
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="J"><circle cx="32" cy="32" r="32" fill="#2ecc71" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">J</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="J"><circle cx="32" cy="32" r="32" fill="#2ecc71"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">J</text></svg>""");
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class AvatarGeneratorTests
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="aB"><circle cx="32" cy="32" r="32" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">aB</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="aB"><circle cx="32" cy="32" r="32" fill="#cfdade"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">aB</text></svg>""");
     }
 
     [Theory]
@@ -118,7 +118,7 @@ public class AvatarGeneratorTests
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class AvatarGeneratorTests
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><rect width="64" height="64" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><rect width="64" height="64" fill="#cfdade"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public class AvatarGeneratorTests
     {
         var svg = AvatarGenerator.CreateSvg("John Doe", new AvatarOptions());
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public class AvatarGeneratorTests
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="JD"><circle cx="64" cy="64" r="64" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="64">JD</text></svg>""");
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="JD"><circle cx="64" cy="64" r="64" fill="#cfdade"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy=".05em" fill="#153037" font-family="monospace" font-weight="700" font-size="64">JD</text></svg>""");
     }
 
     [Fact]

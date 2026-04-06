@@ -1,20 +1,21 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
-    <Version>2.0.5</Version>
-    <Description>Generate a faster ToString method for enumerations</Description>
+    <Version>1.0.0</Version>
+    <Description>Roslyn source generator and analyzer for custom fixed-length string structs</Description>
 
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <NoWarn>$(NoWarn);RS1041</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="Meziantou.Framework.FastEnumToStringGenerator.targets" Pack="true" PackagePath="build/" />
     <None Include="$(OutputPath)\..\$(Configuration.ToLowerInvariant())_netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.2.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

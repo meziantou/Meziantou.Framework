@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
     <Version>1.0.17</Version>
 
     <developmentDependency>true</developmentDependency>

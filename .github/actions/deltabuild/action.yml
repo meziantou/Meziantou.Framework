@@ -84,7 +84,6 @@ runs:
             $arguments += @("--project-bundle", $bundle)
           }
         }
-
         & Meziantou.DeltaBuild @arguments
 
     - name: Compute output project

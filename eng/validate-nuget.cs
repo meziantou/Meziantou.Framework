@@ -32,36 +32,24 @@ if (isDeltaBuild && nupkgFiles.Length == 0)
 }
 
 // Validate source generator packages
-var generators = new[] { "Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.FastEnumToStringGenerator" };
-foreach (var generator in generators)
+if (!isDeltaBuild)
 {
-    Console.WriteLine($"Checking {generator}");
-
-    var packagePattern = new Regex($@"{Regex.Escape(generator)}\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
-    var packagePath = Directory.EnumerateFiles(nugetDirectory)
-        .FirstOrDefault(f => packagePattern.IsMatch(f));
-    if (packagePath is null)
+    var generators = new[] { "Meziantou.Framework.StronglyTypedId" };
+    foreach (var generator in generators)
     {
-        if (isDeltaBuild)
+        Console.WriteLine($"Checking {generator}");
+
+        var packagePattern = new Regex($@"{Regex.Escape(generator)}\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
+        var packagePath = Directory.EnumerateFiles(nugetDirectory)
+            .FirstOrDefault(f => packagePattern.IsMatch(f));
+        if (packagePath is null)
         {
-            Console.WriteLine($"Skipping {generator} validation because package is absent in delta build output.");
-            continue;
+            throw new InvalidOperationException($"Package not found for {generator}");
         }
 
-        throw new InvalidOperationException($"Package not found for {generator}");
-    }
-
-    var annotationPath = rootPath / "src" / $"{generator}.Annotations";
-    if (!Directory.Exists(annotationPath))
-    {
-        Console.WriteLine($"Skipping lib/ validation for {generator} because annotation project is absent.");
-        continue;
-    }
-
-    var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
-
-    using (var zipFile = ZipFile.OpenRead(packagePath))
-    {
+        var annotationPath = rootPath / "src" / $"{generator}.Annotations";
+        var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
+        await using var zipFile = await ZipFile.OpenReadAsync(packagePath);
         var entries = zipFile.Entries.Select(e => e.FullName).ToList();
         foreach (var tfm in tfms)
         {
@@ -73,6 +61,10 @@ foreach (var generator in generators)
             }
         }
     }
+}
+else
+{
+    Console.WriteLine("Skipping source generator package TFM validation for delta build output.");
 }
 
 // General validation

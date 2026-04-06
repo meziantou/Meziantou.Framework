@@ -57,7 +57,7 @@ jobs:
           input-project: eng/build.proj
           output-project: eng/delta.proj
           default-project: eng/build.proj
-          run-generate: 'false'
+          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/codeql.yml
             eng/**/*.proj

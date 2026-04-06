@@ -26,6 +26,10 @@ inputs:
     description: Fallback project path when the delta project is not generated
     required: false
     default: ""
+  fallback-on-empty:
+    description: Whether to fallback to the default project when no delta project is generated
+    required: false
+    default: "true"
 
 outputs:
   project:
@@ -81,6 +85,7 @@ runs:
         OUTPUT_PROJECT: ${{ inputs.output-project }}
         DEFAULT_PROJECT: ${{ inputs.default-project }}
         RUN_GENERATE: ${{ inputs.run-generate }}
+        FALLBACK_ON_EMPTY: ${{ inputs.fallback-on-empty }}
       run: |
         $fallbackProject = $env:DEFAULT_PROJECT
         if (-not $fallbackProject) {
@@ -88,16 +93,21 @@ runs:
         }
 
         $deltaProjectExists = Test-Path -LiteralPath $env:OUTPUT_PROJECT
-        $hasProject = $deltaProjectExists -or $env:RUN_GENERATE -ne "true"
+        $shouldFallback = $env:FALLBACK_ON_EMPTY -eq "true" -or $env:RUN_GENERATE -ne "true"
+        $hasProject = $deltaProjectExists -or $shouldFallback
 
         if ($deltaProjectExists) {
           Write-Host "Using delta build file:"
           Get-Content $env:OUTPUT_PROJECT
           "project=$($env:OUTPUT_PROJECT)" >> $env:GITHUB_OUTPUT
           "is-delta=true" >> $env:GITHUB_OUTPUT
-        } else {
+        } elseif ($shouldFallback) {
           Write-Host "Using full build file: $fallbackProject"
           "project=$fallbackProject" >> $env:GITHUB_OUTPUT
+          "is-delta=false" >> $env:GITHUB_OUTPUT
+        } else {
+          Write-Host "No projects were affected. Skipping fallback project."
+          "project=$($env:OUTPUT_PROJECT)" >> $env:GITHUB_OUTPUT
           "is-delta=false" >> $env:GITHUB_OUTPUT
         }
 

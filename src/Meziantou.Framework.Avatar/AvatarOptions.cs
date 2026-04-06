@@ -41,16 +41,16 @@ public class AvatarOptions
         Size = DefaultSize;
         Palette =
         [
-            new AvatarColorPair("#1abc9c", "#ffffff"),
-            new AvatarColorPair("#3498db", "#ffffff"),
+            new AvatarColorPair("#1abc9c", "#080d14"),
+            new AvatarColorPair("#3498db", "#080d14"),
             new AvatarColorPair("#9b59b6", "#ffffff"),
-            new AvatarColorPair("#e67e22", "#ffffff"),
-            new AvatarColorPair("#e74c3c", "#ffffff"),
-            new AvatarColorPair("#2ecc71", "#ffffff"),
+            new AvatarColorPair("#e67e22", "#080d14"),
+            new AvatarColorPair("#e74c3c", "#080d14"),
+            new AvatarColorPair("#2ecc71", "#080d14"),
             new AvatarColorPair("#34495e", "#ffffff"),
-            new AvatarColorPair("#16a085", "#ffffff"),
-            new AvatarColorPair("#27ae60", "#ffffff"),
-            new AvatarColorPair("#2980b9", "#ffffff"),
+            new AvatarColorPair("#cfdade", "#153037"),
+            new AvatarColorPair("#27ae60", "#080d14"),
+            new AvatarColorPair("#2980b9", "#080d14"),
             new AvatarColorPair("#8e44ad", "#ffffff"),
         ];
     }

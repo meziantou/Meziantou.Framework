@@ -86,9 +86,9 @@ public static class AvatarGenerator
             throw new ArgumentOutOfRangeException(nameof(shape), shape, "Unsupported avatar shape.");
         }
 
-        sb.Append("<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"");
+        sb.Append("<text x=\"50%\" y=\"50%\" text-anchor=\"middle\" dominant-baseline=\"middle\" alignment-baseline=\"middle\" dy=\"0.05em\" fill=\"");
         sb.Append(escapedForegroundColor);
-        sb.Append("\" font-family=\"monospace\" font-size=\"");
+        sb.Append("\" font-family=\"monospace\" font-weight=\"700\" font-size=\"");
         sb.Append(fontSizeString);
         sb.Append("\">");
         sb.Append(escapedBigram);

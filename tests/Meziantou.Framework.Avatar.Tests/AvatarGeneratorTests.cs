@@ -1,20 +1,48 @@
+using Meziantou.Framework.InlineSnapshotTesting;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
 public class AvatarGeneratorTests
 {
-    [Theory]
-    [InlineData("John Doe", "JD")]
-    [InlineData("John Michael Doe", "JD")]
-    [InlineData("JD", "JD")]
-    [InlineData("John", "Jo")]
-    [InlineData("J", "J")]
-    public void CreateSvg_ExtractBigramFromName(string name, string expectedBigram)
+    [Fact]
+    public void CreateSvg_ExtractBigramFromMultiWordName()
     {
-        var svg = AvatarGenerator.CreateSvg(name, new AvatarOptions());
+        var svg = AvatarGenerator.CreateSvg("John Doe", new AvatarOptions());
 
-        Assert.Contains($">{expectedBigram}</text>", svg, StringComparison.Ordinal);
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+    }
+
+    [Fact]
+    public void CreateSvg_ExtractBigramFromThreeWordName()
+    {
+        var svg = AvatarGenerator.CreateSvg("John Michael Doe", new AvatarOptions());
+
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#1abc9c" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+    }
+
+    [Fact]
+    public void CreateSvg_ExtractBigramFromTwoLetterWord()
+    {
+        var svg = AvatarGenerator.CreateSvg("JD", new AvatarOptions());
+
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#34495e" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#ffffff" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
+    }
+
+    [Fact]
+    public void CreateSvg_ExtractBigramFromSingleWord()
+    {
+        var svg = AvatarGenerator.CreateSvg("John", new AvatarOptions());
+
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Jo"><circle cx="32" cy="32" r="32" fill="#27ae60" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">Jo</text></svg>""");
+    }
+
+    [Fact]
+    public void CreateSvg_ExtractBigramFromSingleCharacter()
+    {
+        var svg = AvatarGenerator.CreateSvg("J", new AvatarOptions());
+
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="J"><circle cx="32" cy="32" r="32" fill="#2ecc71" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#080d14" font-family="monospace" font-weight="700" font-size="32">J</text></svg>""");
     }
 
     [Fact]
@@ -27,7 +55,7 @@ public class AvatarGeneratorTests
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        Assert.Contains(">aB</text>", svg, StringComparison.Ordinal);
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="aB"><circle cx="32" cy="32" r="32" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">aB</text></svg>""");
     }
 
     [Theory]
@@ -86,29 +114,22 @@ public class AvatarGeneratorTests
     [Fact]
     public void CreateSvg_RendersRoundShape()
     {
-        var options = new AvatarOptions
-        {
-            Shape = AvatarShape.Round,
-        };
+        var options = new AvatarOptions();
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        Assert.Contains("<circle", svg, StringComparison.Ordinal);
-        Assert.DoesNotContain("<rect", svg, StringComparison.Ordinal);
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
     public void CreateSvg_RendersSquareShape()
     {
-        var options = new AvatarOptions
-        {
-            Shape = AvatarShape.Square,
-        };
+        var options = new AvatarOptions();
+        options.Shape = AvatarShape.Square;
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        Assert.Contains("<rect", svg, StringComparison.Ordinal);
-        Assert.DoesNotContain("<circle", svg, StringComparison.Ordinal);
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><rect width="64" height="64" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
@@ -116,31 +137,29 @@ public class AvatarGeneratorTests
     {
         var svg = AvatarGenerator.CreateSvg("John Doe", new AvatarOptions());
 
-        Assert.Contains("width=\"64\"", svg, StringComparison.Ordinal);
-        Assert.Contains("height=\"64\"", svg, StringComparison.Ordinal);
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="JD"><circle cx="32" cy="32" r="32" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="32">JD</text></svg>""");
     }
 
     [Fact]
     public void CreateSvg_UsesConfiguredSize()
     {
-        var options = new AvatarOptions
-        {
-            Size = 128,
-        };
+        var options = new AvatarOptions();
+        options.Size = 128;
 
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
 
-        Assert.Contains("width=\"128\"", svg, StringComparison.Ordinal);
-        Assert.Contains("height=\"128\"", svg, StringComparison.Ordinal);
-        Assert.Contains("font-size=\"64\"", svg, StringComparison.Ordinal);
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="JD"><circle cx="64" cy="64" r="64" fill="#cfdade" /><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" alignment-baseline="middle" dy="0.05em" fill="#153037" font-family="monospace" font-weight="700" font-size="64">JD</text></svg>""");
     }
 
     [Fact]
-    public void CreateSvg_UsesMonospaceFont()
+    public void AvatarOptions_DefaultPaletteHasGoodContrast()
     {
-        var svg = AvatarGenerator.CreateSvg("John Doe", new AvatarOptions());
-
-        Assert.Contains("font-family=\"monospace\"", svg, StringComparison.Ordinal);
+        var options = new AvatarOptions();
+        foreach (var pair in options.Palette)
+        {
+            var contrastRatio = GetContrastRatio(pair.BackgroundColor, pair.ForegroundColor);
+            Assert.True(contrastRatio >= 4.5, $"Expected at least 4.5 contrast ratio for {pair.BackgroundColor}/{pair.ForegroundColor}, but got {contrastRatio:0.00}.");
+        }
     }
 
     [Fact]
@@ -165,5 +184,33 @@ public class AvatarGeneratorTests
         Assert.True(endIndex > startIndex);
 
         return svg[startIndex..endIndex];
+    }
+
+    private static double GetContrastRatio(string firstColor, string secondColor)
+    {
+        var firstLuminance = GetRelativeLuminance(firstColor);
+        var secondLuminance = GetRelativeLuminance(secondColor);
+        var brightest = Math.Max(firstLuminance, secondLuminance);
+        var darkest = Math.Min(firstLuminance, secondLuminance);
+        return (brightest + 0.05) / (darkest + 0.05);
+    }
+
+    private static double GetRelativeLuminance(string hexColor)
+    {
+        Assert.StartsWith("#", hexColor, StringComparison.Ordinal);
+        Assert.Equal(7, hexColor.Length);
+
+        var red = Convert.ToInt32(hexColor[1..3], fromBase: 16) / 255d;
+        var green = Convert.ToInt32(hexColor[3..5], fromBase: 16) / 255d;
+        var blue = Convert.ToInt32(hexColor[5..7], fromBase: 16) / 255d;
+        return 0.2126 * ToLinear(red) + 0.7152 * ToLinear(green) + 0.0722 * ToLinear(blue);
+    }
+
+    private static double ToLinear(double component)
+    {
+        if (component <= 0.03928)
+            return component / 12.92;
+
+        return Math.Pow((component + 0.055) / 1.055, 2.4);
     }
 }

@@ -10,6 +10,18 @@ internal
 #endif
 ref partial struct ValueStringBuilder
 {
+    public void Append([InterpolatedStringHandlerArgument("")] ref AppendInterpolatedStringHandler handler)
+    {
+        this = handler._valueStringBuilder;
+    }
+
+    public void Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler)
+    {
+        _ = provider;
+
+        this = handler._valueStringBuilder;
+    }
+
     [EditorBrowsable(EditorBrowsableState.Never)]
     [InterpolatedStringHandler]
     public ref struct AppendInterpolatedStringHandler

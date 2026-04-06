@@ -67,23 +67,6 @@ runs:
           }
         }
 
-        $normalizedInputProject = $env:INPUT_PROJECT.Replace('\', '/')
-        if ($normalizedInputProject -eq "eng/build.proj") {
-          $inlineSnapshotTestingProjects = @(
-            "samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj"
-            "src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj"
-            "src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj"
-            "tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj"
-          )
-
-          $projectBundles = @(
-            ($inlineSnapshotTestingProjects -join ",")
-          )
-
-          foreach ($bundle in $projectBundles) {
-            $arguments += @("--project-bundle", $bundle)
-          }
-        }
         & Meziantou.DeltaBuild @arguments
 
     - name: Compute output project

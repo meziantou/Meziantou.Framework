@@ -196,6 +196,16 @@ public ref partial struct ValueStringBuilder
         _pos += value.Length;
     }
 
+    public void Append([InterpolatedStringHandlerArgument("")] ref AppendInterpolatedStringHandler handler)
+    {
+        this = handler._valueStringBuilder;
+    }
+
+    public void Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler)
+    {
+        this = handler._valueStringBuilder;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<char> AppendSpan(int length)
     {

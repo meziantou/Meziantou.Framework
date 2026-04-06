@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Globalization;
 using System.Text;
 using Xunit;
 
@@ -59,6 +60,49 @@ public class ValueStringBuilderTests
 
         Assert.Equal('\0', sb.RawChars[sb.Length]);
         Assert.Equal("ab", sb.ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringAppendsContent()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+        var count = 42;
+        string? text = null;
+
+        sb.Append(CultureInfo.InvariantCulture, $"count={count},text={text}");
+
+        Assert.Equal("count=42,text=", sb.ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringSupportsAlignment()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+
+        sb.Append(CultureInfo.InvariantCulture, $"|{12,4}|{34,-4}|");
+
+        Assert.Equal("|  12|34  |", sb.ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringSupportsProvider()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+
+        sb.Append(CultureInfo.GetCultureInfo("fr-FR"), $"{12.5m:0.0}");
+
+        Assert.Equal("12,5", sb.ToString());
+    }
+
+    [Fact]
+    public void AppendInterpolatedStringSupportsCustomFormatter()
+    {
+        using var sb = new ValueStringBuilder(initialCapacity: 2);
+        var provider = new TestCustomFormatterProvider();
+
+        sb.Append(provider, $"A={12}, B={34,4:000}");
+
+        Assert.Equal("A=<12>, B=<34>", sb.ToString());
     }
 
 #if NET6_0_OR_GREATER
@@ -133,4 +177,17 @@ public class ValueStringBuilderTests
         }
     }
 #endif
+
+    private sealed class TestCustomFormatterProvider : IFormatProvider, ICustomFormatter
+    {
+        public object? GetFormat(Type? formatType)
+        {
+            return formatType == typeof(ICustomFormatter) ? this : null;
+        }
+
+        public string Format(string? format, object? arg, IFormatProvider? formatProvider)
+        {
+            return arg is null ? "<null>" : $"<{arg}>";
+        }
+    }
 }

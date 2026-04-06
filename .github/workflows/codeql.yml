@@ -63,16 +63,18 @@ jobs:
             eng/**/*.proj
 
       - name: Initialize CodeQL
+        if: matrix.language != 'csharp' || steps.build-project.outputs.has-project == 'true'
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
 
       - name: Build
-        if: matrix.build-mode == 'manual'
+        if: matrix.build-mode == 'manual' && steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release /p:IsLinuxArm64=false
 
       - name: Perform CodeQL Analysis
+        if: matrix.language != 'csharp' || steps.build-project.outputs.has-project == 'true'
         uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.language }}

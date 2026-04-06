@@ -34,6 +34,9 @@ outputs:
   is-delta:
     description: Whether the returned project is a generated delta project
     value: ${{ steps.compute-project.outputs.is-delta }}
+  has-project:
+    description: Whether there is at least one project to build
+    value: ${{ steps.compute-project.outputs.has-project }}
 
 runs:
   using: composite
@@ -58,6 +61,7 @@ runs:
           "--input", $env:INPUT_PROJECT
           "--output", $env:OUTPUT_PROJECT
           "--traversal-after-import", $env:TRAVERSAL_AFTER_IMPORT
+          "--no-output-if-empty"
         )
 
         $env:FULL_REBUILD_TRIGGERS -split "`n" | ForEach-Object {
@@ -76,13 +80,17 @@ runs:
         INPUT_PROJECT: ${{ inputs.input-project }}
         OUTPUT_PROJECT: ${{ inputs.output-project }}
         DEFAULT_PROJECT: ${{ inputs.default-project }}
+        RUN_GENERATE: ${{ inputs.run-generate }}
       run: |
         $fallbackProject = $env:DEFAULT_PROJECT
         if (-not $fallbackProject) {
           $fallbackProject = $env:INPUT_PROJECT
         }
 
-        if (Test-Path $env:OUTPUT_PROJECT) {
+        $deltaProjectExists = Test-Path -LiteralPath $env:OUTPUT_PROJECT
+        $hasProject = $deltaProjectExists -or $env:RUN_GENERATE -ne "true"
+
+        if ($deltaProjectExists) {
           Write-Host "Using delta build file:"
           Get-Content $env:OUTPUT_PROJECT
           "project=$($env:OUTPUT_PROJECT)" >> $env:GITHUB_OUTPUT
@@ -92,3 +100,5 @@ runs:
           "project=$fallbackProject" >> $env:GITHUB_OUTPUT
           "is-delta=false" >> $env:GITHUB_OUTPUT
         }
+
+        "has-project=$hasProject" >> $env:GITHUB_OUTPUT

@@ -17,7 +17,7 @@
 
   <Target Name="AddAnnotationsToPackage">
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(OutputPath)\..\..\Meziantou.Framework.FastEnumToStringGenerator.Annotations\$(Configuration.ToLowerInvariant())_$(TargetFramework)\Meziantou.Framework.FastEnumToStringGenerator.Annotations.dll">
+      <TfmSpecificPackageFile Include="$(OutputPath)\..\..\Meziantou.Framework.FastEnumToStringGenerator.Annotations\$(Configuration.ToLowerInvariant())_$(TargetFramework)\*">
         <PackagePath>lib/$(TargetFramework)</PackagePath>
       </TfmSpecificPackageFile>
     </ItemGroup>

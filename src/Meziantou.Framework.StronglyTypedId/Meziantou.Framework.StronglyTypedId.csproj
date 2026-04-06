@@ -16,7 +16,7 @@
 
   <Target Name="AddAnnotationsToPackage">
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration.ToLowerInvariant())_$(TargetFramework)\Meziantou.Framework.StronglyTypedId.Annotations.dll">
+      <TfmSpecificPackageFile Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration.ToLowerInvariant())_$(TargetFramework)\*">
         <PackagePath>lib/$(TargetFramework)</PackagePath>
       </TfmSpecificPackageFile>
     </ItemGroup>

@@ -122,7 +122,7 @@ public class AvatarGeneratorTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void CreateSvg_ThrowsWhenNameIsInvalid(string? name)
+    public void CreateSvg_ThrowsWhenNameIsInvalid(string name)
     {
         Assert.ThrowsAny<ArgumentException>(() => AvatarGenerator.CreateSvg(name!, new AvatarOptions()));
     }
@@ -219,11 +219,11 @@ public class AvatarGeneratorTests
 
     private static string GetBackgroundFill(string svg)
     {
-        const string fill = "fill=\"";
-        var startIndex = svg.IndexOf(fill, StringComparison.Ordinal);
+        const string Fill = "fill=\"";
+        var startIndex = svg.IndexOf(Fill, StringComparison.Ordinal);
         Assert.True(startIndex >= 0);
 
-        startIndex += fill.Length;
+        startIndex += Fill.Length;
         var endIndex = svg.IndexOf('"', startIndex);
         Assert.True(endIndex > startIndex);
 

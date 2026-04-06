@@ -48,6 +48,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStringBuilder\Meziantou.Framework.ValueStringBuilder.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
   </ItemGroup>
 
@@ -87,6 +88,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Unicode" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Uri" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStopwatch" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.ValueStringBuilder" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
   </ItemGroup>
 </Project>

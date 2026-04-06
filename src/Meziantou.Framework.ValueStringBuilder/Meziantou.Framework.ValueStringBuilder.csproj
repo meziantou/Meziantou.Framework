@@ -1,0 +1,16 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>A high-performance value-type string builder with pooled buffers</Description>
+    <DefineConstants>$(DefineConstants);PUBLIC_VALUESTRINGBUILDER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+  </ItemGroup>
+
+</Project>

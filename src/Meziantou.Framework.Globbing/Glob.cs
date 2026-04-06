@@ -1,3 +1,4 @@
+using Meziantou.Framework;
 using Meziantou.Framework.Globbing.Internals;
 
 #if NET472

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Meziantou.Framework;
 using Meziantou.Framework.Globbing.Internals;
 using Meziantou.Framework.Globbing.Internals.Segments;
 

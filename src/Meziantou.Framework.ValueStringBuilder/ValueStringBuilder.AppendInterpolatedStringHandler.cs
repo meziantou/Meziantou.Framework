@@ -105,6 +105,8 @@ public ref partial struct ValueStringBuilder
 
         public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
         {
+            _ = format;
+
             if (alignment is 0)
             {
                 _valueStringBuilder.Append(value);

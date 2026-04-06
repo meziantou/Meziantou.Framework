@@ -203,6 +203,8 @@ public ref partial struct ValueStringBuilder
 
     public void Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler)
     {
+        _ = provider;
+
         this = handler._valueStringBuilder;
     }
 

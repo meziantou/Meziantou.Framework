@@ -6,18 +6,24 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <Description>Source Generator to generate strongly-typed id with all needed helpers such as converters for System.Text.Json, Newtonsoft.Json, or MongoDB.</Description>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddAnnotationsToPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="Meziantou.Framework.StronglyTypedId.targets" Pack="true" PackagePath="build/" />
     <None Include="$(OutputPath)\..\$(Configuration.ToLowerInvariant())_netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration.ToLowerInvariant())_netstandard2.0\*" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
-    <None Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration.ToLowerInvariant())_net8.0\*" Pack="true" PackagePath="lib/net8.0" Visible="false" />
-    <None Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration.ToLowerInvariant())_net9.0\*" Pack="true" PackagePath="lib/net9.0" Visible="false" />
-    <None Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration.ToLowerInvariant())_net10.0\*" Pack="true" PackagePath="lib/net10.0" Visible="false" />
   </ItemGroup>
 
+  <Target Name="AddAnnotationsToPackage">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration.ToLowerInvariant())_$(TargetFramework)\Meziantou.Framework.StronglyTypedId.Annotations.dll">
+        <PackagePath>lib/$(TargetFramework)</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.StronglyTypedId.Annotations\Meziantou.Framework.StronglyTypedId.Annotations.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.3.1" PrivateAssets="all" />
   </ItemGroup>
 

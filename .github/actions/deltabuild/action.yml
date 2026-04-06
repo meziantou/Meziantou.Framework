@@ -84,17 +84,6 @@ runs:
             $arguments += @("--project-bundle", $bundle)
           }
         }
-        elseif ($normalizedInputProject -eq "eng/packages.proj") {
-          $projectBundles = @(
-            "src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj,src/Meziantou.Framework.FastEnumToStringGenerator.Annotations/Meziantou.Framework.FastEnumToStringGenerator.Annotations.csproj"
-            "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj,src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj"
-          )
-
-          foreach ($bundle in $projectBundles) {
-            $arguments += @("--project-bundle", $bundle)
-          }
-        }
-
         & Meziantou.DeltaBuild @arguments
 
     - name: Compute output project

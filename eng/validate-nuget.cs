@@ -32,41 +32,42 @@ if (isDeltaBuild && nupkgFiles.Length == 0)
 }
 
 // Validate source generator packages
-var generators = new[] { "Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.FastEnumToStringGenerator" };
-foreach (var generator in generators)
+if (!isDeltaBuild)
 {
-    Console.WriteLine($"Checking {generator}");
-
-    var packagePattern = new Regex($@"{Regex.Escape(generator)}\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
-    var packagePath = Directory.EnumerateFiles(nugetDirectory)
-        .FirstOrDefault(f => packagePattern.IsMatch(f));
-    if (packagePath is null)
+    var generators = new[] { "Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.FastEnumToStringGenerator" };
+    foreach (var generator in generators)
     {
-        if (isDeltaBuild)
+        Console.WriteLine($"Checking {generator}");
+
+        var packagePattern = new Regex($@"{Regex.Escape(generator)}\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
+        var packagePath = Directory.EnumerateFiles(nugetDirectory)
+            .FirstOrDefault(f => packagePattern.IsMatch(f));
+        if (packagePath is null)
         {
-            Console.WriteLine($"Skipping {generator} validation because package is absent in delta build output.");
-            continue;
+            throw new InvalidOperationException($"Package not found for {generator}");
         }
 
-        throw new InvalidOperationException($"Package not found for {generator}");
-    }
+        var annotationPath = rootPath / "src" / $"{generator}.Annotations";
+        var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
 
-    var annotationPath = rootPath / "src" / $"{generator}.Annotations";
-    var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
-
-    using (var zipFile = ZipFile.OpenRead(packagePath))
-    {
-        var entries = zipFile.Entries.Select(e => e.FullName).ToList();
-        foreach (var tfm in tfms)
+        using (var zipFile = ZipFile.OpenRead(packagePath))
         {
-            var hasEntry = entries.Any(e => e.StartsWith($"lib/{tfm}/", StringComparison.Ordinal));
-            if (!hasEntry)
+            var entries = zipFile.Entries.Select(e => e.FullName).ToList();
+            foreach (var tfm in tfms)
             {
-                Console.Error.WriteLine($"ERROR: Package does not contain a lib/{tfm}/ entry");
-                return 1;
+                var hasEntry = entries.Any(e => e.StartsWith($"lib/{tfm}/", StringComparison.Ordinal));
+                if (!hasEntry)
+                {
+                    Console.Error.WriteLine($"ERROR: Package does not contain a lib/{tfm}/ entry");
+                    return 1;
+                }
             }
         }
     }
+}
+else
+{
+    Console.WriteLine("Skipping source generator package TFM validation for delta build output.");
 }
 
 // General validation

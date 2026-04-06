@@ -175,18 +175,21 @@ jobs:
           output-project: eng/delta.proj
           default-project: eng/build.proj
           run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
+          fallback-on-empty: 'false'
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
 
       - name: PATH
+        if: steps.build-project.outputs.has-project == 'true'
         run: echo $env:PATH
 
       - name: .NET info
+        if: steps.build-project.outputs.has-project == 'true'
         run: dotnet --info
 
       - name: Enable ProjFS
-        if: startsWith(matrix.runs-on, 'windows')
+        if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
         run: |
           $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
           if ($feature.State -ne 'Enabled') {
@@ -194,16 +197,19 @@ jobs:
           }
 
       - name: Build
+        if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
 
       - name: List environment variables
+        if: steps.build-project.outputs.has-project == 'true'
         run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
+        if: steps.build-project.outputs.has-project == 'true'
         run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && steps.build-project.outputs.has-project == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
           if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
@@ -214,7 +220,7 @@ jobs:
             ${{ env.TestResultsDirectory }}/**/*
 
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && steps.build-project.outputs.has-project == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
           if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}

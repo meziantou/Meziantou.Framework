@@ -34,7 +34,7 @@ if (isDeltaBuild && nupkgFiles.Length == 0)
 // Validate source generator packages
 if (!isDeltaBuild)
 {
-    var generators = new[] { "Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.FastEnumToStringGenerator" };
+    var generators = new[] { "Meziantou.Framework.StronglyTypedId" };
     foreach (var generator in generators)
     {
         Console.WriteLine($"Checking {generator}");
@@ -49,18 +49,15 @@ if (!isDeltaBuild)
 
         var annotationPath = rootPath / "src" / $"{generator}.Annotations";
         var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", annotationPath]).Trim().Split(';');
-
-        using (var zipFile = ZipFile.OpenRead(packagePath))
+        await using var zipFile = await ZipFile.OpenReadAsync(packagePath);
+        var entries = zipFile.Entries.Select(e => e.FullName).ToList();
+        foreach (var tfm in tfms)
         {
-            var entries = zipFile.Entries.Select(e => e.FullName).ToList();
-            foreach (var tfm in tfms)
+            var hasEntry = entries.Any(e => e.StartsWith($"lib/{tfm}/", StringComparison.Ordinal));
+            if (!hasEntry)
             {
-                var hasEntry = entries.Any(e => e.StartsWith($"lib/{tfm}/", StringComparison.Ordinal));
-                if (!hasEntry)
-                {
-                    Console.Error.WriteLine($"ERROR: Package does not contain a lib/{tfm}/ entry");
-                    return 1;
-                }
+                Console.Error.WriteLine($"ERROR: Package does not contain a lib/{tfm}/ entry");
+                return 1;
             }
         }
     }

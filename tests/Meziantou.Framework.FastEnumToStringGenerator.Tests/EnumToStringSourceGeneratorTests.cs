@@ -1,6 +1,5 @@
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Reflection;
-using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using TestUtilities;
@@ -16,7 +15,6 @@ public sealed class EnumToStringSourceGeneratorTests
         assemblyLocations ??= [];
         var references = assemblyLocations
             .Concat(netcoreRef)
-            .Append(typeof(FastEnumToStringAttribute).Assembly.Location)
             .Select(loc => MetadataReference.CreateFromFile(loc))
             .ToArray();
 
@@ -73,7 +71,10 @@ public sealed class EnumToStringSourceGeneratorTests
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
         Assert.Empty(generatorResult.Diagnostics);
-        Assert.Single(generatorResult.GeneratedTrees);
+        Assert.Equal(3, generatorResult.GeneratedTrees.Length);
+        Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("FastEnumToStringExtensions.g.cs", StringComparison.Ordinal));
+        Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Microsoft.CodeAnalysis.EmbeddedAttribute.g.cs", StringComparison.Ordinal));
+        Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Meziantou.Framework.Annotations.FastEnumToStringAttribute.g.cs", StringComparison.Ordinal));
 
         var asm = Assembly.Load(assembly);
         var type = asm.GetType("A.B.C");
@@ -112,7 +113,10 @@ public sealed class EnumToStringSourceGeneratorTests
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
         Assert.Empty(generatorResult.Diagnostics);
-        Assert.Single(generatorResult.GeneratedTrees);
+        Assert.Equal(3, generatorResult.GeneratedTrees.Length);
+        Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("FastEnumToStringExtensions.g.cs", StringComparison.Ordinal));
+        Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Microsoft.CodeAnalysis.EmbeddedAttribute.g.cs", StringComparison.Ordinal));
+        Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Meziantou.Framework.Annotations.FastEnumToStringAttribute.g.cs", StringComparison.Ordinal));
 
         var asm = Assembly.Load(assembly);
         var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");

@@ -11,6 +11,10 @@
     <Compile Include="..\Meziantou.Framework\StringExtensions.SplitLines.cs" Link="Internals\StringExtensions.SplitLines.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.ValueStringBuilder\Meziantou.Framework.ValueStringBuilder.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <PackageReference Include="System.Memory" Version="4.6.3" />
     <PackageReference Include="Microsoft.IO.Redist" Version="6.1.3" />

@@ -91,6 +91,7 @@
     <Project Path="src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" Id="4918958a-08ce-42b0-8c93-b1a84fc48573" />
     <Project Path="src/Meziantou.Framework.Uri/Meziantou.Framework.Uri.csproj" />
     <Project Path="src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
+    <Project Path="src/Meziantou.Framework.ValueStringBuilder/Meziantou.Framework.ValueStringBuilder.csproj" />
     <Project Path="src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.AccessToken/Meziantou.Framework.Win32.AccessToken.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.Amsi/Meziantou.Framework.Win32.Amsi.csproj" />
@@ -175,6 +176,7 @@
     <Project Path="tests/Meziantou.Framework.Unix.ControlGroups.Tests/Meziantou.Framework.Unix.ControlGroups.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Uri.Tests/Meziantou.Framework.Uri.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ValueStopwatch.Tests/Meziantou.Framework.ValueStopwatch.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.ValueStringBuilder.Tests/Meziantou.Framework.ValueStringBuilder.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Versioning.Tests/Meziantou.Framework.Versioning.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.AccessToken.Tests/Meziantou.Framework.Win32.AccessToken.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.AmsiTests/Meziantou.Framework.Win32.AmsiTests.csproj" />

@@ -226,4 +226,257 @@ public class EnumerableTests
         _ = data.ToList();
         Assert.Throws<InvalidOperationException>(() => data.ToList());
     }
+
+    [Fact]
+    public void ParallelSort_Span_SortsValues()
+    {
+        var values = Enumerable.Range(0, 20_000).Reverse().ToArray();
+        values.AsSpan().ParallelSort();
+
+        Assert.Equal(Enumerable.Range(0, 20_000).ToArray(), values);
+    }
+
+    [Fact]
+    public void ParallelSort_Span_WithComparer()
+    {
+        int[] values = [1, 5, 2, 3, 4];
+        values.AsSpan().ParallelSort(Comparer<int>.Create((left, right) => right.CompareTo(left)));
+
+        Assert.Equal([5, 4, 3, 2, 1], values);
+    }
+
+    [Fact]
+    public void ParallelSort_Span_WithDegreeOfParallelismAndComparer()
+    {
+        var values = Enumerable.Range(0, 20_000).Reverse().ToArray();
+        values.AsSpan().ParallelSort(2, Comparer<int>.Default);
+
+        Assert.Equal(Enumerable.Range(0, 20_000).ToArray(), values);
+    }
+
+    [Fact]
+    public void ParallelSort_Array_DelegatesToSpan()
+    {
+        var values = Enumerable.Range(0, 20_000).Reverse().ToArray();
+        values.ParallelSort(2);
+
+        Assert.Equal(Enumerable.Range(0, 20_000).ToArray(), values);
+    }
+
+    [Fact]
+    public void ParallelSort_List_DelegatesToSpan()
+    {
+        var values = Enumerable.Range(0, 20_000).Reverse().ToList();
+        values.ParallelSort(2);
+
+        Assert.Equal(Enumerable.Range(0, 20_000).ToArray(), values.ToArray());
+    }
+
+    [Fact]
+    public void ParallelSort_List_WithComparer()
+    {
+        var values = new List<int> { 1, 5, 2, 3, 4 };
+        values.ParallelSort(Comparer<int>.Create((left, right) => right.CompareTo(left)));
+
+        Assert.Equal([5, 4, 3, 2, 1], values);
+    }
+
+    [Fact]
+    public void ParallelSort_InvalidDegree_Throws()
+    {
+        int[] values = [2, 1];
+        Assert.Throws<ArgumentOutOfRangeException>(() => values.AsSpan().ParallelSort(0));
+    }
+
+    [Fact]
+    public void ParallelSort_NullArray_Throws()
+    {
+        int[] values = null;
+        Assert.Throws<ArgumentNullException>(() => values!.ParallelSort());
+    }
+
+    [Fact]
+    public void ParallelSort_NullList_Throws()
+    {
+        List<int> values = null!;
+        Assert.Throws<ArgumentNullException>(() => values.ParallelSort());
+    }
+
+    [Fact]
+    public void ParallelStableSort_PreservesOrderForEqualValues()
+    {
+        var values = new[]
+        {
+            new StableSortableValue(2, 0),
+            new StableSortableValue(1, 1),
+            new StableSortableValue(2, 2),
+            new StableSortableValue(1, 3),
+        };
+
+        values.AsSpan().ParallelStableSort(2, StableSortableValueComparer.Instance);
+
+        Assert.Equal(
+            [
+                new StableSortableValue(1, 1),
+                new StableSortableValue(1, 3),
+                new StableSortableValue(2, 0),
+                new StableSortableValue(2, 2),
+            ],
+            values);
+    }
+
+    [Fact]
+    public void ParallelStableSort_Array_DelegatesToSpan()
+    {
+        var values = new[]
+        {
+            new StableSortableValue(2, 0),
+            new StableSortableValue(1, 1),
+            new StableSortableValue(2, 2),
+            new StableSortableValue(1, 3),
+        };
+
+        values.ParallelStableSort(2, StableSortableValueComparer.Instance);
+
+        Assert.Equal(
+            [
+                new StableSortableValue(1, 1),
+                new StableSortableValue(1, 3),
+                new StableSortableValue(2, 0),
+                new StableSortableValue(2, 2),
+            ],
+            values);
+    }
+
+    [Fact]
+    public void ParallelStableSort_List_DelegatesToSpan()
+    {
+        var values = new List<StableSortableValue>
+        {
+            new StableSortableValue(2, 0),
+            new StableSortableValue(1, 1),
+            new StableSortableValue(2, 2),
+            new StableSortableValue(1, 3),
+        };
+
+        values.ParallelStableSort(2, StableSortableValueComparer.Instance);
+
+        Assert.Equal(
+            [
+                new StableSortableValue(1, 1),
+                new StableSortableValue(1, 3),
+                new StableSortableValue(2, 0),
+                new StableSortableValue(2, 2),
+            ],
+            values);
+    }
+
+    [Fact]
+    public void ParallelStableSort_WithCustomComparer_IsStable()
+    {
+        var values = Enumerable.Range(0, 10_000).Reverse().ToArray();
+        var expected = values.Where(value => (value & 1) is 0).Concat(values.Where(value => (value & 1) is 1)).ToArray();
+
+        values.AsSpan().ParallelStableSort(2, IntParityComparer.Instance);
+
+        Assert.Equal(expected, values);
+    }
+
+    [Fact]
+    public void ParallelStableSort_ImplicitStableType_DefaultComparer_Sorts()
+    {
+        var values = Enumerable.Range(0, 20_000).Reverse().ToArray();
+        values.AsSpan().ParallelStableSort(2);
+
+        Assert.Equal(Enumerable.Range(0, 20_000).ToArray(), values);
+    }
+
+    [Fact]
+    public void ParallelStableSort_Enum_DefaultComparer_Sorts()
+    {
+        BranchCoverageEnum[] values = [BranchCoverageEnum.C, BranchCoverageEnum.A, BranchCoverageEnum.B];
+        values.AsSpan().ParallelStableSort(2);
+
+        Assert.Equal([BranchCoverageEnum.B, BranchCoverageEnum.A, BranchCoverageEnum.C], values);
+    }
+
+    [Fact]
+    public void ParallelStableSort_ReferenceType_DefaultComparer_IsStable()
+    {
+        var values = new[]
+        {
+            new ComparableReferenceValue(2, 0),
+            new ComparableReferenceValue(1, 1),
+            new ComparableReferenceValue(2, 2),
+            new ComparableReferenceValue(1, 3),
+        };
+
+        values.AsSpan().ParallelStableSort(2);
+
+        Assert.Equal([1, 3, 0, 2], values.Select(value => value.Order).ToArray());
+    }
+
+    [Fact]
+    public void ParallelStableSort_InvalidDegree_Throws()
+    {
+        int[] values = [2, 1];
+        Assert.Throws<ArgumentOutOfRangeException>(() => values.AsSpan().ParallelStableSort(0));
+    }
+
+    [Fact]
+    public void ParallelStableSort_NullArray_Throws()
+    {
+        int[] values = null;
+        Assert.Throws<ArgumentNullException>(() => values!.ParallelStableSort());
+    }
+
+    [Fact]
+    public void ParallelStableSort_NullList_Throws()
+    {
+        List<int> values = null!;
+        Assert.Throws<ArgumentNullException>(() => values.ParallelStableSort());
+    }
+
+    private readonly record struct StableSortableValue(int Key, int Order);
+
+    private sealed class StableSortableValueComparer : IComparer<StableSortableValue>
+    {
+        public static StableSortableValueComparer Instance { get; } = new();
+
+        public int Compare(StableSortableValue x, StableSortableValue y)
+        {
+            return x.Key.CompareTo(y.Key);
+        }
+    }
+
+    private sealed class IntParityComparer : IComparer<int>
+    {
+        public static IntParityComparer Instance { get; } = new();
+
+        public int Compare(int x, int y)
+        {
+            return (x & 1).CompareTo(y & 1);
+        }
+    }
+
+    private sealed class ComparableReferenceValue(int key, int order) : IComparable<ComparableReferenceValue>
+    {
+        public int Key { get; } = key;
+        public int Order { get; } = order;
+
+        public int CompareTo(ComparableReferenceValue other)
+        {
+            if (other is null)
+                return 1;
+
+            return Key.CompareTo(other.Key);
+        }
+    }
+
+    private enum BranchCoverageEnum : short
+    {
+        B = 1,
+        A = 2,
+        C = 3,
+    }
 }

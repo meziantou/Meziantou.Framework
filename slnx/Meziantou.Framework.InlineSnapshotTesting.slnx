@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Http.Caching.InMemory/Meziantou.Framework.Http.Caching.InMemory.csproj" />
     <Project Path="../src/Meziantou.Framework.Http.Caching.Redis/Meziantou.Framework.Http.Caching.Redis.csproj" />
@@ -9,11 +10,14 @@
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.QRCode/Meziantou.Framework.QRCode.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.QRCode.Tests/Meziantou.Framework.QRCode.Tests.csproj" />
     <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
 </Solution>

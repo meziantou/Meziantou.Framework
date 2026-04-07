@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Tests;
 
@@ -437,6 +438,7 @@ public class EnumerableTests
         Assert.Throws<ArgumentNullException>(() => values.ParallelStableSort());
     }
 
+    [StructLayout(LayoutKind.Auto)]
     private readonly record struct StableSortableValue(int Key, int Order);
 
     private sealed class StableSortableValueComparer : IComparer<StableSortableValue>
@@ -459,7 +461,7 @@ public class EnumerableTests
         }
     }
 
-    private sealed class ComparableReferenceValue(int key, int order) : IComparable<ComparableReferenceValue>
+    private sealed class ComparableReferenceValue(int key, int order) : IComparable<ComparableReferenceValue>, IEquatable<ComparableReferenceValue>
     {
         public int Key { get; } = key;
         public int Order { get; } = order;
@@ -470,6 +472,54 @@ public class EnumerableTests
                 return 1;
 
             return Key.CompareTo(other.Key);
+        }
+
+        public bool Equals(ComparableReferenceValue other)
+        {
+            if (other is null)
+                return false;
+
+            return Key == other.Key && Order == other.Order;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is ComparableReferenceValue other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Key, Order);
+        }
+
+        public static bool operator <(ComparableReferenceValue left, ComparableReferenceValue right)
+        {
+            return Comparer<ComparableReferenceValue>.Default.Compare(left, right) < 0;
+        }
+
+        public static bool operator <=(ComparableReferenceValue left, ComparableReferenceValue right)
+        {
+            return Comparer<ComparableReferenceValue>.Default.Compare(left, right) <= 0;
+        }
+
+        public static bool operator >(ComparableReferenceValue left, ComparableReferenceValue right)
+        {
+            return Comparer<ComparableReferenceValue>.Default.Compare(left, right) > 0;
+        }
+
+        public static bool operator >=(ComparableReferenceValue left, ComparableReferenceValue right)
+        {
+            return Comparer<ComparableReferenceValue>.Default.Compare(left, right) >= 0;
+        }
+
+        public static bool operator ==(ComparableReferenceValue left, ComparableReferenceValue right)
+        {
+            return object.Equals(left, right);
+        }
+
+        public static bool operator !=(ComparableReferenceValue left, ComparableReferenceValue right)
+        {
+            return !object.Equals(left, right);
         }
     }
 

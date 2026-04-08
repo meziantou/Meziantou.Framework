@@ -36,7 +36,7 @@ public class ProcessWrapperTests
         }
 
         using var result = command
-            .WithExitCodeValidation(ExitCodeValidationMode.None)
+            .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
 
         await result;
@@ -260,7 +260,7 @@ public class ProcessWrapperTests
     }
 
     [Fact]
-    public async Task ExitCodeValidation_FailIfNotZero_Throws()
+    public async Task Validation_FailIfNonZeroExitCode_Throws()
     {
         ProcessWrapper command;
         if (OperatingSystem.IsWindows())
@@ -281,7 +281,7 @@ public class ProcessWrapperTests
     }
 
     [Fact]
-    public async Task ExitCodeValidation_None_DoesNotThrow()
+    public async Task Validation_None_DoesNotThrow()
     {
         ProcessWrapper command;
         if (OperatingSystem.IsWindows())
@@ -296,11 +296,34 @@ public class ProcessWrapperTests
         }
 
         using var process = command
-            .WithExitCodeValidation(ExitCodeValidationMode.None)
+            .WithValidation(ProcessValidationMode.None)
             .ExecuteAsync();
 
         var exitCode = await process;
         Assert.Equal(42, exitCode);
+    }
+
+    [Fact]
+    public async Task Validation_FailIfStdError_Throws()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "echo error>&2");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("sh")
+                .WithArguments("-c", "echo error >&2");
+        }
+
+        using var process = command
+            .WithValidation(ProcessValidationMode.FailIfStdError)
+            .ExecuteAsync();
+
+        var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
+        Assert.Equal("Process wrote to standard error.", ex.Message);
     }
 
     [Fact]
@@ -321,7 +344,7 @@ public class ProcessWrapperTests
         }
 
         using var process = command
-            .WithExitCodeValidation(ExitCodeValidationMode.None)
+            .WithValidation(ProcessValidationMode.None)
             .ExecuteAsync(cts.Token);
 
         // Wait for the process to start
@@ -405,7 +428,7 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithWorkingDirectory(Path.GetTempPath()));
         Assert.Same(command, command.WithEnvironmentVariables(env => env.Set("TEST_VAR_45", "value")));
         Assert.Same(command, command.WithEnvironmentVariables(new Dictionary<string, string?> { ["TEST_VAR_45"] = "updated" }));
-        Assert.Same(command, command.WithExitCodeValidation(ExitCodeValidationMode.None));
+        Assert.Same(command, command.WithValidation(ProcessValidationMode.None));
         Assert.Same(command, command.WithOutputStream(_ => { }));
         Assert.Same(command, command.AddOutputStream(_ => { }));
         Assert.Same(command, command.WithErrorStream(_ => { }));

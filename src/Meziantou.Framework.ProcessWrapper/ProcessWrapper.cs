@@ -13,7 +13,7 @@ namespace Meziantou.Framework;
 public sealed class ProcessWrapper
 {
     private ProcessStartInfo _startInfo;
-    private ExitCodeValidationMode _exitCodeValidation;
+    private ProcessValidationMode _validationMode;
     private ImmutableArray<Action<string>> _outputHandlers;
     private ImmutableArray<Action<string>> _errorHandlers;
     private ProcessInputStream? _inputStream;
@@ -22,7 +22,7 @@ public sealed class ProcessWrapper
     {
         ArgumentNullException.ThrowIfNull(fileName);
         _startInfo = CreateStartInfo(fileName);
-        _exitCodeValidation = ExitCodeValidationMode.FailIfNotZero;
+        _validationMode = ProcessValidationMode.FailIfNonZeroExitCode;
         _outputHandlers = [];
         _errorHandlers = [];
     }
@@ -98,10 +98,10 @@ public sealed class ProcessWrapper
         return this;
     }
 
-    /// <summary>Sets the exit code validation mode.</summary>
-    public ProcessWrapper WithExitCodeValidation(ExitCodeValidationMode mode)
+    /// <summary>Sets process validation rules.</summary>
+    public ProcessWrapper WithValidation(ProcessValidationMode mode)
     {
-        _exitCodeValidation = mode;
+        _validationMode = mode;
         return this;
     }
 
@@ -233,7 +233,7 @@ public sealed class ProcessWrapper
     public ProcessInstance ExecuteAsync(CancellationToken cancellationToken = default)
     {
         return StartProcess(_outputHandlers, _errorHandlers,
-            (process, inputTask, registration, ct) => new ProcessInstance(process, inputTask, registration, _exitCodeValidation, ct),
+            (process, inputTask, registration, ct, hasStandardErrorOutput) => new ProcessInstance(process, inputTask, registration, _validationMode, ct, hasStandardErrorOutput),
             cancellationToken);
     }
 
@@ -249,18 +249,20 @@ public sealed class ProcessWrapper
         var errorHandlers = _errorHandlers.Add(line => output.Add(ProcessOutputType.StandardError, line));
 
         return StartProcess(outputHandlers, errorHandlers,
-            (process, inputTask, registration, ct) => new BufferedProcessInstance(process, inputTask, registration, _exitCodeValidation, output, ct),
+            (process, inputTask, registration, ct, hasStandardErrorOutput) => new BufferedProcessInstance(process, inputTask, registration, _validationMode, output, ct, hasStandardErrorOutput),
             cancellationToken);
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000")]
-    private T StartProcess<T>(ImmutableArray<Action<string>> outputHandlers, ImmutableArray<Action<string>> errorHandlers, Func<Process, Task, CancellationTokenRegistration, CancellationToken, T> factory, CancellationToken cancellationToken)
+    private T StartProcess<T>(ImmutableArray<Action<string>> outputHandlers, ImmutableArray<Action<string>> errorHandlers, Func<Process, Task, CancellationTokenRegistration, CancellationToken, Func<bool>, T> factory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var hasOutputHandlers = !outputHandlers.IsEmpty;
-        var hasErrorHandlers = !errorHandlers.IsEmpty;
+        var shouldValidateErrorOutput = (_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError;
+        var hasErrorHandlers = !errorHandlers.IsEmpty || shouldValidateErrorOutput;
         var hasInputStream = _inputStream is not null;
+        var hasStandardErrorOutput = 0;
 
         _startInfo.RedirectStandardOutput = hasOutputHandlers;
         _startInfo.RedirectStandardError = hasErrorHandlers;
@@ -288,6 +290,7 @@ public sealed class ProcessWrapper
             {
                 if (e.Data is not null)
                 {
+                    Interlocked.Exchange(ref hasStandardErrorOutput, 1);
                     foreach (var handler in errorHandlers)
                     {
                         handler(e.Data);
@@ -338,6 +341,6 @@ public sealed class ProcessWrapper
             registration = cancellationToken.Register(() => ProcessInstance.KillProcess(process));
         }
 
-        return factory(process, inputTask, registration, cancellationToken);
+        return factory(process, inputTask, registration, cancellationToken, () => Volatile.Read(ref hasStandardErrorOutput) != 0);
     }
 }

@@ -10,18 +10,20 @@ public class ProcessInstance : IDisposable
     private readonly Process _process;
     private readonly Task _inputTask;
     private readonly CancellationTokenRegistration _cancellationRegistration;
-    private readonly ExitCodeValidationMode _exitCodeValidation;
+    private readonly ProcessValidationMode _validationMode;
     private readonly CancellationToken _cancellationToken;
+    private readonly Func<bool> _hasStandardErrorOutput;
     private Task<int>? _waitTask;
     private bool _disposed;
 
-    internal ProcessInstance(Process process, Task inputTask, CancellationTokenRegistration cancellationRegistration, ExitCodeValidationMode exitCodeValidation, CancellationToken cancellationToken)
+    internal ProcessInstance(Process process, Task inputTask, CancellationTokenRegistration cancellationRegistration, ProcessValidationMode validationMode, CancellationToken cancellationToken, Func<bool> hasStandardErrorOutput)
     {
         _process = process;
         _inputTask = inputTask;
         _cancellationRegistration = cancellationRegistration;
-        _exitCodeValidation = exitCodeValidation;
+        _validationMode = validationMode;
         _cancellationToken = cancellationToken;
+        _hasStandardErrorOutput = hasStandardErrorOutput;
 
         ProcessId = process.Id;
         SafeProcessHandle = process.SafeHandle;
@@ -72,9 +74,14 @@ public class ProcessInstance : IDisposable
         _cancellationToken.ThrowIfCancellationRequested();
 
         var exitCode = _process.ExitCode;
-        if (_exitCodeValidation == ExitCodeValidationMode.FailIfNotZero && exitCode != 0)
+        if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && exitCode != 0)
         {
             throw new ProcessExecutionException(exitCode);
+        }
+
+        if ((_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError && _hasStandardErrorOutput())
+        {
+            throw new ProcessExecutionException("Process wrote to standard error.");
         }
 
         return exitCode;

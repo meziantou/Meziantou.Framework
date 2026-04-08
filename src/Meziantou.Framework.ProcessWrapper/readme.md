@@ -115,7 +115,7 @@ await process;
 Console.WriteLine(process.Output.ToString());
 ````
 
-## Exit code validation
+## Validation
 
 ````c#
 // Default: throws ProcessExecutionException if exit code is non-zero
@@ -131,12 +131,17 @@ catch (ProcessExecutionException ex)
     Console.WriteLine($"Process failed with exit code {ex.ExitCode}");
 }
 
-// Disable exit code validation
+// Disable validation
 using var process2 = ProcessWrapper.Create("false")
-    .WithExitCodeValidation(ExitCodeValidationMode.None)
+    .WithValidation(ProcessValidationMode.None)
     .ExecuteAsync();
 
 int exitCode = await process2; // does not throw
+
+// Fail on stderr output as well
+using var process3 = ProcessWrapper.Create("my-command")
+    .WithValidation(ProcessValidationMode.FailIfNonZeroExitCode | ProcessValidationMode.FailIfStdError)
+    .ExecuteAsync();
 ````
 
 ## Cancellation

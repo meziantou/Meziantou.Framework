@@ -1,11 +1,11 @@
 namespace Meziantou.Framework;
 
-/// <summary>Thrown when a process exits with a non-zero exit code and exit code validation is enabled.</summary>
+/// <summary>Thrown when configured process validation fails.</summary>
 public sealed class ProcessExecutionException : Exception
 {
     /// <summary>Initializes a new instance of <see cref="ProcessExecutionException"/>.</summary>
     public ProcessExecutionException()
-        : base("Process exited with a non-zero exit code.")
+        : base("Process validation failed.")
     {
     }
 

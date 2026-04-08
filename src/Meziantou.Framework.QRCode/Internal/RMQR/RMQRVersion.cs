@@ -1,9 +1,11 @@
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Meziantou.Framework.Internal.RMQR;
 
 internal static class RMQRVersion
 {
+    [StructLayout(LayoutKind.Auto)]
     private readonly record struct ErrorCorrectionProfile(byte EcCodewordsPerBlock, byte Group1BlockCount, byte Group1DataCodewords, byte Group2BlockCount, byte Group2DataCodewords)
     {
         public int DataCodewords => (Group1BlockCount * Group1DataCodewords) + (Group2BlockCount * Group2DataCodewords);

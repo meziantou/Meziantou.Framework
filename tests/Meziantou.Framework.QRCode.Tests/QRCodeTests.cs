@@ -978,10 +978,10 @@ public class QRCodeTests
         var versionByLength = new Dictionary<int, int>();
 
         var minLength = 1;
-        const int maxLength = 7089;
+        const int MaxLength = 7089;
         for (var version = 1; version <= 40; version++)
         {
-            var payloadLength = FindMinimumLengthForVersion(version, minLength, maxLength, versionByLength);
+            var payloadLength = FindMinimumLengthForVersion(version, minLength, MaxLength, versionByLength);
             data.Add(version, payloadLength);
             minLength = payloadLength + 1;
         }

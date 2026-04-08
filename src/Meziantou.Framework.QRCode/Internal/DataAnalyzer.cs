@@ -36,6 +36,8 @@ internal static class DataAnalyzer
 
     public static EncodingMode DetermineMode(ReadOnlySpan<byte> data)
     {
+        _ = data;
+
         // Binary data always uses byte mode
         return EncodingMode.Byte;
     }
@@ -68,7 +70,7 @@ internal static class DataAnalyzer
 
     public static int GetAlphanumericValue(char c)
     {
-        var index = AlphanumericChars.IndexOf(c);
+        var index = AlphanumericChars.IndexOf(c, StringComparison.Ordinal);
         if (index < 0)
         {
             throw new InvalidOperationException($"Character '{c}' is not valid in alphanumeric mode.");
@@ -94,7 +96,7 @@ internal static class DataAnalyzer
     {
         foreach (var c in data)
         {
-            if (!AlphanumericChars.Contains(c))
+            if (!AlphanumericChars.Contains(c, StringComparison.Ordinal))
             {
                 return false;
             }

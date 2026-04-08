@@ -452,7 +452,7 @@ public static class QRCodePayload
 
         if (remittanceReference is not null && remittanceText is not null)
         {
-            throw new ArgumentException("Only one of remittanceReference or remittanceText can be specified.");
+            throw new ArgumentException("Only one of remittanceReference or remittanceText can be specified.", nameof(remittanceReference));
         }
 
         var sb = new StringBuilder();

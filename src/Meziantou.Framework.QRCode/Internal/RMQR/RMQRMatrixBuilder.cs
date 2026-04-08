@@ -306,7 +306,7 @@ internal sealed class RMQRMatrixBuilder
         }
     }
 
-    private (int Row, int Col)[] GetFinderSideFormatCoordinates()
+    private static (int Row, int Col)[] GetFinderSideFormatCoordinates()
     {
         var coordinates = new (int Row, int Col)[18];
         var index = 0;

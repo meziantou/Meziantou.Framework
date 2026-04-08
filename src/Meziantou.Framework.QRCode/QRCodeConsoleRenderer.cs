@@ -50,8 +50,8 @@ public static class QRCodeConsoleRenderer
     {
         ArgumentNullException.ThrowIfNull(qrCode);
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleWidth, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleHeight, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleWidth, 1, nameof(options));
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleHeight, 1, nameof(options));
 
         var quietZone = options.QuietZoneModules;
         var moduleWidth = options.ModuleWidth;

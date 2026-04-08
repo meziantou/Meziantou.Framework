@@ -16,7 +16,7 @@ public class ProcessInstance : IDisposable
     private Task<int>? _waitTask;
     private bool _disposed;
 
-    internal ProcessInstance(Process process, Task inputTask, CancellationTokenRegistration cancellationRegistration, ProcessValidationMode validationMode, CancellationToken cancellationToken, Func<bool> hasStandardErrorOutput)
+    internal ProcessInstance(Process process, Task inputTask, CancellationTokenRegistration cancellationRegistration, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
     {
         _process = process;
         _inputTask = inputTask;

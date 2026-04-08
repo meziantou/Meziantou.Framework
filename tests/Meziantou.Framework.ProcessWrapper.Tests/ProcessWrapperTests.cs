@@ -94,7 +94,7 @@ public class ProcessWrapperTests
 
         await process;
 
-        Assert.Contains("test", sb.ToString());
+        Assert.Contains("test", sb.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public class ProcessWrapperTests
         }
 
         using var result = command
-            .WithEnvironmentVariables(new Dictionary<string, string?> { ["TEST_VAR_43"] = "world" })
+            .WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_43"] = "world" })
             .ExecuteBufferedAsync();
 
         await result;
@@ -251,7 +251,7 @@ public class ProcessWrapperTests
 
         using var result = command
             .WithEnvironmentVariables(env => env.Set("TEST_VAR_44", "first"))
-            .WithEnvironmentVariables(new Dictionary<string, string?> { ["TEST_VAR_44"] = "second" })
+            .WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_44"] = "second" })
             .ExecuteBufferedAsync();
 
         await result;
@@ -366,13 +366,12 @@ public class ProcessWrapperTests
     [Fact]
     public async Task ProcessDoesNotExist_Throws()
     {
-        Assert.ThrowsAny<Exception>(() =>
+        await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            ProcessWrapper.Create("NonExistentProcess_12345.exe")
+            using var process = ProcessWrapper.Create("NonExistentProcess_12345.exe")
                 .ExecuteAsync();
+            await process;
         });
-
-        await Task.CompletedTask;
     }
 
     [Fact]
@@ -395,7 +394,7 @@ public class ProcessWrapperTests
 
         await result;
 
-        Assert.Contains("hello from stdin", result.Output.StandardOutput.First().Text);
+        Assert.Contains("hello from stdin", result.Output.StandardOutput.First().Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -427,7 +426,7 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithArguments("--version"));
         Assert.Same(command, command.WithWorkingDirectory(Path.GetTempPath()));
         Assert.Same(command, command.WithEnvironmentVariables(env => env.Set("TEST_VAR_45", "value")));
-        Assert.Same(command, command.WithEnvironmentVariables(new Dictionary<string, string?> { ["TEST_VAR_45"] = "updated" }));
+        Assert.Same(command, command.WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_45"] = "updated" }));
         Assert.Same(command, command.WithValidation(ProcessValidationMode.None));
         Assert.Same(command, command.WithOutputStream(_ => { }));
         Assert.Same(command, command.AddOutputStream(_ => { }));

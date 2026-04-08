@@ -8,7 +8,7 @@ public sealed class ProcessWrapperEnvironmentVariables
     private readonly IDictionary<string, string?> _environment;
 
     public ProcessWrapperEnvironmentVariables()
-        : this(new Dictionary<string, string?>())
+        : this(new Dictionary<string, string?>(StringComparer.Ordinal))
     {
     }
 

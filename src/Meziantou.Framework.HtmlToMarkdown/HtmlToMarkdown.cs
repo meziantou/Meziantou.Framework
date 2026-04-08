@@ -278,38 +278,39 @@ public static class HtmlToMarkdown
 
     private static string ConvertTable(IElement table, ConversionState state)
     {
-        var rows = new List<List<(string Content, string? Align)>>();
+        var headerRows = new List<List<(string Content, string? Align)>>();
+        var bodyRows = new List<List<(string Content, string? Align)>>();
+        var footerRows = new List<List<(string Content, string? Align)>>();
 
-        // Collect header rows from thead
-        var thead = table.QuerySelector("thead");
-        if (thead != null)
+        foreach (var child in table.Children)
         {
-            foreach (var tr in thead.Children.Where(c => c.LocalName == "tr"))
-                rows.Add(ExtractTableRow(tr, state));
+            switch (child.LocalName)
+            {
+                case "thead":
+                    foreach (var tr in child.Children.Where(c => c.LocalName == "tr"))
+                        headerRows.Add(ExtractTableRow(tr, state));
+                    break;
+
+                case "tbody":
+                    foreach (var tr in child.Children.Where(c => c.LocalName == "tr"))
+                        bodyRows.Add(ExtractTableRow(tr, state));
+                    break;
+
+                case "tr":
+                    bodyRows.Add(ExtractTableRow(child, state));
+                    break;
+
+                case "tfoot":
+                    foreach (var tr in child.Children.Where(c => c.LocalName == "tr"))
+                        footerRows.Add(ExtractTableRow(tr, state));
+                    break;
+            }
         }
 
-        // Collect body rows from tbody or direct tr children
-        var bodies = table.QuerySelectorAll("tbody");
-        if (bodies.Length > 0)
-        {
-            foreach (var body in bodies)
-                foreach (var tr in body.Children.Where(c => c.LocalName == "tr"))
-                    rows.Add(ExtractTableRow(tr, state));
-        }
-        else
-        {
-            // No tbody — collect all tr children directly under table
-            foreach (var tr in table.Children.Where(c => c.LocalName == "tr"))
-                rows.Add(ExtractTableRow(tr, state));
-        }
-
-        // Also collect tfoot rows
-        var tfoot = table.QuerySelector("tfoot");
-        if (tfoot != null)
-        {
-            foreach (var tr in tfoot.Children.Where(c => c.LocalName == "tr"))
-                rows.Add(ExtractTableRow(tr, state));
-        }
+        var rows = new List<List<(string Content, string? Align)>>(headerRows.Count + bodyRows.Count + footerRows.Count);
+        rows.AddRange(headerRows);
+        rows.AddRange(bodyRows);
+        rows.AddRange(footerRows);
 
         if (rows.Count == 0)
             return "";

@@ -958,6 +958,47 @@ public sealed class HtmlToMarkdownConverterTests
             """);
     }
 
+    [Fact]
+    public void Table_WithClassAndWidthStyleAttributes()
+    {
+        AssertHtmlToMarkdown(
+            """
+            <table class="table-args">
+            <thead>
+            <tr>
+            <th style="width: 25%;">Name</th>
+            <th style="width: 25%;">Type</th>
+            <th>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+            <td style="width: 25%;"><code>token</code></td>
+            <td style="width: 25%;"><code>Token</code></td>
+            <td>Auth token passed as an HTTP header.</td>
+            </tr>
+            <tr>
+            <td><code>identifier</code></td>
+            <td><code>Text</code></td>
+            <td>The user defined unique identifier for the entity.</td>
+            </tr>
+            <tr>
+            <td><code>type</code></td>
+            <td><code>Text</code></td>
+            <td>The identifier of the entity type.</td>
+            </tr>
+            </tbody>
+            </table>
+            """,
+            """
+            | Name | Type | Description |
+            | --- | --- | --- |
+            | `token` | `Token` | Auth token passed as an HTTP header. |
+            | `identifier` | `Text` | The user defined unique identifier for the entity. |
+            | `type` | `Text` | The identifier of the entity type. |
+            """);
+    }
+
     // --- Table alignment via CSS text-align ---
 
     [Fact]
@@ -1253,6 +1294,35 @@ public sealed class HtmlToMarkdownConverterTests
                         <td>A</td>
                     </tr>
                 </tbody>
+                <tbody>
+                    <tr>
+                        <td>B</td>
+                    </tr>
+                </tbody>
+            </table>
+            """,
+            """
+            | H |
+            | --- |
+            | A |
+            | B |
+            """);
+    }
+
+    [Fact]
+    public void Table_MixedDirectRowsAndTbodyRows()
+    {
+        AssertHtmlToMarkdown(
+            """
+            <table>
+                <thead>
+                    <tr>
+                        <th>H</th>
+                    </tr>
+                </thead>
+                <tr>
+                    <td>A</td>
+                </tr>
                 <tbody>
                     <tr>
                         <td>B</td>
@@ -2452,6 +2522,40 @@ public sealed class HtmlToMarkdownConverterTests
             | R1 |
             | R2 |
             | R3 |
+            """);
+    }
+
+    [Fact]
+    public void Table_IgnoresRowsFromNestedTables()
+    {
+        AssertHtmlToMarkdown(
+            """
+            <table>
+                <caption>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>Nested row</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </caption>
+                <thead>
+                    <tr>
+                        <th>Outer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Outer row</td>
+                    </tr>
+                </tbody>
+            </table>
+            """,
+            """
+            | Outer |
+            | --- |
+            | Outer row |
             """);
     }
 

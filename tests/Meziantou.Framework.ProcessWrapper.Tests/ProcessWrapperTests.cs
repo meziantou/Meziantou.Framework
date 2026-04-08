@@ -174,7 +174,7 @@ public class ProcessWrapperTests
             command = ProcessWrapper.Create("pwd");
         }
 
-        var tempDir = Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar);
+        var tempDir = NormalizeWorkingDirectoryPath(Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar));
 
         using var result = command
             .WithWorkingDirectory(tempDir)
@@ -182,7 +182,7 @@ public class ProcessWrapperTests
 
         await result;
 
-        var outputDir = result.Output.StandardOutput.First().Text.TrimEnd(Path.DirectorySeparatorChar);
+        var outputDir = NormalizeWorkingDirectoryPath(result.Output.StandardOutput.First().Text.TrimEnd(Path.DirectorySeparatorChar));
         Assert.Equal(tempDir, outputDir, ignoreCase: OperatingSystem.IsWindows());
     }
 
@@ -476,5 +476,15 @@ public class ProcessWrapperTests
         }
 
         return [text];
+    }
+
+    private static string NormalizeWorkingDirectoryPath(string path)
+    {
+        if (!OperatingSystem.IsWindows() && path.StartsWith("/private/", StringComparison.Ordinal))
+        {
+            return path["/private".Length..];
+        }
+
+        return path;
     }
 }

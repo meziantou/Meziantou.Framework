@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.DependencyScanning\Meziantou.Framework.DependencyScanning.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />

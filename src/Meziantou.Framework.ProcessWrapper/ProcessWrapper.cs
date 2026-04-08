@@ -6,16 +6,13 @@ using System.Text;
 namespace Meziantou.Framework;
 
 /// <summary>
-/// Fluent, immutable builder for configuring and running processes.
-/// Every <c>With*</c> method returns a new instance with the replaced value.
-/// Every <c>Add*</c> method returns a new instance with the appended value.
+/// Fluent builder for configuring and running processes.
+/// Every <c>With*</c> method mutates the current instance with the replaced value.
+/// Every <c>Add*</c> method mutates the current instance with the appended value.
 /// </summary>
 public sealed class ProcessWrapper
 {
-    private readonly string _fileName;
-    private ImmutableArray<string> _arguments;
-    private string? _workingDirectory;
-    private ImmutableArray<EnvironmentVariableAction> _envActions;
+    private ProcessStartInfo _startInfo;
     private ExitCodeValidationMode _exitCodeValidation;
     private ImmutableArray<Action<string>> _outputHandlers;
     private ImmutableArray<Action<string>> _errorHandlers;
@@ -24,24 +21,20 @@ public sealed class ProcessWrapper
     private ProcessWrapper(string fileName)
     {
         ArgumentNullException.ThrowIfNull(fileName);
-        _fileName = fileName;
-        _arguments = [];
-        _envActions = [];
+        _startInfo = CreateStartInfo(fileName);
         _exitCodeValidation = ExitCodeValidationMode.FailIfNotZero;
         _outputHandlers = [];
         _errorHandlers = [];
     }
 
-    private ProcessWrapper(ProcessWrapper other)
+    private static ProcessStartInfo CreateStartInfo(string fileName)
     {
-        _fileName = other._fileName;
-        _arguments = other._arguments;
-        _workingDirectory = other._workingDirectory;
-        _envActions = other._envActions;
-        _exitCodeValidation = other._exitCodeValidation;
-        _outputHandlers = other._outputHandlers;
-        _errorHandlers = other._errorHandlers;
-        _inputStream = other._inputStream;
+        return new ProcessStartInfo
+        {
+            FileName = fileName,
+            UseShellExecute = false,
+            ErrorDialog = false,
+        };
     }
 
     /// <summary>Creates a new <see cref="ProcessWrapper"/> for the specified executable.</summary>
@@ -50,19 +43,32 @@ public sealed class ProcessWrapper
     /// <summary>Sets the arguments for the process, replacing any previously set arguments.</summary>
     public ProcessWrapper WithArguments(params string[] arguments)
     {
-        return new ProcessWrapper(this) { _arguments = [.. arguments] };
+        _startInfo.ArgumentList.Clear();
+        foreach (var argument in arguments)
+        {
+            _startInfo.ArgumentList.Add(argument);
+        }
+
+        return this;
     }
 
     /// <summary>Sets the arguments for the process, replacing any previously set arguments.</summary>
     public ProcessWrapper WithArguments(IEnumerable<string> arguments)
     {
-        return new ProcessWrapper(this) { _arguments = [.. arguments] };
+        _startInfo.ArgumentList.Clear();
+        foreach (var argument in arguments)
+        {
+            _startInfo.ArgumentList.Add(argument);
+        }
+
+        return this;
     }
 
     /// <summary>Sets the working directory for the process.</summary>
     public ProcessWrapper WithWorkingDirectory(string workingDirectory)
     {
-        return new ProcessWrapper(this) { _workingDirectory = workingDirectory };
+        _startInfo.WorkingDirectory = workingDirectory;
+        return this;
     }
 
     /// <summary>Configures environment variables using a callback. Accumulates with previous calls.</summary>
@@ -70,31 +76,51 @@ public sealed class ProcessWrapper
     {
         var builder = new ProcessWrapperEnvironmentVariables();
         configure(builder);
-        return new ProcessWrapper(this) { _envActions = _envActions.AddRange(builder.Actions) };
+        foreach (var action in builder.Actions)
+        {
+            if (action.Value is null)
+            {
+                _startInfo.Environment.Remove(action.Name);
+            }
+            else
+            {
+                _startInfo.Environment[action.Name] = action.Value;
+            }
+        }
+
+        return this;
     }
 
     /// <summary>Configures environment variables from a dictionary. A null value removes the variable. Accumulates with previous calls.</summary>
     public ProcessWrapper WithEnvironmentVariables(IReadOnlyDictionary<string, string?> variables)
     {
-        var actions = _envActions;
         foreach (var (name, value) in variables)
         {
-            actions = actions.Add(new EnvironmentVariableAction(name, value));
+            if (value is null)
+            {
+                _startInfo.Environment.Remove(name);
+            }
+            else
+            {
+                _startInfo.Environment[name] = value;
+            }
         }
 
-        return new ProcessWrapper(this) { _envActions = actions };
+        return this;
     }
 
     /// <summary>Sets the exit code validation mode.</summary>
     public ProcessWrapper WithExitCodeValidation(ExitCodeValidationMode mode)
     {
-        return new ProcessWrapper(this) { _exitCodeValidation = mode };
+        _exitCodeValidation = mode;
+        return this;
     }
 
     /// <summary>Replaces all output stream handlers with the specified handler.</summary>
     public ProcessWrapper WithOutputStream(Action<string> handler)
     {
-        return new ProcessWrapper(this) { _outputHandlers = [handler] };
+        _outputHandlers = [handler];
+        return this;
     }
 
     /// <summary>Replaces all output stream handlers with one that appends to the specified <see cref="StringBuilder"/>.</summary>
@@ -118,7 +144,8 @@ public sealed class ProcessWrapper
     /// <summary>Adds an additional output stream handler.</summary>
     public ProcessWrapper AddOutputStream(Action<string> handler)
     {
-        return new ProcessWrapper(this) { _outputHandlers = _outputHandlers.Add(handler) };
+        _outputHandlers = _outputHandlers.Add(handler);
+        return this;
     }
 
     /// <summary>Adds an additional output stream handler that appends to the specified <see cref="StringBuilder"/>.</summary>
@@ -142,7 +169,8 @@ public sealed class ProcessWrapper
     /// <summary>Replaces all error stream handlers with the specified handler.</summary>
     public ProcessWrapper WithErrorStream(Action<string> handler)
     {
-        return new ProcessWrapper(this) { _errorHandlers = [handler] };
+        _errorHandlers = [handler];
+        return this;
     }
 
     /// <summary>Replaces all error stream handlers with one that appends to the specified <see cref="StringBuilder"/>.</summary>
@@ -166,7 +194,8 @@ public sealed class ProcessWrapper
     /// <summary>Adds an additional error stream handler.</summary>
     public ProcessWrapper AddErrorStream(Action<string> handler)
     {
-        return new ProcessWrapper(this) { _errorHandlers = _errorHandlers.Add(handler) };
+        _errorHandlers = _errorHandlers.Add(handler);
+        return this;
     }
 
     /// <summary>Adds an additional error stream handler that appends to the specified <see cref="StringBuilder"/>.</summary>
@@ -190,19 +219,22 @@ public sealed class ProcessWrapper
     /// <summary>Sets the input stream to the specified <see cref="Stream"/>.</summary>
     public ProcessWrapper WithInputStream(Stream stream)
     {
-        return new ProcessWrapper(this) { _inputStream = new ProcessInputStream.StreamInput(stream) };
+        _inputStream = new ProcessInputStream.StreamInput(stream);
+        return this;
     }
 
     /// <summary>Sets the input stream to the specified <see cref="TextReader"/>.</summary>
     public ProcessWrapper WithInputStream(TextReader reader)
     {
-        return new ProcessWrapper(this) { _inputStream = new ProcessInputStream.TextReaderInput(reader) };
+        _inputStream = new ProcessInputStream.TextReaderInput(reader);
+        return this;
     }
 
     /// <summary>Sets the input stream to the specified string.</summary>
     public ProcessWrapper WithInputStream(string text)
     {
-        return new ProcessWrapper(this) { _inputStream = new ProcessInputStream.StringInput(text) };
+        _inputStream = new ProcessInputStream.StringInput(text);
+        return this;
     }
 
     /// <summary>
@@ -241,39 +273,11 @@ public sealed class ProcessWrapper
         var hasErrorHandlers = !errorHandlers.IsEmpty;
         var hasInputStream = _inputStream is not null;
 
-        var psi = new ProcessStartInfo
-        {
-            FileName = _fileName,
-            UseShellExecute = false,
-            ErrorDialog = false,
-            RedirectStandardOutput = hasOutputHandlers,
-            RedirectStandardError = hasErrorHandlers,
-            RedirectStandardInput = hasInputStream,
-        };
+        _startInfo.RedirectStandardOutput = hasOutputHandlers;
+        _startInfo.RedirectStandardError = hasErrorHandlers;
+        _startInfo.RedirectStandardInput = hasInputStream;
 
-        foreach (var arg in _arguments)
-        {
-            psi.ArgumentList.Add(arg);
-        }
-
-        if (_workingDirectory is not null)
-        {
-            psi.WorkingDirectory = _workingDirectory;
-        }
-
-        foreach (var action in _envActions)
-        {
-            if (action.Value is null)
-            {
-                psi.Environment.Remove(action.Name);
-            }
-            else
-            {
-                psi.Environment[action.Name] = action.Value;
-            }
-        }
-
-        var process = new Process { StartInfo = psi };
+        var process = new Process { StartInfo = _startInfo };
 
         if (hasOutputHandlers)
         {

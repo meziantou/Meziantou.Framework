@@ -235,6 +235,31 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task WithEnvironmentVariables_LastValueWins()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "echo %TEST_VAR_44%");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("sh")
+                .WithArguments("-c", "echo $TEST_VAR_44");
+        }
+
+        using var result = command
+            .WithEnvironmentVariables(env => env.Set("TEST_VAR_44", "first"))
+            .WithEnvironmentVariables(new Dictionary<string, string?> { ["TEST_VAR_44"] = "second" })
+            .ExecuteBufferedAsync();
+
+        await result;
+
+        Assert.Equal("second", result.Output.StandardOutput.First().Text);
+    }
+
+    [Fact]
     public async Task ExitCodeValidation_FailIfNotZero_Throws()
     {
         ProcessWrapper command;
@@ -369,6 +394,23 @@ public class ProcessWrapperTests
 
         Assert.Equal("first", process1.Output.StandardOutput.First().Text);
         Assert.Equal("second", process2.Output.StandardOutput.First().Text);
+    }
+
+    [Fact]
+    public void FluentMethods_ReturnCurrentInstance()
+    {
+        var command = ProcessWrapper.Create("dotnet");
+
+        Assert.Same(command, command.WithArguments("--version"));
+        Assert.Same(command, command.WithWorkingDirectory(Path.GetTempPath()));
+        Assert.Same(command, command.WithEnvironmentVariables(env => env.Set("TEST_VAR_45", "value")));
+        Assert.Same(command, command.WithEnvironmentVariables(new Dictionary<string, string?> { ["TEST_VAR_45"] = "updated" }));
+        Assert.Same(command, command.WithExitCodeValidation(ExitCodeValidationMode.None));
+        Assert.Same(command, command.WithOutputStream(_ => { }));
+        Assert.Same(command, command.AddOutputStream(_ => { }));
+        Assert.Same(command, command.WithErrorStream(_ => { }));
+        Assert.Same(command, command.AddErrorStream(_ => { }));
+        Assert.Same(command, command.WithInputStream("stdin"));
     }
 
     [Fact]

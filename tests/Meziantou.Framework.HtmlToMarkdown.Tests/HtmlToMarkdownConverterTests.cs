@@ -44,6 +44,41 @@ public sealed class HtmlToMarkdownConverterTests
             "hello world");
     }
 
+    [Fact]
+    public void PlainText_Emoji_Default()
+    {
+        AssertHtmlToMarkdown(
+            "I ❤️ Markdown",
+            "I ❤️ Markdown");
+    }
+
+    [Fact]
+    public void PlainText_Emoji_GitHubShortcode()
+    {
+        AssertHtmlToMarkdown(
+            "I ❤️ Markdown",
+            "I :heart: Markdown",
+            options: new() { ReplaceEmojiWithShortcodes = true });
+    }
+
+    [Fact]
+    public void PlainText_Emoji_UnicodeShortcode()
+    {
+        AssertHtmlToMarkdown(
+            "I ❤️ Markdown",
+            "I :red_heart: Markdown",
+            options: new() { ReplaceEmojiWithShortcodes = true, EmojiShortcodeStyle = EmojiShortcodeStyle.Unicode });
+    }
+
+    [Fact]
+    public void HtmlEntity_Emoji_GitHubShortcode()
+    {
+        AssertHtmlToMarkdown(
+            "I &#x2764;&#xFE0F; Markdown",
+            "I :heart: Markdown",
+            options: new() { ReplaceEmojiWithShortcodes = true });
+    }
+
     // --- Headings (ATX) ---
 
     [Fact]

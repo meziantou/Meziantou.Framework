@@ -33,8 +33,21 @@ var markdown = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions
     UnorderedListMarker = '*',
     ThematicBreak = "***",
     LineBreakStyle = LineBreakStyle.Backslash,
+    UseSimplePunctuation = true,
     UnknownElementHandling = UnknownElementHandling.StripKeepContent,
 });
+```
+
+### Replace SmartyPants punctuation with simple ASCII
+
+You can opt in to convert smart punctuation in regular text nodes:
+
+```csharp
+var markdown = HtmlToMarkdown.Convert(
+    "<p>“Hello” ‘Hello’ — – … « »</p>",
+    new HtmlToMarkdownOptions { UseSimplePunctuation = true });
+
+// "Hello" 'Hello' \-\-\- \-\- ... \<\< \>\>
 ```
 
 ## Supported HTML elements

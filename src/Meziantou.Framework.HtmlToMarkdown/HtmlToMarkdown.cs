@@ -47,8 +47,10 @@ public static class HtmlToMarkdown
 
     private static string ConvertText(IText text, ConversionState state)
     {
-        _ = state;
         var content = CollapseWhitespace(text.Data);
+        if (state.Options.UseSimplePunctuation)
+            content = ApplySimplePunctuation(content);
+
         return EscapeMarkdown(content);
     }
 
@@ -712,6 +714,46 @@ public static class HtmlToMarkdown
                     break;
             }
         }
+        return sb.ToString();
+    }
+
+    private static string ApplySimplePunctuation(string text)
+    {
+        if (text.Length == 0)
+            return text;
+
+        var sb = new StringBuilder(text.Length);
+        foreach (var c in text)
+        {
+            switch (c)
+            {
+                case '“' or '”':
+                    sb.Append('"');
+                    break;
+                case '‘' or '’':
+                    sb.Append('\'');
+                    break;
+                case '–':
+                    sb.Append("--");
+                    break;
+                case '—':
+                    sb.Append("---");
+                    break;
+                case '…':
+                    sb.Append("...");
+                    break;
+                case '«':
+                    sb.Append("<<");
+                    break;
+                case '»':
+                    sb.Append(">>");
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
+
         return sb.ToString();
     }
 

@@ -3289,6 +3289,52 @@ public sealed class HtmlToMarkdownConverterTests
         Assert.Contains("world", result, StringComparison.Ordinal);
     }
 
+    // --- Simple punctuation ---
+
+    [Fact]
+    public void SimplePunctuation_DisabledByDefault()
+    {
+        AssertHtmlToMarkdown(
+            "<p>“Hello”</p>",
+            "“Hello”");
+    }
+
+    [Fact]
+    public void SimplePunctuation_ReplacesRequestedSequences()
+    {
+        AssertHtmlToMarkdown(
+            "<p>“Hello” ‘Hello’ — – … « »</p>",
+            "\"Hello\" 'Hello' \\-\\-\\- \\-\\- ... \\<\\< \\>\\>",
+            options: new() { UseSimplePunctuation = true });
+    }
+
+    [Fact]
+    public void SimplePunctuation_WorksAcrossInlineNodes()
+    {
+        AssertHtmlToMarkdown(
+            "<p>“Hello <em>world</em>”</p>",
+            "\"Hello *world*\"",
+            options: new() { UseSimplePunctuation = true });
+    }
+
+    [Fact]
+    public void SimplePunctuation_DoesNotAffectInlineCode()
+    {
+        AssertHtmlToMarkdown(
+            "<p><code>“Hello” — … « »</code></p>",
+            "`“Hello” — … « »`",
+            options: new() { UseSimplePunctuation = true });
+    }
+
+    [Fact]
+    public void SimplePunctuation_DoesNotAffectCodeBlocks()
+    {
+        AssertHtmlToMarkdown(
+            "<pre><code>“Hello” — … « »</code></pre>",
+            "```\n“Hello” — … « »\n```",
+            options: new() { UseSimplePunctuation = true });
+    }
+
     // --- Consecutive same-type elements ---
 
     [Fact]

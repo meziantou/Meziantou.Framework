@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -72,18 +71,13 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
             var csprojs = Directory.GetFiles(lockFile.Parent, "*.csproj", SearchOption.TopDirectoryOnly);
             foreach (var csproj in csprojs)
             {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "dotnet",
-                    ArgumentList =
-                    {
-                        "restore",
-                        csproj,
-                        "--no-cache",
-                    },
-                };
-                var result = await psi.RunAsTaskAsync(cancellationToken).ConfigureAwait(false);
-                if (result.ExitCode is not 0)
+                using var result = ProcessWrapper.Create("dotnet")
+                    .WithArguments("restore", csproj, "--no-cache")
+                    .WithValidation(ProcessValidationMode.None)
+                    .ExecuteBufferedAsync(cancellationToken);
+
+                var exitCode = await result;
+                if (exitCode is not 0)
                 {
                     Console.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
                 }

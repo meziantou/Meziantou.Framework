@@ -25,10 +25,10 @@ public sealed class HtmlToMarkdownOptions
     public LineBreakStyle LineBreakStyle { get; set; } = LineBreakStyle.TrailingSpaces;
 
     /// <summary>
-    /// Gets or sets a value indicating whether straight quotes and ASCII punctuation
-    /// are converted to smart punctuation characters.
+    /// Gets or sets a value indicating whether smart punctuation characters
+    /// are converted to simple ASCII punctuation.
     /// </summary>
-    public bool UseSmartPunctuation { get; set; }
+    public bool UseSimplePunctuation { get; set; }
 
     /// <summary>Gets or sets how unknown HTML elements are handled.</summary>
     public UnknownElementHandling UnknownElementHandling { get; set; }

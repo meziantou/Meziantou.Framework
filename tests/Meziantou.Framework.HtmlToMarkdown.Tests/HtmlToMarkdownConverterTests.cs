@@ -3289,50 +3289,50 @@ public sealed class HtmlToMarkdownConverterTests
         Assert.Contains("world", result, StringComparison.Ordinal);
     }
 
-    // --- Smart punctuation ---
+    // --- Simple punctuation ---
 
     [Fact]
-    public void SmartPunctuation_DisabledByDefault()
+    public void SimplePunctuation_DisabledByDefault()
     {
         AssertHtmlToMarkdown(
-            "<p>\"Hello\"</p>",
-            "\"Hello\"");
+            "<p>“Hello”</p>",
+            "“Hello”");
     }
 
     [Fact]
-    public void SmartPunctuation_ReplacesRequestedSequences()
+    public void SimplePunctuation_ReplacesRequestedSequences()
     {
         AssertHtmlToMarkdown(
-            "<p>\"Hello\" 'Hello' --- -- ... << >></p>",
-            "“Hello” ‘Hello’ — – … « »",
-            options: new() { UseSmartPunctuation = true });
+            "<p>“Hello” ‘Hello’ — – … « »</p>",
+            "\"Hello\" 'Hello' \\-\\-\\- \\-\\- ... \\<\\< \\>\\>",
+            options: new() { UseSimplePunctuation = true });
     }
 
     [Fact]
-    public void SmartPunctuation_WorksAcrossInlineNodes()
+    public void SimplePunctuation_WorksAcrossInlineNodes()
     {
         AssertHtmlToMarkdown(
-            "<p>\"Hello <em>world</em>\"</p>",
-            "“Hello *world*”",
-            options: new() { UseSmartPunctuation = true });
+            "<p>“Hello <em>world</em>”</p>",
+            "\"Hello *world*\"",
+            options: new() { UseSimplePunctuation = true });
     }
 
     [Fact]
-    public void SmartPunctuation_DoesNotAffectInlineCode()
+    public void SimplePunctuation_DoesNotAffectInlineCode()
     {
         AssertHtmlToMarkdown(
-            "<p><code>\"Hello\" -- ... << >></code></p>",
-            "`\"Hello\" -- ... << >>`",
-            options: new() { UseSmartPunctuation = true });
+            "<p><code>“Hello” — … « »</code></p>",
+            "`“Hello” — … « »`",
+            options: new() { UseSimplePunctuation = true });
     }
 
     [Fact]
-    public void SmartPunctuation_DoesNotAffectCodeBlocks()
+    public void SimplePunctuation_DoesNotAffectCodeBlocks()
     {
         AssertHtmlToMarkdown(
-            "<pre><code>\"Hello\" -- ... << >></code></pre>",
-            "```\n\"Hello\" -- ... << >>\n```",
-            options: new() { UseSmartPunctuation = true });
+            "<pre><code>“Hello” — … « »</code></pre>",
+            "```\n“Hello” — … « »\n```",
+            options: new() { UseSimplePunctuation = true });
     }
 
     // --- Consecutive same-type elements ---

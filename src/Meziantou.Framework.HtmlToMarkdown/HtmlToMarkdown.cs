@@ -48,8 +48,8 @@ public static class HtmlToMarkdown
     private static string ConvertText(IText text, ConversionState state)
     {
         var content = CollapseWhitespace(text.Data);
-        if (state.Options.UseSmartPunctuation)
-            return EscapeMarkdown(ApplySmartPunctuation(content, state));
+        if (state.Options.UseSimplePunctuation)
+            return EscapeMarkdown(ApplySimplePunctuation(content));
 
         return EscapeMarkdown(content);
     }
@@ -717,134 +717,44 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ApplySmartPunctuation(string text, ConversionState state)
+    private static string ApplySimplePunctuation(string text)
     {
         if (text.Length == 0)
             return text;
 
         var sb = new StringBuilder(text.Length);
-        for (var i = 0; i < text.Length; i++)
+        foreach (var c in text)
         {
-            var c = text[i];
-            if (c == '-' && i + 2 < text.Length && text[i + 1] == '-' && text[i + 2] == '-')
+            switch (c)
             {
-                sb.Append('—');
-                i += 2;
-                continue;
+                case '“' or '”':
+                    sb.Append('"');
+                    break;
+                case '‘' or '’':
+                    sb.Append('\'');
+                    break;
+                case '–':
+                    sb.Append("--");
+                    break;
+                case '—':
+                    sb.Append("---");
+                    break;
+                case '…':
+                    sb.Append("...");
+                    break;
+                case '«':
+                    sb.Append("<<");
+                    break;
+                case '»':
+                    sb.Append(">>");
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
             }
-
-            if (c == '-' && i + 1 < text.Length && text[i + 1] == '-')
-            {
-                sb.Append('–');
-                i += 1;
-                continue;
-            }
-
-            if (c == '.' && i + 2 < text.Length && text[i + 1] == '.' && text[i + 2] == '.')
-            {
-                sb.Append('…');
-                i += 2;
-                continue;
-            }
-
-            if (c == '<' && i + 1 < text.Length && text[i + 1] == '<')
-            {
-                sb.Append('«');
-                i += 1;
-                continue;
-            }
-
-            if (c == '>' && i + 1 < text.Length && text[i + 1] == '>')
-            {
-                sb.Append('»');
-                i += 1;
-                continue;
-            }
-
-            if (c == '"')
-            {
-                var isOpeningQuote = IsOpeningQuote(text, i, state.NextDoubleQuoteIsOpening);
-                sb.Append(isOpeningQuote ? '“' : '”');
-                state.NextDoubleQuoteIsOpening = !isOpeningQuote;
-                continue;
-            }
-
-            if (c == '\'')
-            {
-                if (IsApostrophe(text, i))
-                {
-                    sb.Append('’');
-                    continue;
-                }
-
-                var isOpeningQuote = IsOpeningQuote(text, i, state.NextSingleQuoteIsOpening);
-                sb.Append(isOpeningQuote ? '‘' : '’');
-                state.NextSingleQuoteIsOpening = !isOpeningQuote;
-                continue;
-            }
-
-            sb.Append(c);
         }
 
         return sb.ToString();
-    }
-
-    private static bool IsApostrophe(string text, int index)
-    {
-        var previous = GetPreviousNonWhitespaceChar(text, index);
-        var next = GetNextNonWhitespaceChar(text, index);
-        return previous is not null && next is not null && char.IsLetterOrDigit(previous.Value) && char.IsLetterOrDigit(next.Value);
-    }
-
-    private static bool IsOpeningQuote(string text, int index, bool defaultValue)
-    {
-        var previous = GetPreviousNonWhitespaceChar(text, index);
-        var next = GetNextNonWhitespaceChar(text, index);
-        if (previous is null && next is null)
-            return defaultValue;
-        if (previous is null)
-            return true;
-        if (next is null)
-            return false;
-
-        if (IsOpeningQuoteContext(previous.Value))
-            return true;
-        if (IsClosingQuoteContext(next.Value))
-            return false;
-
-        return defaultValue;
-    }
-
-    private static bool IsOpeningQuoteContext(char c)
-    {
-        return c is '(' or '[' or '{' or '<' or '«' or '“' or '‘';
-    }
-
-    private static bool IsClosingQuoteContext(char c)
-    {
-        return c is ')' or ']' or '}' or '>' or '»' or ',' or '.' or '!' or '?' or ':' or ';';
-    }
-
-    private static char? GetPreviousNonWhitespaceChar(string text, int index)
-    {
-        for (var i = index - 1; i >= 0; i--)
-        {
-            if (!char.IsWhiteSpace(text[i]))
-                return text[i];
-        }
-
-        return null;
-    }
-
-    private static char? GetNextNonWhitespaceChar(string text, int index)
-    {
-        for (var i = index + 1; i < text.Length; i++)
-        {
-            if (!char.IsWhiteSpace(text[i]))
-                return text[i];
-        }
-
-        return null;
     }
 
     private static string CollapseWhitespace(string text)
@@ -1065,8 +975,6 @@ public static class HtmlToMarkdown
     {
         public HtmlToMarkdownOptions Options { get; }
         public bool InTableCell { get; set; }
-        public bool NextDoubleQuoteIsOpening { get; set; } = true;
-        public bool NextSingleQuoteIsOpening { get; set; } = true;
 
         public ConversionState(HtmlToMarkdownOptions options)
         {

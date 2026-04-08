@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - name: Generate per-project solutions
         run: dotnet run ./eng/update-project-slnx.cs
       - name: Create pull request if needed

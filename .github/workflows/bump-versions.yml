@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - run: dotnet run ./eng/update-versions.cs -- --create-pull-request
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - run: |
           dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator
           if ($LASTEXITCODE -ne 0) {

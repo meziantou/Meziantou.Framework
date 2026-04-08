@@ -74,19 +74,8 @@ public sealed class ProcessWrapper
     /// <summary>Configures environment variables using a callback. Accumulates with previous calls.</summary>
     public ProcessWrapper WithEnvironmentVariables(Action<ProcessWrapperEnvironmentVariables> configure)
     {
-        var builder = new ProcessWrapperEnvironmentVariables();
+        var builder = new ProcessWrapperEnvironmentVariables(_startInfo.Environment);
         configure(builder);
-        foreach (var action in builder.Actions)
-        {
-            if (action.Value is null)
-            {
-                _startInfo.Environment.Remove(action.Name);
-            }
-            else
-            {
-                _startInfo.Environment[action.Name] = action.Value;
-            }
-        }
 
         return this;
     }

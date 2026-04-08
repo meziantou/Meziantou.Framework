@@ -49,7 +49,7 @@ public static class HtmlToMarkdown
     {
         var content = CollapseWhitespace(text.Data);
         if (state.Options.UseSimplePunctuation)
-            return EscapeMarkdown(ApplySimplePunctuation(content));
+            content = ApplySimplePunctuation(content);
 
         return EscapeMarkdown(content);
     }

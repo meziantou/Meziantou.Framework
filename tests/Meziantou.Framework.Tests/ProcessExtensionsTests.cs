@@ -11,19 +11,26 @@ public class ProcessExtensionsTests
     [Fact]
     public async Task RunAsTask()
     {
-        static Task<ProcessResult> CreateProcess()
+        static ProcessWrapper CreateProcess()
         {
             if (OperatingSystem.IsWindows())
-                return ProcessExtensions.RunAsTaskAsync("cmd", "/C echo test", CancellationToken.None);
+            {
+                return ProcessWrapper.Create("cmd")
+                    .WithArguments("/C", "echo test");
+            }
 
-            return ProcessExtensions.RunAsTaskAsync("echo", "test", CancellationToken.None);
+            return ProcessWrapper.Create("echo")
+                .WithArguments("test");
         }
 
-        var result = await CreateProcess();
-        Assert.Equal(0, result.ExitCode);
-        Assert.Single(result.Output);
-        Assert.Equal("test", result.Output[0].Text);
-        Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
+        using var result = CreateProcess()
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteBufferedAsync();
+
+        var exitCode = await result;
+        Assert.Equal(0, exitCode);
+        Assert.Single(result.Output.StandardOutput);
+        Assert.Equal("test", result.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -47,11 +54,15 @@ public class ProcessExtensionsTests
             };
         }
 
-        var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None);
-        Assert.Equal(0, result.ExitCode);
-        Assert.Single(result.Output);
-        Assert.Equal("test", result.Output[0].Text);
-        Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
+        using var result = ProcessWrapper.Create(psi.FileName)
+            .WithArguments(psi.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteBufferedAsync();
+
+        var exitCode = await result;
+        Assert.Equal(0, exitCode);
+        Assert.Single(result.Output.StandardOutput);
+        Assert.Equal("test", result.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -75,16 +86,26 @@ public class ProcessExtensionsTests
             };
         }
 
-        var result = await psi.RunAsTaskAsync(redirectOutput: false, CancellationToken.None);
-        Assert.Equal(0, result.ExitCode);
-        Assert.Empty(result.Output);
+        using var process = ProcessWrapper.Create(psi.FileName)
+            .WithArguments(psi.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteAsync();
+
+        var exitCode = await process;
+        Assert.Equal(0, exitCode);
     }
 
     [Fact]
     public async Task RunAsTask_ProcessDoesNotExists()
     {
-        var psi = new ProcessStartInfo("ProcessDoesNotExists.exe");
-        await Assert.ThrowsAsync<Win32Exception>(() => psi.RunAsTaskAsync(CancellationToken.None));
+        await Assert.ThrowsAsync<Win32Exception>(async () =>
+        {
+            using var process = ProcessWrapper.Create("ProcessDoesNotExists.exe")
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteAsync(CancellationToken.None);
+
+            await process;
+        });
     }
 
     [Fact]
@@ -93,14 +114,20 @@ public class ProcessExtensionsTests
         var stopwatch = Stopwatch.StartNew();
 
         using var cts = new CancellationTokenSource();
-        Task task;
+        ProcessInstance task;
         if (OperatingSystem.IsWindows())
         {
-            task = ProcessExtensions.RunAsTaskAsync("ping.exe", "127.0.0.1 -n 10", cts.Token);
+            task = ProcessWrapper.Create("ping.exe")
+                .WithArguments("127.0.0.1", "-n", "10")
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteAsync(cts.Token);
         }
         else
         {
-            task = ProcessExtensions.RunAsTaskAsync("ping", "127.0.0.1 -c 10", cts.Token);
+            task = ProcessWrapper.Create("ping")
+                .WithArguments("127.0.0.1", "-c", "10")
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteAsync(cts.Token);
         }
 
         // Wait for the process to start
@@ -115,7 +142,7 @@ public class ProcessExtensionsTests
         }
 
         await cts.CancelAsync();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]

@@ -1,4 +1,5 @@
 using Meziantou.Framework.InlineSnapshotTesting;
+using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
@@ -715,6 +716,18 @@ public class QRCodeTests
         Assert.True(qrH.Version >= qrL.Version);
     }
 
+    public static TheoryData<int, int> NumericPayloadLengthForAllVersions => CreateNumericPayloadLengthForAllVersions();
+
+    [Theory]
+    [MemberData(nameof(NumericPayloadLengthForAllVersions))]
+    public void Create_Numeric_HasOneQRCodePerVersion(int expectedVersion, int payloadLength)
+    {
+        var qr = QRCode.Create(new string('1', payloadLength), ErrorCorrectionLevel.L);
+
+        Assert.Equal(expectedVersion, qr.Version);
+        Assert.Equal(17 + (expectedVersion * 4), qr.Size);
+    }
+
     // ───── Binary data coverage ─────
 
     [Fact]
@@ -957,5 +970,63 @@ public class QRCodeTests
         }
 
         return sb.ToString();
+    }
+
+    private static TheoryData<int, int> CreateNumericPayloadLengthForAllVersions()
+    {
+        var data = new TheoryData<int, int>();
+        var versionByLength = new Dictionary<int, int>();
+
+        var minLength = 1;
+        const int maxLength = 7089;
+        for (var version = 1; version <= 40; version++)
+        {
+            var payloadLength = FindMinimumLengthForVersion(version, minLength, maxLength, versionByLength);
+            data.Add(version, payloadLength);
+            minLength = payloadLength + 1;
+        }
+
+        return data;
+    }
+
+    private static int FindMinimumLengthForVersion(int expectedVersion, int minLength, int maxLength, Dictionary<int, int> versionByLength)
+    {
+        var left = minLength;
+        var right = maxLength;
+        var bestLength = maxLength;
+
+        while (left <= right)
+        {
+            var middle = left + ((right - left) / 2);
+            var actualVersion = GetVersionForNumericPayloadLength(middle, versionByLength);
+            if (actualVersion >= expectedVersion)
+            {
+                bestLength = middle;
+                right = middle - 1;
+            }
+            else
+            {
+                left = middle + 1;
+            }
+        }
+
+        var resolvedVersion = GetVersionForNumericPayloadLength(bestLength, versionByLength);
+        if (resolvedVersion != expectedVersion)
+        {
+            throw new InvalidOperationException($"Unable to find payload for QR version {expectedVersion}. Resolved version: {resolvedVersion}.");
+        }
+
+        return bestLength;
+    }
+
+    private static int GetVersionForNumericPayloadLength(int payloadLength, Dictionary<int, int> versionByLength)
+    {
+        if (!versionByLength.TryGetValue(payloadLength, out var version))
+        {
+            version = QRCode.Create(new string('1', payloadLength), ErrorCorrectionLevel.L).Version;
+            versionByLength[payloadLength] = version;
+        }
+
+        return version;
     }
 }

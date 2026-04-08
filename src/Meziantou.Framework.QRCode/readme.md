@@ -8,29 +8,36 @@ QR code generation library with SVG and console renderers. Implements the QR cod
 |------|--------|-------|-------------|
 | Standard QR | `QRCode.Create(...)` | 21x21 to 177x177 | ISO/IEC 18004, versions 1-40 |
 | Micro QR | `QRCode.CreateMicroQR(...)` | 11x11 to 17x17 | ISO/IEC 18004, versions M1-M4 |
-| rMQR | `QRCode.CreateRMQR(...)` | Rectangular (e.g., 7x43) | ISO/IEC 23941 |
+| rMQR | `QRCode.CreateRMQR(...)` | Rectangular (width > height) | ISO/IEC 23941 |
 
 ## Usage
 
-### Generate a QR code
+### Generate QR codes (Standard, Micro QR, rMQR)
 
 ```csharp
 // Standard QR code
-var qr = QRCode.Create("https://example.com");
-var qr = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
+var standardQr = QRCode.Create("HELLO WORLD", ErrorCorrectionLevel.H);
 
 // Micro QR code (smaller, single finder pattern)
 var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L);
 
 // Rectangular Micro QR code (narrow rectangular shape)
-var rmqr = QRCode.CreateRMQR("https://example.com", ErrorCorrectionLevel.M);
+var rmqr = QRCode.CreateRMQR("https://www.meziantou.net", ErrorCorrectionLevel.M);
+
+// Format info
+Console.WriteLine($"{standardQr.Type} {standardQr.Width}x{standardQr.Height}");
+Console.WriteLine($"{microQr.Type} {microQr.Width}x{microQr.Height}");
+Console.WriteLine($"{rmqr.Type} {rmqr.Width}x{rmqr.Height}");
 ```
 
 ### Render as SVG
 
 ```csharp
-var svg = qr.ToSvg();
-var svg = qr.ToSvg(new QRCodeSvgOptions
+var svg = standardQr.ToSvg();
+var microSvg = microQr.ToSvg(new QRCodeSvgOptions { ModuleSize = 2, QuietZoneModules = 2 });
+var rmqrSvg = rmqr.ToSvg(new QRCodeSvgOptions { ModuleSize = 2, QuietZoneModules = 2 });
+
+var customSvg = standardQr.ToSvg(new QRCodeSvgOptions
 {
     ModuleSize = 10,
     QuietZoneModules = 4,
@@ -42,8 +49,21 @@ var svg = qr.ToSvg(new QRCodeSvgOptions
 ### Render to console
 
 ```csharp
-qr.WriteToConsole();
-var text = qr.ToConsoleString();
+standardQr.WriteToConsole();
+var standardText = standardQr.ToConsoleString();
+var microText = microQr.ToConsoleString(new QRCodeConsoleOptions
+{
+    QuietZoneModules = 1,
+    ModuleWidth = 2,
+    ModuleHeight = 2, // 2x bigger output that can look more square on many terminals
+});
+
+var rmqrText = rmqr.ToConsoleString(new QRCodeConsoleOptions
+{
+    QuietZoneModules = 1,
+    ModuleWidth = 2,
+    ModuleHeight = 2,
+});
 ```
 
 ### Content helpers
@@ -84,6 +104,6 @@ var otp = QRCodePayload.OneTimePassword(OneTimePasswordType.Totp,
 var btc = QRCodePayload.Bitcoin("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", amount: 0.05m);
 
 // SEPA payment (EPC QR)
-var sepa = QRCodePayload.SepaPayment("Red Cross", "DE89370400440532013000", 12.50m,
+var sepa = QRCodePayload.SepaPayment("Example", "DE00000000000000000000", 12.50m,
     remittanceText: "Donation");
 ```

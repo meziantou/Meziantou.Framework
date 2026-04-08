@@ -4,8 +4,13 @@ namespace Meziantou.Framework.Internal.RMQR;
 
 internal static class RMQRVersion
 {
-    // 32 versions indexed 0-31
-    // Each entry is (height, width)
+    private readonly record struct ErrorCorrectionProfile(byte EcCodewordsPerBlock, byte Group1BlockCount, byte Group1DataCodewords, byte Group2BlockCount, byte Group2DataCodewords)
+    {
+        public int DataCodewords => (Group1BlockCount * Group1DataCodewords) + (Group2BlockCount * Group2DataCodewords);
+        public int BlockCount => Group1BlockCount + Group2BlockCount;
+        public int TotalCodewords => (DataCodewords + EcCodewordsPerBlock * BlockCount);
+    }
+
     private static ReadOnlySpan<byte> Heights =>
     [
         7, 7, 7, 7, 7,
@@ -26,105 +31,130 @@ internal static class RMQRVersion
         43, 59, 77, 99, 139,
     ];
 
-    // Total codewords by version (0-31)
-    private static ReadOnlySpan<byte> TotalCodewords =>
+    private static readonly ErrorCorrectionProfile[] MProfiles =
     [
-        13, 21, 32, 44, 68,
-        22, 32, 44, 60, 90,
-        12, 32, 44, 60, 80, 118,
-        12, 32, 48, 64, 88, 130,
-        40, 54, 74, 100, 148,
-        46, 62, 82, 112, 245,
+        new(7, 1, 6, 0, 0),   // 1: R7x43
+        new(9, 1, 12, 0, 0),  // 2: R7x59
+        new(12, 1, 20, 0, 0), // 3: R7x77
+        new(16, 1, 28, 0, 0), // 4: R7x99
+        new(24, 1, 44, 0, 0), // 5: R7x139
+        new(9, 1, 12, 0, 0),  // 6: R9x43
+        new(12, 1, 21, 0, 0), // 7: R9x59
+        new(18, 1, 31, 0, 0), // 8: R9x77
+        new(24, 1, 42, 0, 0), // 9: R9x99
+        new(18, 1, 31, 1, 32), // 10: R9x139
+        new(8, 1, 7, 0, 0),   // 11: R11x27
+        new(12, 1, 19, 0, 0), // 12: R11x43
+        new(16, 1, 31, 0, 0), // 13: R11x59
+        new(24, 1, 43, 0, 0), // 14: R11x77
+        new(16, 1, 28, 1, 29), // 15: R11x99
+        new(24, 2, 42, 0, 0), // 16: R11x139
+        new(9, 1, 12, 0, 0),  // 17: R13x27
+        new(14, 1, 27, 0, 0), // 18: R13x43
+        new(22, 1, 38, 0, 0), // 19: R13x59
+        new(16, 1, 26, 1, 27), // 20: R13x77
+        new(20, 1, 36, 1, 37), // 21: R13x99
+        new(20, 2, 35, 1, 36), // 22: R13x139
+        new(18, 1, 33, 0, 0), // 23: R15x43
+        new(26, 1, 48, 0, 0), // 24: R15x59
+        new(18, 1, 33, 1, 34), // 25: R15x77
+        new(24, 2, 44, 0, 0), // 26: R15x99
+        new(24, 2, 42, 1, 43), // 27: R15x139
+        new(22, 1, 39, 0, 0), // 28: R17x43
+        new(16, 2, 28, 0, 0), // 29: R17x59
+        new(22, 2, 39, 0, 0), // 30: R17x77
+        new(20, 2, 33, 1, 34), // 31: R17x99
+        new(20, 4, 38, 0, 0), // 32: R17x139
     ];
 
-    // Data codewords for EC level M by version (0-31)
-    private static ReadOnlySpan<byte> DataCodewordsM =>
+    private static readonly ErrorCorrectionProfile[] HProfiles =
     [
-        4, 7, 10, 14, 24,
-        8, 12, 16, 22, 36,
-        4, 12, 18, 24, 34, 54,
-        4, 14, 20, 28, 40, 62,
-        16, 24, 32, 46, 72,
-        20, 28, 38, 52, 121,
+        new(10, 1, 3, 0, 0),  // 1
+        new(14, 1, 7, 0, 0),  // 2
+        new(22, 1, 10, 0, 0), // 3
+        new(30, 1, 14, 0, 0), // 4
+        new(22, 2, 12, 0, 0), // 5
+        new(14, 1, 7, 0, 0),  // 6
+        new(22, 1, 11, 0, 0), // 7
+        new(16, 1, 8, 1, 9),  // 8
+        new(22, 2, 11, 0, 0), // 9
+        new(22, 3, 11, 0, 0), // 10
+        new(10, 1, 5, 0, 0),  // 11
+        new(20, 1, 11, 0, 0), // 12
+        new(16, 1, 7, 1, 8),  // 13
+        new(22, 1, 11, 1, 12), // 14
+        new(30, 1, 14, 1, 15), // 15
+        new(30, 3, 14, 0, 0), // 16
+        new(14, 1, 7, 0, 0),  // 17
+        new(28, 1, 13, 0, 0), // 18
+        new(20, 2, 10, 0, 0), // 19
+        new(28, 1, 14, 1, 15), // 20
+        new(26, 1, 11, 2, 12), // 21
+        new(28, 2, 13, 2, 14), // 22
+        new(18, 1, 7, 1, 8),  // 23
+        new(24, 2, 13, 0, 0), // 24
+        new(24, 2, 10, 1, 11), // 25
+        new(22, 4, 12, 0, 0), // 26
+        new(26, 1, 13, 4, 14), // 27
+        new(20, 1, 10, 1, 11), // 28
+        new(30, 2, 14, 0, 0), // 29
+        new(28, 1, 12, 2, 13), // 30
+        new(26, 4, 14, 0, 0), // 31
+        new(26, 2, 12, 4, 13), // 32
     ];
 
-    // Data codewords for EC level H by version (0-31)
-    private static ReadOnlySpan<byte> DataCodewordsH =>
+    private static ReadOnlySpan<byte> NumericCharacterCountBits =>
     [
-        2, 4, 6, 8, 14,
-        4, 6, 10, 14, 22,
-        2, 6, 10, 14, 20, 32,
-        2, 8, 12, 16, 24, 36,
-        10, 14, 20, 28, 44,
-        12, 18, 24, 32, 61,
+        4, 5, 6, 7, 7, 5, 6, 7, 7, 8, 4, 6, 7, 7, 8, 8,
+        5, 6, 7, 7, 8, 8, 7, 7, 8, 8, 9, 7, 8, 8, 8, 9,
     ];
 
-    public static int GetHeight(int version) => Heights[version];
+    private static ReadOnlySpan<byte> AlphanumericCharacterCountBits =>
+    [
+        3, 5, 5, 6, 6, 5, 5, 6, 6, 7, 4, 5, 6, 6, 7, 7,
+        5, 6, 6, 7, 7, 8, 6, 7, 7, 7, 8, 6, 7, 7, 8, 8,
+    ];
 
-    public static int GetWidth(int version) => Widths[version];
+    private static ReadOnlySpan<byte> ByteCharacterCountBits =>
+    [
+        3, 4, 5, 5, 6, 4, 5, 5, 6, 6, 3, 5, 5, 6, 6, 7,
+        4, 5, 6, 6, 7, 7, 6, 6, 7, 7, 7, 6, 6, 7, 7, 8,
+    ];
 
-    public static int GetTotalCodewords(int version) => TotalCodewords[version];
+    private static ReadOnlySpan<byte> KanjiCharacterCountBits =>
+    [
+        2, 3, 4, 5, 5, 3, 4, 5, 5, 6, 2, 4, 5, 5, 6, 6,
+        3, 5, 5, 6, 6, 7, 5, 5, 6, 6, 7, 5, 6, 6, 6, 7,
+    ];
 
-    public static int GetDataCodewords(int version, ErrorCorrectionLevel ecLevel)
-    {
-        return ecLevel switch
-        {
-            ErrorCorrectionLevel.M => DataCodewordsM[version],
-            ErrorCorrectionLevel.H => DataCodewordsH[version],
-            _ => throw new ArgumentOutOfRangeException(nameof(ecLevel), $"rMQR only supports EC levels M and H, got {ecLevel}."),
-        };
-    }
+    public static int GetHeight(int version) => Heights[version - 1];
+
+    public static int GetWidth(int version) => Widths[version - 1];
+
+    public static int GetTotalCodewords(int version) => MProfiles[version - 1].TotalCodewords;
+
+    public static int GetDataCodewords(int version, ErrorCorrectionLevel ecLevel) => GetErrorCorrectionProfile(version, ecLevel).DataCodewords;
 
     public static int GetECCodewords(int version, ErrorCorrectionLevel ecLevel)
     {
-        return GetTotalCodewords(version) - GetDataCodewords(version, ecLevel);
+        var profile = GetErrorCorrectionProfile(version, ecLevel);
+        return profile.EcCodewordsPerBlock * profile.BlockCount;
     }
 
-    // Character count indicator bits by version and mode
-    // Group 0: versions 0,1,5         -> Numeric=4, Alpha=3, Byte=3, Kanji=2
-    // Group 1: versions 2,3,6,7,10,11,16 -> Numeric=5, Alpha=4, Byte=4, Kanji=3
-    // Group 2: versions 4,8,9,12-15,17-26,27-30 -> Numeric=6, Alpha=5, Byte=5, Kanji=4
-    // Group 3: version 31              -> Numeric=7, Alpha=6, Byte=6, Kanji=5
     public static int GetCharacterCountBits(int version, EncodingMode mode)
     {
-        var group = GetCCIGroup(version);
-        return (mode, group) switch
+        return mode switch
         {
-            (EncodingMode.Numeric, 0) => 4,
-            (EncodingMode.Numeric, 1) => 5,
-            (EncodingMode.Numeric, 2) => 6,
-            (EncodingMode.Numeric, 3) => 7,
-            (EncodingMode.Alphanumeric, 0) => 3,
-            (EncodingMode.Alphanumeric, 1) => 4,
-            (EncodingMode.Alphanumeric, 2) => 5,
-            (EncodingMode.Alphanumeric, 3) => 6,
-            (EncodingMode.Byte, 0) => 3,
-            (EncodingMode.Byte, 1) => 4,
-            (EncodingMode.Byte, 2) => 5,
-            (EncodingMode.Byte, 3) => 6,
-            (EncodingMode.Kanji, 0) => 2,
-            (EncodingMode.Kanji, 1) => 3,
-            (EncodingMode.Kanji, 2) => 4,
-            (EncodingMode.Kanji, 3) => 5,
+            EncodingMode.Numeric => NumericCharacterCountBits[version - 1],
+            EncodingMode.Alphanumeric => AlphanumericCharacterCountBits[version - 1],
+            EncodingMode.Byte => ByteCharacterCountBits[version - 1],
+            EncodingMode.Kanji => KanjiCharacterCountBits[version - 1],
             _ => throw new ArgumentOutOfRangeException(nameof(mode)),
         };
     }
 
-    private static int GetCCIGroup(int version)
-    {
-        return version switch
-        {
-            0 or 1 or 5 => 0,
-            2 or 3 or 6 or 7 or 10 or 11 or 16 => 1,
-            31 => 3,
-            _ => 2, // versions 4,8,9,12-15,17-26,27-30
-        };
-    }
-
-    // Mode indicator is 3 bits for rMQR
     public static int GetModeIndicatorBits() => 3;
 
-    // Mode indicator values (3-bit)
     public static int GetModeIndicatorValue(EncodingMode mode)
     {
         return mode switch
@@ -137,11 +167,8 @@ internal static class RMQRVersion
         };
     }
 
-    // Terminator is always 3 bits for rMQR
     public static int GetTerminatorBits() => 3;
 
-    // Determine the smallest version that can fit the data.
-    // Smallest = smallest total module area (height * width).
     public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode)
     {
         var charCount = mode switch
@@ -154,23 +181,16 @@ internal static class RMQRVersion
         var bestVersion = -1;
         var bestArea = int.MaxValue;
 
-        for (var version = 0; version < 32; version++)
+        for (var version = 1; version <= 32; version++)
         {
-            var dataCW = GetDataCodewords(version, ecLevel);
-            var totalDataBits = dataCW * 8;
-
-            // Compute how many bits we need for this version
-            var modeIndicatorBits = GetModeIndicatorBits();
+            var totalDataBits = GetDataCodewords(version, ecLevel) * 8;
             var cciBits = GetCharacterCountBits(version, mode);
-
-            // Check if char count fits in the CCI field
             if (charCount >= (1 << cciBits))
             {
                 continue;
             }
 
-            var neededBits = modeIndicatorBits + cciBits + GetDataBitsForMode(data, mode);
-            // We need at least the data bits; terminator and padding are added up to totalDataBits
+            var neededBits = GetModeIndicatorBits() + cciBits + GetDataBitsForMode(data, mode);
             if (neededBits > totalDataBits)
             {
                 continue;
@@ -190,6 +210,42 @@ internal static class RMQRVersion
         }
 
         return bestVersion;
+    }
+
+    public static int[] GetAlignmentPatternColumnPositions(int version)
+    {
+        var width = GetWidth(version);
+        return width switch
+        {
+            27 => [],
+            43 => [21],
+            59 => [19, 39],
+            77 => [25, 51],
+            99 => [23, 49, 75],
+            139 => [27, 55, 83, 111],
+            _ => throw new InvalidOperationException("Unsupported rMQR width."),
+        };
+    }
+
+    public static (int Group1BlockCount, int Group1DataCodewords, int Group2BlockCount, int Group2DataCodewords, int EcCodewordsPerBlock) GetErrorCorrectionBlocks(int version, ErrorCorrectionLevel ecLevel)
+    {
+        var profile = GetErrorCorrectionProfile(version, ecLevel);
+        return (profile.Group1BlockCount, profile.Group1DataCodewords, profile.Group2BlockCount, profile.Group2DataCodewords, profile.EcCodewordsPerBlock);
+    }
+
+    private static ErrorCorrectionProfile GetErrorCorrectionProfile(int version, ErrorCorrectionLevel ecLevel)
+    {
+        if (version < 1 || version > 32)
+        {
+            throw new ArgumentOutOfRangeException(nameof(version), "rMQR version must be in the range 1-32.");
+        }
+
+        return ecLevel switch
+        {
+            ErrorCorrectionLevel.M => MProfiles[version - 1],
+            ErrorCorrectionLevel.H => HProfiles[version - 1],
+            _ => throw new ArgumentOutOfRangeException(nameof(ecLevel), $"rMQR only supports EC levels M and H, got {ecLevel}."),
+        };
     }
 
     private static int GetDataBitsForMode(string data, EncodingMode mode)
@@ -223,57 +279,5 @@ internal static class RMQRVersion
         var fullPairs = length / 2;
         var remainder = length % 2;
         return (fullPairs * 11) + (remainder * 6);
-    }
-
-    // Alignment pattern center positions for rMQR versions.
-    // Only versions with width >= 43 have additional alignment patterns.
-    // The alignment patterns are placed in the interior at specific column positions.
-    // Returns the column centers for the alignment row(s).
-    public static int[] GetAlignmentPatternColumnPositions(int version)
-    {
-        var width = GetWidth(version);
-
-        // For narrow codes (width 27), no alignment patterns
-        if (width <= 27)
-        {
-            return [];
-        }
-
-        // Alignment pattern columns are placed between the finder and sub-finder.
-        // They appear at columns that create roughly even spacing.
-        // The first possible column is 21 (after finder+separator+timing area),
-        // then subsequent ones at intervals, with the last being width-13 (before sub-finder area).
-        // Based on the spec, alignment centers are at fixed positions depending on width.
-        return width switch
-        {
-            43 => [21],
-            59 => [19, 39],
-            77 => [25, 51],
-            99 => [27, 55, 75],
-            139 => [21, 47, 73, 99, 119],
-            _ => [],
-        };
-    }
-
-    // Alignment pattern row positions for rMQR.
-    // For heights 7 and 9, alignment is only in the middle row area of the timing edge.
-    // For heights >= 11, alignment patterns appear at row positions.
-    public static int[] GetAlignmentPatternRowPositions(int version)
-    {
-        var height = GetHeight(version);
-        // Alignment patterns in rMQR sit along a horizontal center line.
-        // For all heights, the alignment center row is at the vertical midpoint.
-        // But actually rMQR alignment patterns are all on the horizontal center stripe.
-        // There's really just one row for alignments.
-        return height switch
-        {
-            7 => [3],  // center of 7-row symbol
-            9 => [4],
-            11 => [5],
-            13 => [6],
-            15 => [7],
-            17 => [8],
-            _ => [],
-        };
     }
 }

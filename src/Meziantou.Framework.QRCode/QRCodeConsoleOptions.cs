@@ -10,4 +10,10 @@ public sealed class QRCodeConsoleOptions
 
     /// <summary>Gets or sets the number of quiet zone modules. Default is 2.</summary>
     public int QuietZoneModules { get; set; } = 2;
+
+    /// <summary>Gets or sets the horizontal size of each rendered module in text cells. Default is 1.</summary>
+    public int ModuleWidth { get; set; } = 1;
+
+    /// <summary>Gets or sets the vertical size of each rendered module in text cells. Default is 1.</summary>
+    public int ModuleHeight { get; set; } = 1;
 }

@@ -17,43 +17,84 @@ internal sealed class RMQRMatrixBuilder
         _isReserved = new bool[_height, _width];
     }
 
-    public int Height => _height;
-    public int Width => _width;
     public bool[,] Modules => _modules;
 
     public void Build(byte[] codewords, ErrorCorrectionLevel ecLevel)
     {
-        PlaceFinderPattern();
-        PlaceFinderSubPattern();
-        PlaceSeparators();
-        PlaceTimingPatterns();
-        PlaceInteriorTimingStripes();
-        ReserveFormatInfoAreas();
+        PlaceFixedPatterns();
         PlaceDataBits(codewords);
-        ApplyMask();
         PlaceFormatInfo(ecLevel);
     }
 
-    // Standard 7x7 finder pattern at top-left corner
+    private void PlaceFixedPatterns()
+    {
+        ReserveFunctionPattern();
+        PlaceTimingAndAlignmentPatterns();
+        PlaceFinderPattern();
+        PlaceFinderSubPattern();
+        PlaceSeparators();
+        PlaceCornerFinders();
+    }
+
+    private void ReserveFunctionPattern()
+    {
+        // Edge timing patterns
+        SetReservedRegion(0, 0, _width, 1); // Top
+        SetReservedRegion(0, _height - 1, _width, 1); // Bottom
+        SetReservedRegion(0, 1, 1, _height - 2); // Left
+        SetReservedRegion(_width - 1, 1, 1, _height - 2); // Right
+
+        var alignmentCenters = RMQRVersion.GetAlignmentPatternColumnPositions(_version);
+        foreach (var center in alignmentCenters)
+        {
+            SetReservedRegion(center - 1, 1, 3, 2); // Top alignment
+            SetReservedRegion(center - 1, _height - 3, 3, 2); // Bottom alignment
+            SetReservedRegion(center, 3, 1, _height - 6); // Vertical timing
+        }
+
+        // Top-left finder + separator area
+        SetReservedRegion(1, 1, 7, 7 - (_height == 7 ? 1 : 0));
+
+        // Top-left format information
+        SetReservedRegion(8, 1, 3, 5);
+        SetReservedRegion(11, 1, 1, 3);
+
+        // Bottom-right finder sub-pattern
+        SetReservedRegion(_width - 5, _height - 5, 4, 4);
+
+        // Bottom-right format information
+        SetReservedRegion(_width - 8, _height - 6, 3, 5);
+        SetReservedRegion(_width - 5, _height - 6, 3, 1);
+
+        SetReserved(1, _width - 2); // Top-right corner finder
+        if (_height > 9)
+        {
+            SetReserved(_height - 2, 1); // Bottom-left corner finder
+        }
+
+        foreach (var (row, col) in GetFinderSideFormatCoordinates())
+        {
+            SetReserved(row, col);
+        }
+
+        foreach (var (row, col) in GetSubFinderSideFormatCoordinates())
+        {
+            SetReserved(row, col);
+        }
+    }
+
     private void PlaceFinderPattern()
     {
         for (var r = 0; r < 7; r++)
         {
             for (var c = 0; c < 7; c++)
             {
-                var isDark = r == 0 || r == 6 || c == 0 || c == 6 ||
-                    (r >= 2 && r <= 4 && c >= 2 && c <= 4);
-                SetModule(r, c, isDark, reserved: true);
+                var isDark = r == 0 || r == 6 || c == 0 || c == 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+                _modules[r, c] = isDark;
             }
         }
     }
 
-    // 5x5 finder sub-pattern at bottom-right corner
-    // #.#.#
-    // #...#
-    // #.#.#
-    // #...#
-    // #.#.#
     private void PlaceFinderSubPattern()
     {
         var startRow = _height - 5;
@@ -63,339 +104,290 @@ internal sealed class RMQRMatrixBuilder
         {
             for (var c = 0; c < 5; c++)
             {
-                var isDark = (r % 2 == 0 && c % 2 == 0) ||
-                             (r % 2 == 1 && (c == 0 || c == 4));
-                SetModule(startRow + r, startCol + c, isDark, reserved: true);
+                var row = startRow + r;
+                var col = startCol + c;
+                if (!_isReserved[row, col])
+                {
+                    continue;
+                }
+
+                var isDark = (r % 2 == 0 && c % 2 == 0) || (r % 2 == 1 && (c == 0 || c == 4));
+                _modules[row, col] = isDark;
             }
         }
     }
 
-    // Separators around the finder pattern
     private void PlaceSeparators()
     {
-        // Horizontal separator below finder: row 7, cols 0-7
-        for (var c = 0; c <= 7; c++)
+        if (_height > 7)
         {
-            if (7 < _height)
+            for (var c = 0; c <= 7; c++)
             {
-                SetModule(7, c, false, reserved: true);
+                _modules[7, c] = false;
             }
         }
 
-        // Vertical separator right of finder: col 7, rows 0-6
-        for (var r = 0; r < 7; r++)
+        for (var r = 0; r < 7 && r < _height; r++)
         {
-            SetModule(r, 7, false, reserved: true);
-        }
-    }
-
-    // Timing patterns run along all four edges connecting finder and sub-finder.
-    // Dark when (row + col) % 2 == 0.
-    private void PlaceTimingPatterns()
-    {
-        // Top timing: row 0, from col 7 to the right edge
-        for (var c = 7; c < _width; c++)
-        {
-            if (!_isReserved[0, c])
+            if (7 < _width)
             {
-                SetModule(0, c, (0 + c) % 2 == 0, reserved: true);
-            }
-        }
-
-        // Left timing: col 0, from row 7 to the bottom edge
-        for (var r = 7; r < _height; r++)
-        {
-            if (!_isReserved[r, 0])
-            {
-                SetModule(r, 0, (r + 0) % 2 == 0, reserved: true);
-            }
-        }
-
-        // Bottom timing: row height-1, from col 0 to just before the sub-finder
-        for (var c = 0; c < _width - 5; c++)
-        {
-            if (!_isReserved[_height - 1, c])
-            {
-                SetModule(_height - 1, c, (_height - 1 + c) % 2 == 0, reserved: true);
-            }
-        }
-
-        // Right timing: col width-1, from row 0 to just above the sub-finder
-        for (var r = 0; r < _height - 5; r++)
-        {
-            if (!_isReserved[r, _width - 1])
-            {
-                SetModule(r, _width - 1, (r + _width - 1) % 2 == 0, reserved: true);
+                _modules[r, 7] = false;
             }
         }
     }
 
-    // Interior horizontal and vertical timing stripes through alignment positions.
-    // These create a grid of timing patterns inside the symbol.
-    private void PlaceInteriorTimingStripes()
+    private void PlaceTimingAndAlignmentPatterns()
     {
-        var colPositions = RMQRVersion.GetAlignmentPatternColumnPositions(_version);
-        var rowPositions = RMQRVersion.GetAlignmentPatternRowPositions(_version);
-
-        // Horizontal interior timing stripes at alignment row positions
-        foreach (var row in rowPositions)
+        if (_height == 7)
         {
-            for (var c = 0; c < _width; c++)
+            for (var col = 0; col < _width; col++)
             {
-                if (!_isReserved[row, c])
-                {
-                    SetModule(row, c, (row + c) % 2 == 0, reserved: true);
-                }
+                _modules[0, col] = col <= 6 || col >= _width - 3 || col % 2 == 0;
+                _modules[_height - 1, col] = col <= 6 || col >= _width - 5 || col % 2 == 0;
             }
+
+            for (var row = 0; row < _height; row++)
+            {
+                _modules[row, 0] = true;
+                _modules[row, _width - 1] = true;
+            }
+
+            var centersForHeight7 = RMQRVersion.GetAlignmentPatternColumnPositions(_version);
+            foreach (var center in centersForHeight7)
+            {
+                _modules[1, center - 1] = true;
+                _modules[1, center] = false;
+                _modules[1, center + 1] = true;
+
+                _modules[2, center - 1] = true;
+                _modules[2, center] = true;
+                _modules[2, center + 1] = true;
+
+                _modules[_height - 3, center - 1] = true;
+                _modules[_height - 3, center] = true;
+                _modules[_height - 3, center + 1] = true;
+
+                _modules[_height - 2, center - 1] = true;
+                _modules[_height - 2, center] = false;
+                _modules[_height - 2, center + 1] = true;
+            }
+
+            return;
         }
 
-        // Vertical interior timing stripes at alignment column positions
-        foreach (var col in colPositions)
+        // Top edge
+        for (var col = 0; col < _width; col++)
         {
-            for (var r = 0; r < _height; r++)
+            _modules[0, col] = col <= 6 || col >= _width - 3 || col % 2 == 0;
+        }
+
+        // Bottom edge
+        for (var col = 0; col < _width; col++)
+        {
+            _modules[_height - 1, col] = col <= 2 || col >= _width - 5 || col % 2 == 0;
+        }
+
+        // Left edge
+        for (var row = 0; row <= 6; row++)
+        {
+            _modules[row, 0] = true;
+        }
+
+        _modules[7, 0] = false;
+        for (var row = 8; row <= _height - 3; row++)
+        {
+            _modules[row, 0] = row % 2 == 0;
+        }
+
+        _modules[_height - 2, 0] = true;
+        _modules[_height - 1, 0] = true;
+
+        // Right edge
+        for (var row = 0; row <= 2; row++)
+        {
+            _modules[row, _width - 1] = true;
+        }
+
+        for (var row = 3; row <= _height - 5; row++)
+        {
+            _modules[row, _width - 1] = row % 2 == 0;
+        }
+
+        for (var row = _height - 4; row < _height; row++)
+        {
+            _modules[row, _width - 1] = true;
+        }
+
+        // Alignment and vertical timing patterns
+        var centers = RMQRVersion.GetAlignmentPatternColumnPositions(_version);
+        foreach (var center in centers)
+        {
+            _modules[1, center - 1] = true;
+            _modules[1, center] = false;
+            _modules[1, center + 1] = true;
+
+            _modules[2, center - 1] = true;
+            _modules[2, center] = true;
+            _modules[2, center + 1] = true;
+
+            for (var row = 3; row <= _height - 4; row++)
             {
-                if (!_isReserved[r, col])
-                {
-                    SetModule(r, col, (r + col) % 2 == 0, reserved: true);
-                }
+                _modules[row, center] = row % 2 == 0;
             }
+
+            _modules[_height - 3, center - 1] = true;
+            _modules[_height - 3, center] = true;
+            _modules[_height - 3, center + 1] = true;
+
+            _modules[_height - 2, center - 1] = true;
+            _modules[_height - 2, center] = false;
+            _modules[_height - 2, center + 1] = true;
         }
     }
 
-    // Reserve areas where format information will be placed.
-    // rMQR has two copies of 18-bit format info:
-    // Copy 1: adjacent to the finder pattern (top-left area)
-    // Copy 2: adjacent to the finder sub-pattern (bottom-right area)
-    private void ReserveFormatInfoAreas()
+    private void PlaceCornerFinders()
     {
-        var (positions1, positions2) = GetFormatInfoPositions();
-        foreach (var (row, col) in positions1)
+        _modules[1, _width - 2] = true;
+        if (_height > 9)
         {
-            SetReserved(row, col);
-        }
-
-        foreach (var (row, col) in positions2)
-        {
-            SetReserved(row, col);
-        }
-    }
-
-    // Get the 18 module positions for each format info copy per ISO/IEC 23941.
-    //
-    // Copy 1 (near top-left finder, 18 bits):
-    //   Along col 8: rows 1, 2, 3, 4, 5  (5 modules)
-    //   Along row 0 (right side): cols width-8..width-2 skipping timing col (remaining modules up to 18)
-    //   If not enough, along col 0 (below finder): rows height-5..height-2
-    //
-    // To keep this robust for all rMQR sizes, we use a simplified but correct approach:
-    //   Copy 1 first 8 bits: col 8, rows 0..height-1 (bottom to top within available non-reserved space)
-    //   Actually the ISO spec places them at fixed positions near the finder.
-    //
-    // Simplified correct positions per the spec:
-    //   Copy 1: row 8 doesn't exist for R7, so use the area along col 8 (rows 1-5 = 5 bits)
-    //           and along row 0, cols from width-2 downward (13 bits, skipping reserved)
-    //   Copy 2: along row height-1 near the sub-pattern (left side of sub) and col width-6 (above sub)
-    //
-    // For correctness across all 32 versions, precompute based on the actual spec layout:
-    private ((int Row, int Col)[] Copy1, (int Row, int Col)[] Copy2) GetFormatInfoPositions()
-    {
-        var copy1 = new List<(int Row, int Col)>(18);
-        var copy2 = new List<(int Row, int Col)>(18);
-
-        // Copy 1: along the right side of the finder separator (col 8) and top edge
-        // Bits 0-4: col 8, rows 1-5 (downward, 5 bits)
-        for (var r = 1; r <= 5 && copy1.Count < 18; r++)
-        {
-            if (r < _height && 8 < _width)
-            {
-                copy1.Add((r, 8));
-            }
-        }
-
-        // Bits 5-17: row 0, from col 9 rightward (13 bits), these are in the top timing row
-        for (var c = 9; c < _width - 1 && copy1.Count < 18; c += 2)
-        {
-            copy1.Add((0, c));
-        }
-
-        // If we still need more positions (shouldn't happen for valid rMQR sizes but safety):
-        for (var c = 10; c < _width - 1 && copy1.Count < 18; c += 2)
-        {
-            copy1.Add((0, c));
-        }
-
-        // Copy 2: near bottom-right sub-pattern
-        // Along bottom edge (row height-1) going left from sub-pattern
-        for (var c = _width - 6; c >= 1 && copy2.Count < 18; c -= 2)
-        {
-            if (c < _width)
-            {
-                copy2.Add((_height - 1, c));
-            }
-        }
-
-        // Along right edge (col width-1) going up from sub-pattern
-        for (var r = _height - 6; r >= 1 && copy2.Count < 18; r -= 2)
-        {
-            if (r < _height)
-            {
-                copy2.Add((r, _width - 1));
-            }
-        }
-
-        // Pad to 18 if needed
-        while (copy1.Count < 18)
-        {
-            copy1.Add((0, 0));
-        }
-
-        while (copy2.Count < 18)
-        {
-            copy2.Add((0, 0));
-        }
-
-        return ([.. copy1], [.. copy2]);
-    }
-
-    private void PlaceFormatInfo(ErrorCorrectionLevel ecLevel)
-    {
-        var formatInfo = RMQRFormatInfo.GetFormatInfo(ecLevel, _version);
-        var (positions1, positions2) = GetFormatInfoPositions();
-
-        // Place both copies (MSB first: bit 17 at position index 0)
-        for (var i = 0; i < 18; i++)
-        {
-            var bit = (formatInfo >> (17 - i)) & 1;
-            var isDark = bit == 1;
-
-            var (r1, c1) = positions1[i];
-            if (r1 >= 0 && r1 < _height && c1 >= 0 && c1 < _width)
-            {
-                _modules[r1, c1] = isDark;
-            }
-
-            var (r2, c2) = positions2[i];
-            if (r2 >= 0 && r2 < _height && c2 >= 0 && c2 < _width)
-            {
-                _modules[r2, c2] = isDark;
-            }
+            _modules[_height - 2, 1] = true;
         }
     }
 
     private void PlaceDataBits(byte[] codewords)
     {
-        var bitIndex = 0;
-        var totalBits = codewords.Length * 8;
+        var codewordIndex = 0;
+        var bitPosition = 7;
+        var readingUp = true;
 
-        // Zigzag pattern from bottom-right, moving in column pairs.
-        // Columns that are timing pattern columns are skipped.
-        // Direction alternates with each pair: first pair upward, next downward, etc.
-        var col = _width - 1;
-        var pairIndex = 0;
-
-        while (col >= 0)
+        // Read/write columns in pairs from right to left, skipping the right edge timing column.
+        for (var x = _width - 2; x > 0; x -= 2)
         {
-            if (IsTimingColumn(col))
-            {
-                col--;
-                continue;
-            }
-
-            var leftCol = col - 1;
-            if (leftCol >= 0 && IsTimingColumn(leftCol))
-            {
-                leftCol--;
-            }
-
-            var isUpward = pairIndex % 2 == 0;
-
             for (var row = 0; row < _height; row++)
             {
-                var actualRow = isUpward ? _height - 1 - row : row;
-
-                // Right column of the pair
-                if (!_isReserved[actualRow, col])
+                var y = readingUp ? _height - 1 - row : row;
+                for (var colOffset = 0; colOffset < 2; colOffset++)
                 {
-                    if (bitIndex < totalBits)
+                    var xx = x - colOffset;
+                    if (_isReserved[y, xx])
                     {
-                        var bit = (codewords[bitIndex >> 3] >> (7 - (bitIndex & 7))) & 1;
-                        _modules[actualRow, col] = bit == 1;
-                        bitIndex++;
+                        continue;
                     }
-                }
 
-                // Left column of the pair
-                if (leftCol >= 0 && !_isReserved[actualRow, leftCol])
-                {
-                    if (bitIndex < totalBits)
-                    {
-                        var bit = (codewords[bitIndex >> 3] >> (7 - (bitIndex & 7))) & 1;
-                        _modules[actualRow, leftCol] = bit == 1;
-                        bitIndex++;
-                    }
+                    var dataBit = TryReadBit(codewords, ref codewordIndex, ref bitPosition);
+                    var maskedBit = GetMaskBit(xx, y) ? !dataBit : dataBit;
+                    _modules[y, xx] = maskedBit;
                 }
             }
 
-            pairIndex++;
-
-            if (leftCol >= 0)
-            {
-                col = leftCol - 1;
-            }
-            else
-            {
-                col--;
-            }
+            readingUp = !readingUp;
         }
     }
 
-    private bool IsTimingColumn(int col)
+    private void PlaceFormatInfo(ErrorCorrectionLevel ecLevel)
     {
-        if (col == 0 || col == _width - 1)
+        var finderSideInfo = RMQRFormatInfo.GetFinderSideFormatInfo(ecLevel, _version);
+        var subFinderSideInfo = RMQRFormatInfo.GetSubFinderSideFormatInfo(ecLevel, _version);
+
+        var finderCoordinates = GetFinderSideFormatCoordinates();
+        for (var i = 0; i < finderCoordinates.Length; i++)
         {
-            return true;
+            var bit = ((finderSideInfo >> (17 - i)) & 1) != 0;
+            var (row, col) = finderCoordinates[i];
+            _modules[row, col] = bit;
         }
 
-        var colPositions = RMQRVersion.GetAlignmentPatternColumnPositions(_version);
-        foreach (var alignCol in colPositions)
+        var subFinderCoordinates = GetSubFinderSideFormatCoordinates();
+        for (var i = 0; i < subFinderCoordinates.Length; i++)
         {
-            if (col == alignCol)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // rMQR uses a FIXED mask pattern: (row + col) % 2 == 0 -> invert
-    private void ApplyMask()
-    {
-        for (var row = 0; row < _height; row++)
-        {
-            for (var col = 0; col < _width; col++)
-            {
-                if (_isReserved[row, col])
-                {
-                    continue;
-                }
-
-                if ((row + col) % 2 == 0)
-                {
-                    _modules[row, col] = !_modules[row, col];
-                }
-            }
+            var bit = ((subFinderSideInfo >> (17 - i)) & 1) != 0;
+            var (row, col) = subFinderCoordinates[i];
+            _modules[row, col] = bit;
         }
     }
 
-    private void SetModule(int row, int col, bool isDark, bool reserved)
+    private (int Row, int Col)[] GetFinderSideFormatCoordinates()
     {
-        _modules[row, col] = isDark;
-        _isReserved[row, col] = reserved;
+        var coordinates = new (int Row, int Col)[18];
+        var index = 0;
+
+        for (var y = 3; y >= 1; y--)
+        {
+            coordinates[index++] = (y, 11);
+        }
+
+        for (var x = 10; x >= 8; x--)
+        {
+            for (var y = 5; y >= 1; y--)
+            {
+                coordinates[index++] = (y, x);
+            }
+        }
+
+        return coordinates;
+    }
+
+    private (int Row, int Col)[] GetSubFinderSideFormatCoordinates()
+    {
+        var coordinates = new (int Row, int Col)[18];
+        var index = 0;
+
+        for (var x = 3; x <= 5; x++)
+        {
+            coordinates[index++] = (_height - 6, _width - x);
+        }
+
+        for (var x = 6; x <= 8; x++)
+        {
+            for (var y = 2; y <= 6; y++)
+            {
+                coordinates[index++] = (_height - y, _width - x);
+            }
+        }
+
+        return coordinates;
+    }
+
+    private static bool GetMaskBit(int x, int y)
+    {
+        // rMQR uses fixed mask pattern 4
+        return ((y / 2) + (x / 3)) % 2 == 0;
+    }
+
+    private static bool TryReadBit(byte[] codewords, ref int codewordIndex, ref int bitPosition)
+    {
+        if ((uint)codewordIndex >= (uint)codewords.Length)
+        {
+            return false;
+        }
+
+        var bit = ((codewords[codewordIndex] >> bitPosition) & 1) != 0;
+        bitPosition--;
+        if (bitPosition < 0)
+        {
+            codewordIndex++;
+            bitPosition = 7;
+        }
+
+        return bit;
+    }
+
+    private void SetReservedRegion(int x, int y, int width, int height)
+    {
+        for (var row = y; row < y + height; row++)
+        {
+            for (var col = x; col < x + width; col++)
+            {
+                SetReserved(row, col);
+            }
+        }
     }
 
     private void SetReserved(int row, int col)
     {
-        _isReserved[row, col] = true;
+        if (row >= 0 && row < _height && col >= 0 && col < _width)
+        {
+            _isReserved[row, col] = true;
+        }
     }
 }

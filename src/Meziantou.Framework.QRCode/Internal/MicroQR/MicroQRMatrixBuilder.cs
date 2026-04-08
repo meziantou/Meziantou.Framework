@@ -25,7 +25,7 @@ internal sealed class MicroQRMatrixBuilder
         PlaceSeparators();
         PlaceTimingPatterns();
         ReserveFormatInfoArea();
-        PlaceDataBits(codewords);
+        PlaceDataBits(codewords, ecLevel);
         ApplyMask(maskPattern);
         PlaceFormatInfo(ecLevel, maskPattern);
     }
@@ -87,10 +87,12 @@ internal sealed class MicroQRMatrixBuilder
         }
     }
 
-    public void PlaceDataBits(byte[] codewords)
+    public void PlaceDataBits(byte[] codewords, ErrorCorrectionLevel ecLevel)
     {
-        var bitIndex = 0;
-        var totalBits = codewords.Length * 8;
+        var hasD4mBlock = _version % 2 == 1;
+        var d4mBlockIndex = _version == 1 ? 3 : (ecLevel == ErrorCorrectionLevel.L ? 11 : 9);
+        var codewordIndex = 0;
+        var bitPosition = GetBitsInCodeword(codewordIndex + 1, hasD4mBlock, d4mBlockIndex) - 1;
 
         // Zigzag pattern from bottom-right, moving upward in column pairs.
         // Column 0 is skipped (timing pattern), analogous to column 6 in regular QR.
@@ -123,23 +125,13 @@ internal sealed class MicroQRMatrixBuilder
                 // Right column of the pair
                 if (!_isReserved[actualRow, col])
                 {
-                    if (bitIndex < totalBits)
-                    {
-                        var bit = (codewords[bitIndex >> 3] >> (7 - (bitIndex & 7))) & 1;
-                        _modules[actualRow, col] = bit == 1;
-                        bitIndex++;
-                    }
+                    _modules[actualRow, col] = TryReadBit(codewords, ref codewordIndex, ref bitPosition, hasD4mBlock, d4mBlockIndex);
                 }
 
                 // Left column of the pair
                 if (col - 1 >= 1 && !_isReserved[actualRow, col - 1])
                 {
-                    if (bitIndex < totalBits)
-                    {
-                        var bit = (codewords[bitIndex >> 3] >> (7 - (bitIndex & 7))) & 1;
-                        _modules[actualRow, col - 1] = bit == 1;
-                        bitIndex++;
-                    }
+                    _modules[actualRow, col - 1] = TryReadBit(codewords, ref codewordIndex, ref bitPosition, hasD4mBlock, d4mBlockIndex);
                 }
             }
 
@@ -172,8 +164,8 @@ internal sealed class MicroQRMatrixBuilder
         {
             0 => row % 2 == 0,
             1 => ((row / 2) + (col / 3)) % 2 == 0,
-            2 => ((row * col) % 2 + (row * col) % 3) % 2 == 0,
-            3 => ((row + col) % 2 + (row * col) % 3) % 2 == 0,
+            2 => (row * col) % 6 < 3,
+            3 => (row + col + ((row * col) % 3)) % 2 == 0,
             _ => throw new ArgumentOutOfRangeException(nameof(maskPattern), $"Micro QR mask pattern must be 0-3, got {maskPattern}."),
         };
     }
@@ -248,5 +240,32 @@ internal sealed class MicroQRMatrixBuilder
     private void SetReserved(int row, int col)
     {
         _isReserved[row, col] = true;
+    }
+
+    private static int GetBitsInCodeword(int codewordIndex1Based, bool hasD4mBlock, int d4mBlockIndex)
+    {
+        return hasD4mBlock && codewordIndex1Based == d4mBlockIndex ? 4 : 8;
+    }
+
+    private static bool TryReadBit(byte[] codewords, ref int codewordIndex, ref int bitPosition, bool hasD4mBlock, int d4mBlockIndex)
+    {
+        if ((uint)codewordIndex >= (uint)codewords.Length)
+        {
+            return false;
+        }
+
+        var bit = ((codewords[codewordIndex] >> bitPosition) & 1) != 0;
+        bitPosition--;
+        if (bitPosition < 0)
+        {
+            codewordIndex++;
+            if ((uint)codewordIndex < (uint)codewords.Length)
+            {
+                var bitsInCodeword = GetBitsInCodeword(codewordIndex + 1, hasD4mBlock, d4mBlockIndex);
+                bitPosition = bitsInCodeword - 1;
+            }
+        }
+
+        return bit;
     }
 }

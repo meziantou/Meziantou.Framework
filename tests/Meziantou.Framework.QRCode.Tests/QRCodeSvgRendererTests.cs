@@ -36,6 +36,26 @@ public class QRCodeSvgRendererTests
     }
 
     [Fact]
+    public void ToSvg_MicroQR_Snapshot()
+    {
+        var qr = QRCode.CreateMicroQR("123", ErrorCorrectionLevel.L);
+        var options = new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 };
+        var svg = qr.ToSvg(options);
+
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11 11"><rect width="11" height="11" fill="#ffffff"/><path fill="#000000" d="M0 0h7v1h-7zM8 0h1v1h-1zM10 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM10 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h3v1h-3zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h2v1h-2zM0 6h7v1h-7zM8 6h1v1h-1zM8 7h3v1h-3zM0 8h2v1h-2zM4 8h3v1h-3zM9 8h2v1h-2zM1 9h1v1h-1zM3 9h2v1h-2zM6 9h1v1h-1zM8 9h1v1h-1zM0 10h4v1h-4zM5 10h4v1h-4z"/></svg>""");
+    }
+
+    [Fact]
+    public void ToSvg_RMQR_Snapshot()
+    {
+        var qr = QRCode.CreateRMQR("AB", ErrorCorrectionLevel.M);
+        var options = new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 };
+        var svg = qr.ToSvg(options);
+
+        InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 27 11"><rect width="27" height="11" fill="#ffffff"/><path fill="#000000" d="M0 0h7v1h-7zM8 0h1v1h-1zM10 0h1v1h-1zM12 0h1v1h-1zM14 0h1v1h-1zM16 0h1v1h-1zM18 0h1v1h-1zM20 0h1v1h-1zM22 0h1v1h-1zM24 0h3v1h-3zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h3v1h-3zM12 1h1v1h-1zM14 1h2v1h-2zM20 1h1v1h-1zM22 1h1v1h-1zM24 1h3v1h-3zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM9 2h4v1h-4zM15 2h2v1h-2zM19 2h1v1h-1zM21 2h1v1h-1zM25 2h2v1h-2zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM10 3h1v1h-1zM12 3h2v1h-2zM16 3h4v1h-4zM21 3h3v1h-3zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM11 4h1v1h-1zM14 4h1v1h-1zM18 4h2v1h-2zM22 4h3v1h-3zM26 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h2v1h-2zM12 5h4v1h-4zM17 5h2v1h-2zM20 5h3v1h-3zM24 5h2v1h-2zM0 6h7v1h-7zM8 6h3v1h-3zM12 6h2v1h-2zM15 6h1v1h-1zM17 6h1v1h-1zM21 6h2v1h-2zM24 6h1v1h-1zM26 6h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM13 7h3v1h-3zM20 7h1v1h-1zM22 7h1v1h-1zM26 7h1v1h-1zM0 8h10v1h-10zM11 8h1v1h-1zM13 8h1v1h-1zM16 8h2v1h-2zM19 8h1v1h-1zM21 8h2v1h-2zM24 8h1v1h-1zM26 8h1v1h-1zM0 9h4v1h-4zM5 9h1v1h-1zM9 9h4v1h-4zM14 9h1v1h-1zM18 9h1v1h-1zM20 9h1v1h-1zM22 9h1v1h-1zM26 9h1v1h-1zM0 10h3v1h-3zM4 10h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM10 10h1v1h-1zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1z"/></svg>""");
+    }
+
+    [Fact]
     public void ToSvg_CustomModuleSize()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);

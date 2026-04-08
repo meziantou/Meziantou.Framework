@@ -54,21 +54,71 @@ internal static class RMQREncoder
 
     private static byte[] AddErrorCorrection(byte[] dataCodewords, int version, ErrorCorrectionLevel ecLevel)
     {
-        var dataCWCount = RMQRVersion.GetDataCodewords(version, ecLevel);
-        var ecCWCount = RMQRVersion.GetECCodewords(version, ecLevel);
-        var totalCWCount = RMQRVersion.GetTotalCodewords(version);
+        var (group1BlockCount, group1DataCodewords, group2BlockCount, group2DataCodewords, ecCodewordsPerBlock) =
+            RMQRVersion.GetErrorCorrectionBlocks(version, ecLevel);
+        var totalBlockCount = group1BlockCount + group2BlockCount;
+        var totalDataCodewords = RMQRVersion.GetDataCodewords(version, ecLevel);
+        var totalCodewords = RMQRVersion.GetTotalCodewords(version);
+        var generatorPolynomial = GaloisField.GenerateGeneratorPolynomial(ecCodewordsPerBlock);
 
-        // rMQR uses a single RS block
-        var dataBlock = new byte[dataCWCount];
-        Array.Copy(dataCodewords, dataBlock, dataCWCount);
+        var dataBlocks = new byte[totalBlockCount][];
+        var ecBlocks = new byte[totalBlockCount][];
 
-        var generator = GaloisField.GenerateGeneratorPolynomial(ecCWCount);
-        var ecBlock = GaloisField.ComputeRemainder(dataBlock, generator);
+        var dataOffset = 0;
+        var blockIndex = 0;
+        for (var i = 0; i < group1BlockCount; i++)
+        {
+            var blockData = new byte[group1DataCodewords];
+            Array.Copy(dataCodewords, dataOffset, blockData, 0, group1DataCodewords);
+            dataBlocks[blockIndex] = blockData;
+            ecBlocks[blockIndex] = GaloisField.ComputeRemainder(blockData, generatorPolynomial);
+            dataOffset += group1DataCodewords;
+            blockIndex++;
+        }
 
-        // Combine: data codewords followed by EC codewords
-        var result = new byte[totalCWCount];
-        Array.Copy(dataBlock, 0, result, 0, dataCWCount);
-        Array.Copy(ecBlock, 0, result, dataCWCount, ecCWCount);
+        for (var i = 0; i < group2BlockCount; i++)
+        {
+            var blockData = new byte[group2DataCodewords];
+            Array.Copy(dataCodewords, dataOffset, blockData, 0, group2DataCodewords);
+            dataBlocks[blockIndex] = blockData;
+            ecBlocks[blockIndex] = GaloisField.ComputeRemainder(blockData, generatorPolynomial);
+            dataOffset += group2DataCodewords;
+            blockIndex++;
+        }
+
+        if (dataOffset != totalDataCodewords)
+        {
+            throw new InvalidOperationException("rMQR data codeword distribution mismatch.");
+        }
+
+        var result = new byte[totalCodewords];
+        var resultOffset = 0;
+
+        var maxDataCodewordsPerBlock = Math.Max(group1DataCodewords, group2DataCodewords);
+        for (var i = 0; i < maxDataCodewordsPerBlock; i++)
+        {
+            for (var j = 0; j < totalBlockCount; j++)
+            {
+                var block = dataBlocks[j];
+                if (i < block.Length)
+                {
+                    result[resultOffset++] = block[i];
+                }
+            }
+        }
+
+        for (var i = 0; i < ecCodewordsPerBlock; i++)
+        {
+            for (var j = 0; j < totalBlockCount; j++)
+            {
+                result[resultOffset++] = ecBlocks[j][i];
+            }
+        }
+
+        if (resultOffset != totalCodewords)
+        {
+            throw new InvalidOperationException("rMQR interleaving produced an unexpected number of codewords.");
+        }
 
         return result;
     }

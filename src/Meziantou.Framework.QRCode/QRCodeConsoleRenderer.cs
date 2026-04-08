@@ -50,38 +50,39 @@ public static class QRCodeConsoleRenderer
     {
         ArgumentNullException.ThrowIfNull(qrCode);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleWidth, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleHeight, 1);
 
         var quietZone = options.QuietZoneModules;
+        var moduleWidth = options.ModuleWidth;
+        var moduleHeight = options.ModuleHeight;
         var totalWidth = qrCode.Width + (2 * quietZone);
-        var totalHeight = qrCode.Height + (2 * quietZone);
+        var totalHeight = (qrCode.Height + (2 * quietZone)) * moduleHeight;
 
         var sb = new StringBuilder();
 
-        // Process two rows at a time using half-block characters
+        // Process two terminal rows at a time using half-block characters
         for (var row = 0; row < totalHeight; row += 2)
         {
             var lineStart = sb.Length;
+            var topSourceRow = (row / moduleHeight) - quietZone;
+            var hasBottomRow = row + 1 < totalHeight;
+            var bottomSourceRow = hasBottomRow ? ((row + 1) / moduleHeight) - quietZone : 0;
             for (var col = 0; col < totalWidth; col++)
             {
-                var topDark = IsDark(qrCode, row - quietZone, col - quietZone, options.InvertColors);
-                var bottomDark = row + 1 < totalHeight && IsDark(qrCode, row + 1 - quietZone, col - quietZone, options.InvertColors);
+                var sourceCol = col - quietZone;
+                var topDark = IsDark(qrCode, topSourceRow, sourceCol, options.InvertColors);
+                var bottomDark = hasBottomRow && IsDark(qrCode, bottomSourceRow, sourceCol, options.InvertColors);
 
-                if (topDark && bottomDark)
+                var block = (topDark, bottomDark) switch
                 {
-                    sb.Append(FullBlock);
-                }
-                else if (topDark)
-                {
-                    sb.Append(UpperHalfBlock);
-                }
-                else if (bottomDark)
-                {
-                    sb.Append(LowerHalfBlock);
-                }
-                else
-                {
-                    sb.Append(' ');
-                }
+                    (true, true) => FullBlock,
+                    (true, false) => UpperHalfBlock,
+                    (false, true) => LowerHalfBlock,
+                    _ => ' ',
+                };
+
+                sb.Append(block, moduleWidth);
             }
 
             // Trim trailing spaces from the line

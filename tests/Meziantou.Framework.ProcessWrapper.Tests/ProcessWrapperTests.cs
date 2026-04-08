@@ -187,6 +187,34 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task WithWorkingDirectory_FindsExecutableInWorkingDirectory()
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var temporaryDirectoryPath = temporaryDirectory.FullPath.Value;
+
+        string executableName;
+        if (OperatingSystem.IsWindows())
+        {
+            executableName = "run";
+            temporaryDirectory.CreateTextFile(executableName + ".bat", "@echo off\r\necho test-from-working-directory\r\n");
+        }
+        else
+        {
+            executableName = "run.sh";
+            var scriptPath = temporaryDirectory.CreateTextFile(executableName, "#!/bin/sh\necho test-from-working-directory\n");
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        using var result = ProcessWrapper.Create(executableName)
+            .WithWorkingDirectory(temporaryDirectoryPath)
+            .ExecuteBufferedAsync();
+
+        await result;
+
+        Assert.Equal("test-from-working-directory", result.Output.StandardOutput.First().Text.Trim());
+    }
+
+    [Fact]
     public async Task WithEnvironmentVariables_Callback_SetsVariable()
     {
         ProcessWrapper command;

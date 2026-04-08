@@ -264,9 +264,11 @@ public sealed class ProcessWrapper
         var hasInputStream = _inputStream is not null;
         var hasStandardErrorOutput = 0;
 
+        var configuredFileName = _startInfo.FileName;
         _startInfo.RedirectStandardOutput = hasOutputHandlers;
         _startInfo.RedirectStandardError = hasErrorHandlers;
         _startInfo.RedirectStandardInput = hasInputStream;
+        _startInfo.FileName = ResolveFileName(configuredFileName, _startInfo.WorkingDirectory);
 
         var process = new Process { StartInfo = _startInfo };
 
@@ -299,9 +301,16 @@ public sealed class ProcessWrapper
             };
         }
 
-        if (!process.Start())
+        try
         {
-            throw new Win32Exception("Cannot start the process");
+            if (!process.Start())
+            {
+                throw new Win32Exception("Cannot start the process");
+            }
+        }
+        finally
+        {
+            _startInfo.FileName = configuredFileName;
         }
 
         if (hasOutputHandlers)
@@ -342,5 +351,11 @@ public sealed class ProcessWrapper
         }
 
         return factory(process, inputTask, registration, () => Volatile.Read(ref hasStandardErrorOutput) != 0, cancellationToken);
+    }
+
+    private static string ResolveFileName(string fileName, string? workingDirectory)
+    {
+        var normalizedWorkingDirectory = string.IsNullOrEmpty(workingDirectory) ? null : workingDirectory;
+        return ExecutableFinder.GetFullExecutablePath(fileName, normalizedWorkingDirectory) ?? fileName;
     }
 }

@@ -8,4 +8,8 @@
     <Description>Fluent API for wrapping System.Diagnostics.Process</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
+  </ItemGroup>
+
 </Project>

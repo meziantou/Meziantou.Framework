@@ -220,10 +220,10 @@ internal sealed class MatrixBuilder
             }
         }
 
-        // Top-right area (3x6 block)
-        for (var r = 0; r < 3; r++)
+        // Top-right area (6x3 block)
+        for (var r = 0; r < 6; r++)
         {
-            for (var c = 0; c < 6; c++)
+            for (var c = 0; c < 3; c++)
             {
                 SetReserved(r, _size - 11 + c);
             }

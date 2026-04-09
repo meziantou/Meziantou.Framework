@@ -152,9 +152,7 @@ int UpdateToolReadmes()
     }
 
     var editedFiles = 0;
-    Parallel.ForEach(
-        source: toolProjects,
-        body: project =>
+    foreach (var project in toolProjects)
     {
         Console.WriteLine($"Processing {project.Csproj}");
 
@@ -179,7 +177,7 @@ int UpdateToolReadmes()
             Console.WriteLine($"WARNING: {project.ToolReadme} was not up-to-date");
             Interlocked.Increment(ref editedFiles);
         }
-    });
+    }
 
     if (editedFiles > 0)
     {

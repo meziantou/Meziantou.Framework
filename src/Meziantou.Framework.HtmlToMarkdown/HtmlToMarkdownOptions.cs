@@ -30,11 +30,8 @@ public sealed class HtmlToMarkdownOptions
     /// </summary>
     public bool UseSimplePunctuation { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether emoji are replaced with shortcodes.</summary>
-    public bool ReplaceEmojiWithShortcodes { get; set; }
-
-    /// <summary>Gets or sets the naming style used for emoji shortcodes when replacement is enabled.</summary>
-    public EmojiShortcodeStyle EmojiShortcodeStyle { get; set; } = EmojiShortcodeStyle.GitHub;
+    /// <summary>Gets or sets how emoji are converted to shortcodes.</summary>
+    public EmojiShortcodeMode EmojiShortcodeMode { get; set; } = EmojiShortcodeMode.None;
 
     /// <summary>Gets or sets how unknown HTML elements are handled.</summary>
     public UnknownElementHandling UnknownElementHandling { get; set; }

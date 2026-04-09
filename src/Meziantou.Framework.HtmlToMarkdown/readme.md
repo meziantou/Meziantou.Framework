@@ -34,8 +34,7 @@ var markdown = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions
     ThematicBreak = "***",
     LineBreakStyle = LineBreakStyle.Backslash,
     UseSimplePunctuation = true,
-    ReplaceEmojiWithShortcodes = true,
-    EmojiShortcodeStyle = EmojiShortcodeStyle.GitHub,
+    EmojiShortcodeMode = EmojiShortcodeMode.GitHub,
     UnknownElementHandling = UnknownElementHandling.StripKeepContent,
 });
 ```
@@ -57,14 +56,12 @@ var markdown = HtmlToMarkdown.Convert(
 ```csharp
 var markdown = HtmlToMarkdown.Convert("<p>I ❤️ Markdown</p>", new HtmlToMarkdownOptions
 {
-    ReplaceEmojiWithShortcodes = true,
-    EmojiShortcodeStyle = EmojiShortcodeStyle.GitHub, // => I :heart: Markdown
+    EmojiShortcodeMode = EmojiShortcodeMode.GitHub, // => I :heart: Markdown
 });
 
 var unicodeMarkdown = HtmlToMarkdown.Convert("<p>I ❤️ Markdown</p>", new HtmlToMarkdownOptions
 {
-    ReplaceEmojiWithShortcodes = true,
-    EmojiShortcodeStyle = EmojiShortcodeStyle.Unicode, // => I :red_heart: Markdown
+    EmojiShortcodeMode = EmojiShortcodeMode.Unicode, // => I :red_heart: Markdown
 });
 ```
 

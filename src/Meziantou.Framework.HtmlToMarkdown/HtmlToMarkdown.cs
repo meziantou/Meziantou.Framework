@@ -54,9 +54,9 @@ public static class HtmlToMarkdown
             content = ApplySimplePunctuation(content);
 
         content = EscapeMarkdown(content);
-        if (state.Options.ReplaceEmojiWithShortcodes)
+        if (state.Options.EmojiShortcodeMode is not EmojiShortcodeMode.None)
         {
-            content = ReplaceEmojiWithShortcodes(content, state.Options.EmojiShortcodeStyle);
+            content = ReplaceEmojiWithShortcodes(content, state.Options.EmojiShortcodeMode);
         }
 
         return content;
@@ -788,15 +788,18 @@ public static class HtmlToMarkdown
         return sb.ToString();
     }
 
-    private static string ReplaceEmojiWithShortcodes(string text, EmojiShortcodeStyle emojiShortcodeStyle)
+    private static string ReplaceEmojiWithShortcodes(string text, EmojiShortcodeMode emojiShortcodeMode)
     {
         if (text.Length == 0)
             return text;
 
-        var mappings = emojiShortcodeStyle switch
+        if (emojiShortcodeMode is EmojiShortcodeMode.None)
+            return text;
+
+        var mappings = emojiShortcodeMode switch
         {
-            EmojiShortcodeStyle.GitHub => EmojiShortcodeMappings.GitHub,
-            EmojiShortcodeStyle.Unicode => EmojiShortcodeMappings.Unicode,
+            EmojiShortcodeMode.GitHub => EmojiShortcodeMappings.GitHub,
+            EmojiShortcodeMode.Unicode => EmojiShortcodeMappings.Unicode,
             _ => EmojiShortcodeMappings.GitHub,
         };
 
@@ -816,7 +819,7 @@ public static class HtmlToMarkdown
                 continue;
             }
 
-            if (emojiShortcodeStyle == EmojiShortcodeStyle.GitHub &&
+            if (emojiShortcodeMode == EmojiShortcodeMode.GitHub &&
                 TryNormalizeVariationSelectors(textElement, out var normalizedTextElement) &&
                 mappings.TryGetValue(normalizedTextElement, out shortcode))
             {

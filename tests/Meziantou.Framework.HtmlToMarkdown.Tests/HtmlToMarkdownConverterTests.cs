@@ -58,7 +58,7 @@ public sealed class HtmlToMarkdownConverterTests
         AssertHtmlToMarkdown(
             "I ❤️ Markdown",
             "I :heart: Markdown",
-            options: new() { ReplaceEmojiWithShortcodes = true });
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class HtmlToMarkdownConverterTests
         AssertHtmlToMarkdown(
             "I ❤️ Markdown",
             "I :red_heart: Markdown",
-            options: new() { ReplaceEmojiWithShortcodes = true, EmojiShortcodeStyle = EmojiShortcodeStyle.Unicode });
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.Unicode });
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class HtmlToMarkdownConverterTests
         AssertHtmlToMarkdown(
             "I &#x2764;&#xFE0F; Markdown",
             "I :heart: Markdown",
-            options: new() { ReplaceEmojiWithShortcodes = true });
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
     }
 
     // --- Headings (ATX) ---
@@ -3376,7 +3376,7 @@ public sealed class HtmlToMarkdownConverterTests
         AssertHtmlToMarkdown(
             "<p>I ❤️ <code>❤️</code></p>",
             "I :heart: `❤️`",
-            options: new() { ReplaceEmojiWithShortcodes = true });
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
     }
 
     [Fact]
@@ -3385,7 +3385,7 @@ public sealed class HtmlToMarkdownConverterTests
         AssertHtmlToMarkdown(
             "<pre><code>I ❤️ Markdown</code></pre>",
             "```\nI ❤️ Markdown\n```",
-            options: new() { ReplaceEmojiWithShortcodes = true });
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
     }
 
     // --- Consecutive same-type elements ---

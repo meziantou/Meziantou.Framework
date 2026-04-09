@@ -71,7 +71,7 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
             var csprojs = Directory.GetFiles(lockFile.Parent, "*.csproj", SearchOption.TopDirectoryOnly);
             foreach (var csproj in csprojs)
             {
-                using var process = ProcessWrapper.Create("dotnet")
+                var process = ProcessWrapper.Create("dotnet")
                     .WithArguments("restore", csproj, "--no-cache")
                     .WithValidation(ProcessValidationMode.None)
                     .ExecuteBufferedAsync(cancellationToken);

@@ -75,7 +75,7 @@ internal sealed class NpmPackageUpdater : PackageUpdater
             var lockFile = TryFindLockFile(file.Parent, "package-lock.json");
             if (!lockFile.IsEmpty)
             {
-                using var process = ProcessWrapper.Create(OperatingSystem.IsWindows() ? @"C:\Program Files\nodejs\npm.cmd" : "npm")
+                var process = ProcessWrapper.Create(OperatingSystem.IsWindows() ? @"C:\Program Files\nodejs\npm.cmd" : "npm")
                     .WithWorkingDirectory(file.Parent)
                     .WithArguments("install", "--no-audit", "--force")
                     .WithValidation(ProcessValidationMode.None)

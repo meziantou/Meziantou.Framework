@@ -604,7 +604,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         async Task ExecuteProcess(string process, string args, string workingDirectory)
         {
             testOutputHelper.WriteLine($"Executing: '{process}' {args} ({workingDirectory})");
-            using var processInstance = ProcessWrapper.Create(process)
+            var processInstance = ProcessWrapper.Create(process)
                 .WithArguments(args.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                 .WithWorkingDirectory(workingDirectory)
                 .WithValidation(ProcessValidationMode.None)
@@ -617,7 +617,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         async Task ExecuteProcess2(string process, string[] args, string workingDirectory)
         {
             testOutputHelper.WriteLine($"Executing: '{process}' {string.Join(' ', args)} ({workingDirectory})");
-            using var processInstance = ProcessWrapper.Create(process)
+            var processInstance = ProcessWrapper.Create(process)
                 .WithArguments(args)
                 .WithWorkingDirectory(workingDirectory)
                 .WithValidation(ProcessValidationMode.None)

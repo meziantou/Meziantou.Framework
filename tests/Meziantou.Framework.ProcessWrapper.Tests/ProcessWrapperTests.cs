@@ -10,7 +10,7 @@ public class ProcessWrapperTests
     [Fact]
     public async Task ExecuteBufferedAsync_CapturesOutput()
     {
-        using var result = CreateEchoCommand("test")
+        var result = CreateEchoCommand("test")
             .ExecuteBufferedAsync();
 
         var processResult = await result;
@@ -35,7 +35,7 @@ public class ProcessWrapperTests
                 .WithArguments("-c", "echo error >&2");
         }
 
-        using var result = command
+        var result = command
             .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
 
@@ -48,7 +48,7 @@ public class ProcessWrapperTests
     [Fact]
     public async Task ExecuteBufferedAsync_ReturnsProcessId()
     {
-        using var result = CreateEchoCommand("test")
+        var result = CreateEchoCommand("test")
             .ExecuteBufferedAsync();
 
         var processResult = await result;
@@ -59,7 +59,7 @@ public class ProcessWrapperTests
     [Fact]
     public async Task ExecuteBufferedAsync_ReturnsTiming()
     {
-        using var result = CreateEchoCommand("test")
+        var result = CreateEchoCommand("test")
             .ExecuteBufferedAsync();
 
         var processResult = await result;
@@ -72,7 +72,7 @@ public class ProcessWrapperTests
     {
         var lines = new List<string>();
 
-        using var process = CreateEchoCommand("test")
+        var process = CreateEchoCommand("test")
             .WithOutputStream(line => { lock (lines) { lines.Add(line); } })
             .ExecuteAsync();
 
@@ -87,7 +87,7 @@ public class ProcessWrapperTests
     {
         var sb = new StringBuilder();
 
-        using var process = CreateEchoCommand("test")
+        var process = CreateEchoCommand("test")
             .WithOutputStream(sb)
             .ExecuteAsync();
 
@@ -101,7 +101,7 @@ public class ProcessWrapperTests
     {
         var output = new ProcessOutputCollection();
 
-        using var process = CreateEchoCommand("test")
+        var process = CreateEchoCommand("test")
             .WithOutputStream(output)
             .ExecuteAsync();
 
@@ -117,7 +117,7 @@ public class ProcessWrapperTests
         var list1 = new List<string>();
         var list2 = new List<string>();
 
-        using var process = CreateEchoCommand("test")
+        var process = CreateEchoCommand("test")
             .AddOutputStream(line => { lock (list1) { list1.Add(line); } })
             .AddOutputStream(line => { lock (list2) { list2.Add(line); } })
             .ExecuteAsync();
@@ -136,7 +136,7 @@ public class ProcessWrapperTests
         var list1 = new List<string>();
         var list2 = new List<string>();
 
-        using var process = CreateEchoCommand("test")
+        var process = CreateEchoCommand("test")
             .AddOutputStream(line => { lock (list1) { list1.Add(line); } })
             .WithOutputStream(line => { lock (list2) { list2.Add(line); } })
             .ExecuteAsync();
@@ -150,7 +150,7 @@ public class ProcessWrapperTests
     [Fact]
     public async Task WithArguments_ReplacesArguments()
     {
-        using var result = CreateEchoCommand("first")
+        var result = CreateEchoCommand("first")
             .WithArguments(GetEchoArguments("second"))
             .ExecuteBufferedAsync();
 
@@ -175,7 +175,7 @@ public class ProcessWrapperTests
 
         var tempDir = NormalizeWorkingDirectoryPath(Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar));
 
-        using var result = command
+        var result = command
             .WithWorkingDirectory(tempDir)
             .ExecuteBufferedAsync();
 
@@ -204,7 +204,7 @@ public class ProcessWrapperTests
             File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
-        using var result = ProcessWrapper.Create(executableName)
+        var result = ProcessWrapper.Create(executableName)
             .WithWorkingDirectory(temporaryDirectoryPath)
             .ExecuteBufferedAsync();
 
@@ -228,7 +228,7 @@ public class ProcessWrapperTests
                 .WithArguments("-c", "echo $TEST_VAR_42");
         }
 
-        using var result = command
+        var result = command
             .WithEnvironmentVariables(env => env.Set("TEST_VAR_42", "hello"))
             .ExecuteBufferedAsync();
 
@@ -252,7 +252,7 @@ public class ProcessWrapperTests
                 .WithArguments("-c", "echo $TEST_VAR_43");
         }
 
-        using var result = command
+        var result = command
             .WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_43"] = "world" })
             .ExecuteBufferedAsync();
 
@@ -276,7 +276,7 @@ public class ProcessWrapperTests
                 .WithArguments("-c", "echo $TEST_VAR_44");
         }
 
-        using var result = command
+        var result = command
             .WithEnvironmentVariables(env => env.Set("TEST_VAR_44", "first"))
             .WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_44"] = "second" })
             .ExecuteBufferedAsync();
@@ -301,7 +301,7 @@ public class ProcessWrapperTests
                 .WithArguments("-c", "exit 1");
         }
 
-        using var process = command.ExecuteAsync();
+        var process = command.ExecuteAsync();
 
         var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
         Assert.Equal(1, ex.ExitCode);
@@ -322,7 +322,7 @@ public class ProcessWrapperTests
                 .WithArguments("-c", "exit 42");
         }
 
-        using var process = command
+        var process = command
             .WithValidation(ProcessValidationMode.None)
             .ExecuteAsync();
 
@@ -345,7 +345,7 @@ public class ProcessWrapperTests
                 .WithArguments("-c", "echo error >&2");
         }
 
-        using var process = command
+        var process = command
             .WithValidation(ProcessValidationMode.FailIfStdError)
             .ExecuteAsync();
 
@@ -370,7 +370,7 @@ public class ProcessWrapperTests
                 .WithArguments("127.0.0.1", "-c", "100");
         }
 
-        using var process = command
+        var process = command
             .WithValidation(ProcessValidationMode.None)
             .ExecuteAsync(cts.Token);
 
@@ -395,7 +395,7 @@ public class ProcessWrapperTests
     {
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            using var process = ProcessWrapper.Create("NonExistentProcess_12345.exe")
+            var process = ProcessWrapper.Create("NonExistentProcess_12345.exe")
                 .ExecuteAsync();
             await process;
         });
@@ -415,7 +415,7 @@ public class ProcessWrapperTests
             command = ProcessWrapper.Create("cat");
         }
 
-        using var result = command
+        var result = command
             .WithInputStream("hello from stdin")
             .ExecuteBufferedAsync();
 
@@ -429,13 +429,13 @@ public class ProcessWrapperTests
     {
         var baseCommand = CreateEchoBase();
 
-        using var process1 = baseCommand
+        var process1 = baseCommand
             .WithArguments(GetEchoArguments("first"))
             .ExecuteBufferedAsync();
 
         var processResult1 = await process1;
 
-        using var process2 = baseCommand
+        var process2 = baseCommand
             .WithArguments(GetEchoArguments("second"))
             .ExecuteBufferedAsync();
 
@@ -465,12 +465,65 @@ public class ProcessWrapperTests
     [Fact]
     public async Task ExecuteAsync_ReturnsProcessId()
     {
-        using var process = CreateEchoCommand("test")
+        var process = CreateEchoCommand("test")
             .ExecuteAsync();
 
         await process;
 
         Assert.True(process.ProcessId > 0);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ReleasesHandleAfterExitWithoutAwait()
+    {
+        var process = CreateEchoCommand("test")
+            .ExecuteAsync();
+
+        var stopwatch = Stopwatch.StartNew();
+        while (process.UnsafeGetProcessHandle() is not null)
+        {
+            await Task.Delay(50);
+            Assert.False(stopwatch.Elapsed > TimeSpan.FromSeconds(10));
+        }
+
+        Assert.Null(process.UnsafeGetProcessHandle());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Kill()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("ping.exe")
+                .WithArguments("127.0.0.1", "-n", "100");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("ping")
+                .WithArguments("127.0.0.1", "-c", "100");
+        }
+
+        var process = command
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteAsync();
+
+        var stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            var processes = Process.GetProcesses();
+            if (processes.Any(p => p.ProcessName.Contains("ping", StringComparison.OrdinalIgnoreCase)))
+                break;
+
+            await Task.Delay(100);
+            Assert.False(stopwatch.Elapsed > TimeSpan.FromSeconds(10));
+        }
+
+        process.Kill(entireProcessTree: false);
+        process.Kill();
+
+        var processResult = await process;
+        Assert.True(processResult.ProcessId > 0);
     }
 
     private static ProcessWrapper CreateEchoBase()

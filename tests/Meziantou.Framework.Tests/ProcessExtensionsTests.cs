@@ -23,7 +23,7 @@ public class ProcessExtensionsTests
                 .WithArguments("test");
         }
 
-        using var process = CreateProcess()
+        var process = CreateProcess()
             .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
 
@@ -54,7 +54,7 @@ public class ProcessExtensionsTests
             };
         }
 
-        using var process = ProcessWrapper.Create(psi.FileName)
+        var process = ProcessWrapper.Create(psi.FileName)
             .WithArguments(psi.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
@@ -86,7 +86,7 @@ public class ProcessExtensionsTests
             };
         }
 
-        using var process = ProcessWrapper.Create(psi.FileName)
+        var process = ProcessWrapper.Create(psi.FileName)
             .WithArguments(psi.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .WithValidation(ProcessValidationMode.None)
             .ExecuteAsync();
@@ -100,7 +100,7 @@ public class ProcessExtensionsTests
     {
         await Assert.ThrowsAsync<Win32Exception>(async () =>
         {
-            using var process = ProcessWrapper.Create("ProcessDoesNotExists.exe")
+            var process = ProcessWrapper.Create("ProcessDoesNotExists.exe")
                 .WithValidation(ProcessValidationMode.None)
                 .ExecuteAsync(CancellationToken.None);
 

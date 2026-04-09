@@ -6,7 +6,7 @@ Fluent, immutable API for configuring and running processes. Inspired by CliWrap
 
 ````c#
 // Execute and wait for exit (throws if exit code is non-zero by default)
-using var process = ProcessWrapper.Create("dotnet")
+var process = ProcessWrapper.Create("dotnet")
     .WithArguments("--version")
     .ExecuteAsync();
 
@@ -18,7 +18,7 @@ int exitCode = result.ExitCode;
 
 ````c#
 // Capture all output
-using var result = ProcessWrapper.Create("dotnet")
+var result = ProcessWrapper.Create("dotnet")
     .WithArguments("--info")
     .ExecuteBufferedAsync();
 
@@ -35,7 +35,7 @@ foreach (var line in completedProcess.Output.StandardOutput)
 ## Working directory
 
 ````c#
-using var process = ProcessWrapper.Create("git")
+var process = ProcessWrapper.Create("git")
     .WithArguments("status")
     .WithWorkingDirectory("/path/to/repo")
     .ExecuteAsync();
@@ -47,7 +47,7 @@ await process;
 
 ````c#
 // Using callback
-using var process = ProcessWrapper.Create("my-app")
+var process = ProcessWrapper.Create("my-app")
     .WithEnvironmentVariables(env => env
         .Set("MY_VAR", "value")
         .Remove("UNWANTED_VAR"))
@@ -56,7 +56,7 @@ using var process = ProcessWrapper.Create("my-app")
 await process;
 
 // Using dictionary (null removes the variable)
-using var process2 = ProcessWrapper.Create("my-app")
+var process2 = ProcessWrapper.Create("my-app")
     .WithEnvironmentVariables(new Dictionary<string, string?>
     {
         ["MY_VAR"] = "value",
@@ -71,7 +71,7 @@ await process2;
 
 ````c#
 // Stream output line by line
-using var process = ProcessWrapper.Create("dotnet")
+var process = ProcessWrapper.Create("dotnet")
     .WithArguments("build")
     .AddOutputStream(line => Console.WriteLine($"[OUT] {line}"))
     .AddErrorStream(line => Console.Error.WriteLine($"[ERR] {line}"))
@@ -81,7 +81,7 @@ await process;
 
 // Collect output into a StringBuilder
 var sb = new StringBuilder();
-using var process2 = ProcessWrapper.Create("dotnet")
+var process2 = ProcessWrapper.Create("dotnet")
     .WithArguments("build")
     .WithOutputStream(sb)
     .ExecuteAsync();
@@ -91,7 +91,7 @@ Console.WriteLine(sb.ToString());
 
 // Collect into a ProcessOutputCollection
 var output = new ProcessOutputCollection();
-using var process3 = ProcessWrapper.Create("dotnet")
+var process3 = ProcessWrapper.Create("dotnet")
     .WithArguments("build")
     .AddOutputStream(output)
     .AddErrorStream(output)
@@ -109,7 +109,7 @@ foreach (var line in output.StandardError)
 
 ````c#
 // Pipe a string to stdin
-using var process = ProcessWrapper.Create("cat")
+var process = ProcessWrapper.Create("cat")
     .WithInputStream("Hello, World!")
     .ExecuteBufferedAsync();
 
@@ -121,7 +121,7 @@ Console.WriteLine(result.Output.ToString());
 
 ````c#
 // Default: throws ProcessExecutionException if exit code is non-zero
-using var process = ProcessWrapper.Create("false")
+var process = ProcessWrapper.Create("false")
     .ExecuteAsync();
 
 try
@@ -134,7 +134,7 @@ catch (ProcessExecutionException ex)
 }
 
 // Disable validation
-using var process2 = ProcessWrapper.Create("false")
+var process2 = ProcessWrapper.Create("false")
     .WithValidation(ProcessValidationMode.None)
     .ExecuteAsync();
 
@@ -142,7 +142,7 @@ var result = await process2; // does not throw
 int exitCode = result.ExitCode;
 
 // Fail on stderr output as well
-using var process3 = ProcessWrapper.Create("my-command")
+var process3 = ProcessWrapper.Create("my-command")
     .WithValidation(ProcessValidationMode.FailIfNonZeroExitCode | ProcessValidationMode.FailIfStdError)
     .ExecuteAsync();
 ````
@@ -151,10 +151,21 @@ using var process3 = ProcessWrapper.Create("my-command")
 
 ````c#
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-using var process = ProcessWrapper.Create("long-running-process")
+var process = ProcessWrapper.Create("long-running-process")
     .ExecuteAsync(cts.Token);
 
 await process; // throws OperationCanceledException if cancelled
+````
+
+## Killing a process
+
+````c#
+var process = ProcessWrapper.Create("long-running-process")
+    .WithValidation(ProcessValidationMode.None)
+    .ExecuteAsync();
+
+process.Kill(); // or process.Kill(entireProcessTree: false)
+await process;
 ````
 
 ## Reusable configuration
@@ -166,9 +177,9 @@ var baseCommand = ProcessWrapper.Create("dotnet")
     .WithWorkingDirectory("/path/to/repo")
     .AddErrorStream(line => Console.Error.WriteLine(line));
 
-using var build = baseCommand.WithArguments("build").ExecuteAsync();
+var build = baseCommand.WithArguments("build").ExecuteAsync();
 await build;
 
-using var test = baseCommand.WithArguments("test").ExecuteAsync();
+var test = baseCommand.WithArguments("test").ExecuteAsync();
 await test;
 ````

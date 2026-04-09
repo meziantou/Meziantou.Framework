@@ -986,6 +986,14 @@ public class QRCodeTests
         Assert.Throws<InvalidOperationException>(() => QRCode.Create(longData, ErrorCorrectionLevel.L));
     }
 
+    [Fact]
+    public void Create_AlphanumericDataTooLong_ThrowsInvalidOperationException()
+    {
+        var longData = new string('A', 660);
+
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(longData, ErrorCorrectionLevel.Q));
+    }
+
     // ───── Determinism ─────
 
     [Fact]

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http;
+using System.Diagnostics;
 using System.Threading;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Filtering;
@@ -150,14 +151,19 @@ public sealed class FilterEngineProviderTests
 
         try
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(450));
+            var timeout = TimeSpan.FromSeconds(5);
+            var stopwatch = Stopwatch.StartNew();
+            while (Volatile.Read(ref requestCount) < 2 && stopwatch.Elapsed < timeout)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50));
+            }
         }
         finally
         {
             await service.StopAsync(CancellationToken.None);
         }
 
-        Assert.True(Volatile.Read(ref requestCount) >= 2);
+        Assert.True(Volatile.Read(ref requestCount) >= 2, $"Expected at least 2 refresh attempts, but got {requestCount}");
     }
 
     private static ServiceProvider CreateServiceProvider(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)

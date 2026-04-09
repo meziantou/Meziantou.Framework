@@ -20,8 +20,8 @@ public static class QRCodeSvgRenderer
     {
         ArgumentNullException.ThrowIfNull(qrCode);
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.DarkColor, nameof(options.DarkColor));
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.LightColor, nameof(options.LightColor));
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.DarkColor);
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.LightColor);
 
         var moduleSize = options.ModuleSize;
         if (moduleSize <= 0)

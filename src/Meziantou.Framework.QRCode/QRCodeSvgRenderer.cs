@@ -20,13 +20,26 @@ public static class QRCodeSvgRenderer
     {
         ArgumentNullException.ThrowIfNull(qrCode);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.DarkColor, nameof(options.DarkColor));
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.LightColor, nameof(options.LightColor));
 
         var moduleSize = options.ModuleSize;
+        if (moduleSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options.ModuleSize), options.ModuleSize, "ModuleSize must be greater than 0.");
+        }
+
         var quietZone = options.QuietZoneModules;
-        var totalWidth = (qrCode.Width + (2 * quietZone)) * moduleSize;
-        var totalHeight = (qrCode.Height + (2 * quietZone)) * moduleSize;
+        if (quietZone < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options.QuietZoneModules), options.QuietZoneModules, "QuietZoneModules must be greater than or equal to 0.");
+        }
+
+        var totalWidth = ((long)qrCode.Width + (2L * quietZone)) * moduleSize;
+        var totalHeight = ((long)qrCode.Height + (2L * quietZone)) * moduleSize;
         var totalWidthStr = totalWidth.ToString(CultureInfo.InvariantCulture);
         var totalHeightStr = totalHeight.ToString(CultureInfo.InvariantCulture);
+        var moduleSizeStr = moduleSize.ToString(CultureInfo.InvariantCulture);
 
         var sb = new StringBuilder(capacity: 1024);
 
@@ -65,9 +78,9 @@ public static class QRCodeSvgRenderer
                         col++;
                     }
 
-                    var x = (runStart + quietZone) * moduleSize;
-                    var y = (row + quietZone) * moduleSize;
-                    var width = (col - runStart) * moduleSize;
+                    var x = ((long)runStart + quietZone) * moduleSize;
+                    var y = ((long)row + quietZone) * moduleSize;
+                    var width = ((long)col - runStart) * moduleSize;
 
                     sb.Append('M');
                     sb.Append(x.ToString(CultureInfo.InvariantCulture));
@@ -76,7 +89,7 @@ public static class QRCodeSvgRenderer
                     sb.Append('h');
                     sb.Append(width.ToString(CultureInfo.InvariantCulture));
                     sb.Append('v');
-                    sb.Append(moduleSize.ToString(CultureInfo.InvariantCulture));
+                    sb.Append(moduleSizeStr);
                     sb.Append('h');
                     sb.Append((-width).ToString(CultureInfo.InvariantCulture));
                     sb.Append('z');

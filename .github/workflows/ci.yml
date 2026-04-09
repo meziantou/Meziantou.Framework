@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - name: Build eng scripts
         run: |
           Get-ChildItem ./eng/*.cs | ForEach-Object {
@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - name: Validate Code
         run: dotnet run ./eng/update-bom.cs
 
@@ -54,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - name: Validate Readme
         run: dotnet run ./eng/update-readme.cs
 
@@ -64,7 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - name: Validate
         run: dotnet run ./eng/validate-testprojects-configuration.cs
 
@@ -74,7 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - name: Validate
         run: dotnet run ./eng/update-trimmable.cs
 
@@ -89,7 +89,7 @@ jobs:
           fetch-depth: ${{ case(github.event_name == 'pull_request', 0, 1) }}
       - run: git config --global protocol.file.allow always
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - name: Generate delta build file
         id: package-project
         uses: ./.github/actions/deltabuild
@@ -130,7 +130,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v8
         with:
           name: nuget
@@ -165,7 +165,7 @@ jobs:
       - run: git config --global protocol.file.allow always
 
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
 
       - name: Generate delta build file
         id: build-project
@@ -239,7 +239,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
@@ -252,7 +252,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   merge_coverage:
@@ -261,7 +261,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - name: Install dotnet-coverage
         run: dotnet tool update --global dotnet-coverage
       - name: Download test results
@@ -295,7 +295,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/setup-dotnet
+        uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v8
         with:
           name: nuget

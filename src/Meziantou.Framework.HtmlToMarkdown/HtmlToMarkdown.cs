@@ -793,9 +793,6 @@ public static class HtmlToMarkdown
         if (text.Length == 0)
             return text;
 
-        if (emojiShortcodeMode is EmojiShortcodeMode.None)
-            return text;
-
         var mappings = emojiShortcodeMode switch
         {
             EmojiShortcodeMode.GitHub => EmojiShortcodeMappings.GitHub,

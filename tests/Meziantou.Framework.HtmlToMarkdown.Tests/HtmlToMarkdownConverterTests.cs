@@ -3370,6 +3370,24 @@ public sealed class HtmlToMarkdownConverterTests
             options: new() { UseSimplePunctuation = true });
     }
 
+    [Fact]
+    public void EmojiShortcode_DoesNotAffectInlineCode()
+    {
+        AssertHtmlToMarkdown(
+            "<p>I ❤️ <code>❤️</code></p>",
+            "I :heart: `❤️`",
+            options: new() { ReplaceEmojiWithShortcodes = true });
+    }
+
+    [Fact]
+    public void EmojiShortcode_DoesNotAffectCodeBlocks()
+    {
+        AssertHtmlToMarkdown(
+            "<pre><code>I ❤️ Markdown</code></pre>",
+            "```\nI ❤️ Markdown\n```",
+            options: new() { ReplaceEmojiWithShortcodes = true });
+    }
+
     // --- Consecutive same-type elements ---
 
     [Fact]

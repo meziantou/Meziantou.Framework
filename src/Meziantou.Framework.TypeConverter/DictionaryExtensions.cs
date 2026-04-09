@@ -39,7 +39,7 @@ public static class DictionaryExtensions
 
         if (dict.TryGetValue(key, out var v))
         {
-            if (ConvertUtilities.TryChangeType(v, out value))
+            if (ConvertUtilities.TryChangeType(v, provider: null, out value))
                 return true;
         }
 

@@ -81,7 +81,7 @@ public static class ConvertUtilities
     /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryChangeType<T>(object? input, [MaybeNullWhen(returnValue: false)] out T value)
     {
-        return TryChangeType(DefaultConverter, input, out value);
+        return TryChangeType(DefaultConverter, input, provider: null, out value);
     }
 
     /// <summary>Attempts to convert an input value to the specified type using a custom converter and invariant culture.</summary>
@@ -246,7 +246,7 @@ public static class ConvertUtilities
     {
         ArgumentNullException.ThrowIfNull(converter);
 
-        return ChangeType(converter, input, default(T));
+        return ChangeType(converter, input, default(T), provider: null);
     }
 
     /// <summary>Converts an input value to the specified type using the default converter, or returns a default value if conversion fails.</summary>
@@ -256,7 +256,7 @@ public static class ConvertUtilities
     /// <returns>The converted value if conversion succeeded; otherwise, <paramref name="defaultValue"/>.</returns>
     public static T? ChangeType<T>(object? input, T defaultValue)
     {
-        return ChangeType(DefaultConverter, input, defaultValue);
+        return ChangeType(DefaultConverter, input, defaultValue, provider: null);
     }
 
     /// <summary>Converts an input value to the specified type using a custom converter, or returns a default value if conversion fails.</summary>

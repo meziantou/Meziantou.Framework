@@ -808,7 +808,7 @@ public static class HtmlToMarkdown
         var textElementEnumerator = StringInfo.GetTextElementEnumerator(text);
         while (textElementEnumerator.MoveNext())
         {
-            var textElement = (string)textElementEnumerator.Current!;
+            var textElement = (string)textElementEnumerator.Current;
             if (mappings.TryGetValue(textElement, out var shortcode))
             {
                 sb.Append(shortcode);

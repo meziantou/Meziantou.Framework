@@ -44,6 +44,41 @@ public sealed class HtmlToMarkdownConverterTests
             "hello world");
     }
 
+    [Fact]
+    public void PlainText_Emoji_Default()
+    {
+        AssertHtmlToMarkdown(
+            "I ❤️ Markdown",
+            "I ❤️ Markdown");
+    }
+
+    [Fact]
+    public void PlainText_Emoji_GitHubShortcode()
+    {
+        AssertHtmlToMarkdown(
+            "I ❤️ Markdown",
+            "I :heart: Markdown",
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void PlainText_Emoji_UnicodeShortcode()
+    {
+        AssertHtmlToMarkdown(
+            "I ❤️ Markdown",
+            "I :red_heart: Markdown",
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.Unicode });
+    }
+
+    [Fact]
+    public void HtmlEntity_Emoji_GitHubShortcode()
+    {
+        AssertHtmlToMarkdown(
+            "I &#x2764;&#xFE0F; Markdown",
+            "I :heart: Markdown",
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
     // --- Headings (ATX) ---
 
     [Fact]
@@ -3333,6 +3368,24 @@ public sealed class HtmlToMarkdownConverterTests
             "<pre><code>“Hello” — … « »</code></pre>",
             "```\n“Hello” — … « »\n```",
             options: new() { UseSimplePunctuation = true });
+    }
+
+    [Fact]
+    public void EmojiShortcode_DoesNotAffectInlineCode()
+    {
+        AssertHtmlToMarkdown(
+            "<p>I ❤️ <code>❤️</code></p>",
+            "I :heart: `❤️`",
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
+    }
+
+    [Fact]
+    public void EmojiShortcode_DoesNotAffectCodeBlocks()
+    {
+        AssertHtmlToMarkdown(
+            "<pre><code>I ❤️ Markdown</code></pre>",
+            "```\nI ❤️ Markdown\n```",
+            options: new() { EmojiShortcodeMode = EmojiShortcodeMode.GitHub });
     }
 
     // --- Consecutive same-type elements ---

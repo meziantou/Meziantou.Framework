@@ -209,6 +209,7 @@
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
   </Folder>

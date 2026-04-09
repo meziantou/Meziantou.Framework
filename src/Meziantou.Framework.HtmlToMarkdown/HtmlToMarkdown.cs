@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
@@ -51,7 +53,13 @@ public static class HtmlToMarkdown
         if (state.Options.UseSimplePunctuation)
             content = ApplySimplePunctuation(content);
 
-        return EscapeMarkdown(content);
+        content = EscapeMarkdown(content);
+        if (state.Options.EmojiShortcodeMode is not EmojiShortcodeMode.None)
+        {
+            content = ReplaceEmojiWithShortcodes(content, state.Options.EmojiShortcodeMode);
+        }
+
+        return content;
     }
 
     private static string ConvertElement(IElement element, ConversionState state)
@@ -778,6 +786,72 @@ public static class HtmlToMarkdown
             }
         }
         return sb.ToString();
+    }
+
+    private static string ReplaceEmojiWithShortcodes(string text, EmojiShortcodeMode emojiShortcodeMode)
+    {
+        if (text.Length == 0)
+            return text;
+
+        var mappings = emojiShortcodeMode switch
+        {
+            EmojiShortcodeMode.GitHub => EmojiShortcodeMappings.GitHub,
+            EmojiShortcodeMode.Unicode => EmojiShortcodeMappings.Unicode,
+            _ => EmojiShortcodeMappings.GitHub,
+        };
+
+        if (mappings.Count == 0)
+            return text;
+
+        var sb = new StringBuilder(text.Length);
+        var changed = false;
+        var textElementEnumerator = StringInfo.GetTextElementEnumerator(text);
+        while (textElementEnumerator.MoveNext())
+        {
+            var textElement = (string)textElementEnumerator.Current;
+            if (mappings.TryGetValue(textElement, out var shortcode))
+            {
+                sb.Append(shortcode);
+                changed = true;
+                continue;
+            }
+
+            if (emojiShortcodeMode == EmojiShortcodeMode.GitHub &&
+                TryNormalizeVariationSelectors(textElement, out var normalizedTextElement) &&
+                mappings.TryGetValue(normalizedTextElement, out shortcode))
+            {
+                sb.Append(shortcode);
+                changed = true;
+                continue;
+            }
+
+            sb.Append(textElement);
+        }
+
+        return changed ? sb.ToString() : text;
+    }
+
+    /// <summary>
+    /// Removes variation selectors (U+FE0E/U+FE0F) so emoji text elements can
+    /// match mappings that do not include those selectors.
+    /// </summary>
+    private static bool TryNormalizeVariationSelectors(string text, [NotNullWhen(true)] out string? normalizedText)
+    {
+        normalizedText = null;
+        if (text.IndexOfAny('\uFE0E', '\uFE0F') < 0)
+            return false;
+
+        var sb = new StringBuilder(text.Length);
+        foreach (var rune in text.EnumerateRunes())
+        {
+            if (rune.Value is 0xFE0E or 0xFE0F)
+                continue;
+
+            sb.Append(rune);
+        }
+
+        normalizedText = sb.ToString();
+        return normalizedText.Length > 0;
     }
 
     /// <summary>

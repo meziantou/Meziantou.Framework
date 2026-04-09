@@ -30,6 +30,9 @@ public sealed class HtmlToMarkdownOptions
     /// </summary>
     public bool UseSimplePunctuation { get; set; }
 
+    /// <summary>Gets or sets how emoji are converted to shortcodes.</summary>
+    public EmojiShortcodeMode EmojiShortcodeMode { get; set; } = EmojiShortcodeMode.None;
+
     /// <summary>Gets or sets how unknown HTML elements are handled.</summary>
     public UnknownElementHandling UnknownElementHandling { get; set; }
         = UnknownElementHandling.PassThrough;

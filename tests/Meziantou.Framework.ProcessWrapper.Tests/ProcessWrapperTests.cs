@@ -13,11 +13,11 @@ public class ProcessWrapperTests
         using var result = CreateEchoCommand("test")
             .ExecuteBufferedAsync();
 
-        var exitCode = await result;
+        var processResult = await result;
 
-        Assert.Equal(0, exitCode);
-        Assert.Single(result.Output.StandardOutput);
-        Assert.Equal("test", result.Output.StandardOutput.First().Text);
+        Assert.Equal(0, processResult.ExitCode);
+        Assert.Single(processResult.Output.StandardOutput);
+        Assert.Equal("test", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -39,10 +39,10 @@ public class ProcessWrapperTests
             .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.Single(result.Output.StandardError);
-        Assert.Equal("error", result.Output.StandardError.First().Text.Trim());
+        Assert.Single(processResult.Output.StandardError);
+        Assert.Equal("error", processResult.Output.StandardError.First().Text.Trim());
     }
 
     [Fact]
@@ -51,9 +51,9 @@ public class ProcessWrapperTests
         using var result = CreateEchoCommand("test")
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.True(result.ProcessId > 0);
+        Assert.True(processResult.ProcessId > 0);
     }
 
     [Fact]
@@ -62,10 +62,9 @@ public class ProcessWrapperTests
         using var result = CreateEchoCommand("test")
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.True(result.StartTime <= result.EndTime);
-        Assert.True(result.Duration >= TimeSpan.Zero);
+        Assert.True(processResult.StartDate <= processResult.ExitDate);
     }
 
     [Fact]
@@ -155,9 +154,9 @@ public class ProcessWrapperTests
             .WithArguments(GetEchoArguments("second"))
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.Equal("second", result.Output.StandardOutput.First().Text);
+        Assert.Equal("second", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -180,9 +179,9 @@ public class ProcessWrapperTests
             .WithWorkingDirectory(tempDir)
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        var outputDir = NormalizeWorkingDirectoryPath(result.Output.StandardOutput.First().Text.TrimEnd(Path.DirectorySeparatorChar));
+        var outputDir = NormalizeWorkingDirectoryPath(processResult.Output.StandardOutput.First().Text.TrimEnd(Path.DirectorySeparatorChar));
         Assert.Equal(tempDir, outputDir, ignoreCase: OperatingSystem.IsWindows());
     }
 
@@ -209,9 +208,9 @@ public class ProcessWrapperTests
             .WithWorkingDirectory(temporaryDirectoryPath)
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.Equal("test-from-working-directory", result.Output.StandardOutput.First().Text.Trim());
+        Assert.Equal("test-from-working-directory", processResult.Output.StandardOutput.First().Text.Trim());
     }
 
     [Fact]
@@ -233,9 +232,9 @@ public class ProcessWrapperTests
             .WithEnvironmentVariables(env => env.Set("TEST_VAR_42", "hello"))
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.Equal("hello", result.Output.StandardOutput.First().Text);
+        Assert.Equal("hello", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -257,9 +256,9 @@ public class ProcessWrapperTests
             .WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_43"] = "world" })
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.Equal("world", result.Output.StandardOutput.First().Text);
+        Assert.Equal("world", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -282,9 +281,9 @@ public class ProcessWrapperTests
             .WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_44"] = "second" })
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.Equal("second", result.Output.StandardOutput.First().Text);
+        Assert.Equal("second", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -327,8 +326,8 @@ public class ProcessWrapperTests
             .WithValidation(ProcessValidationMode.None)
             .ExecuteAsync();
 
-        var exitCode = await process;
-        Assert.Equal(42, exitCode);
+        var processResult = await process;
+        Assert.Equal(42, processResult.ExitCode);
     }
 
     [Fact]
@@ -420,9 +419,9 @@ public class ProcessWrapperTests
             .WithInputStream("hello from stdin")
             .ExecuteBufferedAsync();
 
-        await result;
+        var processResult = await result;
 
-        Assert.Contains("hello from stdin", result.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+        Assert.Contains("hello from stdin", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -434,16 +433,16 @@ public class ProcessWrapperTests
             .WithArguments(GetEchoArguments("first"))
             .ExecuteBufferedAsync();
 
-        await process1;
+        var processResult1 = await process1;
 
         using var process2 = baseCommand
             .WithArguments(GetEchoArguments("second"))
             .ExecuteBufferedAsync();
 
-        await process2;
+        var processResult2 = await process2;
 
-        Assert.Equal("first", process1.Output.StandardOutput.First().Text);
-        Assert.Equal("second", process2.Output.StandardOutput.First().Text);
+        Assert.Equal("first", processResult1.Output.StandardOutput.First().Text);
+        Assert.Equal("second", processResult2.Output.StandardOutput.First().Text);
     }
 
     [Fact]

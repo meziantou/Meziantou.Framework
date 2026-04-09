@@ -10,7 +10,8 @@ using var process = ProcessWrapper.Create("dotnet")
     .WithArguments("--version")
     .ExecuteAsync();
 
-int exitCode = await process;
+var result = await process;
+int exitCode = result.ExitCode;
 ````
 
 ## Buffered execution
@@ -21,10 +22,11 @@ using var result = ProcessWrapper.Create("dotnet")
     .WithArguments("--info")
     .ExecuteBufferedAsync();
 
-int exitCode = await result;
+var completedProcess = await result;
+int exitCode = completedProcess.ExitCode;
 
 // Access output after awaiting
-foreach (var line in result.Output.StandardOutput)
+foreach (var line in completedProcess.Output.StandardOutput)
 {
     Console.WriteLine(line.Text);
 }
@@ -111,8 +113,8 @@ using var process = ProcessWrapper.Create("cat")
     .WithInputStream("Hello, World!")
     .ExecuteBufferedAsync();
 
-await process;
-Console.WriteLine(process.Output.ToString());
+var result = await process;
+Console.WriteLine(result.Output.ToString());
 ````
 
 ## Validation
@@ -136,7 +138,8 @@ using var process2 = ProcessWrapper.Create("false")
     .WithValidation(ProcessValidationMode.None)
     .ExecuteAsync();
 
-int exitCode = await process2; // does not throw
+var result = await process2; // does not throw
+int exitCode = result.ExitCode;
 
 // Fail on stderr output as well
 using var process3 = ProcessWrapper.Create("my-command")

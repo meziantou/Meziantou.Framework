@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
-      is-delta: ${{ steps.package-project.outputs.is-delta }}
+      has-project: ${{ steps.package-project.outputs.has-project }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -96,19 +96,24 @@ jobs:
         with:
           input-project: eng/packages.proj
           output-project: eng/packages.delta.proj
-          default-project: eng/packages.proj
           run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
 
       - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
+        if: steps.package-project.outputs.has-project == 'true'
 
       - name: Prepare NuGet artifact directory
         run: |
           New-Item -ItemType Directory -Path "${{ env.NuGetDirectory }}" -Force | Out-Null
           Set-Content -Path "${{ env.NuGetDirectory }}/artifact-placeholder.txt" -Value "placeholder"
       - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
+        if: steps.package-project.outputs.has-project == 'true'
+
+      - name: Skip packaging
+        if: steps.package-project.outputs.has-project != 'true'
+        run: Write-Host "No package project was impacted. Skipping build and pack."
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -120,7 +125,7 @@ jobs:
         if: always()
         with:
           name: binlog
-          if-no-files-found: error
+          if-no-files-found: ${{ case(steps.package-project.outputs.has-project == 'true', 'error', 'warn') }}
           retention-days: 3
           path: '**/*.binlog'
 
@@ -132,14 +137,16 @@ jobs:
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v8
+        if: needs.create_nuget.outputs.has-project == 'true'
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
       - name: Validate NuGet packages
+        if: needs.create_nuget.outputs.has-project == 'true'
         run: dotnet run ./eng/validate-nuget.cs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_VALIDATION_IS_DELTA: ${{ needs.create_nuget.outputs.is-delta }}
+          NUGET_VALIDATION_IS_DELTA: ${{ case(github.event_name == 'pull_request' && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
 
   build_and_test:
     runs-on: ${{ matrix.runs-on }}
@@ -173,9 +180,7 @@ jobs:
         with:
           input-project: eng/build.proj
           output-project: eng/delta.proj
-          default-project: eng/build.proj
           run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
-          fallback-on-empty: 'false'
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj

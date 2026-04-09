@@ -23,11 +23,10 @@ public class ProcessExtensionsTests
                 .WithArguments("test");
         }
 
-        var process = CreateProcess()
+        var result = await CreateProcess()
             .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
 
-        var result = await process;
         Assert.Equal(0, result.ExitCode);
         Assert.Single(result.Output.StandardOutput);
         Assert.Equal("test", result.Output.StandardOutput.First().Text);
@@ -54,12 +53,11 @@ public class ProcessExtensionsTests
             };
         }
 
-        var process = ProcessWrapper.Create(psi.FileName)
+        var result = await ProcessWrapper.Create(psi.FileName)
             .WithArguments(psi.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
 
-        var result = await process;
         Assert.Equal(0, result.ExitCode);
         Assert.Single(result.Output.StandardOutput);
         Assert.Equal("test", result.Output.StandardOutput.First().Text);
@@ -86,12 +84,11 @@ public class ProcessExtensionsTests
             };
         }
 
-        var process = ProcessWrapper.Create(psi.FileName)
+        var result = await ProcessWrapper.Create(psi.FileName)
             .WithArguments(psi.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .WithValidation(ProcessValidationMode.None)
             .ExecuteAsync();
 
-        var result = await process;
         Assert.Equal(0, result.ExitCode);
     }
 

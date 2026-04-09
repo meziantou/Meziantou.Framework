@@ -970,6 +970,22 @@ public class QRCodeTests
         Assert.Throws<InvalidOperationException>(() => QRCode.Create(longData));
     }
 
+    [Fact]
+    public void Create_ByteDataTooLong_ThrowsInvalidOperationException()
+    {
+        var longData = new string('x', 2954);
+
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(longData, ErrorCorrectionLevel.L));
+    }
+
+    [Fact]
+    public void Create_BinaryDataTooLong_ThrowsInvalidOperationException()
+    {
+        var longData = new byte[2954];
+
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(longData, ErrorCorrectionLevel.L));
+    }
+
     // ───── Determinism ─────
 
     [Fact]

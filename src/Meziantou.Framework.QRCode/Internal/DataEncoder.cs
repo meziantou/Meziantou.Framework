@@ -40,8 +40,13 @@ internal static class DataEncoder
                 throw new ArgumentOutOfRangeException(nameof(mode));
         }
 
-        // Add terminator
         var totalDataBits = QRCodeVersion.GetDataCodewords(version, ecLevel) * 8;
+        if (buffer.BitCount > totalDataBits)
+        {
+            throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+        }
+
+        // Add terminator
         var terminatorLength = Math.Min(4, totalDataBits - buffer.BitCount);
         if (terminatorLength > 0)
         {
@@ -83,8 +88,13 @@ internal static class DataEncoder
             buffer.Append(b, 8);
         }
 
-        // Add terminator
         var totalDataBits = QRCodeVersion.GetDataCodewords(version, ecLevel) * 8;
+        if (buffer.BitCount > totalDataBits)
+        {
+            throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+        }
+
+        // Add terminator
         var terminatorLength = Math.Min(4, totalDataBits - buffer.BitCount);
         if (terminatorLength > 0)
         {

@@ -15,6 +15,7 @@ public class ProcessInstance
     private Process? _process;
     private readonly Task _inputStreamTask;
     private readonly CancellationTokenRegistration _cancellationRegistration;
+    private readonly IDisposable? _processLimiter;
     private readonly ProcessValidationMode _validationMode;
     private readonly CancellationToken _cancellationToken;
     private readonly Func<bool> _hasStandardErrorOutput;
@@ -22,11 +23,12 @@ public class ProcessInstance
     private protected readonly Lock WaitTaskLock = new();
     private Task<ProcessResult>? _waitTask;
 
-    internal ProcessInstance(Process process, Task inputStreamTask, CancellationTokenRegistration cancellationRegistration, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
+    internal ProcessInstance(Process process, Task inputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
     {
         _process = process;
         _inputStreamTask = inputStreamTask;
         _cancellationRegistration = cancellationRegistration;
+        _processLimiter = processLimiter;
         _validationMode = validationMode;
         _cancellationToken = cancellationToken;
         _hasStandardErrorOutput = hasStandardErrorOutput;
@@ -152,6 +154,7 @@ public class ProcessInstance
         {
             _cancellationRegistration.Dispose();
             process.Dispose();
+            _processLimiter?.Dispose();
 
             if (ReferenceEquals(_process, process))
             {

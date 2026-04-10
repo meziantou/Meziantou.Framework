@@ -12,4 +12,9 @@
     <Compile Include="..\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Unix.ControlGroups\Meziantou.Framework.Unix.ControlGroups.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Win32.Jobs\Meziantou.Framework.Win32.Jobs.csproj" />
+  </ItemGroup>
+
 </Project>

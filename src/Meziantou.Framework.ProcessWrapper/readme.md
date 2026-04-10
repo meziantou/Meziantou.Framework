@@ -59,6 +59,46 @@ await ProcessWrapper.Create("my-app")
     .ExecuteAsync();
 ````
 
+## Resource limits
+
+````c#
+var result = await ProcessWrapper.Create("my-app")
+    .WithLimits(new ProcessLimits
+    {
+        CpuPercentage = 50,            // 50% max CPU
+        MemoryLimitInBytes = 512L * 1024 * 1024, // 512 MB
+        ProcessCountLimit = 20,
+    })
+    .ExecuteAsync();
+````
+
+Common limits are mapped to Windows Job Objects or Linux cgroups v2 depending on the current OS.
+If a configured limit cannot be applied on the current platform, execution throws.
+
+### Advanced platform-specific configuration
+
+````c#
+var result = await ProcessWrapper.Create("my-app")
+    .WithLimits(limits => limits.MemoryLimitInBytes = 512L * 1024 * 1024)
+    .WithWindowsJobObject(job =>
+    {
+        job.SetLimits(new JobObjectLimits
+        {
+            Flags = JobObjectLimitFlags.KillOnJobClose,
+        });
+    })
+    .ExecuteAsync();
+````
+
+````c#
+var result = await ProcessWrapper.Create("my-app")
+    .WithLinuxControlGroup(cgroup =>
+    {
+        cgroup.SetMemoryHigh(256L * 1024 * 1024);
+    })
+    .ExecuteAsync();
+````
+
 ## Output handling
 
 ````c#
@@ -147,4 +187,3 @@ var process = ProcessWrapper.Create("long-running-process")
 process.Kill(); // or process.Kill(entireProcessTree: false)
 await process;
 ````
-

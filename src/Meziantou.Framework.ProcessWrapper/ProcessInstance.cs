@@ -55,6 +55,11 @@ public class ProcessInstance
         if (process is null)
             return;
 
+        KillProcess(process, entireProcessTree);
+    }
+
+    internal static void KillProcess(Process process, bool entireProcessTree)
+    {
         try
         {
             process.Kill(entireProcessTree);

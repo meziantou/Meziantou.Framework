@@ -229,7 +229,7 @@ public sealed class ProcessWrapper
     /// <summary>
     /// Starts the process and returns a <see cref="ProcessInstance"/> immediately.
     /// Await the returned instance to wait for the process to exit and get a <see cref="ProcessResult"/>.
-    /// Use <see cref="ProcessInstance.Kill()"/> or <see cref="ProcessInstance.Kill(bool)"/> to stop the process explicitly.
+    /// Use <see cref="ProcessInstance.Kill(bool)"/> to stop the process explicitly.
     /// </summary>
     public ProcessInstance ExecuteAsync(CancellationToken cancellationToken = default)
     {
@@ -241,7 +241,7 @@ public sealed class ProcessWrapper
     /// <summary>
     /// Starts the process with output buffering and returns a <see cref="BufferedProcessInstance"/> immediately.
     /// Await the returned instance to wait for the process to exit and get a <see cref="BufferedProcessResult"/>.
-    /// Use <see cref="ProcessInstance.Kill()"/> or <see cref="ProcessInstance.Kill(bool)"/> to stop the process explicitly.
+    /// Use <see cref="ProcessInstance.Kill(bool)"/> to stop the process explicitly.
     /// </summary>
     public BufferedProcessInstance ExecuteBufferedAsync(CancellationToken cancellationToken = default)
     {
@@ -255,7 +255,6 @@ public sealed class ProcessWrapper
             cancellationToken);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000")]
     private T StartProcess<T>(ImmutableArray<Action<string>> outputHandlers, ImmutableArray<Action<string>> errorHandlers, Func<Process, Task, CancellationTokenRegistration, Func<bool>, CancellationToken, T> factory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -349,7 +348,7 @@ public sealed class ProcessWrapper
         var registration = default(CancellationTokenRegistration);
         if (cancellationToken.CanBeCanceled && !process.HasExited)
         {
-            registration = cancellationToken.Register(() => ProcessInstance.KillProcess(process));
+            registration = cancellationToken.Register(() => ProcessInstance.KillProcess(process, entireProcessTree: true));
         }
 
         return factory(process, inputStreamTask, registration, () => Volatile.Read(ref hasStandardErrorOutput) != 0, cancellationToken);

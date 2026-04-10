@@ -35,7 +35,7 @@ internal static class Program
 
     internal static Task<int> MainImpl(string[] args, Action<InvocationConfiguration>? configure)
     {
-        var rootCommand = new RootCommand();
+        var rootCommand = new RootCommand(description: "List and update dependencies detected in a folder.");
         AddUpdateCommand(rootCommand);
         AddListCommand(rootCommand);
         var invocationConfiguration = new InvocationConfiguration();

@@ -1,16 +1,43 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
-/// <summary>A process instance that also buffers all output. Inherits from <see cref="ProcessInstance"/>.</summary>
+/// <summary>A running process instance that buffers all output and returns it when awaited.</summary>
 public sealed class BufferedProcessInstance : ProcessInstance
 {
+    private readonly ProcessOutputCollection _output;
+    private Task<BufferedProcessResult>? _waitTask;
+
     internal BufferedProcessInstance(Process process, Task inputTask, CancellationTokenRegistration cancellationRegistration, ProcessValidationMode validationMode, ProcessOutputCollection output, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
         : base(process, inputTask, cancellationRegistration, validationMode, hasStandardErrorOutput, cancellationToken)
     {
-        Output = output;
+        _output = output;
     }
 
-    /// <summary>Gets the interleaved output from both standard output and standard error streams.</summary>
-    public ProcessOutputCollection Output { get; }
+    public new TaskAwaiter<BufferedProcessResult> GetAwaiter() => WaitForExitBufferedCoreAsync().GetAwaiter();
+
+    private Task<BufferedProcessResult> WaitForExitBufferedCoreAsync()
+    {
+        if (_waitTask is not null)
+            return _waitTask;
+
+        lock (WaitTaskLock)
+        {
+            _waitTask ??= WaitForExitBufferedImplAsync();
+        }
+
+        return _waitTask;
+
+        async Task<BufferedProcessResult> WaitForExitBufferedImplAsync()
+        {
+            var result = await GetAwaiterTask().ConfigureAwait(false);
+            return (BufferedProcessResult)result;
+        }
+    }
+
+    private protected override ProcessResult CreateProcessResult(int exitCode, DateTimeOffset exitDate)
+    {
+        return new BufferedProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate, output: _output);
+    }
 }

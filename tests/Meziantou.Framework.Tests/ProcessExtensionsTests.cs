@@ -23,12 +23,11 @@ public class ProcessExtensionsTests
                 .WithArguments("test");
         }
 
-        using var result = CreateProcess()
+        var result = await CreateProcess()
             .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
 
-        var exitCode = await result;
-        Assert.Equal(0, exitCode);
+        Assert.Equal(0, result.ExitCode);
         Assert.Single(result.Output.StandardOutput);
         Assert.Equal("test", result.Output.StandardOutput.First().Text);
     }
@@ -54,13 +53,12 @@ public class ProcessExtensionsTests
             };
         }
 
-        using var result = ProcessWrapper.Create(psi.FileName)
+        var result = await ProcessWrapper.Create(psi.FileName)
             .WithArguments(psi.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .WithValidation(ProcessValidationMode.None)
             .ExecuteBufferedAsync();
 
-        var exitCode = await result;
-        Assert.Equal(0, exitCode);
+        Assert.Equal(0, result.ExitCode);
         Assert.Single(result.Output.StandardOutput);
         Assert.Equal("test", result.Output.StandardOutput.First().Text);
     }
@@ -86,13 +84,12 @@ public class ProcessExtensionsTests
             };
         }
 
-        using var process = ProcessWrapper.Create(psi.FileName)
+        var result = await ProcessWrapper.Create(psi.FileName)
             .WithArguments(psi.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .WithValidation(ProcessValidationMode.None)
             .ExecuteAsync();
 
-        var exitCode = await process;
-        Assert.Equal(0, exitCode);
+        Assert.Equal(0, result.ExitCode);
     }
 
     [Fact]
@@ -100,7 +97,7 @@ public class ProcessExtensionsTests
     {
         await Assert.ThrowsAsync<Win32Exception>(async () =>
         {
-            using var process = ProcessWrapper.Create("ProcessDoesNotExists.exe")
+            var process = ProcessWrapper.Create("ProcessDoesNotExists.exe")
                 .WithValidation(ProcessValidationMode.None)
                 .ExecuteAsync(CancellationToken.None);
 

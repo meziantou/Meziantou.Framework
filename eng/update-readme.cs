@@ -116,7 +116,7 @@ int UpdateToolReadmes()
 {
     // Read the latest TFM from Directory.Build.props so we don't hardcode "net10.0"
     var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
-    var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value;
+    var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
 
     var toolProjects = new List<(string Csproj, string? ToolName, string ToolReadme)>();
 
@@ -154,11 +154,13 @@ int UpdateToolReadmes()
     var editedFiles = 0;
     foreach (var project in toolProjects)
     {
+        Console.WriteLine($"Building {project.Csproj}");
+        string[] buildArgs = ["build", project.Csproj, "--framework", latestTfm, "-p:RunAnalyzers=false", "-p:RunAnalyzersDuringBuild=false"];
+        _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2));
+
         Console.WriteLine($"Processing {project.Csproj}");
 
-        string[] runArgs = latestTfm is not null
-            ? ["run", "--project", project.Csproj, "--framework", latestTfm, "--", "--help"]
-            : ["run", "--project", project.Csproj, "--", "--help"];
+        string[] runArgs = ["run", "--no-build", "--project", project.Csproj, "--framework", latestTfm, "--", "--help"];
         var helpText = RunProcessAndCaptureOutput("dotnet", runArgs, timeout: TimeSpan.FromMinutes(2));
         helpText = helpText.TrimEnd(' ', '\t', '\r', '\n');
         if (!string.IsNullOrEmpty(project.ToolName))
@@ -223,11 +225,9 @@ static string RunProcessAndCaptureOutput(string fileName, string[] arguments, Ti
     return output;
 }
 
-static bool IsExecutableProject(string csproj, string? targetFramework)
+static bool IsExecutableProject(string csproj, string targetFramework)
 {
-    string[] arguments = targetFramework is null
-        ? ["msbuild", csproj, "-nologo", "-v:q", "-getProperty:OutputKind", "-getProperty:OutputType"]
-        : ["msbuild", csproj, "-nologo", "-v:q", "-p:TargetFramework=" + targetFramework, "-getProperty:OutputKind", "-getProperty:OutputType"];
+    string[] arguments = ["msbuild", csproj, "-nologo", "-v:q", "-p:TargetFramework=" + targetFramework, "-getProperty:OutputKind", "-getProperty:OutputType"];
 
     var output = RunProcessAndCaptureOutput("dotnet", arguments);
     var outputKind = ExtractMsBuildPropertyValue(output, "OutputKind");

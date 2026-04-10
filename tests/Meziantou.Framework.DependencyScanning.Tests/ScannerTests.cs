@@ -604,33 +604,33 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         async Task ExecuteProcess(string process, string args, string workingDirectory)
         {
             testOutputHelper.WriteLine($"Executing: '{process}' {args} ({workingDirectory})");
-          using var processResult = ProcessWrapper.Create(process)
-            .WithArguments(args.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            .WithWorkingDirectory(workingDirectory)
-            .WithValidation(ProcessValidationMode.None)
-            .ExecuteBufferedAsync(XunitCancellationToken);
+            var processInstance = ProcessWrapper.Create(process)
+                .WithArguments(args.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                .WithWorkingDirectory(workingDirectory)
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteBufferedAsync(XunitCancellationToken);
 
-          var exitCode = await processResult;
-          AssertProcessResult(exitCode, string.Join('\n', processResult.Output));
+            var processResult = await processInstance;
+            AssertProcessResult(processResult.ExitCode, string.Join('\n', processResult.Output));
         }
 
         async Task ExecuteProcess2(string process, string[] args, string workingDirectory)
         {
             testOutputHelper.WriteLine($"Executing: '{process}' {string.Join(' ', args)} ({workingDirectory})");
-          using var processResult = ProcessWrapper.Create(process)
-            .WithArguments(args)
-            .WithWorkingDirectory(workingDirectory)
-            .WithValidation(ProcessValidationMode.None)
-            .ExecuteBufferedAsync(XunitCancellationToken);
+            var processInstance = ProcessWrapper.Create(process)
+                .WithArguments(args)
+                .WithWorkingDirectory(workingDirectory)
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteBufferedAsync(XunitCancellationToken);
 
-          var exitCode = await processResult;
-          AssertProcessResult(exitCode, string.Join('\n', processResult.Output));
+            var processResult = await processInstance;
+            AssertProcessResult(processResult.ExitCode, string.Join('\n', processResult.Output));
         }
 
         void AssertProcessResult(int exitCode, string output)
         {
-          Assert.Equal(0, exitCode);
-          testOutputHelper.WriteLine("git command succeeds\n" + output);
+            Assert.Equal(0, exitCode);
+            testOutputHelper.WriteLine("git command succeeds\n" + output);
         }
     }
 

@@ -75,14 +75,13 @@ internal sealed class NpmPackageUpdater : PackageUpdater
             var lockFile = TryFindLockFile(file.Parent, "package-lock.json");
             if (!lockFile.IsEmpty)
             {
-                using var result = ProcessWrapper.Create(OperatingSystem.IsWindows() ? @"C:\Program Files\nodejs\npm.cmd" : "npm")
+                var result = await ProcessWrapper.Create(OperatingSystem.IsWindows() ? @"C:\Program Files\nodejs\npm.cmd" : "npm")
                     .WithWorkingDirectory(file.Parent)
                     .WithArguments("install", "--no-audit", "--force")
                     .WithValidation(ProcessValidationMode.None)
                     .ExecuteBufferedAsync(cancellationToken);
 
-                var exitCode = await result;
-                if (exitCode is not 0)
+                if (result.ExitCode is not 0)
                 {
                     Console.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
                 }

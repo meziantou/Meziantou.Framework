@@ -71,13 +71,12 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
             var csprojs = Directory.GetFiles(lockFile.Parent, "*.csproj", SearchOption.TopDirectoryOnly);
             foreach (var csproj in csprojs)
             {
-                using var result = ProcessWrapper.Create("dotnet")
+                var result = await ProcessWrapper.Create("dotnet")
                     .WithArguments("restore", csproj, "--no-cache")
                     .WithValidation(ProcessValidationMode.None)
                     .ExecuteBufferedAsync(cancellationToken);
 
-                var exitCode = await result;
-                if (exitCode is not 0)
+                if (result.ExitCode is not 0)
                 {
                     Console.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
                 }

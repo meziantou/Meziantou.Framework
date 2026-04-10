@@ -1,127 +1,70 @@
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework;
 
-/// <summary>Represents a running process. Dispose to kill the process if still running. Await to wait for exit.</summary>
-public class ProcessInstance : IDisposable
+/// <summary>
+/// Represents a running process.
+/// Resources are released automatically when the process exits.
+/// Await to wait for exit and get a <see cref="ProcessResult"/>.
+/// </summary>
+public class ProcessInstance
 {
-    private readonly Process _process;
-    private readonly Task _inputTask;
+    private Process? _process;
+    private readonly Task _inputStreamTask;
     private readonly CancellationTokenRegistration _cancellationRegistration;
     private readonly ProcessValidationMode _validationMode;
     private readonly CancellationToken _cancellationToken;
     private readonly Func<bool> _hasStandardErrorOutput;
-    private Task<int>? _waitTask;
-    private bool _disposed;
+    private readonly Task<ProcessCompletion> _processCompletionTask;
+    private protected readonly Lock WaitTaskLock = new();
+    private Task<ProcessResult>? _waitTask;
 
-    internal ProcessInstance(Process process, Task inputTask, CancellationTokenRegistration cancellationRegistration, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
+    internal ProcessInstance(Process process, Task inputStreamTask, CancellationTokenRegistration cancellationRegistration, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
     {
         _process = process;
-        _inputTask = inputTask;
+        _inputStreamTask = inputStreamTask;
         _cancellationRegistration = cancellationRegistration;
         _validationMode = validationMode;
         _cancellationToken = cancellationToken;
         _hasStandardErrorOutput = hasStandardErrorOutput;
 
         ProcessId = process.Id;
-        SafeProcessHandle = process.SafeHandle;
-        StartTime = DateTimeOffset.UtcNow;
+        StartDate = DateTimeOffset.UtcNow;
+        _processCompletionTask = WaitForProcessExitAsync(process);
     }
 
     /// <summary>Gets the process ID.</summary>
     public int ProcessId { get; }
 
-    /// <summary>Gets the safe handle to the process.</summary>
-    public SafeProcessHandle SafeProcessHandle { get; }
-
     /// <summary>Gets the time the process was started.</summary>
-    public DateTimeOffset StartTime { get; }
+    public DateTimeOffset StartDate { get; }
 
-    /// <summary>Gets the time the process exited. Available after awaiting.</summary>
-    public DateTimeOffset EndTime { get; private set; }
+    /// <summary>Gets the handle to the process. Returns <see langword="null"/> once the process has exited and resources were released.</summary>
+    public SafeProcessHandle? UnsafeGetProcessHandle() => _process?.SafeHandle;
 
-    /// <summary>Gets the duration the process ran. Available after awaiting.</summary>
-    public TimeSpan Duration => EndTime - StartTime;
+    /// <summary>Gets an awaiter that waits for the process to exit and returns the process result.</summary>
+    public TaskAwaiter<ProcessResult> GetAwaiter() => GetAwaiterTask().GetAwaiter();
 
-    /// <summary>Gets an awaiter that waits for the process to exit and returns the exit code.</summary>
-    public TaskAwaiter<int> GetAwaiter() => WaitForExitCoreAsync().GetAwaiter();
-
-    private Task<int> WaitForExitCoreAsync()
+    /// <summary>Kills the process.</summary>
+    public void Kill(bool entireProcessTree = true)
     {
-        if (_waitTask is null)
-        {
-            _waitTask = WaitForExitImplAsync();
-        }
-
-        return _waitTask;
-    }
-
-    private async Task<int> WaitForExitImplAsync()
-    {
-        try
-        {
-            await _process.WaitForExitAsync(_cancellationToken).ConfigureAwait(false);
-            await _inputTask.ConfigureAwait(false);
-        }
-        finally
-        {
-            EndTime = DateTimeOffset.UtcNow;
-            _cancellationRegistration.Dispose();
-        }
-
-        _cancellationToken.ThrowIfCancellationRequested();
-
-        var exitCode = _process.ExitCode;
-        if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && exitCode != 0)
-        {
-            throw new ProcessExecutionException(exitCode);
-        }
-
-        if ((_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError && _hasStandardErrorOutput())
-        {
-            throw new ProcessExecutionException("Process wrote to standard error.");
-        }
-
-        return exitCode;
-    }
-
-    /// <summary>Disposes the process instance. Kills the process if still running.</summary>
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>Disposes managed resources.</summary>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (_disposed)
+        var process = _process;
+        if (process is null)
             return;
 
-        if (disposing)
-        {
-            _cancellationRegistration.Dispose();
-
-            if (!_process.HasExited)
-            {
-                KillProcess(_process);
-            }
-
-            _process.Dispose();
-        }
-
-        _disposed = true;
+        KillProcess(process, entireProcessTree);
     }
 
-    internal static void KillProcess(Process process)
+    internal static void KillProcess(Process process, bool entireProcessTree)
     {
         try
         {
-            process.Kill(entireProcessTree: true);
+            process.Kill(entireProcessTree);
         }
-        catch (InvalidOperationException)
+        catch (AggregateException) when (entireProcessTree)
         {
             try
             {
@@ -131,5 +74,112 @@ public class ProcessInstance : IDisposable
             {
             }
         }
+        catch (InvalidOperationException) when (entireProcessTree)
+        {
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
+    private protected Task<ProcessResult> GetAwaiterTask()
+    {
+        if (_waitTask is not null)
+            return _waitTask;
+
+        lock (WaitTaskLock)
+        {
+            _waitTask ??= WaitForExitImplAsync();
+        }
+
+        return _waitTask;
+
+        async Task<ProcessResult> WaitForExitImplAsync()
+        {
+            var processCompletion = await _processCompletionTask.ConfigureAwait(false);
+            if (processCompletion.InputStreamException is not null)
+            {
+                ExceptionDispatchInfo.Capture(processCompletion.InputStreamException).Throw();
+            }
+
+            _cancellationToken.ThrowIfCancellationRequested();
+
+            if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && processCompletion.ExitCode != 0)
+            {
+                throw new ProcessExecutionException(processCompletion.ExitCode);
+            }
+
+            if ((_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError && _hasStandardErrorOutput())
+            {
+                throw new ProcessExecutionException("Process wrote to standard error.");
+            }
+
+            return CreateProcessResult(processCompletion.ExitCode, processCompletion.ExitDate);
+        }
+    }
+
+    // Wait for process exit and dispose all resources (do not wait for user to await the instance)
+    private async Task<ProcessCompletion> WaitForProcessExitAsync(Process process)
+    {
+        Exception? inputStreamException = null;
+        var exitCode = default(int);
+        var exitDate = default(DateTimeOffset);
+
+        try
+        {
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+
+            try
+            {
+                await _inputStreamTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                inputStreamException = ex;
+            }
+
+            exitCode = process.ExitCode;
+            exitDate = DateTimeOffset.UtcNow;
+        }
+        finally
+        {
+            _cancellationRegistration.Dispose();
+            process.Dispose();
+
+            if (ReferenceEquals(_process, process))
+            {
+                _process = null;
+            }
+        }
+
+        return new ProcessCompletion(exitCode, exitDate, inputStreamException);
+    }
+
+    private protected virtual ProcessResult CreateProcessResult(int exitCode, DateTimeOffset exitDate)
+    {
+        return new ProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate);
+    }
+
+    private sealed class ProcessCompletion
+    {
+        public ProcessCompletion(int exitCode, DateTimeOffset exitDate, Exception? inputStreamException)
+        {
+            ExitCode = exitCode;
+            ExitDate = exitDate;
+            InputStreamException = inputStreamException;
+        }
+
+        public int ExitCode { get; }
+
+        public DateTimeOffset ExitDate { get; }
+
+        public Exception? InputStreamException { get; }
     }
 }

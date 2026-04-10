@@ -474,6 +474,28 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ConcurrentAwait_ReturnsSameResultInstance()
+    {
+        var process = CreateEchoCommand("test")
+            .ExecuteAsync();
+
+        using var gate = new ManualResetEventSlim(initialState: false);
+        var tasks = Enumerable.Range(0, 16)
+            .Select(_ => Task.Run(async () =>
+            {
+                gate.Wait();
+                return await process;
+            }))
+            .ToArray();
+
+        gate.Set();
+        var results = await Task.WhenAll(tasks);
+
+        var firstResult = results[0];
+        Assert.All(results, result => Assert.Same(firstResult, result));
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ReleasesHandleAfterExitWithoutAwait()
     {
         var process = CreateEchoCommand("test")

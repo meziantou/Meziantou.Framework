@@ -19,9 +19,12 @@ public sealed class BufferedProcessInstance : ProcessInstance
 
     private Task<BufferedProcessResult> WaitForExitBufferedCoreAsync()
     {
-        if (_waitTask is null)
+        if (_waitTask is not null)
+            return _waitTask;
+
+        lock (WaitTaskLock)
         {
-            _waitTask = WaitForExitBufferedImplAsync();
+            _waitTask ??= WaitForExitBufferedImplAsync();
         }
 
         return _waitTask;

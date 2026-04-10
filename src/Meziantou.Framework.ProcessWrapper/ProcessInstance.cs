@@ -19,6 +19,7 @@ public class ProcessInstance
     private readonly CancellationToken _cancellationToken;
     private readonly Func<bool> _hasStandardErrorOutput;
     private readonly Task<ProcessCompletion> _processCompletionTask;
+    private protected readonly Lock WaitTaskLock = new();
     private Task<ProcessResult>? _waitTask;
 
     internal ProcessInstance(Process process, Task inputStreamTask, CancellationTokenRegistration cancellationRegistration, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
@@ -47,24 +48,40 @@ public class ProcessInstance
     /// <summary>Gets an awaiter that waits for the process to exit and returns the process result.</summary>
     public TaskAwaiter<ProcessResult> GetAwaiter() => WaitForExitCoreAsync().GetAwaiter();
 
-    /// <summary>Kills the process and all child processes.</summary>
-    public void Kill() => Kill(entireProcessTree: true);
-
     /// <summary>Kills the process.</summary>
-    public void Kill(bool entireProcessTree)
+    public void Kill(bool entireProcessTree = true)
     {
         var process = _process;
         if (process is null)
             return;
 
-        KillProcess(process, entireProcessTree);
+        try
+        {
+            process.Kill(entireProcessTree);
+        }
+        catch (InvalidOperationException) when (entireProcessTree)
+        {
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+        catch (InvalidOperationException)
+        {
+        }
     }
 
     private protected Task<ProcessResult> WaitForExitCoreAsync()
     {
-        if (_waitTask is null)
+        if (_waitTask is not null)
+            return _waitTask;
+
+        lock (WaitTaskLock)
         {
-            _waitTask = WaitForExitImplAsync();
+            _waitTask ??= WaitForExitImplAsync();
         }
 
         return _waitTask;
@@ -132,32 +149,6 @@ public class ProcessInstance
     private protected virtual ProcessResult CreateProcessResult(int exitCode, DateTimeOffset exitDate)
     {
         return new ProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate);
-    }
-
-    internal static void KillProcess(Process process)
-    {
-        KillProcess(process, entireProcessTree: true);
-    }
-
-    private static void KillProcess(Process process, bool entireProcessTree)
-    {
-        try
-        {
-            process.Kill(entireProcessTree);
-        }
-        catch (InvalidOperationException) when (entireProcessTree)
-        {
-            try
-            {
-                process.Kill();
-            }
-            catch (InvalidOperationException)
-            {
-            }
-        }
-        catch (InvalidOperationException)
-        {
-        }
     }
 
     private sealed class ProcessCompletion

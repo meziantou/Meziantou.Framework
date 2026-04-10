@@ -98,6 +98,11 @@ internal static class DataEncoderHelper
 
     public static void AddTerminatorAndPadding(BitBuffer buffer, int totalDataBits, int terminatorMaxBits)
     {
+        if (buffer.BitCount > totalDataBits)
+        {
+            throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+        }
+
         var terminatorLength = Math.Min(terminatorMaxBits, totalDataBits - buffer.BitCount);
         if (terminatorLength > 0)
         {

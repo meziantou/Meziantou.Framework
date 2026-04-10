@@ -152,16 +152,12 @@ int UpdateToolReadmes()
     }
 
     var editedFiles = 0;
-    Parallel.ForEach(toolProjects, project =>
+    foreach (var project in toolProjects)
     {
         Console.WriteLine($"Building {project.Csproj}");
-
         string[] buildArgs = ["build", project.Csproj, "--framework", latestTfm, "-p:RunAnalyzers=false", "-p:RunAnalyzersDuringBuild=false"];
         _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2));
-    });
 
-    Parallel.ForEach(toolProjects, project =>
-    {
         Console.WriteLine($"Processing {project.Csproj}");
 
         string[] runArgs = ["run", "--no-build", "--project", project.Csproj, "--framework", latestTfm, "--", "--help"];
@@ -183,7 +179,7 @@ int UpdateToolReadmes()
             Console.WriteLine($"WARNING: {project.ToolReadme} was not up-to-date");
             Interlocked.Increment(ref editedFiles);
         }
-    });
+    }
 
     if (editedFiles > 0)
     {

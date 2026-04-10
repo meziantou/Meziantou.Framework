@@ -77,6 +77,7 @@ var projectReferencesCache = new Dictionary<string, List<string>>(StringComparer
 // Tool → src project mappings
 var toolProjectsBySrcName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 {
+    ["Meziantou.Framework.HtmlToMarkdown"] = "Meziantou.Framework.HtmlToMarkdown.Emoji.Generator",
     ["Meziantou.Framework.Http.Hsts"] = "Meziantou.Framework.Http.Hsts.Generator",
     ["Meziantou.Framework.Unicode"] = "Meziantou.Framework.Unicode.Generator",
 };

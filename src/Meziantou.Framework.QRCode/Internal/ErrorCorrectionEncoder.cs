@@ -32,6 +32,11 @@ internal static class ErrorCorrectionEncoder
             dataIndex += group2DataCW;
         }
 
+        if (dataIndex != dataCodewords.Length)
+        {
+            throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+        }
+
         // Compute EC for each block
         for (var i = 0; i < totalBlocks; i++)
         {
@@ -50,6 +55,11 @@ internal static class ErrorCorrectionEncoder
             {
                 if (col < dataBlocks[block].Length)
                 {
+                    if (resultIndex >= result.Length)
+                    {
+                        throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+                    }
+
                     result[resultIndex++] = dataBlocks[block][col];
                 }
             }
@@ -60,8 +70,18 @@ internal static class ErrorCorrectionEncoder
         {
             for (var block = 0; block < totalBlocks; block++)
             {
+                if (resultIndex >= result.Length)
+                {
+                    throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+                }
+
                 result[resultIndex++] = ecBlocks[block][col];
             }
+        }
+
+        if (resultIndex != result.Length)
+        {
+            throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
         }
 
         return result;

@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Xunit;
 
@@ -95,5 +96,50 @@ public class QRCodeSvgRendererTests
         var svg = qr.ToSvg(new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 });
 
         InlineSnapshot.Validate(svg, """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21"><rect width="21" height="21" fill="#ffffff"/><path fill="#000000" d="M0 0h7v1h-7zM9 0h1v1h-1zM12 0h1v1h-1zM14 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM11 1h1v1h-1zM14 1h1v1h-1zM20 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM9 2h1v1h-1zM14 2h1v1h-1zM16 2h3v1h-3zM20 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h1v1h-1zM11 3h1v1h-1zM14 3h1v1h-1zM16 3h3v1h-3zM20 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM10 4h3v1h-3zM14 4h1v1h-1zM16 4h3v1h-3zM20 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h3v1h-3zM12 5h1v1h-1zM14 5h1v1h-1zM20 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h7v1h-7zM10 7h3v1h-3zM0 8h5v1h-5zM6 8h4v1h-4zM12 8h2v1h-2zM15 8h1v1h-1zM17 8h1v1h-1zM19 8h1v1h-1zM0 9h1v1h-1zM2 9h1v1h-1zM5 9h1v1h-1zM12 9h1v1h-1zM15 9h1v1h-1zM17 9h4v1h-4zM6 10h1v1h-1zM8 10h4v1h-4zM13 10h1v1h-1zM16 10h2v1h-2zM20 10h1v1h-1zM1 11h5v1h-5zM7 11h1v1h-1zM10 11h1v1h-1zM15 11h2v1h-2zM1 12h2v1h-2zM5 12h2v1h-2zM8 12h4v1h-4zM13 12h1v1h-1zM16 12h1v1h-1zM18 12h1v1h-1zM8 13h2v1h-2zM11 13h4v1h-4zM17 13h1v1h-1zM19 13h2v1h-2zM0 14h7v1h-7zM8 14h1v1h-1zM10 14h1v1h-1zM12 14h1v1h-1zM14 14h2v1h-2zM18 14h1v1h-1zM20 14h1v1h-1zM0 15h1v1h-1zM6 15h1v1h-1zM9 15h6v1h-6zM17 15h1v1h-1zM20 15h1v1h-1zM0 16h1v1h-1zM2 16h3v1h-3zM6 16h1v1h-1zM8 16h1v1h-1zM12 16h1v1h-1zM15 16h1v1h-1zM18 16h1v1h-1zM0 17h1v1h-1zM2 17h3v1h-3zM6 17h1v1h-1zM8 17h1v1h-1zM10 17h1v1h-1zM12 17h1v1h-1zM15 17h1v1h-1zM18 17h1v1h-1zM0 18h1v1h-1zM2 18h3v1h-3zM6 18h1v1h-1zM8 18h1v1h-1zM11 18h1v1h-1zM13 18h1v1h-1zM16 18h1v1h-1zM18 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM10 19h1v1h-1zM15 19h2v1h-2zM18 19h1v1h-1zM20 19h1v1h-1zM0 20h7v1h-7zM8 20h1v1h-1zM11 20h1v1h-1zM13 20h1v1h-1zM16 20h1v1h-1zM18 20h1v1h-1z"/></svg>""");
+    }
+
+    [Fact]
+    public void ToSvg_LongPayload_ProducesValidSvg()
+    {
+        var data = """
+            067786869696809yhjkhghgkghkjfgtyrfturtfjrftuyrgfjhftyurdftyjfjghftyurfuytfftkiftifif56565685756586586565658655685878j74564567456454534345456475478545456jk7879797@hhhhhhhhhhhhhhhhhhhhhhhhhhhhhrffffffffffffffffffffffffffffffhhhhhhhhhhhhjbjgbhgkjgkhghjghjgkjgkgkgkkhgbnadssdfsghjkghhhhhhhhhhhhhhhhhhhhhjjjjjjjjjjjjjjjgyuyghgjghjgjkgkhkkjhkljhgjlghlk067786869696809yhjkhghgkghkjfgtyrfturtfjrftuyrgfjhftycfffhsdjfhdskjksfsdfsdddddddddddsddddddddddddddddjjjjjjjjjjjjjjjjjjjjjjjjjjjjjkurdftyjfjghftyurfuytfftkiftifif56565685756586586565658655685878j74564567456454534345456475478545456jk7879797@hhhhhhhhhhhhhhhhhhhhhhhhhhhhhrfffffffffffffffffffffffffffffffffffffffghhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhjbjgbhgkjgkhghjghjgkjgkgkgkkhgbnadssdfsghjkghhhhhhhhhhhhhhhhhhhhhjjjjjjjjjjjjjjjgyuyghgjghjgjkgkhkkjhkljhgjlghlk
+            """;
+        var qr = QRCode.Create(data, ErrorCorrectionLevel.M);
+        var svg = qr.ToSvg();
+        var document = XDocument.Parse(svg);
+
+        Assert.Equal("svg", document.Root!.Name.LocalName);
+    }
+
+    [Fact]
+    public void ToSvg_ModuleSizeZero_ThrowsArgumentOutOfRangeException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToSvg(new QRCodeSvgOptions { ModuleSize = 0 }));
+    }
+
+    [Fact]
+    public void ToSvg_NegativeQuietZone_ThrowsArgumentOutOfRangeException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToSvg(new QRCodeSvgOptions { QuietZoneModules = -1 }));
+    }
+
+    [Fact]
+    public void ToSvg_NullDarkColor_ThrowsArgumentNullException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentNullException>(() => qr.ToSvg(new QRCodeSvgOptions { DarkColor = null! }));
+    }
+
+    [Fact]
+    public void ToSvg_NullLightColor_ThrowsArgumentNullException()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+
+        Assert.Throws<ArgumentNullException>(() => qr.ToSvg(new QRCodeSvgOptions { LightColor = null! }));
     }
 }

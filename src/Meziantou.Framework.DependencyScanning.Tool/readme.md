@@ -24,7 +24,6 @@ Meziantou.Framework.DependencyScanning.Tool --help
 
 <!-- help -->
 ```
-D:\copilot-worktrees\Meziantou.Framework\meziantou~2Funelectric-ada\src\Meziantou.Framework.ProcessWrapper\ProcessInstance.cs(22,29): warning MA0158: Use System.Threading.Lock (https://github.com/meziantou/Meziantou.Analyzer/blob/main/docs/Rules/MA0158.md) [D:\copilot-worktrees\Meziantou.Framework\meziantou~2Funelectric-ada\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj::TargetFramework=net10.0]
 Description:
 
 Usage:

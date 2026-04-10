@@ -64,6 +64,16 @@ public class ProcessInstance
         {
             process.Kill(entireProcessTree);
         }
+        catch (AggregateException) when (entireProcessTree)
+        {
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
         catch (InvalidOperationException) when (entireProcessTree)
         {
             try

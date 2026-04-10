@@ -152,9 +152,7 @@ int UpdateToolReadmes()
     }
 
     var editedFiles = 0;
-    Parallel.ForEach(
-        source: toolProjects,
-        body: project =>
+    Parallel.ForEach(toolProjects, project =>
     {
         Console.WriteLine($"Building {project.Csproj}");
 

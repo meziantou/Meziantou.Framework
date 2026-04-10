@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Text;
 using Meziantou.Framework.Unix.ControlGroups;
 using Meziantou.Framework.Win32;
@@ -431,12 +432,17 @@ public sealed class ProcessWrapper
             ValidateLimits(_limits!);
         }
 
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
         {
             if (hasLinuxConfiguration)
                 throw new PlatformNotSupportedException("Linux control group configuration can be used only on Linux.");
 
             return new WindowsProcessLimiter(_limits, _windowsJobObjectConfiguration);
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            throw new PlatformNotSupportedException("Windows process limits are supported only on Windows 5.1.2600 and later.");
         }
 
         if (OperatingSystem.IsLinux())
@@ -453,13 +459,13 @@ public sealed class ProcessWrapper
     private static void ValidateLimits(ProcessLimits limits)
     {
         if (limits.CpuPercentage is < 1 or > 100)
-            throw new ArgumentOutOfRangeException(nameof(limits.CpuPercentage), "CPU percentage must be between 1 and 100.");
+            throw new ArgumentOutOfRangeException(nameof(limits), limits.CpuPercentage, $"{nameof(ProcessLimits.CpuPercentage)} must be between 1 and 100.");
 
         if (limits.MemoryLimitInBytes is <= 0)
-            throw new ArgumentOutOfRangeException(nameof(limits.MemoryLimitInBytes), "Memory limit must be greater than 0.");
+            throw new ArgumentOutOfRangeException(nameof(limits), limits.MemoryLimitInBytes, $"{nameof(ProcessLimits.MemoryLimitInBytes)} must be greater than 0.");
 
         if (limits.ProcessCountLimit is <= 0)
-            throw new ArgumentOutOfRangeException(nameof(limits.ProcessCountLimit), "Process count limit must be greater than 0.");
+            throw new ArgumentOutOfRangeException(nameof(limits), limits.ProcessCountLimit, $"{nameof(ProcessLimits.ProcessCountLimit)} must be greater than 0.");
     }
 
     private interface IProcessLimiter : IDisposable
@@ -467,6 +473,7 @@ public sealed class ProcessWrapper
         void Apply(Process process);
     }
 
+    [SupportedOSPlatform("windows5.1.2600")]
     private sealed class WindowsProcessLimiter : IProcessLimiter
     {
         private readonly JobObject _jobObject;
@@ -512,6 +519,7 @@ public sealed class ProcessWrapper
         }
     }
 
+    [SupportedOSPlatform("linux")]
     private sealed class LinuxProcessLimiter : IProcessLimiter
     {
         private readonly ProcessLimits? _limits;
@@ -568,9 +576,9 @@ public sealed class ProcessWrapper
 
             if (_limits?.CpuPercentage is not null)
             {
-                const long periodMicroseconds = 100000;
-                var maxMicroseconds = (long)Math.Ceiling(_limits.CpuPercentage.Value * periodMicroseconds / 100d);
-                _controlGroup.SetCpuMax(maxMicroseconds, periodMicroseconds);
+                const long PeriodMicroseconds = 100000;
+                var maxMicroseconds = (long)Math.Ceiling(_limits.CpuPercentage.Value * PeriodMicroseconds / 100d);
+                _controlGroup.SetCpuMax(maxMicroseconds, PeriodMicroseconds);
             }
 
             if (_limits?.MemoryLimitInBytes is not null)

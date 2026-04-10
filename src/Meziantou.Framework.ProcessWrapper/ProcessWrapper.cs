@@ -1,7 +1,13 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.Versioning;
 using System.Text;
+using Meziantou.Framework.Unix.ControlGroups;
+using Meziantou.Framework.Win32;
 
 namespace Meziantou.Framework;
 
@@ -17,6 +23,9 @@ public sealed class ProcessWrapper
     private ImmutableArray<Action<string>> _outputHandlers;
     private ImmutableArray<Action<string>> _errorHandlers;
     private ProcessInputStream? _inputStream;
+    private ProcessLimits? _limits;
+    private Action<JobObject>? _windowsJobObjectConfiguration;
+    private Action<CGroup2>? _linuxControlGroupConfiguration;
 
     private ProcessWrapper(string fileName)
     {
@@ -102,6 +111,40 @@ public sealed class ProcessWrapper
     public ProcessWrapper WithValidation(ProcessValidationMode mode)
     {
         _validationMode = mode;
+        return this;
+    }
+
+    /// <summary>Sets the process limits, replacing previously configured limits.</summary>
+    public ProcessWrapper WithLimits(ProcessLimits limits)
+    {
+        ArgumentNullException.ThrowIfNull(limits);
+        _limits = limits;
+        return this;
+    }
+
+    /// <summary>Configures process limits. Accumulates with previous calls.</summary>
+    public ProcessWrapper WithLimits(Action<ProcessLimits> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        _limits ??= new ProcessLimits();
+        configure(_limits);
+        return this;
+    }
+
+    /// <summary>Configures the Windows Job Object used to apply process limits.</summary>
+    public ProcessWrapper WithWindowsJobObject(Action<JobObject> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _windowsJobObjectConfiguration = configure;
+        return this;
+    }
+
+    /// <summary>Configures the Linux cgroup used to apply process limits.</summary>
+    public ProcessWrapper WithLinuxControlGroup(Action<CGroup2> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        _linuxControlGroupConfiguration = configure;
         return this;
     }
 
@@ -234,7 +277,7 @@ public sealed class ProcessWrapper
     public ProcessInstance ExecuteAsync(CancellationToken cancellationToken = default)
     {
         return StartProcess(_outputHandlers, _errorHandlers,
-            (process, inputTask, registration, hasStandardErrorOutput, ct) => new ProcessInstance(process, inputTask, registration, _validationMode, hasStandardErrorOutput, ct),
+            (process, inputTask, registration, limiter, hasStandardErrorOutput, ct) => new ProcessInstance(process, inputTask, registration, limiter, _validationMode, hasStandardErrorOutput, ct),
             cancellationToken);
     }
 
@@ -251,12 +294,12 @@ public sealed class ProcessWrapper
         var errorHandlers = _errorHandlers.Add(line => output.Add(ProcessOutputType.StandardError, line));
 
         return StartProcess(outputHandlers, errorHandlers,
-            (process, inputTask, registration, hasStandardErrorOutput, ct) => new BufferedProcessInstance(process, inputTask, registration, _validationMode, output, hasStandardErrorOutput, ct),
+            (process, inputTask, registration, limiter, hasStandardErrorOutput, ct) => new BufferedProcessInstance(process, inputTask, registration, limiter, _validationMode, output, hasStandardErrorOutput, ct),
             cancellationToken);
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ProcessInstance will dispose it")]
-    private T StartProcess<T>(ImmutableArray<Action<string>> outputHandlers, ImmutableArray<Action<string>> errorHandlers, Func<Process, Task, CancellationTokenRegistration, Func<bool>, CancellationToken, T> factory, CancellationToken cancellationToken)
+    private T StartProcess<T>(ImmutableArray<Action<string>> outputHandlers, ImmutableArray<Action<string>> errorHandlers, Func<Process, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, CancellationToken, T> factory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -273,6 +316,7 @@ public sealed class ProcessWrapper
         _startInfo.FileName = ResolveFileName(configuredFileName, _startInfo.WorkingDirectory);
 
         var process = new Process { StartInfo = _startInfo };
+        var processLimiter = CreateProcessLimiter();
 
         if (hasOutputHandlers)
         {
@@ -303,16 +347,35 @@ public sealed class ProcessWrapper
             };
         }
 
+        var processStarted = false;
         try
         {
-            if (!process.Start())
+            try
             {
-                throw new Win32Exception("Cannot start the process");
+                if (!process.Start())
+                {
+                    throw new Win32Exception("Cannot start the process");
+                }
+
+                processStarted = true;
             }
+            finally
+            {
+                _startInfo.FileName = configuredFileName;
+            }
+
+            processLimiter?.Apply(process);
         }
-        finally
+        catch
         {
-            _startInfo.FileName = configuredFileName;
+            if (processStarted)
+            {
+                ProcessInstance.KillProcess(process, entireProcessTree: true);
+            }
+
+            process.Dispose();
+            processLimiter?.Dispose();
+            throw;
         }
 
         if (hasOutputHandlers)
@@ -352,7 +415,223 @@ public sealed class ProcessWrapper
             registration = cancellationToken.Register(() => ProcessInstance.KillProcess(process, entireProcessTree: true));
         }
 
-        return factory(process, inputStreamTask, registration, () => Volatile.Read(ref hasStandardErrorOutput) != 0, cancellationToken);
+        return factory(process, inputStreamTask, registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, cancellationToken);
+    }
+
+    private IProcessLimiter? CreateProcessLimiter()
+    {
+        var hasWindowsConfiguration = _windowsJobObjectConfiguration is not null;
+        var hasLinuxConfiguration = _linuxControlGroupConfiguration is not null;
+        var hasCommonLimits = _limits?.HasAnyLimitConfigured == true;
+
+        if (!hasWindowsConfiguration && !hasLinuxConfiguration && !hasCommonLimits)
+            return null;
+
+        if (hasCommonLimits)
+        {
+            ValidateLimits(_limits!);
+        }
+
+        if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+        {
+            if (hasLinuxConfiguration)
+                throw new PlatformNotSupportedException("Linux control group configuration can be used only on Linux.");
+
+            return new WindowsProcessLimiter(_limits, _windowsJobObjectConfiguration);
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            throw new PlatformNotSupportedException("Windows process limits are supported only on Windows 5.1.2600 and later.");
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            if (hasWindowsConfiguration)
+                throw new PlatformNotSupportedException("Windows job object configuration can be used only on Windows.");
+
+            return new LinuxProcessLimiter(_limits, _linuxControlGroupConfiguration);
+        }
+
+        throw new PlatformNotSupportedException("Process limits are supported only on Windows and Linux.");
+    }
+
+    private static void ValidateLimits(ProcessLimits limits)
+    {
+        if (limits.CpuPercentage is < 1 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(limits), limits.CpuPercentage, $"{nameof(ProcessLimits.CpuPercentage)} must be between 1 and 100.");
+
+        if (limits.MemoryLimitInBytes is <= 0)
+            throw new ArgumentOutOfRangeException(nameof(limits), limits.MemoryLimitInBytes, $"{nameof(ProcessLimits.MemoryLimitInBytes)} must be greater than 0.");
+
+        if (limits.ProcessCountLimit is <= 0)
+            throw new ArgumentOutOfRangeException(nameof(limits), limits.ProcessCountLimit, $"{nameof(ProcessLimits.ProcessCountLimit)} must be greater than 0.");
+    }
+
+    private interface IProcessLimiter : IDisposable
+    {
+        void Apply(Process process);
+    }
+
+    [SupportedOSPlatform("windows5.1.2600")]
+    private sealed class WindowsProcessLimiter : IProcessLimiter
+    {
+        private readonly JobObject _jobObject;
+
+        public WindowsProcessLimiter(ProcessLimits? limits, Action<JobObject>? configure)
+        {
+            _jobObject = new JobObject();
+
+            if (limits?.MemoryLimitInBytes is not null || limits?.ProcessCountLimit is not null)
+            {
+                var jobLimits = new JobObjectLimits();
+
+                if (limits.MemoryLimitInBytes is not null)
+                {
+                    jobLimits.JobMemoryLimit = checked((nuint)limits.MemoryLimitInBytes.Value);
+                }
+
+                if (limits.ProcessCountLimit is not null)
+                {
+                    jobLimits.ActiveProcessLimit = checked((uint)limits.ProcessCountLimit.Value);
+                }
+
+                _jobObject.SetLimits(jobLimits);
+            }
+
+            if (limits?.CpuPercentage is not null)
+            {
+                _jobObject.SetCpuRateHardCap(limits.CpuPercentage.Value * 100);
+            }
+
+            configure?.Invoke(_jobObject);
+        }
+
+        public void Apply(Process process)
+        {
+            ArgumentNullException.ThrowIfNull(process);
+            _jobObject.AssignProcess(process);
+        }
+
+        public void Dispose()
+        {
+            _jobObject.Dispose();
+        }
+    }
+
+    [SupportedOSPlatform("linux")]
+    private sealed class LinuxProcessLimiter : IProcessLimiter
+    {
+        private readonly ProcessLimits? _limits;
+        private readonly Action<CGroup2>? _configure;
+        private CGroup2? _parentControlGroup;
+        private CGroup2? _controlGroup;
+
+        public LinuxProcessLimiter(ProcessLimits? limits, Action<CGroup2>? configure)
+        {
+            _limits = limits;
+            _configure = configure;
+        }
+
+        public void Apply(Process process)
+        {
+            ArgumentNullException.ThrowIfNull(process);
+
+            _parentControlGroup = CGroup2.Root.CreateOrGetChild($"process-wrapper-{Environment.ProcessId}-{Guid.NewGuid():N}");
+            var availableControllers = _parentControlGroup.GetAvailableControllers().ToHashSet(StringComparer.Ordinal);
+            var controllersToEnable = new HashSet<string>(StringComparer.Ordinal);
+
+            if (_limits?.CpuPercentage is not null)
+            {
+                EnsureControllerIsAvailable(availableControllers, "cpu");
+                controllersToEnable.Add("cpu");
+            }
+
+            if (_limits?.MemoryLimitInBytes is not null)
+            {
+                EnsureControllerIsAvailable(availableControllers, "memory");
+                controllersToEnable.Add("memory");
+            }
+
+            if (_limits?.ProcessCountLimit is not null)
+            {
+                EnsureControllerIsAvailable(availableControllers, "pids");
+                controllersToEnable.Add("pids");
+            }
+
+            if (_configure is not null)
+            {
+                foreach (var controller in availableControllers)
+                {
+                    controllersToEnable.Add(controller);
+                }
+            }
+
+            if (controllersToEnable.Count > 0)
+            {
+                _parentControlGroup.SetControllers(controllersToEnable.ToArray());
+            }
+
+            _controlGroup = _parentControlGroup.CreateOrGetChild($"process-{Guid.NewGuid():N}");
+
+            if (_limits?.CpuPercentage is not null)
+            {
+                const long PeriodMicroseconds = 100000;
+                var maxMicroseconds = (long)Math.Ceiling(_limits.CpuPercentage.Value * PeriodMicroseconds / 100d);
+                _controlGroup.SetCpuMax(maxMicroseconds, PeriodMicroseconds);
+            }
+
+            if (_limits?.MemoryLimitInBytes is not null)
+            {
+                _controlGroup.SetMemoryMax(_limits.MemoryLimitInBytes.Value);
+            }
+
+            if (_limits?.ProcessCountLimit is not null)
+            {
+                _controlGroup.SetPidsMax(_limits.ProcessCountLimit.Value);
+            }
+
+            _configure?.Invoke(_controlGroup);
+            _controlGroup.AssociateProcess(process);
+        }
+
+        public void Dispose()
+        {
+            var controlGroup = Interlocked.Exchange(ref _controlGroup, null);
+            TryDeleteControlGroup(controlGroup);
+
+            var parentControlGroup = Interlocked.Exchange(ref _parentControlGroup, null);
+            TryDeleteControlGroup(parentControlGroup);
+        }
+
+        private static void EnsureControllerIsAvailable(HashSet<string> availableControllers, string controllerName)
+        {
+            if (!availableControllers.Contains(controllerName))
+                throw new NotSupportedException($"The '{controllerName}' cgroup controller is not available.");
+        }
+
+        private static void TryDeleteControlGroup(CGroup2? controlGroup)
+        {
+            if (controlGroup is null)
+                return;
+
+            try
+            {
+                if (controlGroup.Exists())
+                {
+                    controlGroup.Delete();
+                }
+            }
+            catch (DirectoryNotFoundException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
     }
 
     private static string ResolveFileName(string fileName, string? workingDirectory)

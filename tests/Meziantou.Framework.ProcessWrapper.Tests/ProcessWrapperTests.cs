@@ -460,6 +460,78 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithErrorStream(_ => { }));
         Assert.Same(command, command.AddErrorStream(_ => { }));
         Assert.Same(command, command.WithInputStream("stdin"));
+        Assert.Same(command, command.WithLimits(new ProcessLimits()));
+        Assert.Same(command, command.WithLimits(limits => limits.CpuPercentage = 50));
+        Assert.Same(command, command.WithWindowsJobObject(_ => { }));
+        Assert.Same(command, command.WithLinuxControlGroup(_ => { }));
+    }
+
+    [Fact]
+    public void ExecuteAsync_WithInvalidCpuLimit_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            _ = CreateEchoCommand("test")
+                .WithLimits(new ProcessLimits { CpuPercentage = 0 })
+                .ExecuteAsync();
+        });
+    }
+
+    [Fact]
+    public void ExecuteAsync_WithInvalidMemoryLimit_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            _ = CreateEchoCommand("test")
+                .WithLimits(new ProcessLimits { MemoryLimitInBytes = -1 })
+                .ExecuteAsync();
+        });
+    }
+
+    [Fact]
+    public void ExecuteAsync_WithInvalidProcessCountLimit_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            _ = CreateEchoCommand("test")
+                .WithLimits(new ProcessLimits { ProcessCountLimit = 0 })
+                .ExecuteAsync();
+        });
+    }
+
+    [Fact]
+    public void ExecuteAsync_WithUnsupportedPlatformSpecificConfiguration_Throws()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                _ = CreateEchoCommand("test")
+                    .WithLinuxControlGroup(_ => { })
+                    .ExecuteAsync();
+            });
+
+            return;
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                _ = CreateEchoCommand("test")
+                    .WithWindowsJobObject(_ => { })
+                    .ExecuteAsync();
+            });
+
+            return;
+        }
+
+        Assert.Throws<PlatformNotSupportedException>(() =>
+        {
+            _ = CreateEchoCommand("test")
+                .WithLimits(new ProcessLimits { CpuPercentage = 10 })
+                .ExecuteAsync();
+        });
     }
 
     [Fact]

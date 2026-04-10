@@ -162,9 +162,7 @@ int UpdateToolReadmes()
         _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2));
     });
 
-    Parallel.ForEach(
-        source: toolProjects,
-        body: project =>
+    Parallel.ForEach(toolProjects, project =>
     {
         Console.WriteLine($"Processing {project.Csproj}");
 

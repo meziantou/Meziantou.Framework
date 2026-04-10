@@ -46,7 +46,7 @@ public class ProcessInstance
     public SafeProcessHandle? UnsafeGetProcessHandle() => _process?.SafeHandle;
 
     /// <summary>Gets an awaiter that waits for the process to exit and returns the process result.</summary>
-    public TaskAwaiter<ProcessResult> GetAwaiter() => WaitForExitCoreAsync().GetAwaiter();
+    public TaskAwaiter<ProcessResult> GetAwaiter() => GetAwaiterTask().GetAwaiter();
 
     /// <summary>Kills the process.</summary>
     public void Kill(bool entireProcessTree = true)
@@ -74,7 +74,7 @@ public class ProcessInstance
         }
     }
 
-    private protected Task<ProcessResult> WaitForExitCoreAsync()
+    private protected Task<ProcessResult> GetAwaiterTask()
     {
         if (_waitTask is not null)
             return _waitTask;
@@ -85,31 +85,32 @@ public class ProcessInstance
         }
 
         return _waitTask;
+
+        async Task<ProcessResult> WaitForExitImplAsync()
+        {
+            var processCompletion = await _processCompletionTask.ConfigureAwait(false);
+            if (processCompletion.InputStreamException is not null)
+            {
+                ExceptionDispatchInfo.Capture(processCompletion.InputStreamException).Throw();
+            }
+
+            _cancellationToken.ThrowIfCancellationRequested();
+
+            if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && processCompletion.ExitCode != 0)
+            {
+                throw new ProcessExecutionException(processCompletion.ExitCode);
+            }
+
+            if ((_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError && _hasStandardErrorOutput())
+            {
+                throw new ProcessExecutionException("Process wrote to standard error.");
+            }
+
+            return CreateProcessResult(processCompletion.ExitCode, processCompletion.ExitDate);
+        }
     }
 
-    private async Task<ProcessResult> WaitForExitImplAsync()
-    {
-        var processCompletion = await _processCompletionTask.ConfigureAwait(false);
-        if (processCompletion.InputStreamException is not null)
-        {
-            ExceptionDispatchInfo.Capture(processCompletion.InputStreamException).Throw();
-        }
-
-        _cancellationToken.ThrowIfCancellationRequested();
-
-        if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && processCompletion.ExitCode != 0)
-        {
-            throw new ProcessExecutionException(processCompletion.ExitCode);
-        }
-
-        if ((_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError && _hasStandardErrorOutput())
-        {
-            throw new ProcessExecutionException("Process wrote to standard error.");
-        }
-
-        return CreateProcessResult(processCompletion.ExitCode, processCompletion.ExitDate);
-    }
-
+    // Wait for process exit and dispose all resources (do not wait for user to await the instance)
     private async Task<ProcessCompletion> WaitForProcessExitAsync(Process process)
     {
         Exception? inputStreamException = null;

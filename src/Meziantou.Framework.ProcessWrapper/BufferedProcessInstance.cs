@@ -28,12 +28,12 @@ public sealed class BufferedProcessInstance : ProcessInstance
         }
 
         return _waitTask;
-    }
 
-    private async Task<BufferedProcessResult> WaitForExitBufferedImplAsync()
-    {
-        var result = await WaitForExitCoreAsync().ConfigureAwait(false);
-        return (BufferedProcessResult)result;
+        async Task<BufferedProcessResult> WaitForExitBufferedImplAsync()
+        {
+            var result = await GetAwaiterTask().ConfigureAwait(false);
+            return (BufferedProcessResult)result;
+        }
     }
 
     private protected override ProcessResult CreateProcessResult(int exitCode, DateTimeOffset exitDate)

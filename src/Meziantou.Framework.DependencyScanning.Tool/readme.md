@@ -25,6 +25,7 @@ Meziantou.Framework.DependencyScanning.Tool --help
 <!-- help -->
 ```
 Description:
+  List and update dependencies detected in a folder.
 
 Usage:
   Meziantou.Framework.DependencyScanning.Tool [command] [options]

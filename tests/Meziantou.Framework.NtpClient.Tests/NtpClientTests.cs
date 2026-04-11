@@ -9,23 +9,26 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
 {
     private const int RetryCount = 3;
 
-    private static NtpClientOptions CreateTestOptions(NtpVersion version = NtpVersion.V4)
+    private static NtpClientOptions CreateTestOptions(NtpVersion version = NtpVersion.V4, TimeSpan? timeout = null)
     {
-        return new NtpClientOptions { Version = version, Timeout = TimeSpan.FromSeconds(2) };
+        return new NtpClientOptions { Version = version, Timeout = timeout ?? TimeSpan.FromSeconds(2) };
     }
 
-    private async Task<NtpResponse> QueryWithRetryAsync(NtpClient client, string server)
+    private async Task<NtpResponse> QueryWithRetryAsync(string server, NtpVersion version = NtpVersion.V4, int retryCount = RetryCount, TimeSpan? timeout = null, TimeSpan? delayBetweenAttempts = null)
     {
-        for (var i = RetryCount; i >= 0; i--)
+        var delay = delayBetweenAttempts ?? TimeSpan.FromMilliseconds(50);
+        for (var i = retryCount; i >= 0; i--)
         {
             try
             {
+                using var client = new NtpClient(server, CreateTestOptions(version, timeout));
                 return await client.QueryAsync(XunitCancellationToken);
             }
             catch (Exception ex) when (i > 0)
             {
-                testOutputHelper.WriteLine($"Attempt {RetryCount - i + 1} for {server} failed: {ex.GetType().Name}: {ex.Message}");
-                await Task.Delay(50, XunitCancellationToken);
+                var attempt = retryCount - i + 1;
+                testOutputHelper.WriteLine($"Attempt {attempt} for {server} failed: {ex.GetType().Name}: {ex.Message}");
+                await Task.Delay(TimeSpan.FromMilliseconds(delay.TotalMilliseconds * attempt), XunitCancellationToken);
             }
         }
 
@@ -43,8 +46,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
         {
             try
             {
-                using var client = new NtpClient(server, CreateTestOptions(version));
-                var response = await QueryWithRetryAsync(client, server);
+                var response = await QueryWithRetryAsync(server, version);
                 testOutputHelper.WriteLine($"Successfully queried {server}");
                 return response;
             }
@@ -144,8 +146,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     public async Task Query_TimeGoogle_ReturnsValidResponse()
     {
         await LogDnsResolutionAsync(["time.google.com"]);
-        using var client = new NtpClient("time.google.com", CreateTestOptions());
-        var response = await QueryWithRetryAsync(client, "time.google.com");
+        var response = await QueryWithRetryAsync("time.google.com");
 
         Assert.True(response.Stratum > 0);
         Assert.True(response.TransmitTimestamp > DateTimeOffset.UnixEpoch);
@@ -156,8 +157,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     public async Task Query_PoolNtpOrg_ReturnsValidResponse()
     {
         await LogDnsResolutionAsync(["pool.ntp.org"]);
-        using var client = new NtpClient("pool.ntp.org", CreateTestOptions());
-        var response = await QueryWithRetryAsync(client, "pool.ntp.org");
+        var response = await QueryWithRetryAsync("pool.ntp.org", retryCount: 8, timeout: TimeSpan.FromSeconds(5), delayBetweenAttempts: TimeSpan.FromMilliseconds(200));
 
         Assert.True(response.Stratum > 0);
         Assert.True(response.TransmitTimestamp > DateTimeOffset.UnixEpoch);

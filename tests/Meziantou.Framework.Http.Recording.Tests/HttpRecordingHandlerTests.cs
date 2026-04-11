@@ -278,7 +278,8 @@ public sealed class HttpRecordingHandlerTests
         var (app, baseAddress) = await StartTestServerAsync();
         try
         {
-            using var recordHandler = new HttpRecordingHandler(new SocketsHttpHandler(), new JsonHttpRecordingStore(recordingsPath), new HttpRecordingOptions
+            using var recordInnerHandler = new SocketsHttpHandler();
+            using var recordHandler = new HttpRecordingHandler(recordInnerHandler, new JsonHttpRecordingStore(recordingsPath), new HttpRecordingOptions
             {
                 Mode = HttpRecordingMode.Record,
             });
@@ -300,7 +301,8 @@ public sealed class HttpRecordingHandlerTests
                 Assert.Equal("{\"id\":42,\"name\":\"item-42\"}", await response.Content.ReadAsStringAsync());
             }
 
-            using (var response = await recordClient.PostAsync("/api/echo", new StringContent("posted-value")))
+            using var postContent = new StringContent("posted-value");
+            using (var response = await recordClient.PostAsync("/api/echo", postContent))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.Equal("echo:posted-value", await response.Content.ReadAsStringAsync());
@@ -314,7 +316,8 @@ public sealed class HttpRecordingHandlerTests
             await app.DisposeAsync();
         }
 
-        using var replayHandler = new HttpRecordingHandler(new SocketsHttpHandler(), new JsonHttpRecordingStore(recordingsPath), new HttpRecordingOptions
+        using var replayInnerHandler = new SocketsHttpHandler();
+        using var replayHandler = new HttpRecordingHandler(replayInnerHandler, new JsonHttpRecordingStore(recordingsPath), new HttpRecordingOptions
         {
             Mode = HttpRecordingMode.Replay,
         });
@@ -336,7 +339,8 @@ public sealed class HttpRecordingHandlerTests
             Assert.Equal("{\"id\":42,\"name\":\"item-42\"}", await response.Content.ReadAsStringAsync());
         }
 
-        using (var response = await replayClient.PostAsync("/api/echo", new StringContent("posted-value")))
+        using var replayPostContent = new StringContent("posted-value");
+        using (var response = await replayClient.PostAsync("/api/echo", replayPostContent))
         {
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("echo:posted-value", await response.Content.ReadAsStringAsync());
@@ -352,7 +356,8 @@ public sealed class HttpRecordingHandlerTests
         var (app, baseAddress) = await StartTestServerAsync();
         try
         {
-            using var recordHandler = new HttpRecordingHandler(new SocketsHttpHandler(), new HarHttpRecordingStore(recordingsPath), new HttpRecordingOptions
+            using var recordInnerHandler = new SocketsHttpHandler();
+            using var recordHandler = new HttpRecordingHandler(recordInnerHandler, new HarHttpRecordingStore(recordingsPath), new HttpRecordingOptions
             {
                 Mode = HttpRecordingMode.Record,
             });
@@ -368,7 +373,8 @@ public sealed class HttpRecordingHandlerTests
                 Assert.Equal("AAECAwQF/w==", Convert.ToBase64String(await response.Content.ReadAsByteArrayAsync()));
             }
 
-            using (var response = await recordClient.PostAsync("/api/echo", new ByteArrayContent(new byte[] { 0x00, 0x01, 0x7F, 0x80, 0xFF })))
+            using var postContent = new ByteArrayContent(new byte[] { 0x00, 0x01, 0x7F, 0x80, 0xFF });
+            using (var response = await recordClient.PostAsync("/api/echo", postContent))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.Equal("echo-bytes:00017F80FF", await response.Content.ReadAsStringAsync());
@@ -382,7 +388,8 @@ public sealed class HttpRecordingHandlerTests
             await app.DisposeAsync();
         }
 
-        using var replayHandler = new HttpRecordingHandler(new SocketsHttpHandler(), new HarHttpRecordingStore(recordingsPath), new HttpRecordingOptions
+        using var replayInnerHandler = new SocketsHttpHandler();
+        using var replayHandler = new HttpRecordingHandler(replayInnerHandler, new HarHttpRecordingStore(recordingsPath), new HttpRecordingOptions
         {
             Mode = HttpRecordingMode.Replay,
         });
@@ -398,7 +405,8 @@ public sealed class HttpRecordingHandlerTests
             Assert.Equal("AAECAwQF/w==", Convert.ToBase64String(await response.Content.ReadAsByteArrayAsync()));
         }
 
-        using (var response = await replayClient.PostAsync("/api/echo", new ByteArrayContent(new byte[] { 0x00, 0x01, 0x7F, 0x80, 0xFF })))
+        using var replayPostContent = new ByteArrayContent(new byte[] { 0x00, 0x01, 0x7F, 0x80, 0xFF });
+        using (var response = await replayClient.PostAsync("/api/echo", replayPostContent))
         {
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("echo-bytes:00017F80FF", await response.Content.ReadAsStringAsync());

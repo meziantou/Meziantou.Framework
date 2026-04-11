@@ -788,6 +788,36 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task WithInputStream_ProcessPipe()
+    {
+        var pipe = new ProcessPipe();
+
+        ProcessWrapper inputCommand;
+        if (OperatingSystem.IsWindows())
+        {
+            inputCommand = ProcessWrapper.Create("findstr")
+                .WithArguments(".*");
+        }
+        else
+        {
+            inputCommand = ProcessWrapper.Create("cat");
+        }
+
+        var destinationProcess = inputCommand
+            .WithInputStream(pipe)
+            .ExecuteBufferedAsync();
+
+        var sourceProcess = CreateEchoCommand("hello from pipe")
+            .AddOutputStream(pipe)
+            .ExecuteAsync();
+
+        await sourceProcess;
+        var processResult = await destinationProcess;
+
+        Assert.Contains("hello from pipe", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ReusableConfiguration()
     {
         var baseCommand = CreateEchoBase();
@@ -812,6 +842,7 @@ public class ProcessWrapperTests
     public void FluentMethods_ReturnCurrentInstance()
     {
         var command = ProcessWrapper.Create("dotnet");
+        var processPipe = new ProcessPipe();
         using var stream = new MemoryStream();
         using var stream2 = new MemoryStream();
         using var textWriter = new StringWriter();
@@ -834,6 +865,7 @@ public class ProcessWrapperTests
         Assert.Same(command, command.AddOutputStream(stream));
         Assert.Same(command, command.AddOutputStream(textWriter));
         Assert.Same(command, command.AddOutputStream(stream, stream2));
+        Assert.Same(command, command.AddOutputStream(processPipe));
         Assert.Same(command, command.WithErrorStream(OutputTarget.ToTextDelegate(_ => { })));
         Assert.Same(command, command.WithErrorStream(OutputTarget.ToTextDelegate(_ => { }), OutputTarget.ToTextDelegate(_ => { })));
         Assert.Same(command, command.WithErrorStream(stream));
@@ -846,10 +878,18 @@ public class ProcessWrapperTests
         Assert.Same(command, command.AddErrorStream(stream, stream2));
         Assert.Same(command, command.WithInputStream("stdin"));
         Assert.Same(command, command.WithInputStream(textReader));
+        Assert.Same(command, command.WithInputStream(processPipe));
         Assert.Same(command, command.WithLimits(new ProcessLimits()));
         Assert.Same(command, command.WithLimits(limits => limits.CpuPercentage = 50));
         Assert.Same(command, command.WithWindowsJobObject(_ => { }));
         Assert.Same(command, command.WithLinuxControlGroup(_ => { }));
+    }
+
+    [Fact]
+    public void ProcessPipe_WithInvalidMaxBufferSize_Throws()
+    {
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => new ProcessPipe(0));
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => new ProcessPipe(-1));
     }
 
     [Fact]

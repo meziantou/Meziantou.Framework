@@ -52,6 +52,12 @@ public class ProcessInstance
     /// <summary>Gets an awaiter that waits for the process to exit and returns the process result.</summary>
     public TaskAwaiter<ProcessResult> GetAwaiter() => GetAwaiterTask().GetAwaiter();
 
+    /// <summary>Configures whether to marshal continuations back to the captured context.</summary>
+    public ConfiguredTaskAwaitable<ProcessResult> ConfigureAwait(bool continueOnCapturedContext) => GetAwaiterTask().ConfigureAwait(continueOnCapturedContext);
+
+    /// <summary>Configures how awaits on this instance are performed.</summary>
+    public ConfiguredTaskAwaitable<ProcessResult> ConfigureAwait(ConfigureAwaitOptions options) => GetAwaiterTask().ConfigureAwait(options);
+
     /// <summary>Kills the process.</summary>
     public void Kill(bool entireProcessTree = true)
     {

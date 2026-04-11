@@ -21,6 +21,30 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteBufferedAsync_SupportsConfigureAwait()
+    {
+        var processResult = await CreateEchoCommand("test")
+            .ExecuteBufferedAsync()
+            .ConfigureAwait(false);
+
+        Assert.Equal(0, processResult.ExitCode);
+        Assert.Single(processResult.Output.StandardOutput);
+        Assert.Equal("test", processResult.Output.StandardOutput.First().Text);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_SupportsConfigureAwaitOptions()
+    {
+        var processResult = await CreateEchoCommand("test")
+            .ExecuteBufferedAsync()
+            .ConfigureAwait(ConfigureAwaitOptions.None);
+
+        Assert.Equal(0, processResult.ExitCode);
+        Assert.Single(processResult.Output.StandardOutput);
+        Assert.Equal("test", processResult.Output.StandardOutput.First().Text);
+    }
+
+    [Fact]
     public async Task ExecuteBufferedAsync_CapturesStdErr()
     {
         ProcessWrapper command;
@@ -80,6 +104,26 @@ public class ProcessWrapperTests
 
         Assert.Single(lines);
         Assert.Equal("test", lines[0]);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_SupportsConfigureAwait()
+    {
+        var processResult = await CreateEchoCommand("test")
+            .ExecuteAsync()
+            .ConfigureAwait(false);
+
+        Assert.Equal(0, processResult.ExitCode);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_SupportsConfigureAwaitOptions()
+    {
+        var processResult = await CreateEchoCommand("test")
+            .ExecuteAsync()
+            .ConfigureAwait(ConfigureAwaitOptions.None);
+
+        Assert.Equal(0, processResult.ExitCode);
     }
 
     [Fact]

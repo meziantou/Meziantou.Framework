@@ -17,6 +17,12 @@ public sealed class BufferedProcessInstance : ProcessInstance
 
     public new TaskAwaiter<BufferedProcessResult> GetAwaiter() => WaitForExitBufferedCoreAsync().GetAwaiter();
 
+    /// <summary>Configures whether to marshal continuations back to the captured context.</summary>
+    public new ConfiguredTaskAwaitable<BufferedProcessResult> ConfigureAwait(bool continueOnCapturedContext) => WaitForExitBufferedCoreAsync().ConfigureAwait(continueOnCapturedContext);
+
+    /// <summary>Configures how awaits on this instance are performed.</summary>
+    public new ConfiguredTaskAwaitable<BufferedProcessResult> ConfigureAwait(ConfigureAwaitOptions options) => WaitForExitBufferedCoreAsync().ConfigureAwait(options);
+
     private Task<BufferedProcessResult> WaitForExitBufferedCoreAsync()
     {
         if (_waitTask is not null)

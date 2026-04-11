@@ -97,7 +97,7 @@ public class ProcessWrapperTests
         var lines = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .WithOutputStream(line => { lock (lines) { lines.Add(line); } })
+            .WithOutputStream(OutputTarget.ToTextDelegate(line => { lock (lines) { lines.Add(line); } }))
             .ExecuteAsync();
 
         await process;
@@ -138,6 +138,20 @@ public class ProcessWrapperTests
         await process;
 
         Assert.Contains("test", sb.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputStream_TextWriter()
+    {
+        using var writer = new StringWriter();
+
+        var process = CreateEchoCommand("test")
+            .WithOutputStream(OutputTarget.ToTextWriter(writer))
+            .ExecuteAsync();
+
+        await process;
+
+        Assert.Contains("test", writer.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -199,6 +213,33 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithOutputStream_ToBytesDelegate()
+    {
+        var byteChunks = new List<byte[]>();
+        var process = CreateEchoCommand("test")
+            .WithOutputStream(OutputTarget.ToBytesDelegate(chunk =>
+            {
+                lock (byteChunks)
+                {
+                    byteChunks.Add(chunk);
+                }
+            }))
+            .ExecuteAsync();
+
+        await process;
+
+        byte[] allBytes;
+        lock (byteChunks)
+        {
+            allBytes = byteChunks.SelectMany(static chunk => chunk).ToArray();
+        }
+
+        Assert.NotEmpty(allBytes);
+        var capturedText = Encoding.UTF8.GetString(allBytes);
+        Assert.Contains("test", capturedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithOutputStream_Stream_AndTextHandler()
     {
         using var output = new MemoryStream();
@@ -206,7 +247,7 @@ public class ProcessWrapperTests
 
         var process = CreateEchoCommand("test")
             .WithOutputStream(output)
-            .AddOutputStream(line => { lock (lines) { lines.Add(line); } })
+            .AddOutputStream(OutputTarget.ToTextDelegate(line => { lock (lines) { lines.Add(line); } }))
             .ExecuteAsync();
 
         await process;
@@ -225,7 +266,7 @@ public class ProcessWrapperTests
         var lines = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .AddOutputStream(line => { lock (lines) { lines.Add(line); } })
+            .AddOutputStream(OutputTarget.ToTextDelegate(line => { lock (lines) { lines.Add(line); } }))
             .WithOutputStream(output)
             .ExecuteAsync();
 
@@ -244,7 +285,9 @@ public class ProcessWrapperTests
         var list2 = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .AddOutputStream(line => { lock (list1) { list1.Add(line); } }, line => { lock (list2) { list2.Add(line); } })
+            .AddOutputStream(
+                OutputTarget.ToTextDelegate(line => { lock (list1) { list1.Add(line); } }),
+                OutputTarget.ToTextDelegate(line => { lock (list2) { list2.Add(line); } }))
             .ExecuteAsync();
 
         await process;
@@ -262,8 +305,8 @@ public class ProcessWrapperTests
         var list2 = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .AddOutputStream(line => { lock (list1) { list1.Add(line); } })
-            .WithOutputStream(line => { lock (list2) { list2.Add(line); } })
+            .AddOutputStream(OutputTarget.ToTextDelegate(line => { lock (list1) { list1.Add(line); } }))
+            .WithOutputStream(OutputTarget.ToTextDelegate(line => { lock (list2) { list2.Add(line); } }))
             .ExecuteAsync();
 
         await process;
@@ -280,10 +323,10 @@ public class ProcessWrapperTests
         var list3 = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .AddOutputStream(line => { lock (list1) { list1.Add(line); } })
+            .AddOutputStream(OutputTarget.ToTextDelegate(line => { lock (list1) { list1.Add(line); } }))
             .WithOutputStream(
-                line => { lock (list2) { list2.Add(line); } },
-                line => { lock (list3) { list3.Add(line); } })
+                OutputTarget.ToTextDelegate(line => { lock (list2) { list2.Add(line); } }),
+                OutputTarget.ToTextDelegate(line => { lock (list3) { list3.Add(line); } }))
             .ExecuteAsync();
 
         await process;
@@ -527,6 +570,35 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithSharedBinaryOutputTarget_IsThreadSafe()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "(for /L %i in (1,1,200) do @echo out%i & @echo err%i 1>&2)");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("sh")
+                .WithArguments("-c", "for i in $(seq 1 200); do echo out$i; echo err$i >&2; done");
+        }
+
+        using var stream = new MemoryStream();
+        var process = command
+            .WithValidation(ProcessValidationMode.None)
+            .WithOutputStream(OutputTarget.ToStream(stream))
+            .WithErrorStream(OutputTarget.ToStream(stream))
+            .ExecuteAsync();
+
+        await process;
+
+        var capturedText = Encoding.UTF8.GetString(stream.ToArray());
+        Assert.Contains("out1", capturedText, StringComparison.Ordinal);
+        Assert.Contains("err1", capturedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithErrorEncoding_UsesConfiguredEncoding()
     {
         var sb = new StringBuilder();
@@ -637,6 +709,85 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task WithInputStream_FromBytes()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("findstr")
+                .WithArguments(".*");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("cat");
+        }
+
+        var result = command
+            .WithInputStream(InputSource.FromBytes(Encoding.UTF8.GetBytes("hello from bytes")))
+            .ExecuteBufferedAsync();
+
+        var processResult = await result;
+
+        Assert.Contains("hello from bytes", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WithInputStream_FromTextReader()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("findstr")
+                .WithArguments(".*");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("cat");
+        }
+
+        using var reader = new StringReader("hello from text reader");
+        var result = command
+            .WithInputStream(InputSource.FromTextReader(reader))
+            .ExecuteBufferedAsync();
+
+        var processResult = await result;
+
+        Assert.Contains("hello from text reader", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WithInputStream_FromFile()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("findstr")
+                .WithArguments(".*");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("cat");
+        }
+
+        var filePath = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(filePath, "hello from file");
+            var result = command
+                .WithInputStream(InputSource.FromFile(filePath))
+                .ExecuteBufferedAsync();
+
+            var processResult = await result;
+
+            Assert.Contains("hello from file", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
     public async Task ReusableConfiguration()
     {
         var baseCommand = CreateEchoBase();
@@ -663,6 +814,8 @@ public class ProcessWrapperTests
         var command = ProcessWrapper.Create("dotnet");
         using var stream = new MemoryStream();
         using var stream2 = new MemoryStream();
+        using var textWriter = new StringWriter();
+        using var textReader = new StringReader("stdin");
 
         Assert.Same(command, command.WithArguments("--version"));
         Assert.Same(command, command.WithWorkingDirectory(Path.GetTempPath()));
@@ -671,23 +824,28 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithValidation(ProcessValidationMode.None));
         Assert.Same(command, command.WithOutputEncoding(Encoding.UTF8));
         Assert.Same(command, command.WithErrorEncoding(Encoding.UTF8));
-        Assert.Same(command, command.WithOutputStream(_ => { }));
-        Assert.Same(command, command.WithOutputStream(_ => { }, _ => { }));
+        Assert.Same(command, command.WithOutputStream(OutputTarget.ToTextDelegate(_ => { })));
+        Assert.Same(command, command.WithOutputStream(OutputTarget.ToTextDelegate(_ => { }), OutputTarget.ToTextDelegate(_ => { })));
         Assert.Same(command, command.WithOutputStream(stream));
+        Assert.Same(command, command.WithOutputStream(textWriter));
         Assert.Same(command, command.WithOutputStream(stream, stream2));
-        Assert.Same(command, command.AddOutputStream(_ => { }));
-        Assert.Same(command, command.AddOutputStream(_ => { }, _ => { }));
+        Assert.Same(command, command.AddOutputStream(OutputTarget.ToTextDelegate(_ => { })));
+        Assert.Same(command, command.AddOutputStream(OutputTarget.ToTextDelegate(_ => { }), OutputTarget.ToTextDelegate(_ => { })));
         Assert.Same(command, command.AddOutputStream(stream));
+        Assert.Same(command, command.AddOutputStream(textWriter));
         Assert.Same(command, command.AddOutputStream(stream, stream2));
-        Assert.Same(command, command.WithErrorStream(_ => { }));
-        Assert.Same(command, command.WithErrorStream(_ => { }, _ => { }));
+        Assert.Same(command, command.WithErrorStream(OutputTarget.ToTextDelegate(_ => { })));
+        Assert.Same(command, command.WithErrorStream(OutputTarget.ToTextDelegate(_ => { }), OutputTarget.ToTextDelegate(_ => { })));
         Assert.Same(command, command.WithErrorStream(stream));
+        Assert.Same(command, command.WithErrorStream(textWriter));
         Assert.Same(command, command.WithErrorStream(stream, stream2));
-        Assert.Same(command, command.AddErrorStream(_ => { }));
-        Assert.Same(command, command.AddErrorStream(_ => { }, _ => { }));
+        Assert.Same(command, command.AddErrorStream(OutputTarget.ToTextDelegate(_ => { })));
+        Assert.Same(command, command.AddErrorStream(OutputTarget.ToTextDelegate(_ => { }), OutputTarget.ToTextDelegate(_ => { })));
         Assert.Same(command, command.AddErrorStream(stream));
+        Assert.Same(command, command.AddErrorStream(textWriter));
         Assert.Same(command, command.AddErrorStream(stream, stream2));
         Assert.Same(command, command.WithInputStream("stdin"));
+        Assert.Same(command, command.WithInputStream(textReader));
         Assert.Same(command, command.WithLimits(new ProcessLimits()));
         Assert.Same(command, command.WithLimits(limits => limits.CpuPercentage = 50));
         Assert.Same(command, command.WithWindowsJobObject(_ => { }));

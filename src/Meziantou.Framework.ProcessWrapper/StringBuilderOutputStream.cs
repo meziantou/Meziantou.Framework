@@ -5,6 +5,7 @@ namespace Meziantou.Framework;
 internal sealed class StringBuilderOutputStream : Stream
 {
     private readonly StringBuilder _stringBuilder;
+    private readonly Lock _syncObject = new();
     private Decoder? _decoder;
 
     public StringBuilderOutputStream(StringBuilder stringBuilder)
@@ -29,7 +30,10 @@ internal sealed class StringBuilderOutputStream : Stream
 
     internal void SetEncoding(Encoding encoding)
     {
-        _decoder = encoding.GetDecoder();
+        lock (_syncObject)
+        {
+            _decoder = encoding.GetDecoder();
+        }
     }
 
     public override void Flush()
@@ -76,46 +80,52 @@ internal sealed class StringBuilderOutputStream : Stream
 
     private void WriteCore(ReadOnlySpan<byte> buffer)
     {
-        var decoder = _decoder ??= Encoding.UTF8.GetDecoder();
-        Span<char> chars = stackalloc char[1024];
-
-        while (!buffer.IsEmpty)
+        lock (_syncObject)
         {
-            decoder.Convert(buffer, chars, flush: false, out var bytesUsed, out var charsUsed, out _);
-            if (charsUsed > 0)
-            {
-                lock (_stringBuilder)
-                {
-                    _stringBuilder.Append(chars[..charsUsed]);
-                }
-            }
+            var decoder = _decoder ??= Encoding.UTF8.GetDecoder();
+            Span<char> chars = stackalloc char[1024];
 
-            buffer = buffer[bytesUsed..];
+            while (!buffer.IsEmpty)
+            {
+                decoder.Convert(buffer, chars, flush: false, out var bytesUsed, out var charsUsed, out _);
+                if (charsUsed > 0)
+                {
+                    lock (_stringBuilder)
+                    {
+                        _stringBuilder.Append(chars[..charsUsed]);
+                    }
+                }
+
+                buffer = buffer[bytesUsed..];
+            }
         }
     }
 
     private void FlushDecoder()
     {
-        if (_decoder is null)
+        lock (_syncObject)
         {
-            return;
-        }
-
-        Span<char> chars = stackalloc char[1024];
-        while (true)
-        {
-            _decoder.Convert(ReadOnlySpan<byte>.Empty, chars, flush: true, out _, out var charsUsed, out var completed);
-            if (charsUsed > 0)
+            if (_decoder is null)
             {
-                lock (_stringBuilder)
-                {
-                    _stringBuilder.Append(chars[..charsUsed]);
-                }
+                return;
             }
 
-            if (completed)
+            Span<char> chars = stackalloc char[1024];
+            while (true)
             {
-                break;
+                _decoder.Convert(ReadOnlySpan<byte>.Empty, chars, flush: true, out _, out var charsUsed, out var completed);
+                if (charsUsed > 0)
+                {
+                    lock (_stringBuilder)
+                    {
+                        _stringBuilder.Append(chars[..charsUsed]);
+                    }
+                }
+
+                if (completed)
+                {
+                    break;
+                }
             }
         }
     }

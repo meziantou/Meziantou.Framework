@@ -61,7 +61,9 @@
     <Project Path="src/Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj" />
     <Project Path="src/Meziantou.Framework.Http.Htpasswd/Meziantou.Framework.Http.Htpasswd.csproj" />
+    <Project Path="src/Meziantou.Framework.Http.Recording/Meziantou.Framework.Http.Recording.csproj" />
     <Project Path="src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
+    <Project Path="src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
     <Project Path="src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
@@ -152,7 +154,9 @@
     <Project Path="tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Hsts.Tests/Meziantou.Framework.Http.Hsts.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Htpasswd.Tests/Meziantou.Framework.Http.Htpasswd.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Http.Recording.Tests/Meziantou.Framework.Http.Recording.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Tests/Meziantou.Framework.Http.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.HttpArchive.Tests/Meziantou.Framework.HttpArchive.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />

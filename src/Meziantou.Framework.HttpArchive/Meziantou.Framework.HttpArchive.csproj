@@ -1,0 +1,10 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>HAR 1.2 (HTTP Archive) format parser and writer</Description>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>HTTP record and replay for testing, using DelegatingHandler with HAR format support</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
+  </ItemGroup>
+
+</Project>

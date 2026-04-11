@@ -22,6 +22,13 @@ public sealed class DefaultHttpRequestMatcher : IHttpRequestMatcher
             // Scheme + host + path (normalized)
             sb.Append(uri.Scheme.ToLowerInvariant());
             sb.Append("://");
+
+            if (!string.IsNullOrEmpty(uri.UserInfo))
+            {
+                sb.Append(uri.UserInfo);
+                sb.Append('@');
+            }
+
             sb.Append(uri.Host.ToLowerInvariant());
             if (!uri.IsDefaultPort)
             {

@@ -88,4 +88,22 @@ public sealed class DefaultHttpRequestMatcherTests
 
         Assert.Equal(fp1, fp2);
     }
+
+    [Fact]
+    public void UserInfo_IsIncludedInFingerprint()
+    {
+        var entry1 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://example.com/api", StatusCode = 200 };
+        var entry2 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://user:password@example.com/api", StatusCode = 200 };
+
+        Assert.NotEqual(_matcher.ComputeFingerprint(entry1), _matcher.ComputeFingerprint(entry2));
+    }
+
+    [Fact]
+    public void DifferentUserInfo_DifferentFingerprint()
+    {
+        var entry1 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://user:password1@example.com/api", StatusCode = 200 };
+        var entry2 = new HttpRecordingEntry { Method = "GET", RequestUri = "https://user:password2@example.com/api", StatusCode = 200 };
+
+        Assert.NotEqual(_matcher.ComputeFingerprint(entry1), _matcher.ComputeFingerprint(entry2));
+    }
 }

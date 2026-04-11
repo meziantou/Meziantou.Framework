@@ -35,6 +35,8 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.Sqlite\Meziantou.Framework.Http.Caching.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Hsts\Meziantou.Framework.Http.Hsts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Htpasswd\Meziantou.Framework.Http.Htpasswd.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Recording\Meziantou.Framework.Http.Recording.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
@@ -79,6 +81,8 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Caching.Sqlite" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Hsts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Htpasswd" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Http.Recording" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.HttpArchive" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -108,7 +109,7 @@ public abstract class OutputTarget
 
     private sealed class BytesDelegateOutputStream(Action<byte[]> handler) : Stream
     {
-        private readonly object _syncObject = new();
+        private readonly Lock _syncObject = new();
 
         public override bool CanRead => false;
 
@@ -174,6 +175,7 @@ public abstract class OutputTarget
         }
     }
 
+    [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The wrapped stream and semaphore are shared and owned by the caller/ConditionalWeakTable.")]
     private sealed class SynchronizedWriteStream : Stream
     {
         private static readonly ConditionalWeakTable<Stream, SemaphoreSlim> SemaphoreByStream = new();

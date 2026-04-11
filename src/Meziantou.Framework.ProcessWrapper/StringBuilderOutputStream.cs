@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 internal sealed class StringBuilderOutputStream : Stream
 {
     private readonly StringBuilder _stringBuilder;
-    private readonly object _syncObject = new();
+    private readonly Lock _syncObject = new();
     private Decoder? _decoder;
 
     public StringBuilderOutputStream(StringBuilder stringBuilder)

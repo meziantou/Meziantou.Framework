@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Recording\Meziantou.Framework.Http.Recording.csproj" />
   </ItemGroup>
 

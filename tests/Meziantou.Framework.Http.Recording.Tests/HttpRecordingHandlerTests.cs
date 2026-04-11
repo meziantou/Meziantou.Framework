@@ -1,4 +1,7 @@
 using System.Net;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
 using Xunit;
 
 namespace Meziantou.Framework.Http.Recording.Tests;
@@ -263,6 +266,165 @@ public sealed class HttpRecordingHandlerTests
         Assert.Equal("POST", entry.Method);
         Assert.NotNull(entry.RequestBody);
         Assert.Contains("test", System.Text.Encoding.UTF8.GetString(entry.RequestBody), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Integration_JsonStore_RecordThenReplay()
+    {
+        var recordingsPath = Path.Combine(Path.GetTempPath(), "HttpRecordingIntegration", Guid.NewGuid().ToString("N"), "recordings.json");
+        var (app, baseAddress) = await StartTestServerAsync();
+        try
+        {
+            using var recordHandler = new HttpRecordingHandler(new SocketsHttpHandler(), new JsonHttpRecordingStore(recordingsPath), new HttpRecordingOptions
+            {
+                Mode = HttpRecordingMode.Record,
+            });
+
+            using var recordClient = new HttpClient(recordHandler)
+            {
+                BaseAddress = baseAddress,
+            };
+
+            using (var response = await recordClient.GetAsync("/api/text"))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal("hello integration", await response.Content.ReadAsStringAsync());
+            }
+
+            using (var response = await recordClient.GetAsync("/api/items/42?b=2&a=1"))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal("{\"id\":42,\"name\":\"item-42\"}", await response.Content.ReadAsStringAsync());
+            }
+
+            using (var response = await recordClient.PostAsync("/api/echo", new StringContent("posted-value")))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal("echo:posted-value", await response.Content.ReadAsStringAsync());
+            }
+
+            await recordHandler.SaveAsync();
+        }
+        finally
+        {
+            await app.StopAsync();
+            await app.DisposeAsync();
+        }
+
+        using var replayHandler = new HttpRecordingHandler(new SocketsHttpHandler(), new JsonHttpRecordingStore(recordingsPath), new HttpRecordingOptions
+        {
+            Mode = HttpRecordingMode.Replay,
+        });
+
+        using var replayClient = new HttpClient(replayHandler)
+        {
+            BaseAddress = baseAddress,
+        };
+
+        using (var response = await replayClient.GetAsync("/api/text"))
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("hello integration", await response.Content.ReadAsStringAsync());
+        }
+
+        using (var response = await replayClient.GetAsync("/api/items/42?a=1&b=2"))
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("{\"id\":42,\"name\":\"item-42\"}", await response.Content.ReadAsStringAsync());
+        }
+
+        using (var response = await replayClient.PostAsync("/api/echo", new StringContent("posted-value")))
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("echo:posted-value", await response.Content.ReadAsStringAsync());
+        }
+    }
+
+    [Fact]
+    public async Task Integration_HarStore_RecordThenReplay()
+    {
+        var recordingsPath = Path.Combine(Path.GetTempPath(), "HttpRecordingIntegration", Guid.NewGuid().ToString("N"), "recordings.har");
+        var (app, baseAddress) = await StartTestServerAsync();
+        try
+        {
+            using var recordHandler = new HttpRecordingHandler(new SocketsHttpHandler(), new HarHttpRecordingStore(recordingsPath), new HttpRecordingOptions
+            {
+                Mode = HttpRecordingMode.Record,
+            });
+
+            using var recordClient = new HttpClient(recordHandler)
+            {
+                BaseAddress = baseAddress,
+            };
+
+            using (var response = await recordClient.GetAsync("/api/binary"))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal("AAECAwQF/w==", Convert.ToBase64String(await response.Content.ReadAsByteArrayAsync()));
+            }
+
+            using (var response = await recordClient.PostAsync("/api/echo", new ByteArrayContent(new byte[] { 0x00, 0x01, 0x7F, 0x80, 0xFF })))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal("echo-bytes:00017F80FF", await response.Content.ReadAsStringAsync());
+            }
+
+            await recordHandler.SaveAsync();
+        }
+        finally
+        {
+            await app.StopAsync();
+            await app.DisposeAsync();
+        }
+
+        using var replayHandler = new HttpRecordingHandler(new SocketsHttpHandler(), new HarHttpRecordingStore(recordingsPath), new HttpRecordingOptions
+        {
+            Mode = HttpRecordingMode.Replay,
+        });
+
+        using var replayClient = new HttpClient(replayHandler)
+        {
+            BaseAddress = baseAddress,
+        };
+
+        using (var response = await replayClient.GetAsync("/api/binary"))
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("AAECAwQF/w==", Convert.ToBase64String(await response.Content.ReadAsByteArrayAsync()));
+        }
+
+        using (var response = await replayClient.PostAsync("/api/echo", new ByteArrayContent(new byte[] { 0x00, 0x01, 0x7F, 0x80, 0xFF })))
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("echo-bytes:00017F80FF", await response.Content.ReadAsStringAsync());
+        }
+    }
+
+    private static async Task<(WebApplication App, Uri BaseAddress)> StartTestServerAsync()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+
+        var app = builder.Build();
+        app.MapGet("/api/text", static () => Results.Text("hello integration"));
+        app.MapGet("/api/items/{id:int}", static (int id) => Results.Json(new { id, name = $"item-{id}" }));
+        app.MapGet("/api/binary", static () => Results.Bytes(new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0xFF }, "application/octet-stream"));
+        app.MapPost("/api/echo", static async (HttpRequest request) =>
+        {
+            await using var stream = new MemoryStream();
+            await request.Body.CopyToAsync(stream);
+            var bytes = stream.ToArray();
+            if (request.ContentType is not null && request.ContentType.StartsWith("text/plain", StringComparison.Ordinal))
+            {
+                return Results.Text("echo:" + System.Text.Encoding.UTF8.GetString(bytes));
+            }
+
+            return Results.Text("echo-bytes:" + Convert.ToHexString(bytes));
+        });
+
+        await app.StartAsync();
+        var address = app.Urls.First(static u => u.StartsWith("http://", StringComparison.Ordinal));
+        return (app, new Uri(address));
     }
 
     private sealed class FakeHttpHandler : HttpMessageHandler

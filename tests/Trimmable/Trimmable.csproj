@@ -36,6 +36,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Hsts\Meziantou.Framework.Http.Hsts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Htpasswd\Meziantou.Framework.Http.Htpasswd.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
@@ -79,6 +80,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Hsts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Htpasswd" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ProcessWrapper" />

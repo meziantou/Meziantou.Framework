@@ -101,6 +101,8 @@ var result = await ProcessWrapper.Create("my-app")
 
 ## Output handling
 
+Use `With*` methods to replace handlers, and `Add*` methods to append additional handlers.
+
 ````c#
 // Stream output line by line
 await ProcessWrapper.Create("dotnet")
@@ -145,7 +147,7 @@ await using var rawOutput = File.Create("raw-output.bin");
 await ProcessWrapper.Create("dotnet")
     .WithArguments("--version")
     .WithOutputStream(rawOutput)
-    .WithOutputStream(line => Console.WriteLine($"Version line: {line}"))
+    .AddOutputStream(line => Console.WriteLine($"Version line: {line}"))
     .ExecuteAsync();
 
 // Override stdout/stderr decoding when process output is not UTF-8

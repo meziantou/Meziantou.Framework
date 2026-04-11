@@ -162,7 +162,7 @@ public class ProcessWrapperTests
 
         var process = CreateEchoCommand("test")
             .WithOutputStream(output)
-            .WithOutputStream(line => { lock (lines) { lines.Add(line); } })
+            .AddOutputStream(line => { lock (lines) { lines.Add(line); } })
             .ExecuteAsync();
 
         await process;
@@ -175,34 +175,32 @@ public class ProcessWrapperTests
     }
 
     [Fact]
-    public async Task WithOutputStream_Stream_DoesNotReplaceTextHandlers()
+    public async Task WithOutputStream_Stream_ReplacesTextHandlers()
     {
         using var output = new MemoryStream();
         var lines = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .WithOutputStream(line => { lock (lines) { lines.Add(line); } })
+            .AddOutputStream(line => { lock (lines) { lines.Add(line); } })
             .WithOutputStream(output)
             .ExecuteAsync();
 
         await process;
 
-        Assert.Single(lines);
-        Assert.Equal("test", lines[0]);
+        Assert.Empty(lines);
 
         var capturedText = Encoding.UTF8.GetString(output.ToArray());
         Assert.Contains("test", capturedText, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithOutputStream_AccumulatesHandlers()
+    public async Task ExecuteAsync_AddOutputStream_AccumulatesHandlers()
     {
         var list1 = new List<string>();
         var list2 = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .WithOutputStream(line => { lock (list1) { list1.Add(line); } })
-            .WithOutputStream(line => { lock (list2) { list2.Add(line); } })
+            .AddOutputStream(line => { lock (list1) { list1.Add(line); } }, line => { lock (list2) { list2.Add(line); } })
             .ExecuteAsync();
 
         await process;
@@ -214,20 +212,41 @@ public class ProcessWrapperTests
     }
 
     [Fact]
-    public async Task WithOutputStream_DoesNotReplaceExistingHandlers()
+    public async Task WithOutputStream_ReplacesAllHandlers()
     {
         var list1 = new List<string>();
         var list2 = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .WithOutputStream(line => { lock (list1) { list1.Add(line); } })
+            .AddOutputStream(line => { lock (list1) { list1.Add(line); } })
             .WithOutputStream(line => { lock (list2) { list2.Add(line); } })
             .ExecuteAsync();
 
         await process;
 
-        Assert.Single(list1);
+        Assert.Empty(list1);
         Assert.Single(list2);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputStream_MultipleHandlers_ReplacesWithAllProvidedHandlers()
+    {
+        var list1 = new List<string>();
+        var list2 = new List<string>();
+        var list3 = new List<string>();
+
+        var process = CreateEchoCommand("test")
+            .AddOutputStream(line => { lock (list1) { list1.Add(line); } })
+            .WithOutputStream(
+                line => { lock (list2) { list2.Add(line); } },
+                line => { lock (list3) { list3.Add(line); } })
+            .ExecuteAsync();
+
+        await process;
+
+        Assert.Empty(list1);
+        Assert.Single(list2);
+        Assert.Single(list3);
     }
 
     [Fact]
@@ -599,6 +618,7 @@ public class ProcessWrapperTests
     {
         var command = ProcessWrapper.Create("dotnet");
         using var stream = new MemoryStream();
+        using var stream2 = new MemoryStream();
 
         Assert.Same(command, command.WithArguments("--version"));
         Assert.Same(command, command.WithWorkingDirectory(Path.GetTempPath()));
@@ -608,9 +628,21 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithOutputEncoding(Encoding.UTF8));
         Assert.Same(command, command.WithErrorEncoding(Encoding.UTF8));
         Assert.Same(command, command.WithOutputStream(_ => { }));
+        Assert.Same(command, command.WithOutputStream(_ => { }, _ => { }));
         Assert.Same(command, command.WithOutputStream(stream));
+        Assert.Same(command, command.WithOutputStream(stream, stream2));
+        Assert.Same(command, command.AddOutputStream(_ => { }));
+        Assert.Same(command, command.AddOutputStream(_ => { }, _ => { }));
+        Assert.Same(command, command.AddOutputStream(stream));
+        Assert.Same(command, command.AddOutputStream(stream, stream2));
         Assert.Same(command, command.WithErrorStream(_ => { }));
+        Assert.Same(command, command.WithErrorStream(_ => { }, _ => { }));
         Assert.Same(command, command.WithErrorStream(stream));
+        Assert.Same(command, command.WithErrorStream(stream, stream2));
+        Assert.Same(command, command.AddErrorStream(_ => { }));
+        Assert.Same(command, command.AddErrorStream(_ => { }, _ => { }));
+        Assert.Same(command, command.AddErrorStream(stream));
+        Assert.Same(command, command.AddErrorStream(stream, stream2));
         Assert.Same(command, command.WithInputStream("stdin"));
         Assert.Same(command, command.WithLimits(new ProcessLimits()));
         Assert.Same(command, command.WithLimits(limits => limits.CpuPercentage = 50));

@@ -13,8 +13,8 @@ namespace Meziantou.Framework;
 
 /// <summary>
 /// Fluent builder for configuring and running processes.
-/// Every <c>With*</c> method mutates the current instance.
-/// Handler-related <c>With*</c> methods accumulate with previous calls.
+/// Every <c>With*</c> method mutates the current instance with the replaced value.
+/// Every <c>Add*</c> method mutates the current instance with the appended value.
 /// </summary>
 public sealed class ProcessWrapper
 {
@@ -168,60 +168,120 @@ public sealed class ProcessWrapper
         return this;
     }
 
-    /// <summary>Adds an output stream handler.</summary>
-    public ProcessWrapper WithOutputStream(Action<string> handler)
+    /// <summary>Replaces all output stream handlers with the specified handlers.</summary>
+    public ProcessWrapper WithOutputStream(params ReadOnlySpan<Action<string>> handlers)
     {
-        ArgumentNullException.ThrowIfNull(handler);
-        _outputHandlers = _outputHandlers.Add(handler);
+        _outputHandlers = CreateImmutableArray(handlers, nameof(handlers));
+        _outputBinaryHandlers = [];
         return this;
     }
 
-    /// <summary>Adds a binary output stream handler that writes to the specified <see cref="Stream"/>.</summary>
-    public ProcessWrapper WithOutputStream(Stream stream)
+    /// <summary>Replaces all binary output stream handlers with the specified streams.</summary>
+    public ProcessWrapper WithOutputStream(params ReadOnlySpan<Stream> streams)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-        _outputBinaryHandlers = _outputBinaryHandlers.Add(stream);
+        _outputHandlers = [];
+        _outputBinaryHandlers = CreateImmutableArray(streams, nameof(streams));
         return this;
     }
 
-    /// <summary>Adds an output stream handler that appends to the specified <see cref="StringBuilder"/>.</summary>
+    /// <summary>Replaces all output stream handlers with one that appends to the specified <see cref="StringBuilder"/>.</summary>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Output stream handlers are managed for the process lifetime.")]
     public ProcessWrapper WithOutputStream(StringBuilder stringBuilder)
     {
         return WithOutputStream(CreateStringBuilderOutputStream(stringBuilder));
     }
 
-    /// <summary>Adds an output stream handler that adds to the specified <see cref="ProcessOutputCollection"/>.</summary>
+    /// <summary>Replaces all output stream handlers with one that adds to the specified <see cref="ProcessOutputCollection"/>.</summary>
     public ProcessWrapper WithOutputStream(ProcessOutputCollection collection)
     {
+        ArgumentNullException.ThrowIfNull(collection);
         return WithOutputStream(line => collection.Add(ProcessOutputType.StandardOutput, line));
     }
 
-    /// <summary>Adds an error stream handler.</summary>
-    public ProcessWrapper WithErrorStream(Action<string> handler)
+    /// <summary>Adds additional output stream handlers.</summary>
+    public ProcessWrapper AddOutputStream(params ReadOnlySpan<Action<string>> handlers)
     {
-        ArgumentNullException.ThrowIfNull(handler);
-        _errorHandlers = _errorHandlers.Add(handler);
+        _outputHandlers = AddToImmutableArray(_outputHandlers, handlers, nameof(handlers));
         return this;
     }
 
-    /// <summary>Adds a binary error stream handler that writes to the specified <see cref="Stream"/>.</summary>
-    public ProcessWrapper WithErrorStream(Stream stream)
+    /// <summary>Adds additional binary output stream handlers.</summary>
+    public ProcessWrapper AddOutputStream(params ReadOnlySpan<Stream> streams)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-        _errorBinaryHandlers = _errorBinaryHandlers.Add(stream);
+        _outputBinaryHandlers = AddToImmutableArray(_outputBinaryHandlers, streams, nameof(streams));
         return this;
     }
 
-    /// <summary>Adds an error stream handler that appends to the specified <see cref="StringBuilder"/>.</summary>
+    /// <summary>Adds an additional output stream handler that appends to the specified <see cref="StringBuilder"/>.</summary>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Output stream handlers are managed for the process lifetime.")]
+    public ProcessWrapper AddOutputStream(StringBuilder stringBuilder)
+    {
+        return AddOutputStream(CreateStringBuilderOutputStream(stringBuilder));
+    }
+
+    /// <summary>Adds an additional output stream handler that adds to the specified <see cref="ProcessOutputCollection"/>.</summary>
+    public ProcessWrapper AddOutputStream(ProcessOutputCollection collection)
+    {
+        ArgumentNullException.ThrowIfNull(collection);
+        return AddOutputStream(line => collection.Add(ProcessOutputType.StandardOutput, line));
+    }
+
+    /// <summary>Replaces all error stream handlers with the specified handlers.</summary>
+    public ProcessWrapper WithErrorStream(params ReadOnlySpan<Action<string>> handlers)
+    {
+        _errorHandlers = CreateImmutableArray(handlers, nameof(handlers));
+        _errorBinaryHandlers = [];
+        return this;
+    }
+
+    /// <summary>Replaces all binary error stream handlers with the specified streams.</summary>
+    public ProcessWrapper WithErrorStream(params ReadOnlySpan<Stream> streams)
+    {
+        _errorHandlers = [];
+        _errorBinaryHandlers = CreateImmutableArray(streams, nameof(streams));
+        return this;
+    }
+
+    /// <summary>Replaces all error stream handlers with one that appends to the specified <see cref="StringBuilder"/>.</summary>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Output stream handlers are managed for the process lifetime.")]
     public ProcessWrapper WithErrorStream(StringBuilder stringBuilder)
     {
         return WithErrorStream(CreateStringBuilderOutputStream(stringBuilder));
     }
 
-    /// <summary>Adds an error stream handler that adds to the specified <see cref="ProcessOutputCollection"/>.</summary>
+    /// <summary>Replaces all error stream handlers with one that adds to the specified <see cref="ProcessOutputCollection"/>.</summary>
     public ProcessWrapper WithErrorStream(ProcessOutputCollection collection)
     {
+        ArgumentNullException.ThrowIfNull(collection);
         return WithErrorStream(line => collection.Add(ProcessOutputType.StandardError, line));
+    }
+
+    /// <summary>Adds additional error stream handlers.</summary>
+    public ProcessWrapper AddErrorStream(params ReadOnlySpan<Action<string>> handlers)
+    {
+        _errorHandlers = AddToImmutableArray(_errorHandlers, handlers, nameof(handlers));
+        return this;
+    }
+
+    /// <summary>Adds additional binary error stream handlers.</summary>
+    public ProcessWrapper AddErrorStream(params ReadOnlySpan<Stream> streams)
+    {
+        _errorBinaryHandlers = AddToImmutableArray(_errorBinaryHandlers, streams, nameof(streams));
+        return this;
+    }
+
+    /// <summary>Adds an additional error stream handler that appends to the specified <see cref="StringBuilder"/>.</summary>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Output stream handlers are managed for the process lifetime.")]
+    public ProcessWrapper AddErrorStream(StringBuilder stringBuilder)
+    {
+        return AddErrorStream(CreateStringBuilderOutputStream(stringBuilder));
+    }
+
+    /// <summary>Adds an additional error stream handler that adds to the specified <see cref="ProcessOutputCollection"/>.</summary>
+    public ProcessWrapper AddErrorStream(ProcessOutputCollection collection)
+    {
+        ArgumentNullException.ThrowIfNull(collection);
+        return AddErrorStream(line => collection.Add(ProcessOutputType.StandardError, line));
     }
 
     /// <summary>Sets the input stream to the specified <see cref="Stream"/>.</summary>
@@ -389,7 +449,7 @@ public sealed class ProcessWrapper
         var buffer = new byte[4096];
         while (true)
         {
-            var bytesRead = await stream.ReadAsync(buffer.AsMemory()).ConfigureAwait(false);
+            var bytesRead = await ReadBufferAsync(stream, buffer.AsMemory()).ConfigureAwait(false);
             if (bytesRead == 0)
             {
                 break;
@@ -419,7 +479,7 @@ public sealed class ProcessWrapper
 
         while (true)
         {
-            var bytesRead = await stream.ReadAsync(buffer.AsMemory()).ConfigureAwait(false);
+            var bytesRead = await ReadBufferAsync(stream, buffer.AsMemory()).ConfigureAwait(false);
             if (bytesRead == 0)
             {
                 break;
@@ -447,6 +507,23 @@ public sealed class ProcessWrapper
         foreach (var binaryHandler in binaryHandlers)
         {
             await binaryHandler.FlushAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static async ValueTask<int> ReadBufferAsync(Stream stream, Memory<byte> buffer)
+    {
+        try
+        {
+            return await stream.ReadAsync(buffer).ConfigureAwait(false);
+        }
+        catch (IOException)
+        {
+            // Match Process.AsyncStreamReader behavior and treat cancellation-related read failures as EOF.
+            return 0;
+        }
+        catch (OperationCanceledException)
+        {
+            return 0;
         }
     }
 
@@ -505,6 +582,38 @@ public sealed class ProcessWrapper
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
         return new StringBuilderOutputStream(stringBuilder);
+    }
+
+    private static ImmutableArray<T> CreateImmutableArray<T>(ReadOnlySpan<T> values, string parameterName)
+        where T : class
+    {
+        if (values.IsEmpty)
+            return [];
+
+        var builder = ImmutableArray.CreateBuilder<T>(values.Length);
+        foreach (var value in values)
+        {
+            ArgumentNullException.ThrowIfNull(value, parameterName);
+            builder.Add(value);
+        }
+
+        return builder.ToImmutable();
+    }
+
+    private static ImmutableArray<T> AddToImmutableArray<T>(ImmutableArray<T> existingValues, ReadOnlySpan<T> values, string parameterName)
+        where T : class
+    {
+        if (values.IsEmpty)
+            return existingValues;
+
+        var builder = existingValues.ToBuilder();
+        foreach (var value in values)
+        {
+            ArgumentNullException.ThrowIfNull(value, parameterName);
+            builder.Add(value);
+        }
+
+        return builder.ToImmutable();
     }
 
     private IProcessLimiter? CreateProcessLimiter()

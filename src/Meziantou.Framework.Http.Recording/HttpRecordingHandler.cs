@@ -143,7 +143,7 @@ public sealed class HttpRecordingHandler : DelegatingHandler
 
     private async Task RecordEntryAsync(HttpRequestMessage request, HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
+        await response.Content.LoadIntoBufferAsync(cancellationToken).ConfigureAwait(false);
 
         var entry = await HttpMessageConverter.CreateFromRequestResponseAsync(request, response, cancellationToken).ConfigureAwait(false);
         _sanitizer?.Sanitize(entry);

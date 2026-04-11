@@ -8,7 +8,7 @@ public sealed class HttpRecordingHandlerTests
     private static HttpRecordingHandler CreateHandler(
         HttpMessageHandler innerHandler,
         IHttpRecordingStore store,
-        HttpRecordingOptions? options = null)
+        HttpRecordingOptions options = null)
     {
         return new HttpRecordingHandler(innerHandler, store, options);
     }
@@ -24,10 +24,7 @@ public sealed class HttpRecordingHandlerTests
     [Fact]
     public async Task RecordMode_CallsInnerHandler_AndRecordsEntry()
     {
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent("hello"),
-        });
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK, "hello");
         var store = new InMemoryRecordingStore();
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Record };
 
@@ -42,7 +39,7 @@ public sealed class HttpRecordingHandlerTests
         await handler.SaveAsync();
         Assert.Single(store.SavedEntries);
         Assert.Equal("GET", store.SavedEntries[0].Method);
-        Assert.Contains("/api/test", store.SavedEntries[0].RequestUri);
+        Assert.Contains("/api/test", store.SavedEntries[0].RequestUri, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -56,14 +53,14 @@ public sealed class HttpRecordingHandlerTests
                 RequestUri = "https://example.com/api/test",
                 StatusCode = 200,
                 ResponseBody = "recorded"u8.ToArray(),
-                ResponseHeaders = new Dictionary<string, string[]>
+                ResponseHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Content-Type"] = ["text/plain; charset=utf-8"],
                 },
             },
         };
         var store = new InMemoryRecordingStore(entries);
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.InternalServerError);
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
 
         using var handler = CreateHandler(innerHandler, store, options);
@@ -81,7 +78,7 @@ public sealed class HttpRecordingHandlerTests
     public async Task ReplayMode_MissBehaviorThrow_ThrowsException()
     {
         var store = new InMemoryRecordingStore();
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.OK));
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK);
         var options = new HttpRecordingOptions
         {
             Mode = HttpRecordingMode.Replay,
@@ -93,14 +90,14 @@ public sealed class HttpRecordingHandlerTests
 
         var ex = await Assert.ThrowsAsync<HttpRecordingMissException>(() => client.GetAsync("/api/missing"));
         Assert.Equal("GET", ex.Method);
-        Assert.Contains("/api/missing", ex.RequestUri);
+        Assert.Contains("/api/missing", ex.RequestUri, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task ReplayMode_MissBehaviorReturnDefault_Returns500()
     {
         var store = new InMemoryRecordingStore();
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.OK));
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK);
         var options = new HttpRecordingOptions
         {
             Mode = HttpRecordingMode.Replay,
@@ -114,7 +111,7 @@ public sealed class HttpRecordingHandlerTests
 
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("No recorded response found", body);
+        Assert.Contains("No recorded response found", body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -131,7 +128,7 @@ public sealed class HttpRecordingHandlerTests
             },
         };
         var store = new InMemoryRecordingStore(entries);
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.InternalServerError);
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Auto };
 
         using var handler = CreateHandler(innerHandler, store, options);
@@ -147,10 +144,7 @@ public sealed class HttpRecordingHandlerTests
     public async Task AutoMode_RecordsOnMiss()
     {
         var store = new InMemoryRecordingStore();
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent("new-response"),
-        });
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK, "new-response");
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Auto };
 
         using var handler = CreateHandler(innerHandler, store, options);
@@ -168,7 +162,7 @@ public sealed class HttpRecordingHandlerTests
     [Fact]
     public async Task RecordMode_AppliesSanitizer()
     {
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.OK));
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.OK);
         var store = new InMemoryRecordingStore();
         var options = new HttpRecordingOptions
         {
@@ -210,7 +204,7 @@ public sealed class HttpRecordingHandlerTests
             },
         };
         var store = new InMemoryRecordingStore(entries);
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.InternalServerError);
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
 
         using var handler = CreateHandler(innerHandler, store, options);
@@ -238,7 +232,7 @@ public sealed class HttpRecordingHandlerTests
             },
         };
         var store = new InMemoryRecordingStore(entries);
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.InternalServerError);
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
 
         using var handler = CreateHandler(innerHandler, store, options);
@@ -252,14 +246,15 @@ public sealed class HttpRecordingHandlerTests
     [Fact]
     public async Task RecordMode_CapturesPostBody()
     {
-        var innerHandler = new FakeHttpHandler(new HttpResponseMessage(HttpStatusCode.Created));
+        using var innerHandler = new FakeHttpHandler(HttpStatusCode.Created);
         var store = new InMemoryRecordingStore();
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Record };
 
         using var handler = CreateHandler(innerHandler, store, options);
         using var client = CreateClient(handler);
 
-        using var response = await client.PostAsync("/api/items", new StringContent("{\"name\":\"test\"}", System.Text.Encoding.UTF8, "application/json"));
+        using var content = new StringContent("{\"name\":\"test\"}", System.Text.Encoding.UTF8, "application/json");
+        using var response = await client.PostAsync("/api/items", content);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         await handler.SaveAsync();
@@ -267,16 +262,26 @@ public sealed class HttpRecordingHandlerTests
         var entry = Assert.Single(store.SavedEntries);
         Assert.Equal("POST", entry.Method);
         Assert.NotNull(entry.RequestBody);
-        Assert.Contains("test", System.Text.Encoding.UTF8.GetString(entry.RequestBody));
+        Assert.Contains("test", System.Text.Encoding.UTF8.GetString(entry.RequestBody), StringComparison.Ordinal);
     }
 
     private sealed class FakeHttpHandler : HttpMessageHandler
     {
-        private readonly HttpResponseMessage _response;
+        private readonly Func<HttpResponseMessage> _responseFactory;
 
-        public FakeHttpHandler(HttpResponseMessage response)
+        public FakeHttpHandler(HttpStatusCode statusCode)
+            : this(() => new HttpResponseMessage(statusCode))
         {
-            _response = response;
+        }
+
+        public FakeHttpHandler(HttpStatusCode statusCode, string responseContent)
+            : this(() => new HttpResponseMessage(statusCode) { Content = new StringContent(responseContent) })
+        {
+        }
+
+        private FakeHttpHandler(Func<HttpResponseMessage> responseFactory)
+        {
+            _responseFactory = responseFactory;
         }
 
         public int CallCount { get; private set; }
@@ -284,7 +289,7 @@ public sealed class HttpRecordingHandlerTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             CallCount++;
-            return Task.FromResult(_response);
+            return Task.FromResult(_responseFactory());
         }
     }
 

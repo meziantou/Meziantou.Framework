@@ -42,13 +42,13 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
                 Method = "GET",
                 RequestUri = "https://example.com/api/data",
                 StatusCode = 200,
-                RequestHeaders = new Dictionary<string, string[]>
+                RequestHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Accept"] = ["application/json"],
                     ["Host"] = ["example.com"],
                 },
                 ResponseBody = "{\"id\":1}"u8.ToArray(),
-                ResponseHeaders = new Dictionary<string, string[]>
+                ResponseHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Content-Type"] = ["application/json"],
                 },
@@ -61,9 +61,9 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
 
         // Verify it's valid HAR
         var content = await File.ReadAllTextAsync(filePath);
-        Assert.Contains("\"log\"", content);
-        Assert.Contains("\"version\"", content);
-        Assert.Contains("\"entries\"", content);
+        Assert.Contains("\"log\"", content, StringComparison.Ordinal);
+        Assert.Contains("\"version\"", content, StringComparison.Ordinal);
+        Assert.Contains("\"entries\"", content, StringComparison.Ordinal);
 
         var loaded = await store.LoadAsync(CancellationToken.None);
         Assert.Single(loaded);
@@ -87,13 +87,13 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
                 Method = "POST",
                 RequestUri = "https://example.com/api/items",
                 StatusCode = 201,
-                RequestHeaders = new Dictionary<string, string[]>
+                RequestHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Content-Type"] = ["application/json"],
                     ["X-Custom"] = ["value1", "value2"],
                 },
                 RequestBody = "{\"name\":\"test\"}"u8.ToArray(),
-                ResponseHeaders = new Dictionary<string, string[]>
+                ResponseHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Location"] = ["/api/items/1"],
                 },
@@ -125,7 +125,7 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
                 Method = "GET",
                 RequestUri = "https://example.com/image.jpg",
                 StatusCode = 200,
-                ResponseHeaders = new Dictionary<string, string[]>
+                ResponseHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Content-Type"] = ["image/jpeg"],
                 },
@@ -161,7 +161,7 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
                 Method = "POST",
                 RequestUri = "https://example.com/upload",
                 StatusCode = 204,
-                RequestHeaders = new Dictionary<string, string[]>
+                RequestHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Content-Type"] = ["application/octet-stream"],
                 },

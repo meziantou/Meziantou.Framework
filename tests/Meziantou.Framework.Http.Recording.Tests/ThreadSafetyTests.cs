@@ -9,10 +9,10 @@ public sealed class ThreadSafetyTests
     [Fact]
     public async Task ConcurrentReplay_AllRequestsGetResponses()
     {
-        const int requestCount = 100;
+        const int RequestCount = 100;
 
         var entries = new List<HttpRecordingEntry>();
-        for (var i = 0; i < requestCount; i++)
+        for (var i = 0; i < RequestCount; i++)
         {
             entries.Add(new HttpRecordingEntry
             {
@@ -24,16 +24,16 @@ public sealed class ThreadSafetyTests
         }
 
         var store = new InMemoryStore(entries);
-        var innerHandler = new FakeHandler();
+        using var innerHandler = new FakeHandler();
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
 
         using var handler = new HttpRecordingHandler(innerHandler, store, options);
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com") };
 
         var results = new ConcurrentBag<(int Index, string Body)>();
-        var tasks = new Task[requestCount];
+        var tasks = new Task[RequestCount];
 
-        for (var i = 0; i < requestCount; i++)
+        for (var i = 0; i < RequestCount; i++)
         {
             var index = i;
             tasks[i] = Task.Run(async () =>
@@ -46,12 +46,12 @@ public sealed class ThreadSafetyTests
 
         await Task.WhenAll(tasks);
 
-        Assert.Equal(requestCount, results.Count);
+        Assert.Equal(RequestCount, results.Count);
         Assert.Equal(0, innerHandler.CallCount);
 
         // Verify all unique responses were returned
-        var bodies = results.Select(r => r.Body).OrderBy(b => b).ToList();
-        for (var i = 0; i < requestCount; i++)
+        var bodies = results.Select(r => r.Body).OrderBy(b => b, StringComparer.Ordinal).ToList();
+        for (var i = 0; i < RequestCount; i++)
         {
             Assert.Contains($"response-{i}", bodies);
         }
@@ -60,10 +60,10 @@ public sealed class ThreadSafetyTests
     [Fact]
     public async Task ConcurrentReplay_FIFO_IdenticalRequests()
     {
-        const int requestCount = 10;
+        const int RequestCount = 10;
 
         var entries = new List<HttpRecordingEntry>();
-        for (var i = 0; i < requestCount; i++)
+        for (var i = 0; i < RequestCount; i++)
         {
             entries.Add(new HttpRecordingEntry
             {
@@ -75,7 +75,7 @@ public sealed class ThreadSafetyTests
         }
 
         var store = new InMemoryStore(entries);
-        var innerHandler = new FakeHandler();
+        using var innerHandler = new FakeHandler();
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
 
         using var handler = new HttpRecordingHandler(innerHandler, store, options);
@@ -83,13 +83,13 @@ public sealed class ThreadSafetyTests
 
         // Make requests sequentially to verify FIFO order
         var bodies = new List<string>();
-        for (var i = 0; i < requestCount; i++)
+        for (var i = 0; i < RequestCount; i++)
         {
             using var response = await client.GetAsync("/api/same");
             bodies.Add(await response.Content.ReadAsStringAsync());
         }
 
-        for (var i = 0; i < requestCount; i++)
+        for (var i = 0; i < RequestCount; i++)
         {
             Assert.Equal($"response-{i}", bodies[i]);
         }
@@ -98,17 +98,17 @@ public sealed class ThreadSafetyTests
     [Fact]
     public async Task ConcurrentRecording_AllEntriesRecorded()
     {
-        const int requestCount = 50;
+        const int RequestCount = 50;
 
         var store = new InMemoryStore();
-        var innerHandler = new FakeHandler();
+        using var innerHandler = new FakeHandler();
         var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Record };
 
         using var handler = new HttpRecordingHandler(innerHandler, store, options);
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com") };
 
-        var tasks = new Task[requestCount];
-        for (var i = 0; i < requestCount; i++)
+        var tasks = new Task[RequestCount];
+        for (var i = 0; i < RequestCount; i++)
         {
             var index = i;
             tasks[i] = Task.Run(async () =>
@@ -120,7 +120,7 @@ public sealed class ThreadSafetyTests
         await Task.WhenAll(tasks);
         await handler.SaveAsync();
 
-        Assert.Equal(requestCount, store.SavedEntries.Count);
+        Assert.Equal(RequestCount, store.SavedEntries.Count);
     }
 
     private sealed class FakeHandler : HttpMessageHandler

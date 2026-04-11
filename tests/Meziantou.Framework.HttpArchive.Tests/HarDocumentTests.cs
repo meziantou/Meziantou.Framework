@@ -261,7 +261,7 @@ public sealed class HarDocumentTests
     [Fact]
     public void NegativeOneTimingValues_Preserved()
     {
-        const string har = """
+        const string Har = """
             {
                 "log": {
                     "version": "1.2",
@@ -307,7 +307,7 @@ public sealed class HarDocumentTests
             }
             """;
 
-        var doc = HarDocument.Parse(har);
+        var doc = HarDocument.Parse(Har);
         var timings = doc.Log.Entries[0].Timings;
 
         Assert.Equal(-1, timings.Blocked);
@@ -325,7 +325,7 @@ public sealed class HarDocumentTests
     [Fact]
     public void RedirectURL_Casing()
     {
-        const string har = """
+        const string Har = """
             {
                 "log": {
                     "version": "1.2",
@@ -367,7 +367,7 @@ public sealed class HarDocumentTests
             }
             """;
 
-        var doc = HarDocument.Parse(har);
+        var doc = HarDocument.Parse(Har);
         Assert.Equal("https://www.example.com", doc.Log.Entries[0].Response.RedirectUrl);
 
         var json = doc.ToJsonString();
@@ -377,7 +377,7 @@ public sealed class HarDocumentTests
     [Fact]
     public void UnknownProperties_Preserved()
     {
-        const string har = """
+        const string Har = """
             {
                 "log": {
                     "version": "1.2",
@@ -417,7 +417,7 @@ public sealed class HarDocumentTests
             }
             """;
 
-        var doc = HarDocument.Parse(har);
+        var doc = HarDocument.Parse(Har);
         var entry = doc.Log.Entries[0];
 
         Assert.NotNull(entry.ExtensionData);
@@ -436,7 +436,7 @@ public sealed class HarDocumentTests
     [Fact]
     public void PostData_Parsed()
     {
-        const string har = """
+        const string Har = """
             {
                 "log": {
                     "version": "1.2",
@@ -478,7 +478,7 @@ public sealed class HarDocumentTests
             }
             """;
 
-        var doc = HarDocument.Parse(har);
+        var doc = HarDocument.Parse(Har);
         var postData = doc.Log.Entries[0].Request.PostData;
 
         Assert.NotNull(postData);
@@ -489,7 +489,7 @@ public sealed class HarDocumentTests
     [Fact]
     public void CacheEntries_Parsed()
     {
-        const string har = """
+        const string Har = """
             {
                 "log": {
                     "version": "1.2",
@@ -534,7 +534,7 @@ public sealed class HarDocumentTests
             }
             """;
 
-        var doc = HarDocument.Parse(har);
+        var doc = HarDocument.Parse(Har);
         var cache = doc.Log.Entries[0].Cache;
 
         Assert.Null(cache.BeforeRequest);

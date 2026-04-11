@@ -41,12 +41,12 @@ public sealed class JsonHttpRecordingStoreTests : IDisposable
                 Method = "GET",
                 RequestUri = "https://example.com/api/test",
                 StatusCode = 200,
-                RequestHeaders = new Dictionary<string, string[]>
+                RequestHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Accept"] = ["application/json"],
                 },
                 ResponseBody = "hello"u8.ToArray(),
-                ResponseHeaders = new Dictionary<string, string[]>
+                ResponseHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Content-Type"] = ["text/plain"],
                 },

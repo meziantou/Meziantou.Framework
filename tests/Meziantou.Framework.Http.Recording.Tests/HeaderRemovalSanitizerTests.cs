@@ -13,13 +13,13 @@ public sealed class HeaderRemovalSanitizerTests
             Method = "GET",
             RequestUri = "https://example.com",
             StatusCode = 200,
-            RequestHeaders = new Dictionary<string, string[]>
+            RequestHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Authorization"] = ["Bearer token"],
                 ["Accept"] = ["application/json"],
                 ["Cookie"] = ["session=abc"],
             },
-            ResponseHeaders = new Dictionary<string, string[]>
+            ResponseHeaders = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Set-Cookie"] = ["session=xyz"],
                 ["Content-Type"] = ["text/plain"],

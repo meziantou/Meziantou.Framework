@@ -177,9 +177,9 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
             else
             {
                 harEntry.Request.PostData.Text = Convert.ToBase64String(entry.RequestBody);
-                harEntry.Request.PostData.ExtensionData = new Dictionary<string, System.Text.Json.JsonElement>
+                harEntry.Request.PostData.ExtensionData = new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)
                 {
-                    [MeziantouEncodingExtensionName] = System.Text.Json.JsonSerializer.SerializeToElement("base64"),
+                    [MeziantouEncodingExtensionName] = System.Text.Json.JsonDocument.Parse("\"base64\"").RootElement.Clone(),
                 };
             }
         }
@@ -233,7 +233,7 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
 
     private static bool IsTextMediaType(string contentType)
     {
-        var separatorIndex = contentType.IndexOf(';');
+        var separatorIndex = contentType.IndexOf(';', StringComparison.Ordinal);
         var mediaType = separatorIndex >= 0 ? contentType[..separatorIndex].Trim() : contentType.Trim();
 
         if (mediaType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))

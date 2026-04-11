@@ -14,6 +14,7 @@ public class ProcessInstance
 {
     private Process? _process;
     private readonly Task _inputStreamTask;
+    private readonly Task _outputStreamTask;
     private readonly CancellationTokenRegistration _cancellationRegistration;
     private readonly IDisposable? _processLimiter;
     private readonly ProcessValidationMode _validationMode;
@@ -23,10 +24,11 @@ public class ProcessInstance
     private protected readonly Lock WaitTaskLock = new();
     private Task<ProcessResult>? _waitTask;
 
-    internal ProcessInstance(Process process, Task inputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
+    internal ProcessInstance(Process process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
     {
         _process = process;
         _inputStreamTask = inputStreamTask;
+        _outputStreamTask = outputStreamTask;
         _cancellationRegistration = cancellationRegistration;
         _processLimiter = processLimiter;
         _validationMode = validationMode;
@@ -111,6 +113,11 @@ public class ProcessInstance
                 ExceptionDispatchInfo.Capture(processCompletion.InputStreamException).Throw();
             }
 
+            if (processCompletion.OutputStreamException is not null)
+            {
+                ExceptionDispatchInfo.Capture(processCompletion.OutputStreamException).Throw();
+            }
+
             _cancellationToken.ThrowIfCancellationRequested();
 
             if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && processCompletion.ExitCode != 0)
@@ -131,6 +138,7 @@ public class ProcessInstance
     private async Task<ProcessCompletion> WaitForProcessExitAsync(Process process)
     {
         Exception? inputStreamException = null;
+        Exception? outputStreamException = null;
         var exitCode = default(int);
         var exitDate = default(DateTimeOffset);
 
@@ -145,6 +153,15 @@ public class ProcessInstance
             catch (Exception ex)
             {
                 inputStreamException = ex;
+            }
+
+            try
+            {
+                await _outputStreamTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                outputStreamException = ex;
             }
 
             exitCode = process.ExitCode;
@@ -162,7 +179,7 @@ public class ProcessInstance
             }
         }
 
-        return new ProcessCompletion(exitCode, exitDate, inputStreamException);
+        return new ProcessCompletion(exitCode, exitDate, inputStreamException, outputStreamException);
     }
 
     private protected virtual ProcessResult CreateProcessResult(int exitCode, DateTimeOffset exitDate)
@@ -172,11 +189,12 @@ public class ProcessInstance
 
     private sealed class ProcessCompletion
     {
-        public ProcessCompletion(int exitCode, DateTimeOffset exitDate, Exception? inputStreamException)
+        public ProcessCompletion(int exitCode, DateTimeOffset exitDate, Exception? inputStreamException, Exception? outputStreamException)
         {
             ExitCode = exitCode;
             ExitDate = exitDate;
             InputStreamException = inputStreamException;
+            OutputStreamException = outputStreamException;
         }
 
         public int ExitCode { get; }
@@ -184,5 +202,7 @@ public class ProcessInstance
         public DateTimeOffset ExitDate { get; }
 
         public Exception? InputStreamException { get; }
+
+        public Exception? OutputStreamException { get; }
     }
 }

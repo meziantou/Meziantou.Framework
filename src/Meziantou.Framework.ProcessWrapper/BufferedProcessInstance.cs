@@ -9,8 +9,8 @@ public sealed class BufferedProcessInstance : ProcessInstance
     private readonly ProcessOutputCollection _output;
     private Task<BufferedProcessResult>? _waitTask;
 
-    internal BufferedProcessInstance(Process process, Task inputTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, ProcessOutputCollection output, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
-        : base(process, inputTask, cancellationRegistration, processLimiter, validationMode, hasStandardErrorOutput, cancellationToken)
+    internal BufferedProcessInstance(Process process, Task inputTask, Task outputTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, ProcessOutputCollection output, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
+        : base(process, inputTask, outputTask, cancellationRegistration, processLimiter, validationMode, hasStandardErrorOutput, cancellationToken)
     {
         _output = output;
     }

@@ -105,8 +105,8 @@ var result = await ProcessWrapper.Create("my-app")
 // Stream output line by line
 await ProcessWrapper.Create("dotnet")
     .WithArguments("build")
-    .AddOutputStream(line => Console.WriteLine($"[OUT] {line}"))
-    .AddErrorStream(line => Console.Error.WriteLine($"[ERR] {line}"))
+    .WithOutputStream(line => Console.WriteLine($"[OUT] {line}"))
+    .WithErrorStream(line => Console.Error.WriteLine($"[ERR] {line}"))
     .ExecuteAsync();
 
 // Collect output into a StringBuilder
@@ -122,14 +122,39 @@ Console.WriteLine(sb.ToString());
 var output = new ProcessOutputCollection();
 await ProcessWrapper.Create("dotnet")
     .WithArguments("build")
-    .AddOutputStream(output)
-    .AddErrorStream(output)
+    .WithOutputStream(output)
+    .WithErrorStream(output)
     .ExecuteAsync();
 
 foreach (var line in output.StandardError)
 {
     Console.Error.WriteLine(line.Text);
 }
+
+// Capture raw bytes from stdout/stderr
+await using var stdout = File.Create("stdout.bin");
+await using var stderr = File.Create("stderr.bin");
+
+await ProcessWrapper.Create("my-command")
+    .WithOutputStream(stdout)
+    .WithErrorStream(stderr)
+    .ExecuteAsync();
+
+// Text and binary handlers can be combined on the same stream
+await using var rawOutput = File.Create("raw-output.bin");
+await ProcessWrapper.Create("dotnet")
+    .WithArguments("--version")
+    .WithOutputStream(rawOutput)
+    .WithOutputStream(line => Console.WriteLine($"Version line: {line}"))
+    .ExecuteAsync();
+
+// Override stdout/stderr decoding when process output is not UTF-8
+await ProcessWrapper.Create("my-command")
+    .WithOutputEncoding(Encoding.Latin1)
+    .WithErrorEncoding(Encoding.Latin1)
+    .WithOutputStream(line => Console.WriteLine(line))
+    .WithErrorStream(line => Console.Error.WriteLine(line))
+    .ExecuteAsync();
 ````
 
 ## Input stream

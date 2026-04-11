@@ -97,6 +97,35 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithOutputStream_StringBuilder_PreservesOutputWithoutTrailingNewline()
+    {
+        var sb = new StringBuilder();
+
+        var process = CreateNoNewlineOutputCommand("test")
+            .WithOutputStream(sb)
+            .ExecuteAsync();
+
+        await process;
+
+        Assert.Equal("test", sb.ToString());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputEncoding_UsesConfiguredEncoding()
+    {
+        var sb = new StringBuilder();
+
+        var process = CreateSingleByteOutputCommand(0xE9)
+            .WithOutputEncoding(Encoding.Latin1)
+            .WithOutputStream(sb)
+            .ExecuteAsync();
+
+        await process;
+
+        Assert.Equal("é", sb.ToString());
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithOutputStream_ProcessOutputCollection()
     {
         var output = new ProcessOutputCollection();
@@ -112,14 +141,68 @@ public class ProcessWrapperTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_AddOutputStream_AccumulatesHandlers()
+    public async Task ExecuteAsync_WithOutputStream_Stream()
+    {
+        using var output = new MemoryStream();
+        var process = CreateEchoCommand("test")
+            .WithOutputStream(output)
+            .ExecuteAsync();
+
+        await process;
+
+        var capturedText = Encoding.UTF8.GetString(output.ToArray());
+        Assert.Contains("test", capturedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputStream_Stream_AndTextHandler()
+    {
+        using var output = new MemoryStream();
+        var lines = new List<string>();
+
+        var process = CreateEchoCommand("test")
+            .WithOutputStream(output)
+            .WithOutputStream(line => { lock (lines) { lines.Add(line); } })
+            .ExecuteAsync();
+
+        await process;
+
+        Assert.Single(lines);
+        Assert.Equal("test", lines[0]);
+
+        var capturedText = Encoding.UTF8.GetString(output.ToArray());
+        Assert.Contains("test", capturedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WithOutputStream_Stream_DoesNotReplaceTextHandlers()
+    {
+        using var output = new MemoryStream();
+        var lines = new List<string>();
+
+        var process = CreateEchoCommand("test")
+            .WithOutputStream(line => { lock (lines) { lines.Add(line); } })
+            .WithOutputStream(output)
+            .ExecuteAsync();
+
+        await process;
+
+        Assert.Single(lines);
+        Assert.Equal("test", lines[0]);
+
+        var capturedText = Encoding.UTF8.GetString(output.ToArray());
+        Assert.Contains("test", capturedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputStream_AccumulatesHandlers()
     {
         var list1 = new List<string>();
         var list2 = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .AddOutputStream(line => { lock (list1) { list1.Add(line); } })
-            .AddOutputStream(line => { lock (list2) { list2.Add(line); } })
+            .WithOutputStream(line => { lock (list1) { list1.Add(line); } })
+            .WithOutputStream(line => { lock (list2) { list2.Add(line); } })
             .ExecuteAsync();
 
         await process;
@@ -131,19 +214,19 @@ public class ProcessWrapperTests
     }
 
     [Fact]
-    public async Task WithOutputStream_ReplacesAllHandlers()
+    public async Task WithOutputStream_DoesNotReplaceExistingHandlers()
     {
         var list1 = new List<string>();
         var list2 = new List<string>();
 
         var process = CreateEchoCommand("test")
-            .AddOutputStream(line => { lock (list1) { list1.Add(line); } })
+            .WithOutputStream(line => { lock (list1) { list1.Add(line); } })
             .WithOutputStream(line => { lock (list2) { list2.Add(line); } })
             .ExecuteAsync();
 
         await process;
 
-        Assert.Empty(list1);
+        Assert.Single(list1);
         Assert.Single(list2);
     }
 
@@ -354,6 +437,72 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithErrorStream_Stream()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "echo error>&2");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("sh")
+                .WithArguments("-c", "echo error >&2");
+        }
+
+        using var error = new MemoryStream();
+        var process = command
+            .WithErrorStream(error)
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteAsync();
+
+        await process;
+
+        var capturedText = Encoding.UTF8.GetString(error.ToArray());
+        Assert.Contains("error", capturedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithErrorEncoding_UsesConfiguredEncoding()
+    {
+        var sb = new StringBuilder();
+        var process = CreateSingleByteOutputCommand(0xE9, standardError: true)
+            .WithValidation(ProcessValidationMode.None)
+            .WithErrorEncoding(Encoding.Latin1)
+            .WithErrorStream(sb)
+            .ExecuteAsync();
+
+        await process;
+
+        Assert.Equal("é", sb.ToString());
+    }
+
+    [Fact]
+    public async Task Validation_FailIfStdError_WithBinaryHandler_Throws()
+    {
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "echo error>&2");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("sh")
+                .WithArguments("-c", "echo error >&2");
+        }
+
+        using var error = new MemoryStream();
+        var process = command
+            .WithErrorStream(error)
+            .WithValidation(ProcessValidationMode.FailIfStdError)
+            .ExecuteAsync();
+
+        await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_Cancel()
     {
         using var cts = new CancellationTokenSource();
@@ -449,16 +598,19 @@ public class ProcessWrapperTests
     public void FluentMethods_ReturnCurrentInstance()
     {
         var command = ProcessWrapper.Create("dotnet");
+        using var stream = new MemoryStream();
 
         Assert.Same(command, command.WithArguments("--version"));
         Assert.Same(command, command.WithWorkingDirectory(Path.GetTempPath()));
         Assert.Same(command, command.WithEnvironmentVariables(env => env.Set("TEST_VAR_45", "value")));
         Assert.Same(command, command.WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_45"] = "updated" }));
         Assert.Same(command, command.WithValidation(ProcessValidationMode.None));
+        Assert.Same(command, command.WithOutputEncoding(Encoding.UTF8));
+        Assert.Same(command, command.WithErrorEncoding(Encoding.UTF8));
         Assert.Same(command, command.WithOutputStream(_ => { }));
-        Assert.Same(command, command.AddOutputStream(_ => { }));
+        Assert.Same(command, command.WithOutputStream(stream));
         Assert.Same(command, command.WithErrorStream(_ => { }));
-        Assert.Same(command, command.AddErrorStream(_ => { }));
+        Assert.Same(command, command.WithErrorStream(stream));
         Assert.Same(command, command.WithInputStream("stdin"));
         Assert.Same(command, command.WithLimits(new ProcessLimits()));
         Assert.Same(command, command.WithLimits(limits => limits.CpuPercentage = 50));
@@ -640,6 +792,39 @@ public class ProcessWrapperTests
 
         return ProcessWrapper.Create("echo")
             .WithArguments(text);
+    }
+
+    private static ProcessWrapper CreateNoNewlineOutputCommand(string text)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", $"set /p ={text}<nul&exit /b 0");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"printf '%s' \"{text}\"");
+    }
+
+    private static ProcessWrapper CreateSingleByteOutputCommand(byte value, bool standardError = false)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var streamAccessor = standardError ? "StandardError" : "StandardOutput";
+            return ProcessWrapper.Create("powershell.exe")
+                .WithArguments(
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    $"[Console]::Open{streamAccessor}().Write([byte[]]({value}), 0, 1)");
+        }
+
+        var octalValue = Convert.ToString(value, 8).PadLeft(3, '0');
+        var redirection = standardError ? " >&2" : "";
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"printf '\\{octalValue}'{redirection}");
     }
 
     private static string[] GetEchoArguments(string text)

@@ -6,7 +6,6 @@ namespace Meziantou.Framework.Http.Recording;
 public sealed class HarHttpRecordingStore : IHttpRecordingStore
 {
     private static readonly System.Text.UTF8Encoding Utf8EncodingThrowOnInvalid = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-    private const string MeziantouEncodingExtensionName = "x-meziantou-encoding";
     private readonly string _filePath;
 
     public HarHttpRecordingStore(string filePath)
@@ -85,17 +84,9 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
         }
 
         // Request body
-        if (harEntry.Request.PostData?.Text is not null)
+        if (harEntry.Request.PostData.TryGetRawData(out var requestBody))
         {
-            if (TryGetMeziantouEncoding(harEntry.Request.PostData, out var requestEncoding) &&
-                string.Equals(requestEncoding, "base64", StringComparison.OrdinalIgnoreCase))
-            {
-                entry.RequestBody = Convert.FromBase64String(harEntry.Request.PostData.Text);
-            }
-            else
-            {
-                entry.RequestBody = System.Text.Encoding.UTF8.GetBytes(harEntry.Request.PostData.Text);
-            }
+            entry.RequestBody = requestBody;
         }
 
         // Response headers
@@ -179,7 +170,7 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
                 harEntry.Request.PostData.Text = Convert.ToBase64String(entry.RequestBody);
                 harEntry.Request.PostData.ExtensionData = new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)
                 {
-                    [MeziantouEncodingExtensionName] = System.Text.Json.JsonDocument.Parse("\"base64\"").RootElement.Clone(),
+                    [HarPostDataExtensions.DefaultEncodingExtensionName] = System.Text.Json.JsonDocument.Parse("\"base64\"").RootElement.Clone(),
                 };
             }
         }
@@ -263,17 +254,4 @@ public sealed class HarHttpRecordingStore : IHttpRecordingStore
         }
     }
 
-    private static bool TryGetMeziantouEncoding(HarPostData postData, out string? encoding)
-    {
-        if (postData.ExtensionData is not null &&
-            postData.ExtensionData.TryGetValue(MeziantouEncodingExtensionName, out var value) &&
-            value.ValueKind is System.Text.Json.JsonValueKind.String)
-        {
-            encoding = value.GetString();
-            return true;
-        }
-
-        encoding = null;
-        return false;
-    }
 }

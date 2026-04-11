@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Xunit;
 
 namespace Meziantou.Framework.HttpArchive.Tests;
@@ -176,5 +177,43 @@ public sealed class HarEntryExtensionsTests
         using var message = entry.ToHttpResponseMessage();
 
         Assert.Equal(HttpStatusCode.NotFound, message.StatusCode);
+    }
+
+    [Fact]
+    public void PostData_TryGetRawData_Utf8()
+    {
+        var postData = new HarPostData
+        {
+            Text = "test",
+        };
+
+        Assert.True(postData.TryGetRawData(out var rawData));
+        Assert.Equal("test"u8.ToArray(), rawData);
+    }
+
+    [Fact]
+    public void PostData_TryGetRawData_Base64EncodingExtension()
+    {
+        var binaryData = new byte[] { 0x00, 0x01, 0x7F, 0x80, 0xFF };
+        var postData = new HarPostData
+        {
+            Text = Convert.ToBase64String(binaryData),
+            ExtensionData = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                [HarPostDataExtensions.DefaultEncodingExtensionName] = JsonDocument.Parse("\"base64\"").RootElement.Clone(),
+            },
+        };
+
+        Assert.True(postData.TryGetRawData(out var rawData));
+        Assert.Equal(binaryData, rawData);
+    }
+
+    [Fact]
+    public void PostData_TryGetRawData_NoText()
+    {
+        var postData = new HarPostData();
+
+        Assert.False(postData.TryGetRawData(out var rawData));
+        Assert.Null(rawData);
     }
 }

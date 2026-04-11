@@ -47,7 +47,21 @@ public class ProcessInstance
     public DateTimeOffset StartDate { get; }
 
     /// <summary>Gets the handle to the process. Returns <see langword="null"/> once the process has exited and resources were released.</summary>
-    public SafeProcessHandle? UnsafeGetProcessHandle() => _process?.SafeHandle;
+    public SafeProcessHandle? UnsafeGetProcessHandle()
+    {
+        var process = _process;
+        if (process is null)
+            return null;
+
+        try
+        {
+            return process.SafeHandle;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>Gets an awaiter that waits for the process to exit and returns the process result.</summary>
     public TaskAwaiter<ProcessResult> GetAwaiter() => GetAwaiterTask().GetAwaiter();

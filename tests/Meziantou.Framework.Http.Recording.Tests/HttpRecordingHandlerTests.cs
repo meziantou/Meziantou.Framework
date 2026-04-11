@@ -1,4 +1,5 @@
 using System.Net;
+using Meziantou.Framework;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
@@ -271,7 +272,9 @@ public sealed class HttpRecordingHandlerTests
     [Fact]
     public async Task Integration_JsonStore_RecordThenReplay()
     {
-        var recordingsPath = Path.Combine(Path.GetTempPath(), "HttpRecordingIntegration", Guid.NewGuid().ToString("N"), "recordings.json");
+        using var recordingsFile = TemporaryFile.Create("recordings.json");
+        var recordingsPath = (string)recordingsFile;
+        File.Delete(recordingsPath);
         var (app, baseAddress) = await StartTestServerAsync();
         try
         {
@@ -343,7 +346,9 @@ public sealed class HttpRecordingHandlerTests
     [Fact]
     public async Task Integration_HarStore_RecordThenReplay()
     {
-        var recordingsPath = Path.Combine(Path.GetTempPath(), "HttpRecordingIntegration", Guid.NewGuid().ToString("N"), "recordings.har");
+        using var recordingsFile = TemporaryFile.Create("recordings.har");
+        var recordingsPath = (string)recordingsFile;
+        File.Delete(recordingsPath);
         var (app, baseAddress) = await StartTestServerAsync();
         try
         {

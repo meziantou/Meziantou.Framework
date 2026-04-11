@@ -7,6 +7,8 @@
     <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="../src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
+    <Project Path="../src/Meziantou.Framework.Http.Recording/Meziantou.Framework.Http.Recording.csproj" />
+    <Project Path="../src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
     <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
@@ -25,6 +27,7 @@
     <Project Path="../tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Http.Recording.Tests/Meziantou.Framework.Http.Recording.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tests/Meziantou.Framework.NuGetPackageValidation.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />

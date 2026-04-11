@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Recording\Meziantou.Framework.Http.Recording.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>
 
 </Project>

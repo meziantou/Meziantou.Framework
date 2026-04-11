@@ -1,30 +1,19 @@
+using Meziantou.Framework;
 using Meziantou.Framework.HttpArchive;
 using Xunit;
 
 namespace Meziantou.Framework.Http.Recording.Tests;
 
-public sealed class HarHttpRecordingStoreTests : IDisposable
+public sealed class HarHttpRecordingStoreTests
 {
-    private readonly string _tempDir;
-
-    public HarHttpRecordingStoreTests()
-    {
-        _tempDir = Path.Combine(Path.GetTempPath(), "HttpRecordingTests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(_tempDir);
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_tempDir))
-        {
-            Directory.Delete(_tempDir, recursive: true);
-        }
-    }
-
     [Fact]
     public async Task LoadAsync_FileDoesNotExist_ReturnsEmpty()
     {
-        var store = new HarHttpRecordingStore(Path.Combine(_tempDir, "nonexistent.har"));
+        using var temporaryFile = TemporaryFile.Create("nonexistent.har");
+        var filePath = (string)temporaryFile;
+        File.Delete(filePath);
+
+        var store = new HarHttpRecordingStore(filePath);
         var entries = await store.LoadAsync(CancellationToken.None);
         Assert.Empty(entries);
     }
@@ -32,7 +21,8 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
     [Fact]
     public async Task RoundTrip_SaveAndLoad()
     {
-        var filePath = Path.Combine(_tempDir, "test.har");
+        using var temporaryFile = TemporaryFile.Create("test.har");
+        var filePath = (string)temporaryFile;
         var store = new HarHttpRecordingStore(filePath);
 
         var entries = new List<HttpRecordingEntry>
@@ -77,7 +67,8 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
     [Fact]
     public async Task RoundTrip_PreservesHeaders()
     {
-        var filePath = Path.Combine(_tempDir, "headers.har");
+        using var temporaryFile = TemporaryFile.Create("headers.har");
+        var filePath = (string)temporaryFile;
         var store = new HarHttpRecordingStore(filePath);
 
         var entries = new List<HttpRecordingEntry>
@@ -114,7 +105,8 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
     [Fact]
     public async Task RoundTrip_BinaryResponseBody_UsesBase64AndPreservesBytes()
     {
-        var filePath = Path.Combine(_tempDir, "binary.har");
+        using var temporaryFile = TemporaryFile.Create("binary.har");
+        var filePath = (string)temporaryFile;
         var store = new HarHttpRecordingStore(filePath);
 
         var responseBody = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46 };
@@ -150,7 +142,8 @@ public sealed class HarHttpRecordingStoreTests : IDisposable
     [Fact]
     public async Task RoundTrip_BinaryRequestBody_UsesVendorBase64AndPreservesBytes()
     {
-        var filePath = Path.Combine(_tempDir, "binary-request.har");
+        using var temporaryFile = TemporaryFile.Create("binary-request.har");
+        var filePath = (string)temporaryFile;
         var store = new HarHttpRecordingStore(filePath);
 
         var requestBody = new byte[] { 0x00, 0x01, 0x02, 0x7F, 0x80, 0xFF };

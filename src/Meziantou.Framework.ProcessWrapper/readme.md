@@ -107,8 +107,8 @@ Use `With*` methods to replace handlers, and `Add*` methods to append additional
 // Stream output line by line
 await ProcessWrapper.Create("dotnet")
     .WithArguments("build")
-    .WithOutputStream(line => Console.WriteLine($"[OUT] {line}"))
-    .WithErrorStream(line => Console.Error.WriteLine($"[ERR] {line}"))
+    .WithOutputStream(OutputTarget.ToTextDelegate(line => Console.WriteLine($"[OUT] {line}")))
+    .WithErrorStream(OutputTarget.ToTextDelegate(line => Console.Error.WriteLine($"[ERR] {line}")))
     .ExecuteAsync();
 
 // Collect output into a StringBuilder
@@ -119,6 +119,13 @@ await ProcessWrapper.Create("dotnet")
     .ExecuteAsync();
 
 Console.WriteLine(sb.ToString());
+
+// Stream lines to a TextWriter
+using var writer = new StringWriter();
+await ProcessWrapper.Create("dotnet")
+    .WithArguments("--version")
+    .WithOutputStream(OutputTarget.ToTextWriter(writer))
+    .ExecuteAsync();
 
 // Collect into a ProcessOutputCollection
 var output = new ProcessOutputCollection();
@@ -147,15 +154,21 @@ await using var rawOutput = File.Create("raw-output.bin");
 await ProcessWrapper.Create("dotnet")
     .WithArguments("--version")
     .WithOutputStream(rawOutput)
-    .AddOutputStream(line => Console.WriteLine($"Version line: {line}"))
+    .AddOutputStream(OutputTarget.ToTextDelegate(line => Console.WriteLine($"Version line: {line}")))
+    .ExecuteAsync();
+
+// Capture raw bytes using a delegate
+await ProcessWrapper.Create("dotnet")
+    .WithArguments("--version")
+    .WithOutputStream(OutputTarget.ToBytesDelegate(bytes => Console.WriteLine($"Chunk size: {bytes.Length}")))
     .ExecuteAsync();
 
 // Override stdout/stderr decoding when process output is not UTF-8
 await ProcessWrapper.Create("my-command")
     .WithOutputEncoding(Encoding.Latin1)
     .WithErrorEncoding(Encoding.Latin1)
-    .WithOutputStream(line => Console.WriteLine(line))
-    .WithErrorStream(line => Console.Error.WriteLine(line))
+    .WithOutputStream(OutputTarget.ToTextDelegate(line => Console.WriteLine(line)))
+    .WithErrorStream(OutputTarget.ToTextDelegate(line => Console.Error.WriteLine(line)))
     .ExecuteAsync();
 ````
 
@@ -164,10 +177,25 @@ await ProcessWrapper.Create("my-command")
 ````c#
 // Pipe a string to stdin
 var result = await ProcessWrapper.Create("cat")
-    .WithInputStream("Hello, World!")
+    .WithInputStream(InputSource.FromText("Hello, World!"))
     .ExecuteBufferedAsync();
 
 Console.WriteLine(result.Output.ToString());
+
+// Pipe a file to stdin
+var fileResult = await ProcessWrapper.Create("cat")
+    .WithInputStream(InputSource.FromFile("input.txt"))
+    .ExecuteBufferedAsync();
+
+Console.WriteLine(fileResult.Output.ToString());
+
+// Pipe from a TextReader
+using var reader = new StringReader("Hello from reader");
+var readerResult = await ProcessWrapper.Create("cat")
+    .WithInputStream(InputSource.FromTextReader(reader))
+    .ExecuteBufferedAsync();
+
+Console.WriteLine(readerResult.Output.ToString());
 ````
 
 ## Validation

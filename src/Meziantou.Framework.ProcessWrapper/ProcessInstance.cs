@@ -20,11 +20,12 @@ public class ProcessInstance
     private readonly ProcessValidationMode _validationMode;
     private readonly CancellationToken _cancellationToken;
     private readonly Func<bool> _hasStandardErrorOutput;
+    private readonly Activity? _activity;
     private readonly Task<ProcessCompletion> _processCompletionTask;
     private protected readonly Lock WaitTaskLock = new();
     private Task<ProcessResult>? _waitTask;
 
-    internal ProcessInstance(Process process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, CancellationToken cancellationToken)
+    internal ProcessInstance(Process process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, CancellationToken cancellationToken)
     {
         _process = process;
         _inputStreamTask = inputStreamTask;
@@ -34,6 +35,7 @@ public class ProcessInstance
         _validationMode = validationMode;
         _cancellationToken = cancellationToken;
         _hasStandardErrorOutput = hasStandardErrorOutput;
+        _activity = activity;
 
         ProcessId = process.Id;
         StartDate = DateTimeOffset.UtcNow;
@@ -140,18 +142,29 @@ public class ProcessInstance
 
             _cancellationToken.ThrowIfCancellationRequested();
 
-            if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && processCompletion.ExitCode != 0)
+            var validationException = GetValidationException(processCompletion.ExitCode);
+            if (validationException is not null)
             {
-                throw new ProcessExecutionException(processCompletion.ExitCode);
-            }
-
-            if ((_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError && _hasStandardErrorOutput())
-            {
-                throw new ProcessExecutionException("Process wrote to standard error.");
+                throw validationException;
             }
 
             return CreateProcessResult(processCompletion.ExitCode, processCompletion.ExitDate);
         }
+    }
+
+    private ProcessExecutionException? GetValidationException(int exitCode)
+    {
+        if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && exitCode != 0)
+        {
+            return new ProcessExecutionException(exitCode);
+        }
+
+        if ((_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError && _hasStandardErrorOutput())
+        {
+            return new ProcessExecutionException("Process wrote to standard error.");
+        }
+
+        return null;
     }
 
     // Wait for process exit and dispose all resources (do not wait for user to await the instance)
@@ -161,6 +174,7 @@ public class ProcessInstance
         Exception? outputStreamException = null;
         var exitCode = default(int);
         var exitDate = default(DateTimeOffset);
+        var processExited = false;
 
         try
         {
@@ -186,6 +200,7 @@ public class ProcessInstance
 
             exitCode = process.ExitCode;
             exitDate = DateTimeOffset.UtcNow;
+            processExited = true;
         }
         finally
         {
@@ -196,6 +211,27 @@ public class ProcessInstance
             if (ReferenceEquals(_process, process))
             {
                 _process = null;
+            }
+
+            var activity = _activity;
+            if (activity is not null)
+            {
+                if (processExited)
+                {
+                    activity.SetTag("process.exit.code", exitCode);
+
+                    if (!_cancellationToken.IsCancellationRequested)
+                    {
+                        var validationException = GetValidationException(exitCode);
+                        if (validationException is not null)
+                        {
+                            activity.SetStatus(ActivityStatusCode.Error, validationException.Message);
+                        }
+                    }
+                }
+
+                activity.Stop();
+                activity.Dispose();
             }
         }
 

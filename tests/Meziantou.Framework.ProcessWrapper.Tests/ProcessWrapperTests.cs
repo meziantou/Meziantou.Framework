@@ -92,6 +92,25 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_EmitsActivity_WithProcessPathAndExitCode()
+    {
+        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
+        ActivitySource.AddActivityListener(listener);
+
+        var processResult = await CreateEchoCommand("test")
+            .ExecuteAsync();
+
+        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(0, processResult.ExitCode);
+        Assert.Equal("process.execute", activity.OperationName);
+        Assert.Equal(0, activity.GetTagItem("process.exit.code"));
+        var processPath = Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
+        Assert.False(string.IsNullOrWhiteSpace(processPath));
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithOutputStream_Action()
     {
         var lines = new List<string>();
@@ -494,6 +513,35 @@ public class ProcessWrapperTests
 
         var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
         Assert.Equal(1, ex.ExitCode);
+    }
+
+    [Fact]
+    public async Task Validation_FailIfNonZeroExitCode_SetsActivityStatusToError()
+    {
+        var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = CreateProcessWrapperActivityListener(activity => activityTask.TrySetResult(activity));
+        ActivitySource.AddActivityListener(listener);
+
+        ProcessWrapper command;
+        if (OperatingSystem.IsWindows())
+        {
+            command = ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", "exit 1");
+        }
+        else
+        {
+            command = ProcessWrapper.Create("sh")
+                .WithArguments("-c", "exit 1");
+        }
+
+        var process = command.ExecuteAsync();
+
+        await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
+
+        var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal(ActivityStatusCode.Error, activity.Status);
+        Assert.Equal("Process exited with code 1.", activity.StatusDescription);
+        Assert.Equal(1, activity.GetTagItem("process.exit.code"));
     }
 
     [Fact]
@@ -1073,6 +1121,17 @@ public class ProcessWrapperTests
 
         var processResult = await process;
         Assert.True(processResult.ProcessId > 0);
+    }
+
+    private static ActivityListener CreateProcessWrapperActivityListener(Action<Activity> activityStopped)
+    {
+        return new ActivityListener
+        {
+            ShouldListenTo = static source => source.Name == "Meziantou.Framework.ProcessWrapper",
+            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = activityStopped,
+        };
     }
 
     private static ProcessWrapper CreateEchoBase()

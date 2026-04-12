@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -44,7 +43,13 @@ public abstract class OutputTarget
     public static OutputTarget ToProcessOutputCollection(ProcessOutputCollection collection)
     {
         ArgumentNullException.ThrowIfNull(collection);
-        return new ProcessOutputCollectionOutputTarget(collection);
+        return new ProcessOutputCollectionOutputTarget(collection, ProcessOutputType.StandardOutput);
+    }
+
+    public static OutputTarget ToProcessPipe(ProcessPipe pipe)
+    {
+        ArgumentNullException.ThrowIfNull(pipe);
+        return new ProcessPipeOutputTarget(pipe);
     }
 
     public static implicit operator OutputTarget(Stream stream) => ToStream(stream);
@@ -57,121 +62,224 @@ public abstract class OutputTarget
 
     public static implicit operator OutputTarget(ProcessOutputCollection collection) => ToProcessOutputCollection(collection);
 
-    internal abstract void AddHandlers(ImmutableArray<Action<string>>.Builder outputHandlers, ImmutableArray<Stream>.Builder outputBinaryHandlers, ProcessOutputType outputType);
+    public abstract void Write(ReadOnlySpan<byte> write);
+
+    public virtual void NotifyProcessCompleted()
+    {
+    }
+
+    internal virtual void SetEncoding(Encoding encoding)
+    {
+    }
+
+    internal virtual OutputTarget ForOutputType(ProcessOutputType outputType) => this;
 
     private sealed class StreamOutputTarget(Stream stream) : OutputTarget
     {
-        internal override void AddHandlers(ImmutableArray<Action<string>>.Builder outputHandlers, ImmutableArray<Stream>.Builder outputBinaryHandlers, ProcessOutputType outputType)
+        private readonly Stream _stream = SynchronizedWriteStream.Create(stream);
+
+        public override void Write(ReadOnlySpan<byte> write)
         {
-            outputBinaryHandlers.Add(SynchronizedWriteStream.Create(stream));
+            _stream.Write(write);
+        }
+
+        public override void NotifyProcessCompleted()
+        {
+            _stream.Flush();
         }
     }
 
     private sealed class StringBuilderOutputTarget(StringBuilder stringBuilder) : OutputTarget
     {
-        internal override void AddHandlers(ImmutableArray<Action<string>>.Builder outputHandlers, ImmutableArray<Stream>.Builder outputBinaryHandlers, ProcessOutputType outputType)
+        private readonly Lock _syncObject = new();
+        private Decoder _decoder = Encoding.UTF8.GetDecoder();
+
+        public override void Write(ReadOnlySpan<byte> write)
         {
-            outputBinaryHandlers.Add(new StringBuilderOutputStream(stringBuilder));
+            if (write.IsEmpty)
+                return;
+
+            lock (_syncObject)
+            {
+                var charCount = _decoder.GetCharCount(write, flush: false);
+                if (charCount == 0)
+                    return;
+
+                var chars = new char[charCount];
+                var charsRead = _decoder.GetChars(write, chars, flush: false);
+                stringBuilder.Append(chars, 0, charsRead);
+            }
+        }
+
+        public override void NotifyProcessCompleted()
+        {
+            lock (_syncObject)
+            {
+                var charCount = _decoder.GetCharCount(ReadOnlySpan<byte>.Empty, flush: true);
+                if (charCount == 0)
+                    return;
+
+                var chars = new char[charCount];
+                var charsRead = _decoder.GetChars(ReadOnlySpan<byte>.Empty, chars, flush: true);
+                stringBuilder.Append(chars, 0, charsRead);
+            }
+        }
+
+        internal override void SetEncoding(Encoding encoding)
+        {
+            lock (_syncObject)
+            {
+                _decoder = encoding.GetDecoder();
+            }
         }
     }
 
-    private sealed class TextDelegateOutputTarget(Action<string> handler) : OutputTarget
+    private sealed class TextDelegateOutputTarget(Action<string> handler) : LineBasedTextOutputTarget
     {
-        internal override void AddHandlers(ImmutableArray<Action<string>>.Builder outputHandlers, ImmutableArray<Stream>.Builder outputBinaryHandlers, ProcessOutputType outputType)
+        protected override void HandleLine(string line)
         {
-            outputHandlers.Add(handler);
+            handler(line);
         }
     }
 
-    private sealed class TextWriterOutputTarget(TextWriter writer) : OutputTarget
+    private sealed class TextWriterOutputTarget(TextWriter writer) : LineBasedTextOutputTarget
     {
-        internal override void AddHandlers(ImmutableArray<Action<string>>.Builder outputHandlers, ImmutableArray<Stream>.Builder outputBinaryHandlers, ProcessOutputType outputType)
+        protected override void HandleLine(string line)
         {
-            outputHandlers.Add(line => SynchronizedTextWriter.WriteLine(writer, line));
+            SynchronizedTextWriter.WriteLine(writer, line);
         }
     }
 
     private sealed class BytesDelegateOutputTarget(Action<byte[]> handler) : OutputTarget
     {
-        internal override void AddHandlers(ImmutableArray<Action<string>>.Builder outputHandlers, ImmutableArray<Stream>.Builder outputBinaryHandlers, ProcessOutputType outputType)
-        {
-            outputBinaryHandlers.Add(new BytesDelegateOutputStream(handler));
-        }
-    }
-
-    private sealed class ProcessOutputCollectionOutputTarget(ProcessOutputCollection collection) : OutputTarget
-    {
-        internal override void AddHandlers(ImmutableArray<Action<string>>.Builder outputHandlers, ImmutableArray<Stream>.Builder outputBinaryHandlers, ProcessOutputType outputType)
-        {
-            outputHandlers.Add(line => collection.Add(outputType, line));
-        }
-    }
-
-    private sealed class BytesDelegateOutputStream(Action<byte[]> handler) : Stream
-    {
         private readonly Lock _syncObject = new();
 
-        public override bool CanRead => false;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => true;
-
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
+        public override void Write(ReadOnlySpan<byte> write)
         {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        public override void Flush()
-        {
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            return Task.CompletedTask;
-        }
-
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            WriteCore(buffer.AsSpan(offset, count));
-        }
-
-        public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            WriteCore(buffer);
-        }
-
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            WriteCore(buffer.AsSpan(offset, count));
-            return Task.CompletedTask;
-        }
-
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            WriteCore(buffer.Span);
-            return ValueTask.CompletedTask;
-        }
-
-        private void WriteCore(ReadOnlySpan<byte> buffer)
-        {
-            var copy = buffer.ToArray();
+            var copy = write.ToArray();
             lock (_syncObject)
             {
                 handler(copy);
             }
+        }
+    }
+
+    private sealed class ProcessOutputCollectionOutputTarget(ProcessOutputCollection collection, ProcessOutputType outputType) : LineBasedTextOutputTarget
+    {
+        protected override void HandleLine(string line)
+        {
+            collection.Add(outputType, line);
+        }
+
+        internal override OutputTarget ForOutputType(ProcessOutputType targetOutputType)
+        {
+            return new ProcessOutputCollectionOutputTarget(collection, targetOutputType);
+        }
+    }
+
+    private sealed class ProcessPipeOutputTarget(ProcessPipe pipe) : OutputTarget
+    {
+        public override void Write(ReadOnlySpan<byte> write)
+        {
+            pipe.Write(write);
+        }
+
+        public override void NotifyProcessCompleted()
+        {
+            pipe.DisposeWriter();
+        }
+    }
+
+    private abstract class LineBasedTextOutputTarget : OutputTarget
+    {
+        private readonly Lock _syncObject = new();
+        private Decoder _decoder = Encoding.UTF8.GetDecoder();
+        private readonly StringBuilder _lineBuilder = new();
+        private bool _lastCharacterWasCarriageReturn;
+
+        public override void Write(ReadOnlySpan<byte> write)
+        {
+            if (write.IsEmpty)
+                return;
+
+            lock (_syncObject)
+            {
+                var charCount = _decoder.GetCharCount(write, flush: false);
+                if (charCount == 0)
+                    return;
+
+                var chars = new char[charCount];
+                var charsRead = _decoder.GetChars(write, chars, flush: false);
+                DispatchLines(chars.AsSpan(0, charsRead));
+            }
+        }
+
+        public override void NotifyProcessCompleted()
+        {
+            lock (_syncObject)
+            {
+                var charCount = _decoder.GetCharCount(ReadOnlySpan<byte>.Empty, flush: true);
+                if (charCount > 0)
+                {
+                    var chars = new char[charCount];
+                    var charsRead = _decoder.GetChars(ReadOnlySpan<byte>.Empty, chars, flush: true);
+                    DispatchLines(chars.AsSpan(0, charsRead));
+                }
+
+                if (_lastCharacterWasCarriageReturn || _lineBuilder.Length > 0)
+                {
+                    DispatchLine();
+                }
+            }
+        }
+
+        internal override void SetEncoding(Encoding encoding)
+        {
+            lock (_syncObject)
+            {
+                _decoder = encoding.GetDecoder();
+                _lineBuilder.Clear();
+                _lastCharacterWasCarriageReturn = false;
+            }
+        }
+
+        protected abstract void HandleLine(string line);
+
+        private void DispatchLines(ReadOnlySpan<char> chars)
+        {
+            foreach (var character in chars)
+            {
+                if (_lastCharacterWasCarriageReturn)
+                {
+                    _lastCharacterWasCarriageReturn = false;
+                    if (character == '\n')
+                    {
+                        continue;
+                    }
+                }
+
+                if (character == '\r')
+                {
+                    DispatchLine();
+                    _lastCharacterWasCarriageReturn = true;
+                    continue;
+                }
+
+                if (character == '\n')
+                {
+                    DispatchLine();
+                    continue;
+                }
+
+                _lineBuilder.Append(character);
+            }
+        }
+
+        private void DispatchLine()
+        {
+            var line = _lineBuilder.ToString();
+            _lineBuilder.Clear();
+            HandleLine(line);
         }
     }
 

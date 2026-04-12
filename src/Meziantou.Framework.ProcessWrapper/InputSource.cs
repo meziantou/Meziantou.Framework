@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Meziantou.Framework;
 
 public abstract class InputSource
@@ -35,6 +37,12 @@ public abstract class InputSource
         return new FileInputSource(path);
     }
 
+    public static InputSource FromProcessPipe(ProcessPipe processPipe)
+    {
+        ArgumentNullException.ThrowIfNull(processPipe);
+        return new ProcessPipeInputSource(processPipe);
+    }
+
     public static implicit operator InputSource(Stream stream) => FromStream(stream);
 
     public static implicit operator InputSource(string text) => FromText(text);
@@ -45,51 +53,94 @@ public abstract class InputSource
 
     public static implicit operator InputSource(TextReader reader) => FromTextReader(reader);
 
-    internal abstract Task WriteAsync(StreamWriter standardInput, CancellationToken cancellationToken);
+    public abstract int Read(byte[] buffer);
+
+    internal virtual void NotifyProcessCompleted()
+    {
+    }
 
     private sealed class StreamInputSource(Stream stream) : InputSource
     {
-        internal override async Task WriteAsync(StreamWriter standardInput, CancellationToken cancellationToken)
+        public override int Read(byte[] buffer)
         {
-            await stream.CopyToAsync(standardInput.BaseStream, cancellationToken).ConfigureAwait(false);
+            ArgumentNullException.ThrowIfNull(buffer);
+            return stream.Read(buffer, 0, buffer.Length);
         }
     }
 
     private sealed class TextInputSource(string text) : InputSource
     {
-        internal override async Task WriteAsync(StreamWriter standardInput, CancellationToken cancellationToken)
+        private readonly BytesInputSource _inner = new(Encoding.UTF8.GetBytes(text));
+
+        public override int Read(byte[] buffer)
         {
-            await standardInput.WriteAsync(text.AsMemory(), cancellationToken).ConfigureAwait(false);
+            return _inner.Read(buffer);
         }
     }
 
     private sealed class BytesInputSource(byte[] bytes) : InputSource
     {
-        internal override async Task WriteAsync(StreamWriter standardInput, CancellationToken cancellationToken)
+        private int _position;
+
+        public override int Read(byte[] buffer)
         {
-            await standardInput.BaseStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (_position >= bytes.Length || buffer.Length == 0)
+                return 0;
+
+            var count = Math.Min(buffer.Length, bytes.Length - _position);
+            bytes.AsSpan(_position, count).CopyTo(buffer);
+            _position += count;
+            return count;
         }
     }
 
     private sealed class TextReaderInputSource(TextReader reader) : InputSource
     {
-        internal override async Task WriteAsync(StreamWriter standardInput, CancellationToken cancellationToken)
+        private readonly BytesInputSource _inner = new(Encoding.UTF8.GetBytes(reader.ReadToEnd()));
+
+        public override int Read(byte[] buffer)
         {
-            var buffer = new char[4096];
-            int charsRead;
-            while ((charsRead = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
-            {
-                await standardInput.WriteAsync(buffer.AsMemory(0, charsRead), cancellationToken).ConfigureAwait(false);
-            }
+            return _inner.Read(buffer);
         }
     }
 
     private sealed class FileInputSource(string path) : InputSource
     {
-        internal override async Task WriteAsync(StreamWriter standardInput, CancellationToken cancellationToken)
+        private FileStream? _stream;
+
+        public override int Read(byte[] buffer)
         {
-            using var fileStream = File.OpenRead(path);
-            await fileStream.CopyToAsync(standardInput.BaseStream, cancellationToken).ConfigureAwait(false);
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            _stream ??= File.OpenRead(path);
+            var bytesRead = _stream.Read(buffer, 0, buffer.Length);
+            if (bytesRead == 0)
+            {
+                _stream.Dispose();
+                _stream = null;
+            }
+
+            return bytesRead;
+        }
+
+        internal override void NotifyProcessCompleted()
+        {
+            _stream?.Dispose();
+            _stream = null;
+        }
+    }
+
+    private sealed class ProcessPipeInputSource(ProcessPipe processPipe) : InputSource
+    {
+        public override int Read(byte[] buffer)
+        {
+            return processPipe.Read(buffer);
+        }
+
+        internal override void NotifyProcessCompleted()
+        {
+            processPipe.DisposeReader();
         }
     }
 }

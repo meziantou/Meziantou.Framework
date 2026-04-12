@@ -20,10 +20,8 @@ public sealed class ProcessWrapper
 {
     private readonly ProcessStartInfo _startInfo;
     private ProcessValidationMode _validationMode;
-    private ImmutableArray<Action<string>> _outputHandlers;
-    private ImmutableArray<Stream> _outputBinaryHandlers;
-    private ImmutableArray<Action<string>> _errorHandlers;
-    private ImmutableArray<Stream> _errorBinaryHandlers;
+    private ImmutableArray<OutputTarget> _outputTargets;
+    private ImmutableArray<OutputTarget> _errorTargets;
     private InputSource? _inputSource;
     private ProcessLimits? _limits;
     private Action<JobObject>? _windowsJobObjectConfiguration;
@@ -34,10 +32,8 @@ public sealed class ProcessWrapper
         ArgumentNullException.ThrowIfNull(fileName);
         _startInfo = CreateStartInfo(fileName);
         _validationMode = ProcessValidationMode.FailIfNonZeroExitCode;
-        _outputHandlers = [];
-        _outputBinaryHandlers = [];
-        _errorHandlers = [];
-        _errorBinaryHandlers = [];
+        _outputTargets = [];
+        _errorTargets = [];
     }
 
     private static ProcessStartInfo CreateStartInfo(string fileName)
@@ -171,32 +167,30 @@ public sealed class ProcessWrapper
     /// <summary>Replaces all output stream handlers with the specified targets.</summary>
     public ProcessWrapper WithOutputStream(params ReadOnlySpan<OutputTarget> targets)
     {
-        (_outputHandlers, _outputBinaryHandlers) = CreateOutputHandlers(targets, ProcessOutputType.StandardOutput, nameof(targets));
+        _outputTargets = CreateOutputTargets(targets, ProcessOutputType.StandardOutput, nameof(targets));
         return this;
     }
 
     /// <summary>Adds additional output stream handlers.</summary>
     public ProcessWrapper AddOutputStream(params ReadOnlySpan<OutputTarget> targets)
     {
-        var (outputHandlers, outputBinaryHandlers) = CreateOutputHandlers(targets, ProcessOutputType.StandardOutput, nameof(targets));
-        _outputHandlers = AddToImmutableArray(_outputHandlers, outputHandlers);
-        _outputBinaryHandlers = AddToImmutableArray(_outputBinaryHandlers, outputBinaryHandlers);
+        var outputTargets = CreateOutputTargets(targets, ProcessOutputType.StandardOutput, nameof(targets));
+        _outputTargets = AddToImmutableArray(_outputTargets, outputTargets);
         return this;
     }
 
     /// <summary>Replaces all error stream handlers with the specified targets.</summary>
     public ProcessWrapper WithErrorStream(params ReadOnlySpan<OutputTarget> targets)
     {
-        (_errorHandlers, _errorBinaryHandlers) = CreateOutputHandlers(targets, ProcessOutputType.StandardError, nameof(targets));
+        _errorTargets = CreateOutputTargets(targets, ProcessOutputType.StandardError, nameof(targets));
         return this;
     }
 
     /// <summary>Adds additional error stream handlers.</summary>
     public ProcessWrapper AddErrorStream(params ReadOnlySpan<OutputTarget> targets)
     {
-        var (errorHandlers, errorBinaryHandlers) = CreateOutputHandlers(targets, ProcessOutputType.StandardError, nameof(targets));
-        _errorHandlers = AddToImmutableArray(_errorHandlers, errorHandlers);
-        _errorBinaryHandlers = AddToImmutableArray(_errorBinaryHandlers, errorBinaryHandlers);
+        var errorTargets = CreateOutputTargets(targets, ProcessOutputType.StandardError, nameof(targets));
+        _errorTargets = AddToImmutableArray(_errorTargets, errorTargets);
         return this;
     }
 
@@ -215,7 +209,7 @@ public sealed class ProcessWrapper
     /// </summary>
     public ProcessInstance ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        return StartProcess(_outputHandlers, _errorHandlers, _outputBinaryHandlers, _errorBinaryHandlers,
+        return StartProcess(_outputTargets, _errorTargets,
             (process, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, ct) => new ProcessInstance(process, inputTask, outputTask, registration, limiter, _validationMode, hasStandardErrorOutput, ct),
             cancellationToken);
     }
@@ -229,26 +223,22 @@ public sealed class ProcessWrapper
     {
         var output = new ProcessOutputCollection();
 
-        var outputHandlers = _outputHandlers.Add(line => output.Add(ProcessOutputType.StandardOutput, line));
-        var errorHandlers = _errorHandlers.Add(line => output.Add(ProcessOutputType.StandardError, line));
+        var outputTargets = _outputTargets.Add(OutputTarget.ToProcessOutputCollection(output).ForOutputType(ProcessOutputType.StandardOutput));
+        var errorTargets = _errorTargets.Add(OutputTarget.ToProcessOutputCollection(output).ForOutputType(ProcessOutputType.StandardError));
 
-        return StartProcess(outputHandlers, errorHandlers, _outputBinaryHandlers, _errorBinaryHandlers,
+        return StartProcess(outputTargets, errorTargets,
             (process, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, ct) => new BufferedProcessInstance(process, inputTask, outputTask, registration, limiter, _validationMode, output, hasStandardErrorOutput, ct),
             cancellationToken);
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ProcessInstance will dispose it")]
-    private T StartProcess<T>(ImmutableArray<Action<string>> outputHandlers, ImmutableArray<Action<string>> errorHandlers, ImmutableArray<Stream> outputBinaryHandlers, ImmutableArray<Stream> errorBinaryHandlers, Func<Process, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, CancellationToken, T> factory, CancellationToken cancellationToken)
+    private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<Process, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, CancellationToken, T> factory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var hasOutputTextHandlers = !outputHandlers.IsEmpty;
-        var hasOutputBinaryHandlers = !outputBinaryHandlers.IsEmpty;
-        var hasOutputHandlers = hasOutputTextHandlers || hasOutputBinaryHandlers;
+        var hasOutputHandlers = !outputTargets.IsEmpty;
         var shouldValidateErrorOutput = (_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError;
-        var hasErrorTextHandlers = !errorHandlers.IsEmpty;
-        var hasErrorBinaryHandlers = !errorBinaryHandlers.IsEmpty;
-        var hasErrorHandlers = hasErrorTextHandlers || hasErrorBinaryHandlers || shouldValidateErrorOutput;
+        var hasErrorHandlers = !errorTargets.IsEmpty || shouldValidateErrorOutput;
         var hasInputStream = _inputSource is not null;
         var hasStandardErrorOutput = 0;
 
@@ -295,27 +285,40 @@ public sealed class ProcessWrapper
         var outputStreamTask = Task.CompletedTask;
         if (hasOutputHandlers)
         {
-            outputStreamTask = PumpStreamAsync(process.StandardOutput.BaseStream, process.StandardOutput.CurrentEncoding, outputHandlers, outputBinaryHandlers, onDataRead: null);
+            outputStreamTask = PumpStreamAsync(process.StandardOutput.BaseStream, process.StandardOutput.CurrentEncoding, outputTargets, onDataRead: null);
         }
 
         var errorStreamTask = Task.CompletedTask;
         if (hasErrorHandlers)
         {
-            errorStreamTask = PumpStreamAsync(process.StandardError.BaseStream, process.StandardError.CurrentEncoding, errorHandlers, errorBinaryHandlers, onDataRead: () => Interlocked.Exchange(ref hasStandardErrorOutput, 1));
+            errorStreamTask = PumpStreamAsync(process.StandardError.BaseStream, process.StandardError.CurrentEncoding, errorTargets, onDataRead: () => Interlocked.Exchange(ref hasStandardErrorOutput, 1));
         }
 
         var inputStreamTask = Task.CompletedTask;
         if (_inputSource is not null)
         {
             var inputSource = _inputSource;
-            inputStreamTask = Task.Run(async () =>
+            inputStreamTask = Task.Run(() =>
             {
+                var buffer = new byte[4096];
                 try
                 {
-                    await inputSource.WriteAsync(process.StandardInput, cancellationToken).ConfigureAwait(false);
+                    while (true)
+                    {
+                        var bytesRead = inputSource.Read(buffer);
+                        if (bytesRead <= 0)
+                        {
+                            break;
+                        }
+
+                        process.StandardInput.BaseStream.Write(buffer, 0, bytesRead);
+                    }
+
+                    process.StandardInput.BaseStream.Flush();
                 }
                 finally
                 {
+                    inputSource.NotifyProcessCompleted();
                     process.StandardInput.Close();
                 }
             }, cancellationToken);
@@ -330,82 +333,34 @@ public sealed class ProcessWrapper
         return factory(process, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, cancellationToken);
     }
 
-    private static async Task PumpStreamAsync(Stream stream, Encoding encoding, ImmutableArray<Action<string>> lineHandlers, ImmutableArray<Stream> binaryHandlers, Action? onDataRead)
+    private static async Task PumpStreamAsync(Stream stream, Encoding encoding, ImmutableArray<OutputTarget> targets, Action? onDataRead)
     {
-        InitializeBinaryHandlers(binaryHandlers, encoding);
-
-        if (lineHandlers.IsEmpty)
+        InitializeTargets(targets, encoding);
+        try
         {
-            await CopyStreamToBinaryHandlersAsync(stream, binaryHandlers, onDataRead).ConfigureAwait(false);
-            return;
-        }
-
-        await PumpMixedTextAndBinaryStreamAsync(stream, encoding, lineHandlers, binaryHandlers, onDataRead).ConfigureAwait(false);
-    }
-
-    private static async Task CopyStreamToBinaryHandlersAsync(Stream stream, ImmutableArray<Stream> binaryHandlers, Action? onDataRead)
-    {
-        var buffer = new byte[4096];
-        while (true)
-        {
-            var bytesRead = await ReadBufferAsync(stream, buffer.AsMemory()).ConfigureAwait(false);
-            if (bytesRead == 0)
+            var buffer = new byte[4096];
+            while (true)
             {
-                break;
-            }
+                var bytesRead = await ReadBufferAsync(stream, buffer.AsMemory()).ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
 
-            onDataRead?.Invoke();
-            var data = buffer.AsMemory(0, bytesRead);
-            foreach (var binaryHandler in binaryHandlers)
-            {
-                await binaryHandler.WriteAsync(data).ConfigureAwait(false);
+                onDataRead?.Invoke();
+                var data = buffer.AsSpan(0, bytesRead);
+                foreach (var target in targets)
+                {
+                    target.Write(data);
+                }
             }
         }
-
-        foreach (var binaryHandler in binaryHandlers)
+        finally
         {
-            await binaryHandler.FlushAsync().ConfigureAwait(false);
-        }
-    }
-
-    private static async Task PumpMixedTextAndBinaryStreamAsync(Stream stream, Encoding encoding, ImmutableArray<Action<string>> lineHandlers, ImmutableArray<Stream> binaryHandlers, Action? onDataRead)
-    {
-        var decoder = encoding.GetDecoder();
-        var buffer = new byte[4096];
-        var chars = new char[encoding.GetMaxCharCount(buffer.Length)];
-        var lineBuilder = new StringBuilder();
-        var lastCharacterWasCarriageReturn = false;
-
-        while (true)
-        {
-            var bytesRead = await ReadBufferAsync(stream, buffer.AsMemory()).ConfigureAwait(false);
-            if (bytesRead == 0)
+            foreach (var target in targets)
             {
-                break;
+                target.NotifyProcessCompleted();
             }
-
-            onDataRead?.Invoke();
-            var data = buffer.AsMemory(0, bytesRead);
-            foreach (var binaryHandler in binaryHandlers)
-            {
-                await binaryHandler.WriteAsync(data).ConfigureAwait(false);
-            }
-
-            var charsRead = decoder.GetChars(buffer, 0, bytesRead, chars, 0, flush: false);
-            DispatchLines(chars.AsSpan(0, charsRead), lineHandlers, lineBuilder, ref lastCharacterWasCarriageReturn);
-        }
-
-        var finalCharsRead = decoder.GetChars(Array.Empty<byte>(), 0, 0, chars, 0, flush: true);
-        DispatchLines(chars.AsSpan(0, finalCharsRead), lineHandlers, lineBuilder, ref lastCharacterWasCarriageReturn);
-
-        if (lastCharacterWasCarriageReturn || lineBuilder.Length > 0)
-        {
-            DispatchLine(lineHandlers, lineBuilder);
-        }
-
-        foreach (var binaryHandler in binaryHandlers)
-        {
-            await binaryHandler.FlushAsync().ConfigureAwait(false);
         }
     }
 
@@ -426,71 +381,27 @@ public sealed class ProcessWrapper
         }
     }
 
-    private static void DispatchLines(ReadOnlySpan<char> chars, ImmutableArray<Action<string>> lineHandlers, StringBuilder lineBuilder, ref bool lastCharacterWasCarriageReturn)
+    private static void InitializeTargets(ImmutableArray<OutputTarget> targets, Encoding encoding)
     {
-        foreach (var character in chars)
+        foreach (var target in targets)
         {
-            if (lastCharacterWasCarriageReturn)
-            {
-                lastCharacterWasCarriageReturn = false;
-                if (character == '\n')
-                {
-                    continue;
-                }
-            }
-
-            if (character == '\r')
-            {
-                DispatchLine(lineHandlers, lineBuilder);
-                lastCharacterWasCarriageReturn = true;
-                continue;
-            }
-
-            if (character == '\n')
-            {
-                DispatchLine(lineHandlers, lineBuilder);
-                continue;
-            }
-
-            lineBuilder.Append(character);
+            target.SetEncoding(encoding);
         }
     }
 
-    private static void DispatchLine(ImmutableArray<Action<string>> lineHandlers, StringBuilder lineBuilder)
-    {
-        var line = lineBuilder.ToString();
-        lineBuilder.Clear();
-        foreach (var lineHandler in lineHandlers)
-        {
-            lineHandler(line);
-        }
-    }
-
-    private static void InitializeBinaryHandlers(ImmutableArray<Stream> binaryHandlers, Encoding encoding)
-    {
-        foreach (var binaryHandler in binaryHandlers)
-        {
-            if (binaryHandler is StringBuilderOutputStream stringBuilderOutputStream)
-            {
-                stringBuilderOutputStream.SetEncoding(encoding);
-            }
-        }
-    }
-
-    private static (ImmutableArray<Action<string>> outputHandlers, ImmutableArray<Stream> outputBinaryHandlers) CreateOutputHandlers(ReadOnlySpan<OutputTarget> targets, ProcessOutputType outputType, string parameterName)
+    private static ImmutableArray<OutputTarget> CreateOutputTargets(ReadOnlySpan<OutputTarget> targets, ProcessOutputType outputType, string parameterName)
     {
         if (targets.IsEmpty)
-            return ([], []);
+            return [];
 
-        var outputHandlers = ImmutableArray.CreateBuilder<Action<string>>(targets.Length);
-        var outputBinaryHandlers = ImmutableArray.CreateBuilder<Stream>(targets.Length);
+        var outputTargets = ImmutableArray.CreateBuilder<OutputTarget>(targets.Length);
         foreach (var target in targets)
         {
             ArgumentNullException.ThrowIfNull(target, parameterName);
-            target.AddHandlers(outputHandlers, outputBinaryHandlers, outputType);
+            outputTargets.Add(target.ForOutputType(outputType));
         }
 
-        return (outputHandlers.ToImmutable(), outputBinaryHandlers.ToImmutable());
+        return outputTargets.ToImmutable();
     }
 
     private static ImmutableArray<T> AddToImmutableArray<T>(ImmutableArray<T> existingValues, ImmutableArray<T> values)

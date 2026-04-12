@@ -196,6 +196,20 @@ var readerResult = await ProcessWrapper.Create("cat")
     .ExecuteBufferedAsync();
 
 Console.WriteLine(readerResult.Output.ToString());
+
+// Pipe one process output to another process input
+var pipe = new ProcessPipe(maxBufferSize: 256 * 1024);
+
+var downstream = ProcessWrapper.Create("process-b")
+    .WithInputStream(pipe)
+    .ExecuteAsync();
+
+await ProcessWrapper.Create("process-a")
+    .WithArguments("--generate-data")
+    .AddOutputStream(pipe)
+    .ExecuteAsync();
+
+await downstream;
 ````
 
 ## Validation

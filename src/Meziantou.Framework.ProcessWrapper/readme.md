@@ -212,6 +212,25 @@ await ProcessWrapper.Create("process-a")
 await downstream;
 ````
 
+### Pipe operator (`|`)
+
+````c#
+var result = await (ProcessWrapper.Create("process-a")
+    .WithArguments("--generate-data")
+    | ProcessWrapper.Create("process-b")
+    | ProcessWrapper.Create("process-c"))
+    .ExecuteBufferedAsync();
+
+// Buffered output corresponds to the last command (process-c)
+foreach (var line in result.Output.StandardOutput)
+{
+    Console.WriteLine(line.Text);
+}
+````
+
+The `|` operator wires the standard output of each command to the standard input of the next command.
+Validation runs on every command in the pipeline, and execution fails if any command fails.
+
 ## Validation
 
 ````c#

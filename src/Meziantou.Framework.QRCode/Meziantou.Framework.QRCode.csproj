@@ -5,7 +5,7 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.0.4</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>QR Code generation with SVG and console renderers</Description>
+    <Description>QR Code generation with SVG, PNG, and console renderers</Description>
     <NoWarn>$(NoWarn);CA1814</NoWarn>
   </PropertyGroup>
 

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>A library for reading and writing metadata tags in media files (MP3, OGG, FLAC, MP4/M4A, WAV, AIFF)</Description>
   </PropertyGroup>

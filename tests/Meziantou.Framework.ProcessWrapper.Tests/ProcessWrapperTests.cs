@@ -792,18 +792,7 @@ public class ProcessWrapperTests
     {
         var pipe = new ProcessPipe();
 
-        ProcessWrapper inputCommand;
-        if (OperatingSystem.IsWindows())
-        {
-            inputCommand = ProcessWrapper.Create("findstr")
-                .WithArguments(".*");
-        }
-        else
-        {
-            inputCommand = ProcessWrapper.Create("cat");
-        }
-
-        var destinationProcess = inputCommand
+        var destinationProcess = CreatePassthroughCommand()
             .WithInputStream(pipe)
             .ExecuteBufferedAsync();
 
@@ -815,6 +804,46 @@ public class ProcessWrapperTests
         var processResult = await destinationProcess;
 
         Assert.Contains("hello from pipe", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_PipesCommandOutput()
+    {
+        var processResult = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand())
+            .ExecuteBufferedAsync();
+
+        Assert.Contains("hello from operator", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_MultipleCommands()
+    {
+        var processResult = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand() | CreatePassthroughCommand())
+            .ExecuteBufferedAsync();
+
+        Assert.Contains("hello from operator", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_FailsIfAnyCommandFails()
+    {
+        var exception = await Assert.ThrowsAsync<ProcessExecutionException>(async () =>
+        {
+            _ = await (CreateOutputThenFailCommand("hello from failing command") | CreatePassthroughCommand())
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.Equal(42, exception.ExitCode);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_WhenIntermediateCommandHasInputStream_Throws()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            _ = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand().WithInputStream("overridden"))
+                .ExecuteBufferedAsync();
+        });
     }
 
     [Fact]
@@ -1056,6 +1085,17 @@ public class ProcessWrapperTests
         return ProcessWrapper.Create("echo");
     }
 
+    private static ProcessWrapper CreatePassthroughCommand()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("findstr")
+                .WithArguments(".*");
+        }
+
+        return ProcessWrapper.Create("cat");
+    }
+
     private static ProcessWrapper CreateEchoCommand(string text)
     {
         if (OperatingSystem.IsWindows())
@@ -1066,6 +1106,18 @@ public class ProcessWrapperTests
 
         return ProcessWrapper.Create("echo")
             .WithArguments(text);
+    }
+
+    private static ProcessWrapper CreateOutputThenFailCommand(string text)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", $"echo {text} & exit /b 42");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"printf '%s\\n' \"{text}\"; exit 42");
     }
 
     private static ProcessWrapper CreateNoNewlineOutputCommand(string text)

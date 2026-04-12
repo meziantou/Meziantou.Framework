@@ -36,6 +36,20 @@ public sealed class ProcessWrapper
         _errorTargets = [];
     }
 
+    private ProcessWrapper(ProcessWrapper other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        _startInfo = CloneStartInfo(other._startInfo);
+        _validationMode = other._validationMode;
+        _outputTargets = other._outputTargets;
+        _errorTargets = other._errorTargets;
+        _inputSource = other._inputSource;
+        _limits = other._limits;
+        _windowsJobObjectConfiguration = other._windowsJobObjectConfiguration;
+        _linuxControlGroupConfiguration = other._linuxControlGroupConfiguration;
+    }
+
     private static ProcessStartInfo CreateStartInfo(string fileName)
     {
         return new ProcessStartInfo
@@ -46,8 +60,33 @@ public sealed class ProcessWrapper
         };
     }
 
+    private static ProcessStartInfo CloneStartInfo(ProcessStartInfo source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        var startInfo = CreateStartInfo(source.FileName);
+        startInfo.WorkingDirectory = source.WorkingDirectory;
+        startInfo.StandardOutputEncoding = source.StandardOutputEncoding;
+        startInfo.StandardErrorEncoding = source.StandardErrorEncoding;
+
+        foreach (var argument in source.ArgumentList)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        foreach (var (name, value) in source.Environment)
+        {
+            startInfo.Environment[name] = value;
+        }
+
+        return startInfo;
+    }
+
     /// <summary>Creates a new <see cref="ProcessWrapper"/> for the specified executable.</summary>
     public static ProcessWrapper Create(string fileName) => new(fileName);
+
+    /// <summary>Creates a pipeline between 2 commands.</summary>
+    public static ProcessPipeline operator |(ProcessWrapper left, ProcessWrapper right) => ProcessPipeline.Create(left, right);
 
     /// <summary>Sets the arguments for the process, replacing any previously set arguments.</summary>
     public ProcessWrapper WithArguments(params string[] arguments)
@@ -200,6 +239,13 @@ public sealed class ProcessWrapper
         ArgumentNullException.ThrowIfNull(source);
         _inputSource = source;
         return this;
+    }
+
+    internal bool HasInputSource => _inputSource is not null;
+
+    internal ProcessWrapper Clone()
+    {
+        return new ProcessWrapper(this);
     }
 
     /// <summary>

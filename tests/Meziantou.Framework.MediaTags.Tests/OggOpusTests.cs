@@ -32,6 +32,8 @@ public sealed class OggOpusTests
             {
                 Title = "New Opus Title",
                 Artist = "New Opus Artist",
+                Lyrics = "New Opus Lyrics",
+                Isrc = "USRC17607839",
             };
 
             var writeResult = MediaFile.WriteTags(tempFile, newTags);
@@ -42,6 +44,8 @@ public sealed class OggOpusTests
 
             Assert.Equal("New Opus Title", readResult.Value.Title);
             Assert.Equal("New Opus Artist", readResult.Value.Artist);
+            Assert.Equal("New Opus Lyrics", readResult.Value.Lyrics);
+            Assert.Equal("USRC17607839", readResult.Value.Isrc);
         }
         finally
         {

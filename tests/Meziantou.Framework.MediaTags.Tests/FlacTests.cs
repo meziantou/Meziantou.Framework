@@ -126,6 +126,8 @@ public sealed class FlacTests
                 DiscNumber = 1,
                 DiscTotal = 2,
                 Comment = "FLAC Comment",
+                Lyrics = "FLAC Lyrics",
+                Isrc = "USRC17607839",
             };
 
             var writeResult = MediaFile.WriteTags(tempFile, newTags);
@@ -145,6 +147,8 @@ public sealed class FlacTests
             Assert.Equal(1, tags.DiscNumber);
             Assert.Equal(2, tags.DiscTotal);
             Assert.Equal("FLAC Comment", tags.Comment);
+            Assert.Equal("FLAC Lyrics", tags.Lyrics);
+            Assert.Equal("USRC17607839", tags.Isrc);
         }
         finally
         {

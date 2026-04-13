@@ -14,6 +14,9 @@ internal static class VorbisCommentFieldNames
     public const string DiscTotal = "DISCTOTAL";
     public const string Comment = "COMMENT";
     public const string Description = "DESCRIPTION";
+    public const string Lyrics = "LYRICS";
+    public const string UnsyncedLyrics = "UNSYNCEDLYRICS";
+    public const string Isrc = "ISRC";
     public const string Composer = "COMPOSER";
     public const string Conductor = "CONDUCTOR";
     public const string Copyright = "COPYRIGHT";

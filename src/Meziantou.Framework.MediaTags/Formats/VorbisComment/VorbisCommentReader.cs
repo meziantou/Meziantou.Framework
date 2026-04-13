@@ -98,6 +98,11 @@ internal static class VorbisCommentReader
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Comment, StringComparison.OrdinalIgnoreCase)
               || string.Equals(fieldName, VorbisCommentFieldNames.Description, StringComparison.OrdinalIgnoreCase))
             tags.Comment ??= value;
+        else if (string.Equals(fieldName, VorbisCommentFieldNames.Lyrics, StringComparison.OrdinalIgnoreCase)
+              || string.Equals(fieldName, VorbisCommentFieldNames.UnsyncedLyrics, StringComparison.OrdinalIgnoreCase))
+            tags.Lyrics ??= value;
+        else if (string.Equals(fieldName, VorbisCommentFieldNames.Isrc, StringComparison.OrdinalIgnoreCase))
+            tags.Isrc ??= value;
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Composer, StringComparison.OrdinalIgnoreCase))
             tags.Composer ??= value;
         else if (string.Equals(fieldName, VorbisCommentFieldNames.Conductor, StringComparison.OrdinalIgnoreCase))

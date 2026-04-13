@@ -65,6 +65,30 @@ public sealed class VorbisCommentTests
     }
 
     [Fact]
+    public void TryParse_LyricsFieldVariants()
+    {
+        var lyricsData = BuildVorbisComment("Vendor", ["LYRICS=Lyrics from LYRICS"]);
+        var lyricsTags = new MediaTagInfo();
+        VorbisCommentReader.TryParse(lyricsData, lyricsTags);
+        Assert.Equal("Lyrics from LYRICS", lyricsTags.Lyrics);
+
+        var unsyncedLyricsData = BuildVorbisComment("Vendor", ["UNSYNCEDLYRICS=Lyrics from UNSYNCEDLYRICS"]);
+        var unsyncedLyricsTags = new MediaTagInfo();
+        VorbisCommentReader.TryParse(unsyncedLyricsData, unsyncedLyricsTags);
+        Assert.Equal("Lyrics from UNSYNCEDLYRICS", unsyncedLyricsTags.Lyrics);
+    }
+
+    [Fact]
+    public void TryParse_IsrcField()
+    {
+        var data = BuildVorbisComment("Vendor", ["ISRC=USRC17607839"]);
+        var tags = new MediaTagInfo();
+        VorbisCommentReader.TryParse(data, tags);
+
+        Assert.Equal("USRC17607839", tags.Isrc);
+    }
+
+    [Fact]
     public void TryParse_EmptyData_ReturnsFalse()
     {
         var tags = new MediaTagInfo();
@@ -91,6 +115,8 @@ public sealed class VorbisCommentTests
             TrackTotal = 10,
             Genre = "Pop",
             Comment = "A comment",
+            Lyrics = "Some lyrics",
+            Isrc = "USRC17607839",
         };
 
         var data = VorbisCommentWriter.Build(originalTags);
@@ -106,6 +132,8 @@ public sealed class VorbisCommentTests
         Assert.Equal(10, readTags.TrackTotal);
         Assert.Equal("Pop", readTags.Genre);
         Assert.Equal("A comment", readTags.Comment);
+        Assert.Equal("Some lyrics", readTags.Lyrics);
+        Assert.Equal("USRC17607839", readTags.Isrc);
     }
 
     [Fact]

@@ -96,6 +96,8 @@ public sealed class Mp3Id3v2Tests
                 TrackNumber = 7,
                 TrackTotal = 15,
                 Comment = "New Comment",
+                Lyrics = "New Lyrics",
+                Isrc = "USRC17607839",
             };
 
             var writeResult = MediaFile.WriteTags(tempFile, newTags);
@@ -113,6 +115,8 @@ public sealed class Mp3Id3v2Tests
             Assert.Equal(7, tags.TrackNumber);
             Assert.Equal(15, tags.TrackTotal);
             Assert.Equal("New Comment", tags.Comment);
+            Assert.Equal("New Lyrics", tags.Lyrics);
+            Assert.Equal("USRC17607839", tags.Isrc);
         }
         finally
         {

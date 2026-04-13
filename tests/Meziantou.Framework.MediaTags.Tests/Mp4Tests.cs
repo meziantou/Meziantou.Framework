@@ -109,6 +109,8 @@ public sealed class Mp4Tests
                 Year = 2025,
                 TrackNumber = 2,
                 TrackTotal = 8,
+                Lyrics = "New MP4 Lyrics",
+                Isrc = "USRC17607839",
             };
 
             var writeResult = MediaFile.WriteTags(tempFile, newTags);
@@ -123,6 +125,8 @@ public sealed class Mp4Tests
             Assert.Equal(2025, readResult.Value.Year);
             Assert.Equal(2, readResult.Value.TrackNumber);
             Assert.Equal(8, readResult.Value.TrackTotal);
+            Assert.Equal("New MP4 Lyrics", readResult.Value.Lyrics);
+            Assert.Equal("USRC17607839", readResult.Value.Isrc);
         }
         finally
         {

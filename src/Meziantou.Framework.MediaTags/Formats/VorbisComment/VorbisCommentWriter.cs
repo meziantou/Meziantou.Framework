@@ -31,6 +31,8 @@ internal static class VorbisCommentWriter
             AddField(comments, VorbisCommentFieldNames.DiscTotal, tags.DiscTotal.Value.ToString(CultureInfo.InvariantCulture));
 
         AddField(comments, VorbisCommentFieldNames.Comment, tags.Comment);
+        AddField(comments, VorbisCommentFieldNames.Lyrics, tags.Lyrics);
+        AddField(comments, VorbisCommentFieldNames.Isrc, tags.Isrc);
         AddField(comments, VorbisCommentFieldNames.Composer, tags.Composer);
         AddField(comments, VorbisCommentFieldNames.Conductor, tags.Conductor);
         AddField(comments, VorbisCommentFieldNames.Copyright, tags.Copyright);

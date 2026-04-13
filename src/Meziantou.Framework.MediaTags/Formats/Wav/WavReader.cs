@@ -76,6 +76,8 @@ internal sealed class WavReader : IMediaTagReader
                         tags.TrackNumber = track;
                     break;
                 case "ICMT": tags.Comment ??= value; break;
+                case "ILYR": tags.Lyrics ??= value; break;
+                case "ISRC": tags.Isrc ??= value; break;
                 case "ICOP": tags.Copyright ??= value; break;
                 case "IENG": tags.Composer ??= value; break;
                 default:

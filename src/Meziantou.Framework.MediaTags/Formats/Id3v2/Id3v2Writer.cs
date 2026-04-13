@@ -47,11 +47,16 @@ internal static class Id3v2Writer
         if (tags.Bpm is not null)
             AddTextFrame(frames, Id3v2FrameId.Bpm, tags.Bpm.Value.ToString(CultureInfo.InvariantCulture));
 
+        AddTextFrame(frames, Id3v2FrameId.Isrc, tags.Isrc);
+
         if (tags.IsCompilation is not null)
             AddTextFrame(frames, Id3v2FrameId.Compilation, tags.IsCompilation.Value ? "1" : "0");
 
         if (tags.Comment is not null)
             AddCommentFrame(frames, tags.Comment);
+
+        if (tags.Lyrics is not null)
+            AddUnsynchronizedLyricsFrame(frames, tags.Lyrics);
 
         foreach (var picture in tags.Pictures)
         {
@@ -141,6 +146,20 @@ internal static class Id3v2Writer
         frameData[4] = 0; // Empty description null terminator
         textBytes.CopyTo(frameData, 5);
         frames.Add(BuildFrame(Id3v2FrameId.Comment, frameData));
+    }
+
+    private static void AddUnsynchronizedLyricsFrame(List<byte[]> frames, string value)
+    {
+        // USLT frame: encoding(1) + language(3) + content descriptor(null-terminated) + lyrics text
+        var textBytes = Encoding.UTF8.GetBytes(value);
+        var frameData = new byte[1 + 3 + 1 + textBytes.Length]; // encoding + "eng" + null descriptor + text
+        frameData[0] = Id3v2TextEncoding.Utf8;
+        frameData[1] = (byte)'e';
+        frameData[2] = (byte)'n';
+        frameData[3] = (byte)'g';
+        frameData[4] = 0; // Empty descriptor null terminator
+        textBytes.CopyTo(frameData, 5);
+        frames.Add(BuildFrame(Id3v2FrameId.Lyrics, frameData));
     }
 
     private static void AddPictureFrame(List<byte[]> frames, MediaPicture picture)

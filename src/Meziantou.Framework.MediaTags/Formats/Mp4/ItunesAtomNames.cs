@@ -15,6 +15,7 @@ internal static class ItunesAtomNames
     public const string DiscNumber = "disk";
     public const string Composer = "\u00A9wrt";
     public const string Comment = "\u00A9cmt";
+    public const string Lyrics = "\u00A9lyr";
     public const string Copyright = "cprt";
     public const string Bpm = "tmpo";
     public const string Compilation = "cpil";

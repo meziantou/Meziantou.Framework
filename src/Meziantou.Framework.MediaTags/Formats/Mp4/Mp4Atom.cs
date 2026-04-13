@@ -121,7 +121,7 @@ internal sealed class Mp4Atom
             or ItunesAtomNames.Title or ItunesAtomNames.Artist or ItunesAtomNames.Album
             or ItunesAtomNames.AlbumArtist or ItunesAtomNames.Genre or ItunesAtomNames.Year
             or ItunesAtomNames.TrackNumber or ItunesAtomNames.DiscNumber or ItunesAtomNames.Composer
-            or ItunesAtomNames.Comment or ItunesAtomNames.Copyright or ItunesAtomNames.Bpm
+            or ItunesAtomNames.Comment or ItunesAtomNames.Lyrics or ItunesAtomNames.Copyright or ItunesAtomNames.Bpm
             or ItunesAtomNames.Compilation or ItunesAtomNames.CoverArt or ItunesAtomNames.Freeform
             or "aART";
     }

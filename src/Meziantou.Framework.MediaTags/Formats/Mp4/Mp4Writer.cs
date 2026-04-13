@@ -127,7 +127,9 @@ internal sealed class Mp4Writer : IMediaTagWriter
 
         WriteTextAtom(ms, ItunesAtomNames.Composer, tags.Composer);
         WriteTextAtom(ms, ItunesAtomNames.Comment, tags.Comment);
+        WriteTextAtom(ms, ItunesAtomNames.Lyrics, tags.Lyrics);
         WriteTextAtom(ms, ItunesAtomNames.Copyright, tags.Copyright);
+        WriteFreeformTextAtom(ms, "com.apple.iTunes", "ISRC", tags.Isrc);
 
         if (tags.Bpm is not null)
             WriteUInt16Atom(ms, ItunesAtomNames.Bpm, (ushort)tags.Bpm.Value);
@@ -191,6 +193,35 @@ internal sealed class Mp4Writer : IMediaTagWriter
         Encoding.Latin1.GetBytes(atomType, itemHeader[4..]);
         ms.Write(itemHeader);
         ms.Write(dataAtom);
+    }
+
+    private static void WriteFreeformTextAtom(MemoryStream ms, string mean, string name, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return;
+
+        var meanBytes = Encoding.UTF8.GetBytes(mean);
+        var meanData = new byte[4 + meanBytes.Length]; // version/flags + value
+        meanBytes.CopyTo(meanData, 4);
+        var meanAtom = BuildAtom("mean", meanData);
+
+        var nameBytes = Encoding.UTF8.GetBytes(name);
+        var nameData = new byte[4 + nameBytes.Length]; // version/flags + value
+        nameBytes.CopyTo(nameData, 4);
+        var nameAtom = BuildAtom("name", nameData);
+
+        var valueBytes = Encoding.UTF8.GetBytes(value);
+        var dataPayload = new byte[8 + valueBytes.Length]; // type + locale + value
+        BinaryPrimitives.WriteUInt32BigEndian(dataPayload, 1); // UTF-8 text
+        valueBytes.CopyTo(dataPayload, 8);
+        var dataAtom = BuildAtom("data", dataPayload);
+
+        var freeformData = new byte[meanAtom.Length + nameAtom.Length + dataAtom.Length];
+        meanAtom.CopyTo(freeformData, 0);
+        nameAtom.CopyTo(freeformData, meanAtom.Length);
+        dataAtom.CopyTo(freeformData, meanAtom.Length + nameAtom.Length);
+
+        ms.Write(BuildAtom(ItunesAtomNames.Freeform, freeformData));
     }
 
     private static byte[] BuildAtom(string type, byte[] data)

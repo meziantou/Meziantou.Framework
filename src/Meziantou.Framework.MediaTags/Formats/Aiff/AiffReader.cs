@@ -68,6 +68,12 @@ internal sealed class AiffReader : IMediaTagReader
                     if (stream.ReadAtLeast(data, chunkSize, throwOnEndOfStream: false) >= chunkSize)
                         tags.Copyright ??= ReadAiffString(data);
                 }
+                else if (chunkId == "ISRC")
+                {
+                    var data = new byte[chunkSize];
+                    if (stream.ReadAtLeast(data, chunkSize, throwOnEndOfStream: false) >= chunkSize)
+                        tags.Isrc ??= ReadAiffString(data);
+                }
 
                 // Skip to next chunk (big-endian sizes, pad to even boundary)
                 var nextPos = chunkDataStart + chunkSize;

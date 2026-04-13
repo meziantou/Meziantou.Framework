@@ -77,6 +77,8 @@ public sealed class OggVorbisTests
                 Artist = "New OGG Artist",
                 Year = 2025,
                 TrackNumber = 4,
+                Lyrics = "New OGG Lyrics",
+                Isrc = "USRC17607839",
             };
 
             var writeResult = MediaFile.WriteTags(tempFile, newTags);
@@ -89,6 +91,8 @@ public sealed class OggVorbisTests
             Assert.Equal("New OGG Artist", readResult.Value.Artist);
             Assert.Equal(2025, readResult.Value.Year);
             Assert.Equal(4, readResult.Value.TrackNumber);
+            Assert.Equal("New OGG Lyrics", readResult.Value.Lyrics);
+            Assert.Equal("USRC17607839", readResult.Value.Isrc);
         }
         finally
         {

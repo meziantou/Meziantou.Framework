@@ -40,6 +40,12 @@ public sealed class MediaTagInfo
     /// <summary>Gets or sets a comment or description.</summary>
     public string? Comment { get; set; }
 
+    /// <summary>Gets or sets the track lyrics.</summary>
+    public string? Lyrics { get; set; }
+
+    /// <summary>Gets or sets the ISRC (International Standard Recording Code).</summary>
+    public string? Isrc { get; set; }
+
     /// <summary>Gets or sets the composer.</summary>
     public string? Composer { get; set; }
 

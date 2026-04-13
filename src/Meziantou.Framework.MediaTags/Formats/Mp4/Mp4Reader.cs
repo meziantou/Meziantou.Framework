@@ -95,6 +95,9 @@ internal sealed class Mp4Reader : IMediaTagReader
             case ItunesAtomNames.Comment:
                 tags.Comment ??= ReadUtf8Value(valueData);
                 break;
+            case ItunesAtomNames.Lyrics:
+                tags.Lyrics ??= ReadUtf8Value(valueData);
+                break;
             case ItunesAtomNames.Copyright:
                 tags.Copyright ??= ReadUtf8Value(valueData);
                 break;
@@ -159,6 +162,8 @@ internal sealed class Mp4Reader : IMediaTagReader
                 tags.MusicBrainzAlbumId ??= value;
             else if (string.Equals(name, "MusicBrainz Release Group Id", StringComparison.OrdinalIgnoreCase))
                 tags.MusicBrainzReleaseGroupId ??= value;
+            else if (string.Equals(name, "ISRC", StringComparison.OrdinalIgnoreCase))
+                tags.Isrc ??= value;
             else if (string.Equals(name, "REPLAYGAIN_TRACK_GAIN", StringComparison.OrdinalIgnoreCase))
             {
                 if (TryParseReplayGainValue(value, out var gain))

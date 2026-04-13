@@ -221,6 +221,10 @@ internal static class Id3v2Reader
                 }
                 break;
 
+            case Id3v2FrameId.Isrc:
+                tags.Isrc ??= ReadTextFrame(data);
+                break;
+
             case Id3v2FrameId.Compilation:
                 if (tags.IsCompilation is null)
                 {
@@ -231,6 +235,10 @@ internal static class Id3v2Reader
 
             case Id3v2FrameId.Comment:
                 tags.Comment ??= ReadCommentFrame(data);
+                break;
+
+            case Id3v2FrameId.Lyrics:
+                tags.Lyrics ??= ReadUnsynchronizedLyricsFrame(data);
                 break;
 
             case Id3v2FrameId.Picture:
@@ -263,6 +271,28 @@ internal static class Id3v2Reader
         var remaining = data[4..];
 
         // Find null terminator for short description
+        var nullPos = Id3v2TextEncoding.FindNullTerminator(remaining, encoding, 0);
+        if (nullPos < 0)
+            return Id3v2TextEncoding.DecodeString(encoding, remaining);
+
+        var textStart = nullPos + Id3v2TextEncoding.NullTerminatorSize(encoding);
+        if (textStart >= remaining.Length)
+            return string.Empty;
+
+        return Id3v2TextEncoding.DecodeString(encoding, remaining[textStart..]);
+    }
+
+    private static string? ReadUnsynchronizedLyricsFrame(ReadOnlySpan<byte> data)
+    {
+        // USLT frame: encoding(1) + language(3) + content descriptor(null-terminated) + lyrics text
+        if (data.Length < 4)
+            return null;
+
+        var encoding = data[0];
+        // Skip language (3 bytes)
+        var remaining = data[4..];
+
+        // Find null terminator for descriptor
         var nullPos = Id3v2TextEncoding.FindNullTerminator(remaining, encoding, 0);
         if (nullPos < 0)
             return Id3v2TextEncoding.DecodeString(encoding, remaining);
@@ -466,7 +496,9 @@ internal static class Id3v2Reader
         Id3v2FrameId.ConductorV22 => Id3v2FrameId.Conductor,
         Id3v2FrameId.CopyrightV22 => Id3v2FrameId.Copyright,
         Id3v2FrameId.BpmV22 => Id3v2FrameId.Bpm,
+        Id3v2FrameId.IsrcV22 => Id3v2FrameId.Isrc,
         Id3v2FrameId.CommentV22 => Id3v2FrameId.Comment,
+        Id3v2FrameId.LyricsV22 => Id3v2FrameId.Lyrics,
         Id3v2FrameId.PictureV22 => Id3v2FrameId.Picture,
         Id3v2FrameId.UserDefinedTextV22 => Id3v2FrameId.UserDefinedText,
         _ => v22Id,

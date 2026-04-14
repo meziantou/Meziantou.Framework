@@ -72,12 +72,18 @@ var settings = InlineSnapshotSettings.Default with
     SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite,
 };
 
+InlineSnapshot.Validate(data, settings, "");
+````
+
+If you prefer, you can use the builder syntax:
+
+````c#
 InlineSnapshot.CreateBuilder()
     .WithSettings(settings)
     .Validate(data, "");
 ````
 
-If you prefer, you can use the alternative syntax:
+Or configure settings inline:
 
 ````c#
 InlineSnapshot.CreateBuilder()

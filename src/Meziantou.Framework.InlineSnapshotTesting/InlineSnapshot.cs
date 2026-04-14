@@ -72,7 +72,23 @@ public static class InlineSnapshot
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static void Validate(object? subject, string? expected = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
-        var settings = InlineSnapshotSettings.Default;
+        Validate(subject, InlineSnapshotSettings.Default, expected, filePath, lineNumber);
+    }
+
+    /// <summary>
+    /// Validates that the serialized representation of the subject matches the expected snapshot using the provided settings.
+    /// If the snapshot doesn't match, the source file is updated with the actual value based on the configured update strategy.
+    /// </summary>
+    /// <param name="subject">The object to validate.</param>
+    /// <param name="settings">The settings to use for validation. If null, <see cref="InlineSnapshotSettings.Default"/> is used.</param>
+    /// <param name="expected">The expected snapshot value. This parameter will be automatically updated when the snapshot changes.</param>
+    /// <param name="filePath">The source file path. Automatically populated by the compiler.</param>
+    /// <param name="lineNumber">The line number in the source file. Automatically populated by the compiler.</param>
+    [InlineSnapshotAssertion(nameof(expected))]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static void Validate(object? subject, InlineSnapshotSettings? settings, string? expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+    {
+        settings ??= InlineSnapshotSettings.Default;
         var context = CallerContext.Get(settings, filePath, lineNumber);
         ShouldMatchInlineSnapshot(subject, context, settings, expected);
     }

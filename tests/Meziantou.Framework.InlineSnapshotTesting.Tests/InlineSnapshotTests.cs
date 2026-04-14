@@ -53,6 +53,40 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void Validate_WithSettings()
+    {
+        InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "{}");
+    }
+
+    [Fact]
+    public async Task UpdateSnapshotUsingQuotedString_WithSettings()
+    {
+        await AssertSnapshot(
+            """
+            var settings = InlineSnapshotSettings.Default;
+            InlineSnapshot.Validate(new object(), settings, "");
+            """,
+            """
+            var settings = InlineSnapshotSettings.Default;
+            InlineSnapshot.Validate(new object(), settings, "{}");
+            """);
+    }
+
+    [Fact]
+    public async Task UpdateSnapshotWhenExpectedIsNull_WithSettings()
+    {
+        await AssertSnapshot(
+            """
+            var settings = InlineSnapshotSettings.Default;
+            InlineSnapshot.Validate(new object(), settings, expected: null);
+            """,
+            """
+            var settings = InlineSnapshotSettings.Default;
+            InlineSnapshot.Validate(new object(), settings, expected: "{}");
+            """);
+    }
+
+    [Fact]
     public async Task UpdateSnapshotUsingQuotedString()
     {
         await AssertSnapshot(
@@ -1189,13 +1223,13 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 }
             }
 
-            psi.EnvironmentVariables.Add("DiffEngine_Disabled", "true");
-            psi.EnvironmentVariables.Add("MF_CurrentDirectory", Environment.CurrentDirectory);
+            psi.EnvironmentVariables["DiffEngine_Disabled"] = "true";
+            psi.EnvironmentVariables["MF_CurrentDirectory"] = Environment.CurrentDirectory;
             if (environmentVariables is not null)
             {
                 foreach (var variable in environmentVariables)
                 {
-                    psi.EnvironmentVariables.Add(variable.Key, variable.Value);
+                    psi.EnvironmentVariables[variable.Key] = variable.Value;
                 }
             }
 

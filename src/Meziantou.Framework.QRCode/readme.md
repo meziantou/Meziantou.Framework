@@ -1,6 +1,6 @@
 # Meziantou.Framework.QRCode
 
-QR code generation library with SVG and console renderers. Implements the QR code specification from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes.
+QR code generation library with SVG, PNG, and console renderers. Implements the QR code specification from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes.
 
 ## Supported QR Code Types
 
@@ -43,6 +43,20 @@ var customSvg = standardQr.ToSvg(new QRCodeSvgOptions
     QuietZoneModules = 4,
     DarkColor = "#000000",
     LightColor = "#ffffff",
+});
+```
+
+### Render as PNG
+
+```csharp
+var png = standardQr.ToPng();
+File.WriteAllBytes("qrcode.png", png);
+
+using var stream = File.Create("micro-qrcode.png");
+microQr.WriteToPng(stream, new QRCodePngOptions
+{
+    ModuleSize = 4,
+    QuietZoneModules = 2,
 });
 ```
 

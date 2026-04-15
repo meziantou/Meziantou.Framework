@@ -27,6 +27,6 @@ public class AssertionExceptionBuilder
         if (msTestV2AssertionType != null)
             return (Exception)Activator.CreateInstance(msTestV2AssertionType, message)!;
 
-        throw new InlineSnapshotAssertionException(message);
+        return new InlineSnapshotAssertionException(message);
     }
 }

@@ -117,6 +117,17 @@ public class CsvReader
                             value.Append(c.Value);
                             c = await ReadCharAsync().ConfigureAwait(false);
                             ColumnNumber++;
+                            if (!c.HasValue)
+                            {
+                                endOfStream = true;
+                                if (hasCell)
+                                {
+                                    rowValues.Add(value.ToString());
+                                }
+
+                                RowNumber++;
+                                break;
+                            }
                         }
 
                         LineNumber++;

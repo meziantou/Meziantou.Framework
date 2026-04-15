@@ -5,10 +5,11 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Meziantou.Framework;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
-internal record struct CallerContext(string FilePath, int LineNumber, int ColumnNumber, string MethodName, string? ParameterName, int ParameterIndex, string? AssemblyLocation)
+internal record struct CallerContext(FullPath FilePath, int LineNumber, int ColumnNumber, string MethodName, string? ParameterName, int ParameterIndex, string? AssemblyLocation)
 {
     private static readonly ConcurrentDictionary<string, Version?> LanguageVersionCache = new(StringComparer.Ordinal);
 
@@ -72,7 +73,10 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
             throw new InlineSnapshotException($"Cannot find the method to update in the call stack. Be sure at least one method from the stack is decorated with '{nameof(InlineSnapshotAssertionAttribute)}'.");
 
         var pdbFileName = callerFrame.GetFileName();
-        if (settings.ValidateSourceFilePathUsingPdbInfoWhenAvailable && pdbFileName is not null && filePath is not null && pdbFileName != filePath)
+        var stackTraceFilePath = pdbFileName is not null ? (FullPath?)FullPath.FromPath(pdbFileName) : null;
+        var callerFilePath = filePath is not null ? (FullPath?)FullPath.FromPath(filePath) : null;
+
+        if (settings.ValidateSourceFilePathUsingPdbInfoWhenAvailable && stackTraceFilePath is not null && callerFilePath is not null && stackTraceFilePath != callerFilePath)
         {
             throw new InlineSnapshotException($"""
                 The call stack doesn't match the file to update. This may happen when you build the project in Release configuration.
@@ -91,10 +95,10 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
                 """");
         }
 
-        filePath ??= pdbFileName;
+        var resolvedFilePath = callerFilePath ?? stackTraceFilePath;
         var column = callerFrame.GetFileColumnNumber();
 
-        if (filePath is null)
+        if (resolvedFilePath is null)
             throw new InlineSnapshotException("Cannot find the file to update from the call stack. The PDB may be missing.");
 
         if (methodName is null)
@@ -107,7 +111,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
             assemblyLocation = callerFrame.GetMethod()?.DeclaringType?.Assembly?.Location;
         }
 
-        return new CallerContext(filePath, lineNumber, column, methodName, parameterName, parameterIndex, assemblyLocation);
+        return new CallerContext(resolvedFilePath.Value, lineNumber, column, methodName, parameterName, parameterIndex, assemblyLocation);
     }
 
     public readonly string[]? GetCompilationDefines()
@@ -297,4 +301,3 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         return match.Success;
     }
 }
-

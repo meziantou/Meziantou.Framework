@@ -1,5 +1,6 @@
 using DiffEngine;
 
+using Meziantou.Framework;
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
@@ -80,10 +81,11 @@ public abstract class MergeTool
 
     private protected static string CopyFileToTemp(string path)
     {
-        var temp = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
-        Directory.CreateDirectory(temp);
-        var filePath = Path.Combine(temp, Path.GetFileName(path));
-        File.Copy(path, filePath, overwrite: false);
+        var sourcePath = FullPath.FromPath(path);
+        var tempDirectory = FullPath.GetTempPath() / Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(tempDirectory);
+        var filePath = tempDirectory / sourcePath.Name;
+        File.Copy(sourcePath, filePath, overwrite: false);
         return filePath;
     }
 }

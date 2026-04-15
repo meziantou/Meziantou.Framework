@@ -86,6 +86,8 @@
     <Project Path="src/Meziantou.Framework.SimpleQueryLanguage/Meziantou.Framework.SimpleQueryLanguage.csproj" />
     <Project Path="src/Meziantou.Framework.SingleInstance/Meziantou.Framework.SingleInstance.csproj" />
     <Project Path="src/Meziantou.Framework.Slug/Meziantou.Framework.Slug.csproj" />
+    <Project Path="src/Meziantou.Framework.SnapshotTesting.Common/Meziantou.Framework.SnapshotTesting.Common.csproj" />
+    <Project Path="src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
     <Project Path="src/Meziantou.Framework.StronglyTypedId.Interfaces/Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
     <Project Path="src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
@@ -180,6 +182,7 @@
     <Project Path="tests/Meziantou.Framework.SimpleQueryLanguage.Tests/Meziantou.Framework.SimpleQueryLanguage.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.SingleInstance.Tests/Meziantou.Framework.SingleInstance.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Slug.Tests/Meziantou.Framework.Slug.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Templating.Html.Tests/Meziantou.Framework.Templating.Html.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Templating.Tests/Meziantou.Framework.Templating.Tests.csproj" />

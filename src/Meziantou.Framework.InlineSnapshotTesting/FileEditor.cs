@@ -5,18 +5,19 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
 using System.Diagnostics;
+using Meziantou.Framework;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 internal static class FileEditor
 {
-    private static readonly ConcurrentDictionary<string, Lock> FileLocks = new(StringComparer.Ordinal);
-    private static readonly ConcurrentDictionary<string, string> TempFiles = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<FullPath, Lock> FileLocks = new();
+    private static readonly ConcurrentDictionary<FullPath, FullPath> TempFiles = new();
 
-    private static readonly Dictionary<string, List<FileEdit>> Changes = new(StringComparer.Ordinal);
-    private static readonly HashSet<string> Errors = new(StringComparer.Ordinal);
+    private static readonly Dictionary<FullPath, List<FileEdit>> Changes = [];
+    private static readonly HashSet<FullPath> Errors = [];
 
-    private static int GetActualLine(string fullPath, int startLine)
+    private static int GetActualLine(FullPath fullPath, int startLine)
     {
         if (Changes.TryGetValue(fullPath, out var edits))
         {
@@ -36,7 +37,7 @@ internal static class FileEditor
         return startLine;
     }
 
-    private static SourceText GetSourceText(InlineSnapshotSettings settings, string tempPath)
+    private static SourceText GetSourceText(InlineSnapshotSettings settings, FullPath tempPath)
     {
         using var fs = File.OpenRead(tempPath);
         using var stream = fs.CanSeek ? fs : CopyToMemoryStream(fs);
@@ -67,7 +68,7 @@ internal static class FileEditor
             if (Errors.Contains(context.FilePath))
                 throw new InlineSnapshotException("The previous merged cannot be resolved. Restart the tests to update this snapshot.");
 
-            var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cs"));
+            var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => FullPath.GetTempPath() / (Guid.NewGuid().ToString("N") + ".cs"));
             var preprocessorSymbols = context.GetCompilationDefines();
 
             // Find node to update
@@ -156,7 +157,7 @@ internal static class FileEditor
             // Create a temp file, show diff if needed, Move or let the tool update the file
             var encoding = settings.FileEncoding ?? sourceText.Encoding ?? DetectEncoding(context) ?? Encoding.UTF8;
 
-            Directory.CreateDirectory(Path.GetDirectoryName(tempPath)!);
+            tempPath.CreateParentDirectory();
             var tempFileInfo = new FileInfo(tempPath);
             if (tempFileInfo.Exists)
             {

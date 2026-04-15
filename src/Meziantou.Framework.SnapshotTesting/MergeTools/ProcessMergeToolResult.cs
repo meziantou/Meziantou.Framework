@@ -1,0 +1,11 @@
+using System.Diagnostics;
+
+namespace Meziantou.Framework.SnapshotTesting.MergeTools;
+
+internal sealed class ProcessMergeToolResult(Process process) : MergeToolResult
+{
+    public Process Process { get; } = process;
+
+    public override void WaitForExit() => Process.WaitForExit();
+    public override void Dispose() => Process.Dispose();
+}

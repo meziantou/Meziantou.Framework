@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using DiffEngine;
+using Meziantou.Framework;
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 

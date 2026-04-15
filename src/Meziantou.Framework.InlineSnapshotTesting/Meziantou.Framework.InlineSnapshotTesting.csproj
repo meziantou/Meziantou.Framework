@@ -3,10 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net472;net48</TargetFrameworks>
     <Description>Enables verification of objects using inline snapshots</Description>
-    <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
-
     <Version>3.3.42</Version>
-    <NoWarn>$(NoWarn);NU5100</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.SnapshotTesting.Common\Meziantou.Framework.SnapshotTesting.Common.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.HumanReadableSerializer\Meziantou.Framework.HumanReadableSerializer.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
   </ItemGroup>

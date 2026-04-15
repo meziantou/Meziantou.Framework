@@ -107,7 +107,12 @@ public static class MeziantouServiceDefaults
         builder.Services.AddOpenTelemetry()
             .ConfigureResource(x =>
             {
-                var name = builder.Environment.ApplicationName;
+                var name = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME");
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    name = builder.Environment.ApplicationName;
+                }
+
                 var version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
                 x.AddService(name, serviceVersion: version);
             })

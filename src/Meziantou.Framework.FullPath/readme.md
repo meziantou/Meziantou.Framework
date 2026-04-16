@@ -30,6 +30,12 @@ string relativePath = filePath.MakeRelativeTo(rootPath); // temp\meziantou.txt
 // Check if a path is under another path
 bool isChildOf = filePath.IsChildOf(rootPath);
 
+// Resolve to canonical final path (follows symbolic links/reparse points)
+if (filePath.TryGetCanonicalPath(out var canonicalPath))
+{
+    Console.WriteLine(canonicalPath);
+}
+
 // FullPath is implicitly converted to string, so it works well with File/Directory methods
 System.IO.File.WriteAllText(filePath, content);
 ````

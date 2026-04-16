@@ -152,6 +152,14 @@ namespace Meziantou.Framework
                 IntPtr overlapped
             );
 
+            [DllImport(Kernel32Name, EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+            [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+            internal static extern uint GetFinalPathNameByHandle(
+                SafeFileHandle hFile,
+                [Out] char[] lpszFilePath,
+                uint cchFilePath,
+                uint dwFlags);
+
             internal const int MAX_PATH = 260;
 
             [StructLayout(LayoutKind.Sequential)]

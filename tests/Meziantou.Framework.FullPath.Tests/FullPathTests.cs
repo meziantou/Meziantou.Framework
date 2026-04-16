@@ -254,6 +254,38 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public async Task TryGetCanonicalPath_File()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var file = temp.CreateEmptyFile("a.txt");
+
+        Assert.True(file.TryGetCanonicalPath(out var canonicalPath));
+        Assert.True(File.Exists(canonicalPath));
+    }
+
+    [Fact]
+    public async Task TryGetCanonicalPath_SymbolicLink()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var target = temp.CreateEmptyFile("a.txt");
+        var symlink = temp.GetFullPath("b.txt");
+        CreateSymlink(symlink, "a.txt", SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
+
+        Assert.True(target.TryGetCanonicalPath(out var expected));
+        Assert.True(symlink.TryGetCanonicalPath(out var actual));
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public async Task TryGetCanonicalPath_MissingPath()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var missingPath = temp.GetFullPath("missing.txt");
+
+        Assert.False(missingPath.TryGetCanonicalPath(out _));
+    }
+
+    [Fact]
     public void ChangeExtension()
     {
         var actual = FullPath.FromPath("test.a.txt").ChangeExtension(".avi");

@@ -3,7 +3,7 @@ namespace Meziantou.Framework;
 /// <summary>Represents a completed buffered process execution.</summary>
 public sealed class BufferedProcessResult : ProcessResult
 {
-    internal BufferedProcessResult(int processId, int exitCode, DateTimeOffset startDate, DateTimeOffset exitDate, ProcessOutputCollection output)
+    internal BufferedProcessResult(int processId, ProcessExitCode exitCode, DateTimeOffset startDate, DateTimeOffset exitDate, ProcessOutputCollection output)
         : base(processId, exitCode, startDate, exitDate)
     {
         Output = output;

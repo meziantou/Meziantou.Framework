@@ -10,7 +10,10 @@ var result = await ProcessWrapper.Create("dotnet")
     .WithArguments("--version")
     .ExecuteAsync();
 
-int exitCode = result.ExitCode;
+if (result.ExitCode.IsSuccess)
+{
+    Console.WriteLine("Process succeeded");
+}
 ````
 
 ## Buffered execution
@@ -250,6 +253,7 @@ var result = await ProcessWrapper.Create("false")
     .WithValidation(ProcessValidationMode.None)
     .ExecuteAsync();
 int exitCode = result.ExitCode;
+bool isSuccess = result.ExitCode.IsSuccess;
 
 // Fail on stderr output as well
 await ProcessWrapper.Create("my-command")

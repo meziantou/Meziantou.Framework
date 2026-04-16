@@ -88,6 +88,104 @@ public sealed class SnapshotTests
         Assert.True(fileName.Length <= settings.MaxSnapshotFileNameLength);
     }
 
+    [Fact]
+    public void Validate_UsesSnapshotTypeExtension()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var snapshotType = SnapshotType.Png;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
+            FileNameStrategy = context => $"{context.Type.Type}_{context.Index}.{context.Extension}",
+            PathStrategy = context => directory / context.FileName,
+        };
+
+        settings.SetSnapshotSerializer(snapshotType, new SnapshotTypeSerializer());
+        Snapshot.Validate(snapshotType, "sample", settings);
+
+        var filePath = directory / "png_0.png";
+        Assert.True(File.Exists(filePath));
+        Assert.Equal("png", File.ReadAllText(filePath));
+    }
+
+    [Fact]
+    public void DefaultSerializer_HandlesByteArrayAsBinary()
+    {
+        var serializer = new HumanReadableSnapshotSerializer();
+        var snapshotType = SnapshotType.Png;
+        var expectedBytes = "binary-data"u8.ToArray();
+
+        var data = serializer.Serialize(snapshotType, expectedBytes);
+
+        var snapshot = Assert.Single(data);
+        Assert.Equal(snapshotType.Type, snapshot.Extension);
+        Assert.Equal(expectedBytes, snapshot.Data);
+    }
+
+    [Fact]
+    public void DefaultSerializer_HandlesStreamAsBinary()
+    {
+        var serializer = new HumanReadableSnapshotSerializer();
+        var snapshotType = SnapshotType.Png;
+        var expectedBytes = "stream-binary-data"u8.ToArray();
+        using var stream = new MemoryStream(expectedBytes);
+        stream.Position = 5;
+
+        var data = serializer.Serialize(snapshotType, stream);
+
+        var snapshot = Assert.Single(data);
+        Assert.Equal(snapshotType.Type, snapshot.Extension);
+        Assert.Equal(expectedBytes, snapshot.Data);
+        Assert.Equal(5, stream.Position);
+    }
+
+    [Fact]
+    public void Validate_CreatesReceivedFileWhenSnapshotChanged()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateDeterministicSnapshotSettings(directory, "actual");
+        var expectedPath = directory.GetFullPath("snapshot_0.txt");
+        var receivedPath = directory.GetFullPath("snapshot_0.received.txt");
+
+        File.WriteAllText(expectedPath, "expected");
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
+
+        Assert.True(File.Exists(receivedPath));
+        Assert.Equal("actual", File.ReadAllText(receivedPath));
+    }
+
+    [Fact]
+    public void Validate_RetriesWhenReceivedFileIsLocked()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateDeterministicSnapshotSettings(directory, "actual");
+        var expectedPath = directory.GetFullPath("snapshot_0.txt");
+        var receivedPath = directory.GetFullPath("snapshot_0.received.txt");
+
+        File.WriteAllText(expectedPath, "expected");
+        File.WriteAllText(receivedPath, "locked");
+
+        var lockStream = new FileStream(receivedPath, FileMode.Open, FileAccess.Read, FileShare.None);
+        var releaseTask = Task.Run(() =>
+        {
+            Thread.Sleep(250);
+            lockStream.Dispose();
+        });
+
+        try
+        {
+            Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
+        }
+        finally
+        {
+            releaseTask.GetAwaiter().GetResult();
+        }
+
+        Assert.Equal("actual", File.ReadAllText(receivedPath));
+    }
+
     private static void ValidateWithSerializerCount(SnapshotSettings settings, int count)
     {
         settings.SetSnapshotSerializer(SnapshotType.Default, new FixedCountSerializer(count));
@@ -105,6 +203,37 @@ public sealed class SnapshotTests
             }
 
             return result;
+        }
+    }
+
+    private static SnapshotSettings CreateDeterministicSnapshotSettings(TemporaryDirectory directory, string serializedValue)
+    {
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
+            FileNameStrategy = static _ => "snapshot_0.txt",
+            PathStrategy = context => directory / context.FileName,
+        };
+
+        settings.SetSnapshotSerializer(SnapshotType.Default, new FixedValueSerializer(serializedValue));
+        return settings;
+    }
+
+    private sealed class SnapshotTypeSerializer : ISnapshotSerializer
+    {
+        public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object? value)
+        {
+            return [new SnapshotData("txt", Encoding.UTF8.GetBytes(type.Type))];
+        }
+    }
+
+    private sealed class FixedValueSerializer(string value) : ISnapshotSerializer
+    {
+        public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object? value_)
+        {
+            return [new SnapshotData("txt", Encoding.UTF8.GetBytes(value))];
         }
     }
 

@@ -17,3 +17,14 @@ public class SampleTests
 ```
 
 You can configure serializers, comparers, path and naming strategies with `SnapshotSettings`.
+
+You can also select a specific snapshot type explicitly:
+
+```csharp
+Snapshot.Validate(SnapshotType.Png, imageBytes);
+```
+
+When a type is provided, its value is used as the snapshot file extension.
+The default serializer treats `byte[]` and `Stream` values as binary data and writes the bytes directly (without converting them to text).
+
+When an existing snapshot differs from the new value, a `.received.<extension>` file is written next to the expected snapshot with the new content.

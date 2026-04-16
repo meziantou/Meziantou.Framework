@@ -1,7 +1,8 @@
 namespace Meziantou.Framework.SnapshotTesting;
 
-public sealed record class SnapshotType(string Type)
+public readonly record struct SnapshotType(string Type)
 {
-    public static SnapshotType Default { get; } = new("default");
+    public static SnapshotType Default { get; } = new("");
+    public static SnapshotType Png { get; } = new("png");
 }
 

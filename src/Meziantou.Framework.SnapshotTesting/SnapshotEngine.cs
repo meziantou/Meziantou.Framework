@@ -6,23 +6,24 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 internal static class SnapshotEngine
 {
-    public static void Validate(object? value, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext)
+    public static void Validate(SnapshotType type, object? value, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
         var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName);
-        var snapshotType = SnapshotType.Default;
-        var serializer = settings.GetSnapshotSerializer(snapshotType);
-        var serialized = serializer.Serialize(snapshotType, value);
+        var serializer = settings.GetSnapshotSerializer(type);
+        var serialized = serializer.Serialize(type, value);
 
         if (serialized is null || serialized.Count == 0)
             throw new SnapshotException("Serializer returned no snapshot data.");
 
-        var actualFiles = BuildActualFiles(settings, callerContext, snapshotType, serialized, testContext);
+        var actualFiles = BuildActualFiles(settings, callerContext, type, serialized, testContext);
         var expectedFilePaths = DiscoverExpectedFilePaths(actualFiles);
         var expectedFiles = LoadSnapshotFiles(expectedFilePaths);
 
-        var comparison = Compare(settings, snapshotType, actualFiles, expectedFiles);
+        var comparison = Compare(settings, type, actualFiles, expectedFiles);
+        WriteReceivedSnapshots(actualFiles, comparison.ChangedPaths);
+
         if (!comparison.HasDifferences && !settings.ForceUpdateSnapshots)
             return;
 
@@ -69,7 +70,7 @@ internal static class SnapshotEngine
         }
 
         var message = BuildMessage(settings, missingPaths, extraPaths, changedPaths, expectedFiles, actualByPath);
-        return new SnapshotComparisonResult(true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths));
+        return new SnapshotComparisonResult(true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths), [.. changedPaths]);
     }
 
     private static string BuildMessage(
@@ -162,6 +163,7 @@ internal static class SnapshotEngine
         for (var index = 0; index < serialized.Count; index++)
         {
             var snapshotData = serialized[index];
+            var extension = string.IsNullOrEmpty(type.Type) ? snapshotData.Extension : type.Type;
             var fileName = settings.FileNameStrategy(new SnapshotFileNameContext(
                 callerContext.SourceFilePath,
                 callerContext.MethodName,
@@ -169,7 +171,7 @@ internal static class SnapshotEngine
                 callerContext.LineNumber,
                 type,
                 index,
-                snapshotData.Extension,
+                extension,
                 testContext,
                 settings));
 
@@ -266,6 +268,58 @@ internal static class SnapshotEngine
         }
     }
 
+    private static void WriteReceivedSnapshots(IReadOnlyList<SnapshotFile> actualFiles, IReadOnlyCollection<FullPath> changedPaths)
+    {
+        if (changedPaths.Count == 0)
+            return;
+
+        var actualByPath = actualFiles.ToDictionary(static item => item.FilePath, static item => item.Data.Data);
+        foreach (var changedPath in changedPaths)
+        {
+            if (!actualByPath.TryGetValue(changedPath, out var data))
+                continue;
+
+            var receivedPath = GetReceivedSnapshotPath(changedPath);
+            WriteAllBytesWithRetry(receivedPath, data);
+        }
+    }
+
+    private static FullPath GetReceivedSnapshotPath(FullPath expectedSnapshotPath)
+    {
+        if (expectedSnapshotPath.Extension.Length == 0)
+            return expectedSnapshotPath.Parent / (expectedSnapshotPath.Name + ".received");
+
+        return expectedSnapshotPath.ChangeExtension(".received" + expectedSnapshotPath.Extension);
+    }
+
+    private static void WriteAllBytesWithRetry(FullPath path, byte[] data)
+    {
+        const int maxAttemptCount = 8;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                path.CreateParentDirectory();
+                var fileInfo = new FileInfo(path);
+                if (fileInfo.Exists)
+                {
+                    fileInfo.TrySetReadOnly(false);
+                }
+
+                File.WriteAllBytes(path, data);
+                return;
+            }
+            catch (IOException) when (attempt < maxAttemptCount)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
+            }
+            catch (UnauthorizedAccessException) when (attempt < maxAttemptCount)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
+            }
+        }
+    }
+
     private static void ThrowAssertion(SnapshotSettings settings, string message)
     {
         throw settings.AssertionExceptionCreator.CreateException(message);
@@ -285,8 +339,8 @@ internal static class SnapshotEngine
         }
     }
 
-    private readonly record struct SnapshotComparisonResult(bool HasDifferences, string Message, string? ExpectedSummary, string? ActualSummary)
+    private readonly record struct SnapshotComparisonResult(bool HasDifferences, string Message, string? ExpectedSummary, string? ActualSummary, IReadOnlyCollection<FullPath> ChangedPaths)
     {
-        public static SnapshotComparisonResult NoDifference { get; } = new(false, "", null, null);
+        public static SnapshotComparisonResult NoDifference { get; } = new(false, "", null, null, []);
     }
 }

@@ -41,7 +41,51 @@ public sealed class HumanReadableSnapshotSerializer : ISnapshotSerializer
 
     public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object? value)
     {
+        if (value is byte[] bytes)
+        {
+            return [new SnapshotData(GetBinaryExtension(type), bytes)];
+        }
+
+        if (value is Stream stream)
+        {
+            return [new SnapshotData(GetBinaryExtension(type), ReadStream(stream))];
+        }
+
         return [new SnapshotData("txt", Encoding.UTF8.GetBytes(HumanReadableSerializer.Serialize(value, Options)))];
+    }
+
+    private static string? GetBinaryExtension(SnapshotType type)
+    {
+        if (string.IsNullOrWhiteSpace(type.Type))
+            return null;
+
+        return type.Type;
+    }
+
+    private static byte[] ReadStream(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        if (stream.CanSeek)
+        {
+            var originalPosition = stream.Position;
+            stream.Position = 0;
+
+            try
+            {
+                using var memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+                return memoryStream.ToArray();
+            }
+            finally
+            {
+                stream.Position = originalPosition;
+            }
+        }
+
+        using var streamContent = new MemoryStream();
+        stream.CopyTo(streamContent);
+        return streamContent.ToArray();
     }
 }
 

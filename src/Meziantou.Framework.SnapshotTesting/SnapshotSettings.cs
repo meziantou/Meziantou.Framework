@@ -159,21 +159,18 @@ public sealed record SnapshotSettings
 
     public void SetSnapshotSerializer(SnapshotType type, ISnapshotSerializer serializer)
     {
-        ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(serializer);
         _serializers[type] = serializer;
     }
 
     public void SetSnapshotComparer(SnapshotType type, ISnapshotComparer comparer)
     {
-        ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(comparer);
         _comparers[type] = comparer;
     }
 
     public ISnapshotSerializer GetSnapshotSerializer(SnapshotType type)
     {
-        ArgumentNullException.ThrowIfNull(type);
         if (_serializers.TryGetValue(type, out var serializer))
             return serializer;
 
@@ -182,7 +179,6 @@ public sealed record SnapshotSettings
 
     public ISnapshotComparer GetSnapshotComparer(SnapshotType type)
     {
-        ArgumentNullException.ThrowIfNull(type);
         if (_comparers.TryGetValue(type, out var comparer))
             return comparer;
 
@@ -269,4 +265,3 @@ public sealed record SnapshotSettings
         return buffer.ToString().Trim('_');
     }
 }
-

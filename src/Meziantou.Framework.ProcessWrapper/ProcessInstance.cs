@@ -152,9 +152,9 @@ public class ProcessInstance
         }
     }
 
-    private ProcessExecutionException? GetValidationException(int exitCode)
+    private ProcessExecutionException? GetValidationException(ProcessExitCode exitCode)
     {
-        if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && exitCode != 0)
+        if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && !exitCode.IsSuccess)
         {
             return new ProcessExecutionException(exitCode);
         }
@@ -172,7 +172,7 @@ public class ProcessInstance
     {
         Exception? inputStreamException = null;
         Exception? outputStreamException = null;
-        var exitCode = default(int);
+        var exitCode = default(ProcessExitCode);
         var exitDate = default(DateTimeOffset);
         var processExited = false;
 
@@ -198,7 +198,7 @@ public class ProcessInstance
                 outputStreamException = ex;
             }
 
-            exitCode = process.ExitCode;
+            exitCode = new ProcessExitCode(process.ExitCode);
             exitDate = DateTimeOffset.UtcNow;
             processExited = true;
         }
@@ -218,7 +218,7 @@ public class ProcessInstance
             {
                 if (processExited)
                 {
-                    activity.SetTag("process.exit.code", exitCode);
+                    activity.SetTag("process.exit.code", (int)exitCode);
 
                     if (!_cancellationToken.IsCancellationRequested)
                     {
@@ -238,14 +238,14 @@ public class ProcessInstance
         return new ProcessCompletion(exitCode, exitDate, inputStreamException, outputStreamException);
     }
 
-    private protected virtual ProcessResult CreateProcessResult(int exitCode, DateTimeOffset exitDate)
+    private protected virtual ProcessResult CreateProcessResult(ProcessExitCode exitCode, DateTimeOffset exitDate)
     {
         return new ProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate);
     }
 
     private sealed class ProcessCompletion
     {
-        public ProcessCompletion(int exitCode, DateTimeOffset exitDate, Exception? inputStreamException, Exception? outputStreamException)
+        public ProcessCompletion(ProcessExitCode exitCode, DateTimeOffset exitDate, Exception? inputStreamException, Exception? outputStreamException)
         {
             ExitCode = exitCode;
             ExitDate = exitDate;
@@ -253,7 +253,7 @@ public class ProcessInstance
             OutputStreamException = outputStreamException;
         }
 
-        public int ExitCode { get; }
+        public ProcessExitCode ExitCode { get; }
 
         public DateTimeOffset ExitDate { get; }
 

@@ -1,9 +1,6 @@
 #nullable enable
 
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
-using Meziantou.Framework;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
@@ -157,17 +154,16 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void Validate_RetriesWhenReceivedFileIsLocked()
+    public async Task Validate_RetriesWhenReceivedFileIsLocked()
     {
         using var directory = TemporaryDirectory.Create();
         var settings = CreateDeterministicSnapshotSettings(directory, "actual");
         var expectedPath = directory.GetFullPath("snapshot_0.txt");
         var receivedPath = directory.GetFullPath("snapshot_0.received.txt");
+        await File.WriteAllTextAsync(expectedPath, "expected");
+        await File.WriteAllTextAsync(receivedPath, "locked");
 
-        File.WriteAllText(expectedPath, "expected");
-        File.WriteAllText(receivedPath, "locked");
-
-        var lockStream = new FileStream(receivedPath, FileMode.Open, FileAccess.Read, FileShare.None);
+        await using var lockStream = new FileStream(receivedPath, FileMode.Open, FileAccess.Read, FileShare.None);
         var releaseTask = Task.Run(() =>
         {
             Thread.Sleep(250);
@@ -180,10 +176,10 @@ public sealed class SnapshotTests
         }
         finally
         {
-            releaseTask.GetAwaiter().GetResult();
+            await releaseTask;
         }
 
-        Assert.Equal("actual", File.ReadAllText(receivedPath));
+        Assert.Equal("actual", await File.ReadAllTextAsync(receivedPath));
     }
 
     private static void ValidateWithSerializerCount(SnapshotSettings settings, int count)
@@ -213,7 +209,7 @@ public sealed class SnapshotTests
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
             AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
-            FileNameStrategy = static _ => "snapshot_0.txt",
+            FileNameStrategy = _ => "snapshot_0.txt",
             PathStrategy = context => directory / context.FileName,
         };
 

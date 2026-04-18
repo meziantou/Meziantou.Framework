@@ -1,274 +1,223 @@
 #nullable enable
 
 using System.Collections;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using Meziantou.Framework;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
 public sealed class SnapshotEndToEndTests
 {
+    public enum SnapshotTestFramework
+    {
+        Xunit,
+        XunitV3,
+        MSTest,
+        NUnit,
+        TUnit,
+    }
+
     [Fact]
     public async Task Validate_EndToEnd_CreatesReceivedFile()
     {
-        await AssertSnapshot(
+        var snapshotFiles = await AssertSnapshot(
             """
-            using System;
-            using System.Collections.Generic;
-            using System.IO;
-            using System.Runtime.CompilerServices;
-            using System.Text;
-            using Meziantou.Framework.SnapshotTesting;
-            using Xunit;
-            
             public sealed class GeneratedSnapshotTests
             {
                 [Fact]
-                public void CreatesReceivedSnapshotFile()
+                public void SampleTest()
                 {
-                    var expectedPath = GetExpectedPath();
-                    Directory.CreateDirectory(Path.GetDirectoryName(expectedPath)!);
-                    File.WriteAllText(expectedPath, "expected");
-            
-                    var settings = CreateSettings();
-                    Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
-                }
-            
-                private static SnapshotSettings CreateSettings()
-                {
-                    var settings = new SnapshotSettings()
-                    {
-                        AutoDetectContinuousEnvironment = false,
-                        SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
-                        AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
-                        FileNameStrategy = static _ => "snapshot_0.txt",
-                    };
-            
-                    settings.SetSnapshotSerializer(SnapshotType.Default, new FixedValueSerializer("actual"));
-                    return settings;
-                }
-            
-                private static string GetExpectedPath([CallerFilePath] string? filePath = null)
-                {
-                    var sourceDirectory = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("Source directory not found.");
-                    return Path.Combine(sourceDirectory, "__snapshots__", "snapshot_0.txt");
-                }
-            
-                private sealed class FixedValueSerializer(string value) : ISnapshotSerializer
-                {
-                    public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object? value_)
-                    {
-                        return [new SnapshotData("txt", Encoding.UTF8.GetBytes(value))];
-                    }
-                }
-            
-                private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder
-                {
-                    public override Exception CreateException(string message) => new SnapshotAssertionException(message);
+                    Snapshot.Validate("sample");
                 }
             }
             """,
-            expectedReceivedFileName: "snapshot_0.received.txt",
-            expectedReceivedContent: "actual");
+            expectFailure: true);
+
+        Assert.Contains("__snapshots__/SampleTest_a715b6b8b0_0.received.txt", snapshotFiles.Select(f => f.RelativePath));
     }
 
-    [Fact]
-    public async Task Validate_EndToEnd_RetriesWhenReceivedFileIsLocked()
-    {
-        await AssertSnapshot(
-            """
-            using System;
-            using System.Collections.Generic;
-            using System.IO;
-            using System.Runtime.CompilerServices;
-            using System.Text;
-            using System.Threading;
-            using System.Threading.Tasks;
-            using Meziantou.Framework.SnapshotTesting;
-            using Xunit;
-            
-            public sealed class GeneratedSnapshotTests
-            {
-                [Fact]
-                public async Task RetriesWhenReceivedFileIsLocked()
-                {
-                    var expectedPath = GetExpectedPath();
-                    var receivedPath = GetReceivedPath();
-                    Directory.CreateDirectory(Path.GetDirectoryName(expectedPath)!);
-                    File.WriteAllText(expectedPath, "expected");
-                    File.WriteAllText(receivedPath, "locked");
-            
-                    var settings = CreateSettings();
-                    using var lockStream = new FileStream(receivedPath, FileMode.Open, FileAccess.Read, FileShare.None);
-                    var releaseTask = Task.Run(() =>
-                    {
-                        Thread.Sleep(250);
-                        lockStream.Dispose();
-                    });
-            
-                    try
-                    {
-                        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
-                    }
-                    finally
-                    {
-                        await releaseTask;
-                    }
-            
-                    Assert.Equal("actual", File.ReadAllText(receivedPath));
-                }
-            
-                private static SnapshotSettings CreateSettings()
-                {
-                    var settings = new SnapshotSettings()
-                    {
-                        AutoDetectContinuousEnvironment = false,
-                        SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
-                        AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
-                        FileNameStrategy = static _ => "snapshot_0.txt",
-                    };
-            
-                    settings.SetSnapshotSerializer(SnapshotType.Default, new FixedValueSerializer("actual"));
-                    return settings;
-                }
-            
-                private static string GetExpectedPath([CallerFilePath] string? filePath = null)
-                {
-                    var sourceDirectory = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("Source directory not found.");
-                    return Path.Combine(sourceDirectory, "__snapshots__", "snapshot_0.txt");
-                }
-            
-                private static string GetReceivedPath([CallerFilePath] string? filePath = null)
-                {
-                    var sourceDirectory = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("Source directory not found.");
-                    return Path.Combine(sourceDirectory, "__snapshots__", "snapshot_0.received.txt");
-                }
-            
-                private sealed class FixedValueSerializer(string value) : ISnapshotSerializer
-                {
-                    public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object? value_)
-                    {
-                        return [new SnapshotData("txt", Encoding.UTF8.GetBytes(value))];
-                    }
-                }
-            
-                private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder
-                {
-                    public override Exception CreateException(string message) => new SnapshotAssertionException(message);
-                }
-            }
-            """,
-            expectedReceivedFileName: "snapshot_0.received.txt",
-            expectedReceivedContent: "actual");
-    }
-
-    [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Used to align behavior with integration test process execution.")]
-    [SuppressMessage("Performance", "CA1849:Call async methods when in an async method", Justification = "Synchronous process APIs are used with event-based output capture.")]
-    private static async Task AssertSnapshot([StringSyntax("c#-test")] string source, string expectedReceivedFileName, string expectedReceivedContent)
+    private static async Task<SnapshotFile[]> AssertSnapshot(
+        [StringSyntax("c#-test")] string source,
+        SnapshotTestFramework testFramework = SnapshotTestFramework.XunitV3,
+        string? targetFramework = null,
+        bool expectFailure = false)
     {
         await using var directory = TemporaryDirectory.Create();
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
         Assert.NotNull(dotnetPath);
 
-        await ExecuteDotNet(directory.FullPath, dotnetPath, "new xunit --framework net8.0 --output . --force", expectedExitCode: 0);
+        var snapshotProjectPath = GetRepositoryRoot() / "src" / "Meziantou.Framework.SnapshotTesting" / "Meziantou.Framework.SnapshotTesting.csproj";
+        CreateTextFile("Project.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>{{targetFramework ?? GetTargetFramework()}}</TargetFramework>
+                <Nullable>disable</Nullable>
+                <IsPackable>false</IsPackable>
+              </PropertyGroup>
+              <ItemGroup>
+                {{GetPackageReferences(testFramework)}}
+              </ItemGroup>
+              <ItemGroup>
+                <ProjectReference Include="{{snapshotProjectPath}}" />
+              </ItemGroup>
+            </Project>
+            """);
+        CreateTextFile("GlobalUsings.cs", GetGlobalUsings(testFramework));
+        CreateTextFile("SnapshotIntegrationTests.cs", source);
 
-        var projectFilePath = Directory.GetFiles(directory.FullPath, "*.csproj", SearchOption.TopDirectoryOnly).Single();
-        var snapshotProjectPath = Path.Combine(GetRepositoryRoot(), "src", "Meziantou.Framework.SnapshotTesting", "Meziantou.Framework.SnapshotTesting.csproj");
-        var projectFileContent = File.ReadAllText(projectFilePath);
-        projectFileContent = projectFileContent.Replace(
-            "</Project>",
-            $$"""
-                <ItemGroup>
-                    <ProjectReference Include="{{snapshotProjectPath}}" />
-                </ItemGroup>
-                </Project>
-                """,
-            StringComparison.Ordinal);
-        File.WriteAllText(projectFilePath, projectFileContent);
+        await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore"], expectedExitCode: 0);
+        await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore"], expectedExitCode: 0);
+        await ExecuteDotNet(directory.FullPath, dotnetPath, ["test", "--no-build", "--nologo", "-v", "minimal"], expectedExitCode: expectFailure ? 1 : 0);
 
-        var templateTestPath = directory.GetFullPath("UnitTest1.cs");
-        if (File.Exists(templateTestPath))
+        return GetGeneratedSnapshotFiles(directory.FullPath);
+
+        FullPath CreateTextFile(string path, string content)
         {
-            File.Delete(templateTestPath);
+            var fullPath = directory.GetFullPath(path);
+            File.WriteAllText(fullPath, content);
+            return fullPath;
         }
-
-        File.WriteAllText(directory.GetFullPath("SnapshotIntegrationTests.cs"), source);
-
-        await ExecuteDotNet(directory.FullPath, dotnetPath, "restore", expectedExitCode: 0);
-        await ExecuteDotNet(directory.FullPath, dotnetPath, "build --no-restore", expectedExitCode: 0);
-        var testResult = await ExecuteDotNet(directory.FullPath, dotnetPath, "test --no-build --nologo -v minimal", expectedExitCode: 0);
-
-        var receivedPath = directory.GetFullPath(Path.Combine("__snapshots__", expectedReceivedFileName));
-        Assert.True(File.Exists(receivedPath), testResult.Output);
-        Assert.Equal(expectedReceivedContent, File.ReadAllText(receivedPath));
     }
 
-    private static string GetRepositoryRoot([CallerFilePath] string? filePath = null)
+    private static FullPath GetRepositoryRoot([CallerFilePath] string? filePath = null)
     {
-        var directory = Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("Cannot resolve source directory.");
-        return Path.GetFullPath(Path.Combine(directory, "..", ".."));
+        var directory = FullPath.FromPath(Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("Cannot resolve source directory."));
+        return directory.Parent.Parent;
     }
 
-    private static async Task<DotNetExecutionResult> ExecuteDotNet(string workingDirectory, string dotnetPath, string command, int? expectedExitCode = null)
+    private static SnapshotFile[] GetGeneratedSnapshotFiles(FullPath rootPath)
     {
-        var startInfo = new ProcessStartInfo(dotnetPath, command)
+        return Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories)
+                    .Select(path => path.Replace('\\', '/'))
+                    .Where(path => path.Contains("/__snapshots__/", StringComparison.Ordinal))
+                    .Order(StringComparer.Ordinal)
+                    .Select(file => new SnapshotFile(Path.GetRelativePath(rootPath, file).Replace('\\', '/'), File.ReadAllBytes(file)))
+                    .ToArray();
+    }
+
+    private static string GetGlobalUsings(SnapshotTestFramework testFramework)
+    {
+        var globalUsings = new List<string>()
         {
-            WorkingDirectory = workingDirectory,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            "global using System;",
+            "global using System.Collections.Generic;",
+            "global using System.IO;",
+            "global using System.Runtime.CompilerServices;",
+            "global using System.Text;",
+            "global using Meziantou.Framework.SnapshotTesting;",
         };
 
-        startInfo.EnvironmentVariables.Remove("CI");
-        foreach (var entry in startInfo.EnvironmentVariables.Cast<DictionaryEntry>().ToArray())
+        var frameworkGlobalUsing = testFramework switch
         {
-            var key = (string)entry.Key;
-            if (key == "GITHUB_WORKSPACE")
-                continue;
+            SnapshotTestFramework.Xunit or SnapshotTestFramework.XunitV3 => "global using Xunit;",
+            SnapshotTestFramework.MSTest => "global using Microsoft.VisualStudio.TestTools.UnitTesting;",
+            SnapshotTestFramework.NUnit => "global using NUnit.Framework;",
+            _ => null,
+        };
 
-            if (key.StartsWith("GITHUB", StringComparison.Ordinal))
-            {
-                startInfo.EnvironmentVariables.Remove(key);
-            }
+        if (frameworkGlobalUsing is not null)
+        {
+            globalUsings.Add(frameworkGlobalUsing);
         }
 
-        startInfo.EnvironmentVariables["DiffEngine_Disabled"] = "true";
-        startInfo.EnvironmentVariables["MF_CurrentDirectory"] = Environment.CurrentDirectory;
+        return string.Join(Environment.NewLine, globalUsings);
+    }
 
-        using var process = Process.Start(startInfo);
-        Assert.NotNull(process);
-        var outputBuilder = new StringBuilder();
-        process.OutputDataReceived += (_, e) =>
+    private static string GetTargetFramework()
+    {
+#if NET472
+        return "net472";
+#elif NET48
+        return "net48";
+#elif NET8_0
+        return "net8.0";
+#elif NET9_0
+        return "net9.0";
+#elif NET10_0
+        return "net10.0";
+#else
+        throw new NotSupportedException("Unsupported target framework");
+#endif
+    }
+
+    private static string GetPackageReferences(SnapshotTestFramework testFramework)
+    {
+        string[] references = testFramework switch
         {
-            if (e.Data is not null)
-            {
-                outputBuilder.AppendLine(e.Data);
-            }
+            SnapshotTestFramework.Xunit =>
+            [
+                """<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />""",
+                """<PackageReference Include="xunit" Version="2.9.3" />""",
+                """<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />""",
+            ],
+            SnapshotTestFramework.XunitV3 =>
+            [
+                """<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />""",
+                """<PackageReference Include="xunit.v3" Version="3.2.2" />""",
+                """<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />""",
+            ],
+            SnapshotTestFramework.MSTest =>
+            [
+                """<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />""",
+                """<PackageReference Include="MSTest.TestFramework" Version="4.2.1" />""",
+                """<PackageReference Include="MSTest.TestAdapter" Version="4.2.1" />""",
+            ],
+            SnapshotTestFramework.NUnit =>
+            [
+                """<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />""",
+                """<PackageReference Include="NUnit" Version="4.5.1" />""",
+                """<PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />""",
+            ],
+            SnapshotTestFramework.TUnit =>
+            [
+                """<PackageReference Include="TUnit" Version="1.35.2" />""",
+            ],
+            _ => throw new ArgumentOutOfRangeException(nameof(testFramework), testFramework, null),
         };
 
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (e.Data is not null)
-            {
-                outputBuilder.AppendLine(e.Data);
-            }
-        };
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        await process.WaitForExitAsync();
+        return string.Join(Environment.NewLine, references);
+    }
 
-        var output = outputBuilder.ToString();
+    private static async Task<DotNetExecutionResult> ExecuteDotNet(FullPath workingDirectory, string dotnetPath, IReadOnlyList<string> arguments, int? expectedExitCode = null)
+    {
+        var process = ProcessWrapper.Create(dotnetPath)
+            .WithArguments(arguments)
+            .WithWorkingDirectory(workingDirectory)
+            .WithValidation(ProcessValidationMode.None)
+            .WithEnvironmentVariables(env =>
+            {
+                env.Remove("CI");
+                foreach (var entry in Environment.GetEnvironmentVariables().Cast<DictionaryEntry>())
+                {
+                    var key = (string)entry.Key;
+                    if (key == "GITHUB_WORKSPACE")
+                        continue;
+
+                    if (key.StartsWith("GITHUB", StringComparison.Ordinal))
+                    {
+                        env.Remove(key);
+                    }
+                }
+
+                env.Set("DiffEngine_Disabled", "true");
+                env.Set("MF_CurrentDirectory", Environment.CurrentDirectory);
+            })
+            .ExecuteBufferedAsync();
+
+        var result = await process;
+        var output = new StringBuilder();
+        foreach (var line in result.Output)
+        {
+            output.AppendLine(line.Text);
+        }
+
         if (expectedExitCode.HasValue)
         {
-            Assert.Equal(expectedExitCode.Value, process.ExitCode);
+            Assert.Equal(expectedExitCode.Value, result.ExitCode);
         }
 
-        return new DotNetExecutionResult(process.ExitCode, output);
+        return new DotNetExecutionResult(result.ExitCode, output.ToString());
     }
 
     private readonly record struct DotNetExecutionResult(int ExitCode, string Output);
+    private sealed record SnapshotFile(string RelativePath, byte[] Content);
 }

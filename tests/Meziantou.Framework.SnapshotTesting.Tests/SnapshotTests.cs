@@ -110,7 +110,7 @@ public sealed class SnapshotTests
     [Fact]
     public void DefaultSerializer_HandlesByteArrayAsBinary()
     {
-        var serializer = new HumanReadableSnapshotSerializer();
+        var serializer = new DefaultSnapshotSerializer();
         var snapshotType = SnapshotType.Png;
         var expectedBytes = "binary-data"u8.ToArray();
 
@@ -124,7 +124,7 @@ public sealed class SnapshotTests
     [Fact]
     public void DefaultSerializer_HandlesStreamAsBinary()
     {
-        var serializer = new HumanReadableSnapshotSerializer();
+        var serializer = new DefaultSnapshotSerializer();
         var snapshotType = SnapshotType.Png;
         var expectedBytes = "stream-binary-data"u8.ToArray();
         using var stream = new MemoryStream(expectedBytes);

@@ -131,7 +131,7 @@ public sealed record SnapshotSettings
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         AssertionExceptionCreator = AssertionExceptionBuilder.Default;
         ErrorMessageFormatter = InlineDiffAssertionMessageFormatter.Instance;
-        DefaultSerializer = HumanReadableSnapshotSerializer.DefaultInstance;
+        DefaultSerializer = DefaultSnapshotSerializer.DefaultInstance;
         DefaultComparer = ByteArraySnapshotComparer.Default;
         MaxSnapshotFileNameLength = 128;
         FileNameStrategy = DefaultFileName;
@@ -191,7 +191,7 @@ public sealed record SnapshotSettings
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var extension = context.Extension;
+        var extension = context.Type.Extension;
         if (string.IsNullOrWhiteSpace(extension))
         {
             extension = "bin";
@@ -206,15 +206,17 @@ public sealed record SnapshotSettings
             }
         }
 
-        var startPart = context.TestContext?.TestName ?? context.MethodName ?? context.MemberName ?? "snapshot";
+        var startPart = context.TestContext?.TestName ?? context.MethodName ?? "";
         startPart = SanitizeFragment(startPart);
         if (startPart.Length == 0)
         {
             startPart = "snapshot";
         }
 
-        var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.MemberName}|{context.LineNumber}|{context.Type.Type}|{context.TestContext?.TestName}|{context.TestContext?.Parameters}";
-        var hash = ToHexSha256(hashInput, length: 10);
+        // TODO add suffix only if method name is too long (> 80 chars)
+        // TODO .received, .actual
+        var hashInput = $"{context.TestContext?.TestName ?? context.MethodName}|{context.Type.Type}";
+        var hash = ToHexSha256(hashInput, length: 8);
         var indexPart = context.Index.ToString(CultureInfo.InvariantCulture);
         var suffix = "_" + hash + "_" + indexPart + "." + extension;
         var maxStartLength = context.Settings.MaxSnapshotFileNameLength - suffix.Length;
@@ -249,6 +251,9 @@ public sealed record SnapshotSettings
     private static string SanitizeFragment(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        if (string.IsNullOrEmpty(value))
+            return "";
+
         var buffer = new StringBuilder(value.Length);
         foreach (var c in value)
         {

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.SnapshotTesting.Utils;
+using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
@@ -16,6 +17,8 @@ internal static class SnapshotEngine
 
         if (serialized is null || serialized.Count == 0)
             throw new SnapshotException("Serializer returned no snapshot data.");
+
+        testContext ??= SnapshotTestContext.Get();
 
         var actualFiles = BuildActualFiles(settings, callerContext, type, serialized, testContext);
         var expectedFilePaths = DiscoverExpectedFilePaths(actualFiles);

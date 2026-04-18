@@ -25,8 +25,8 @@ public static class Snapshot
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void Validate(SnapshotType type, object? value, SnapshotSettings? settings, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1, [CallerMemberName] string? memberName = null)
+    public static void Validate(SnapshotType type, object? value, SnapshotSettings? settings, [CallerFilePath] string? callerFilePath = null, [CallerLineNumber] int callerLineNumber = -1, [CallerMemberName] string? callerMemberName = null)
     {
-        SnapshotEngine.Validate(type, value, settings ?? SnapshotSettings.Default, filePath, lineNumber, memberName, TestContext.Value);
+        SnapshotEngine.Validate(type, value, settings ?? SnapshotSettings.Default, callerFilePath, callerLineNumber, callerMemberName, TestContext.Value);
     }
 }

@@ -1,7 +1,11 @@
 #nullable enable
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using Meziantou.Framework;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
@@ -26,7 +30,7 @@ public sealed class SnapshotEndToEndTests
                 [Fact]
                 public void SampleTest()
                 {
-                    Snapshot.Validate("sample");
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateFailureSettings());
                 }
             }
             """,
@@ -36,10 +40,352 @@ public sealed class SnapshotEndToEndTests
                 new SnapshotFile("__snapshots__/SampleTest_0.txt", "expected"u8.ToArray()),
             ]);
 
-        AssertSnapshotContent(snapshotFiles, [
+        AssertSnapshotContent(snapshotFiles,
+        [
             ("__snapshots__/SampleTest_0.received.txt", "sample"),
             ("__snapshots__/SampleTest_0.txt", "expected"),
         ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_CreatesSnapshot_WhenSnapshotDoesNotExist()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest_0.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_DoesNotCreateReceivedFile_WhenSnapshotMatches()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateFailureSettings());
+                }
+            }
+            """,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/SampleTest_0.txt", "sample"u8.ToArray()),
+            ]);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest_0.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Fails_WhenExpectedHasMoreFilesThanActual()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            CreateFixedCountSerializerSource(count: 1),
+            expectFailure: true,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/SampleTest_0.txt", "value_0"u8.ToArray()),
+                new SnapshotFile("__snapshots__/SampleTest_1.txt", "value_1"u8.ToArray()),
+            ]);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest_0.txt", "value_0"),
+            ("__snapshots__/SampleTest_1.txt", "value_1"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Fails_WhenActualHasMoreFilesThanExpected()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            CreateFixedCountSerializerSource(count: 2),
+            expectFailure: true,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/SampleTest_0.txt", "value_0"u8.ToArray()),
+            ]);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest_0.txt", "value_0"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Theory_CreatesDistinctSnapshots_WhenTestContextIsUsed()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Theory]
+                [InlineData("alpha")]
+                [InlineData("beta")]
+                public void SampleTheory(string value)
+                {
+                    var previous = Snapshot.TestContext.Value;
+                    Snapshot.TestContext.Value = new SnapshotTestContext(TestName: "Case_" + value);
+                    try
+                    {
+                        Snapshot.Validate(value, SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                    finally
+                    {
+                        Snapshot.TestContext.Value = previous;
+                    }
+                }
+            }
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/Case_alpha_0.txt", "alpha"),
+            ("__snapshots__/Case_beta_0.txt", "beta"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Theory_CreatesDistinctSnapshots_WhenUsingXunitV3Context()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Theory]
+                [InlineData("alpha")]
+                [InlineData("beta")]
+                public void SampleTheory(string value)
+                {
+                    Snapshot.Validate(value, SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTheory_alpha_0.txt", "alpha"),
+            ("__snapshots__/SampleTheory_beta_0.txt", "beta"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_UsesHashSuffix_WhenSnapshotNameIsTooLong()
+    {
+        var methodName = "SampleTest" + new string('a', 100);
+        var snapshotFiles = await AssertSnapshot(
+            $$"""
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void {{methodName}}()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """);
+
+        var snapshotFile = Assert.Single(snapshotFiles);
+        Assert.Matches(new Regex($"^__snapshots__/{Regex.Escape(methodName)}_[0-9a-f]{{8}}_0\\.txt$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), snapshotFile.RelativePath);
+        Assert.Equal("sample", snapshotFile.ContentAsString);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_UsesHashSuffix_WhenSnapshotNameIsReserved()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var previous = Snapshot.TestContext.Value;
+                    Snapshot.TestContext.Value = new SnapshotTestContext(TestName: "snapshot.received");
+                    try
+                    {
+                        Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                    finally
+                    {
+                        Snapshot.TestContext.Value = previous;
+                    }
+                }
+            }
+            """);
+
+        var snapshotFile = Assert.Single(snapshotFiles);
+        Assert.Matches(new Regex("^__snapshots__/snapshot\\.received_[0-9a-f]{8}_0\\.txt$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), snapshotFile.RelativePath);
+        Assert.Equal("sample", snapshotFile.ContentAsString);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_UsesTypedExtension_WhenValueIsByteArray()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var payload = new byte[] { 0x42, 0x00, 0x43 };
+                    Snapshot.Validate(SnapshotType.Png, payload, SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """);
+
+        var snapshotFile = Assert.Single(snapshotFiles);
+        Assert.Equal("__snapshots__/SampleTest_0.png", snapshotFile.RelativePath);
+        Assert.Equal([0x42, 0x00, 0x43], snapshotFile.Content);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_UsesTypedExtension_WhenValueIsStream()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    using var stream = new MemoryStream(new byte[] { 0x01, 0x02, 0x03, 0x04 });
+                    Snapshot.Validate(SnapshotType.Png, stream, SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """);
+
+        var snapshotFile = Assert.Single(snapshotFiles);
+        Assert.Equal("__snapshots__/SampleTest_0.png", snapshotFile.RelativePath);
+        Assert.Equal([0x01, 0x02, 0x03, 0x04], snapshotFile.Content);
+    }
+
+    [Theory]
+    [InlineData(SnapshotTestFramework.Xunit)]
+    [InlineData(SnapshotTestFramework.XunitV3)]
+    [InlineData(SnapshotTestFramework.MSTest)]
+    [InlineData(SnapshotTestFramework.NUnit)]
+    [InlineData(SnapshotTestFramework.TUnit)]
+    public async Task Validate_EndToEnd_Smoke_WorksAcrossFrameworks(SnapshotTestFramework testFramework)
+    {
+        var snapshotFiles = await AssertSnapshot(GetFrameworkSmokeSource(testFramework), testFramework);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest_0.txt", "sample"),
+        ]);
+    }
+
+    private static string GetFrameworkSmokeSource(SnapshotTestFramework framework)
+    {
+        return framework switch
+        {
+            SnapshotTestFramework.Xunit or SnapshotTestFramework.XunitV3 =>
+                """
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Fact]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+                """,
+            SnapshotTestFramework.MSTest =>
+                """
+                [TestClass]
+                public sealed class GeneratedSnapshotTests
+                {
+                    [TestMethod]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+                """,
+            SnapshotTestFramework.NUnit =>
+                """
+                [TestFixture]
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Test]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+                """,
+            SnapshotTestFramework.TUnit =>
+                """
+                using System.Threading.Tasks;
+
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Test]
+                    public async Task SampleTest()
+                    {
+                        Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                        await Task.CompletedTask;
+                    }
+                }
+                """,
+            _ => throw new ArgumentOutOfRangeException(nameof(framework), framework, null),
+        };
+    }
+
+    private static string CreateFixedCountSerializerSource(int count)
+    {
+        return $$"""
+            using System.Globalization;
+
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var settings = new SnapshotSettings
+                    {
+                        AutoDetectContinuousEnvironment = false,
+                        SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+                    };
+
+                    settings.SetSnapshotSerializer(SnapshotType.Default, new FixedCountSerializer({{count}}));
+                    Snapshot.Validate("sample", settings);
+                }
+            }
+
+            file sealed class FixedCountSerializer(int count) : ISnapshotSerializer
+            {
+                public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object value)
+                {
+                    var result = new List<SnapshotData>(count);
+                    for (var i = 0; i < count; i++)
+                    {
+                        result.Add(new SnapshotData("txt", Encoding.UTF8.GetBytes("value_" + i.ToString(CultureInfo.InvariantCulture))));
+                    }
+
+                    return result;
+                }
+            }
+            """;
     }
 
     private static void AssertSnapshotContent(SnapshotFile[] snapshotFiles, (string RelativePath, string Content)[] expected)
@@ -65,6 +411,7 @@ public sealed class SnapshotEndToEndTests
                 <TargetFramework>{{targetFramework ?? GetTargetFramework()}}</TargetFramework>
                 <Nullable>disable</Nullable>
                 <IsPackable>false</IsPackable>
+                {{GetAdditionalProjectProperties(testFramework)}}
               </PropertyGroup>
               <ItemGroup>
                 {{GetPackageReferences(testFramework)}}
@@ -75,7 +422,19 @@ public sealed class SnapshotEndToEndTests
             </Project>
             """);
         CreateTextFile("GlobalUsings.cs", GetGlobalUsings(testFramework));
+        CreateTextFile("SnapshotTestUtilities.cs", GetSnapshotTestUtilitiesSource());
         CreateTextFile("SnapshotIntegrationTests.cs", source);
+        if (testFramework == SnapshotTestFramework.TUnit)
+        {
+            CreateTextFile("global.json", """
+                {
+                  "test": {
+                    "runner": "Microsoft.Testing.Platform"
+                  }
+                }
+                """);
+        }
+
         if (existingFiles is not null)
         {
             foreach (var existingFile in existingFiles)
@@ -86,7 +445,7 @@ public sealed class SnapshotEndToEndTests
 
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore"], expectedExitCode: 0);
-        await ExecuteDotNet(directory.FullPath, dotnetPath, ["test", "--no-build", "--nologo", "-v", "minimal"], expectedExitCode: expectFailure ? 1 : 0);
+        await ExecuteDotNet(directory.FullPath, dotnetPath, GetDotNetTestArguments(testFramework), expectedExitCode: expectFailure ? 1 : 0);
 
         return GetGeneratedSnapshotFiles(directory.FullPath);
 
@@ -104,6 +463,15 @@ public sealed class SnapshotEndToEndTests
             File.WriteAllBytes(fullPath, data);
             return fullPath;
         }
+    }
+
+    private static string[] GetDotNetTestArguments(SnapshotTestFramework testFramework)
+    {
+        return testFramework switch
+        {
+            SnapshotTestFramework.TUnit => ["test", "--no-build"],
+            _ => ["test", "--no-build", "--nologo", "-v", "minimal"],
+        };
     }
 
     private static FullPath GetRepositoryRoot([CallerFilePath] string? filePath = null)
@@ -139,6 +507,7 @@ public sealed class SnapshotEndToEndTests
             SnapshotTestFramework.Xunit or SnapshotTestFramework.XunitV3 => "global using Xunit;",
             SnapshotTestFramework.MSTest => "global using Microsoft.VisualStudio.TestTools.UnitTesting;",
             SnapshotTestFramework.NUnit => "global using NUnit.Framework;",
+            SnapshotTestFramework.TUnit => "global using TUnit.Core;",
             _ => null,
         };
 
@@ -165,6 +534,42 @@ public sealed class SnapshotEndToEndTests
 #else
         throw new NotSupportedException("Unsupported target framework");
 #endif
+    }
+
+    private static string GetSnapshotTestUtilitiesSource()
+    {
+        return
+            """
+            public static class SnapshotTestUtilities
+            {
+                public static SnapshotSettings CreateSuccessSettings()
+                {
+                    return new SnapshotSettings
+                    {
+                        AutoDetectContinuousEnvironment = false,
+                        SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+                    };
+                }
+
+                public static SnapshotSettings CreateFailureSettings()
+                {
+                    return new SnapshotSettings
+                    {
+                        AutoDetectContinuousEnvironment = false,
+                        SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+                    };
+                }
+            }
+            """;
+    }
+
+    private static string GetAdditionalProjectProperties(SnapshotTestFramework testFramework)
+    {
+        return testFramework switch
+        {
+            SnapshotTestFramework.TUnit => "<TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>",
+            _ => "",
+        };
     }
 
     private static string GetPackageReferences(SnapshotTestFramework testFramework)
@@ -240,13 +645,16 @@ public sealed class SnapshotEndToEndTests
 
         if (expectedExitCode.HasValue)
         {
-            Assert.Equal(expectedExitCode.Value, result.ExitCode);
+            Assert.True(
+                expectedExitCode.Value == result.ExitCode,
+                $"dotnet {string.Join(" ", arguments)} returned exit code {result.ExitCode} but {expectedExitCode.Value} was expected.{Environment.NewLine}{output}");
         }
 
         return new DotNetExecutionResult(result.ExitCode, output.ToString());
     }
 
     private readonly record struct DotNetExecutionResult(int ExitCode, string Output);
+
     private sealed record SnapshotFile(string RelativePath, byte[] Content)
     {
         public string ContentAsString => Encoding.UTF8.GetString(Content);

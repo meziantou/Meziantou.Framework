@@ -17,7 +17,7 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
-    public async Task Validate_EndToEnd_CreatesReceivedFile()
+    public async Task Validate_EndToEnd_CreatesReceivedFile_WhenSnapshotFails()
     {
         var snapshotFiles = await AssertSnapshot(
             """
@@ -30,16 +30,29 @@ public sealed class SnapshotEndToEndTests
                 }
             }
             """,
-            expectFailure: true);
+            expectFailure: true,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/SampleTest_0.txt", "expected"u8.ToArray()),
+            ]);
 
-        Assert.Contains("__snapshots__/SampleTest_a715b6b8b0_0.received.txt", snapshotFiles.Select(f => f.RelativePath));
+        AssertSnapshotContent(snapshotFiles, [
+            ("__snapshots__/SampleTest_0.received.txt", "sample"),
+            ("__snapshots__/SampleTest_0.txt", "expected"),
+        ]);
+    }
+
+    private static void AssertSnapshotContent(SnapshotFile[] snapshotFiles, (string RelativePath, string Content)[] expected)
+    {
+        Assert.Equal(expected, snapshotFiles.Select(f => (f.RelativePath, f.ContentAsString)));
     }
 
     private static async Task<SnapshotFile[]> AssertSnapshot(
         [StringSyntax("c#-test")] string source,
         SnapshotTestFramework testFramework = SnapshotTestFramework.XunitV3,
         string? targetFramework = null,
-        bool expectFailure = false)
+        bool expectFailure = false,
+        IReadOnlyList<SnapshotFile>? existingFiles = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
@@ -63,6 +76,13 @@ public sealed class SnapshotEndToEndTests
             """);
         CreateTextFile("GlobalUsings.cs", GetGlobalUsings(testFramework));
         CreateTextFile("SnapshotIntegrationTests.cs", source);
+        if (existingFiles is not null)
+        {
+            foreach (var existingFile in existingFiles)
+            {
+                CreateBinaryFile(existingFile.RelativePath, existingFile.Content);
+            }
+        }
 
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore"], expectedExitCode: 0);
@@ -74,6 +94,14 @@ public sealed class SnapshotEndToEndTests
         {
             var fullPath = directory.GetFullPath(path);
             File.WriteAllText(fullPath, content);
+            return fullPath;
+        }
+
+        FullPath CreateBinaryFile(string path, byte[] data)
+        {
+            var fullPath = directory.GetFullPath(path);
+            fullPath.CreateParentDirectory();
+            File.WriteAllBytes(fullPath, data);
             return fullPath;
         }
     }
@@ -219,5 +247,8 @@ public sealed class SnapshotEndToEndTests
     }
 
     private readonly record struct DotNetExecutionResult(int ExitCode, string Output);
-    private sealed record SnapshotFile(string RelativePath, byte[] Content);
+    private sealed record SnapshotFile(string RelativePath, byte[] Content)
+    {
+        public string ContentAsString => Encoding.UTF8.GetString(Content);
+    }
 }

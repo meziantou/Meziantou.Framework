@@ -191,7 +191,7 @@ public sealed record SnapshotSettings
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var extension = context.Type.Extension;
+        var extension = context.Extension;
         if (string.IsNullOrWhiteSpace(extension))
         {
             extension = "bin";
@@ -206,19 +206,28 @@ public sealed record SnapshotSettings
             }
         }
 
-        var startPart = context.TestContext?.TestName ?? context.MethodName ?? "";
+        var startPart = context.TestContext?.TestName ?? context.MethodName ?? context.MemberName ?? "";
         startPart = SanitizeFragment(startPart);
         if (startPart.Length == 0)
         {
             startPart = "snapshot";
         }
 
-        // TODO add suffix only if method name is too long (> 80 chars)
-        // TODO .received, .actual
-        var hashInput = $"{context.TestContext?.TestName ?? context.MethodName}|{context.Type.Type}";
-        var hash = ToHexSha256(hashInput, length: 8);
         var indexPart = context.Index.ToString(CultureInfo.InvariantCulture);
-        var suffix = "_" + hash + "_" + indexPart + "." + extension;
+        var suffixWithoutHash = "_" + indexPart + "." + extension;
+        var shouldAddHashSuffix =
+            startPart.Length > 80 ||
+            startPart.Length > context.Settings.MaxSnapshotFileNameLength - suffixWithoutHash.Length ||
+            IsReservedSnapshotName(startPart);
+
+        var suffix = suffixWithoutHash;
+        if (shouldAddHashSuffix)
+        {
+            var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.MemberName}|{context.LineNumber}|{context.Type.Type}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
+            var hash = ToHexSha256(hashInput, length: 8);
+            suffix = "_" + hash + "_" + indexPart + "." + extension;
+        }
+
         var maxStartLength = context.Settings.MaxSnapshotFileNameLength - suffix.Length;
         if (maxStartLength <= 0)
         {
@@ -230,6 +239,20 @@ public sealed record SnapshotSettings
         }
 
         return startPart + suffix;
+    }
+
+    private static bool IsReservedSnapshotName(string value)
+    {
+        return value.EndsWith(".received", StringComparison.OrdinalIgnoreCase) ||
+               value.EndsWith(".actual", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FormatMetadata(IReadOnlyDictionary<string, string?>? metadata)
+    {
+        if (metadata is null || metadata.Count == 0)
+            return "";
+
+        return string.Join("|", metadata.OrderBy(static entry => entry.Key, StringComparer.Ordinal).Select(static entry => $"{entry.Key}={entry.Value}"));
     }
 
     private static FullPath DefaultPath(SnapshotPathContext context)

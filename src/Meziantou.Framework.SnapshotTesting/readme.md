@@ -2,7 +2,7 @@
 
 `Meziantou.Framework.SnapshotTesting` validates serialized values against snapshot files stored on disk.
 
-By default, snapshots are written in a `__snapshots__` folder next to the test source file. File names are deterministic and bounded using `<start>_<hash>_<index>.<extension>`.
+By default, snapshots are written in a `__snapshots__` folder next to the test source file. File names are deterministic and bounded using `<start>_<index>.<extension>`. A short hash is appended before the index when the generated name is long or uses reserved suffixes such as `.received` or `.actual`.
 
 ```csharp
 public class SampleTests

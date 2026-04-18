@@ -66,7 +66,7 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void FileNameStrategy_UsesHashAndIndexPattern()
+    public void FileNameStrategy_UsesIndexPatternForShortName()
     {
         var settings = new SnapshotSettings();
         var context = new SnapshotFileNameContext(
@@ -81,7 +81,50 @@ public sealed class SnapshotTests
             Settings: settings);
 
         var fileName = settings.FileNameStrategy(context);
-        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{10}_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
+        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
+        Assert.DoesNotMatch(new Regex("_[0-9a-f]{8}_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
+        Assert.True(fileName.Length <= settings.MaxSnapshotFileNameLength);
+    }
+
+    [Fact]
+    public void FileNameStrategy_UsesHashAndIndexPatternForLongName()
+    {
+        var settings = new SnapshotSettings();
+        var context = new SnapshotFileNameContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            MethodName: new string('a', 120),
+            MemberName: "MemberName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 2,
+            Extension: "png",
+            TestContext: null,
+            Settings: settings);
+
+        var fileName = settings.FileNameStrategy(context);
+        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
+        Assert.True(fileName.Length <= settings.MaxSnapshotFileNameLength);
+    }
+
+    [Theory]
+    [InlineData("snapshot.received")]
+    [InlineData("snapshot.actual")]
+    public void FileNameStrategy_UsesHashAndIndexPatternForReservedNames(string testName)
+    {
+        var settings = new SnapshotSettings();
+        var context = new SnapshotFileNameContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            MethodName: "MethodName",
+            MemberName: "MemberName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 2,
+            Extension: "png",
+            TestContext: new SnapshotTestContext(TestName: testName),
+            Settings: settings);
+
+        var fileName = settings.FileNameStrategy(context);
+        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
         Assert.True(fileName.Length <= settings.MaxSnapshotFileNameLength);
     }
 

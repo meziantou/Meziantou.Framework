@@ -69,17 +69,7 @@ public sealed record SnapshotSettings
         }
     }
 
-    public SnapshotFileNameStrategy FileNameStrategy
-    {
-        get;
-        set
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            field = value;
-        }
-    }
-
-    public SnapshotPathStrategy PathStrategy
+    public SnapshotPathStrategy SnapshotPathStrategy
     {
         get;
         set
@@ -134,8 +124,7 @@ public sealed record SnapshotSettings
         DefaultSerializer = DefaultSnapshotSerializer.DefaultInstance;
         DefaultComparer = ByteArraySnapshotComparer.Default;
         MaxSnapshotFileNameLength = 128;
-        FileNameStrategy = DefaultFileName;
-        PathStrategy = DefaultPath;
+        SnapshotPathStrategy = DefaultSnapshotPath;
         MergeTools = DefaultMergeTools;
     }
 
@@ -150,8 +139,7 @@ public sealed record SnapshotSettings
         AssertionExceptionCreator = options.AssertionExceptionCreator;
         ErrorMessageFormatter = options.ErrorMessageFormatter;
         MaxSnapshotFileNameLength = options.MaxSnapshotFileNameLength;
-        FileNameStrategy = options.FileNameStrategy;
-        PathStrategy = options.PathStrategy;
+        SnapshotPathStrategy = options.SnapshotPathStrategy;
         DefaultSerializer = options.DefaultSerializer;
         DefaultComparer = options.DefaultComparer;
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
@@ -187,7 +175,13 @@ public sealed record SnapshotSettings
 
     internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected;
 
-    private static string DefaultFileName(SnapshotFileNameContext context)
+    private static FullPath DefaultSnapshotPath(SnapshotPathContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return context.SourceFilePath.Parent / "__snapshots__" / BuildSnapshotFileName(context);
+    }
+
+    private static string BuildSnapshotFileName(SnapshotPathContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -213,8 +207,9 @@ public sealed record SnapshotSettings
             startPart = "snapshot";
         }
 
+        var hasMultipleSnapshots = context.SnapshotCount > 1;
         var indexPart = context.Index.ToString(CultureInfo.InvariantCulture);
-        var suffixWithoutHash = "_" + indexPart + "." + extension;
+        var suffixWithoutHash = hasMultipleSnapshots ? "_" + indexPart + ".verified." + extension : ".verified." + extension;
         var shouldAddHashSuffix =
             startPart.Length > 80 ||
             startPart.Length > context.Settings.MaxSnapshotFileNameLength - suffixWithoutHash.Length ||
@@ -225,7 +220,7 @@ public sealed record SnapshotSettings
         {
             var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.MemberName}|{context.LineNumber}|{context.Type.Type}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
             var hash = ToHexSha256(hashInput, length: 8);
-            suffix = "_" + hash + "_" + indexPart + "." + extension;
+            suffix = hasMultipleSnapshots ? "_" + hash + "_" + indexPart + ".verified." + extension : "_" + hash + ".verified." + extension;
         }
 
         var maxStartLength = context.Settings.MaxSnapshotFileNameLength - suffix.Length;
@@ -243,7 +238,7 @@ public sealed record SnapshotSettings
 
     private static bool IsReservedSnapshotName(string value)
     {
-        return value.EndsWith(".received", StringComparison.OrdinalIgnoreCase) ||
+        return value.EndsWith(".verified", StringComparison.OrdinalIgnoreCase) ||
                value.EndsWith(".actual", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -252,13 +247,7 @@ public sealed record SnapshotSettings
         if (metadata is null || metadata.Count == 0)
             return "";
 
-        return string.Join("|", metadata.OrderBy(static entry => entry.Key, StringComparer.Ordinal).Select(static entry => $"{entry.Key}={entry.Value}"));
-    }
-
-    private static FullPath DefaultPath(SnapshotPathContext context)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return context.SourceFilePath.Parent / "__snapshots__" / context.FileName;
+        return string.Join('|', metadata.OrderBy(static entry => entry.Key, StringComparer.Ordinal).Select(static entry => $"{entry.Key}={entry.Value}"));
     }
 
     private static string ToHexSha256(string value, int length)

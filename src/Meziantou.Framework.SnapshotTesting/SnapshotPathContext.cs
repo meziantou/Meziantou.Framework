@@ -9,7 +9,8 @@ public sealed record SnapshotPathContext(
     int LineNumber,
     SnapshotType Type,
     int Index,
-    string FileName,
+    string? Extension,
     SnapshotTestContext? TestContext,
-    SnapshotSettings Settings);
+    SnapshotSettings Settings,
+    int SnapshotCount = 1);
 

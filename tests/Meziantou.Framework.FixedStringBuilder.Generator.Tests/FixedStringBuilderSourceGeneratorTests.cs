@@ -48,7 +48,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Single(runResult.Results);
         Assert.Equal(3, runResult.Results[0].GeneratedSources.Length);
 
-        var allGeneratedSources = string.Join("\n", runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
+        var allGeneratedSources = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
         Assert.Contains("internal partial class FixedStringBuilderAttribute", allGeneratedSources, StringComparison.Ordinal);
         Assert.Contains("internal sealed partial class EmbeddedAttribute", allGeneratedSources, StringComparison.Ordinal);
         Assert.Contains("public static int MaxLength => 10;", allGeneratedSources, StringComparison.Ordinal);
@@ -116,7 +116,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         var (runResult, compilation) = await GenerateAsync(Source);
         Assert.Empty(runResult.Diagnostics);
 
-        var generatedCode = string.Join("\n", runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
+        var generatedCode = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
         Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString<global::FixedStringBuilder4>", generatedCode, StringComparison.Ordinal);
         Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => AsUnsafeFullSpan();", generatedCode, StringComparison.Ordinal);
 

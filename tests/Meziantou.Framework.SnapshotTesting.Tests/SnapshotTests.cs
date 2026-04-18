@@ -15,7 +15,7 @@ public sealed class SnapshotTests
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
             AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
-            PathStrategy = context => directory / context.FileName,
+            SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + (context.Extension ?? "txt")),
         };
 
         Snapshot.Validate(new { A = 1 }, settings);
@@ -33,8 +33,7 @@ public sealed class SnapshotTests
         {
             AutoDetectContinuousEnvironment = false,
             AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
-            PathStrategy = context => directory / context.FileName,
-            FileNameStrategy = context => $"snapshot_fixed_{context.Index}.{context.Extension ?? "txt"}",
+            SnapshotPathStrategy = context => directory / ("snapshot_fixed_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + (context.Extension ?? "txt")),
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
         };
 
@@ -66,10 +65,10 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void FileNameStrategy_UsesIndexPatternForShortName()
+    public void SnapshotPathStrategy_UsesIndexPatternForShortName()
     {
         var settings = new SnapshotSettings();
-        var context = new SnapshotFileNameContext(
+        var context = new SnapshotPathContext(
             SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
             MethodName: "MethodName",
             MemberName: "MemberName",
@@ -78,19 +77,42 @@ public sealed class SnapshotTests
             Index: 2,
             Extension: "png",
             TestContext: new SnapshotTestContext(TestName: "Image snapshot"),
-            Settings: settings);
+            Settings: settings,
+            SnapshotCount: 3);
 
-        var fileName = settings.FileNameStrategy(context);
-        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
-        Assert.DoesNotMatch(new Regex("_[0-9a-f]{8}_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
-        Assert.True(fileName.Length <= settings.MaxSnapshotFileNameLength);
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.DoesNotMatch(new Regex("_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
     }
 
     [Fact]
-    public void FileNameStrategy_UsesHashAndIndexPatternForLongName()
+    public void SnapshotPathStrategy_OmitsIndex_WhenSingleSnapshot()
     {
         var settings = new SnapshotSettings();
-        var context = new SnapshotFileNameContext(
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            MethodName: "MethodName",
+            MemberName: "MemberName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "png",
+            TestContext: new SnapshotTestContext(TestName: "Image snapshot"),
+            Settings: settings,
+            SnapshotCount: 1);
+
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Matches(new Regex("^[A-Za-z0-9._-]+\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.DoesNotContain("_0", path.Name, StringComparison.Ordinal);
+        Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_UsesHashAndIndexPatternForLongName()
+    {
+        var settings = new SnapshotSettings();
+        var context = new SnapshotPathContext(
             SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
             MethodName: new string('a', 120),
             MemberName: "MemberName",
@@ -99,20 +121,21 @@ public sealed class SnapshotTests
             Index: 2,
             Extension: "png",
             TestContext: null,
-            Settings: settings);
+            Settings: settings,
+            SnapshotCount: 3);
 
-        var fileName = settings.FileNameStrategy(context);
-        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
-        Assert.True(fileName.Length <= settings.MaxSnapshotFileNameLength);
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
     }
 
     [Theory]
-    [InlineData("snapshot.received")]
+    [InlineData("snapshot.verified")]
     [InlineData("snapshot.actual")]
-    public void FileNameStrategy_UsesHashAndIndexPatternForReservedNames(string testName)
+    public void SnapshotPathStrategy_UsesHashAndIndexPatternForReservedNames(string testName)
     {
         var settings = new SnapshotSettings();
-        var context = new SnapshotFileNameContext(
+        var context = new SnapshotPathContext(
             SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
             MethodName: "MethodName",
             MemberName: "MemberName",
@@ -121,11 +144,12 @@ public sealed class SnapshotTests
             Index: 2,
             Extension: "png",
             TestContext: new SnapshotTestContext(TestName: testName),
-            Settings: settings);
+            Settings: settings,
+            SnapshotCount: 3);
 
-        var fileName = settings.FileNameStrategy(context);
-        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), fileName);
-        Assert.True(fileName.Length <= settings.MaxSnapshotFileNameLength);
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
     }
 
     [Fact]
@@ -138,14 +162,13 @@ public sealed class SnapshotTests
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
             AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
-            FileNameStrategy = context => $"{context.Type.Type}_{context.Index}.{context.Extension}",
-            PathStrategy = context => directory / context.FileName,
+            SnapshotPathStrategy = context => directory / (context.Type.Type + "_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension),
         };
 
         settings.SetSnapshotSerializer(snapshotType, new SnapshotTypeSerializer());
         Snapshot.Validate(snapshotType, "sample", settings);
 
-        var filePath = directory / "png_0.png";
+        var filePath = directory / "png_0.verified.png";
         Assert.True(File.Exists(filePath));
         Assert.Equal("png", File.ReadAllText(filePath));
     }
@@ -182,31 +205,31 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void Validate_CreatesReceivedFileWhenSnapshotChanged()
+    public void Validate_CreatesActualFileWhenSnapshotChanged()
     {
         using var directory = TemporaryDirectory.Create();
         var settings = CreateDeterministicSnapshotSettings(directory, "actual");
-        var expectedPath = directory.GetFullPath("snapshot_0.txt");
-        var receivedPath = directory.GetFullPath("snapshot_0.received.txt");
+        var expectedPath = directory.GetFullPath("snapshot.verified.txt");
+        var actualPath = directory.GetFullPath("snapshot.actual.txt");
 
         File.WriteAllText(expectedPath, "expected");
         Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
 
-        Assert.True(File.Exists(receivedPath));
-        Assert.Equal("actual", File.ReadAllText(receivedPath));
+        Assert.True(File.Exists(actualPath));
+        Assert.Equal("actual", File.ReadAllText(actualPath));
     }
 
     [Fact]
-    public async Task Validate_RetriesWhenReceivedFileIsLocked()
+    public async Task Validate_RetriesWhenActualFileIsLocked()
     {
         using var directory = TemporaryDirectory.Create();
         var settings = CreateDeterministicSnapshotSettings(directory, "actual");
-        var expectedPath = directory.GetFullPath("snapshot_0.txt");
-        var receivedPath = directory.GetFullPath("snapshot_0.received.txt");
+        var expectedPath = directory.GetFullPath("snapshot.verified.txt");
+        var actualPath = directory.GetFullPath("snapshot.actual.txt");
         await File.WriteAllTextAsync(expectedPath, "expected");
-        await File.WriteAllTextAsync(receivedPath, "locked");
+        await File.WriteAllTextAsync(actualPath, "locked");
 
-        await using var lockStream = new FileStream(receivedPath, FileMode.Open, FileAccess.Read, FileShare.None);
+        await using var lockStream = new FileStream(actualPath, FileMode.Open, FileAccess.Read, FileShare.None);
         var releaseTask = Task.Run(() =>
         {
             Thread.Sleep(250);
@@ -222,7 +245,29 @@ public sealed class SnapshotTests
             await releaseTask;
         }
 
-        Assert.Equal("actual", await File.ReadAllTextAsync(receivedPath));
+        Assert.Equal("actual", await File.ReadAllTextAsync(actualPath));
+    }
+
+    [Fact]
+    public void Validate_SucceedsWhenMultipleSnapshotFilesMatch()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var baseSettings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
+            SnapshotPathStrategy = context => directory / ("snapshot_fixed_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + (context.Extension ?? "txt")),
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+        };
+
+        ValidateWithSerializerCount(baseSettings, count: 2);
+
+        var validateSettings = baseSettings with
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+        };
+
+        ValidateWithSerializerCount(validateSettings, count: 2);
     }
 
     private static void ValidateWithSerializerCount(SnapshotSettings settings, int count)
@@ -252,8 +297,7 @@ public sealed class SnapshotTests
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
             AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
-            FileNameStrategy = _ => "snapshot_0.txt",
-            PathStrategy = context => directory / context.FileName,
+            SnapshotPathStrategy = _ => directory / "snapshot.verified.txt",
         };
 
         settings.SetSnapshotSerializer(SnapshotType.Default, new FixedValueSerializer(serializedValue));

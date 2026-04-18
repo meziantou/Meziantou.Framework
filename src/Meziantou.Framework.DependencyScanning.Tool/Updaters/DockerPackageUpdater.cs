@@ -185,7 +185,7 @@ internal sealed class DockerPackageUpdater : PackageUpdater
             return new Uri(realm, UriKind.Absolute);
 
         var separator = realm.Contains('?', StringComparison.Ordinal) ? '&' : '?';
-        return new Uri($"{realm}{separator}{string.Join("&", queryParameters)}", UriKind.Absolute);
+        return new Uri($"{realm}{separator}{string.Join('&', queryParameters)}", UriKind.Absolute);
     }
 
     private sealed class DockerRegistryToken

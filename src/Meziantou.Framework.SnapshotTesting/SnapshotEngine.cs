@@ -25,7 +25,7 @@ internal static class SnapshotEngine
         var expectedFiles = LoadSnapshotFiles(expectedFilePaths);
 
         var comparison = Compare(settings, type, actualFiles, expectedFiles);
-        WriteReceivedSnapshots(actualFiles, comparison.ChangedPaths);
+        WriteActualSnapshots(actualFiles, comparison.ChangedPaths);
 
         if (!comparison.HasDifferences && !settings.ForceUpdateSnapshots)
             return;
@@ -167,7 +167,7 @@ internal static class SnapshotEngine
         {
             var snapshotData = serialized[index];
             var extension = string.IsNullOrEmpty(type.Type) ? snapshotData.Extension : type.Type;
-            var fileName = settings.FileNameStrategy(new SnapshotFileNameContext(
+            var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
                 callerContext.SourceFilePath,
                 callerContext.MethodName,
                 callerContext.MemberName,
@@ -176,18 +176,8 @@ internal static class SnapshotEngine
                 index,
                 extension,
                 testContext,
-                settings));
-
-            var path = settings.PathStrategy(new SnapshotPathContext(
-                callerContext.SourceFilePath,
-                callerContext.MethodName,
-                callerContext.MemberName,
-                callerContext.LineNumber,
-                type,
-                index,
-                fileName,
-                testContext,
-                settings));
+                settings,
+                serialized.Count));
 
             result.Add(new SnapshotFile(path, snapshotData));
         }
@@ -205,21 +195,30 @@ internal static class SnapshotEngine
         if (!Directory.Exists(firstFile.Parent))
             return actualPaths.Where(path => File.Exists(path.Value)).ToArray();
 
-        var firstName = firstFile.NameWithoutExtension;
-        var separatorIndex = firstName.LastIndexOf('_');
-        if (separatorIndex < 0)
+        var firstName = GetVerifiedBaseName(firstFile);
+        if (firstName is null)
             return actualPaths.Where(path => File.Exists(path.Value)).ToArray();
 
-        var prefix = firstName[..(separatorIndex + 1)];
+        var indexedPrefix = GetIndexedPrefix(firstName, actualFiles.Count);
+
         var expected = new HashSet<FullPath>();
         foreach (var path in Directory.EnumerateFiles(firstFile.Parent))
         {
             var candidate = FullPath.FromPath(path);
-            var name = candidate.NameWithoutExtension;
-            if (!name.StartsWith(prefix, StringComparison.Ordinal))
+            var name = GetVerifiedBaseName(candidate);
+            if (name is null)
                 continue;
 
-            var suffix = name[prefix.Length..];
+            if (name == firstName)
+            {
+                expected.Add(candidate);
+                continue;
+            }
+
+            if (!name.StartsWith(indexedPrefix, StringComparison.Ordinal))
+                continue;
+
+            var suffix = name[indexedPrefix.Length..];
             if (!int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out _))
                 continue;
 
@@ -232,6 +231,31 @@ internal static class SnapshotEngine
         }
 
         return expected;
+    }
+
+    private static string? GetVerifiedBaseName(FullPath path)
+    {
+        var snapshotName = path.NameWithoutExtension;
+        if (!snapshotName.EndsWith(".verified", StringComparison.Ordinal))
+            return null;
+
+        return snapshotName[..^".verified".Length];
+    }
+
+    private static string GetIndexedPrefix(string snapshotName, int actualFileCount)
+    {
+        if (actualFileCount > 1)
+        {
+            var separatorIndex = snapshotName.LastIndexOf('_');
+            if (separatorIndex >= 0)
+            {
+                var suffix = snapshotName[(separatorIndex + 1)..];
+                if (int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+                    return snapshotName[..(separatorIndex + 1)];
+            }
+        }
+
+        return snapshotName + "_";
     }
 
     private static void WriteSnapshots(SnapshotSettings settings, IReadOnlyList<SnapshotFile> actualFiles, IEnumerable<FullPath> existingPaths)
@@ -271,7 +295,7 @@ internal static class SnapshotEngine
         }
     }
 
-    private static void WriteReceivedSnapshots(IReadOnlyList<SnapshotFile> actualFiles, IReadOnlyCollection<FullPath> changedPaths)
+    private static void WriteActualSnapshots(IReadOnlyList<SnapshotFile> actualFiles, IReadOnlyCollection<FullPath> changedPaths)
     {
         if (changedPaths.Count == 0)
             return;
@@ -282,17 +306,23 @@ internal static class SnapshotEngine
             if (!actualByPath.TryGetValue(changedPath, out var data))
                 continue;
 
-            var receivedPath = GetReceivedSnapshotPath(changedPath);
-            WriteAllBytesWithRetry(receivedPath, data);
+            var actualPath = GetActualSnapshotPath(changedPath);
+            WriteAllBytesWithRetry(actualPath, data);
         }
     }
 
-    private static FullPath GetReceivedSnapshotPath(FullPath expectedSnapshotPath)
+    private static FullPath GetActualSnapshotPath(FullPath expectedSnapshotPath)
     {
-        if (expectedSnapshotPath.Extension.Length == 0)
-            return expectedSnapshotPath.Parent / (expectedSnapshotPath.Name + ".received");
+        var snapshotName = expectedSnapshotPath.NameWithoutExtension;
+        var actualSnapshotName = snapshotName.EndsWith(".verified", StringComparison.Ordinal)
+            ? snapshotName[..^".verified".Length] + ".actual"
+            : snapshotName + ".actual";
 
-        return expectedSnapshotPath.ChangeExtension(".received" + expectedSnapshotPath.Extension);
+        var extension = expectedSnapshotPath.Extension;
+        if (extension.Length == 0)
+            return expectedSnapshotPath.Parent / actualSnapshotName;
+
+        return expectedSnapshotPath.Parent / (actualSnapshotName + extension);
     }
 
     private static void WriteAllBytesWithRetry(FullPath path, byte[] data)

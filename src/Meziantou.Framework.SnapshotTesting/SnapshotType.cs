@@ -2,11 +2,27 @@ using System;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
-public readonly record struct SnapshotType(string Type, string? MimeType = null, string? DisplayName = null)
+public readonly struct SnapshotType : IEquatable<SnapshotType>
 {
     public static SnapshotType Default { get; } = new("txt", "text/plain", "Text");
     public static SnapshotType Png { get; } = new("png", "image/png", "PNG image");
 
+    private static readonly Dictionary<string, SnapshotType> Cache = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["txt"] = Default,
+        ["png"] = Png,
+    };
+
+    private SnapshotType(string type, string? mimeType = null, string? displayName = null)
+    {
+        Type = type;
+        MimeType = mimeType;
+        DisplayName = displayName;
+    }
+
+    public string Type { get; }
+    public string? MimeType { get; }
+    public string? DisplayName { get; }
     public string FileExtension => $".{Type}";
 
     public static SnapshotType Create(string? name)
@@ -17,19 +33,28 @@ public readonly record struct SnapshotType(string Type, string? MimeType = null,
         var nameSpan = name.AsSpan();
         if (nameSpan.StartsWith('.'))
         {
-            nameSpan = nameSpan.Slice(1);
+            nameSpan = nameSpan[1..];
+            name = null;
         }
 
-        foreach (var prop in typeof(SnapshotType).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
-        {
-            if (prop.GetValue(null) is SnapshotType snapshotType && nameSpan.Equals(snapshotType.Type, StringComparison.OrdinalIgnoreCase))
-                return snapshotType;
-        }
+#if NET9_0_OR_GREATER
+        if (Cache.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(nameSpan, out var snapshotType))
+            return snapshotType;
+#else
+        if (Cache.TryGetValue(name ?? nameSpan.ToString(), out snapshotType))
+            return snapshotType;
+#endif
 
-        return new SnapshotType(nameSpan.ToString());
+        return new SnapshotType(name ?? nameSpan.ToString());
     }
 
     public bool Equals(SnapshotType other) => StringComparer.Ordinal.Equals(Type, other.Type);
-
     public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Type);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is SnapshotType snapshotType && Equals(snapshotType);
+
+    public static bool operator ==(SnapshotType left, SnapshotType right) => left.Equals(right);
+
+    public static bool operator !=(SnapshotType left, SnapshotType right) => !(left == right);
+
+    public static implicit operator SnapshotType(string? name) => Create(name);
 }

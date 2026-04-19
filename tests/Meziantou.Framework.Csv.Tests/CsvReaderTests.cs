@@ -136,4 +136,54 @@ public class CsvReaderTests
         Assert.Equal("ab", row1[0]);
         Assert.Equal("cd", row1[1]);
     }
+
+    [Fact]
+    public async Task CsvReader_QuotedValueEndingWithCarriageReturnAtEndOfStream_DoesNotThrow()
+    {
+        using var sr = new TruncatedCarriageReturnReader();
+        var reader = new CsvReader(sr);
+
+        var row = await reader.ReadRowAsync();
+
+        Assert.NotNull(row);
+        Assert.Equal("a\r", row[0]);
+        Assert.Null(await reader.ReadRowAsync());
+    }
+
+    private sealed class TruncatedCarriageReturnReader : TextReader
+    {
+        private readonly char[] _content = ['"', 'a', '\r'];
+        private int _position;
+
+        public override int Peek()
+        {
+            if (_position < _content.Length)
+                return _content[_position];
+
+            // Simulate an inconsistent reader that reported a '\n' after '\r' in Peek(),
+            // but reaches EOF when the next character is read.
+            if (_position == _content.Length)
+                return '\n';
+
+            return -1;
+        }
+
+        public override int Read(char[] buffer, int index, int count)
+        {
+            if (count <= 0)
+                return 0;
+
+            if (_position >= _content.Length)
+                return 0;
+
+            buffer[index] = _content[_position];
+            _position++;
+            return 1;
+        }
+
+        public override Task<int> ReadAsync(char[] buffer, int index, int count)
+        {
+            return Task.FromResult(Read(buffer, index, count));
+        }
+    }
 }

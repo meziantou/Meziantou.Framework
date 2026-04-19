@@ -166,7 +166,7 @@ public sealed class SnapshotTests
         };
 
         settings.SetSnapshotSerializer(snapshotType, new SnapshotTypeSerializer());
-        Snapshot.Validate(snapshotType, "sample", settings);
+        Snapshot.Validate("sample", snapshotType, settings);
 
         var filePath = directory / "png_0.verified.png";
         Assert.True(File.Exists(filePath));
@@ -280,6 +280,37 @@ public sealed class SnapshotTests
         }
 
         Assert.Equal("actual", await File.ReadAllTextAsync(actualPath));
+    }
+
+    [Fact]
+    public void Validate_ErrorMessageIncludesVerifiedAndActualPaths_ForAllChangedFiles()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
+            SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.txt"),
+        };
+        settings.SetSnapshotSerializer(SnapshotType.Default, new FixedCountSerializer(count: 2));
+
+        var verifiedPath0 = directory.GetFullPath("snapshot_0.verified.txt");
+        var verifiedPath1 = directory.GetFullPath("snapshot_1.verified.txt");
+        File.WriteAllText(verifiedPath0, "old_0");
+        File.WriteAllText(verifiedPath1, "old_1");
+
+        var exception = Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
+        var actualPath0 = directory.GetFullPath("snapshot_0.actual.txt");
+        var actualPath1 = directory.GetFullPath("snapshot_1.actual.txt");
+
+        Assert.Contains("Snapshots do not match.", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Verified: " + verifiedPath0.Value, exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Actual:   " + actualPath0.Value, exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Verified: " + verifiedPath1.Value, exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Actual:   " + actualPath1.Value, exception.Message, StringComparison.Ordinal);
+        Assert.True(File.Exists(actualPath0));
+        Assert.True(File.Exists(actualPath1));
     }
 
     [Fact]

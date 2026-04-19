@@ -48,7 +48,25 @@ public abstract class SnapshotUpdateStrategy
     /// <summary>Indicates if an an inline snapshot must be updated</summary>
     public abstract bool CanUpdateSnapshot(SnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot);
 
-    public abstract void UpdateFile(SnapshotSettings settings, string targetFile, string tempFile);
+    /// <summary>Updates one or more snapshot files and deletes obsolete verified files.</summary>
+    public virtual void UpdateFiles(SnapshotSettings settings, IReadOnlyList<SnapshotUpdateFile> filesToUpdate, IReadOnlyList<string> filesToDelete)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(filesToUpdate);
+        ArgumentNullException.ThrowIfNull(filesToDelete);
+
+        foreach (var fileToUpdate in filesToUpdate)
+        {
+            UpdateFile(settings, fileToUpdate.VerifiedFilePath, fileToUpdate.ActualFilePath);
+        }
+
+        foreach (var fileToDelete in filesToDelete)
+        {
+            TryDeleteFile(fileToDelete);
+        }
+    }
+
+    public abstract void UpdateFile(SnapshotSettings settings, string verifiedFilePath, string actualFilePath);
 
     /// <summary>Indicates if an exception must be thrown when the snapshots differ.</summary>
     public abstract bool MustReportError(SnapshotSettings settings, string path);
@@ -67,6 +85,24 @@ public abstract class SnapshotUpdateStrategy
         File.Copy(source, destination, overwrite: true);
         TryDeleteFile(source);
 #endif
+    }
+
+    private protected static void CopyFile(string source, string destination)
+    {
+        if (source == destination)
+            return;
+
+        var sourceInfo = new FileInfo(source);
+        sourceInfo.TrySetReadOnly(false);
+
+        var destinationInfo = new FileInfo(destination);
+        destinationInfo.Directory?.Create();
+        if (destinationInfo.Exists)
+        {
+            destinationInfo.TrySetReadOnly(false);
+        }
+
+        File.Copy(source, destination, overwrite: true);
     }
 
     private protected static void TryDeleteFile(string path)
@@ -96,3 +132,5 @@ public abstract class SnapshotUpdateStrategy
         return name;
     }
 }
+
+public sealed record SnapshotUpdateFile(string VerifiedFilePath, string ActualFilePath);

@@ -9,6 +9,6 @@ internal sealed class AlwaysStrategy : SnapshotUpdateStrategy
 
     public override void UpdateFile(SnapshotSettings settings, string currentFilePath, string newFilePath)
     {
-        MoveFile(newFilePath, currentFilePath);
+        CopyFile(newFilePath, currentFilePath);
     }
 }

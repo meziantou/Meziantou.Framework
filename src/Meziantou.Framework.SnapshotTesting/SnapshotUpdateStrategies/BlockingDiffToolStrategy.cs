@@ -12,6 +12,5 @@ internal sealed class BlockingDiffToolStrategy : MergeToolStrategyBase
     {
         using var process = LaunchMergeTool(settings, currentFilePath, newFilePath);
         process.WaitForExit();
-        TryDeleteFile(newFilePath);
     }
 }

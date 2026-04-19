@@ -26,7 +26,8 @@ internal static class SnapshotEngine
         var expectedFiles = LoadSnapshotFiles(expectedFilePaths);
 
         var comparison = Compare(settings, type, actualFiles, expectedFiles);
-        WriteActualSnapshots(actualFiles, comparison.ChangedPaths);
+        var filesToUpdate = BuildSnapshotFilesToUpdate(actualFiles, comparison.PathsToUpdate);
+        WriteActualSnapshots(filesToUpdate);
 
         if (!comparison.HasDifferences && !settings.ForceUpdateSnapshots)
             return;
@@ -41,7 +42,12 @@ internal static class SnapshotEngine
             return;
         }
 
-        WriteSnapshots(settings, actualFiles, expectedFiles.Keys);
+        if (settings.ForceUpdateSnapshots)
+        {
+            filesToUpdate = BuildSnapshotFilesToUpdate(actualFiles, [.. actualFiles.Select(item => item.FilePath)]);
+        }
+
+        ApplySnapshotUpdates(settings, filesToUpdate, comparison.ExtraPaths);
 
         if (comparison.HasDifferences && settings.SnapshotUpdateStrategy.MustReportError(settings, callerContext.SourceFilePath))
         {
@@ -74,7 +80,8 @@ internal static class SnapshotEngine
         }
 
         var message = BuildMessage(settings, missingPaths, extraPaths, changedPaths, expectedFiles, actualByPath);
-        return new SnapshotComparisonResult(true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths), [.. changedPaths]);
+        var pathsToUpdate = missingPaths.Concat(changedPaths).Distinct().ToArray();
+        return new SnapshotComparisonResult(HasDifferences: true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths), [.. changedPaths], missingPaths, extraPaths, pathsToUpdate);
     }
 
     private static string BuildMessage(
@@ -86,7 +93,20 @@ internal static class SnapshotEngine
         Dictionary<FullPath, SnapshotData> actualFiles)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("Snapshots do not match:");
+        sb.AppendLine("Snapshots do not match.");
+
+        var pathsToUpdate = missingPaths.Concat(changedPaths).Distinct().OrderBy(static p => p.Value, StringComparer.Ordinal).ToArray();
+        if (pathsToUpdate.Length > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Snapshot file paths:");
+            foreach (var path in pathsToUpdate)
+            {
+                var actualPath = GetActualSnapshotPath(path);
+                sb.Append("  * Verified: ").AppendLine(path.Value);
+                sb.Append("    Actual:   ").AppendLine(actualPath.Value);
+            }
+        }
 
         if (missingPaths.Length > 0)
         {
@@ -105,6 +125,7 @@ internal static class SnapshotEngine
             foreach (var path in extraPaths.OrderBy(static p => p.Value, StringComparer.Ordinal))
             {
                 sb.Append("  - ").AppendLine(path.Value);
+                sb.Append("    Actual:   ").AppendLine(GetActualSnapshotPath(path).Value);
             }
         }
 
@@ -259,56 +280,52 @@ internal static class SnapshotEngine
         return snapshotName + "_";
     }
 
-    private static void WriteSnapshots(SnapshotSettings settings, IReadOnlyList<SnapshotFile> actualFiles, IEnumerable<FullPath> existingPaths)
+    private static List<SnapshotFileToUpdate> BuildSnapshotFilesToUpdate(IReadOnlyList<SnapshotFile> actualFiles, IReadOnlyCollection<FullPath> pathsToUpdate)
     {
-        var actualPaths = new HashSet<FullPath>(actualFiles.Select(static item => item.FilePath));
+        if (pathsToUpdate.Count == 0)
+            return [];
 
-        foreach (var snapshotFile in actualFiles)
+        var actualByPath = actualFiles.ToDictionary(static item => item.FilePath, static item => item.Data.Data);
+        var result = new List<SnapshotFileToUpdate>(pathsToUpdate.Count);
+        foreach (var path in pathsToUpdate)
         {
-            Directory.CreateDirectory(snapshotFile.FilePath.Parent);
+            if (!actualByPath.TryGetValue(path, out var data))
+                continue;
 
-            var tempFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempFolder);
-            var tempFilePath = Path.Combine(tempFolder, snapshotFile.FilePath.Name);
-            File.WriteAllBytes(tempFilePath, snapshotFile.Data.Data);
+            result.Add(new SnapshotFileToUpdate(path, GetActualSnapshotPath(path), data));
+        }
 
-            if (!File.Exists(snapshotFile.FilePath))
+        return result;
+    }
+
+    private static void ApplySnapshotUpdates(SnapshotSettings settings, IReadOnlyList<SnapshotFileToUpdate> filesToUpdate, IReadOnlyCollection<FullPath> filesToDelete)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(filesToUpdate);
+        ArgumentNullException.ThrowIfNull(filesToDelete);
+
+        foreach (var fileToUpdate in filesToUpdate)
+        {
+            fileToUpdate.VerifiedPath.CreateParentDirectory();
+            if (!File.Exists(fileToUpdate.VerifiedPath))
             {
-                using (File.Create(snapshotFile.FilePath))
+                using (File.Create(fileToUpdate.VerifiedPath))
                 {
                 }
             }
-
-            settings.SnapshotUpdateStrategy.UpdateFile(settings, snapshotFile.FilePath, tempFilePath);
         }
 
-        foreach (var existingPath in existingPaths)
-        {
-            if (actualPaths.Contains(existingPath))
-                continue;
-
-            if (File.Exists(existingPath))
-            {
-                var fileInfo = new FileInfo(existingPath);
-                fileInfo.TrySetReadOnly(false);
-                fileInfo.Delete();
-            }
-        }
+        settings.SnapshotUpdateStrategy.UpdateFiles(
+            settings,
+            [.. filesToUpdate.Select(item => new SnapshotUpdateFile(item.VerifiedPath, item.ActualPath))],
+            [.. filesToDelete.Select(item => item.Value)]);
     }
 
-    private static void WriteActualSnapshots(IReadOnlyList<SnapshotFile> actualFiles, IReadOnlyCollection<FullPath> changedPaths)
+    private static void WriteActualSnapshots(IReadOnlyList<SnapshotFileToUpdate> filesToUpdate)
     {
-        if (changedPaths.Count == 0)
-            return;
-
-        var actualByPath = actualFiles.ToDictionary(static item => item.FilePath, static item => item.Data.Data);
-        foreach (var changedPath in changedPaths)
+        foreach (var fileToUpdate in filesToUpdate)
         {
-            if (!actualByPath.TryGetValue(changedPath, out var data))
-                continue;
-
-            var actualPath = GetActualSnapshotPath(changedPath);
-            WriteAllBytesWithRetry(actualPath, data);
+            WriteAllBytesWithRetry(fileToUpdate.ActualPath, fileToUpdate.ActualData);
         }
     }
 
@@ -373,8 +390,18 @@ internal static class SnapshotEngine
         }
     }
 
-    private readonly record struct SnapshotComparisonResult(bool HasDifferences, string Message, string? ExpectedSummary, string? ActualSummary, IReadOnlyCollection<FullPath> ChangedPaths)
+    private readonly record struct SnapshotComparisonResult(
+        bool HasDifferences,
+        string Message,
+        string? ExpectedSummary,
+        string? ActualSummary,
+        IReadOnlyCollection<FullPath> ChangedPaths,
+        IReadOnlyCollection<FullPath> MissingPaths,
+        IReadOnlyCollection<FullPath> ExtraPaths,
+        IReadOnlyCollection<FullPath> PathsToUpdate)
     {
-        public static SnapshotComparisonResult NoDifference { get; } = new(false, "", null, null, []);
+        public static SnapshotComparisonResult NoDifference { get; } = new(false, "", null, null, [], [], [], []);
     }
+
+    private readonly record struct SnapshotFileToUpdate(FullPath VerifiedPath, FullPath ActualPath, byte[] ActualData);
 }

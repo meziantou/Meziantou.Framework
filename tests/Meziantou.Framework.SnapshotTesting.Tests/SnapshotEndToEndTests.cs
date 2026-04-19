@@ -126,6 +126,7 @@ public sealed class SnapshotEndToEndTests
         AssertSnapshotContent(snapshotFiles,
         [
             ("__snapshots__/SampleTest_0.verified.txt", "value_0"),
+            ("__snapshots__/SampleTest_1.actual.txt", "value_1"),
         ]);
     }
 
@@ -397,7 +398,7 @@ public sealed class SnapshotEndToEndTests
                 public void SampleTest()
                 {
                     var payload = new byte[] { 0x42, 0x00, 0x43 };
-                    Snapshot.Validate(SnapshotType.Png, payload, SnapshotTestUtilities.CreateSuccessSettings());
+                    Snapshot.Validate(payload, SnapshotType.Png, SnapshotTestUtilities.CreateSuccessSettings());
                 }
             }
             """);
@@ -418,7 +419,7 @@ public sealed class SnapshotEndToEndTests
                 public void SampleTest()
                 {
                     using var stream = new MemoryStream(new byte[] { 0x01, 0x02, 0x03, 0x04 });
-                    Snapshot.Validate(SnapshotType.Png, stream, SnapshotTestUtilities.CreateSuccessSettings());
+                    Snapshot.Validate(stream, SnapshotType.Png, SnapshotTestUtilities.CreateSuccessSettings());
                 }
             }
             """);

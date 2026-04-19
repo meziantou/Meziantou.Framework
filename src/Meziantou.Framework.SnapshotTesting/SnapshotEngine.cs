@@ -145,7 +145,20 @@ internal static class SnapshotEngine
             }
         }
 
+        AppendResolutionGuidance(sb);
+
         return sb.ToString().TrimEnd();
+    }
+
+    private static void AppendResolutionGuidance(StringBuilder sb)
+    {
+        sb.AppendLine();
+        sb.AppendLine("Resolution guidance:");
+        sb.AppendLine("  - Compare each Verified/Actual pair listed above.");
+        sb.AppendLine("  - If the new behavior is correct, copy each .actual file to its .verified file.");
+        sb.AppendLine("  - If the old behavior is correct, fix the test or production code so output matches the .verified files.");
+        sb.AppendLine("  - Remove unexpected .verified files when they are no longer expected.");
+        sb.AppendLine("  - Re-run the test.");
     }
 
     private static string? FormatSummary(IEnumerable<FullPath> paths)

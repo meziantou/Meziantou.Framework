@@ -309,6 +309,8 @@ public sealed class SnapshotTests
         Assert.Contains("Actual:   " + actualPath0.Value, exception.Message, StringComparison.Ordinal);
         Assert.Contains("Verified: " + verifiedPath1.Value, exception.Message, StringComparison.Ordinal);
         Assert.Contains("Actual:   " + actualPath1.Value, exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Resolution guidance:", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("If the new behavior is correct, copy each .actual file to its .verified file.", exception.Message, StringComparison.Ordinal);
         Assert.True(File.Exists(actualPath0));
         Assert.True(File.Exists(actualPath1));
     }

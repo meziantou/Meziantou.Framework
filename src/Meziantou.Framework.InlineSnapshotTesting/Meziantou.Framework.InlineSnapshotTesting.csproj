@@ -3,7 +3,10 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net472;net48</TargetFrameworks>
     <Description>Enables verification of objects using inline snapshots</Description>
-    <Version>3.3.42</Version>
+    <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
+
+    <Version>3.3.43</Version>
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -22,12 +22,12 @@ public sealed class ProcessExecutionException : Exception
     }
 
     /// <summary>Initializes a new instance of <see cref="ProcessExecutionException"/> with the specified exit code.</summary>
-    public ProcessExecutionException(int exitCode)
+    public ProcessExecutionException(ProcessExitCode exitCode)
         : base($"Process exited with code {exitCode}.")
     {
         ExitCode = exitCode;
     }
 
     /// <summary>Gets the exit code of the process.</summary>
-    public int ExitCode { get; }
+    public ProcessExitCode ExitCode { get; }
 }

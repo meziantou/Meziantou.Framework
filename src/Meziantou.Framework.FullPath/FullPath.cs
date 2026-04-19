@@ -436,6 +436,25 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         return Symlink.IsSymbolicLink(_value);
     }
 
+    /// <summary>Attempts to resolve this path to its canonical final existing path.</summary>
+    /// <param name="result">The canonical final path if successful; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if canonical resolution succeeds; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// <para>The canonical path resolves symbolic links and reparse points to the final target.</para>
+    /// <para>This method returns <see langword="false"/> when the path does not exist or cannot be resolved.</para>
+    /// </remarks>
+    public bool TryGetCanonicalPath([NotNullWhen(true)] out FullPath? result)
+    {
+        if (!IsEmpty && CanonicalPath.TryGetCanonicalPath(_value, out var path))
+        {
+            result = FromPath(path);
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
     /// <summary>Finds the first ancestor path or self that matches the specified predicate.</summary>
     /// <param name="predicate">A function to test each path.</param>
     /// <param name="result">The first matching path, or default if not found.</param>

@@ -3,7 +3,7 @@ namespace Meziantou.Framework;
 /// <summary>Represents a completed process execution.</summary>
 public class ProcessResult
 {
-    internal ProcessResult(int processId, int exitCode, DateTimeOffset startDate, DateTimeOffset exitDate)
+    internal ProcessResult(int processId, ProcessExitCode exitCode, DateTimeOffset startDate, DateTimeOffset exitDate)
     {
         ProcessId = processId;
         ExitCode = exitCode;
@@ -15,7 +15,7 @@ public class ProcessResult
     public int ProcessId { get; }
 
     /// <summary>Gets the process exit code.</summary>
-    public int ExitCode { get; }
+    public ProcessExitCode ExitCode { get; }
 
     /// <summary>Gets the time the process was started.</summary>
     public DateTimeOffset StartDate { get; }

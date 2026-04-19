@@ -8,6 +8,47 @@ namespace Meziantou.Framework.Tests;
 public class ProcessWrapperTests
 {
     [Fact]
+    public void ProcessExitCode_IsSuccess_TrueForZero()
+    {
+        var exitCode = new ProcessExitCode(0);
+
+        Assert.True(exitCode.IsSuccess);
+    }
+
+    [Fact]
+    public void ProcessExitCode_IsSuccess_FalseForNonZero()
+    {
+        var exitCode = new ProcessExitCode(42);
+
+        Assert.False(exitCode.IsSuccess);
+    }
+
+    [Fact]
+    public void ProcessExitCode_EqualityMembers()
+    {
+        var exitCodeA = new ProcessExitCode(42);
+        var exitCodeB = new ProcessExitCode(42);
+        var exitCodeC = new ProcessExitCode(1);
+
+        Assert.True(exitCodeA.Equals(exitCodeB));
+        Assert.True(exitCodeA.Equals((object)exitCodeB));
+        Assert.False(exitCodeA.Equals(exitCodeC));
+        Assert.True(exitCodeA == exitCodeB);
+        Assert.True(exitCodeA != exitCodeC);
+        Assert.Equal(exitCodeA.GetHashCode(), exitCodeB.GetHashCode());
+        Assert.Equal("42", exitCodeA.ToString());
+    }
+
+    [Fact]
+    public void ProcessExitCode_ImplicitlyConvertsToInt()
+    {
+        var exitCode = new ProcessExitCode(42);
+
+        int numericExitCode = exitCode;
+        Assert.Equal(42, numericExitCode);
+    }
+
+    [Fact]
     public async Task ExecuteBufferedAsync_CapturesOutput()
     {
         var result = CreateEchoCommand("test")
@@ -16,6 +57,7 @@ public class ProcessWrapperTests
         var processResult = await result;
 
         Assert.Equal(0, processResult.ExitCode);
+        Assert.True(processResult.ExitCode.IsSuccess);
         Assert.Single(processResult.Output.StandardOutput);
         Assert.Equal("test", processResult.Output.StandardOutput.First().Text);
     }

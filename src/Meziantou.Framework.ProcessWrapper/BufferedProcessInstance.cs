@@ -42,7 +42,7 @@ public sealed class BufferedProcessInstance : ProcessInstance
         }
     }
 
-    private protected override ProcessResult CreateProcessResult(int exitCode, DateTimeOffset exitDate)
+    private protected override ProcessResult CreateProcessResult(ProcessExitCode exitCode, DateTimeOffset exitDate)
     {
         return new BufferedProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate, output: _output);
     }

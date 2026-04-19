@@ -76,7 +76,7 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
                     .WithValidation(ProcessValidationMode.None)
                     .ExecuteBufferedAsync(cancellationToken);
 
-                if (result.ExitCode is not 0)
+                if (!result.ExitCode.IsSuccess)
                 {
                     Console.WriteLine($"Unable to update lock file '{lockFile}':\n{result.Output}");
                 }

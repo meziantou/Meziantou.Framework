@@ -13,6 +13,14 @@ public static class Extensions
         {
             snapshotSettings.AddConverter(new Rgba32HumanReadableConverter());
             snapshotSettings.Serializers.Add(new ImageSnapshotSerializer());
+
+            var comparer = new ImageSharpSnapshotComparer(settings);
+            snapshotSettings.SetSnapshotComparer("bmp", comparer);
+            snapshotSettings.SetSnapshotComparer("png", comparer);
+            snapshotSettings.SetSnapshotComparer("jpeg", comparer);
+            snapshotSettings.SetSnapshotComparer("jpg", comparer);
+            snapshotSettings.SetSnapshotComparer("tiff", comparer);
+            snapshotSettings.SetSnapshotComparer("webp", comparer);
         }
     }
 }
@@ -22,7 +30,7 @@ public sealed class ImageComparisonSettings
     public float? SimilarityThreshold { get; set; }
 }
 
-internal sealed class ImageSharpSnapshotComparer(ImageComparisonSettings settings) : ISnapshotComparer
+internal sealed class ImageSharpSnapshotComparer(ImageComparisonSettings? settings) : ISnapshotComparer
 {
     public bool Equals(SnapshotData expected, SnapshotData actual)
     {

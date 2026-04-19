@@ -5,7 +5,7 @@ namespace Meziantou.Framework.SnapshotTesting.ImageSharp;
 internal sealed class ImageSnapshotSerializer : ISnapshotSerializer
 {
     public bool CanSerialize(SnapshotType type, object? value) => value is Image;
-    public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object? value)
+    public SerializedSnapshot Serialize(SnapshotType type, object? value)
     {
         if (value is not Image image)
             throw new ArgumentException("Value must be an Image.", nameof(value));
@@ -32,6 +32,6 @@ internal sealed class ImageSnapshotSerializer : ISnapshotSerializer
             image.SaveAsWebp(ms);
         }
 
-        return [new SnapshotData(type.FileExtension, ms.ToArray())];
+        return new SerializedSnapshot([new SnapshotData(type.FileExtension, ms.ToArray())]);
     }
 }

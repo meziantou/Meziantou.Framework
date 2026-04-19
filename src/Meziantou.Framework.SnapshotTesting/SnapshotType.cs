@@ -6,12 +6,20 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
     public static SnapshotType Default { get; } = new("txt", "text/plain", "Text");
     public static SnapshotType Png { get; } = new("png", "image/png", "PNG image");
     public static SnapshotType Svg { get; } = new("svg", "image/svg+xml", "SVG image");
+    public static SnapshotType Bmp { get; } = new("bmp", "image/bmp", "BMP image");
+    public static SnapshotType Jpeg { get; } = new("jpeg", "image/jpeg", "JPEG image");
+    public static SnapshotType Tiff { get; } = new("tiff", "image/tiff", "TIFF image");
+    public static SnapshotType Webp { get; } = new("webp", "image/webp", "WebP image");
 
     private static readonly Dictionary<string, SnapshotType> Cache = new(StringComparer.OrdinalIgnoreCase)
     {
         ["txt"] = Default,
         ["png"] = Png,
         ["svg"] = Svg,
+        ["bmp"] = Bmp,
+        ["jpeg"] = Jpeg,
+        ["tiff"] = Tiff,
+        ["webp"] = Webp,
     };
 
     private SnapshotType(string type, string? mimeType = null, string? displayName = null)

@@ -180,7 +180,8 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                     if (arguments is null || arguments.Length == 0)
                         return displayName ?? methodName;
 
-                    if (ShouldPreferDisplayName(displayName, methodName))
+                    var displayNameHasParameters = displayName?.IndexOf('(', StringComparison.Ordinal) >= 0;
+                    if (ShouldPreferDisplayName(displayName, methodName) || !displayNameHasParameters)
                         return GetMethodName(displayName) ?? displayName;
 
                     return methodName + "_" + string.Join('_', arguments.Select(FormatArgument));

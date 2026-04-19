@@ -52,11 +52,11 @@ public sealed class SnapshotTests
     public void Settings_WithDeepClone()
     {
         var original = new SnapshotSettings();
-        original.SetSnapshotSerializer(SnapshotType.Create("dummy"), new FixedCountSerializer(count: 1));
-        original.SetSnapshotComparer(SnapshotType.Create("dummy"), ByteArraySnapshotComparer.Instance);
+        original.Serializers.Set(SnapshotType.Create("dummy"), new FixedCountSerializer(count: 1));
+        original.Comparers.Set(SnapshotType.Create("dummy"), ByteArraySnapshotComparer.Instance);
 
         var clone = original with { };
-        clone.SetSnapshotSerializer(SnapshotType.Create("new"), new FixedCountSerializer(count: 2));
+        clone.Serializers.Set(SnapshotType.Create("new"), new FixedCountSerializer(count: 2));
 
         Assert.NotSame(original.Serializers, clone.Serializers);
         Assert.NotSame(original.Comparers, clone.Comparers);
@@ -165,7 +165,7 @@ public sealed class SnapshotTests
             SnapshotPathStrategy = context => directory / (context.Type.Type + "_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension),
         };
 
-        settings.SetSnapshotSerializer(snapshotType, new SnapshotTypeSerializer());
+        settings.Serializers.Set(snapshotType, new SnapshotTypeSerializer());
         Snapshot.Validate("sample", snapshotType, settings);
 
         var filePath = directory / "png_0.verified.png";
@@ -293,7 +293,7 @@ public sealed class SnapshotTests
             AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.txt"),
         };
-        settings.SetSnapshotSerializer(SnapshotType.Default, new FixedCountSerializer(count: 2));
+        settings.Serializers.Set(SnapshotType.Default, new FixedCountSerializer(count: 2));
 
         var verifiedPath0 = directory.GetFullPath("snapshot_0.verified.txt");
         var verifiedPath1 = directory.GetFullPath("snapshot_1.verified.txt");
@@ -339,7 +339,7 @@ public sealed class SnapshotTests
 
     private static void ValidateWithSerializerCount(SnapshotSettings settings, int count)
     {
-        settings.SetSnapshotSerializer(SnapshotType.Default, new FixedCountSerializer(count));
+        settings.Serializers.Set(SnapshotType.Default, new FixedCountSerializer(count));
         Snapshot.Validate("sample", settings);
     }
 
@@ -367,7 +367,7 @@ public sealed class SnapshotTests
             SnapshotPathStrategy = _ => directory / "snapshot.verified.txt",
         };
 
-        settings.SetSnapshotSerializer(SnapshotType.Default, new FixedValueSerializer(serializedValue));
+        settings.Serializers.Set(SnapshotType.Default, new FixedValueSerializer(serializedValue));
         return settings;
     }
 

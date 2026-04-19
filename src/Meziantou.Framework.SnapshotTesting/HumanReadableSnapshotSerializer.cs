@@ -38,9 +38,9 @@ internal sealed class HumanReadableSnapshotSerializer : ISnapshotSerializer
         Options = options;
     }
 
-    public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object? value)
+    public SerializedSnapshot Serialize(SnapshotType type, object? value)
     {
-        return [new SnapshotData(type.FileExtension, Encoding.UTF8.GetBytes(HumanReadableSerializer.Serialize(value, Options)))];
+        return new SerializedSnapshot([new SnapshotData(type.FileExtension, Encoding.UTF8.GetBytes(HumanReadableSerializer.Serialize(value, Options)))]);
     }
 
     public bool CanSerialize(SnapshotType type, object? value) => true;

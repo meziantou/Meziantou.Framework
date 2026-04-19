@@ -10,11 +10,11 @@ public static class SnapsthotSettingsImageSharpExtensions
             snapshotSettings.Serializers.Add(new ImageSnapshotSerializer());
 
             var comparer = new ImageSharpSnapshotComparer(settings);
-            snapshotSettings.SetSnapshotComparer(SnapshotType.Bmp, comparer);
-            snapshotSettings.SetSnapshotComparer(SnapshotType.Png, comparer);
-            snapshotSettings.SetSnapshotComparer(SnapshotType.Jpeg, comparer);
-            snapshotSettings.SetSnapshotComparer(SnapshotType.Tiff, comparer);
-            snapshotSettings.SetSnapshotComparer(SnapshotType.Webp, comparer);
+            snapshotSettings.Comparers.Set(SnapshotType.Bmp, comparer);
+            snapshotSettings.Comparers.Set(SnapshotType.Png, comparer);
+            snapshotSettings.Comparers.Set(SnapshotType.Jpeg, comparer);
+            snapshotSettings.Comparers.Set(SnapshotType.Tiff, comparer);
+            snapshotSettings.Comparers.Set(SnapshotType.Webp, comparer);
         }
     }
 }

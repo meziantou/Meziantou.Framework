@@ -15,8 +15,6 @@ public sealed record SnapshotSettings
         MergeTool.RiderIfCurrentProcess,
         new AutoDiffEngineTool());
 
-    private readonly List<ISnapshotSerializer> _serializers;
-    private readonly Dictionary<SnapshotType, ISnapshotComparer> _comparers;
 
     public static SnapshotSettings Default { get; set; } = new();
 
@@ -76,7 +74,7 @@ public sealed record SnapshotSettings
         }
     }
 
-    public IList<ISnapshotSerializer> Serializers => _serializers;
+    public SnapshotSerializerCollection Serializers { get; }
 
     /// <summary>
     /// Set the ordered list of tools to diff snapshots.
@@ -89,12 +87,18 @@ public sealed record SnapshotSettings
     /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
     public IEnumerable<MergeTool>? MergeTools { get; set; }
 
-    public IReadOnlyDictionary<SnapshotType, ISnapshotComparer> Comparers => _comparers;
+    public SnapshotComparerCollection Comparers { get; }
 
     public SnapshotSettings()
     {
-        _serializers = new List<ISnapshotSerializer>() { HumanReadableSnapshotSerializer.DefaultInstance, ByteArraySnapshotSerializer.Instance, StreamSnapshotSerializer.Instance };
-        _comparers = new Dictionary<SnapshotType, ISnapshotComparer>() { [SnapshotType.None] = ByteArraySnapshotComparer.Instance };
+        Serializers =
+        [
+            HumanReadableSnapshotSerializer.DefaultInstance,
+            ByteArraySnapshotSerializer.Instance,
+            StreamSnapshotSerializer.Instance,
+        ];
+        Comparers = new SnapshotComparerCollection();
+        Comparers.Set(SnapshotType.None, ByteArraySnapshotComparer.Instance);
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         AssertionExceptionCreator = AssertionExceptionBuilder.Default;
         ErrorMessageFormatter = InlineDiffAssertionMessageFormatter.Instance;
@@ -106,8 +110,8 @@ public sealed record SnapshotSettings
     private SnapshotSettings(SnapshotSettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        _serializers = [.. options._serializers];
-        _comparers = new Dictionary<SnapshotType, ISnapshotComparer>(options._comparers);
+        Serializers = new SnapshotSerializerCollection(options.Serializers);
+        Comparers = new SnapshotComparerCollection(options.Comparers);
         AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
         ForceUpdateSnapshots = options.ForceUpdateSnapshots;
         SnapshotUpdateStrategy = options.SnapshotUpdateStrategy;
@@ -116,23 +120,6 @@ public sealed record SnapshotSettings
         MaxSnapshotFileNameLength = options.MaxSnapshotFileNameLength;
         SnapshotPathStrategy = options.SnapshotPathStrategy;
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
-    }
-
-    public void SetSnapshotComparer(SnapshotType type, ISnapshotComparer comparer)
-    {
-        ArgumentNullException.ThrowIfNull(comparer);
-        _comparers[type] = comparer;
-    }
-
-    public ISnapshotComparer GetSnapshotComparer(SnapshotType type)
-    {
-        if (_comparers.TryGetValue(type, out var comparer))
-            return comparer;
-
-        if (_comparers.TryGetValue(SnapshotType.None, out var defaultComparer))
-            return defaultComparer;
-
-        return ByteArraySnapshotComparer.Instance;
     }
 
     internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected;

@@ -53,16 +53,8 @@ internal static class SnapshotEngine
 
     private static IReadOnlyList<SnapshotData> Serialize(SnapshotSettings settings, SnapshotType type, object? value)
     {
-        for (var i = settings.Serializers.Count - 1; i >= 0; i--)
-        {
-            var serializer = settings.Serializers[i];
-            if (serializer.CanSerialize(type, value))
-            {
-                return serializer.Serialize(type, value);
-            }
-        }
-
-        throw new InvalidOperationException($"No suitable serializer found for '{type.DisplayName}' and value type '{value?.GetType()}'.");
+        var serializer = settings.Serializers.Get(type, value);
+        return serializer.Serialize(type, value);
     }
 
     private static SnapshotComparisonResult Compare(SnapshotSettings settings, SnapshotType type, List<SnapshotFile> actualFiles, Dictionary<FullPath, SnapshotData> expectedFiles)
@@ -74,7 +66,7 @@ internal static class SnapshotEngine
         var missingPaths = actualPaths.Where(path => !expectedPaths.Contains(path)).ToArray();
         var extraPaths = expectedPaths.Where(path => !actualPaths.Contains(path)).ToArray();
 
-        var comparer = settings.GetSnapshotComparer(type);
+        var comparer = settings.Comparers.Get(type);
         var changedPaths = new List<FullPath>();
         foreach (var path in expectedPaths.Intersect(actualPaths))
         {

@@ -30,7 +30,7 @@ public abstract class SnapshotUpdateStrategy
     {
         get
         {
-            return MergeTool;
+            return Disallow;
         }
     }
 

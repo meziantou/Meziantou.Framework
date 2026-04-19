@@ -23,7 +23,7 @@ public class QRCodePngRendererTests
         var qr = QRCode.Create("TEST", ErrorCorrectionLevel.L);
         var png = qr.ToPng();
 
-        Snapshot.Validate(png, SnapshotType.Png); // TODO allow diff percentage + Extension ValidatePng (ImageSharp)
+        Snapshot.Validate(png, SnapshotType.Png);
     }
 
     [Fact]

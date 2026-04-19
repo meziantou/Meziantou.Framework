@@ -2,7 +2,4 @@
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.ValueStringBuilder/Meziantou.Framework.ValueStringBuilder.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.ValueStringBuilder.Tests/Meziantou.Framework.ValueStringBuilder.Tests.csproj" />
-  </Folder>
 </Solution>

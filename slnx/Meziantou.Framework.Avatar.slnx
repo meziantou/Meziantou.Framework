@@ -1,11 +1,5 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
-    <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
-    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
-    <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
   </Folder>
 </Solution>

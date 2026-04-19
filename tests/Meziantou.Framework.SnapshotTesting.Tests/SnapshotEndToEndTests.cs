@@ -552,6 +552,21 @@ public sealed class SnapshotEndToEndTests
         };
     }
 
+    [Fact]
+    public void GetRepositoryRoot_UsesSourceRootForPathMappedCallerFilePath()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFilePath = directory.GetFullPath("tests\\Meziantou.Framework.SnapshotTesting.Tests\\SnapshotEndToEndTests.cs");
+        sourceFilePath.CreateParentDirectory();
+        File.WriteAllText(sourceFilePath, "");
+
+        var repositoryRoot = GetRepositoryRoot(
+            "/_/tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotEndToEndTests.cs",
+            [directory.FullPath.Value]);
+
+        Assert.Equal(directory.FullPath, repositoryRoot);
+    }
+
     private static string CreateFixedCountSerializerSource(int count)
     {
         return $$"""
@@ -694,8 +709,17 @@ public sealed class SnapshotEndToEndTests
 
     private static FullPath GetRepositoryRoot([CallerFilePath] string? filePath = null)
     {
-        var directory = FullPath.FromPath(Path.GetDirectoryName(filePath) ?? throw new InvalidOperationException("Cannot resolve source directory."));
-        return directory.Parent.Parent;
+        return GetRepositoryRoot(filePath, sourceRoots: null);
+    }
+
+    private static FullPath GetRepositoryRoot(string? filePath, IEnumerable<string?>? sourceRoots)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        var resolvedSourceFilePath = sourceRoots is null
+            ? SnapshotCallerContext.ResolveSourceFilePath(filePath)
+            : SnapshotCallerContext.ResolveSourceFilePath(filePath, sourceRoots);
+
+        return resolvedSourceFilePath.Parent.Parent.Parent;
     }
 
     private static SnapshotFile[] GetGeneratedSnapshotFiles(FullPath rootPath)

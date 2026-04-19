@@ -1,5 +1,5 @@
-using System.Numerics.Tensors;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.HumanReadable;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -66,95 +66,159 @@ internal sealed class ImageSharpSnapshotComparer(ImageComparisonSettings? settin
 
     /// <summary>
     /// Computes the mean Structural Similarity Index (SSIM) across R, G, B channels.
-    /// Iterates pixel rows via <see cref="SixLabors.ImageSharp.PixelFormats.Rgba32"/> accessors to avoid
-    /// copying the full image into a buffer, using per-row float buffers and
-    /// <see cref="System.Numerics.Tensors.TensorPrimitives"/> for SIMD-accelerated row sums.
-    /// Variances and covariance are derived from the identity
-    /// <c>Var(X) = E[X²] − E[X]²</c> in a single pass.
+    /// Iterates pixel rows via <see cref="SixLabors.ImageSharp.PixelFormats.Rgba32"/> accessors,
+    /// casting each row to <see cref="uint"/> spans and using <see cref="Vector512{T}"/>/<see cref="Vector256{T}"/>/<see cref="Vector128{T}"/>
+    /// intrinsics to extract channels and accumulate statistics with zero heap allocations.
+    /// Variances and covariance are derived from the identity <c>Var(X) = E[X²] − E[X]²</c> in a single pass.
     /// </summary>
     private static float ComputeMeanSSIM(Image<Rgba32> img1, Image<Rgba32> img2)
     {
-        var width = img1.Width;
-        var pixelCount = width * img1.Height;
+        var pixelCount = img1.Width * img1.Height;
 
-        // Per-row channel buffers; reused for every row to keep allocations small.
-        var rowR1 = new float[width];
-        var rowG1 = new float[width];
-        var rowB1 = new float[width];
-        var rowR2 = new float[width];
-        var rowG2 = new float[width];
-        var rowB2 = new float[width];
-        var rowCrossR = new float[width];
-        var rowCrossG = new float[width];
-        var rowCrossB = new float[width];
-        var rowSqR1 = new float[width];
-        var rowSqG1 = new float[width];
-        var rowSqB1 = new float[width];
-        var rowSqR2 = new float[width];
-        var rowSqG2 = new float[width];
-        var rowSqB2 = new float[width];
-
-        // Accumulators: sum, sumSq, sumCross per channel (R=0, G=1, B=2).
-        var sum1 = new double[3];
-        var sum2 = new double[3];
-        var sumSq1 = new double[3];
-        var sumSq2 = new double[3];
-        var sumCross = new double[3];
+        double sumR1 = 0, sumG1 = 0, sumB1 = 0;
+        double sumR2 = 0, sumG2 = 0, sumB2 = 0;
+        double sumR1Sq = 0, sumG1Sq = 0, sumB1Sq = 0;
+        double sumR2Sq = 0, sumG2Sq = 0, sumB2Sq = 0;
+        double sumR12 = 0, sumG12 = 0, sumB12 = 0;
 
         img1.ProcessPixelRows(img2, (acc1, acc2) =>
         {
             for (var y = 0; y < acc1.Height; y++)
             {
-                var row1 = acc1.GetRowSpan(y);
-                var row2 = acc2.GetRowSpan(y);
+                var row1 = MemoryMarshal.Cast<Rgba32, uint>(acc1.GetRowSpan(y));
+                var row2 = MemoryMarshal.Cast<Rgba32, uint>(acc2.GetRowSpan(y));
+                var width = row1.Length;
+                var x = 0;
 
-                for (var x = 0; x < width; x++)
+                // Vector512 path (AVX-512): 16 pixels per iteration
+                if (Vector512.IsHardwareAccelerated && width >= Vector512<uint>.Count)
                 {
-                    rowR1[x] = row1[x].R;
-                    rowG1[x] = row1[x].G;
-                    rowB1[x] = row1[x].B;
-                    rowR2[x] = row2[x].R;
-                    rowG2[x] = row2[x].G;
-                    rowB2[x] = row2[x].B;
+                    var vR1 = Vector512<float>.Zero; var vG1 = Vector512<float>.Zero; var vB1 = Vector512<float>.Zero;
+                    var vR2 = Vector512<float>.Zero; var vG2 = Vector512<float>.Zero; var vB2 = Vector512<float>.Zero;
+                    var vR1Sq = Vector512<float>.Zero; var vG1Sq = Vector512<float>.Zero; var vB1Sq = Vector512<float>.Zero;
+                    var vR2Sq = Vector512<float>.Zero; var vG2Sq = Vector512<float>.Zero; var vB2Sq = Vector512<float>.Zero;
+                    var vR12 = Vector512<float>.Zero; var vG12 = Vector512<float>.Zero; var vB12 = Vector512<float>.Zero;
+                    var mask = Vector512.Create(0x000000FFu);
+
+                    ref var ref1 = ref MemoryMarshal.GetReference(row1);
+                    ref var ref2 = ref MemoryMarshal.GetReference(row2);
+                    for (; x <= width - Vector512<uint>.Count; x += Vector512<uint>.Count)
+                    {
+                        var p1 = Vector512.LoadUnsafe(ref ref1, (nuint)x);
+                        var p2 = Vector512.LoadUnsafe(ref ref2, (nuint)x);
+                        var r1 = Vector512.ConvertToSingle((p1 & mask).AsInt32());
+                        var g1 = Vector512.ConvertToSingle((Vector512.ShiftRightLogical(p1, 8) & mask).AsInt32());
+                        var b1 = Vector512.ConvertToSingle((Vector512.ShiftRightLogical(p1, 16) & mask).AsInt32());
+                        var r2 = Vector512.ConvertToSingle((p2 & mask).AsInt32());
+                        var g2 = Vector512.ConvertToSingle((Vector512.ShiftRightLogical(p2, 8) & mask).AsInt32());
+                        var b2 = Vector512.ConvertToSingle((Vector512.ShiftRightLogical(p2, 16) & mask).AsInt32());
+                        vR1 += r1; vG1 += g1; vB1 += b1;
+                        vR2 += r2; vG2 += g2; vB2 += b2;
+                        vR1Sq += r1 * r1; vG1Sq += g1 * g1; vB1Sq += b1 * b1;
+                        vR2Sq += r2 * r2; vG2Sq += g2 * g2; vB2Sq += b2 * b2;
+                        vR12 += r1 * r2; vG12 += g1 * g2; vB12 += b1 * b2;
+                    }
+
+                    sumR1 += Vector512.Sum(vR1); sumG1 += Vector512.Sum(vG1); sumB1 += Vector512.Sum(vB1);
+                    sumR2 += Vector512.Sum(vR2); sumG2 += Vector512.Sum(vG2); sumB2 += Vector512.Sum(vB2);
+                    sumR1Sq += Vector512.Sum(vR1Sq); sumG1Sq += Vector512.Sum(vG1Sq); sumB1Sq += Vector512.Sum(vB1Sq);
+                    sumR2Sq += Vector512.Sum(vR2Sq); sumG2Sq += Vector512.Sum(vG2Sq); sumB2Sq += Vector512.Sum(vB2Sq);
+                    sumR12 += Vector512.Sum(vR12); sumG12 += Vector512.Sum(vG12); sumB12 += Vector512.Sum(vB12);
                 }
 
-                // Use TensorPrimitives to compute squared and cross-product rows.
-                TensorPrimitives.Multiply(rowR1, rowR1, rowSqR1);
-                TensorPrimitives.Multiply(rowG1, rowG1, rowSqG1);
-                TensorPrimitives.Multiply(rowB1, rowB1, rowSqB1);
-                TensorPrimitives.Multiply(rowR2, rowR2, rowSqR2);
-                TensorPrimitives.Multiply(rowG2, rowG2, rowSqG2);
-                TensorPrimitives.Multiply(rowB2, rowB2, rowSqB2);
-                TensorPrimitives.Multiply(rowR1, rowR2, rowCrossR);
-                TensorPrimitives.Multiply(rowG1, rowG2, rowCrossG);
-                TensorPrimitives.Multiply(rowB1, rowB2, rowCrossB);
+                // Vector256 path
+                if (Vector256.IsHardwareAccelerated && width >= Vector256<uint>.Count)
+                {
+                    var vR1 = Vector256<float>.Zero; var vG1 = Vector256<float>.Zero; var vB1 = Vector256<float>.Zero;
+                    var vR2 = Vector256<float>.Zero; var vG2 = Vector256<float>.Zero; var vB2 = Vector256<float>.Zero;
+                    var vR1Sq = Vector256<float>.Zero; var vG1Sq = Vector256<float>.Zero; var vB1Sq = Vector256<float>.Zero;
+                    var vR2Sq = Vector256<float>.Zero; var vG2Sq = Vector256<float>.Zero; var vB2Sq = Vector256<float>.Zero;
+                    var vR12 = Vector256<float>.Zero; var vG12 = Vector256<float>.Zero; var vB12 = Vector256<float>.Zero;
+                    var mask = Vector256.Create(0x000000FFu);
 
-                sum1[0] += TensorPrimitives.Sum(rowR1.AsSpan());
-                sum1[1] += TensorPrimitives.Sum(rowG1.AsSpan());
-                sum1[2] += TensorPrimitives.Sum(rowB1.AsSpan());
-                sum2[0] += TensorPrimitives.Sum(rowR2.AsSpan());
-                sum2[1] += TensorPrimitives.Sum(rowG2.AsSpan());
-                sum2[2] += TensorPrimitives.Sum(rowB2.AsSpan());
-                sumSq1[0] += TensorPrimitives.Sum(rowSqR1.AsSpan());
-                sumSq1[1] += TensorPrimitives.Sum(rowSqG1.AsSpan());
-                sumSq1[2] += TensorPrimitives.Sum(rowSqB1.AsSpan());
-                sumSq2[0] += TensorPrimitives.Sum(rowSqR2.AsSpan());
-                sumSq2[1] += TensorPrimitives.Sum(rowSqG2.AsSpan());
-                sumSq2[2] += TensorPrimitives.Sum(rowSqB2.AsSpan());
-                sumCross[0] += TensorPrimitives.Sum(rowCrossR.AsSpan());
-                sumCross[1] += TensorPrimitives.Sum(rowCrossG.AsSpan());
-                sumCross[2] += TensorPrimitives.Sum(rowCrossB.AsSpan());
+                    ref var ref1 = ref MemoryMarshal.GetReference(row1);
+                    ref var ref2 = ref MemoryMarshal.GetReference(row2);
+                    for (; x <= width - Vector256<uint>.Count; x += Vector256<uint>.Count)
+                    {
+                        var p1 = Vector256.LoadUnsafe(ref ref1, (nuint)x);
+                        var p2 = Vector256.LoadUnsafe(ref ref2, (nuint)x);
+                        var r1 = Vector256.ConvertToSingle((p1 & mask).AsInt32());
+                        var g1 = Vector256.ConvertToSingle((Vector256.ShiftRightLogical(p1, 8) & mask).AsInt32());
+                        var b1 = Vector256.ConvertToSingle((Vector256.ShiftRightLogical(p1, 16) & mask).AsInt32());
+                        var r2 = Vector256.ConvertToSingle((p2 & mask).AsInt32());
+                        var g2 = Vector256.ConvertToSingle((Vector256.ShiftRightLogical(p2, 8) & mask).AsInt32());
+                        var b2 = Vector256.ConvertToSingle((Vector256.ShiftRightLogical(p2, 16) & mask).AsInt32());
+                        vR1 += r1; vG1 += g1; vB1 += b1;
+                        vR2 += r2; vG2 += g2; vB2 += b2;
+                        vR1Sq += r1 * r1; vG1Sq += g1 * g1; vB1Sq += b1 * b1;
+                        vR2Sq += r2 * r2; vG2Sq += g2 * g2; vB2Sq += b2 * b2;
+                        vR12 += r1 * r2; vG12 += g1 * g2; vB12 += b1 * b2;
+                    }
+
+                    sumR1 += Vector256.Sum(vR1); sumG1 += Vector256.Sum(vG1); sumB1 += Vector256.Sum(vB1);
+                    sumR2 += Vector256.Sum(vR2); sumG2 += Vector256.Sum(vG2); sumB2 += Vector256.Sum(vB2);
+                    sumR1Sq += Vector256.Sum(vR1Sq); sumG1Sq += Vector256.Sum(vG1Sq); sumB1Sq += Vector256.Sum(vB1Sq);
+                    sumR2Sq += Vector256.Sum(vR2Sq); sumG2Sq += Vector256.Sum(vG2Sq); sumB2Sq += Vector256.Sum(vB2Sq);
+                    sumR12 += Vector256.Sum(vR12); sumG12 += Vector256.Sum(vG12); sumB12 += Vector256.Sum(vB12);
+                }
+
+                // Vector128 path (remainder after Vector256, or main path when only 128-bit SIMD is available)
+                if (Vector128.IsHardwareAccelerated && x <= width - Vector128<uint>.Count)
+                {
+                    var vR1 = Vector128<float>.Zero; var vG1 = Vector128<float>.Zero; var vB1 = Vector128<float>.Zero;
+                    var vR2 = Vector128<float>.Zero; var vG2 = Vector128<float>.Zero; var vB2 = Vector128<float>.Zero;
+                    var vR1Sq = Vector128<float>.Zero; var vG1Sq = Vector128<float>.Zero; var vB1Sq = Vector128<float>.Zero;
+                    var vR2Sq = Vector128<float>.Zero; var vG2Sq = Vector128<float>.Zero; var vB2Sq = Vector128<float>.Zero;
+                    var vR12 = Vector128<float>.Zero; var vG12 = Vector128<float>.Zero; var vB12 = Vector128<float>.Zero;
+                    var mask = Vector128.Create(0x000000FFu);
+
+                    ref var ref1 = ref MemoryMarshal.GetReference(row1);
+                    ref var ref2 = ref MemoryMarshal.GetReference(row2);
+                    for (; x <= width - Vector128<uint>.Count; x += Vector128<uint>.Count)
+                    {
+                        var p1 = Vector128.LoadUnsafe(ref ref1, (nuint)x);
+                        var p2 = Vector128.LoadUnsafe(ref ref2, (nuint)x);
+                        var r1 = Vector128.ConvertToSingle((p1 & mask).AsInt32());
+                        var g1 = Vector128.ConvertToSingle((Vector128.ShiftRightLogical(p1, 8) & mask).AsInt32());
+                        var b1 = Vector128.ConvertToSingle((Vector128.ShiftRightLogical(p1, 16) & mask).AsInt32());
+                        var r2 = Vector128.ConvertToSingle((p2 & mask).AsInt32());
+                        var g2 = Vector128.ConvertToSingle((Vector128.ShiftRightLogical(p2, 8) & mask).AsInt32());
+                        var b2 = Vector128.ConvertToSingle((Vector128.ShiftRightLogical(p2, 16) & mask).AsInt32());
+                        vR1 += r1; vG1 += g1; vB1 += b1;
+                        vR2 += r2; vG2 += g2; vB2 += b2;
+                        vR1Sq += r1 * r1; vG1Sq += g1 * g1; vB1Sq += b1 * b1;
+                        vR2Sq += r2 * r2; vG2Sq += g2 * g2; vB2Sq += b2 * b2;
+                        vR12 += r1 * r2; vG12 += g1 * g2; vB12 += b1 * b2;
+                    }
+
+                    sumR1 += Vector128.Sum(vR1); sumG1 += Vector128.Sum(vG1); sumB1 += Vector128.Sum(vB1);
+                    sumR2 += Vector128.Sum(vR2); sumG2 += Vector128.Sum(vG2); sumB2 += Vector128.Sum(vB2);
+                    sumR1Sq += Vector128.Sum(vR1Sq); sumG1Sq += Vector128.Sum(vG1Sq); sumB1Sq += Vector128.Sum(vB1Sq);
+                    sumR2Sq += Vector128.Sum(vR2Sq); sumG2Sq += Vector128.Sum(vG2Sq); sumB2Sq += Vector128.Sum(vB2Sq);
+                    sumR12 += Vector128.Sum(vR12); sumG12 += Vector128.Sum(vG12); sumB12 += Vector128.Sum(vB12);
+                }
+
+                // Scalar remainder
+                for (; x < width; x++)
+                {
+                    double r1 = (byte)row1[x], g1 = (byte)(row1[x] >> 8), b1 = (byte)(row1[x] >> 16);
+                    double r2 = (byte)row2[x], g2 = (byte)(row2[x] >> 8), b2 = (byte)(row2[x] >> 16);
+                    sumR1 += r1; sumG1 += g1; sumB1 += b1;
+                    sumR2 += r2; sumG2 += g2; sumB2 += b2;
+                    sumR1Sq += r1 * r1; sumG1Sq += g1 * g1; sumB1Sq += b1 * b1;
+                    sumR2Sq += r2 * r2; sumG2Sq += g2 * g2; sumB2Sq += b2 * b2;
+                    sumR12 += r1 * r2; sumG12 += g1 * g2; sumB12 += b1 * b2;
+                }
             }
         });
 
-        float ssimSum = 0f;
-        for (var c = 0; c < 3; c++)
-            ssimSum += ComputeChannelSSIM(sum1[c], sum2[c], sumSq1[c], sumSq2[c], sumCross[c], pixelCount);
-
-        return ssimSum / 3f;
+        var ssimR = ComputeChannelSSIM(pixelCount, sumR1, sumR2, sumR1Sq, sumR2Sq, sumR12);
+        var ssimG = ComputeChannelSSIM(pixelCount, sumG1, sumG2, sumG1Sq, sumG2Sq, sumG12);
+        var ssimB = ComputeChannelSSIM(pixelCount, sumB1, sumB2, sumB1Sq, sumB2Sq, sumB12);
+        return (float)((ssimR + ssimG + ssimB) / 3.0);
     }
 
-    private static float ComputeChannelSSIM(double sum1, double sum2, double sumSq1, double sumSq2, double sumCross, int count)
+    private static double ComputeChannelSSIM(int count, double sum1, double sum2, double sumSq1, double sumSq2, double sumCross)
     {
         var mean1 = sum1 / count;
         var mean2 = sum2 / count;
@@ -173,7 +237,7 @@ internal sealed class ImageSharpSnapshotComparer(ImageComparisonSettings? settin
         var numerator = (2.0 * mean1 * mean2 + C1) * (2.0 * sigma12 + C2);
         var denominator = (mean1 * mean1 + mean2 * mean2 + C1) * (sigma1Sq + sigma2Sq + C2);
 
-        return (float)(numerator / denominator);
+        return numerator / denominator;
     }
 }
 

@@ -579,4 +579,3 @@ public class QRCodePayloadTests
             """, payload);
     }
 }
-

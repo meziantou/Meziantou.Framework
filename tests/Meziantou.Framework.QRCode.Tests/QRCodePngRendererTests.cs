@@ -6,13 +6,24 @@ namespace Meziantou.Framework.Tests;
 
 public class QRCodePngRendererTests
 {
+    public static IEnumerable<object[]> ModuleSizes
+    {
+        get
+        {
+            for (var moduleSize = 1; moduleSize <= 10; moduleSize++)
+            {
+                yield return [moduleSize];
+            }
+        }
+    }
+
     [Fact]
     public void ToPng_DefaultOptions()
     {
         var qr = QRCode.Create("TEST", ErrorCorrectionLevel.L);
         var png = qr.ToPng();
 
-        Snapshot.Validate(SnapshotType.Png, png); // TODO allow diff percentage + Extension ValidatePng (ImageSharp)
+        Snapshot.Validate(png, SnapshotType.Png); // TODO allow diff percentage + Extension ValidatePng (ImageSharp)
     }
 
     [Fact]
@@ -40,6 +51,16 @@ public class QRCodePngRendererTests
         var (width, height, _) = ParsePng(png);
         Assert.Equal(290, width);
         Assert.Equal(290, height);
+    }
+
+    [Theory]
+    [MemberData(nameof(ModuleSizes))]
+    public void ToPng_UsesConfiguredModuleSize(int moduleSize)
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var png = qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize });
+
+        Snapshot.Validate(png, SnapshotType.Png);
     }
 
     [Fact]

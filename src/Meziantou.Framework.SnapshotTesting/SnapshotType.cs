@@ -4,11 +4,13 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
 {
     public static SnapshotType Default { get; } = new("txt", "text/plain", "Text");
     public static SnapshotType Png { get; } = new("png", "image/png", "PNG image");
+    public static SnapshotType Svg { get; } = new("svg", "image/svg+xml", "SVG image");
 
     private static readonly Dictionary<string, SnapshotType> Cache = new(StringComparer.OrdinalIgnoreCase)
     {
         ["txt"] = Default,
         ["png"] = Png,
+        ["svg"] = Svg,
     };
 
     private SnapshotType(string type, string? mimeType = null, string? displayName = null)

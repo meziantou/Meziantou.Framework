@@ -42,6 +42,7 @@ Built-in types include:
 
 - `SnapshotType.Default` (`txt`, `text/plain`)
 - `SnapshotType.Png` (`png`, `image/png`)
+- `SnapshotType.Svg` (`svg`, `image/svg+xml`)
 
 ## Customization
 

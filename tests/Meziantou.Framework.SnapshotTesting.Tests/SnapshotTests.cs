@@ -180,6 +180,8 @@ public sealed class SnapshotTests
         Assert.Equal("Text", SnapshotType.Default.DisplayName);
         Assert.Equal("image/png", SnapshotType.Png.MimeType);
         Assert.Equal("PNG image", SnapshotType.Png.DisplayName);
+        Assert.Equal("image/svg+xml", SnapshotType.Svg.MimeType);
+        Assert.Equal("SVG image", SnapshotType.Svg.DisplayName);
     }
 
     [Fact]
@@ -197,8 +199,12 @@ public sealed class SnapshotTests
     {
         var pngA = SnapshotType.Create("png");
         var pngB = SnapshotType.Create("png");
+        var svgA = SnapshotType.Create("svg");
+        var svgB = SnapshotType.Create("svg");
 
         Assert.Same(pngA, pngB);
+        Assert.Same(svgA, svgB);
+        Assert.Same(SnapshotType.Svg, svgA);
     }
 
     [Fact]
@@ -356,5 +362,4 @@ public sealed class SnapshotTests
         }
     }
 }
-
 

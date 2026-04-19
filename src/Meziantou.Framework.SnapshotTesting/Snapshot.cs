@@ -15,17 +15,17 @@ public static class Snapshot
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static void Validate(object? value, SnapshotSettings? settings, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1, [CallerMemberName] string? memberName = null)
     {
-        Validate(SnapshotType.Default, value, settings, filePath, lineNumber, memberName);
+        Validate(value, type: null, settings, filePath, lineNumber, memberName);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void Validate(SnapshotType type, object? value, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1, [CallerMemberName] string? memberName = null)
+    public static void Validate(object? value, SnapshotType? type, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1, [CallerMemberName] string? memberName = null)
     {
-        Validate(type, value, settings: null, filePath, lineNumber, memberName);
+        Validate(value, type, settings: null, filePath, lineNumber, memberName);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void Validate(SnapshotType type, object? value, SnapshotSettings? settings, [CallerFilePath] string? callerFilePath = null, [CallerLineNumber] int callerLineNumber = -1, [CallerMemberName] string? callerMemberName = null)
+    public static void Validate(object? value, SnapshotType? type, SnapshotSettings? settings, [CallerFilePath] string? callerFilePath = null, [CallerLineNumber] int callerLineNumber = -1, [CallerMemberName] string? callerMemberName = null)
     {
         SnapshotEngine.Validate(type, value, settings ?? SnapshotSettings.Default, callerFilePath, callerLineNumber, callerMemberName, TestContext.Value);
     }

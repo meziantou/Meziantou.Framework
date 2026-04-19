@@ -7,10 +7,11 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 internal static class SnapshotEngine
 {
-    public static void Validate(SnapshotType type, object? value, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext)
+    public static void Validate(SnapshotType? type, object? value, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
+        type ??= SnapshotType.Default;
         var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName);
         var serializer = settings.GetSnapshotSerializer(type);
         var serialized = serializer.Serialize(type, value);

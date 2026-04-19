@@ -42,7 +42,7 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         if (Cache.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(nameSpan, out var snapshotType))
             return snapshotType;
 #else
-        if (Cache.TryGetValue(name ?? nameSpan.ToString(), out snapshotType))
+        if (Cache.TryGetValue(name ?? nameSpan.ToString(), out var snapshotType))
             return snapshotType;
 #endif
 
@@ -53,9 +53,9 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
     public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Type);
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is SnapshotType snapshotType && Equals(snapshotType);
 
-    public static bool operator ==(SnapshotType left, SnapshotType right) => left.Equals(right);
+    public static bool operator ==(SnapshotType? left, SnapshotType? right) => left is null ? right is null : left.Equals(right);
 
-    public static bool operator !=(SnapshotType left, SnapshotType right) => !(left == right);
+    public static bool operator !=(SnapshotType? left, SnapshotType? right) => !(left == right);
 
     public static implicit operator SnapshotType(string? name) => Create(name);
 }

@@ -41,8 +41,8 @@ public static class QRCodePngRenderer
         ArgumentNullException.ThrowIfNull(qrCode);
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleSize, 1, nameof(options.ModuleSize));
-        ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules, nameof(options.QuietZoneModules));
+        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleSize, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules);
 
         var width = GetTotalDimension(qrCode.Width, options.QuietZoneModules, options.ModuleSize);
         var height = GetTotalDimension(qrCode.Height, options.QuietZoneModules, options.ModuleSize);
@@ -69,7 +69,7 @@ public static class QRCodePngRenderer
         var dataLength = (long)stride * height;
         if (dataLength > int.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(options.ModuleSize), "The output image is too large.");
+            throw new ArgumentOutOfRangeException("options.ModuleSize", "The output image is too large.");
         }
 
         var result = new byte[(int)dataLength];

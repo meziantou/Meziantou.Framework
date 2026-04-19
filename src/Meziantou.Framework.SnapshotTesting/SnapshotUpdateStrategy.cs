@@ -132,5 +132,3 @@ public abstract class SnapshotUpdateStrategy
         return name;
     }
 }
-
-public sealed record SnapshotUpdateFile(string VerifiedFilePath, string ActualFilePath);

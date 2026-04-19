@@ -40,7 +40,7 @@ public class QRCodeSvgRendererTests
     public void ToSvg_MicroQR_Snapshot()
     {
         var qr = QRCode.CreateMicroQR("123", ErrorCorrectionLevel.L);
-        var options = new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 };
+        var options = new QRCodeSvgOptions { ModuleSize = 1 };
         var svg = qr.ToSvg(options);
 
         Snapshot.Validate(svg, SnapshotType.Svg);
@@ -50,7 +50,7 @@ public class QRCodeSvgRendererTests
     public void ToSvg_RMQR_Snapshot()
     {
         var qr = QRCode.CreateRMQR("AB", ErrorCorrectionLevel.M);
-        var options = new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 };
+        var options = new QRCodeSvgOptions { ModuleSize = 1 };
         var svg = qr.ToSvg(options);
 
         Snapshot.Validate(svg, SnapshotType.Svg);
@@ -60,7 +60,7 @@ public class QRCodeSvgRendererTests
     public void ToSvg_CustomModuleSize()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
-        var svg = qr.ToSvg(new QRCodeSvgOptions { ModuleSize = 5, QuietZoneModules = 0 });
+        var svg = qr.ToSvg(new QRCodeSvgOptions { ModuleSize = 5 });
 
         Snapshot.Validate(svg, SnapshotType.Svg);
     }
@@ -73,7 +73,7 @@ public class QRCodeSvgRendererTests
         {
             DarkColor = "#ff0000",
             LightColor = "#00ff00",
-            QuietZoneModules = 0,
+            QuietZoneModules = 4,
             ModuleSize = 1,
         });
 

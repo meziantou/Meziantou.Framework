@@ -2,29 +2,54 @@
 
 `Meziantou.Framework.SnapshotTesting` validates serialized values against snapshot files stored on disk.
 
-By default, snapshots are written in a `__snapshots__` folder next to the test source file. Expected files use the `.verified.<extension>` suffix (for example `SampleTest.verified.txt`), while mismatches are written as `.actual.<extension>` files next to them. A short hash is appended when the generated name is long or uses reserved suffixes.
+## Basic usage
 
 ```csharp
-public class SampleTests
+public sealed class SampleTests
 {
     [Fact]
-    public void Test1()
+    public void ValidateUser()
     {
-        var data = new { Name = "John" };
-        Snapshot.Validate(data);
+        var value = new { Name = "John", Age = 42 };
+        Snapshot.Validate(value);
     }
 }
 ```
 
-You can configure serializers, comparers, and snapshot path strategy (`SnapshotPathStrategy`) with `SnapshotSettings`.
+## File naming convention
 
-You can also select a specific snapshot type explicitly:
+Snapshots are stored in a `__snapshots__` directory next to the test source file:
+
+- expected snapshots: `*.verified.<extension>`
+- mismatch output: `*.actual.<extension>`
+
+Example:
+
+- `__snapshots__/SampleTest.verified.txt`
+- `__snapshots__/SampleTest.actual.txt`
+
+When names are long or use reserved suffixes (`.verified` / `.actual`), a hash is added to keep file names deterministic and bounded.
+
+## Snapshot types
+
+`SnapshotType` controls the extension and can carry optional metadata (`MimeType`, `DisplayName`):
 
 ```csharp
 Snapshot.Validate(SnapshotType.Png, imageBytes);
 ```
 
-When a type is provided, its value is used as the snapshot file extension.
-The default serializer treats `byte[]` and `Stream` values as binary data and writes the bytes directly (without converting them to text).
+Built-in types include:
 
-When an existing snapshot differs from the new value, a `.actual.<extension>` file is written next to the expected snapshot with the new content.
+- `SnapshotType.Default` (`txt`, `text/plain`)
+- `SnapshotType.Png` (`png`, `image/png`)
+
+## Customization
+
+Use `SnapshotSettings` to customize behavior:
+
+- serializer and comparer per `SnapshotType`
+- update strategy
+- assertion message and exception type
+- `SnapshotPathStrategy` to control full snapshot path generation
+
+The default serializer writes human-readable text for most objects. For `byte[]` and `Stream`, it writes raw bytes directly.

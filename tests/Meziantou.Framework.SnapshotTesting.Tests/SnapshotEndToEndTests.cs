@@ -224,6 +224,36 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
+    public async Task Validate_EndToEnd_MultipleXunitTests_RunsSingleFilteredTest()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleFact()
+                {
+                    Snapshot.Validate("fact-value", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+
+                [Theory]
+                [InlineData("alpha")]
+                [InlineData("beta")]
+                public void SampleTheory(string value)
+                {
+                    Snapshot.Validate(value, SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            testFilter: "FullyQualifiedName~GeneratedSnapshotTests.SampleFact");
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleFact.verified.txt", "fact-value"),
+        ]);
+    }
+
+    [Fact]
     public async Task Validate_EndToEnd_Theory_CreatesDistinctSnapshots_WhenTestContextIsUsed()
     {
         var snapshotFiles = await AssertSnapshot(
@@ -518,7 +548,8 @@ public sealed class SnapshotEndToEndTests
         SnapshotTestFramework testFramework = SnapshotTestFramework.XunitV3,
         string? targetFramework = null,
         bool expectFailure = false,
-        IReadOnlyList<SnapshotFile>? existingFiles = null)
+        IReadOnlyList<SnapshotFile>? existingFiles = null,
+        string? testFilter = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
@@ -565,7 +596,7 @@ public sealed class SnapshotEndToEndTests
 
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore"], expectedExitCode: 0);
-        await ExecuteDotNet(directory.FullPath, dotnetPath, GetDotNetTestArguments(testFramework), expectedExitCode: expectFailure ? 1 : 0);
+        await ExecuteDotNet(directory.FullPath, dotnetPath, GetDotNetTestArguments(testFramework, testFilter), expectedExitCode: expectFailure ? 1 : 0);
 
         return GetGeneratedSnapshotFiles(directory.FullPath);
 
@@ -585,13 +616,27 @@ public sealed class SnapshotEndToEndTests
         }
     }
 
-    private static string[] GetDotNetTestArguments(SnapshotTestFramework testFramework)
+    private static string[] GetDotNetTestArguments(SnapshotTestFramework testFramework, string? testFilter)
     {
-        return testFramework switch
+        if (testFramework == SnapshotTestFramework.TUnit)
+            return ["test", "--no-build"];
+
+        var arguments = new List<string>
         {
-            SnapshotTestFramework.TUnit => ["test", "--no-build"],
-            _ => ["test", "--no-build", "--nologo", "-v", "minimal"],
+            "test",
+            "--no-build",
+            "--nologo",
+            "-v",
+            "minimal",
         };
+
+        if (!string.IsNullOrWhiteSpace(testFilter))
+        {
+            arguments.Add("--filter");
+            arguments.Add(testFilter);
+        }
+
+        return [.. arguments];
     }
 
     private static FullPath GetRepositoryRoot([CallerFilePath] string? filePath = null)

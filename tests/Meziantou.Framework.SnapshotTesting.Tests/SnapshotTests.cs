@@ -174,6 +174,25 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public void SnapshotType_DefaultsExposeOptionalMetadata()
+    {
+        Assert.Equal("text/plain", SnapshotType.Default.MimeType);
+        Assert.Equal("Text", SnapshotType.Default.DisplayName);
+        Assert.Equal("image/png", SnapshotType.Png.MimeType);
+        Assert.Equal("PNG image", SnapshotType.Png.DisplayName);
+    }
+
+    [Fact]
+    public void SnapshotType_EqualityUsesTypeOnly()
+    {
+        var pngA = new SnapshotType("png", mimeType: "image/png", displayName: "Portable Network Graphics");
+        var pngB = new SnapshotType("png", mimeType: "application/octet-stream", displayName: "Png");
+
+        Assert.Equal(pngA, pngB);
+        Assert.Equal(pngA.GetHashCode(), pngB.GetHashCode());
+    }
+
+    [Fact]
     public void DefaultSerializer_HandlesByteArrayAsBinary()
     {
         var serializer = new DefaultSnapshotSerializer();

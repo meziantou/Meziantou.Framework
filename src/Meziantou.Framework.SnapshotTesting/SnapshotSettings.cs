@@ -76,7 +76,7 @@ public sealed record SnapshotSettings
         }
     }
 
-    public IList<ISnapshotSerializer> Serializers { get; } = [];
+    public IList<ISnapshotSerializer> Serializers => _serializers;
 
     /// <summary>
     /// Set the ordered list of tools to diff snapshots.

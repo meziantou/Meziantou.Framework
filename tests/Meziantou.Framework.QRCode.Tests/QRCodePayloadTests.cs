@@ -1,4 +1,3 @@
-using Meziantou.Framework.InlineSnapshotTesting;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -10,7 +9,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Wifi("MyNetwork", "MyPassword123");
 
-        InlineSnapshot.Validate(payload, "WIFI:T:WPA;S:MyNetwork;P:MyPassword123;;");
+        Assert.Equal("WIFI:T:WPA;S:MyNetwork;P:MyPassword123;;", payload);
     }
 
     [Fact]
@@ -18,7 +17,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Wifi("MyNetwork", "MyKey", WifiAuthentication.WEP);
 
-        InlineSnapshot.Validate(payload, "WIFI:T:WEP;S:MyNetwork;P:MyKey;;");
+        Assert.Equal("WIFI:T:WEP;S:MyNetwork;P:MyKey;;", payload);
     }
 
     [Fact]
@@ -26,7 +25,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Wifi("OpenNet", authentication: WifiAuthentication.None);
 
-        InlineSnapshot.Validate(payload, "WIFI:T:nopass;S:OpenNet;;");
+        Assert.Equal("WIFI:T:nopass;S:OpenNet;;", payload);
     }
 
     [Fact]
@@ -34,7 +33,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Wifi("HiddenNet", "pass", hidden: true);
 
-        InlineSnapshot.Validate(payload, "WIFI:T:WPA;S:HiddenNet;P:pass;H:true;;");
+        Assert.Equal("WIFI:T:WPA;S:HiddenNet;P:pass;H:true;;", payload);
     }
 
     [Fact]
@@ -42,7 +41,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Wifi("My;Net", "pass:word");
 
-        InlineSnapshot.Validate(payload, """WIFI:T:WPA;S:My\;Net;P:pass\:word;;""");
+        Assert.Equal("""WIFI:T:WPA;S:My\;Net;P:pass\:word;;""", payload);
     }
 
     [Fact]
@@ -50,7 +49,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Wifi("Net", """p\a"ss""");
 
-        InlineSnapshot.Validate(payload, """WIFI:T:WPA;S:Net;P:p\\a\"ss;;""");
+        Assert.Equal("""WIFI:T:WPA;S:Net;P:p\\a\"ss;;""", payload);
     }
 
     [Fact]
@@ -67,7 +66,7 @@ public class QRCodePayloadTests
             organization: "ACME", title: "Engineer",
             url: "https://example.com", address: "123 Main St");
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BEGIN:VCARD
             VERSION:3.0
             N:Doe;John;;;
@@ -79,7 +78,7 @@ public class QRCodePayloadTests
             URL:https://example.com
             ADR:;;123 Main St;;;;
             END:VCARD
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -87,13 +86,13 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.VCard("Doe");
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BEGIN:VCARD
             VERSION:3.0
             N:Doe;;;;
             FN:Doe
             END:VCARD
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -107,7 +106,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Email("test@example.com", "Hello World", "Message body");
 
-        InlineSnapshot.Validate(payload, "mailto:test@example.com?subject=Hello%20World&body=Message%20body");
+        Assert.Equal("mailto:test@example.com?subject=Hello%20World&body=Message%20body", payload);
     }
 
     [Fact]
@@ -115,7 +114,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Email("test@example.com");
 
-        InlineSnapshot.Validate(payload, "mailto:test@example.com");
+        Assert.Equal("mailto:test@example.com", payload);
     }
 
     [Fact]
@@ -123,7 +122,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Email("test@example.com", subject: "Hello");
 
-        InlineSnapshot.Validate(payload, "mailto:test@example.com?subject=Hello");
+        Assert.Equal("mailto:test@example.com?subject=Hello", payload);
     }
 
     [Fact]
@@ -131,7 +130,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Email("test@example.com", body: "Body text");
 
-        InlineSnapshot.Validate(payload, "mailto:test@example.com?body=Body%20text");
+        Assert.Equal("mailto:test@example.com?body=Body%20text", payload);
     }
 
     [Fact]
@@ -145,7 +144,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Phone("+1234567890");
 
-        InlineSnapshot.Validate(payload, "tel:+1234567890");
+        Assert.Equal("tel:+1234567890", payload);
     }
 
     [Fact]
@@ -159,7 +158,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Sms("+1234567890", "Hello!");
 
-        InlineSnapshot.Validate(payload, "smsto:+1234567890:Hello!");
+        Assert.Equal("smsto:+1234567890:Hello!", payload);
     }
 
     [Fact]
@@ -167,7 +166,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Sms("+1234567890");
 
-        InlineSnapshot.Validate(payload, "smsto:+1234567890");
+        Assert.Equal("smsto:+1234567890", payload);
     }
 
     [Fact]
@@ -181,7 +180,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Geolocation(48.8566, 2.3522);
 
-        InlineSnapshot.Validate(payload, "geo:48.8566,2.3522");
+        Assert.Equal("geo:48.8566,2.3522", payload);
     }
 
     [Fact]
@@ -189,7 +188,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Geolocation(-33.8688, 151.2093);
 
-        InlineSnapshot.Validate(payload, "geo:-33.8688,151.2093");
+        Assert.Equal("geo:-33.8688,151.2093", payload);
     }
 
     [Fact]
@@ -202,7 +201,7 @@ public class QRCodePayloadTests
             location: "Room 42",
             description: "Weekly sync");
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BEGIN:VEVENT
             SUMMARY:Team Meeting
             DTSTART:20250615T140000Z
@@ -210,7 +209,7 @@ public class QRCodePayloadTests
             LOCATION:Room 42
             DESCRIPTION:Weekly sync
             END:VEVENT
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -221,13 +220,13 @@ public class QRCodePayloadTests
             new DateTime(2025, 1, 1, 9, 0, 0, DateTimeKind.Utc),
             new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc));
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BEGIN:VEVENT
             SUMMARY:Meeting
             DTSTART:20250101T090000Z
             DTEND:20250101T100000Z
             END:VEVENT
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -247,7 +246,7 @@ public class QRCodePayloadTests
             organization: "ACME", url: "https://example.com",
             address: "123 Main St", note: "A friend");
 
-        InlineSnapshot.Validate(payload, "MECARD:N:Doe,John;TEL:+1234567890;EMAIL:john@example.com;ORG:ACME;URL:https\\://example.com;ADR:123 Main St;NOTE:A friend;;");
+        Assert.Equal("MECARD:N:Doe,John;TEL:+1234567890;EMAIL:john@example.com;ORG:ACME;URL:https\\://example.com;ADR:123 Main St;NOTE:A friend;;", payload);
     }
 
     [Fact]
@@ -255,7 +254,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.MeCard("Doe");
 
-        InlineSnapshot.Validate(payload, "MECARD:N:Doe;;");
+        Assert.Equal("MECARD:N:Doe;;", payload);
     }
 
     [Fact]
@@ -263,7 +262,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.MeCard("O;Brien", "John");
 
-        InlineSnapshot.Validate(payload, """MECARD:N:O\;Brien,John;;""");
+        Assert.Equal("""MECARD:N:O\;Brien,John;;""", payload);
     }
 
     [Fact]
@@ -281,7 +280,7 @@ public class QRCodePayloadTests
             "user@example.com",
             issuer: "GitHub");
 
-        InlineSnapshot.Validate(payload, "otpauth://totp/GitHub:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub");
+        Assert.Equal("otpauth://totp/GitHub:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=GitHub", payload);
     }
 
     [Fact]
@@ -296,7 +295,7 @@ public class QRCodePayloadTests
             digits: 8,
             period: 60);
 
-        InlineSnapshot.Validate(payload, "otpauth://totp/MyApp:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=MyApp&algorithm=SHA256&digits=8&period=60");
+        Assert.Equal("otpauth://totp/MyApp:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=MyApp&algorithm=SHA256&digits=8&period=60", payload);
     }
 
     [Fact]
@@ -309,7 +308,7 @@ public class QRCodePayloadTests
             issuer: "Service",
             counter: 42);
 
-        InlineSnapshot.Validate(payload, "otpauth://hotp/Service:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Service&counter=42");
+        Assert.Equal("otpauth://hotp/Service:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Service&counter=42", payload);
     }
 
     [Fact]
@@ -320,7 +319,7 @@ public class QRCodePayloadTests
             "JBSWY3DPEHPK3PXP",
             "user@example.com");
 
-        InlineSnapshot.Validate(payload, "otpauth://totp/user%40example.com?secret=JBSWY3DPEHPK3PXP");
+        Assert.Equal("otpauth://totp/user%40example.com?secret=JBSWY3DPEHPK3PXP", payload);
     }
 
     [Fact]
@@ -342,7 +341,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Bitcoin("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
 
-        InlineSnapshot.Validate(payload, "bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
+        Assert.Equal("bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", payload);
     }
 
     [Fact]
@@ -350,7 +349,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Bitcoin("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", amount: 0.05m);
 
-        InlineSnapshot.Validate(payload, "bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?amount=0.05");
+        Assert.Equal("bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?amount=0.05", payload);
     }
 
     [Fact]
@@ -359,7 +358,7 @@ public class QRCodePayloadTests
         var payload = QRCodePayload.Bitcoin("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
             amount: 1.5m, label: "Donation", message: "Thanks!");
 
-        InlineSnapshot.Validate(payload, "bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?amount=1.5&label=Donation&message=Thanks%21");
+        Assert.Equal("bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?amount=1.5&label=Donation&message=Thanks%21", payload);
     }
 
     [Fact]
@@ -378,7 +377,7 @@ public class QRCodePayloadTests
             bic: "COBADEFFXXX",
             remittanceText: "Donation");
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BCD
             002
             1
@@ -391,7 +390,7 @@ public class QRCodePayloadTests
 
             Donation
 
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -402,7 +401,7 @@ public class QRCodePayloadTests
             "NL91ABNA0417164300",
             100.00m);
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BCD
             002
             1
@@ -415,7 +414,7 @@ public class QRCodePayloadTests
 
 
 
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -427,7 +426,7 @@ public class QRCodePayloadTests
             50.00m,
             remittanceReference: "RF18539007547034");
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BCD
             002
             1
@@ -440,7 +439,7 @@ public class QRCodePayloadTests
             RF18539007547034
 
 
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -463,14 +462,14 @@ public class QRCodePayloadTests
         Assert.Throws<ArgumentNullException>(() => QRCodePayload.SepaPayment("Name", null!, 10m));
     }
 
-    // ───── Edge cases for encoding and special characters ─────
+    // Edge cases for encoding and special characters
 
     [Fact]
     public void Email_SpecialCharactersInSubjectAreEncoded()
     {
         var payload = QRCodePayload.Email("test@example.com", subject: "Hello & World", body: "a=b&c=d");
 
-        InlineSnapshot.Validate(payload, "mailto:test@example.com?subject=Hello%20%26%20World&body=a%3Db%26c%3Dd");
+        Assert.Equal("mailto:test@example.com?subject=Hello%20%26%20World&body=a%3Db%26c%3Dd", payload);
     }
 
     [Fact]
@@ -478,14 +477,14 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.VCard("Doe", address: "123 Main St");
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BEGIN:VCARD
             VERSION:3.0
             N:Doe;;;;
             FN:Doe
             ADR:;;123 Main St;;;;
             END:VCARD
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -493,7 +492,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Wifi("Net,Work", "pass");
 
-        InlineSnapshot.Validate(payload, """WIFI:T:WPA;S:Net\,Work;P:pass;;""");
+        Assert.Equal("""WIFI:T:WPA;S:Net\,Work;P:pass;;""", payload);
     }
 
     [Fact]
@@ -501,7 +500,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.MeCard("Doe", url: "https://example.com");
 
-        InlineSnapshot.Validate(payload, """MECARD:N:Doe;URL:https\://example.com;;""");
+        Assert.Equal("""MECARD:N:Doe;URL:https\://example.com;;""", payload);
     }
 
     [Fact]
@@ -513,7 +512,7 @@ public class QRCodePayloadTests
             "user@example.com",
             algorithm: OneTimePasswordAlgorithm.SHA512);
 
-        InlineSnapshot.Validate(payload, "otpauth://totp/user%40example.com?secret=JBSWY3DPEHPK3PXP&algorithm=SHA512");
+        Assert.Equal("otpauth://totp/user%40example.com?secret=JBSWY3DPEHPK3PXP&algorithm=SHA512", payload);
     }
 
     [Fact]
@@ -521,7 +520,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Bitcoin("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", label: "My Wallet");
 
-        InlineSnapshot.Validate(payload, "bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?label=My%20Wallet");
+        Assert.Equal("bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?label=My%20Wallet", payload);
     }
 
     [Fact]
@@ -529,7 +528,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Bitcoin("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", message: "Thanks");
 
-        InlineSnapshot.Validate(payload, "bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?message=Thanks");
+        Assert.Equal("bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?message=Thanks", payload);
     }
 
     [Fact]
@@ -537,7 +536,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.SepaPayment("Doe", "DE89370400440532013000", 25.00m, information: "Thank you");
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BCD
             002
             1
@@ -550,7 +549,7 @@ public class QRCodePayloadTests
 
 
             Thank you
-            """);
+            """, payload);
     }
 
     [Fact]
@@ -558,7 +557,7 @@ public class QRCodePayloadTests
     {
         var payload = QRCodePayload.Geolocation(0, 0);
 
-        InlineSnapshot.Validate(payload, "geo:0,0");
+        Assert.Equal("geo:0,0", payload);
     }
 
     [Fact]
@@ -570,13 +569,14 @@ public class QRCodePayloadTests
             new DateTime(2025, 3, 1, 11, 0, 0, DateTimeKind.Utc),
             description: "Quarterly review");
 
-        InlineSnapshot.Validate(payload, """
+        Assert.Equal("""
             BEGIN:VEVENT
             SUMMARY:Review
             DTSTART:20250301T100000Z
             DTEND:20250301T110000Z
             DESCRIPTION:Quarterly review
             END:VEVENT
-            """);
+            """, payload);
     }
 }
+

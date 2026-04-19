@@ -1,7 +1,4 @@
 using Meziantou.Framework.InlineSnapshotTesting;
-using System.Collections.Generic;
-using System.Text;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

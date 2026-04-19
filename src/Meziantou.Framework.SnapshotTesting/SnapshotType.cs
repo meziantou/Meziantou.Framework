@@ -1,8 +1,6 @@
-using System;
-
 namespace Meziantou.Framework.SnapshotTesting;
 
-public readonly struct SnapshotType : IEquatable<SnapshotType>
+public sealed class SnapshotType : IEquatable<SnapshotType>
 {
     public static SnapshotType Default { get; } = new("txt", "text/plain", "Text");
     public static SnapshotType Png { get; } = new("png", "image/png", "PNG image");
@@ -24,6 +22,9 @@ public readonly struct SnapshotType : IEquatable<SnapshotType>
     public string? MimeType { get; }
     public string? DisplayName { get; }
     public string FileExtension => $".{Type}";
+
+    public static SnapshotType Create(string type, string? mimeType, string? displayName)
+        => new(type, mimeType, displayName);
 
     public static SnapshotType Create(string? name)
     {
@@ -48,7 +49,7 @@ public readonly struct SnapshotType : IEquatable<SnapshotType>
         return new SnapshotType(name ?? nameSpan.ToString());
     }
 
-    public bool Equals(SnapshotType other) => StringComparer.Ordinal.Equals(Type, other.Type);
+    public bool Equals(SnapshotType? other) => other is not null && StringComparer.Ordinal.Equals(Type, other.Type);
     public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Type);
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is SnapshotType snapshotType && Equals(snapshotType);
 

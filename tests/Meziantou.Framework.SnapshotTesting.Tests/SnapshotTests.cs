@@ -52,16 +52,16 @@ public sealed class SnapshotTests
     public void Settings_WithDeepClone()
     {
         var original = new SnapshotSettings();
-        original.SetSnapshotSerializer(new SnapshotType("dummy"), new FixedCountSerializer(count: 1));
-        original.SetSnapshotComparer(new SnapshotType("dummy"), ByteArraySnapshotComparer.Default);
+        original.SetSnapshotSerializer(SnapshotType.Create("dummy"), new FixedCountSerializer(count: 1));
+        original.SetSnapshotComparer(SnapshotType.Create("dummy"), ByteArraySnapshotComparer.Default);
 
         var clone = original with { };
-        clone.SetSnapshotSerializer(new SnapshotType("new"), new FixedCountSerializer(count: 2));
+        clone.SetSnapshotSerializer(SnapshotType.Create("new"), new FixedCountSerializer(count: 2));
 
         Assert.NotSame(original.Serializers, clone.Serializers);
         Assert.NotSame(original.Comparers, clone.Comparers);
-        Assert.True(clone.Serializers.ContainsKey(new SnapshotType("new")));
-        Assert.False(original.Serializers.ContainsKey(new SnapshotType("new")));
+        Assert.True(clone.Serializers.ContainsKey(SnapshotType.Create("new")));
+        Assert.False(original.Serializers.ContainsKey(SnapshotType.Create("new")));
     }
 
     [Fact]
@@ -185,11 +185,20 @@ public sealed class SnapshotTests
     [Fact]
     public void SnapshotType_EqualityUsesTypeOnly()
     {
-        var pngA = new SnapshotType("png", mimeType: "image/png", displayName: "Portable Network Graphics");
-        var pngB = new SnapshotType("png", mimeType: "application/octet-stream", displayName: "Png");
+        var pngA = SnapshotType.Create("png", mimeType: "image/png", displayName: "Portable Network Graphics");
+        var pngB = SnapshotType.Create("png", mimeType: "application/octet-stream", displayName: "Png");
 
         Assert.Equal(pngA, pngB);
         Assert.Equal(pngA.GetHashCode(), pngB.GetHashCode());
+    }
+
+    [Fact]
+    public void SnapshotType_CreateReturnsCachedInstance()
+    {
+        var pngA = SnapshotType.Create("png");
+        var pngB = SnapshotType.Create("png");
+
+        Assert.Same(pngA, pngB);
     }
 
     [Fact]
@@ -347,4 +356,5 @@ public sealed class SnapshotTests
         }
     }
 }
+
 

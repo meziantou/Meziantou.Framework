@@ -337,9 +337,59 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
+    public async Task Validate_EndToEnd_Theory_CreatesDistinctSnapshots_WhenUsingNUnitContext()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            [TestFixture]
+            public sealed class GeneratedSnapshotTests
+            {
+                [TestCase("alpha")]
+                [TestCase("beta")]
+                public void SampleTheory(string value)
+                {
+                    Snapshot.Validate(value, SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            testFramework: SnapshotTestFramework.NUnit);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTheory_alpha.verified.txt", "alpha"),
+            ("__snapshots__/SampleTheory_beta.verified.txt", "beta"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Theory_UsesCustomSnapshotNames_WhenUsingNUnitContext()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            [TestFixture]
+            public sealed class GeneratedSnapshotTests
+            {
+                [TestCase("alpha", TestName = "Case_alpha")]
+                [TestCase("beta", TestName = "Case_beta")]
+                public void SampleTheory(string value)
+                {
+                    Snapshot.Validate(value, SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            testFramework: SnapshotTestFramework.NUnit);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/Case_alpha.verified.txt", "alpha"),
+            ("__snapshots__/Case_beta.verified.txt", "beta"),
+        ]);
+    }
+
+    [Fact]
     public async Task Validate_EndToEnd_UsesHashSuffix_WhenSnapshotNameIsTooLong()
     {
-        var methodName = "SampleTest" + new string('a', 100);
+        var methodName = "SampleTest" + new string('a', 200);
         var snapshotFiles = await AssertSnapshot(
             $$"""
             public sealed class GeneratedSnapshotTests
@@ -518,14 +568,16 @@ public sealed class SnapshotEndToEndTests
                         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
                     };
 
-                    settings.SetSnapshotSerializer(SnapshotType.Default, new FixedCountSerializer({{count}}));
+                    settings.Serializers.Add(new FixedCountSerializer({{count}}));
                     Snapshot.Validate("sample", settings);
                 }
             }
 
             file sealed class FixedCountSerializer(int count) : ISnapshotSerializer
             {
-                public IReadOnlyList<SnapshotData> Serialize(SnapshotType type, object value)
+                public bool CanSerialize(SnapshotType type, object? value) => type == SnapshotType.Default;
+
+                public SerializedSnapshot Serialize(SnapshotType type, object? value)
                 {
                     var result = new List<SnapshotData>(count);
                     for (var i = 0; i < count; i++)
@@ -533,7 +585,7 @@ public sealed class SnapshotEndToEndTests
                         result.Add(new SnapshotData("txt", Encoding.UTF8.GetBytes("value_" + i.ToString(CultureInfo.InvariantCulture))));
                     }
 
-                    return result;
+                    return new SerializedSnapshot(result);
                 }
             }
             """;

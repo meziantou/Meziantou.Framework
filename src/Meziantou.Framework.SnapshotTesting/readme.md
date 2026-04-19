@@ -50,7 +50,7 @@ Notes:
 Snapshot naming uses test context when available:
 
 - `Snapshot.TestContext` (`AsyncLocal<SnapshotTestContext?>`) can be set explicitly.
-- Xunit v3 and TUnit display names are auto-detected to improve generated file names.
+- Xunit v3, TUnit, and NUnit display names are auto-detected to improve generated file names.
 
 ## Customization
 

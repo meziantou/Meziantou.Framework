@@ -62,7 +62,21 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
 
     private static bool HasTestAttribute(MethodBase method)
     {
-        foreach (var attribute in method.GetCustomAttributesData())
+        IList<CustomAttributeData> attributes;
+        try
+        {
+            attributes = method.GetCustomAttributesData();
+        }
+        catch (NotSupportedException)
+        {
+            return false;
+        }
+        catch (NotImplementedException)
+        {
+            return false;
+        }
+
+        foreach (var attribute in attributes)
         {
             var attributeName = attribute.AttributeType.Name;
             if (TestAttributeNames.Contains(attributeName))
@@ -74,4 +88,3 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
         return false;
     }
 }
-

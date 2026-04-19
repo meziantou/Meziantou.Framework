@@ -54,7 +54,7 @@ internal static class SnapshotEngine
     private static IReadOnlyList<SnapshotData> Serialize(SnapshotSettings settings, SnapshotType type, object? value)
     {
         var serializer = settings.Serializers.Get(type, value);
-        return serializer.Serialize(type, value);
+        return serializer.Serialize(type, value).Data;
     }
 
     private static SnapshotComparisonResult Compare(SnapshotSettings settings, SnapshotType type, List<SnapshotFile> actualFiles, Dictionary<FullPath, SnapshotData> expectedFiles)

@@ -6,11 +6,13 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
 {
     private static Func<string?>? s_xunitV3GetDisplayName;
     private static Func<string?>? s_tunitGetDisplayName;
+    private static Func<string?>? s_nunitGetDisplayName;
 
     internal static SnapshotTestContext Get()
     {
         var displayName = GetDisplayName(ref s_xunitV3GetDisplayName, TryCreateXunitV3GetDisplayName)?.Invoke() ??
-                          GetDisplayName(ref s_tunitGetDisplayName, TryCreateTUnitGetDisplayName)?.Invoke();
+                          GetDisplayName(ref s_tunitGetDisplayName, TryCreateTUnitGetDisplayName)?.Invoke() ??
+                          GetDisplayName(ref s_nunitGetDisplayName, TryCreateNUnitGetDisplayName)?.Invoke();
         if (displayName is not null)
             return new SnapshotTestContext(TestName: displayName);
 
@@ -64,7 +66,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
 
                     var displayName = GetStringPropertyValue(test, "TestDisplayName") ??
                                       GetStringPropertyValue(test, "DisplayName");
-                    var methodName = GetMethodName(displayName);
+                    var methodName = GetStringPropertyValue(test, "MethodName") ?? GetMethodName(displayName);
                     if (methodName is null)
                         return displayName;
 
@@ -135,6 +137,66 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
         }
     }
 
+    private static Func<string?>? TryCreateNUnitGetDisplayName()
+    {
+        // NUnit: NUnit.Framework.TestContext.CurrentContext?.Test
+        // We use reflection so we don't take a hard dependency on NUnit.
+        try
+        {
+            var testContextType = Type.GetType("NUnit.Framework.TestContext, nunit.framework", throwOnError: false);
+            if (testContextType is null)
+                return null;
+
+            var currentContextProperty = testContextType.GetProperty("CurrentContext", BindingFlags.Public | BindingFlags.Static);
+            if (currentContextProperty is null)
+                return null;
+
+            var currentContextType = currentContextProperty.PropertyType;
+            var testProperty = currentContextType.GetProperty("Test", BindingFlags.Public | BindingFlags.Instance);
+            if (testProperty is null)
+                return null;
+
+            return () =>
+            {
+                try
+                {
+                    var currentContext = currentContextProperty.GetValue(null);
+                    if (currentContext is null)
+                        return null;
+
+                    var test = testProperty.GetValue(currentContext);
+                    if (test is null)
+                        return null;
+
+                    var displayName = GetStringPropertyValue(test, "Name") ??
+                                      GetStringPropertyValue(test, "MethodName") ??
+                                      GetStringPropertyValue(test, "FullName");
+
+                    var methodName = GetMethodName(displayName);
+                    if (methodName is null)
+                        return displayName;
+
+                    var arguments = GetObjectArrayPropertyValue(test, "Arguments");
+                    if (arguments is null || arguments.Length == 0)
+                        return displayName ?? methodName;
+
+                    if (ShouldPreferDisplayName(displayName, methodName))
+                        return GetMethodName(displayName) ?? displayName;
+
+                    return methodName + "_" + string.Join('_', arguments.Select(FormatArgument));
+                }
+                catch
+                {
+                    return null;
+                }
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static string? GetStringPropertyValue(object instance, string propertyName)
     {
         var property = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
@@ -176,5 +238,16 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
             IFormattable value => value.ToString(format: null, CultureInfo.InvariantCulture) ?? argument.ToString() ?? "",
             _ => argument.ToString() ?? "",
         };
+    }
+
+    private static bool ShouldPreferDisplayName(string? displayName, string methodName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+            return false;
+
+        if (string.Equals(displayName, methodName, StringComparison.Ordinal))
+            return false;
+
+        return !displayName.StartsWith(methodName + "(", StringComparison.Ordinal);
     }
 }

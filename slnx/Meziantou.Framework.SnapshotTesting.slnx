@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
@@ -14,6 +15,7 @@
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.QRCode.Tests/Meziantou.Framework.QRCode.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
   </Folder>

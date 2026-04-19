@@ -1,7 +1,4 @@
-using System.Globalization;
-using System.Text;
 using Meziantou.Framework.SnapshotTesting.Utils;
-using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
@@ -13,8 +10,7 @@ internal static class SnapshotEngine
 
         type ??= SnapshotType.Default;
         var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName);
-        var serializer = settings.GetSnapshotSerializer(type);
-        var serialized = serializer.Serialize(type, value);
+        var serialized = Serialize(settings, type, value);
 
         if (serialized is null || serialized.Count == 0)
             throw new SnapshotException("Serializer returned no snapshot data.");
@@ -53,6 +49,20 @@ internal static class SnapshotEngine
         {
             ThrowAssertion(settings, comparison.Message);
         }
+    }
+
+    private static IReadOnlyList<SnapshotData> Serialize(SnapshotSettings settings, SnapshotType type, object? value)
+    {
+        for (var i = settings.Serializers.Count - 1; i >= 0; i--)
+        {
+            var serializer = settings.Serializers[i];
+            if (serializer.CanSerialize(type, value))
+            {
+                return serializer.Serialize(type, value);
+            }
+        }
+
+        throw new InvalidOperationException($"No suitable serializer found for '{type.DisplayName}' and value type '{value?.GetType()}'.");
     }
 
     private static SnapshotComparisonResult Compare(SnapshotSettings settings, SnapshotType type, List<SnapshotFile> actualFiles, Dictionary<FullPath, SnapshotData> expectedFiles)
@@ -358,7 +368,7 @@ internal static class SnapshotEngine
 
     private static void WriteAllBytesWithRetry(FullPath path, byte[] data)
     {
-        const int maxAttemptCount = 8;
+        const int MaxAttemptCount = 8;
         for (var attempt = 1; ; attempt++)
         {
             try
@@ -373,11 +383,11 @@ internal static class SnapshotEngine
                 File.WriteAllBytes(path, data);
                 return;
             }
-            catch (IOException) when (attempt < maxAttemptCount)
+            catch (IOException) when (attempt < MaxAttemptCount)
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
             }
-            catch (UnauthorizedAccessException) when (attempt < maxAttemptCount)
+            catch (UnauthorizedAccessException) when (attempt < MaxAttemptCount)
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
             }

@@ -2,6 +2,7 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 public sealed class SnapshotType : IEquatable<SnapshotType>
 {
+    public static SnapshotType None { get; } = new("");
     public static SnapshotType Default { get; } = new("txt", "text/plain", "Text");
     public static SnapshotType Png { get; } = new("png", "image/png", "PNG image");
     public static SnapshotType Svg { get; } = new("svg", "image/svg+xml", "SVG image");
@@ -23,7 +24,7 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
     public string Type { get; }
     public string? MimeType { get; }
     public string? DisplayName { get; }
-    public string FileExtension => $".{Type}";
+    public string FileExtension => string.IsNullOrEmpty(Type) ? string.Empty : $".{Type}";
 
     public static SnapshotType Create(string type, string? mimeType, string? displayName)
         => new(type, mimeType, displayName);

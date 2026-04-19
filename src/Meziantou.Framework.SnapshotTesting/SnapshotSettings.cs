@@ -1,8 +1,5 @@
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Security.Cryptography;
-using System.Text;
-using Meziantou.Framework;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.SnapshotTesting;
@@ -18,7 +15,7 @@ public sealed record SnapshotSettings
         MergeTool.RiderIfCurrentProcess,
         new AutoDiffEngineTool());
 
-    private readonly Dictionary<SnapshotType, ISnapshotSerializer> _serializers;
+    private readonly List<ISnapshotSerializer> _serializers;
     private readonly Dictionary<SnapshotType, ISnapshotComparer> _comparers;
 
     public static SnapshotSettings Default { get; set; } = new();
@@ -79,25 +76,7 @@ public sealed record SnapshotSettings
         }
     }
 
-    public ISnapshotSerializer DefaultSerializer
-    {
-        get;
-        set
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            field = value;
-        }
-    }
-
-    public ISnapshotComparer DefaultComparer
-    {
-        get;
-        set
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            field = value;
-        }
-    }
+    public IList<ISnapshotSerializer> Serializers { get; } = [];
 
     /// <summary>
     /// Set the ordered list of tools to diff snapshots.
@@ -110,19 +89,15 @@ public sealed record SnapshotSettings
     /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
     public IEnumerable<MergeTool>? MergeTools { get; set; }
 
-    public IReadOnlyDictionary<SnapshotType, ISnapshotSerializer> Serializers => _serializers;
-
     public IReadOnlyDictionary<SnapshotType, ISnapshotComparer> Comparers => _comparers;
 
     public SnapshotSettings()
     {
-        _serializers = new Dictionary<SnapshotType, ISnapshotSerializer>();
-        _comparers = new Dictionary<SnapshotType, ISnapshotComparer>();
+        _serializers = new List<ISnapshotSerializer>() { HumanReadableSnapshotSerializer.DefaultInstance, ByteArraySnapshotSerializer.Instance, StreamSnapshotSerializer.Instance };
+        _comparers = new Dictionary<SnapshotType, ISnapshotComparer>() { [SnapshotType.None] = ByteArraySnapshotComparer.Instance };
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         AssertionExceptionCreator = AssertionExceptionBuilder.Default;
         ErrorMessageFormatter = InlineDiffAssertionMessageFormatter.Instance;
-        DefaultSerializer = DefaultSnapshotSerializer.DefaultInstance;
-        DefaultComparer = ByteArraySnapshotComparer.Default;
         MaxSnapshotFileNameLength = 128;
         SnapshotPathStrategy = DefaultSnapshotPath;
         MergeTools = DefaultMergeTools;
@@ -131,7 +106,7 @@ public sealed record SnapshotSettings
     private SnapshotSettings(SnapshotSettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        _serializers = new Dictionary<SnapshotType, ISnapshotSerializer>(options._serializers);
+        _serializers = [.. options._serializers];
         _comparers = new Dictionary<SnapshotType, ISnapshotComparer>(options._comparers);
         AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
         ForceUpdateSnapshots = options.ForceUpdateSnapshots;
@@ -140,15 +115,7 @@ public sealed record SnapshotSettings
         ErrorMessageFormatter = options.ErrorMessageFormatter;
         MaxSnapshotFileNameLength = options.MaxSnapshotFileNameLength;
         SnapshotPathStrategy = options.SnapshotPathStrategy;
-        DefaultSerializer = options.DefaultSerializer;
-        DefaultComparer = options.DefaultComparer;
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
-    }
-
-    public void SetSnapshotSerializer(SnapshotType type, ISnapshotSerializer serializer)
-    {
-        ArgumentNullException.ThrowIfNull(serializer);
-        _serializers[type] = serializer;
     }
 
     public void SetSnapshotComparer(SnapshotType type, ISnapshotComparer comparer)
@@ -157,20 +124,15 @@ public sealed record SnapshotSettings
         _comparers[type] = comparer;
     }
 
-    public ISnapshotSerializer GetSnapshotSerializer(SnapshotType type)
-    {
-        if (_serializers.TryGetValue(type, out var serializer))
-            return serializer;
-
-        return DefaultSerializer;
-    }
-
     public ISnapshotComparer GetSnapshotComparer(SnapshotType type)
     {
         if (_comparers.TryGetValue(type, out var comparer))
             return comparer;
 
-        return DefaultComparer;
+        if (_comparers.TryGetValue(SnapshotType.None, out var defaultComparer))
+            return defaultComparer;
+
+        return ByteArraySnapshotComparer.Instance;
     }
 
     internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected;
@@ -211,7 +173,6 @@ public sealed record SnapshotSettings
         var indexPart = context.Index.ToString(CultureInfo.InvariantCulture);
         var suffixWithoutHash = hasMultipleSnapshots ? "_" + indexPart + ".verified." + extension : ".verified." + extension;
         var shouldAddHashSuffix =
-            startPart.Length > 80 ||
             startPart.Length > context.Settings.MaxSnapshotFileNameLength - suffixWithoutHash.Length ||
             IsReservedSnapshotName(startPart);
 

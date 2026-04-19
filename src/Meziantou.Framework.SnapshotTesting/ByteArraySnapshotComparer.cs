@@ -1,8 +1,8 @@
 namespace Meziantou.Framework.SnapshotTesting;
 
-public sealed class ByteArraySnapshotComparer : ISnapshotComparer
+internal sealed class ByteArraySnapshotComparer : ISnapshotComparer
 {
-    public static ByteArraySnapshotComparer Default { get; } = new();
+    public static ByteArraySnapshotComparer Instance { get; } = new();
 
     public bool Equals(SnapshotData expected, SnapshotData actual)
     {

@@ -53,7 +53,7 @@ public sealed class SnapshotTests
     {
         var original = new SnapshotSettings();
         original.SetSnapshotSerializer(SnapshotType.Create("dummy"), new FixedCountSerializer(count: 1));
-        original.SetSnapshotComparer(SnapshotType.Create("dummy"), ByteArraySnapshotComparer.Default);
+        original.SetSnapshotComparer(SnapshotType.Create("dummy"), ByteArraySnapshotComparer.Instance);
 
         var clone = original with { };
         clone.SetSnapshotSerializer(SnapshotType.Create("new"), new FixedCountSerializer(count: 2));
@@ -210,7 +210,7 @@ public sealed class SnapshotTests
     [Fact]
     public void DefaultSerializer_HandlesByteArrayAsBinary()
     {
-        var serializer = new DefaultSnapshotSerializer();
+        var serializer = new HumanReadableSnapshotSerializer();
         var snapshotType = SnapshotType.Png;
         var expectedBytes = "binary-data"u8.ToArray();
 
@@ -224,7 +224,7 @@ public sealed class SnapshotTests
     [Fact]
     public void DefaultSerializer_HandlesStreamAsBinary()
     {
-        var serializer = new DefaultSnapshotSerializer();
+        var serializer = new HumanReadableSnapshotSerializer();
         var snapshotType = SnapshotType.Png;
         var expectedBytes = "stream-binary-data"u8.ToArray();
         using var stream = new MemoryStream(expectedBytes);

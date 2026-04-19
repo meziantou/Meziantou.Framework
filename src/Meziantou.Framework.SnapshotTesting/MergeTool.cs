@@ -1,6 +1,4 @@
 using DiffEngine;
-
-using Meziantou.Framework;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.SnapshotTesting;

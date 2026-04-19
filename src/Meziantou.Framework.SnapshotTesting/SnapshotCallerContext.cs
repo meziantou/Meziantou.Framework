@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Reflection;
-using Meziantou.Framework;
 
 namespace Meziantou.Framework.SnapshotTesting;
 

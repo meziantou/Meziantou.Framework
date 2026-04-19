@@ -16,6 +16,13 @@ public sealed class SampleTests
 }
 ```
 
+For typed snapshots:
+
+```csharp
+Snapshot.Validate(imageBytes, SnapshotType.Png);
+Snapshot.Validate(svgText, SnapshotType.Svg);
+```
+
 ## File naming convention
 
 Snapshots are stored in a `__snapshots__` directory next to the test source file:
@@ -28,29 +35,40 @@ Example:
 - `__snapshots__/SampleTest.verified.txt`
 - `__snapshots__/SampleTest.actual.txt`
 
-When names are long or use reserved suffixes (`.verified` / `.actual`), a hash is added to keep file names deterministic and bounded.
+Notes:
+
+- `.actual` files are always written when a snapshot does not match.
+- If a single assertion serializes multiple files, an index suffix (`_0`, `_1`, ...) is appended.
+- If names are too long (or already end with `.verified` / `.actual`), a stable hash is added.
 
 ## Snapshot types
 
-`SnapshotType` controls the extension and can carry optional metadata (`MimeType`, `DisplayName`):
+`SnapshotType` controls extension and optional metadata (`MimeType`, `DisplayName`). This can also affect the serializer.
 
-```csharp
-Snapshot.Validate(SnapshotType.Png, imageBytes);
-```
+## Test context
 
-Built-in types include:
+Snapshot naming uses test context when available:
 
-- `SnapshotType.Default` (`txt`, `text/plain`)
-- `SnapshotType.Png` (`png`, `image/png`)
-- `SnapshotType.Svg` (`svg`, `image/svg+xml`)
+- `Snapshot.TestContext` (`AsyncLocal<SnapshotTestContext?>`) can be set explicitly.
+- Xunit v3 and TUnit display names are auto-detected to improve generated file names.
 
 ## Customization
 
 Use `SnapshotSettings` to customize behavior:
 
-- serializer and comparer per `SnapshotType`
-- update strategy
-- assertion message and exception type
-- `SnapshotPathStrategy` to control full snapshot path generation
+- `Serializers` (`SnapshotSerializerCollection`)
+- `Comparers` (`SnapshotComparerCollection`)
+- `SnapshotUpdateStrategy` (`Disallow`, `Overwrite`, `OverwriteWithoutFailure`, `MergeTool`, `MergeToolSync`)
+- `AssertionExceptionCreator` and `ErrorMessageFormatter`
+- `SnapshotPathStrategy` for full path generation
 
-The default serializer writes human-readable text for most objects. For `byte[]` and `Stream`, it writes raw bytes directly.
+```csharp
+var settings = SnapshotSettings.Default with
+{
+    SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+};
+
+Snapshot.Validate(value, SnapshotType.Default, settings);
+```
+
+The default serializers handle human-readable objects, `byte[]`, and `Stream`.

@@ -649,8 +649,8 @@ public sealed class SnapshotEndToEndTests
             }
         }
 
-        await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore"], expectedExitCode: 0);
-        await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore"], expectedExitCode: 0);
+        await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore", "--disable-build-servers"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, GetDotNetTestArguments(testFramework, testFilter), expectedExitCode: expectFailure ? 1 : 0);
 
         return GetGeneratedSnapshotFiles(directory.FullPath);
@@ -845,6 +845,7 @@ public sealed class SnapshotEndToEndTests
             .WithArguments(arguments)
             .WithWorkingDirectory(workingDirectory)
             .WithValidation(ProcessValidationMode.None)
+            .WithInputStream(InputSource.FromStream(Stream.Null))
             .WithEnvironmentVariables(env =>
             {
                 env.Remove("CI");
@@ -861,6 +862,8 @@ public sealed class SnapshotEndToEndTests
                 }
 
                 env.Set("DiffEngine_Disabled", "true");
+                env.Set("MSBUILDDISABLENODEREUSE", "1");
+                env.Set("DOTNET_CLI_TELEMETRY_OPTOUT", "1");
             })
             .ExecuteBufferedAsync();
 

@@ -33,7 +33,7 @@
       </_SnapshotTestingSourceRoot>
     </ItemGroup>
 
-    <!-- Build one RegisterSourceRootMapping call per SourceRoot item — no runtime parsing needed. -->
+    <!-- Build one RegisterSourceRootMapping call per SourceRoot item - no runtime parsing needed. -->
     <ItemGroup>
       <_SnapshotTestingSourceRootRegistrationLines
           Include="@(_SnapshotTestingSourceRoot->'        global::Meziantou.Framework.SnapshotTesting.SnapshotConfiguration.RegisterSourceRootMapping(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />

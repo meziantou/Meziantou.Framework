@@ -1,28 +1,48 @@
 <Project>
   <!--
-    Generates a C# file in the intermediate output folder that registers the MSBuild PathMap
+    Generates a C# file in the intermediate output folder that registers the MSBuild SourceRoot
     mappings (the deterministic path prefixes such as /_/ or /_1/ used during deterministic builds)
     with SnapshotConfiguration via a [ModuleInitializer] so that file-based snapshot tests can
     resolve CallerFilePath values back to real paths on disk in CI environments.
 
-    The $(PathMap) property is set by the _SetPathMapFromSourceRoots target in the .NET SDK when
-    deterministic builds are active. Its format is: realPath1=/_/,realPath2=/_1/,...
+    The target mirrors the approach used by _SetPathMapFromSourceRoots in the .NET SDK: it depends on
+    InitializeSourceRootMappedPaths so that %(SourceRoot.MappedPath) metadata is already populated,
+    and it only runs when DeterministicSourcePaths is true.
 
     Set $(SnapshotTestingGenerateSourceRoot) to 'false' to opt out of this code generation.
   -->
   <Target Name="GenerateSnapshotTestingSourceRoots"
-          AfterTargets="_SetPathMapFromSourceRoots"
+          DependsOnTargets="InitializeSourceRootMappedPaths"
           BeforeTargets="CoreCompile"
-          Condition="'$(SnapshotTestingGenerateSourceRoot)' != 'false'">
+          Condition="'$(SnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'">
 
     <PropertyGroup>
       <_SnapshotTestingSourceRootFile>$(IntermediateOutputPath)SnapshotTestingSourceRoot.g.cs</_SnapshotTestingSourceRootFile>
-      <!-- Normalize backslashes so the embedded string literal is always valid -->
-      <_SnapshotTestingNormalizedPathMap>$(PathMap.Replace('\', '/'))</_SnapshotTestingNormalizedPathMap>
     </PropertyGroup>
 
-    <!-- Only generate the file when PathMap is non-empty (i.e. deterministic builds are active) -->
-    <ItemGroup Condition="'$(_SnapshotTestingNormalizedPathMap)' != ''">
+    <!--
+      Collect top-level SourceRoot items that have a MappedPath, mirroring the filter used by
+      _SetPathMapFromSourceRoots (NestedRoot == '' excludes sub-roots such as NuGet package roots
+      that are already covered by their parent). Normalize backslashes in Identity so the generated
+      string literal is always valid on Windows.
+    -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRoot Include="@(SourceRoot)"
+          Condition="'%(SourceRoot.NestedRoot)' == '' and '%(SourceRoot.MappedPath)' != ''">
+        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
+      </_SnapshotTestingSourceRoot>
+    </ItemGroup>
+
+    <!--
+      Build a comma-separated path map string of the form realPath=mappedPath,... that
+      SnapshotConfiguration.RegisterPathMap can parse (same format as $(PathMap), minus escaping).
+    -->
+    <PropertyGroup Condition="'@(_SnapshotTestingSourceRoot)' != ''">
+      <_SnapshotTestingPathMap>@(_SnapshotTestingSourceRoot->'%(NormalizedIdentity)=%(MappedPath)', ',')</_SnapshotTestingPathMap>
+    </PropertyGroup>
+
+    <!-- Only generate the file when there is at least one mapping -->
+    <ItemGroup Condition="'$(_SnapshotTestingPathMap)' != ''">
       <_SnapshotTestingSourceRootFileLines
           Include="// &lt;auto-generated/&gt;
 using System.Runtime.CompilerServices%3B
@@ -36,7 +56,7 @@ internal static class SnapshotTestingSourceRootInitializer
     [ModuleInitializer]
     internal static void Initialize()
     {
-        global::Meziantou.Framework.SnapshotTesting.SnapshotConfiguration.RegisterPathMap(%22$(_SnapshotTestingNormalizedPathMap)%22)%3B
+        global::Meziantou.Framework.SnapshotTesting.SnapshotConfiguration.RegisterPathMap(%22$(_SnapshotTestingPathMap)%22)%3B
     }
 }" />
     </ItemGroup>
@@ -55,7 +75,7 @@ internal static class SnapshotTestingSourceRootInitializer
 
     <!-- Clean up temporary items -->
     <ItemGroup>
-      <_SnapshotTestingNormalizedPathMap Remove="@(_SnapshotTestingNormalizedPathMap)" />
+      <_SnapshotTestingSourceRoot Remove="@(_SnapshotTestingSourceRoot)" />
       <_SnapshotTestingSourceRootFileLines Remove="@(_SnapshotTestingSourceRootFileLines)" />
     </ItemGroup>
   </Target>

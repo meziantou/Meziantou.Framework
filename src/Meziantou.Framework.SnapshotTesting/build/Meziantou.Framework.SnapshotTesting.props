@@ -1,0 +1,75 @@
+<Project>
+  <!--
+    Generates a C# file in the intermediate output folder that registers the MSBuild SourceRoot
+    mappings (the deterministic path prefixes such as /_/ or /_1/ used during deterministic builds)
+    with SnapshotCallerContext via a [ModuleInitializer] so that file-based snapshot tests can
+    resolve CallerFilePath values back to real paths on disk in CI environments.
+
+    Set $(SnapshotTestingGenerateSourceRoot) to 'false' to opt out of this code generation.
+  -->
+  <Target Name="GenerateSnapshotTestingSourceRoots"
+          BeforeTargets="CoreCompile"
+          Condition="'$(SnapshotTestingGenerateSourceRoot)' != 'false'">
+
+    <PropertyGroup>
+      <_SnapshotTestingSourceRootFile>$(IntermediateOutputPath)SnapshotTestingSourceRoot.g.cs</_SnapshotTestingSourceRootFile>
+    </PropertyGroup>
+
+    <!-- Collect only SourceRoot items that have a MappedPath (i.e. deterministic builds are active) -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRoot Include="@(SourceRoot)" Condition="'%(SourceRoot.MappedPath)' != ''" />
+      <!-- Normalize backslashes to forward slashes so the generated string literals are always valid -->
+      <_SnapshotTestingSourceRoot>
+        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
+      </_SnapshotTestingSourceRoot>
+    </ItemGroup>
+
+    <!--
+      Build the list of RegisterSourceRootMapping calls — one per SourceRoot item.
+      %(MappedPath) is already a forward-slash prefix like /_/ or /_1/.
+      %(NormalizedIdentity) is the real absolute path on disk with forward slashes.
+    -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRootRegistrationLines
+          Include="@(_SnapshotTestingSourceRoot -> '        global::Meziantou.Framework.SnapshotTesting.SnapshotCallerContext.RegisterSourceRootMapping(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />
+    </ItemGroup>
+
+    <!-- Only generate the file when there is at least one source root mapping -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRootFileLines Condition="'@(_SnapshotTestingSourceRootRegistrationLines)' != ''"
+          Include="// &lt;auto-generated/&gt;
+using System.Runtime.CompilerServices%3B
+
+namespace Meziantou.Framework.SnapshotTesting%3B
+
+[assembly: System.Reflection.AssemblyMetadata(%22SnapshotTestingSourceRootMappings%22, %22generated%22)]
+
+internal static class SnapshotTestingSourceRootInitializer
+{
+    [ModuleInitializer]
+    internal static void Initialize()
+    {
+@(_SnapshotTestingSourceRootRegistrationLines, '%0A')
+    }
+}" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+        File="$(_SnapshotTestingSourceRootFile)"
+        Lines="@(_SnapshotTestingSourceRootFileLines)"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true"
+        Condition="'@(_SnapshotTestingSourceRootFileLines)' != ''" />
+
+    <ItemGroup Condition="'@(_SnapshotTestingSourceRootFileLines)' != ''">
+      <Compile Include="$(_SnapshotTestingSourceRootFile)" />
+    </ItemGroup>
+
+    <!-- Clean up temporary items -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRoot Remove="@(_SnapshotTestingSourceRoot)" />
+      <_SnapshotTestingSourceRootRegistrationLines Remove="@(_SnapshotTestingSourceRootRegistrationLines)" />
+      <_SnapshotTestingSourceRootFileLines Remove="@(_SnapshotTestingSourceRootFileLines)" />
+    </ItemGroup>
+  </Target>
+</Project>

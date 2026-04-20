@@ -1,42 +1,29 @@
 <Project>
   <!--
-    Generates a C# file in the intermediate output folder that registers the MSBuild SourceRoot
+    Generates a C# file in the intermediate output folder that registers the MSBuild PathMap
     mappings (the deterministic path prefixes such as /_/ or /_1/ used during deterministic builds)
-    with SnapshotCallerContext via a [ModuleInitializer] so that file-based snapshot tests can
+    with SnapshotConfiguration via a [ModuleInitializer] so that file-based snapshot tests can
     resolve CallerFilePath values back to real paths on disk in CI environments.
+
+    The $(PathMap) property is set by the _SetPathMapFromSourceRoots target in the .NET SDK when
+    deterministic builds are active. Its format is: realPath1=/_/,realPath2=/_1/,...
 
     Set $(SnapshotTestingGenerateSourceRoot) to 'false' to opt out of this code generation.
   -->
   <Target Name="GenerateSnapshotTestingSourceRoots"
+          AfterTargets="_SetPathMapFromSourceRoots"
           BeforeTargets="CoreCompile"
           Condition="'$(SnapshotTestingGenerateSourceRoot)' != 'false'">
 
     <PropertyGroup>
       <_SnapshotTestingSourceRootFile>$(IntermediateOutputPath)SnapshotTestingSourceRoot.g.cs</_SnapshotTestingSourceRootFile>
+      <!-- Normalize backslashes so the embedded string literal is always valid -->
+      <_SnapshotTestingNormalizedPathMap>$(PathMap.Replace('\', '/'))</_SnapshotTestingNormalizedPathMap>
     </PropertyGroup>
 
-    <!-- Collect only SourceRoot items that have a MappedPath (i.e. deterministic builds are active) -->
-    <ItemGroup>
-      <_SnapshotTestingSourceRoot Include="@(SourceRoot)" Condition="'%(SourceRoot.MappedPath)' != ''" />
-      <!-- Normalize backslashes to forward slashes so the generated string literals are always valid -->
-      <_SnapshotTestingSourceRoot>
-        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
-      </_SnapshotTestingSourceRoot>
-    </ItemGroup>
-
-    <!--
-      Build the list of RegisterSourceRootMapping calls — one per SourceRoot item.
-      %(MappedPath) is already a forward-slash prefix like /_/ or /_1/.
-      %(NormalizedIdentity) is the real absolute path on disk with forward slashes.
-    -->
-    <ItemGroup>
-      <_SnapshotTestingSourceRootRegistrationLines
-          Include="@(_SnapshotTestingSourceRoot -> '        global::Meziantou.Framework.SnapshotTesting.SnapshotCallerContext.RegisterSourceRootMapping(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />
-    </ItemGroup>
-
-    <!-- Only generate the file when there is at least one source root mapping -->
-    <ItemGroup>
-      <_SnapshotTestingSourceRootFileLines Condition="'@(_SnapshotTestingSourceRootRegistrationLines)' != ''"
+    <!-- Only generate the file when PathMap is non-empty (i.e. deterministic builds are active) -->
+    <ItemGroup Condition="'$(_SnapshotTestingNormalizedPathMap)' != ''">
+      <_SnapshotTestingSourceRootFileLines
           Include="// &lt;auto-generated/&gt;
 using System.Runtime.CompilerServices%3B
 
@@ -49,7 +36,7 @@ internal static class SnapshotTestingSourceRootInitializer
     [ModuleInitializer]
     internal static void Initialize()
     {
-@(_SnapshotTestingSourceRootRegistrationLines, '%0A')
+        global::Meziantou.Framework.SnapshotTesting.SnapshotConfiguration.RegisterPathMap(%22$(_SnapshotTestingNormalizedPathMap)%22)%3B
     }
 }" />
     </ItemGroup>
@@ -68,8 +55,7 @@ internal static class SnapshotTestingSourceRootInitializer
 
     <!-- Clean up temporary items -->
     <ItemGroup>
-      <_SnapshotTestingSourceRoot Remove="@(_SnapshotTestingSourceRoot)" />
-      <_SnapshotTestingSourceRootRegistrationLines Remove="@(_SnapshotTestingSourceRootRegistrationLines)" />
+      <_SnapshotTestingNormalizedPathMap Remove="@(_SnapshotTestingNormalizedPathMap)" />
       <_SnapshotTestingSourceRootFileLines Remove="@(_SnapshotTestingSourceRootFileLines)" />
     </ItemGroup>
   </Target>

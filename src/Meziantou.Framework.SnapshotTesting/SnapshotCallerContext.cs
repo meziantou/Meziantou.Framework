@@ -24,6 +24,27 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
         (SourceRootMappings ??= new Dictionary<string, string>(StringComparer.Ordinal))[mappedPath] = realPath;
     }
 
+    /// <summary>Parses the MSBuild <c>$(PathMap)</c> property value and registers every entry.
+    /// The format is a comma-separated list of <c>realPath=mappedPrefix</c> pairs, e.g.
+    /// <c>/home/runner/work/Repo/=/_/,/home/runner/.nuget/packages/=/_1/,</c>.</summary>
+    internal static void RegisterPathMap(string pathMap)
+    {
+        if (string.IsNullOrEmpty(pathMap))
+            return;
+
+        foreach (var segment in pathMap.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = segment.IndexOf('=', StringComparison.Ordinal);
+            if (eq <= 0)
+                continue;
+
+            var realPath = segment[..eq];
+            var mappedPath = segment[(eq + 1)..];
+            if (!string.IsNullOrEmpty(realPath) && !string.IsNullOrEmpty(mappedPath))
+                RegisterSourceRootMapping(mappedPath, realPath);
+        }
+    }
+
     public static SnapshotCallerContext Create(string? filePath, int lineNumber, string? memberName)
     {
         var stackTrace = new StackTrace(fNeedFileInfo: true);

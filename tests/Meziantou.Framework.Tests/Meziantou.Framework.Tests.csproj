@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Markdig" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.4.0" />
+    <PackageReference Include="Markdig" Version="1.1.2" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.5.0" />
   </ItemGroup>
 
   <ItemGroup>

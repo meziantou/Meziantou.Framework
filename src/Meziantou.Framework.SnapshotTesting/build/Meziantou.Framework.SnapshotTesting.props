@@ -39,24 +39,27 @@
           Include="@(_SnapshotTestingSourceRoot->'        global::Meziantou.Framework.SnapshotTesting.SnapshotConfiguration.RegisterSourceRootMapping(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />
     </ItemGroup>
 
-    <!-- Only generate the file when there is at least one mapping -->
+    <!--
+      Build the generated file as individual line items so that item-list expansion
+      (@(...)) is never embedded inside a string literal (MSB4012 restriction).
+      Blank lines use a single space so that WriteLinesToFile does not skip them.
+    -->
     <ItemGroup Condition="'@(_SnapshotTestingSourceRootRegistrationLines)' != ''">
-      <_SnapshotTestingSourceRootFileLines
-          Include="// &lt;auto-generated/&gt;
-using System.Runtime.CompilerServices%3B
-
-[assembly: System.Reflection.AssemblyMetadata(%22SnapshotTestingSourceRootMappings%22, %22generated%22)]
-
-namespace Meziantou.Framework.SnapshotTesting%3B
-
-internal static class SnapshotTestingSourceRootInitializer
-{
-    [ModuleInitializer]
-    internal static void Initialize()
-    {
-@(_SnapshotTestingSourceRootRegistrationLines, '%0A')
-    }
-}" />
+      <_SnapshotTestingSourceRootFileLines Include="// &lt;auto-generated/&gt;" />
+      <_SnapshotTestingSourceRootFileLines Include="using System.Runtime.CompilerServices%3B" />
+      <_SnapshotTestingSourceRootFileLines Include=" " />
+      <_SnapshotTestingSourceRootFileLines Include="[assembly: System.Reflection.AssemblyMetadata(%22SnapshotTestingSourceRootMappings%22, %22generated%22)]" />
+      <_SnapshotTestingSourceRootFileLines Include=" " />
+      <_SnapshotTestingSourceRootFileLines Include="namespace Meziantou.Framework.SnapshotTesting%3B" />
+      <_SnapshotTestingSourceRootFileLines Include=" " />
+      <_SnapshotTestingSourceRootFileLines Include="internal static class SnapshotTestingSourceRootInitializer" />
+      <_SnapshotTestingSourceRootFileLines Include="{" />
+      <_SnapshotTestingSourceRootFileLines Include="    [ModuleInitializer]" />
+      <_SnapshotTestingSourceRootFileLines Include="    internal static void Initialize()" />
+      <_SnapshotTestingSourceRootFileLines Include="    {" />
+      <_SnapshotTestingSourceRootFileLines Include="@(_SnapshotTestingSourceRootRegistrationLines)" />
+      <_SnapshotTestingSourceRootFileLines Include="    }" />
+      <_SnapshotTestingSourceRootFileLines Include="}" />
     </ItemGroup>
 
     <WriteLinesToFile

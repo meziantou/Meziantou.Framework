@@ -63,6 +63,7 @@ internal static class SnapshotTestingSourceRootInitializer
 
     <ItemGroup Condition="'@(_SnapshotTestingSourceRootFileLines)' != ''">
       <Compile Include="$(_SnapshotTestingSourceRootFile)" />
+      <EmbedInBinlog Include="$(_SnapshotTestingSourceRootFile)" />
     </ItemGroup>
 
     <!-- Clean up temporary items -->

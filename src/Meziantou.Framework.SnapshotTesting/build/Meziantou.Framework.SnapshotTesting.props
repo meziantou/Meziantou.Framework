@@ -33,30 +33,28 @@
       </_SnapshotTestingSourceRoot>
     </ItemGroup>
 
-    <!--
-      Build a comma-separated path map string of the form realPath=mappedPath,... that
-      SnapshotConfiguration.RegisterPathMap can parse (same format as $(PathMap), minus escaping).
-    -->
-    <PropertyGroup Condition="'@(_SnapshotTestingSourceRoot)' != ''">
-      <_SnapshotTestingPathMap>@(_SnapshotTestingSourceRoot->'%(NormalizedIdentity)=%(MappedPath)', ',')</_SnapshotTestingPathMap>
-    </PropertyGroup>
+    <!-- Build one RegisterSourceRootMapping call per SourceRoot item — no runtime parsing needed. -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRootRegistrationLines
+          Include="@(_SnapshotTestingSourceRoot->'        global::Meziantou.Framework.SnapshotTesting.SnapshotConfiguration.RegisterSourceRootMapping(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />
+    </ItemGroup>
 
     <!-- Only generate the file when there is at least one mapping -->
-    <ItemGroup Condition="'$(_SnapshotTestingPathMap)' != ''">
+    <ItemGroup Condition="'@(_SnapshotTestingSourceRootRegistrationLines)' != ''">
       <_SnapshotTestingSourceRootFileLines
           Include="// &lt;auto-generated/&gt;
 using System.Runtime.CompilerServices%3B
 
-namespace Meziantou.Framework.SnapshotTesting%3B
-
 [assembly: System.Reflection.AssemblyMetadata(%22SnapshotTestingSourceRootMappings%22, %22generated%22)]
+
+namespace Meziantou.Framework.SnapshotTesting%3B
 
 internal static class SnapshotTestingSourceRootInitializer
 {
     [ModuleInitializer]
     internal static void Initialize()
     {
-        global::Meziantou.Framework.SnapshotTesting.SnapshotConfiguration.RegisterPathMap(%22$(_SnapshotTestingPathMap)%22)%3B
+@(_SnapshotTestingSourceRootRegistrationLines, '%0A')
     }
 }" />
     </ItemGroup>
@@ -76,6 +74,7 @@ internal static class SnapshotTestingSourceRootInitializer
     <!-- Clean up temporary items -->
     <ItemGroup>
       <_SnapshotTestingSourceRoot Remove="@(_SnapshotTestingSourceRoot)" />
+      <_SnapshotTestingSourceRootRegistrationLines Remove="@(_SnapshotTestingSourceRootRegistrationLines)" />
       <_SnapshotTestingSourceRootFileLines Remove="@(_SnapshotTestingSourceRootFileLines)" />
     </ItemGroup>
   </Target>

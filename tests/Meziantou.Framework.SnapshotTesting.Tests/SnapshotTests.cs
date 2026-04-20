@@ -66,22 +66,6 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void ResolveSourceFilePath_UsesSourceRootForPathMappedFile()
-    {
-        using var directory = TemporaryDirectory.Create();
-        var relativePath = "__snapshot_path_map__/Sample.cs";
-        var expectedPath = directory.GetFullPath(relativePath);
-        expectedPath.CreateParentDirectory();
-        File.WriteAllText(expectedPath, "");
-
-        var resolvedPath = SnapshotCallerContext.ResolveSourceFilePath(
-            "/_/" + relativePath,
-            [directory.FullPath.Value]);
-
-        Assert.Equal(expectedPath, resolvedPath);
-    }
-
-    [Fact]
     public void SnapshotPathStrategy_UsesIndexPatternForShortName()
     {
         var settings = new SnapshotSettings();

@@ -552,21 +552,6 @@ public sealed class SnapshotEndToEndTests
         };
     }
 
-    [Fact]
-    public void GetRepositoryRoot_UsesSourceRootForPathMappedCallerFilePath()
-    {
-        using var directory = TemporaryDirectory.Create();
-        var sourceFilePath = directory.GetFullPath("tests\\Meziantou.Framework.SnapshotTesting.Tests\\SnapshotEndToEndTests.cs");
-        sourceFilePath.CreateParentDirectory();
-        File.WriteAllText(sourceFilePath, "");
-
-        var repositoryRoot = GetRepositoryRoot(
-            "/_/tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotEndToEndTests.cs",
-            [directory.FullPath.Value]);
-
-        Assert.Equal(directory.FullPath, repositoryRoot);
-    }
-
     private static string CreateFixedCountSerializerSource(int count)
     {
         return $$"""

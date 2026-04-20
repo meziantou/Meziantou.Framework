@@ -1145,13 +1145,13 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(dotnetPath);
 
         testOutputHelper.WriteLine("Restoring project");
-        await ExecuteDotNet("restore", expectedExitCode: 0);
+        await ExecuteDotNet("restore --disable-build-servers", expectedExitCode: 0);
 
         testOutputHelper.WriteLine("Building project");
-        await ExecuteDotNet("build", expectedExitCode: 0);
+        await ExecuteDotNet("build --no-restore --disable-build-servers", expectedExitCode: 0);
 
         testOutputHelper.WriteLine("Running project");
-        await ExecuteDotNet("run");
+        await ExecuteDotNet("run --no-build --disable-build-servers");
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;

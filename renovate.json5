@@ -32,6 +32,7 @@
         "src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj",
         "src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj",
         "tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests.csproj",
+        "tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj",
         "tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj",
         "tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj",
         "tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj"

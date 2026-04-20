@@ -52,6 +52,7 @@
       <_SnapshotTestingSourceRootFileLines Include=" " />
       <_SnapshotTestingSourceRootFileLines Include="namespace Meziantou.Framework.SnapshotTesting%3B" />
       <_SnapshotTestingSourceRootFileLines Include=" " />
+      <_SnapshotTestingSourceRootFileLines Include="[System.CodeDom.Compiler.GeneratedCode(%22Meziantou.Framework.SnapshotTesting%22, %22%22)]" />
       <_SnapshotTestingSourceRootFileLines Include="internal static class SnapshotTestingSourceRootInitializer" />
       <_SnapshotTestingSourceRootFileLines Include="{" />
       <_SnapshotTestingSourceRootFileLines Include="    [ModuleInitializer]" />

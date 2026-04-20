@@ -1,5 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.props" />
+
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>

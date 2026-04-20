@@ -874,7 +874,6 @@ public sealed class SnapshotEndToEndTests
                 }
 
                 env.Set("DiffEngine_Disabled", "true");
-                env.Set("MF_CurrentDirectory", Environment.CurrentDirectory);
             })
             .ExecuteBufferedAsync();
 

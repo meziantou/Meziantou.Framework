@@ -1224,7 +1224,6 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             }
 
             psi.EnvironmentVariables["DiffEngine_Disabled"] = "true";
-            psi.EnvironmentVariables["MF_CurrentDirectory"] = Environment.CurrentDirectory;
             if (environmentVariables is not null)
             {
                 foreach (var variable in environmentVariables)

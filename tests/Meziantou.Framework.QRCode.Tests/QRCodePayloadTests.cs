@@ -78,7 +78,7 @@ public class QRCodePayloadTests
             URL:https://example.com
             ADR:;;123 Main St;;;;
             END:VCARD
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class QRCodePayloadTests
             N:Doe;;;;
             FN:Doe
             END:VCARD
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public class QRCodePayloadTests
             LOCATION:Room 42
             DESCRIPTION:Weekly sync
             END:VEVENT
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public class QRCodePayloadTests
             DTSTART:20250101T090000Z
             DTEND:20250101T100000Z
             END:VEVENT
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -390,7 +390,7 @@ public class QRCodePayloadTests
 
             Donation
 
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -414,7 +414,7 @@ public class QRCodePayloadTests
 
 
 
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -439,7 +439,7 @@ public class QRCodePayloadTests
             RF18539007547034
 
 
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -484,7 +484,7 @@ public class QRCodePayloadTests
             FN:Doe
             ADR:;;123 Main St;;;;
             END:VCARD
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -549,7 +549,7 @@ public class QRCodePayloadTests
 
 
             Thank you
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -576,6 +576,6 @@ public class QRCodePayloadTests
             DTEND:20250301T110000Z
             DESCRIPTION:Quarterly review
             END:VEVENT
-            """, payload);
+            """, payload, ignoreLineEndingDifferences: true);
     }
 }

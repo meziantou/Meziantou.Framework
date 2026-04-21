@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Meziantou.Framework;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
@@ -7,7 +8,7 @@ internal sealed class GitMergeTool : GitTool
 {
     public override MergeToolResult? Start(string currentFilePath, string newFilePath)
     {
-        var workingDirectory = Path.GetDirectoryName(currentFilePath);
+        var workingDirectory = FullPath.FromPath(currentFilePath).Parent;
         var toolName = GetGitConfiguration(workingDirectory, "merge.tool");
         if (toolName is not null)
         {

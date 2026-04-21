@@ -1,5 +1,4 @@
-using Meziantou.Framework.InlineSnapshotTesting;
-using System.Text;
+using Meziantou.Framework.SnapshotTesting;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -17,19 +16,7 @@ public class MicroQRCodeTests
         Assert.Equal(1, qr.Version);
         Assert.Equal(11, qr.Width);
         Assert.Equal(11, qr.Height);
-        InlineSnapshot.Validate(RenderAsText(qr), """
-            #######.#.#
-            #.....#....
-            #.###.#.#..
-            #.###.#...#
-            #.###.#.###
-            #.....#..##
-            #######.#..
-            ........###
-            ##..###..##
-            .#.##.#.#..
-            ####.####..
-            """);
+        Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
     // ───── Version M2 (13x13, numeric + alphanumeric) ─────
@@ -41,19 +28,7 @@ public class MicroQRCodeTests
 
         Assert.Equal(1, qr.Version);
         Assert.Equal(11, qr.Width);
-        InlineSnapshot.Validate(RenderAsText(qr), """
-            #######.#.#
-            #.....#....
-            #.###.#.###
-            #.###.#....
-            #.###.#.###
-            #.....#..##
-            #######.#..
-            ........###
-            ##..###..##
-            .#.#...##..
-            ####.....##
-            """);
+        Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
     [Fact]
@@ -64,21 +39,7 @@ public class MicroQRCodeTests
         Assert.Equal(QRCodeType.MicroQR, qr.Type);
         Assert.Equal(2, qr.Version);
         Assert.Equal(13, qr.Width);
-        InlineSnapshot.Validate(RenderAsText(qr), """
-            #######.#.#.#
-            #.....#..##..
-            #.###.#..#.##
-            #.###.#.###..
-            #.###.#..####
-            #.....#...#.#
-            #######.#.##.
-            ........#..#.
-            ###..####.##.
-            ...###..#..##
-            #.###.#.#####
-            ..##...#..#.#
-            #.####.###.#.
-            """);
+        Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
     // ───── Version M3 (15x15, all modes) ─────
@@ -90,23 +51,7 @@ public class MicroQRCodeTests
 
         Assert.Equal(3, qr.Version);
         Assert.Equal(15, qr.Width);
-        InlineSnapshot.Validate(RenderAsText(qr), """
-            #######.#.#.#.#
-            #.....#...##.##
-            #.###.#.#.#.#.#
-            #.###.#..#.##..
-            #.###.#..###..#
-            #.....#..##...#
-            #######..#.##..
-            ........#.####.
-            #####..#..#....
-            .###..#.#...###
-            #...#####...##.
-            .#.......#....#
-            #.....#.##..###
-            ...#####.#.#.#.
-            #######..#.##.#
-            """);
+        Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
     [Fact]
@@ -115,21 +60,7 @@ public class MicroQRCodeTests
         var qr = QRCode.CreateMicroQR("HELLO", ErrorCorrectionLevel.M);
 
         Assert.Equal(QRCodeType.MicroQR, qr.Type);
-        InlineSnapshot.Validate(RenderAsText(qr), """
-            #######.#.#.#
-            #.....#.##...
-            #.###.#..####
-            #.###.#..##.#
-            #.###.#.#..#.
-            #.....#..#..#
-            #######.#####
-            .........#...
-            ###.#...#..##
-            .#.###.######
-            #.#.#.#....##
-            .#.#.#.#.###.
-            ###..#...###.
-            """);
+        Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
     // ───── Version M4 (17x17, all modes + EC Q) ─────
@@ -141,25 +72,7 @@ public class MicroQRCodeTests
 
         Assert.Equal(4, qr.Version);
         Assert.Equal(17, qr.Width);
-        InlineSnapshot.Validate(RenderAsText(qr), """
-            #######.#.#.#.#.#
-            #.....#......#...
-            #.###.#.##..##...
-            #.###.#.#...###.#
-            #.###.#...#.###.#
-            #.....#.#....#.#.
-            #######..##..#..#
-            ........#...###.#
-            #..#.###.##.#...#
-            .#####......#....
-            ##..####.#####.#.
-            .#...#.##..##....
-            ####.#.#.##.###.#
-            .....#########...
-            ###...####....#..
-            ..#...#.###.##...
-            ###.#..#.##.#...#
-            """);
+        Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
     [Fact]
@@ -169,25 +82,7 @@ public class MicroQRCodeTests
 
         Assert.Equal(4, qr.Version);
         Assert.Equal(17, qr.Width);
-        InlineSnapshot.Validate(RenderAsText(qr), """
-            #######.#.#.#.#.#
-            #.....#.#.#.....#
-            #.###.#.#....#..#
-            #.###.#....##.#..
-            #.###.#..#####..#
-            #.....#..####...#
-            #######.###.###..
-            ........#.#.##..#
-            #.##.#..#..#.##.#
-            ...##..##......##
-            #####.#.###..##..
-            .#.#.###..#.#....
-            #....#.#.##..###.
-            .#..#..#####.###.
-            #...####.#.###..#
-            ..#..####..#.##..
-            #.#..##.#########
-            """);
+        Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
     // ───── Error cases ─────
@@ -260,22 +155,12 @@ public class MicroQRCodeTests
         Assert.NotEmpty(text);
     }
 
-    private static string RenderAsText(QRCode qr)
+    private static string RenderAsSvg(QRCode qr)
     {
-        var sb = new StringBuilder();
-        for (var row = 0; row < qr.Height; row++)
+        return qr.ToSvg(new QRCodeSvgOptions
         {
-            if (row > 0)
-            {
-                sb.AppendLine();
-            }
-
-            for (var col = 0; col < qr.Width; col++)
-            {
-                sb.Append(qr[row, col] ? '#' : '.');
-            }
-        }
-
-        return sb.ToString();
+            ModuleSize = 1,
+            QuietZoneModules = 0,
+        });
     }
 }

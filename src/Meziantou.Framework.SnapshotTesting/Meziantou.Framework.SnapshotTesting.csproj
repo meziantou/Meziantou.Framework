@@ -1,0 +1,31 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Description>Enables verification of objects using file-based snapshots</Description>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="build/**" Pack="true" PackagePath="build" />
+    <None Include="buildTransitive/**" Pack="true" PackagePath="buildTransitive" />
+    <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.SnapshotTesting.Common\Meziantou.Framework.SnapshotTesting.Common.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.HumanReadableSerializer\Meziantou.Framework.HumanReadableSerializer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DiffEngine" Version="19.1.2" />
+  </ItemGroup>
+</Project>

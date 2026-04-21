@@ -1,5 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.props" />
+
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
@@ -7,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Avatar\Meziantou.Framework.Avatar.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.SnapshotTesting\Meziantou.Framework.SnapshotTesting.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Meziantou.Framework;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
@@ -6,7 +7,7 @@ internal sealed class GitDiffTool : GitTool
 {
     public override MergeToolResult? Start(string currentFilePath, string newFilePath)
     {
-        var workingDirectory = Path.GetDirectoryName(currentFilePath);
+        var workingDirectory = FullPath.FromPath(currentFilePath).Parent;
         var toolName = GetGitConfiguration(workingDirectory, "diff.tool");
         if (toolName is not null)
         {

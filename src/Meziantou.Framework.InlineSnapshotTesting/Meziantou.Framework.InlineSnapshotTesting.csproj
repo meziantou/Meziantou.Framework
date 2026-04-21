@@ -20,6 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.SnapshotTesting.Common\Meziantou.Framework.SnapshotTesting.Common.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.HumanReadableSerializer\Meziantou.Framework.HumanReadableSerializer.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
   </ItemGroup>

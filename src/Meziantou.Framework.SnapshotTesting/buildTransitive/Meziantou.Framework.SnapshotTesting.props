@@ -1,0 +1,3 @@
+<Project>
+  <Import Project="../build/Meziantou.Framework.SnapshotTesting.props" />
+</Project>

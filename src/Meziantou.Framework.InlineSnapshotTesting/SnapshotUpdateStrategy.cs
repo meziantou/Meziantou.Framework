@@ -1,5 +1,6 @@
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
+using Meziantou.Framework;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -55,17 +56,19 @@ public abstract class SnapshotUpdateStrategy
 
     private protected static void MoveFile(string source, string destination)
     {
-        if (source == destination)
+        var sourcePath = FullPath.FromPath(source);
+        var destinationPath = FullPath.FromPath(destination);
+        if (sourcePath == destinationPath)
             return;
 
-        var fi = new FileInfo(source);
+        var fi = new FileInfo(sourcePath);
         fi.TrySetReadOnly(false);
 
 #if NETCOREAPP3_0_OR_GREATER
-        File.Move(source, destination, overwrite: true);
+        File.Move(sourcePath, destinationPath, overwrite: true);
 #else
-        File.Copy(source, destination, overwrite: true);
-        TryDeleteFile(source);
+        File.Copy(sourcePath, destinationPath, overwrite: true);
+        TryDeleteFile(sourcePath);
 #endif
     }
 
@@ -73,7 +76,8 @@ public abstract class SnapshotUpdateStrategy
     {
         try
         {
-            var fi = new FileInfo(path);
+            var filePath = FullPath.FromPath(path);
+            var fi = new FileInfo(filePath);
             if (fi.Exists)
             {
                 fi.TrySetReadOnly(false);

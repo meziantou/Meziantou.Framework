@@ -113,9 +113,6 @@ public static class InlineSnapshot
         {
             if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
             {
-                if (context.FilePath is null)
-                    throw new InlineSnapshotException("Cannot update source file as the path is null");
-
                 FileEditor.UpdateFile(context, settings, expected, actual);
 
                 if (settings.SnapshotUpdateStrategy.MustReportError(settings, context.FilePath))
@@ -130,9 +127,6 @@ public static class InlineSnapshot
         }
         else if (settings.ForceUpdateSnapshots)
         {
-            if (context.FilePath is null)
-                throw new InlineSnapshotException("Cannot update source file as the path is null");
-
             FileEditor.UpdateFile(context, settings, expected, actual);
         }
     }

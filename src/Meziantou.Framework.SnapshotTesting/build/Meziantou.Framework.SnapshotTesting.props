@@ -1,0 +1,85 @@
+<Project>
+  <!--
+    Generates a C# file in the intermediate output folder that registers the MSBuild SourceRoot
+    mappings (the deterministic path prefixes such as /_/ or /_1/ used during deterministic builds)
+    with SnapshotConfiguration via a [ModuleInitializer] so that file-based snapshot tests can
+    resolve CallerFilePath values back to real paths on disk in CI environments.
+
+    The target mirrors the approach used by _SetPathMapFromSourceRoots in the .NET SDK: it depends on
+    InitializeSourceRootMappedPaths so that %(SourceRoot.MappedPath) metadata is already populated,
+    and it only runs when DeterministicSourcePaths is true.
+
+    Set $(SnapshotTestingGenerateSourceRoot) to 'false' to opt out of this code generation.
+  -->
+  <Target Name="GenerateSnapshotTestingSourceRoots"
+          DependsOnTargets="InitializeSourceRootMappedPaths"
+          BeforeTargets="CoreCompile"
+          Condition="'$(SnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'">
+
+    <PropertyGroup>
+      <_SnapshotTestingSourceRootFile>$(IntermediateOutputPath)SnapshotTestingSourceRoot.g.cs</_SnapshotTestingSourceRootFile>
+    </PropertyGroup>
+
+    <!--
+      Collect top-level SourceRoot items that have a MappedPath, mirroring the filter used by
+      _SetPathMapFromSourceRoots (NestedRoot == '' excludes sub-roots such as NuGet package roots
+      that are already covered by their parent). Normalize backslashes in Identity so the generated
+      string literal is always valid on Windows.
+    -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRoot Include="@(SourceRoot)"
+          Condition="'%(SourceRoot.NestedRoot)' == '' and '%(SourceRoot.MappedPath)' != ''">
+        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
+      </_SnapshotTestingSourceRoot>
+    </ItemGroup>
+
+    <!-- Build one RegisterSourceRootMapping call per SourceRoot item - no runtime parsing needed. -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRootRegistrationLines
+          Include="@(_SnapshotTestingSourceRoot->'        global::Meziantou.Framework.SnapshotTesting.SnapshotConfiguration.RegisterSourceRootMapping(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />
+    </ItemGroup>
+
+    <!--
+      Build the generated file as individual line items so that item-list expansion
+      (@(...)) is never embedded inside a string literal (MSB4012 restriction).
+      Blank lines use a single space so that WriteLinesToFile does not skip them.
+    -->
+    <ItemGroup Condition="'@(_SnapshotTestingSourceRootRegistrationLines)' != ''">
+      <_SnapshotTestingSourceRootFileLines Include="// &lt;auto-generated/&gt;" />
+      <_SnapshotTestingSourceRootFileLines Include="using System.Runtime.CompilerServices%3B" />
+      <_SnapshotTestingSourceRootFileLines Include=" " />
+      <_SnapshotTestingSourceRootFileLines Include="[assembly: System.Reflection.AssemblyMetadata(%22SnapshotTestingSourceRootMappings%22, %22generated%22)]" />
+      <_SnapshotTestingSourceRootFileLines Include=" " />
+      <_SnapshotTestingSourceRootFileLines Include="namespace Meziantou.Framework.SnapshotTesting%3B" />
+      <_SnapshotTestingSourceRootFileLines Include=" " />
+      <_SnapshotTestingSourceRootFileLines Include="[System.CodeDom.Compiler.GeneratedCode(%22Meziantou.Framework.SnapshotTesting%22, %22%22)]" />
+      <_SnapshotTestingSourceRootFileLines Include="internal static class SnapshotTestingSourceRootInitializer" />
+      <_SnapshotTestingSourceRootFileLines Include="{" />
+      <_SnapshotTestingSourceRootFileLines Include="    [ModuleInitializer]" />
+      <_SnapshotTestingSourceRootFileLines Include="    internal static void Initialize()" />
+      <_SnapshotTestingSourceRootFileLines Include="    {" />
+      <_SnapshotTestingSourceRootFileLines Include="@(_SnapshotTestingSourceRootRegistrationLines)" />
+      <_SnapshotTestingSourceRootFileLines Include="    }" />
+      <_SnapshotTestingSourceRootFileLines Include="}" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+        File="$(_SnapshotTestingSourceRootFile)"
+        Lines="@(_SnapshotTestingSourceRootFileLines)"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true"
+        Condition="'@(_SnapshotTestingSourceRootFileLines)' != ''" />
+
+    <ItemGroup Condition="'@(_SnapshotTestingSourceRootFileLines)' != ''">
+      <Compile Include="$(_SnapshotTestingSourceRootFile)" />
+      <EmbedInBinlog Include="$(_SnapshotTestingSourceRootFile)" />
+    </ItemGroup>
+
+    <!-- Clean up temporary items -->
+    <ItemGroup>
+      <_SnapshotTestingSourceRoot Remove="@(_SnapshotTestingSourceRoot)" />
+      <_SnapshotTestingSourceRootRegistrationLines Remove="@(_SnapshotTestingSourceRootRegistrationLines)" />
+      <_SnapshotTestingSourceRootFileLines Remove="@(_SnapshotTestingSourceRootFileLines)" />
+    </ItemGroup>
+  </Target>
+</Project>

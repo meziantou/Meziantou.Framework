@@ -1,8 +1,9 @@
-namespace Meziantou.Framework.InlineSnapshotTesting;
+namespace Meziantou.Framework;
 
-internal static class BuildServerDetector
+public static class BuildServerDetector
 {
     private static bool HasEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name) is not null;
+
     private static bool HasEnvironmentVariable(string name, string value) => string.Equals(Environment.GetEnvironmentVariable(name), value, StringComparison.OrdinalIgnoreCase);
 
     public static bool Detected { get; } = HasEnvironmentVariable("CI")

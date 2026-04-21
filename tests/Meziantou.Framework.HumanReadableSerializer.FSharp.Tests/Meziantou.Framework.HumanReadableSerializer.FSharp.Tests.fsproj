@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="Library.fs" />
+    <PackageReference Update="FSharp.Core" Version="11.0.100-preview1.26104.118" />
   </ItemGroup>
 
 </Project>

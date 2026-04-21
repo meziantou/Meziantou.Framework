@@ -294,3 +294,4 @@ src/Meziantou.AspNetCore.Components/wwwroot/**/*.js
 *_wpftmp.csproj
 
 artifacts/
+**/__snapshots__/*.actual.*

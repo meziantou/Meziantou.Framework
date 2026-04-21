@@ -9,8 +9,8 @@ internal static class HuntSzymanskiDiff
 
         var leftModified = new bool[left.Length];
         var rightModified = new bool[right.Length];
-        Array.Fill(leftModified, value: true);
-        Array.Fill(rightModified, value: true);
+        Array.Fill(leftModified, true);
+        Array.Fill(rightModified, true);
 
         var current = links;
         while (current is not null)

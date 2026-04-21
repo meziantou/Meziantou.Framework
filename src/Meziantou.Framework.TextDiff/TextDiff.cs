@@ -104,7 +104,8 @@ public static class TextDiff
         public int GetHashCode(string obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            return string.GetHashCode(Trim(obj.AsSpan()), _comparison);
+            var trimmed = Trim(obj.AsSpan());
+            return string.GetHashCode(trimmed, _comparison);
         }
 
         private static ReadOnlySpan<char> Trim(ReadOnlySpan<char> value)

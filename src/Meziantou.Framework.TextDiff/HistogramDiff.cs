@@ -8,8 +8,8 @@ internal static class HistogramDiff
     {
         var leftModified = new bool[left.Length];
         var rightModified = new bool[right.Length];
-        Array.Fill(leftModified, value: true);
-        Array.Fill(rightModified, value: true);
+        Array.Fill(leftModified, true);
+        Array.Fill(rightModified, true);
 
         ComputeRange(left, 0, left.Length, right, 0, right.Length, comparer, leftModified, rightModified);
         return new DiffComputationResult(leftModified, rightModified);

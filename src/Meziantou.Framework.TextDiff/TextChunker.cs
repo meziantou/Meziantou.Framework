@@ -69,9 +69,14 @@ public class TextChunker
                 }
 
                 var whiteSpaceEnd = whiteSpaceStart + 1;
-                while (whiteSpaceEnd < value.Length && WhiteSpaceCharacters.Contains(value[whiteSpaceEnd]))
+                var nonWhiteSpaceOffset = value[whiteSpaceEnd..].IndexOfAnyExcept(WhiteSpaceCharacters);
+                if (nonWhiteSpaceOffset < 0)
                 {
-                    whiteSpaceEnd++;
+                    whiteSpaceEnd = value.Length;
+                }
+                else
+                {
+                    whiteSpaceEnd += nonWhiteSpaceOffset;
                 }
 
                 words.Add(value[whiteSpaceStart..whiteSpaceEnd].ToString());

@@ -232,7 +232,8 @@ List<string> GetProjectReferences(string projectPath)
             if (string.IsNullOrEmpty(include))
                 continue;
 
-            var candidatePath = FullPath.FromPath(projectPath).Parent / include;
+            var normalizedInclude = include.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+            var candidatePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(projectPath)!, normalizedInclude));
             if (!File.Exists(candidatePath))
                 continue;
 

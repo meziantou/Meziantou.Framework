@@ -2,4 +2,8 @@
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  </Folder>
 </Solution>

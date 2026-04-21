@@ -1,5 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.DnsProxy/Meziantou.DnsProxy.csproj" />
+    <Project Path="../src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
+    <Project Path="../src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
+    <Project Path="../src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,5 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
+    <Project Path="../src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.NtpClient.Tests/Meziantou.Framework.NtpClient.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.NtpServer.Tests/Meziantou.Framework.NtpServer.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
 </Solution>

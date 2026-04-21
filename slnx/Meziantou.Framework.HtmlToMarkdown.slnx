@@ -1,6 +1,10 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.HtmlToMarkdown/Meziantou.Framework.HtmlToMarkdown.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.HtmlToMarkdown.Tests/Meziantou.Framework.HtmlToMarkdown.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="../tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator.csproj" />

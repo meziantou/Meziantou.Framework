@@ -1,5 +1,15 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.QRCode/Meziantou.Framework.QRCode.csproj" />
+    <Project Path="../src/Meziantou.Framework.SnapshotTesting.Common/Meziantou.Framework.SnapshotTesting.Common.csproj" />
+    <Project Path="../src/Meziantou.Framework.SnapshotTesting.ImageSharp/Meziantou.Framework.SnapshotTesting.ImageSharp.csproj" />
+    <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.QRCode.Tests/Meziantou.Framework.QRCode.Tests.csproj" />
   </Folder>
 </Solution>

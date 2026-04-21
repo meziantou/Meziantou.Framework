@@ -2,4 +2,8 @@
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.MediaTags.Tests/Meziantou.Framework.MediaTags.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  </Folder>
 </Solution>

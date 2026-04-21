@@ -42,4 +42,16 @@ public sealed class InlineSnapshotSettingsTests
         Assert.Equal(settings.Scrubbers, clone.Scrubbers);
         Assert.NotSame(settings.Scrubbers, clone.Scrubbers);
     }
+
+    [Fact]
+    public void AssertSnapshot_ShouldContainResolutionGuidance()
+    {
+        var settings = new InlineSnapshotSettings();
+
+        var exception = Assert.ThrowsAny<Exception>(() => settings.AssertSnapshot("old", "new"));
+        Assert.StartsWith("Snapshots do not match:\n", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Resolution guidance:", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("- If the new behavior is correct, update the inline snapshot.", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("- Re-run the test.", exception.Message, StringComparison.Ordinal);
+    }
 }

@@ -182,7 +182,20 @@ public sealed record InlineSnapshotSettings
     [DoesNotReturn]
     internal void AssertSnapshot(string? expected, string? actual)
     {
-        var errorMessage = "Snapshots do not match:\n" + ErrorMessageFormatter.FormatMessage(expected, actual);
+        var errorMessage =
+            "Snapshots do not match:\n" +
+            ErrorMessageFormatter.FormatMessage(expected, actual) +
+            "\n\n" +
+            GetResolutionGuidanceMessage();
         throw AssertionExceptionCreator.CreateException(errorMessage);
     }
+
+    private static string GetResolutionGuidanceMessage() =>
+        """
+        Resolution guidance:
+          - Compare the expected snapshot and received value shown above.
+          - If the new behavior is correct, update the inline snapshot.
+          - If the old behavior is correct, fix the test or production code so the output matches the snapshot.
+          - Re-run the test.
+        """;
 }

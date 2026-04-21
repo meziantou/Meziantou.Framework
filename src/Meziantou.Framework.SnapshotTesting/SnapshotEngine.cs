@@ -81,18 +81,15 @@ internal static class SnapshotEngine
             return SnapshotComparisonResult.NoDifference;
         }
 
-        var message = BuildMessage(settings, missingPaths, extraPaths, changedPaths, expectedFiles, actualByPath);
+        var message = BuildMessage(missingPaths, extraPaths, changedPaths);
         var pathsToUpdate = missingPaths.Concat(changedPaths).Distinct().ToArray();
         return new SnapshotComparisonResult(HasDifferences: true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths), [.. changedPaths], missingPaths, extraPaths, pathsToUpdate);
     }
 
     private static string BuildMessage(
-        SnapshotSettings settings,
         FullPath[] missingPaths,
         FullPath[] extraPaths,
-        List<FullPath> changedPaths,
-        Dictionary<FullPath, SnapshotData> expectedFiles,
-        Dictionary<FullPath, SnapshotData> actualFiles)
+        List<FullPath> changedPaths)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Snapshots do not match.");

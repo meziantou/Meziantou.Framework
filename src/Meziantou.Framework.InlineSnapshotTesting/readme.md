@@ -24,8 +24,19 @@ var data = new
 InlineSnapshot.Validate(data);
 ````
 
-Then, run the tests. It will show you a diff tool where you can compare the expected value and the new value.
-Once you accept the change, the source code is updated:
+Then, run the tests. By default, snapshot updates are disabled and the test fails when the snapshot doesn't match.
+This default is better for AI-assisted flows where automatic source updates can be unexpected.
+
+If you want to restore the previous behavior (open a merge tool and update snapshots), configure `SnapshotUpdateStrategy.MergeTool`:
+
+````c#
+InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
+{
+    SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
+};
+````
+
+Once the snapshot is updated, the source code is changed:
 
 ````c#
 var data = new
@@ -196,6 +207,8 @@ The HumanReadableSerializer has many options to make the snapshot deterministic 
     ````
 
 ## Diff tool
+
+To restore the old default behavior (before v4), set the snapshot update strategy to `SnapshotUpdateStrategy.MergeTool`.
 
 When a snapshot is updated, a diff tool is used to compare the expected value and the new value. By default, it uses one of the following tools
 - The diff tool configured by the `DiffEngine_Tool` environment variable

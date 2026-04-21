@@ -2,8 +2,4 @@
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.FastEnumToStringGenerator.Tests/Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj" />
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
-  </Folder>
 </Solution>

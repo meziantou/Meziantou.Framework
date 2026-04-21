@@ -2,7 +2,4 @@
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.Http.Tests/Meziantou.Framework.Http.Tests.csproj" />
-  </Folder>
 </Solution>

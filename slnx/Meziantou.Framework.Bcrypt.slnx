@@ -2,7 +2,4 @@
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.Bcrypt.Tests/Meziantou.Framework.Bcrypt.Tests.csproj" />
-  </Folder>
 </Solution>

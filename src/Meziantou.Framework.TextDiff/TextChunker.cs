@@ -1,4 +1,6 @@
+#if NET8_0_OR_GREATER
 using System.Buffers;
+#endif
 
 namespace Meziantou.Framework;
 
@@ -13,7 +15,11 @@ public class TextChunker
 
     private sealed class LineChunker : TextChunker
     {
+#if NET8_0_OR_GREATER
         private static SearchValues<char> NewLineCharacters { get; } = SearchValues.Create("\r\n\u0085\u2028\u2029");
+#else
+        private static readonly char[] NewLineCharacters = ['\r', '\n', '\u0085', '\u2028', '\u2029'];
+#endif
 
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
@@ -47,7 +53,11 @@ public class TextChunker
 
     private sealed class WordChunker : TextChunker
     {
+#if NET8_0_OR_GREATER
         private static SearchValues<char> WhiteSpaceCharacters { get; } = SearchValues.Create("\t\n\v\f\r\u0020\u0085\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000");
+#else
+        private static readonly char[] WhiteSpaceCharacters = ['\t', '\n', '\v', '\f', '\r', '\u0020', '\u0085', '\u00A0', '\u1680', '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009', '\u200A', '\u2028', '\u2029', '\u202F', '\u205F', '\u3000'];
+#endif
 
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
@@ -69,7 +79,11 @@ public class TextChunker
                 }
 
                 var whiteSpaceEnd = whiteSpaceStart + 1;
+#if NET8_0_OR_GREATER
                 while (whiteSpaceEnd < value.Length && WhiteSpaceCharacters.Contains(value[whiteSpaceEnd]))
+#else
+                while (whiteSpaceEnd < value.Length && Array.IndexOf(WhiteSpaceCharacters, value[whiteSpaceEnd]) >= 0)
+#endif
                 {
                     whiteSpaceEnd++;
                 }

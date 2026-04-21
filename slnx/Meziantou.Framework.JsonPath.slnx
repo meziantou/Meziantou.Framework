@@ -2,7 +2,4 @@
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
-  </Folder>
 </Solution>

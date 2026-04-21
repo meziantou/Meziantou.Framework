@@ -81,18 +81,15 @@ internal static class SnapshotEngine
             return SnapshotComparisonResult.NoDifference;
         }
 
-        var message = BuildMessage(settings, missingPaths, extraPaths, changedPaths, expectedFiles, actualByPath);
+        var message = BuildMessage(missingPaths, extraPaths, changedPaths);
         var pathsToUpdate = missingPaths.Concat(changedPaths).Distinct().ToArray();
         return new SnapshotComparisonResult(HasDifferences: true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths), [.. changedPaths], missingPaths, extraPaths, pathsToUpdate);
     }
 
     private static string BuildMessage(
-        SnapshotSettings settings,
         FullPath[] missingPaths,
         FullPath[] extraPaths,
-        List<FullPath> changedPaths,
-        Dictionary<FullPath, SnapshotData> expectedFiles,
-        Dictionary<FullPath, SnapshotData> actualFiles)
+        List<FullPath> changedPaths)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Snapshots do not match.");
@@ -138,12 +135,6 @@ internal static class SnapshotEngine
             foreach (var path in changedPaths.OrderBy(static p => p.Value, StringComparer.Ordinal))
             {
                 sb.Append("  * ").AppendLine(path.Value);
-                if (TryDecodeAsText(expectedFiles[path].Data, out var expectedText) && TryDecodeAsText(actualFiles[path].Data, out var actualText))
-                {
-                    sb.AppendLine();
-                    sb.AppendLine(settings.ErrorMessageFormatter.FormatMessage(expectedText, actualText));
-                    sb.AppendLine();
-                }
             }
         }
 
@@ -389,20 +380,6 @@ internal static class SnapshotEngine
     private static void ThrowAssertion(SnapshotSettings settings, string message)
     {
         throw settings.AssertionExceptionCreator.CreateException(message);
-    }
-
-    private static bool TryDecodeAsText(byte[] data, out string value)
-    {
-        try
-        {
-            value = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetString(data);
-            return true;
-        }
-        catch (DecoderFallbackException)
-        {
-            value = "";
-            return false;
-        }
     }
 
     private readonly record struct SnapshotComparisonResult(

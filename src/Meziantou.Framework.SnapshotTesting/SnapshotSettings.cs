@@ -42,16 +42,6 @@ public sealed record SnapshotSettings
         }
     }
 
-    public AssertionMessageFormatter ErrorMessageFormatter
-    {
-        get;
-        set
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            field = value;
-        }
-    }
-
     public int MaxSnapshotFileNameLength
     {
         get;
@@ -101,7 +91,6 @@ public sealed record SnapshotSettings
         Comparers.Set(SnapshotType.None, ByteArraySnapshotComparer.Instance);
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         AssertionExceptionCreator = AssertionExceptionBuilder.Default;
-        ErrorMessageFormatter = InlineDiffAssertionMessageFormatter.Instance;
         MaxSnapshotFileNameLength = 128;
         SnapshotPathStrategy = DefaultSnapshotPath;
         MergeTools = DefaultMergeTools;
@@ -116,7 +105,6 @@ public sealed record SnapshotSettings
         ForceUpdateSnapshots = options.ForceUpdateSnapshots;
         SnapshotUpdateStrategy = options.SnapshotUpdateStrategy;
         AssertionExceptionCreator = options.AssertionExceptionCreator;
-        ErrorMessageFormatter = options.ErrorMessageFormatter;
         MaxSnapshotFileNameLength = options.MaxSnapshotFileNameLength;
         SnapshotPathStrategy = options.SnapshotPathStrategy;
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];

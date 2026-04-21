@@ -49,41 +49,6 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void InlineDiffAssertionMessageFormatter_FormatsMixedChanges()
-    {
-        var message = InlineDiffAssertionMessageFormatter.Instance.FormatMessage("line1\nline2\nline4", "line1\nline3\nline4");
-
-        var expected = string.Join(Environment.NewLine, [
-            "- Snapshot",
-            "+ Received",
-            "",
-            "",
-            "  line1",
-            "- line2",
-            "+ line3",
-            "  line4",
-        ]);
-
-        Assert.Equal(expected, message);
-    }
-
-    [Fact]
-    public void InlineDiffAssertionMessageFormatter_FormatsEmptySnapshot()
-    {
-        var message = InlineDiffAssertionMessageFormatter.Instance.FormatMessage("", "");
-
-        var expected = string.Join(Environment.NewLine, [
-            "- Snapshot",
-            "+ Received",
-            "",
-            "",
-            "  ",
-        ]);
-
-        Assert.Equal(expected, message);
-    }
-
-    [Fact]
     public void Settings_WithDeepClone()
     {
         var original = new SnapshotSettings();

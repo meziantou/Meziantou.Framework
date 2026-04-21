@@ -2,6 +2,9 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 internal sealed class InlineDiffAssertionMessageFormatter : AssertionMessageFormatter
 {
+    private static readonly string[] LineSeparators = ["\r\n", "\n", "\r"];
+    private static readonly TextDiffOptions DiffOptions = new() { Chunker = DiffChunker.Instance };
+
     private InlineDiffAssertionMessageFormatter()
     {
     }
@@ -19,38 +22,36 @@ internal sealed class InlineDiffAssertionMessageFormatter : AssertionMessageForm
         sb.AppendLine();
         sb.AppendLine();
 
-        var diff = TextDiff.ComputeDiff(expected, actual);
+        var diff = TextDiff.ComputeDiff(expected, actual, DiffOptions);
         foreach (var entry in diff.Entries)
         {
-            sb.Append(entry.Operation switch
+            var prefix = entry.Operation switch
             {
                 TextDiffOperation.Equal => "  ",
                 TextDiffOperation.Delete => "- ",
                 TextDiffOperation.Insert => "+ ",
                 _ => throw new InvalidOperationException("Unknown operation"),
-            });
-            sb.Append(entry.Text);
+            };
+
+            var lines = entry.Text.Split(LineSeparators, StringSplitOptions.None);
+            foreach (var line in lines)
+            {
+                sb.Append(prefix).AppendLine(line);
+            }
         }
 
-        if (sb.Length > 0)
-        {
-            if (sb[^1] == '\n')
-            {
-                if (sb.Length > 1 && sb[^2] == '\r')
-                {
-                    sb.Length -= 2;
-                }
-                else
-                {
-                    sb.Length--;
-                }
-            }
-            else if (sb[^1] == '\r')
-            {
-                sb.Length--;
-            }
-        }
+        sb.Remove(sb.Length - Environment.NewLine.Length, Environment.NewLine.Length);
 
         return sb.ToString();
+    }
+
+    private sealed class DiffChunker : TextChunker
+    {
+        public static DiffChunker Instance { get; } = new();
+
+        public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
+        {
+            return value.ToString().Split(LineSeparators, StringSplitOptions.None);
+        }
     }
 }

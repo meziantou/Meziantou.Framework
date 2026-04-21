@@ -2,8 +2,7 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 internal sealed class InlineDiffAssertionMessageFormatter : AssertionMessageFormatter
 {
-    private static readonly string[] LineSeparators = ["\r\n", "\n", "\r"];
-    private static readonly TextDiffOptions DiffOptions = new() { Chunker = DiffChunker.Instance };
+    private static readonly TextDiffOptions DiffOptions = new() { Chunker = TextChunker.Lines };
 
     private InlineDiffAssertionMessageFormatter()
     {
@@ -33,25 +32,11 @@ internal sealed class InlineDiffAssertionMessageFormatter : AssertionMessageForm
                 _ => throw new InvalidOperationException("Unknown operation"),
             };
 
-            var lines = entry.Text.Split(LineSeparators, StringSplitOptions.None);
-            foreach (var line in lines)
-            {
-                sb.Append(prefix).AppendLine(line);
-            }
+            sb.Append(prefix).AppendLine(entry.Text.TrimEnd('\r', '\n'));
         }
 
         sb.Remove(sb.Length - Environment.NewLine.Length, Environment.NewLine.Length);
 
         return sb.ToString();
-    }
-
-    private sealed class DiffChunker : TextChunker
-    {
-        public static DiffChunker Instance { get; } = new();
-
-        public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
-        {
-            return value.ToString().Split(LineSeparators, StringSplitOptions.None);
-        }
     }
 }

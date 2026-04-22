@@ -1,10 +1,14 @@
 using Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategies;
 using Meziantou.Framework.SnapshotTesting.Utils;
+using System.Reflection;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
 public abstract class SnapshotUpdateStrategy
 {
+    private const string SnapshotUpdateStrategyEnvironmentVariableName = "SNAPSHOTTESTING_STRATEGY";
+    private static readonly IReadOnlyList<PropertyInfo> SnapshotUpdateStrategyProperties = typeof(SnapshotUpdateStrategy).GetProperties(BindingFlags.Public | BindingFlags.Static);
+
     /// <summary>Do not update the snapshots and fail the tests if the snapshots are different.</summary>
     public static SnapshotUpdateStrategy Disallow { get; } = new DisallowStrategy();
 
@@ -30,6 +34,10 @@ public abstract class SnapshotUpdateStrategy
     {
         get
         {
+            var strategyFromEnvironmentVariable = GetStrategyFromEnvironmentVariable();
+            if (strategyFromEnvironmentVariable is not null)
+                return strategyFromEnvironmentVariable;
+
             return Disallow;
         }
     }
@@ -130,5 +138,27 @@ public abstract class SnapshotUpdateStrategy
         }
 
         return name;
+    }
+
+    private static SnapshotUpdateStrategy? GetStrategyFromEnvironmentVariable()
+    {
+        var variable = Environment.GetEnvironmentVariable(SnapshotUpdateStrategyEnvironmentVariableName);
+        if (string.IsNullOrWhiteSpace(variable))
+            return null;
+
+        var strategyName = variable.Trim();
+
+        foreach (var property in SnapshotUpdateStrategyProperties)
+        {
+            if (!typeof(SnapshotUpdateStrategy).IsAssignableFrom(property.PropertyType))
+                continue;
+
+            if (!string.Equals(property.Name, strategyName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            return (SnapshotUpdateStrategy?)property.GetValue(null);
+        }
+
+        return null;
     }
 }

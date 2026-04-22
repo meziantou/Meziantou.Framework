@@ -6,6 +6,8 @@ namespace Meziantou.Framework.SnapshotTesting.Tests;
 
 public sealed class SnapshotTests
 {
+    private const string SnapshotUpdateStrategyEnvironmentVariableName = "SNAPSHOTTESTING_STRATEGY";
+
     [Fact]
     public void Validate_CreateSnapshotFile()
     {
@@ -311,8 +313,46 @@ public sealed class SnapshotTests
         Assert.Contains("Actual:   " + actualPath1.Value, exception.Message, StringComparison.Ordinal);
         Assert.Contains("Resolution guidance:", exception.Message, StringComparison.Ordinal);
         Assert.Contains("If the new behavior is correct, copy each .actual file to its .verified file.", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", exception.Message, StringComparison.Ordinal);
         Assert.True(File.Exists(actualPath0));
         Assert.True(File.Exists(actualPath1));
+    }
+
+    [Theory]
+    [InlineData("DISALLOW", nameof(SnapshotUpdateStrategy.Disallow))]
+    [InlineData("overwrite", nameof(SnapshotUpdateStrategy.Overwrite))]
+    [InlineData("mErGeToOlSyNc", nameof(SnapshotUpdateStrategy.MergeToolSync))]
+    [InlineData("OverwriteWithoutFailure", nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure))]
+    public void SnapshotUpdateStrategy_Default_CanBeConfiguredUsingEnvironmentVariable(string value, string expectedStrategyName)
+    {
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, value);
+
+        var settings = new SnapshotSettings();
+
+        Assert.Same(GetSnapshotUpdateStrategy(expectedStrategyName), settings.SnapshotUpdateStrategy);
+    }
+
+    [Fact]
+    public void SnapshotUpdateStrategy_Default_InvalidEnvironmentVariableValue_UsesDisallow()
+    {
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, "invalid");
+
+        var settings = new SnapshotSettings();
+
+        Assert.Same(SnapshotUpdateStrategy.Disallow, settings.SnapshotUpdateStrategy);
+    }
+
+    [Fact]
+    public void SnapshotUpdateStrategy_ExplicitSetting_HasPriorityOverEnvironmentVariable()
+    {
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, nameof(SnapshotUpdateStrategy.Overwrite));
+
+        var settings = new SnapshotSettings()
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+        };
+
+        Assert.Same(SnapshotUpdateStrategy.Disallow, settings.SnapshotUpdateStrategy);
     }
 
     [Fact]
@@ -373,6 +413,19 @@ public sealed class SnapshotTests
         return settings;
     }
 
+    private static SnapshotUpdateStrategy GetSnapshotUpdateStrategy(string name)
+    {
+        return name switch
+        {
+            nameof(SnapshotUpdateStrategy.Disallow) => SnapshotUpdateStrategy.Disallow,
+            nameof(SnapshotUpdateStrategy.MergeTool) => SnapshotUpdateStrategy.MergeTool,
+            nameof(SnapshotUpdateStrategy.MergeToolSync) => SnapshotUpdateStrategy.MergeToolSync,
+            nameof(SnapshotUpdateStrategy.Overwrite) => SnapshotUpdateStrategy.Overwrite,
+            nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure) => SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            _ => throw new ArgumentOutOfRangeException(nameof(name)),
+        };
+    }
+
     private sealed class SnapshotTypeSerializer : ISnapshotSerializer
     {
         public bool CanSerialize(SnapshotType type, object? value) => type == SnapshotType.Png;
@@ -390,6 +443,24 @@ public sealed class SnapshotTests
         public override Exception CreateException(string message)
         {
             return new SnapshotAssertionException(message);
+        }
+    }
+
+    private sealed class EnvironmentVariableScope : IDisposable
+    {
+        private readonly string _name;
+        private readonly string? _previousValue;
+
+        public EnvironmentVariableScope(string name, string? value)
+        {
+            _name = name;
+            _previousValue = Environment.GetEnvironmentVariable(name);
+            Environment.SetEnvironmentVariable(name, value);
+        }
+
+        public void Dispose()
+        {
+            Environment.SetEnvironmentVariable(_name, _previousValue);
         }
     }
 }

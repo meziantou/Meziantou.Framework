@@ -5,6 +5,8 @@ using TestUtilities;
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class InlineSnapshotSettingsTests
 {
+    private const string SnapshotUpdateStrategyEnvironmentVariableName = "INLINESNAPSHOTTESTING_STRATEGY";
+
     [Fact]
     public void Clone()
     {
@@ -54,6 +56,75 @@ public sealed class InlineSnapshotSettingsTests
         Assert.Contains("- If the new behavior is correct, update the inline snapshot in source code:", exception.Message, StringComparison.Ordinal);
         Assert.Contains("  - remove lines starting with '-' from the snapshot", exception.Message, StringComparison.Ordinal);
         Assert.Contains("  - add lines starting with '+' to the snapshot", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("  - To update snapshots automatically, re-run the test with INLINESNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", exception.Message, StringComparison.Ordinal);
         Assert.Contains("- Re-run the test.", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("DISALLOW", nameof(SnapshotUpdateStrategy.Disallow))]
+    [InlineData("overwrite", nameof(SnapshotUpdateStrategy.Overwrite))]
+    [InlineData("mErGeToOlSyNc", nameof(SnapshotUpdateStrategy.MergeToolSync))]
+    [InlineData("OverwriteWithoutFailure", nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure))]
+    public void SnapshotUpdateStrategy_Default_CanBeConfiguredUsingEnvironmentVariable(string value, string expectedStrategyName)
+    {
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, value);
+
+        var settings = new InlineSnapshotSettings();
+
+        Assert.Same(GetSnapshotUpdateStrategy(expectedStrategyName), settings.SnapshotUpdateStrategy);
+    }
+
+    [Fact]
+    public void SnapshotUpdateStrategy_Default_InvalidEnvironmentVariableValue_UsesDisallow()
+    {
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, "invalid");
+
+        var settings = new InlineSnapshotSettings();
+
+        Assert.Same(SnapshotUpdateStrategy.Disallow, settings.SnapshotUpdateStrategy);
+    }
+
+    [Fact]
+    public void SnapshotUpdateStrategy_ExplicitSetting_HasPriorityOverEnvironmentVariable()
+    {
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, nameof(SnapshotUpdateStrategy.Overwrite));
+
+        var settings = new InlineSnapshotSettings()
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+        };
+
+        Assert.Same(SnapshotUpdateStrategy.Disallow, settings.SnapshotUpdateStrategy);
+    }
+
+    private static SnapshotUpdateStrategy GetSnapshotUpdateStrategy(string name)
+    {
+        return name switch
+        {
+            nameof(SnapshotUpdateStrategy.Disallow) => SnapshotUpdateStrategy.Disallow,
+            nameof(SnapshotUpdateStrategy.MergeTool) => SnapshotUpdateStrategy.MergeTool,
+            nameof(SnapshotUpdateStrategy.MergeToolSync) => SnapshotUpdateStrategy.MergeToolSync,
+            nameof(SnapshotUpdateStrategy.Overwrite) => SnapshotUpdateStrategy.Overwrite,
+            nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure) => SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            _ => throw new ArgumentOutOfRangeException(nameof(name)),
+        };
+    }
+
+    private sealed class EnvironmentVariableScope : IDisposable
+    {
+        private readonly string _name;
+        private readonly string? _previousValue;
+
+        public EnvironmentVariableScope(string name, string? value)
+        {
+            _name = name;
+            _previousValue = Environment.GetEnvironmentVariable(name);
+            Environment.SetEnvironmentVariable(name, value);
+        }
+
+        public void Dispose()
+        {
+            Environment.SetEnvironmentVariable(_name, _previousValue);
+        }
     }
 }

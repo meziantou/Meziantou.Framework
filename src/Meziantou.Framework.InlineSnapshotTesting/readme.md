@@ -425,6 +425,9 @@ InlineSnapshot
 - `SnapshotUpdateStrategy.MergeToolSync`: Use a merge tool to compare the snapshot with the new value and wait for the merge tool to close
 - `SnapshotUpdateStrategy.Disallow`: Do not update the snapshot
 
+You can also set the default strategy using the `INLINESNAPSHOTTESTING_STRATEGY` environment variable.  
+The value is case-insensitive and must match one of the `SnapshotUpdateStrategy` static property names (for example: `DISALLOW`, `MergeTool`, `overwritewithoutfailure`).
+
 ## Recreate the snapshots
 
 You can force the update of all snapshots by setting the `InlineSnapshotSettings.ForceUpdateSnapshots` property to `true` and setting the update strategy to `OverwriteWithoutFailure`.

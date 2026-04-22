@@ -194,7 +194,9 @@ public sealed record InlineSnapshotSettings
         """
         Resolution guidance:
           - Compare the expected snapshot and received value shown above.
-          - If the new behavior is correct, update the inline snapshot.
+          - If the new behavior is correct, update the inline snapshot in source code:
+            - remove lines starting with '-' from the snapshot
+            - add lines starting with '+' to the snapshot
           - If the old behavior is correct, fix the test or production code so the output matches the snapshot.
           - Re-run the test.
         """;

@@ -449,3 +449,19 @@ InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
 - [Scrub lines matching a predicate](https://github.com/meziantou/Meziantou.Framework/blob/main/samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Scrub_lines_matching_a_predicate.cs)
 - [Scrub lines matching a regex](https://github.com/meziantou/Meziantou.Framework/blob/main/samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Scrub_lines_matching_a_regex.cs)
 - [Scrub lines with rewriting](https://github.com/meziantou/Meziantou.Framework/blob/main/samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Srub_replace_line_content.cs)
+
+# Migration guide
+
+## Migrate from v3 to v4
+
+In v4, snapshot updates are disabled by default (`SnapshotUpdateStrategy.Disallow`).
+If you want to keep the v3 behavior (open a merge tool and let it update snapshots), explicitly set the update strategy:
+
+````c#
+InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
+{
+    SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
+};
+````
+
+If you prefer waiting for the merge tool to close before continuing, use `SnapshotUpdateStrategy.MergeToolSync`.

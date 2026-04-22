@@ -197,6 +197,7 @@ public sealed record InlineSnapshotSettings
           - If the new behavior is correct, update the inline snapshot in source code:
             - remove lines starting with '-' from the snapshot
             - add lines starting with '+' to the snapshot
+          - To update snapshots automatically, re-run the test with INLINESNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).
           - If the old behavior is correct, fix the test or production code so the output matches the snapshot.
           - Re-run the test.
         """;

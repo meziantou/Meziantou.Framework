@@ -149,6 +149,7 @@ internal static class SnapshotEngine
         sb.AppendLine("Resolution guidance:");
         sb.AppendLine("  - Compare each Verified/Actual pair listed above.");
         sb.AppendLine("  - If the new behavior is correct, copy each .actual file to its .verified file.");
+        sb.AppendLine("  - To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).");
         sb.AppendLine("  - If the old behavior is correct, fix the test or production code so output matches the .verified files.");
         sb.AppendLine("  - Remove unexpected .verified files when they are no longer expected.");
         sb.AppendLine("  - Re-run the test.");

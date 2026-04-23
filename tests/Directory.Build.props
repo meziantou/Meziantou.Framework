@@ -7,6 +7,7 @@
     <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
     <IncludeDefaultTestReferences Condition="'$(IncludeDefaultTestReferences)' == ''">true</IncludeDefaultTestReferences>
     <DefineConstants Condition="'$(GITHUB_ACTIONS)' == 'true'">$(DefineConstants);GITHUB_ACTIONS</DefineConstants>
+    <TestTfmsInParallel Condition="'$(GITHUB_ACTIONS)' == 'true' AND $([MSBuild]::IsOsPlatform('Windows'))">false</TestTfmsInParallel>
   </PropertyGroup>
 
   <ItemGroup>

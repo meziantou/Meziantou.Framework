@@ -315,16 +315,75 @@ jobs:
           Write-Host "Current ref: $env:GITHUB_REF"
           Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
           $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
-          foreach($file in $files) {
-              Write-Host "Pushing NuGet package: $($file.FullName)"
-              if ($env:GITHUB_REF -eq 'refs/heads/main')
-              {
-                & dotnet nuget push "$($file.FullName)" --api-key "$env:NUGETAPIKEY" --source ${{ env.NuGetSource }} --force-english-output --skip-duplicate
+          if ($env:GITHUB_REF -eq 'refs/heads/main')
+          {
+            $apiKey = $env:NUGETAPIKEY
+            $source = "${{ env.NuGetSource }}"
+          }
+          else
+          {
+            $apiKey = $env:FEEDZ_APIKEY
+            $source = "https://f.feedz.io/meziantou/meziantou-framework/nuget/index.json"
+          }
+
+          if ($files.Count -eq 0) {
+            Write-Host "No NuGet package found to push."
+          }
+          else {
+            $maxAttempts = 3
+            $baseDelaySeconds = 2
+            $results = $files | ForEach-Object -Parallel {
+              $packagePath = $_.FullName
+              $apiKey = $using:apiKey
+              $source = $using:source
+              $maxAttempts = $using:maxAttempts
+              $baseDelaySeconds = $using:baseDelaySeconds
+
+              for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+                Write-Host "Pushing NuGet package: $packagePath (attempt $attempt/$maxAttempts)"
+                & dotnet nuget push "$packagePath" --api-key "$apiKey" --source "$source" --force-english-output --skip-duplicate
+                $exitCode = $LASTEXITCODE
+
+                if ($exitCode -eq 0) {
+                  return [pscustomobject]@{
+                    PackagePath = $packagePath
+                    Succeeded = $true
+                    Attempts = $attempt
+                  }
+                }
+
+                if ($attempt -lt $maxAttempts) {
+                  $delaySeconds = [int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1))
+                  Write-Host "Retrying NuGet push for $packagePath in $delaySeconds second(s)."
+                  Start-Sleep -Seconds $delaySeconds
+                }
               }
-              else
-              {
-                & dotnet nuget push "$($file.FullName)" --api-key "$env:FEEDZ_APIKEY" --source "https://f.feedz.io/meziantou/meziantou-framework/nuget/index.json" --force-english-output --skip-duplicate
+
+              return [pscustomobject]@{
+                PackagePath = $packagePath
+                Succeeded = $false
+                Attempts = $maxAttempts
               }
+            } -ThrottleLimit 8
+
+            $pushResults = @(
+              $results
+              | Where-Object { $_.PSObject.Properties.Name -contains "Succeeded" }
+            )
+            $failedPackages = @($pushResults | Where-Object { -not $_.Succeeded })
+            $succeededPackages = @($pushResults | Where-Object { $_.Succeeded })
+            foreach ($item in $succeededPackages) {
+              Write-Host "Successfully pushed NuGet package: $($item.PackagePath) (attempts: $($item.Attempts))"
+            }
+
+            if ($failedPackages.Count -gt 0) {
+              foreach ($item in $failedPackages) {
+                Write-Host "::error::Failed to push NuGet package after retries: $($item.PackagePath)"
+              }
+
+              Write-Host "::error::Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
+              throw "Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
+            }
           }
         name: Publish NuGet packages
         if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork

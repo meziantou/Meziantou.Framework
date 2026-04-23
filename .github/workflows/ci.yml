@@ -366,8 +366,12 @@ jobs:
               }
             } -ThrottleLimit 8
 
-            $failedPackages = @($results | Where-Object { -not $_.Succeeded })
-            $succeededPackages = @($results | Where-Object { $_.Succeeded })
+            $pushResults = @(
+              $results
+              | Where-Object { $_.PSObject.Properties.Name -contains "Succeeded" }
+            )
+            $failedPackages = @($pushResults | Where-Object { -not $_.Succeeded })
+            $succeededPackages = @($pushResults | Where-Object { $_.Succeeded })
             foreach ($item in $succeededPackages) {
               Write-Host "Successfully pushed NuGet package: $($item.PackagePath) (attempts: $($item.Attempts))"
             }

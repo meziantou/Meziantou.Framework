@@ -1,4 +1,6 @@
-﻿export function initialize(lastIndicator : HTMLElement, instance : DotNet.DotNetObject) {
+﻿/// <reference types="blazor__javascript-interop" />
+
+export function initialize(lastIndicator : HTMLElement, instance : DotNet.DotNetObject) {
   const options = {
     root: findClosestScrollContainer(lastIndicator),
     rootMargin: '0px',

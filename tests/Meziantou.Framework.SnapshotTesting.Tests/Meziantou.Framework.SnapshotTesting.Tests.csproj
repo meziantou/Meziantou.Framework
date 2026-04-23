@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <TestTfmsInParallel Condition="'$(GITHUB_ACTIONS)' == 'true'">false</TestTfmsInParallel>
   </PropertyGroup>
 
   <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.props" />

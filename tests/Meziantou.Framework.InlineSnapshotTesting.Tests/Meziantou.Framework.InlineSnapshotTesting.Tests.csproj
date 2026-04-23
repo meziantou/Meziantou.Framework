@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472;net48</TargetFrameworks>
+    <TestTfmsInParallel Condition="'$(GITHUB_ACTIONS)' == 'true'">false</TestTfmsInParallel>
   </PropertyGroup>
 
   <ItemGroup>

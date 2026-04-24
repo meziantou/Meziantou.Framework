@@ -26,6 +26,7 @@ if (!result.IsSuccess)
 
 var tags = result.Value;
 Console.WriteLine($"Format: {tags.Format}");
+Console.WriteLine($"Duration: {tags.Duration}");
 Console.WriteLine($"Title: {tags.Title}");
 Console.WriteLine($"Artist: {tags.Artist}");
 ```

@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj">
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TextDiff\Meziantou.Framework.TextDiff.csproj">
       <Aliases>TextDiffLib</Aliases>
     </ProjectReference>
   </ItemGroup>

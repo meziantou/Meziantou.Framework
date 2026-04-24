@@ -6,15 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../common/SharedHttpClient.cs" Link="SharedHttpClient.cs" />
-    <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeBlock.cs" Link="UnicodeBlock.cs" />
-    <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeRange.cs" Link="UnicodeRange.cs" />
-    <Compile Include="../../src/Meziantou.Framework.Unicode/UnicodeBidirectionalCategory.cs" Link="UnicodeBidirectionalCategory.cs" />
+    <Compile Include="..\..\common\SharedHttpClient.cs" Link="SharedHttpClient.cs" />
+    <Compile Include="..\..\src\Meziantou.Framework.Unicode\UnicodeBlock.cs" Link="UnicodeBlock.cs" />
+    <Compile Include="..\..\src\Meziantou.Framework.Unicode\UnicodeRange.cs" Link="UnicodeRange.cs" />
+    <Compile Include="..\..\src\Meziantou.Framework.Unicode\UnicodeBidirectionalCategory.cs" Link="UnicodeBidirectionalCategory.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
   </ItemGroup>
 
 </Project>

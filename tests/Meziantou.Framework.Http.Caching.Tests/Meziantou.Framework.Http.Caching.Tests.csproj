@@ -26,12 +26,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.Http.Caching.InMemory/Meziantou.Framework.Http.Caching.InMemory.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.Http.Caching.Redis/Meziantou.Framework.Http.Caching.Redis.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.Http.Caching.Sqlite/Meziantou.Framework.Http.Caching.Sqlite.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.InMemory\Meziantou.Framework.Http.Caching.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.Redis\Meziantou.Framework.Http.Caching.Redis.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.Sqlite\Meziantou.Framework.Http.Caching.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
 </Project>

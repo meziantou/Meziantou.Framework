@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.Templating.Html/Meziantou.Framework.Templating.Html.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Templating.Html\Meziantou.Framework.Templating.Html.csproj" />
   </ItemGroup>
 
 </Project>

@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Extensions.Logging.InMemory/Meziantou.Extensions.Logging.InMemory.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.InMemory\Meziantou.Extensions.Logging.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.Xunit.v3\Meziantou.Extensions.Logging.Xunit.v3.csproj" />
   </ItemGroup>
 </Project>

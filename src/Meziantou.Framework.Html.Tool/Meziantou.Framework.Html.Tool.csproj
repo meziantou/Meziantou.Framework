@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Html\Meziantou.Framework.Html.csproj" />
   </ItemGroup>
 
 </Project>

@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Bcrypt\Meziantou.Framework.Bcrypt.csproj" />
   </ItemGroup>
 
 </Project>

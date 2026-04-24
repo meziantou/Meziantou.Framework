@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FastEnumToStringGenerator\Meziantou.Framework.FastEnumToStringGenerator.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="5.3.0" />
   </ItemGroup>
 

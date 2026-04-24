@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.Win32.ChangeJournal/Meziantou.Framework.Win32.ChangeJournal.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.ChangeJournal\Meziantou.Framework.Win32.ChangeJournal.csproj" />
   </ItemGroup>
 
 </Project>

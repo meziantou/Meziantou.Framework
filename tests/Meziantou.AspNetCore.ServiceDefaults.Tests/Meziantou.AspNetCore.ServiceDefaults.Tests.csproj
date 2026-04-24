@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.ServiceDefaults\Meziantou.AspNetCore.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

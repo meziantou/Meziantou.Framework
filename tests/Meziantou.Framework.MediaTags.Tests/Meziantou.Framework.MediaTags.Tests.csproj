@@ -5,12 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="TestFiles/**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="TestFiles\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

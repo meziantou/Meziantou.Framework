@@ -10,8 +10,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.DependencyScanning\Meziantou.Framework.DependencyScanning.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
   </ItemGroup>
 
 </Project>

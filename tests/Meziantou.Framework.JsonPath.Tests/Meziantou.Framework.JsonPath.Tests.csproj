@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
   </ItemGroup>
 
   <ItemGroup>

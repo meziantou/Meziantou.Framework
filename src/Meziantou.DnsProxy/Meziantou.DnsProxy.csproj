@@ -13,9 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.DnsClient\Meziantou.Framework.DnsClient.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.DnsServer\Meziantou.Framework.DnsServer.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.DnsFilter\Meziantou.Framework.DnsFilter.csproj" />
   </ItemGroup>
 
   <ItemGroup>

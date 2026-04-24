@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.Dialogs\Meziantou.Framework.Win32.Dialogs.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Win32.Dialogs/Meziantou.Framework.Win32.Dialogs.csproj" />
   </ItemGroup>
 
 </Project>

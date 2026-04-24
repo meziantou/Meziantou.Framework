@@ -6,8 +6,8 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.OpenTelemetryCollector\Meziantou.Framework.OpenTelemetryCollector.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.OpenTelemetryCollector.InMemory\Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
     <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
   </ItemGroup>
 

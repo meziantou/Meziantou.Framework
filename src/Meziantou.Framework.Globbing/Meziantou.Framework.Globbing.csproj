@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Meziantou.Framework\StringExtensions.SplitLines.cs" Link="Internals\StringExtensions.SplitLines.cs" />
-    <Compile Include="..\Meziantou.Framework.ValueStringBuilder\ValueStringBuilder.cs" Link="Internals\ValueStringBuilder\ValueStringBuilder.cs" />
+    <Compile Include="../Meziantou.Framework/StringExtensions.SplitLines.cs" Link="Internals/StringExtensions.SplitLines.cs" />
+    <Compile Include="../Meziantou.Framework.ValueStringBuilder/ValueStringBuilder.cs" Link="Internals/ValueStringBuilder/ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">

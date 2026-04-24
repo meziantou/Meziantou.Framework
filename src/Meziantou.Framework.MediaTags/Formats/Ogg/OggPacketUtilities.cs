@@ -1,15 +1,5 @@
 namespace Meziantou.Framework.MediaTags.Formats.Ogg;
 
-internal sealed class OggPacketInfo
-{
-    public required byte[] Data { get; init; }
-    public required int StartPageIndex { get; init; }
-    public required int EndPageIndex { get; init; }
-    public required bool StartsAtPageStart { get; init; }
-    public required bool EndsAtPageEnd { get; init; }
-    public required long FinalPageGranulePosition { get; init; }
-}
-
 internal static class OggPacketUtilities
 {
     public static List<OggPage> ReadAllPages(Stream stream)
@@ -252,7 +242,7 @@ internal static class OggPacketUtilities
         return lacingValues;
     }
 
-    private static int FindPacketIndex(IReadOnlyList<OggPacketInfo> packets, ReadOnlySpan<byte> prefix)
+    private static int FindPacketIndex(List<OggPacketInfo> packets, ReadOnlySpan<byte> prefix)
     {
         for (var i = 0; i < packets.Count; i++)
         {

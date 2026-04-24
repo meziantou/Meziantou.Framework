@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.Slug/Meziantou.Framework.Slug.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Slug\Meziantou.Framework.Slug.csproj" />
   </ItemGroup>
 
 </Project>

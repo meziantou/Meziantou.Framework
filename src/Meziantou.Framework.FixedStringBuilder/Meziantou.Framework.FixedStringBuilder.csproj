@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <ProjectReference Include="..\Meziantou.Framework.FixedStringBuilder.Generator\Meziantou.Framework.FixedStringBuilder.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>

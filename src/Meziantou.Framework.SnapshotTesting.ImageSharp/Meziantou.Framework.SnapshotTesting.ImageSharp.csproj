@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.SnapshotTesting\Meziantou.Framework.SnapshotTesting.csproj" />
   </ItemGroup>
 
   <ItemGroup>

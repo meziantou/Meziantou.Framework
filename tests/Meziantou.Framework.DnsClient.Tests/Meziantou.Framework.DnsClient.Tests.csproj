@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.DnsClient\Meziantou.Framework.DnsClient.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
 </Project>

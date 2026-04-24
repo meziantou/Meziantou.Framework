@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
 </Project>

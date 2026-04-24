@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.Diagnostics.ContextSnapshot/Meziantou.Framework.Diagnostics.ContextSnapshot.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Diagnostics.ContextSnapshot\Meziantou.Framework.Diagnostics.ContextSnapshot.csproj" />
   </ItemGroup>
 
 </Project>

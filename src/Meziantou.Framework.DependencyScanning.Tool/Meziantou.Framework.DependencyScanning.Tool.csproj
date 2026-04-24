@@ -14,12 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework/Meziantou.Framework.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework\Meziantou.Framework.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.DependencyScanning\Meziantou.Framework.DependencyScanning.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
   </ItemGroup>
 
 </Project>

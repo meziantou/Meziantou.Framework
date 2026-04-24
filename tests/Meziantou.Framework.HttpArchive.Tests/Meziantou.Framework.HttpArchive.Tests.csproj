@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
   </ItemGroup>
 
 </Project>

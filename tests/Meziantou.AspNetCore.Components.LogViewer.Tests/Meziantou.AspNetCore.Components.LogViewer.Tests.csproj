@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.AspNetCore.Components.LogViewer/Meziantou.AspNetCore.Components.LogViewer.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Components.LogViewer\Meziantou.AspNetCore.Components.LogViewer.csproj" />
   </ItemGroup>
 
 </Project>

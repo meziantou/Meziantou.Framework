@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.NuGetPackageValidation\Meziantou.Framework.NuGetPackageValidation.csproj" />
   </ItemGroup>
 
 </Project>

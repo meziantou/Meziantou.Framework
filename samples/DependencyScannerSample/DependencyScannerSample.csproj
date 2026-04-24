@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.DependencyScanning\Meziantou.Framework.DependencyScanning.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Properties/" />
+    <Folder Include="Properties\" />
   </ItemGroup>
 
 </Project>

@@ -12,6 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Extensions.Logging.Xunit/Meziantou.Extensions.Logging.Xunit.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.Xunit\Meziantou.Extensions.Logging.Xunit.csproj" />
   </ItemGroup>
 </Project>

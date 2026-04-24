@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.FileLogger\Meziantou.Extensions.Logging.FileLogger.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>
 </Project>

@@ -8,14 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Meziantou.Framework\Collections\AppendOnlyCollection.cs" Link="Collections/AppendOnlyCollection.cs" />
-    <Compile Include="..\Meziantou.Framework\Collections\AppendOnlyCollectionSegment.cs" Link="Collections/AppendOnlyCollectionSegment.cs" />
-    <Compile Include="..\Meziantou.Framework\Collections\CircularBuffer.cs" Link="Collections/CircularBuffer.cs" />
-    <Compile Include="..\Meziantou.Framework\Collections\ThrowHelper.cs" Link="Collections/ThrowHelper.cs" />
+    <Compile Include="../Meziantou.Framework/Collections/AppendOnlyCollection.cs" Link="Collections/AppendOnlyCollection.cs" />
+    <Compile Include="../Meziantou.Framework/Collections/AppendOnlyCollectionSegment.cs" Link="Collections/AppendOnlyCollectionSegment.cs" />
+    <Compile Include="../Meziantou.Framework/Collections/CircularBuffer.cs" Link="Collections/CircularBuffer.cs" />
+    <Compile Include="../Meziantou.Framework/Collections/ThrowHelper.cs" Link="Collections/ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Meziantou.Framework.OpenTelemetryCollector\Meziantou.Framework.OpenTelemetryCollector.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
   </ItemGroup>
 
 </Project>

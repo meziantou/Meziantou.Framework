@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) != 'netstandard2.0' AND '$(IncludeDefaultTestReferences)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)..\common\XUnitStaticHelpers.cs" Link="XUnitStaticHelpers.cs" Condition="'$(MSBuildProjectExtension)' == '.csproj'" Visible="false" />
+    <Compile Include="$(MSBuildThisFileDirectory)../common/XUnitStaticHelpers.cs" Link="XUnitStaticHelpers.cs" Condition="'$(MSBuildProjectExtension)' == '.csproj'" Visible="false" />
 
     <Using Include="Xunit.TestContext" Alias="TestContext" />
     <Using Include="TestUtilities.XUnitStaticHelpers" Static="true" />

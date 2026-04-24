@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.WPF\Meziantou.Framework.WPF.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
   </ItemGroup>
 
   <ItemGroup>

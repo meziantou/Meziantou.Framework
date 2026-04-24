@@ -20,6 +20,30 @@ public sealed class Mp4Tests
         Assert.Equal(2024, tags.Year);
         Assert.Equal("Rock", tags.Genre);
         Assert.Equal(3, tags.TrackNumber);
+        Assert.NotNull(tags.Duration);
+        Assert.InRange(tags.Duration.Value.TotalSeconds, 0.9, 1.2);
+    }
+
+    [Fact]
+    public void ReadTags_M4aWithFlacExtension_UsesMagicBytesAndParsesDuration()
+    {
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.m4a"), tempFile, overwrite: true);
+
+            var result = MediaFile.ReadTags(tempFile);
+            Assert.True(result.IsSuccess);
+
+            var tags = result.Value;
+            Assert.Equal(MediaFormat.Mp4, tags.Format);
+            Assert.NotNull(tags.Duration);
+            Assert.InRange(tags.Duration.Value.TotalSeconds, 0.9, 1.2);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
     }
 
     [Fact]

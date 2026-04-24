@@ -58,6 +58,9 @@ public sealed class MediaTagInfo
     /// <summary>Gets or sets the beats per minute.</summary>
     public int? Bpm { get; set; }
 
+    /// <summary>Gets or sets the media duration.</summary>
+    public TimeSpan? Duration { get; set; }
+
     /// <summary>Gets or sets whether this track is part of a compilation.</summary>
     public bool? IsCompilation { get; set; }
 

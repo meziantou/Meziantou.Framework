@@ -14,6 +14,7 @@ internal sealed class Mp4Reader : IMediaTagReader
             var tags = new MediaTagInfo();
 
             var atoms = Mp4Atom.ReadAtoms(stream, stream.Length);
+            tags.Duration = TryReadDuration(atoms);
 
             // Navigate to moov.udta.meta.ilst
             var ilst = Mp4Atom.FindPath(atoms, "moov", "udta", "meta", "ilst");
@@ -31,6 +32,87 @@ internal sealed class Mp4Reader : IMediaTagReader
         {
             return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
         }
+    }
+
+    private static TimeSpan? TryReadDuration(List<Mp4Atom> atoms)
+    {
+        var moovAtom = Mp4Atom.FindPath(atoms, "moov");
+        if (moovAtom is null)
+            return null;
+
+        foreach (var atom in moovAtom.Children)
+        {
+            if (atom.Type != "trak")
+                continue;
+
+            var trackDuration = TryReadAudioTrackDuration(atom);
+            if (trackDuration is not null)
+                return trackDuration;
+        }
+
+        return TryReadDurationFromFullBox(moovAtom.FindChild("mvhd")?.Data);
+    }
+
+    private static TimeSpan? TryReadAudioTrackDuration(Mp4Atom trackAtom)
+    {
+        var mediaAtom = trackAtom.FindChild("mdia");
+        if (mediaAtom is null)
+            return null;
+
+        if (!IsSoundTrack(mediaAtom.FindChild("hdlr")?.Data))
+            return null;
+
+        return TryReadDurationFromFullBox(mediaAtom.FindChild("mdhd")?.Data);
+    }
+
+    private static bool IsSoundTrack(byte[]? handlerData)
+    {
+        if (handlerData is null || handlerData.Length < 12)
+            return false;
+
+        return handlerData[8] == 's' && handlerData[9] == 'o' && handlerData[10] == 'u' && handlerData[11] == 'n';
+    }
+
+    private static TimeSpan? TryReadDurationFromFullBox(byte[]? data)
+    {
+        if (data is null || data.Length < 20)
+            return null;
+
+        var version = data[0];
+        return version switch
+        {
+            0 => TryReadVersion0Duration(data),
+            1 => TryReadVersion1Duration(data),
+            _ => null,
+        };
+    }
+
+    private static TimeSpan? TryReadVersion0Duration(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 20)
+            return null;
+
+        var timeScale = BinaryPrimitives.ReadUInt32BigEndian(data[12..]);
+        var duration = BinaryPrimitives.ReadUInt32BigEndian(data[16..]);
+
+        if (timeScale == 0 || duration == 0 || duration == uint.MaxValue)
+            return null;
+
+        return TimeSpan.FromSeconds(duration / (double)timeScale);
+    }
+
+    private static TimeSpan? TryReadVersion1Duration(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 32)
+            return null;
+
+        var timeScale = BinaryPrimitives.ReadUInt32BigEndian(data[20..]);
+        var duration = BinaryPrimitives.ReadUInt64BigEndian(data[24..]);
+
+        if (timeScale == 0 || duration == 0 || duration == ulong.MaxValue)
+            return null;
+
+        return TimeSpan.FromSeconds(duration / (double)timeScale);
     }
 
     private static void ProcessIlstItem(Mp4Atom item, MediaTagInfo tags)

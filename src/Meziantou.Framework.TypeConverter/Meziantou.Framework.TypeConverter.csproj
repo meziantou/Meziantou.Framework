@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Meziantou.Framework\ReflectionUtilities.cs" Link="ReflectionUtilities.cs" />
+    <Compile Include="../Meziantou.Framework/ReflectionUtilities.cs" Link="ReflectionUtilities.cs" />
   </ItemGroup>
 
 </Project>

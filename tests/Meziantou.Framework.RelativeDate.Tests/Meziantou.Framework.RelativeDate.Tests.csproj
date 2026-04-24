@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.RelativeDate/Meziantou.Framework.RelativeDate.csproj" />
   </ItemGroup>
 
 </Project>

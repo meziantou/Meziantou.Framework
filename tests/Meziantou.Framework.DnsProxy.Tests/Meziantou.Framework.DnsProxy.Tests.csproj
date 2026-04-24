@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.DnsProxy\Meziantou.DnsProxy.csproj" />
+    <ProjectReference Include="../../src/Meziantou.DnsProxy/Meziantou.DnsProxy.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">

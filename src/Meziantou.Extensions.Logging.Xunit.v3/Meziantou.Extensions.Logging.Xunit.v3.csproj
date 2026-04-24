@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\common\TypeNameHelper.cs" Link="TypeNameHelper.cs" />
+    <Compile Include="../../common/TypeNameHelper.cs" Link="TypeNameHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>

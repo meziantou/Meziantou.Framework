@@ -9,11 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Meziantou.Framework\IOUtilities.Delete.cs" Link="IOUtilities.Delete.cs" />
+    <Compile Include="../Meziantou.Framework/IOUtilities.Delete.cs" Link="IOUtilities.Delete.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net472'">

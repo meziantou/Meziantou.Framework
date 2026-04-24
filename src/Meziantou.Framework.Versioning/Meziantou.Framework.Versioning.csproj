@@ -12,6 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\common\CultureInsensitiveTypeAttribute.cs" />
+    <Compile Include="../../common/CultureInsensitiveTypeAttribute.cs" />
   </ItemGroup>
 </Project>

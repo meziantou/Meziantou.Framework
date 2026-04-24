@@ -6,6 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.CodeOwners\Meziantou.Framework.CodeOwners.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.CodeOwners/Meziantou.Framework.CodeOwners.csproj" />
   </ItemGroup>
 </Project>

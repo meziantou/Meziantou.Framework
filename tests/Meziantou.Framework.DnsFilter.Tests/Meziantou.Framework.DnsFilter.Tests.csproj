@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.DnsFilter\Meziantou.Framework.DnsFilter.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
   </ItemGroup>
 
 </Project>

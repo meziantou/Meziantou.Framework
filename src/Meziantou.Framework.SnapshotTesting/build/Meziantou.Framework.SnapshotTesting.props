@@ -23,13 +23,13 @@
     <!--
       Collect top-level SourceRoot items that have a MappedPath, mirroring the filter used by
       _SetPathMapFromSourceRoots (NestedRoot == '' excludes sub-roots such as NuGet package roots
-      that are already covered by their parent). Normalize backslashes in Identity so the generated
+      that are already covered by their parent). Normalize path separators in Identity so the generated
       string literal is always valid on Windows.
     -->
     <ItemGroup>
       <_SnapshotTestingSourceRoot Include="@(SourceRoot)"
           Condition="'%(SourceRoot.NestedRoot)' == '' and '%(SourceRoot.MappedPath)' != ''">
-        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
+        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace($([System.IO.Path]::DirectorySeparatorChar), '/'))</NormalizedIdentity>
       </_SnapshotTestingSourceRoot>
     </ItemGroup>
 

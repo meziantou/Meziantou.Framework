@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Avatar\Meziantou.Framework.Avatar.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.SnapshotTesting\Meziantou.Framework.SnapshotTesting.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
   </ItemGroup>
 
 </Project>

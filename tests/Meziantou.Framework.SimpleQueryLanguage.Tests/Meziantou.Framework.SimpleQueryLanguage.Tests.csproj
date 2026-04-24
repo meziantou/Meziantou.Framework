@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.SimpleQueryLanguage\Meziantou.Framework.SimpleQueryLanguage.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.SimpleQueryLanguage/Meziantou.Framework.SimpleQueryLanguage.csproj" />
   </ItemGroup>
 
 </Project>

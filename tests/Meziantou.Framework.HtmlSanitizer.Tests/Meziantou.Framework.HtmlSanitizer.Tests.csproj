@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.HtmlSanitizer\Meziantou.Framework.HtmlSanitizer.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
   </ItemGroup>
 
 </Project>

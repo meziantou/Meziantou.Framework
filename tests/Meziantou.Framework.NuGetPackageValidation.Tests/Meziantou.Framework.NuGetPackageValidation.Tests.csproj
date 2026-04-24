@@ -5,9 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.NuGetPackageValidation\Meziantou.Framework.NuGetPackageValidation.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
   </ItemGroup>
 
   <ItemGroup>

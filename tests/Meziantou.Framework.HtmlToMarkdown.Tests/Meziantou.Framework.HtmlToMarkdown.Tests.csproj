@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.HtmlToMarkdown\Meziantou.Framework.HtmlToMarkdown.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.HtmlToMarkdown/Meziantou.Framework.HtmlToMarkdown.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="TestData\**\*" />
+    <EmbeddedResource Include="TestData/**/*" />
   </ItemGroup>
 
 </Project>

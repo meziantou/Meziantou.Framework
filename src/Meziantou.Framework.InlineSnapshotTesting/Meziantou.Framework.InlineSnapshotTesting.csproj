@@ -10,8 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Meziantou.Framework.HumanReadableSerializer\Utils\StringUtils.cs" Link="Utils\StringUtils.cs" />
-    <Compile Include="..\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
+    <Compile Include="../Meziantou.Framework.HumanReadableSerializer/Utils/StringUtils.cs" Link="Utils/StringUtils.cs" />
+    <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,11 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
-    <ProjectReference Include="..\Meziantou.Framework.SnapshotTesting.Common\Meziantou.Framework.SnapshotTesting.Common.csproj" />
-    <ProjectReference Include="..\Meziantou.Framework.HumanReadableSerializer\Meziantou.Framework.HumanReadableSerializer.csproj" />
-    <ProjectReference Include="..\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
-    <ProjectReference Include="..\Meziantou.Framework.TextDiff\Meziantou.Framework.TextDiff.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.SnapshotTesting.Common/Meziantou.Framework.SnapshotTesting.Common.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
   </ItemGroup>
 
   <ItemGroup>

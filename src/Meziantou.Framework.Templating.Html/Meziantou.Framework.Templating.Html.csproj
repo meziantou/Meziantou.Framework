@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Meziantou.Framework.Templating\Meziantou.Framework.Templating.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />
   </ItemGroup>
 
 </Project>

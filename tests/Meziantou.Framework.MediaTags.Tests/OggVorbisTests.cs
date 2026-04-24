@@ -1,4 +1,5 @@
 using Meziantou.Framework.MediaTags;
+using Meziantou.Framework.MediaTags.Formats.Ogg;
 
 namespace Meziantou.Framework.MediaTags.Tests;
 
@@ -123,6 +124,51 @@ public sealed class OggVorbisTests
         finally
         {
             File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public void WriteTags_LargeCommentPacket_RoundTrip()
+    {
+        var tempFile = Path.GetTempFileName() + ".ogg";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.ogg"), tempFile, overwrite: true);
+
+            var largeLyrics = new string('a', 80000);
+            var tags = new MediaTagInfo
+            {
+                Title = "Large OGG Title",
+                Lyrics = largeLyrics,
+            };
+
+            var writeResult = MediaFile.WriteTags(tempFile, tags);
+            Assert.True(writeResult.IsSuccess);
+
+            var readResult = MediaFile.ReadTags(tempFile);
+            Assert.True(readResult.IsSuccess);
+
+            Assert.Equal("Large OGG Title", readResult.Value.Title);
+            Assert.Equal(largeLyrics, readResult.Value.Lyrics);
+            Assert.True(ContainsContinuedPage(tempFile));
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    private static bool ContainsContinuedPage(string filePath)
+    {
+        using var stream = File.OpenRead(filePath);
+        while (true)
+        {
+            var page = OggPage.Read(stream);
+            if (page is null)
+                return false;
+
+            if ((page.HeaderType & OggPage.HeaderTypeContinued) != 0)
+                return true;
         }
     }
 }

@@ -92,6 +92,20 @@ internal sealed class OggPage
         return result;
     }
 
+    public OggPage Clone()
+    {
+        return new OggPage
+        {
+            Version = Version,
+            HeaderType = HeaderType,
+            GranulePosition = GranulePosition,
+            SerialNumber = SerialNumber,
+            PageSequenceNumber = PageSequenceNumber,
+            SegmentTable = (byte[])SegmentTable.Clone(),
+            Data = (byte[])Data.Clone(),
+        };
+    }
+
     /// <summary>
     /// Builds the segment table for a given data size.
     /// </summary>

@@ -29,7 +29,7 @@
     <ItemGroup>
       <_SnapshotTestingSourceRoot Include="@(SourceRoot)"
           Condition="'%(SourceRoot.NestedRoot)' == '' and '%(SourceRoot.MappedPath)' != ''">
-        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace($([System.IO.Path]::DirectorySeparatorChar), '/'))</NormalizedIdentity>
+        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
       </_SnapshotTestingSourceRoot>
     </ItemGroup>
 

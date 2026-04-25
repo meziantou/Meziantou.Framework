@@ -11,6 +11,36 @@ namespace Meziantou.Framework.PublicApiGenerator.Tests;
 [Collection("Tool")] // Ensure tests run sequentially
 public sealed class PublicApiGeneratorTests
 {
+    [Fact]
+    public async Task EmptyClass()
+    {
+        await Validate("""
+            public class Sample
+            {
+            }
+            """, """
+            public class Sample
+            {
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Property_GetSet()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public string Name { get; set; }
+            }
+            """, """
+            public class Sample
+            {
+                public string Name { get; set; }
+            }
+            """);
+    }
+
     [InlineSnapshotAssertion(nameof(expected))]
     private static async Task Validate(string source, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
@@ -91,22 +121,22 @@ public sealed class PublicApiGeneratorTests
         await RunDotNetAsync(temporaryDirectory, ["restore", projectPath, "-nologo", "--disable-build-servers"]);
         await RunDotNetAsync(temporaryDirectory, ["build", projectPath, "-nologo", "--disable-build-servers", "--no-restore", "--output", outputPath, "/p:AssemblyName=Source"]);
         return outputPath / "bin" / "Source.dll";
-    }
 
-    private static async Task RunDotNetAsync(string workingDirectory, IReadOnlyList<string> arguments)
-    {
-        var processResult = await ProcessWrapper.Create("dotnet")
-            .WithArguments(arguments)
-            .WithWorkingDirectory(workingDirectory)
-            .WithEnvironmentVariables(env => env.Set("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1"))
-            .WithValidation(ProcessValidationMode.None)
-            .ExecuteBufferedAsync(XunitCancellationToken);
-
-        if (!processResult.ExitCode.IsSuccess)
+        static async Task RunDotNetAsync(string workingDirectory, IReadOnlyList<string> arguments)
         {
-            var standardOutput = string.Join('\n', processResult.Output.StandardOutput.Select(line => line.Text));
-            var standardError = string.Join('\n', processResult.Output.StandardError.Select(line => line.Text));
-            throw new XunitException($"Command failed: dotnet {string.Join(' ', arguments)}\nstdout:\n{standardOutput}\nstderr:\n{standardError}");
+            var processResult = await ProcessWrapper.Create("dotnet")
+                .WithArguments(arguments)
+                .WithWorkingDirectory(workingDirectory)
+                .WithEnvironmentVariables(env => env.Set("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1"))
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteBufferedAsync(XunitCancellationToken);
+
+            if (!processResult.ExitCode.IsSuccess)
+            {
+                var standardOutput = string.Join('\n', processResult.Output.StandardOutput.Select(line => line.Text));
+                var standardError = string.Join('\n', processResult.Output.StandardError.Select(line => line.Text));
+                throw new XunitException($"Command failed: dotnet {string.Join(' ', arguments)}\nstdout:\n{standardOutput}\nstderr:\n{standardError}");
+            }
         }
     }
 }

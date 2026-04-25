@@ -1,0 +1,63 @@
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using Meziantou.Framework.PublicApiGenerator;
+
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Meziantou.Framework.PublicApiGenerator.Tests")]
+
+namespace Meziantou.Framework.PublicApiGenerator.Tool;
+
+internal static class Program
+{
+    public static Task<int> Main(string[] args)
+    {
+        return MainImpl(args, configure: null);
+    }
+
+    internal static Task<int> MainImpl(string[] args, Action<InvocationConfiguration>? configure)
+    {
+        var inputOption = new Option<string>("--input")
+        {
+            Description = "Path to a .NET dll or exe file",
+            Required = true,
+        };
+        var outputOption = new Option<string>("--output")
+        {
+            Description = "Output directory",
+            Required = true,
+        };
+        var fileLayoutOption = new Option<PublicApiFileLayout>("--file-layout")
+        {
+            Description = "File layout: SingleFile, OneFilePerNamespace, or OneFilePerType",
+            DefaultValueFactory = _ => PublicApiFileLayout.SingleFile,
+        };
+
+        var rootCommand = new RootCommand("Generate public API stubs from a .NET assembly.");
+        rootCommand.Options.Add(inputOption);
+        rootCommand.Options.Add(outputOption);
+        rootCommand.Options.Add(fileLayoutOption);
+
+        rootCommand.SetAction(parseResult =>
+        {
+            var input = parseResult.GetValue(inputOption);
+            var output = parseResult.GetValue(outputOption);
+            if (string.IsNullOrWhiteSpace(input) || string.IsNullOrWhiteSpace(output))
+            {
+                throw new InvalidOperationException("The --input and --output options are required.");
+            }
+
+            var options = new PublicApiGeneratorOptions
+            {
+                FileLayout = parseResult.GetValue(fileLayoutOption),
+            };
+            PublicApiStubGenerator.GenerateToDirectory(
+                input,
+                output,
+                options);
+            return 0;
+        });
+
+        var invocationConfiguration = new InvocationConfiguration();
+        configure?.Invoke(invocationConfiguration);
+        return rootCommand.Parse(args).InvokeAsync(invocationConfiguration);
+    }
+}

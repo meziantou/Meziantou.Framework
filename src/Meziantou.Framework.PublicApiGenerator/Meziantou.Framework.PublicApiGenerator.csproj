@@ -1,0 +1,9 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <Description>Generate compilable C# public API stubs from .NET assemblies.</Description>
+  </PropertyGroup>
+
+</Project>

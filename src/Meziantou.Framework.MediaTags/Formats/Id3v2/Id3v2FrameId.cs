@@ -16,6 +16,7 @@ internal static class Id3v2FrameId
     public const string Conductor = "TPE3";
     public const string Copyright = "TCOP";
     public const string Bpm = "TBPM";
+    public const string Duration = "TLEN";
     public const string Compilation = "TCMP";  // iTunes non-standard
     public const string Isrc = "TSRC";
 
@@ -38,6 +39,7 @@ internal static class Id3v2FrameId
     public const string ConductorV22 = "TP3";
     public const string CopyrightV22 = "TCR";
     public const string BpmV22 = "TBP";
+    public const string DurationV22 = "TLE";
     public const string IsrcV22 = "TRC";
     public const string CommentV22 = "COM";
     public const string LyricsV22 = "ULT";

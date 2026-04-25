@@ -297,10 +297,53 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     public static FullPath GetTempPath() => FromPath(Path.GetTempPath());
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static FullPath GetTempFileName() => FromPath(Path.GetTempFileName());
+    public static FullPath GetTempFileName() => CreateTempFile();
 
     /// <summary>Creates a uniquely named, zero-byte temporary file and returns its full path.</summary>
-    public static FullPath CreateTempFile() => FromPath(Path.GetTempFileName());
+    public static FullPath CreateTempFile() => CreateTempFile(prefix: null);
+
+    /// <summary>Creates a uniquely named, zero-byte temporary file and returns its full path.</summary>
+    /// <param name="prefix">A prefix to prepend to the generated file name.</param>
+    /// <param name="suffix">A suffix to append to the generated file name. Defaults to <c>.tmp</c>.</param>
+    /// <exception cref="IOException">Thrown when a unique file could not be created after 10 attempts.</exception>
+    public static FullPath CreateTempFile(string? prefix, string? suffix = ".tmp") => CreateTempFile(folder: null, prefix: prefix, suffix: suffix);
+
+    /// <summary>Creates a uniquely named, zero-byte temporary file and returns its full path.</summary>
+    /// <param name="folder">The destination folder. If <see langword="null"/> or empty, the system temporary folder is used.</param>
+    /// <param name="prefix">A prefix to prepend to the generated file name.</param>
+    /// <param name="suffix">A suffix to append to the generated file name. Defaults to <c>.tmp</c>.</param>
+    /// <exception cref="IOException">Thrown when a unique file could not be created after 10 attempts.</exception>
+    public static FullPath CreateTempFile(FullPath? folder, string? prefix, string? suffix = ".tmp")
+    {
+        var destinationFolder = folder.GetValueOrDefault();
+        if (destinationFolder.IsEmpty)
+        {
+            destinationFolder = GetTempPath();
+        }
+
+        Directory.CreateDirectory(destinationFolder.Value);
+
+        prefix ??= string.Empty;
+        suffix ??= string.Empty;
+
+        IOException? lastException = null;
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            var filePath = destinationFolder / (prefix + Guid.NewGuid().ToString("N") + suffix);
+
+            try
+            {
+                using var stream = File.Open(filePath.Value, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                return filePath;
+            }
+            catch (IOException ex)
+            {
+                lastException = ex;
+            }
+        }
+
+        throw new IOException("Could not create a unique temporary file after 10 attempts.", lastException);
+    }
 
     /// <summary>Gets the path to the system special folder identified by the specified enumeration.</summary>
     public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));

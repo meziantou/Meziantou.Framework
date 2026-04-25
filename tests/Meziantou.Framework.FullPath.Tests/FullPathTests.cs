@@ -326,6 +326,69 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void CreateTempFile_Default()
+    {
+        var path = FullPath.CreateTempFile(prefix: null);
+        try
+        {
+            Assert.Equal(".tmp", path.Extension);
+            Assert.True(File.Exists(path.Value));
+        }
+        finally
+        {
+            File.Delete(path.Value);
+        }
+    }
+
+    [Fact]
+    public void CreateTempFile_WithFolderPrefixSuffix()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var folder = tempDirectory.FullPath / Guid.NewGuid().ToString("N");
+        Assert.False(Directory.Exists(folder.Value));
+
+        var path = FullPath.CreateTempFile(folder, "prefix-", ".txt");
+
+        try
+        {
+            Assert.Equal(".txt", path.Extension);
+            Assert.Equal(folder, path.Parent);
+            Assert.StartsWith("prefix-", path.Name, StringComparison.Ordinal);
+            Assert.True(File.Exists(path.Value));
+            Assert.True(Directory.Exists(folder.Value));
+        }
+        finally
+        {
+            File.Delete(path.Value);
+        }
+    }
+
+    [Fact]
+    public void CreateTempFile_WithNullSuffix()
+    {
+        var path = FullPath.CreateTempFile(prefix: "prefix-", suffix: null);
+        try
+        {
+            Assert.Equal(string.Empty, path.Extension);
+            Assert.StartsWith("prefix-", path.Name, StringComparison.Ordinal);
+            Assert.True(File.Exists(path.Value));
+        }
+        finally
+        {
+            File.Delete(path.Value);
+        }
+    }
+
+    [Fact]
+    public void CreateTempFile_ThrowsAfterMaxAttempts()
+    {
+        var folder = FullPath.GetTempPath();
+        var invalidSuffix = $"{Path.DirectorySeparatorChar}invalid";
+        var exception = Assert.Throws<IOException>(() => FullPath.CreateTempFile(folder, prefix: null, suffix: invalidSuffix));
+        Assert.Contains("10 attempts", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task TryFindFirstAncestorOrSelf()
     {
         await using var tempDir = TemporaryDirectory.Create();

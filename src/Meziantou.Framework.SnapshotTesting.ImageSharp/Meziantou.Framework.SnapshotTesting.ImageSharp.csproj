@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="System.Numerics.Tensors" Version="10.0.6" />
+    <PackageReference Include="System.Numerics.Tensors" Version="10.0.7" />
   </ItemGroup>
 
 </Project>

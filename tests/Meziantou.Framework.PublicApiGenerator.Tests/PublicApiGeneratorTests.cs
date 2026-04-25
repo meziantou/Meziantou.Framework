@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework;
@@ -89,35 +88,25 @@ public sealed class PublicApiGeneratorTests
 
         var outputPath = temporaryDirectory / "bin";
 
-        await RunDotNetAsync(temporaryDirectory, $"restore \"{projectPath}\" -nologo --disable-build-servers");
-        await RunDotNetAsync(temporaryDirectory, $"build \"{projectPath}\" -nologo --disable-build-servers --no-restore --output \"{outputPath}\" /p:AssemblyName=Source");
+        await RunDotNetAsync(temporaryDirectory, ["restore", projectPath, "-nologo", "--disable-build-servers"]);
+        await RunDotNetAsync(temporaryDirectory, ["build", projectPath, "-nologo", "--disable-build-servers", "--no-restore", "--output", outputPath, "/p:AssemblyName=Source"]);
         return outputPath / "bin" / "Source.dll";
     }
 
-    private static async Task RunDotNetAsync(string workingDirectory, string arguments)
+    private static async Task RunDotNetAsync(string workingDirectory, IReadOnlyList<string> arguments)
     {
-        var processStartInfo = new ProcessStartInfo
+        var processResult = await ProcessWrapper.Create("dotnet")
+            .WithArguments(arguments)
+            .WithWorkingDirectory(workingDirectory)
+            .WithEnvironmentVariables(env => env.Set("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1"))
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteBufferedAsync(XunitCancellationToken);
+
+        if (!processResult.ExitCode.IsSuccess)
         {
-            FileName = "dotnet",
-            Arguments = arguments,
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
-        processStartInfo.EnvironmentVariables["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
-
-        using var process = Process.Start(processStartInfo) ?? throw new XunitException("Cannot start dotnet process");
-        var stdOutTask = process.StandardOutput.ReadToEndAsync(XunitCancellationToken);
-        var stdErrTask = process.StandardError.ReadToEndAsync(XunitCancellationToken);
-        await process.WaitForExitAsync(XunitCancellationToken);
-
-        var standardOutput = await stdOutTask;
-        var standardError = await stdErrTask;
-
-        if (process.ExitCode != 0)
-        {
-            throw new XunitException($"Command failed: dotnet {arguments}\nstdout:\n{standardOutput}\nstderr:\n{standardError}");
+            var standardOutput = string.Join('\n', processResult.Output.StandardOutput.Select(line => line.Text));
+            var standardError = string.Join('\n', processResult.Output.StandardError.Select(line => line.Text));
+            throw new XunitException($"Command failed: dotnet {string.Join(' ', arguments)}\nstdout:\n{standardOutput}\nstderr:\n{standardError}");
         }
     }
 }

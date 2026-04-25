@@ -9,6 +9,7 @@
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.QRCode/Meziantou.Framework.QRCode.csproj" />
@@ -17,6 +18,8 @@
     <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
+    <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj" />

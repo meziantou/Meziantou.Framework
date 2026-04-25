@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Helpers for ASP.NET Core middleware diagnostics</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

@@ -13,6 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore\Meziantou.AspNetCore.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Authentication.HttpBasic\Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Mvc\Meziantou.AspNetCore.Mvc.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
@@ -60,6 +61,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <TrimmerRootAssembly Include="Meziantou.AspNetCore" />
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Authentication.HttpBasic" />
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Mvc" />
     <TrimmerRootAssembly Include="Meziantou.Framework" />

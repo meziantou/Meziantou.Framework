@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>In-memory OpenTelemetry collector receiver for Meziantou.Framework.OpenTelemetryCollector</Description>
     <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>

@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Json</RootNamespace>
     <Description>An implementation of JSONPath (RFC 9535) for System.Text.Json.</Description>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

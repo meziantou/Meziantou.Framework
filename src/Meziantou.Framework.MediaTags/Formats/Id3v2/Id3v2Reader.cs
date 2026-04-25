@@ -221,6 +221,11 @@ internal static class Id3v2Reader
                 }
                 break;
 
+            case Id3v2FrameId.Duration:
+                if (tags.Duration is null)
+                    ParseDuration(ReadTextFrame(data), tags);
+                break;
+
             case Id3v2FrameId.Isrc:
                 tags.Isrc ??= ReadTextFrame(data);
                 break;
@@ -429,6 +434,12 @@ internal static class Id3v2Reader
         return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
 
+    private static void ParseDuration(string value, MediaTagInfo tags)
+    {
+        if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var milliseconds) && milliseconds >= 0)
+            tags.Duration = TimeSpan.FromMilliseconds(milliseconds);
+    }
+
     private static string ParseGenre(string genre)
     {
         // ID3v2 genre can be "(12)" for index, "(12)Rock" for index+text, or just text
@@ -496,6 +507,7 @@ internal static class Id3v2Reader
         Id3v2FrameId.ConductorV22 => Id3v2FrameId.Conductor,
         Id3v2FrameId.CopyrightV22 => Id3v2FrameId.Copyright,
         Id3v2FrameId.BpmV22 => Id3v2FrameId.Bpm,
+        Id3v2FrameId.DurationV22 => Id3v2FrameId.Duration,
         Id3v2FrameId.IsrcV22 => Id3v2FrameId.Isrc,
         Id3v2FrameId.CommentV22 => Id3v2FrameId.Comment,
         Id3v2FrameId.LyricsV22 => Id3v2FrameId.Lyrics,

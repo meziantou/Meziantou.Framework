@@ -211,4 +211,100 @@ public sealed class Mp3Id3v2Tests
         // Should succeed with empty tags (no valid ID3 found)
         Assert.True(result.IsSuccess);
     }
+
+    [Fact]
+    public void ReadTags_Mp3Frames_ComputesDuration()
+    {
+        const int FrameCount = 100;
+        using var stream = new MemoryStream(CreateSyntheticMp3(FrameCount, includeId3v2Tag: true));
+
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.Duration);
+
+        var expectedSeconds = FrameCount * (1152d / 44_100);
+        Assert.InRange(result.Value.Duration.Value.TotalSeconds, expectedSeconds - 0.01, expectedSeconds + 0.01);
+    }
+
+    [Fact]
+    public void ReadTags_Id3v2Tlen_ComputesDuration()
+    {
+        using var stream = new MemoryStream(CreateId3v24WithTextFrame("TLEN", "123456"));
+
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.Duration);
+        Assert.Equal(TimeSpan.FromMilliseconds(123456), result.Value.Duration.Value);
+    }
+
+    private static byte[] CreateSyntheticMp3(int frameCount, bool includeId3v2Tag)
+    {
+        const int Mpeg1Layer3FrameLength = 417;
+        var id3v2HeaderLength = includeId3v2Tag ? 10 : 0;
+        var data = new byte[id3v2HeaderLength + (frameCount * Mpeg1Layer3FrameLength)];
+
+        if (includeId3v2Tag)
+        {
+            data[0] = (byte)'I';
+            data[1] = (byte)'D';
+            data[2] = (byte)'3';
+            data[3] = 4; // ID3v2.4
+            data[4] = 0; // Revision
+            data[5] = 0; // Flags
+            // Tag size is 0, so bytes 6..9 are already 0.
+        }
+
+        var offset = id3v2HeaderLength;
+        for (var i = 0; i < frameCount; i++)
+        {
+            data[offset + 0] = 0xFF;
+            data[offset + 1] = 0xFB;
+            data[offset + 2] = 0x90;
+            data[offset + 3] = 0x00;
+            offset += Mpeg1Layer3FrameLength;
+        }
+
+        return data;
+    }
+
+    private static byte[] CreateId3v24WithTextFrame(string frameId, string value)
+    {
+        var textBytes = System.Text.Encoding.ASCII.GetBytes(value);
+        var frameDataLength = 1 + textBytes.Length;
+        var frameLength = 10 + frameDataLength;
+        var tagLength = 10 + frameLength;
+        var result = new byte[tagLength];
+
+        // Tag header
+        result[0] = (byte)'I';
+        result[1] = (byte)'D';
+        result[2] = (byte)'3';
+        result[3] = 4; // Version 2.4
+        result[4] = 0;
+        result[5] = 0;
+        WriteSynchsafeInteger(result.AsSpan(6, 4), frameLength);
+
+        // Frame header
+        result[10] = (byte)frameId[0];
+        result[11] = (byte)frameId[1];
+        result[12] = (byte)frameId[2];
+        result[13] = (byte)frameId[3];
+        WriteSynchsafeInteger(result.AsSpan(14, 4), frameDataLength);
+        result[18] = 0; // Frame flags
+        result[19] = 0;
+
+        // Frame payload
+        result[20] = 0; // ISO-8859-1 encoding
+        textBytes.CopyTo(result.AsSpan(21));
+
+        return result;
+    }
+
+    private static void WriteSynchsafeInteger(Span<byte> destination, int value)
+    {
+        destination[0] = (byte)((value >> 21) & 0x7F);
+        destination[1] = (byte)((value >> 14) & 0x7F);
+        destination[2] = (byte)((value >> 7) & 0x7F);
+        destination[3] = (byte)(value & 0x7F);
+    }
 }

@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Http;
 
-namespace Meziantou.AspNetCore.ServiceDefaults;
+namespace Meziantou.AspNetCore;
 
-[SuppressMessage("Usage", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated dynamically")]
-internal sealed class NoCacheMiddleware(RequestDelegate next)
+public sealed class NoCacheMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context)
     {

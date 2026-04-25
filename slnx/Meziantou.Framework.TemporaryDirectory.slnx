@@ -15,6 +15,8 @@
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
     <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
+    <Project Path="../src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
+    <Project Path="../src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Common/Meziantou.Framework.SnapshotTesting.Common.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
@@ -36,6 +38,7 @@
     <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tests/Meziantou.Framework.NuGetPackageValidation.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
     <Project Path="../tests/TestUtilities/TestUtilities.csproj" />

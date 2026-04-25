@@ -11,11 +11,10 @@ Usage:
   Meziantou.Framework.PublicApiGenerator.Tool [options]
 
 Options:
-  --input <input> (REQUIRED)                       Path to a .NET dll or exe file
-  --output <output> (REQUIRED)                     Output directory
-  --file-layout                                    File layout: SingleFile, OneFilePerNamespace, or OneFilePerType 
-  <OneFilePerNamespace|OneFilePerType|SingleFile>  [default: SingleFile]
-  -?, -h, --help                                   Show help and usage information
-  --version                                        Show version information
+  --input <input> (REQUIRED)                                     Path to a .NET dll or exe file
+  --output <output> (REQUIRED)                                   Output directory
+  --file-layout <OneFilePerNamespace|OneFilePerType|SingleFile>  File layout: SingleFile, OneFilePerNamespace, or OneFilePerType [default: SingleFile]
+  -?, -h, --help                                                 Show help and usage information
+  --version                                                      Show version information
 ```
 <!-- help -->

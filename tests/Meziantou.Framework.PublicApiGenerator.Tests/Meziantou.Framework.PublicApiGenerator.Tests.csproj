@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />

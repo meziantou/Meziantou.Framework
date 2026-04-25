@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework;
+using Meziantou.Framework.InlineSnapshotTesting;
 using Meziantou.Framework.PublicApiGenerator;
 using Meziantou.Framework.PublicApiGenerator.Tool;
 using Xunit.Sdk;
@@ -10,180 +12,50 @@ namespace Meziantou.Framework.PublicApiGenerator.Tests;
 [Collection("Tool")] // Ensure tests run sequentially
 public sealed class PublicApiGeneratorTests
 {
-    private const string SampleSource = """
-        using System;
-        using System.Diagnostics.CodeAnalysis;
-        using System.Runtime.InteropServices;
-
-        namespace Sample;
-
-        file class FileOnlyType
-        {
-            public int Value => 1;
-        }
-
-        internal class InternalType
-        {
-            public int Value => 1;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public partial class ApiClass
-        {
-            public required int A { get; init; }
-
-            [return: NotNullIfNotNull(nameof(input))]
-            public string? Identity(string? input) => input;
-
-            public ref int RefReturn(ref int value) => ref value;
-
-            public void InRefOut(in int a, ref int b, out int c)
-            {
-                c = a + b;
-            }
-
-            [DllImport("kernel32.dll")]
-            public static extern IntPtr GetCurrentThread();
-
-            [LibraryImport("kernel32.dll")]
-            public static partial int Beep(int dwFreq, int dwDuration);
-
-            protected internal virtual int VirtualMethod() => 0;
-
-            protected class NestedProtectedType
-            {
-                public int Value => 0;
-            }
-        }
-
-        public interface IApiInterface
-        {
-            int AbstractMethod();
-
-            int DefaultMethod() => 42;
-
-            static virtual int StaticVirtual() => 7;
-        }
-
-        public delegate int ApiDelegate(int value);
-
-        public struct ApiStruct
-        {
-            public int Value;
-        }
-
-        public readonly record struct ApiRecordStruct(int Value);
-
-        public record ApiRecord(int Value);
-
-        public enum ApiEnum
-        {
-            None = 0,
-            One = 1,
-        }
-        """;
-
-    [Fact]
-    public async Task MetadataAndReflectionProduceEquivalentModel()
+    [InlineSnapshotAssertion(nameof(expected))]
+    private static async Task Validate(string source, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
-        var assemblyPath = await CompileSampleProjectAsync(temporaryDirectory);
 
-        var metadataModel = PublicApiStubGenerator.ReadModel(assemblyPath);
-        var reflectionAssembly = Assembly.LoadFile(assemblyPath);
-        var reflectionModel = PublicApiStubGenerator.ReadModel(reflectionAssembly);
+        // Build the project
+        var sourceProjectDirectory = temporaryDirectory / "source";
+        temporaryDirectory.CreateTextFile(sourceProjectDirectory / "project.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0</TargetFramework>
+                <LangVersion>preview</LangVersion>
+                <Nullable>enable</Nullable>
+                <ImplicitUsings>enable</ImplicitUsings>
+                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+              </PropertyGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile(sourceProjectDirectory / "Sample.cs", source);
 
-        Assert.Equal(
-            metadataModel.Types.Select(static type => type.QualifiedName).OrderBy(static value => value, StringComparer.Ordinal),
-            reflectionModel.Types.Select(static type => type.QualifiedName).OrderBy(static value => value, StringComparer.Ordinal));
-    }
+        var assemblyPath = await Compile(sourceProjectDirectory);
 
-    [Fact]
-    public async Task ModuleAndTypeOverloadsUseReflectionModel()
-    {
-        await using var temporaryDirectory = TemporaryDirectory.Create();
-        var assemblyPath = await CompileSampleProjectAsync(temporaryDirectory);
-        var assembly = Assembly.LoadFile(assemblyPath);
-
-        var assemblyModel = PublicApiStubGenerator.ReadModel(assembly);
-        var moduleModel = PublicApiStubGenerator.ReadModel(assembly.ManifestModule);
-        var typeModel = PublicApiStubGenerator.ReadModel(assembly.GetType("Sample.ApiClass", throwOnError: true)!);
-
-        Assert.Equal(
-            assemblyModel.Types.Select(static type => type.QualifiedName).OrderBy(static value => value, StringComparer.Ordinal),
-            moduleModel.Types.Select(static type => type.QualifiedName).OrderBy(static value => value, StringComparer.Ordinal));
-        Assert.Contains(typeModel.Types, static type => string.Equals(type.QualifiedName, "Sample.ApiClass", StringComparison.Ordinal));
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task GeneratedOutputCompiles(bool useAssemblyReader)
-    {
-        await using var temporaryDirectory = TemporaryDirectory.Create();
-        var assemblyPath = await CompileSampleProjectAsync(temporaryDirectory);
-        var reflectionAssembly = useAssemblyReader ? Assembly.LoadFile(assemblyPath) : null;
-        foreach (var layout in Enum.GetValues<PublicApiFileLayout>())
-        {
-            var outputDirectory = temporaryDirectory.GetFullPath($"generated-{(useAssemblyReader ? "reflection" : "metadata")}-{layout}");
-            var options = new PublicApiGeneratorOptions
-            {
-                FileLayout = layout,
-            };
-            if (reflectionAssembly is null)
-            {
-                PublicApiStubGenerator.GenerateToDirectory(assemblyPath, outputDirectory, options);
-            }
-            else
-            {
-                PublicApiStubGenerator.GenerateToDirectory(reflectionAssembly, outputDirectory, options);
-            }
-
-            await CompileGeneratedProjectAsync(outputDirectory);
-        }
-    }
-
-    [Fact]
-    public async Task GeneratedOutputContainsRequiredMembers()
-    {
-        await using var temporaryDirectory = TemporaryDirectory.Create();
-        var assemblyPath = await CompileSampleProjectAsync(temporaryDirectory);
-        var files = PublicApiStubGenerator.GenerateFiles(
+        // Generate the API files using both reflection and metadata
+        var reflectionFiles = PublicApiStubGenerator.GenerateFiles(
             Assembly.LoadFile(assemblyPath),
             new PublicApiGeneratorOptions
             {
                 FileLayout = PublicApiFileLayout.SingleFile,
             });
-        var file = Assert.Single(files);
-        Assert.Contains("required int A", file.Content, StringComparison.Ordinal);
-    }
+        var metadataFiles = PublicApiStubGenerator.GenerateFiles(
+            assemblyPath,
+            new PublicApiGeneratorOptions
+            {
+                FileLayout = PublicApiFileLayout.SingleFile,
+            });
 
-    [Fact]
-    public async Task CliGeneratesFiles()
-    {
-        await using var temporaryDirectory = TemporaryDirectory.Create();
-        var assemblyPath = await CompileSampleProjectAsync(temporaryDirectory);
-        var outputDirectory = temporaryDirectory.GetFullPath("cli-output");
+        var reflectionContent = SerializeFiles(reflectionFiles);
+        var metadataContent = SerializeFiles(metadataFiles);
+        Assert.Equal(reflectionContent, metadataContent);
+        InlineSnapshot.Validate(reflectionContent, expected, filePath, lineNumber);
 
-        var result = await Program.MainImpl(
-            [
-                "--input", assemblyPath,
-                "--output", outputDirectory,
-                "--file-layout", PublicApiFileLayout.OneFilePerType.ToString(),
-            ],
-            configure: null);
-
-        Assert.Equal(0, result);
-        Assert.NotEmpty(Directory.EnumerateFiles(outputDirectory, "*.cs", SearchOption.AllDirectories));
-    }
-
-    private static async Task<string> CompileSampleProjectAsync(TemporaryDirectory temporaryDirectory)
-    {
-        var projectDirectory = temporaryDirectory.GetFullPath("source");
-        Directory.CreateDirectory(projectDirectory);
-
-        var projectPath = projectDirectory / "Source.csproj";
-        await File.WriteAllTextAsync(projectPath, """
+        // Ensure the generated files are compilable
+        var generatedDirectory = temporaryDirectory / "generated";
+        temporaryDirectory.CreateTextFile(generatedDirectory / "project.csproj", """
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
                 <TargetFramework>net8.0</TargetFramework>
@@ -193,31 +65,33 @@ public sealed class PublicApiGeneratorTests
                 <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
               </PropertyGroup>
             </Project>
-            """, XunitCancellationToken);
-        await File.WriteAllTextAsync(projectDirectory / "Sample.cs", SampleSource, XunitCancellationToken);
+            """);
+        foreach (var file in reflectionFiles)
+        {
+            temporaryDirectory.CreateTextFile(generatedDirectory / file.RelativePath, file.Content);
+        }
 
-        await RunDotNetAsync(projectDirectory, $"build \"{projectPath}\" -nologo");
-        var assemblyPath = projectDirectory / "bin" / "Debug" / "net8.0" / "Source.dll";
-        Assert.True(File.Exists(assemblyPath), "Sample assembly should exist after build");
-        return assemblyPath;
+        await Compile(generatedDirectory);
+
+        static string SerializeFiles(IReadOnlyList<PublicApiGeneratedFile> files)
+        {
+            return string.Join(
+                "\n\n",
+                files
+                    .OrderBy(file => file.RelativePath, StringComparer.Ordinal)
+                    .Select(file => file.Content.TrimEnd('\r', '\n')));
+        }
     }
 
-    private static async Task CompileGeneratedProjectAsync(string generatedDirectory)
+    private static async Task<FullPath> Compile(FullPath temporaryDirectory)
     {
-        var projectPath = Path.Combine(generatedDirectory, "Generated.csproj");
-        await File.WriteAllTextAsync(projectPath, """
-            <Project Sdk="Microsoft.NET.Sdk">
-              <PropertyGroup>
-                <TargetFramework>net8.0</TargetFramework>
-                <LangVersion>preview</LangVersion>
-                <Nullable>enable</Nullable>
-                <ImplicitUsings>enable</ImplicitUsings>
-                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-              </PropertyGroup>
-            </Project>
-            """, XunitCancellationToken);
+        var projectPath = Assert.Single(Directory.EnumerateFiles(temporaryDirectory, "*.csproj", SearchOption.TopDirectoryOnly));
 
-        await RunDotNetAsync(generatedDirectory, $"build \"{projectPath}\" -nologo");
+        var outputPath = temporaryDirectory / "bin";
+
+        await RunDotNetAsync(temporaryDirectory, $"restore \"{projectPath}\" -nologo --disable-build-servers");
+        await RunDotNetAsync(temporaryDirectory, $"build \"{projectPath}\" -nologo --disable-build-servers --no-restore --output \"{outputPath}\" /p:AssemblyName=Source");
+        return outputPath / "bin" / "Source.dll";
     }
 
     private static async Task RunDotNetAsync(string workingDirectory, string arguments)
@@ -234,8 +108,8 @@ public sealed class PublicApiGeneratorTests
         processStartInfo.EnvironmentVariables["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
 
         using var process = Process.Start(processStartInfo) ?? throw new XunitException("Cannot start dotnet process");
-        var stdOutTask = process.StandardOutput.ReadToEndAsync();
-        var stdErrTask = process.StandardError.ReadToEndAsync();
+        var stdOutTask = process.StandardOutput.ReadToEndAsync(XunitCancellationToken);
+        var stdErrTask = process.StandardError.ReadToEndAsync(XunitCancellationToken);
         await process.WaitForExitAsync(XunitCancellationToken);
 
         var standardOutput = await stdOutTask;

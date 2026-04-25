@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework);net9.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

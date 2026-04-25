@@ -106,6 +106,7 @@ internal sealed class MiddlewarePipelineCaptureApplicationBuilder : IApplication
         return false;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Middleware diagnostics uses reflective best-effort discovery over ASP.NET internals.")]
     private static bool TryGetMiddlewareType(object value, HashSet<object> visited, int maxDepth, [NotNullWhen(true)] out Type? middlewareType)
     {
         if (maxDepth < 0)
@@ -165,6 +166,7 @@ internal sealed class MiddlewarePipelineCaptureApplicationBuilder : IApplication
         return false;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Middleware diagnostics inspects middleware invoke methods by reflection.")]
     private static bool IsMiddlewareType(Type type)
     {
         if (type == typeof(RequestDelegate))

@@ -140,8 +140,8 @@ public sealed class MiddlewarePipelineDebuggingTests
         {
             settings.ScrubLinesWithReplace(static line =>
             {
-                var scrubbed = Regex.Replace(line, @"Version=\d+\.\d+\.\d+\.\d+", "Version=*");
-                scrubbed = Regex.Replace(scrubbed, @"PublicKeyToken=[0-9a-f]{16}", "PublicKeyToken=*");
+                var scrubbed = Regex.Replace(line, @"Version=\d+\.\d+\.\d+\.\d+", "Version=*", RegexOptions.None, TimeSpan.FromSeconds(1));
+                scrubbed = Regex.Replace(scrubbed, @"PublicKeyToken=[0-9a-f]{16}", "PublicKeyToken=*", RegexOptions.None, TimeSpan.FromSeconds(1));
                 return scrubbed;
             });
         }).Validate(text, """

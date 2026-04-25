@@ -162,7 +162,7 @@ int UpdateToolReadmes()
 
         string[] runArgs = ["run", "--no-build", "--project", project.Csproj, "--framework", latestTfm, "--", "--help"];
         var helpText = RunProcessAndCaptureOutput("dotnet", runArgs, timeout: TimeSpan.FromMinutes(2));
-        helpText = helpText.TrimEnd(' ', '\t', '\r', '\n');
+        helpText = TrimEndOfLines(helpText).TrimEnd('\r', '\n');
         if (!string.IsNullOrEmpty(project.ToolName))
         {
             helpText = helpText.Replace(Path.GetFileNameWithoutExtension(project.Csproj), project.ToolName, StringComparison.Ordinal);
@@ -246,6 +246,9 @@ static string? ExtractMsBuildPropertyValue(string output, string propertyName)
     var match = Regex.Match(output, $"\"{Regex.Escape(propertyName)}\"\\s*:\\s*\"(?<value>[^\"]*)\"", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
     return match.Success ? match.Groups["value"].Value : null;
 }
+
+static string TrimEndOfLines(string text) =>
+    Regex.Replace(text, "[ \\t]+(?=\\r?\\n|$)", string.Empty, RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
 
 static void RunProcess(string fileName, string[] arguments)
 {

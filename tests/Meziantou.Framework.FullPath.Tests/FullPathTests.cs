@@ -353,7 +353,7 @@ public sealed class FullPathTests
         {
             Assert.Equal(".txt", path.Extension);
             Assert.Equal(folder, path.Parent);
-            Assert.StartsWith("prefix-", path.Name);
+            Assert.StartsWith("prefix-", path.Name, StringComparison.Ordinal);
             Assert.True(File.Exists(path.Value));
             Assert.True(Directory.Exists(folder.Value));
         }
@@ -370,7 +370,7 @@ public sealed class FullPathTests
         try
         {
             Assert.Equal(string.Empty, path.Extension);
-            Assert.StartsWith("prefix-", path.Name);
+            Assert.StartsWith("prefix-", path.Name, StringComparison.Ordinal);
             Assert.True(File.Exists(path.Value));
         }
         finally
@@ -385,7 +385,7 @@ public sealed class FullPathTests
         var folder = FullPath.GetTempPath();
         var invalidSuffix = $"{Path.DirectorySeparatorChar}invalid";
         var exception = Assert.Throws<IOException>(() => FullPath.CreateTempFile(folder, prefix: null, suffix: invalidSuffix));
-        Assert.Contains("10 attempts", exception.Message);
+        Assert.Contains("10 attempts", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

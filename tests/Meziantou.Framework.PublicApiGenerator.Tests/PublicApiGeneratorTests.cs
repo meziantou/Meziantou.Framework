@@ -8,7 +8,7 @@ using Xunit.Sdk;
 
 namespace Meziantou.Framework.PublicApiGenerator.Tests;
 
-[Collection("Tool")] // Ensure tests run sequentially
+//[Collection("Tool")] // Ensure tests run sequentially
 public sealed class PublicApiGeneratorTests
 {
     [Fact]
@@ -43,6 +43,30 @@ public sealed class PublicApiGeneratorTests
             {
                 public class Sample
                 {
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NestedTypes_Basic()
+    {
+        await Validate("""
+            public class Outer
+            {
+                public class Inner
+                {
+                    public int M() => 0;
+                }
+            }
+            """, """
+            #nullable enable
+
+            public class Outer
+            {
+                public class Inner
+                {
+                    public int M() => throw null;
                 }
             }
             """);
@@ -161,6 +185,184 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Operators_ImplicitExplicitEqualityAddition()
+    {
+        await Validate("""
+            public readonly struct Sample
+            {
+                public static implicit operator int(Sample value) => default;
+                public static explicit operator Sample(int value) => default;
+                public static Sample operator +(Sample left, Sample right) => default;
+                public static bool operator ==(Sample left, Sample right) => default;
+                public static bool operator !=(Sample left, Sample right) => default;
+            }
+            """, """
+            #nullable enable
+
+            public readonly struct Sample
+            {
+                public static implicit operator int(Sample value) => throw null;
+                public static explicit operator Sample(int value) => throw null;
+                public static Sample operator +(Sample left, Sample right) => throw null;
+                public static bool operator ==(Sample left, Sample right) => throw null;
+                public static bool operator !=(Sample left, Sample right) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Operators_FullOverloadableSet()
+    {
+        await Validate("""
+            public struct Sample
+            {
+                public static Sample operator +(Sample x) => x;
+                public static Sample operator -(Sample x) => x;
+                public static Sample operator !(Sample x) => x;
+                public static Sample operator ~(Sample x) => x;
+                public static Sample operator ++(Sample x) => x;
+                public static Sample operator --(Sample x) => x;
+                public static bool operator true(Sample x) => true;
+                public static bool operator false(Sample x) => false;
+                public static Sample operator +(Sample x, Sample y) => x;
+                public static Sample operator -(Sample x, Sample y) => x;
+                public static Sample operator *(Sample x, Sample y) => x;
+                public static Sample operator /(Sample x, Sample y) => x;
+                public static Sample operator %(Sample x, Sample y) => x;
+                public static Sample operator &(Sample x, Sample y) => x;
+                public static Sample operator |(Sample x, Sample y) => x;
+                public static Sample operator ^(Sample x, Sample y) => x;
+                public static Sample operator <<(Sample x, int y) => x;
+                public static Sample operator >>(Sample x, int y) => x;
+                public static Sample operator >>>(Sample x, int y) => x;
+                public static bool operator ==(Sample x, Sample y) => true;
+                public static bool operator !=(Sample x, Sample y) => true;
+                public static bool operator <(Sample x, Sample y) => true;
+                public static bool operator >(Sample x, Sample y) => true;
+                public static bool operator <=(Sample x, Sample y) => true;
+                public static bool operator >=(Sample x, Sample y) => true;
+                public static implicit operator int(Sample x) => 0;
+                public static explicit operator Sample(int x) => default;
+                public void operator +=(Sample x) { }
+                public void operator -=(Sample x) { }
+                public void operator *=(Sample x) { }
+                public void operator /=(Sample x) { }
+                public void operator %=(Sample x) { }
+                public void operator &=(Sample x) { }
+                public void operator |=(Sample x) { }
+                public void operator ^=(Sample x) { }
+                public void operator <<=(int x) { }
+                public void operator >>=(int x) { }
+                public void operator >>>=(int x) { }
+                public void operator ++() { }
+                public void operator --() { }
+                public override bool Equals([NotNullWhen(true)] object? obj) => false;
+                public override int GetHashCode() => 0;
+            }
+            """, """
+            #nullable enable
+
+            public struct Sample
+            {
+                public static Sample operator +(Sample x) => throw null;
+                public static Sample operator -(Sample x) => throw null;
+                public static Sample operator !(Sample x) => throw null;
+                public static Sample operator ~(Sample x) => throw null;
+                public static Sample operator ++(Sample x) => throw null;
+                public static Sample operator --(Sample x) => throw null;
+                public static bool operator true(Sample x) => throw null;
+                public static bool operator false(Sample x) => throw null;
+                public static Sample operator +(Sample x, Sample y) => throw null;
+                public static Sample operator -(Sample x, Sample y) => throw null;
+                public static Sample operator *(Sample x, Sample y) => throw null;
+                public static Sample operator /(Sample x, Sample y) => throw null;
+                public static Sample operator %(Sample x, Sample y) => throw null;
+                public static Sample operator &(Sample x, Sample y) => throw null;
+                public static Sample operator |(Sample x, Sample y) => throw null;
+                public static Sample operator ^(Sample x, Sample y) => throw null;
+                public static Sample operator <<(Sample x, int y) => throw null;
+                public static Sample operator >>(Sample x, int y) => throw null;
+                public static Sample operator >>>(Sample x, int y) => throw null;
+                public static bool operator ==(Sample x, Sample y) => throw null;
+                public static bool operator !=(Sample x, Sample y) => throw null;
+                public static bool operator <(Sample x, Sample y) => throw null;
+                public static bool operator >(Sample x, Sample y) => throw null;
+                public static bool operator <=(Sample x, Sample y) => throw null;
+                public static bool operator >=(Sample x, Sample y) => throw null;
+                public static implicit operator int(Sample x) => throw null;
+                public static explicit operator Sample(int x) => throw null;
+                public void operator +=(Sample x) => throw null;
+                public void operator -=(Sample x) => throw null;
+                public void operator *=(Sample x) => throw null;
+                public void operator /=(Sample x) => throw null;
+                public void operator %=(Sample x) => throw null;
+                public void operator &=(Sample x) => throw null;
+                public void operator |=(Sample x) => throw null;
+                public void operator ^=(Sample x) => throw null;
+                public void operator <<=(int x) => throw null;
+                public void operator >>=(int x) => throw null;
+                public void operator >>>=(int x) => throw null;
+                public void operator ++() => throw null;
+                public void operator --() => throw null;
+                public override bool Equals([NotNullWhen(true)] object? obj) => throw null;
+                public override int GetHashCode() => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ExtensionMethod_ThisModifier()
+    {
+        await Validate("""
+            public static class SampleExtensions
+            {
+                public static int Length2(this string value) => value.Length;
+            }
+            """, """
+            #nullable enable
+
+            public static class SampleExtensions
+            {
+                public static int Length2(this string value) => throw null;
+            }
+            """);
+    }
+
+#if NET10_0_OR_GREATER
+    [Fact]
+    public async Task ExtensionMembers_CSharp14()
+    {
+        await Validate("""
+            using System.Collections.Generic;
+            using System.Linq;
+
+            public static class SampleExtensions
+            {
+                extension(IEnumerable<int> values)
+                {
+                    public int CountPlusOne => values.Count() + 1;
+                    public IEnumerable<int> Add(int value) => values.Select(item => item + value);
+                }
+            }
+            """, """
+            #nullable enable
+
+            public static class SampleExtensions
+            {
+                public static global::System.Collections.Generic.IEnumerable<int> Add(this global::System.Collections.Generic.IEnumerable<int> values, int value) => throw null;
+                extension(global::System.Collections.Generic.IEnumerable<int> values)
+                {
+                    public int CountPlusOne { get => throw null; }
+                }
+            }
+            """, compilerOptions: new CompilerOptions
+        {
+            TargetFramework = "net10.0",
+        });
+    }
+#endif
+
+    [Fact]
     public async Task Method_ParameterModifiers()
     {
         await Validate("""
@@ -187,7 +389,7 @@ public sealed class PublicApiGeneratorTests
         await Validate("""
             public class Sample
             {
-                public void M(readonly ref readonly int value)
+                public void M(ref readonly int value)
                 {
                 }
             }
@@ -196,7 +398,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public void M(readonly ref readonly int value) => throw null;
+                public void M(ref readonly int value) => throw null;
             }
             """);
     }
@@ -331,6 +533,71 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Indexer_OneParameter_GetOnly()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public int this[int index] => index;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int this[int index] { get => throw null; }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Indexer_MultipleParameters_SetOnly()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public int this[int index1, int index2]
+                {
+                    set
+                    {
+                    }
+                }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int this[int index1, int index2] { set => throw null; }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Indexer_MultipleParameters_GetSet()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public int this[int index1, int index2]
+                {
+                    get => 0;
+                    set
+                    {
+                    }
+                }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int this[int index1, int index2] { get => throw null; set => throw null; }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Fields_InstanceAndStaticReadonly()
     {
         await Validate("""
@@ -366,10 +633,52 @@ public sealed class PublicApiGeneratorTests
 
             public interface ISample
             {
-                public static int Counter { get; set; }
-                public abstract void M();
+                static int Counter { get; set; }
+                abstract void M();
                 public static virtual int StaticMethod() => throw null;
                 public virtual int DefaultMethod() => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Interface_WithProperty()
+    {
+        await Validate("""
+            public interface ISample
+            {
+                int Value { get; }
+            }
+            """, """
+            #nullable enable
+
+            public interface ISample
+            {
+                int Value { get; }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Interface_VisibilityModifiers()
+    {
+        await Validate("""
+            public interface ISample
+            {
+                void AbstractImplicit();
+                public void PublicDefault() { }
+                private void PrivateDefault() { }
+                protected void ProtectedDefault() { }
+                internal void InternalDefault() { }
+            }
+            """, """
+            #nullable enable
+
+            public interface ISample
+            {
+                void AbstractImplicit();
+                public void PublicDefault() => throw null;
+                protected void ProtectedDefault() => throw null;
             }
             """);
     }
@@ -468,11 +777,13 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample : SampleBaseClass
             {
+                public Sample() : base(default(int)) => throw null;
             }
 
 
             public class SampleBaseClass
             {
+                public SampleBaseClass(int value) => throw null;
             }
             """);
     }
@@ -556,6 +867,28 @@ public sealed class PublicApiGeneratorTests
             public class Sample
             {
                 [global::System.CLSCompliant(false)]
+                public void M() => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Method_WithUnsupportedOSPlatformAttribute()
+    {
+        await Validate("""
+            public class Sample
+            {
+                [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+                public void M()
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                [global::System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
                 public void M() => throw null;
             }
             """);

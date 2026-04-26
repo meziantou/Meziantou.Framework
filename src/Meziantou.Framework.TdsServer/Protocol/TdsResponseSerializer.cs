@@ -22,7 +22,7 @@ internal static class TdsResponseSerializer
         WriteLoginAckToken(writer, "Meziantou.TdsServer");
         if (!string.IsNullOrEmpty(authenticationResult.Database))
         {
-            WriteEnvironmentChangeToken(writer, environmentType: 1, authenticationResult.Database!, oldValue: string.Empty);
+            WriteEnvironmentChangeToken(writer, environmentType: 1, authenticationResult.Database, oldValue: string.Empty);
         }
 
         WriteCollationEnvironmentChangeToken(writer, DefaultCollation);

@@ -7,6 +7,10 @@ using System.Security.Cryptography.X509Certificates;
 using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
 using Microsoft.Data.SqlClient;
+using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
+using SqlParser = Microsoft.SqlServer.Management.SqlParser.Parser.Parser;
+using SqlParserParseOptions = Microsoft.SqlServer.Management.SqlParser.Parser.ParseOptions;
+using SqlParserParseResult = Microsoft.SqlServer.Management.SqlParser.Parser.ParseResult;
 using Xunit;
 
 namespace Meziantou.Framework.Tds.Tests;
@@ -58,7 +62,7 @@ public sealed class TdsServerProtocolTests
     [Fact]
     public async Task SqlClient_TextQuery_WithoutParameters_UsesSqlBatch()
     {
-        const string marker = "TextQueryWithoutParametersMarker";
+        const string Marker = "TextQueryWithoutParametersMarker";
         var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var options = new TdsServerOptions();
@@ -69,7 +73,7 @@ public sealed class TdsServerProtocolTests
             (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
             (context, cancellationToken) =>
             {
-                if (context.CommandText?.Contains(marker, StringComparison.Ordinal) == true)
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
                 {
                     queryContextTask.TrySetResult(context);
                     return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 123));
@@ -85,20 +89,20 @@ public sealed class TdsServerProtocolTests
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT 1 /* {marker} */";
+        command.CommandText = $"SELECT 1 /* {Marker} */";
 
         var result = await command.ExecuteScalarAsync();
         var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Equal(123, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
-        Assert.Contains(marker, capturedContext.CommandText, StringComparison.Ordinal);
+        Assert.Contains(Marker, capturedContext.CommandText, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task SqlClient_TextQuery_WithParameters_UsesRpc()
     {
-        const string marker = "TextQueryWithParametersMarker";
+        const string Marker = "TextQueryWithParametersMarker";
         var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var options = new TdsServerOptions();
@@ -111,7 +115,7 @@ public sealed class TdsServerProtocolTests
             {
                 if (context.RequestType == TdsQueryRequestType.Rpc &&
                     string.Equals(context.ProcedureName, "sp_executesql", StringComparison.OrdinalIgnoreCase) &&
-                    context.Parameters.Any(parameter => parameter.Value.AsString()?.Contains(marker, StringComparison.Ordinal) == true) &&
+                    context.Parameters.Any(parameter => parameter.Value.AsString()?.Contains(Marker, StringComparison.Ordinal) == true) &&
                     HasIntParameter(context.Parameters, 42))
                 {
                     queryContextTask.TrySetResult(context);
@@ -128,7 +132,7 @@ public sealed class TdsServerProtocolTests
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT @value /* {marker} */";
+        command.CommandText = $"SELECT @value /* {Marker} */";
         _ = command.Parameters.Add(new SqlParameter("@value", SqlDbType.Int) { Value = 42 });
 
         var result = await command.ExecuteScalarAsync();
@@ -138,6 +142,109 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(TdsQueryRequestType.Rpc, capturedContext.RequestType);
         Assert.Equal("sp_executesql", capturedContext.ProcedureName, StringComparer.OrdinalIgnoreCase);
         Assert.Contains(capturedContext.Parameters, parameter => IsExpectedIntParameter(parameter.Value, 42));
+    }
+
+    [Fact]
+    public async Task SqlClient_TextQuery_ParsedWithSqlParser_ReturnsFilteredCustomers()
+    {
+        const string Query = "SELECT Id, Name FROM customers WHERE Id = 1";
+        var parseSucceededTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var customers = new[]
+        {
+            new Customer(1, "Alice"),
+            new Customer(2, "Bob"),
+            new Customer(3, "Charlie"),
+        };
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (!TryParseCustomerQuery(context.CommandText, out var customerId))
+                {
+                    parseSucceededTask.TrySetResult(false);
+                    return ValueTask.FromResult(TdsQueryResult.FromError(new TdsQueryError
+                    {
+                        Message = "Invalid query",
+                    }));
+                }
+
+                parseSucceededTask.TrySetResult(true);
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Id", TdsColumnType.Int32, isNullable: false));
+                resultSet.Columns.Add(new TdsColumn("Name", TdsColumnType.NVarChar, isNullable: false));
+                foreach (var customer in customers.Where(customer => customer.Id == customerId))
+                {
+                    resultSet.Rows.Add([customer.Id, customer.Name]);
+                }
+
+                var result = new TdsQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = Query;
+        await using var reader = await command.ExecuteReaderAsync();
+
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+        Assert.Equal("Alice", reader.GetString(1));
+        Assert.False(await reader.ReadAsync());
+        Assert.True(await parseSucceededTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task SqlClient_TextQuery_InvalidQuery_ReturnsServerError()
+    {
+        const string Query = "SELECT Id, Name FROM customers WHERE Id = ";
+        var invalidQueryTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (!TryParseCustomerQuery(context.CommandText, out _))
+                {
+                    invalidQueryTask.TrySetResult(true);
+                    return ValueTask.FromResult(TdsQueryResult.FromError(new TdsQueryError
+                    {
+                        Number = 50001,
+                        Message = "Invalid query",
+                    }));
+                }
+
+                invalidQueryTask.TrySetResult(false);
+                return ValueTask.FromResult(new TdsQueryResult());
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = Query;
+
+        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
+        Assert.Equal(50001, exception.Number);
+        Assert.Contains("Invalid query", exception.Message, StringComparison.Ordinal);
+        Assert.True(await invalidQueryTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
     [Fact]
@@ -339,7 +446,7 @@ public sealed class TdsServerProtocolTests
     [Fact]
     public async Task SqlClient_QueryResult_CoversAllColumnTypes()
     {
-        const string marker = "AllDataTypesMarker";
+        const string Marker = "AllDataTypesMarker";
         var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
         var (resultSet, expectedValues) = CreateResultSetWithAllDataTypes();
 
@@ -351,7 +458,7 @@ public sealed class TdsServerProtocolTests
             (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
             (context, cancellationToken) =>
             {
-                if (context.CommandText?.Contains(marker, StringComparison.Ordinal) == true)
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
                 {
                     queryContextTask.TrySetResult(context);
                     var result = new TdsQueryResult();
@@ -369,7 +476,7 @@ public sealed class TdsServerProtocolTests
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT 1 /* {marker} */";
+        command.CommandText = $"SELECT 1 /* {Marker} */";
 
         await using var reader = await command.ExecuteReaderAsync();
         Assert.True(await reader.ReadAsync());
@@ -482,6 +589,69 @@ public sealed class TdsServerProtocolTests
         };
     }
 
+    private static bool TryParseCustomerQuery(string query, out int customerId)
+    {
+        customerId = default;
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return false;
+        }
+
+        var parseResult = SqlParser.Parse(query, new SqlParserParseOptions(), out _);
+        if (HasSqlParserErrors(parseResult))
+        {
+            return false;
+        }
+
+        if (parseResult.Script.Batches.Count != 1)
+        {
+            return false;
+        }
+
+        if (parseResult.Script.Batches[0].Statements.Count != 1 ||
+            parseResult.Script.Batches[0].Statements[0] is not SqlSelectStatement selectStatement ||
+            selectStatement.SelectSpecification.QueryExpression is not SqlQuerySpecification querySpecification)
+        {
+            return false;
+        }
+
+        if (querySpecification.SelectClause.SelectExpressions.Count != 2 ||
+            querySpecification.SelectClause.SelectExpressions[0] is not SqlSelectScalarExpression { Expression: SqlColumnRefExpression firstSelectColumn } ||
+            querySpecification.SelectClause.SelectExpressions[1] is not SqlSelectScalarExpression { Expression: SqlColumnRefExpression secondSelectColumn } ||
+            !string.Equals(firstSelectColumn.ColumnName.Value, "Id", StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(secondSelectColumn.ColumnName.Value, "Name", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (querySpecification.FromClause is null ||
+            querySpecification.FromClause.TableExpressions.Count != 1 ||
+            querySpecification.FromClause.TableExpressions[0] is not SqlTableRefExpression tableExpression ||
+            !string.Equals(tableExpression.ObjectIdentifier.ObjectName.Value, "customers", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (querySpecification.WhereClause?.Expression is not SqlComparisonBooleanExpression
+            {
+                ComparisonOperator: SqlComparisonBooleanExpressionType.Equals,
+                Left: SqlColumnRefExpression predicateColumn,
+                Right: SqlLiteralExpression predicateValue,
+            } ||
+            !string.Equals(predicateColumn.ColumnName.Value, "Id", StringComparison.OrdinalIgnoreCase) ||
+            predicateValue.Type != LiteralValueType.Integer)
+        {
+            return false;
+        }
+
+        return int.TryParse(predicateValue.Value, NumberStyles.None, CultureInfo.InvariantCulture, out customerId);
+    }
+
+    private static bool HasSqlParserErrors(SqlParserParseResult parseResult)
+    {
+        return parseResult.Errors.Any() || parseResult.ParseErrors.Any();
+    }
+
     private static TdsQueryResult CreateScalarResultSet(TdsColumnType columnType, object value)
     {
         var resultSet = new TdsResultSet();
@@ -571,5 +741,7 @@ public sealed class TdsServerProtocolTests
             }
         }
     }
+
+    private sealed record Customer(int Id, string Name);
 
 }

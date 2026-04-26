@@ -79,6 +79,8 @@
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
     <Project Path="src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
+    <Project Path="src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
+    <Project Path="src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.QRCode/Meziantou.Framework.QRCode.csproj" />
     <Project Path="src/Meziantou.Framework.RelativeDate/Meziantou.Framework.RelativeDate.csproj" />
     <Project Path="src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj" />
@@ -177,6 +179,7 @@
     <Project Path="tests/Meziantou.Framework.ObjectMethodExecutor.Tests/Meziantou.Framework.ObjectMethodExecutor.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.QRCode.Tests/Meziantou.Framework.QRCode.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.RelativeDate.Tests/Meziantou.Framework.RelativeDate.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj" />

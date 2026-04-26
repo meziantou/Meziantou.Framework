@@ -121,6 +121,24 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Method_NullableReferenceTypes()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public string? A(string? value) => value;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public string? A(string? value) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Event_Basic()
     {
         await Validate("""
@@ -202,8 +220,8 @@ public sealed class PublicApiGeneratorTests
             {
                 public static int Counter { get; set; }
                 public abstract void M();
-                public static virtual int StaticMethod();
-                public virtual int DefaultMethod();
+                public static virtual int StaticMethod() => throw null;
+                public virtual int DefaultMethod() => throw null;
             }
             """);
     }

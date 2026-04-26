@@ -139,6 +139,46 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Method_NullableGenericArguments()
+    {
+        await Validate("""
+            using System.Collections.Generic;
+
+            public class Sample
+            {
+                public Dictionary<object, string?> A() => null;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public global::System.Collections.Generic.Dictionary<object, string?> A() => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Method_NestedNullableGenericArguments()
+    {
+        await Validate("""
+            using System.Collections.Generic;
+
+            public class Sample
+            {
+                public Dictionary<object, HashSet<string?>?> A() => null;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public global::System.Collections.Generic.Dictionary<object, global::System.Collections.Generic.HashSet<string?>?> A() => throw null;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Event_Basic()
     {
         await Validate("""

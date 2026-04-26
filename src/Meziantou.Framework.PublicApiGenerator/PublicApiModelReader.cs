@@ -139,9 +139,10 @@ internal static class PublicApiModelReader
     private static string BuildField(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, FieldDefinition field)
     {
         var type = DecodeFieldType(metadataReader, field);
+        var nullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, field.GetCustomAttributes());
         var typeName = ApplyNullableReferenceType(
             type,
-            IsNullableReferenceType(metadataReader, declaringTypeHandle, field.GetCustomAttributes()));
+            nullableInfo);
         var modifiers = new List<string>();
         var accessibility = GetAccessibility(field.Attributes);
         if (!string.IsNullOrEmpty(accessibility))
@@ -208,10 +209,10 @@ internal static class PublicApiModelReader
             modifiers.Add("required");
         }
 
-        var propertyNullable = false;
+        var propertyNullableInfo = default(NullableMetadataInfo);
         if (isGetVisible && !getAccessorHandle.IsNil && getAccessor is MethodDefinition getter)
         {
-            propertyNullable = IsNullableReferenceType(
+            propertyNullableInfo = GetNullableMetadataInfo(
                 metadataReader,
                 declaringTypeHandle,
                 GetParameterCustomAttributes(metadataReader, getter, sequenceNumber: 0),
@@ -220,7 +221,7 @@ internal static class PublicApiModelReader
         }
         else if (isSetVisible && !setAccessorHandle.IsNil && setAccessor is MethodDefinition setter)
         {
-            propertyNullable = IsNullableReferenceType(
+            propertyNullableInfo = GetNullableMetadataInfo(
                 metadataReader,
                 declaringTypeHandle,
                 GetParameterCustomAttributes(metadataReader, setter, sequenceNumber: 1),
@@ -229,10 +230,10 @@ internal static class PublicApiModelReader
         }
         else
         {
-            propertyNullable = IsNullableReferenceType(metadataReader, declaringTypeHandle, property.GetCustomAttributes());
+            propertyNullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, property.GetCustomAttributes());
         }
 
-        var propertyType = ApplyNullableReferenceType(DecodePropertyType(metadataReader, property), propertyNullable);
+        var propertyType = ApplyNullableReferenceType(DecodePropertyType(metadataReader, property), propertyNullableInfo);
         var propertyName = metadataReader.GetString(property.Name);
         var accessorText = new List<string>();
         if (isGetVisible)
@@ -278,14 +279,14 @@ internal static class PublicApiModelReader
             modifiers.Add("static");
         }
 
-        var eventNullable = IsNullableReferenceType(
+        var eventNullableInfo = GetNullableMetadataInfo(
             metadataReader,
             declaringTypeHandle,
             GetParameterCustomAttributes(metadataReader, addMethod, sequenceNumber: 1),
             accessors.Adder,
             eventDefinition.GetCustomAttributes());
         var addMethodSignature = DecodeMethodSignature(metadataReader, addMethod);
-        var eventType = ApplyNullableReferenceType(addMethodSignature.Signature.ParameterTypes[0], eventNullable);
+        var eventType = ApplyNullableReferenceType(addMethodSignature.Signature.ParameterTypes[0], eventNullableInfo);
         var eventName = metadataReader.GetString(eventDefinition.Name);
         return $"{string.Join(' ', modifiers)} event {eventType} {eventName};";
     }
@@ -296,7 +297,7 @@ internal static class PublicApiModelReader
         var modifiers = BuildMethodModifiers(method.Attributes);
         var returnType = ApplyNullableReferenceType(
             signature.Signature.ReturnType,
-            IsNullableReferenceType(metadataReader, declaringTypeHandle, GetParameterCustomAttributes(metadataReader, method, sequenceNumber: 0), methodHandle));
+            GetNullableMetadataInfo(metadataReader, declaringTypeHandle, GetParameterCustomAttributes(metadataReader, method, sequenceNumber: 0), methodHandle));
         var parameters = BuildParameters(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes);
         var methodBody = method.Attributes.HasFlag(MethodAttributes.Abstract) ? ";" : " => throw null;";
         return $"{string.Join(' ', modifiers)} {returnType} {name}({parameters}){methodBody}";
@@ -329,8 +330,8 @@ internal static class PublicApiModelReader
                 parameterAttributes = null;
             }
 
-            var parameterNullable = IsNullableReferenceType(metadataReader, declaringTypeHandle, parameterAttributes, methodHandle);
-            result[i] = ApplyNullableReferenceType(parameterTypes[i], parameterNullable) + " " + parameterName;
+            var parameterNullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, parameterAttributes, methodHandle);
+            result[i] = ApplyNullableReferenceType(parameterTypes[i], parameterNullableInfo) + " " + parameterName;
         }
 
         return string.Join(", ", result);
@@ -385,56 +386,57 @@ internal static class PublicApiModelReader
         return null;
     }
 
-    private static bool IsNullableReferenceType(
+    private static NullableMetadataInfo GetNullableMetadataInfo(
         MetadataReader metadataReader,
         TypeDefinitionHandle declaringTypeHandle,
         CustomAttributeHandleCollection? targetAttributes,
         MethodDefinitionHandle methodHandle = default,
         CustomAttributeHandleCollection? secondaryTargetAttributes = null)
     {
-        if (TryGetNullableFlag(metadataReader, targetAttributes, out var nullableFlag))
-            return nullableFlag == 2;
-
-        if (secondaryTargetAttributes is not null && TryGetNullableFlag(metadataReader, secondaryTargetAttributes.Value, out nullableFlag))
-            return nullableFlag == 2;
-
-        if (TryGetNullableContextFlag(metadataReader, targetAttributes, out var nullableContextFlag))
-            return nullableContextFlag == 2;
-
-        if (secondaryTargetAttributes is not null && TryGetNullableContextFlag(metadataReader, secondaryTargetAttributes.Value, out nullableContextFlag))
-            return nullableContextFlag == 2;
-
-        if (!methodHandle.IsNil)
+        ImmutableArray<byte> nullableFlags = default;
+        if (!TryGetNullableFlags(metadataReader, targetAttributes, out nullableFlags) &&
+            secondaryTargetAttributes is not null)
         {
-            var method = metadataReader.GetMethodDefinition(methodHandle);
-            if (TryGetNullableContextFlag(metadataReader, method.GetCustomAttributes(), out nullableContextFlag))
-                return nullableContextFlag == 2;
+            _ = TryGetNullableFlags(metadataReader, secondaryTargetAttributes.Value, out nullableFlags);
         }
 
-        var currentTypeHandle = declaringTypeHandle;
-        while (!currentTypeHandle.IsNil)
+        var nullableContextFlag = (byte)0;
+        if (!TryGetNullableContextFlag(metadataReader, targetAttributes, out nullableContextFlag) &&
+            !(secondaryTargetAttributes is not null && TryGetNullableContextFlag(metadataReader, secondaryTargetAttributes.Value, out nullableContextFlag)))
         {
-            var type = metadataReader.GetTypeDefinition(currentTypeHandle);
-            if (TryGetNullableContextFlag(metadataReader, type.GetCustomAttributes(), out nullableContextFlag))
-                return nullableContextFlag == 2;
+            if (!methodHandle.IsNil)
+            {
+                var method = metadataReader.GetMethodDefinition(methodHandle);
+                _ = TryGetNullableContextFlag(metadataReader, method.GetCustomAttributes(), out nullableContextFlag);
+            }
 
-            currentTypeHandle = type.GetDeclaringType();
+            if (nullableContextFlag == 0)
+            {
+                var currentTypeHandle = declaringTypeHandle;
+                while (!currentTypeHandle.IsNil)
+                {
+                    var type = metadataReader.GetTypeDefinition(currentTypeHandle);
+                    if (TryGetNullableContextFlag(metadataReader, type.GetCustomAttributes(), out nullableContextFlag))
+                        break;
+
+                    currentTypeHandle = type.GetDeclaringType();
+                }
+            }
+
+            if (nullableContextFlag == 0 && metadataReader.IsAssembly)
+            {
+                _ = TryGetNullableContextFlag(metadataReader, metadataReader.GetAssemblyDefinition().GetCustomAttributes(), out nullableContextFlag);
+            }
         }
 
-        if (metadataReader.IsAssembly &&
-            TryGetNullableContextFlag(metadataReader, metadataReader.GetAssemblyDefinition().GetCustomAttributes(), out nullableContextFlag))
-        {
-            return nullableContextFlag == 2;
-        }
-
-        return false;
+        return new NullableMetadataInfo(nullableFlags, nullableContextFlag);
     }
 
-    private static bool TryGetNullableFlag(MetadataReader metadataReader, CustomAttributeHandleCollection? attributes, out byte nullableFlag)
+    private static bool TryGetNullableFlags(MetadataReader metadataReader, CustomAttributeHandleCollection? attributes, out ImmutableArray<byte> nullableFlags)
     {
         if (attributes is null)
         {
-            nullableFlag = 0;
+            nullableFlags = default;
             return false;
         }
 
@@ -444,11 +446,11 @@ internal static class PublicApiModelReader
             if (!string.Equals(GetAttributeTypeFullName(metadataReader, attribute), "System.Runtime.CompilerServices.NullableAttribute", StringComparison.Ordinal))
                 continue;
 
-            if (TryDecodeNullableAttributeFirstFlag(metadataReader, attribute, out nullableFlag))
+            if (TryDecodeNullableAttributeFlags(metadataReader, attribute, out nullableFlags))
                 return true;
         }
 
-        nullableFlag = 0;
+        nullableFlags = default;
         return false;
     }
 
@@ -474,36 +476,42 @@ internal static class PublicApiModelReader
         return false;
     }
 
-    private static bool TryDecodeNullableAttributeFirstFlag(MetadataReader metadataReader, CustomAttribute attribute, out byte nullableFlag)
+    private static bool TryDecodeNullableAttributeFlags(MetadataReader metadataReader, CustomAttribute attribute, out ImmutableArray<byte> nullableFlags)
     {
         var value = metadataReader.GetBlobBytes(attribute.Value);
         if (value.Length < 5 || value[0] != 1 || value[1] != 0)
         {
-            nullableFlag = 0;
+            nullableFlags = default;
             return false;
         }
 
         var payload = value.AsSpan(2);
         if (payload.Length == 3)
         {
-            nullableFlag = payload[0];
+            nullableFlags = [payload[0]];
             return true;
         }
 
         if (payload.Length < 7)
         {
-            nullableFlag = 0;
+            nullableFlags = default;
             return false;
         }
 
         var count = BinaryPrimitives.ReadInt32LittleEndian(payload);
         if (count <= 0 || payload.Length < 4 + count + 2)
         {
-            nullableFlag = 0;
+            nullableFlags = default;
             return false;
         }
 
-        nullableFlag = payload[4];
+        var builder = ImmutableArray.CreateBuilder<byte>(count);
+        for (var i = 0; i < count; i++)
+        {
+            builder.Add(payload[4 + i]);
+        }
+
+        nullableFlags = builder.MoveToImmutable();
         return true;
     }
 
@@ -520,15 +528,70 @@ internal static class PublicApiModelReader
         return true;
     }
 
-    private static string ApplyNullableReferenceType(DecodedType type, bool isNullableReferenceType)
+    private static string ApplyNullableReferenceType(DecodedType type, NullableMetadataInfo nullableInfo)
     {
-        if (!isNullableReferenceType)
-            return type.Name;
+        var annotationIndex = 0;
+        return FormatDecodedType(type, nullableInfo, ref annotationIndex);
+    }
 
-        if (!type.IsReferenceType || type.IsTypeParameter || type.Name.EndsWith("?", StringComparison.Ordinal))
-            return type.Name;
+    private static string FormatDecodedType(DecodedType type, NullableMetadataInfo nullableInfo, ref int annotationIndex)
+    {
+        var consumesAnnotation = type.Kind is not DecodedTypeKind.ByReference and not DecodedTypeKind.Pointer;
+        var nullableAnnotation = consumesAnnotation
+            ? GetNullableAnnotation(nullableInfo, ref annotationIndex)
+            : (byte)0;
 
-        return type.Name + "?";
+        string typeName;
+        switch (type.Kind)
+        {
+            case DecodedTypeKind.GenericInstantiation:
+            {
+                var genericArguments = new string[type.TypeArguments.Length];
+                for (var i = 0; i < genericArguments.Length; i++)
+                {
+                    genericArguments[i] = FormatDecodedType(type.TypeArguments[i], nullableInfo, ref annotationIndex);
+                }
+
+                typeName = type.Name + "<" + string.Join(", ", genericArguments) + ">";
+                break;
+            }
+            case DecodedTypeKind.Array:
+                typeName = FormatDecodedType(type.ElementType!, nullableInfo, ref annotationIndex) + "[]";
+                break;
+            case DecodedTypeKind.Pointer:
+                typeName = FormatDecodedType(type.ElementType!, nullableInfo, ref annotationIndex) + "*";
+                break;
+            case DecodedTypeKind.ByReference:
+                typeName = "ref " + FormatDecodedType(type.ElementType!, nullableInfo, ref annotationIndex);
+                break;
+            default:
+                typeName = type.Name;
+                break;
+        }
+
+        if (type.Kind == DecodedTypeKind.ByReference)
+            return typeName;
+
+        if (nullableAnnotation != 2 || !type.IsReferenceType || type.IsTypeParameter || typeName.EndsWith("?", StringComparison.Ordinal))
+            return typeName;
+
+        return typeName + "?";
+    }
+
+    private static byte GetNullableAnnotation(NullableMetadataInfo nullableInfo, ref int annotationIndex)
+    {
+        byte annotation;
+        if (!nullableInfo.Flags.IsDefaultOrEmpty && annotationIndex < nullableInfo.Flags.Length)
+        {
+            annotation = nullableInfo.Flags[annotationIndex];
+        }
+        else
+        {
+            annotation = nullableInfo.ContextFlag;
+        }
+
+        annotationIndex++;
+        return annotation == 0 ? nullableInfo.ContextFlag : annotation;
     }
 
     private static bool HasRequiredMemberAttribute(MetadataReader metadataReader, CustomAttributeHandleCollection attributes)
@@ -754,13 +817,13 @@ internal static class PublicApiModelReader
 
         public bool ContainsIsExternalInitModifier { get; private set; }
 
-        public DecodedType GetArrayType(DecodedType elementType, ArrayShape shape) => new(elementType.Name + "[]", IsReferenceType: true, IsTypeParameter: false);
+        public DecodedType GetArrayType(DecodedType elementType, ArrayShape shape) => new(elementType.Name, IsReferenceType: true, IsTypeParameter: false, Kind: DecodedTypeKind.Array, ElementType: elementType);
 
-        public DecodedType GetByReferenceType(DecodedType elementType) => new("ref " + elementType.Name, IsReferenceType: elementType.IsReferenceType, IsTypeParameter: elementType.IsTypeParameter);
+        public DecodedType GetByReferenceType(DecodedType elementType) => new(elementType.Name, IsReferenceType: elementType.IsReferenceType, IsTypeParameter: elementType.IsTypeParameter, Kind: DecodedTypeKind.ByReference, ElementType: elementType);
 
         public DecodedType GetFunctionPointerType(MethodSignature<DecodedType> signature) => new("delegate*", IsReferenceType: false, IsTypeParameter: false);
 
-        public DecodedType GetGenericInstantiation(DecodedType genericType, ImmutableArray<DecodedType> typeArguments) => new(genericType.Name + "<" + string.Join(", ", typeArguments.Select(static type => type.Name)) + ">", genericType.IsReferenceType, IsTypeParameter: false);
+        public DecodedType GetGenericInstantiation(DecodedType genericType, ImmutableArray<DecodedType> typeArguments) => new(genericType.Name, genericType.IsReferenceType, IsTypeParameter: false, Kind: DecodedTypeKind.GenericInstantiation, TypeArguments: typeArguments);
 
         public DecodedType GetGenericMethodParameter(object? genericContext, int index) => new("TMethod" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), IsReferenceType: false, IsTypeParameter: true);
 
@@ -778,7 +841,7 @@ internal static class PublicApiModelReader
 
         public DecodedType GetPinnedType(DecodedType elementType) => elementType;
 
-        public DecodedType GetPointerType(DecodedType elementType) => new(elementType.Name + "*", IsReferenceType: false, IsTypeParameter: false);
+        public DecodedType GetPointerType(DecodedType elementType) => new(elementType.Name, IsReferenceType: false, IsTypeParameter: false, Kind: DecodedTypeKind.Pointer, ElementType: elementType);
 
         public DecodedType GetPrimitiveType(PrimitiveTypeCode typeCode)
         {
@@ -805,7 +868,7 @@ internal static class PublicApiModelReader
             };
         }
 
-        public DecodedType GetSZArrayType(DecodedType elementType) => new(elementType.Name + "[]", IsReferenceType: true, IsTypeParameter: false);
+        public DecodedType GetSZArrayType(DecodedType elementType) => new(elementType.Name, IsReferenceType: true, IsTypeParameter: false, Kind: DecodedTypeKind.Array, ElementType: elementType);
 
         public DecodedType GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
@@ -840,7 +903,24 @@ internal static class PublicApiModelReader
         }
     }
 
-    private readonly record struct DecodedType(string Name, bool IsReferenceType, bool IsTypeParameter);
+    private enum DecodedTypeKind
+    {
+        Simple,
+        GenericInstantiation,
+        Array,
+        ByReference,
+        Pointer,
+    }
+
+    private sealed record DecodedType(
+        string Name,
+        bool IsReferenceType,
+        bool IsTypeParameter,
+        DecodedTypeKind Kind = DecodedTypeKind.Simple,
+        ImmutableArray<DecodedType> TypeArguments = default,
+        DecodedType? ElementType = null);
+
+    private readonly record struct NullableMetadataInfo(ImmutableArray<byte> Flags, byte ContextFlag);
 
     private readonly record struct DecodedMethodSignature(MethodSignature<DecodedType> Signature, bool ContainsIsExternalInitModifier);
 }

@@ -258,7 +258,7 @@ public sealed class PublicApiGeneratorTests
             public class Sample
             {
                 public int GetValue() => throw null;
-                public static void Reset() => throw null;
+                public static void Reset() { }
             }
             """);
     }
@@ -370,19 +370,19 @@ public sealed class PublicApiGeneratorTests
                 public static bool operator >=(Sample x, Sample y) => throw null;
                 public static implicit operator int(Sample x) => throw null;
                 public static explicit operator Sample(int x) => throw null;
-                public void operator +=(Sample x) => throw null;
-                public void operator -=(Sample x) => throw null;
-                public void operator *=(Sample x) => throw null;
-                public void operator /=(Sample x) => throw null;
-                public void operator %=(Sample x) => throw null;
-                public void operator &=(Sample x) => throw null;
-                public void operator |=(Sample x) => throw null;
-                public void operator ^=(Sample x) => throw null;
-                public void operator <<=(int x) => throw null;
-                public void operator >>=(int x) => throw null;
-                public void operator >>>=(int x) => throw null;
-                public void operator ++() => throw null;
-                public void operator --() => throw null;
+                public void operator +=(Sample x) { }
+                public void operator -=(Sample x) { }
+                public void operator *=(Sample x) { }
+                public void operator /=(Sample x) { }
+                public void operator %=(Sample x) { }
+                public void operator &=(Sample x) { }
+                public void operator |=(Sample x) { }
+                public void operator ^=(Sample x) { }
+                public void operator <<=(int x) { }
+                public void operator >>=(int x) { }
+                public void operator >>>=(int x) { }
+                public void operator ++() { }
+                public void operator --() { }
                 public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
                 public override int GetHashCode() => throw null;
             }
@@ -477,7 +477,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public void M(ref readonly int value) => throw null;
+                public void M(ref readonly int value) { }
             }
             """);
     }
@@ -503,8 +503,8 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public void M1(params System.ReadOnlySpan<int> values) => throw null;
-                public void M2(params object[] values) => throw null;
+                public void M1(params System.ReadOnlySpan<int> values) { }
+                public void M2(params object[] values) { }
             }
             """);
     }
@@ -604,9 +604,9 @@ public sealed class PublicApiGeneratorTests
             public class Sample
             {
                 public int GetOnly { get => throw null; }
-                public int SetOnly { set => throw null; }
-                public int InitOnly { get => throw null; init => throw null; }
-                public required int RequiredValue { get => throw null; set => throw null; }
+                public int SetOnly { set { } }
+                public int InitOnly { get => throw null; init { } }
+                public required int RequiredValue { get => throw null; set { } }
             }
             """);
     }
@@ -647,7 +647,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public int this[int index1, int index2] { set => throw null; }
+                public int this[int index1, int index2] { set { } }
             }
             """);
     }
@@ -671,7 +671,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public int this[int index1, int index2] { get => throw null; set => throw null; }
+                public int this[int index1, int index2] { get => throw null; set { } }
             }
             """);
     }
@@ -756,8 +756,8 @@ public sealed class PublicApiGeneratorTests
             public interface ISample
             {
                 void AbstractImplicit();
-                public void PublicDefault() => throw null;
-                protected void ProtectedDefault() => throw null;
+                public void PublicDefault() { }
+                protected void ProtectedDefault() { }
             }
             """);
     }
@@ -796,7 +796,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public Sample(int value) => throw null;
+                public Sample(int value) { }
             }
             """);
     }
@@ -823,13 +823,13 @@ public sealed class PublicApiGeneratorTests
 
             public class SampleBase
             {
-                public SampleBase(int value) => throw null;
+                public SampleBase(int value) { }
             }
 
 
             public class SampleDerived : SampleBase
             {
-                public SampleDerived(int value) : base(default(int)) => throw null;
+                public SampleDerived(int value) : base(default(int)) { }
             }
             """);
     }
@@ -856,13 +856,13 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample : SampleBaseClass
             {
-                public Sample() : base(default(int)) => throw null;
+                public Sample() : base(default(int)) { }
             }
 
 
             public class SampleBaseClass
             {
-                public SampleBaseClass(int value) => throw null;
+                public SampleBaseClass(int value) { }
             }
             """);
     }
@@ -882,7 +882,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                ~Sample() => throw null;
+                ~Sample() { }
             }
             """);
     }
@@ -904,7 +904,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample : System.IDisposable
             {
-                public void Dispose() => throw null;
+                public void Dispose() { }
             }
             """);
     }
@@ -924,7 +924,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public void M(int value = 42, string? text = null) => throw null;
+                public void M(int value = 42, string? text = null) { }
             }
             """);
     }
@@ -946,7 +946,7 @@ public sealed class PublicApiGeneratorTests
             public class Sample
             {
                 [System.CLSCompliant(false)]
-                public void M() => throw null;
+                public void M() { }
             }
             """);
     }
@@ -968,7 +968,7 @@ public sealed class PublicApiGeneratorTests
             public class Sample
             {
                 [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-                public void M() => throw null;
+                public void M() { }
             }
             """);
     }
@@ -1017,7 +1017,7 @@ public sealed class PublicApiGeneratorTests
             public class Sample
             {
                 [System.CLSCompliant(false)]
-                public void M() => throw null;
+                public void M() { }
             }
             """);
     }
@@ -1186,7 +1186,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public void M<TAllowNull, TNew, TStruct, TClass, TEnum, TBase>() where TAllowNull : class where TNew : new() where TStruct : struct where TClass : class where TEnum : System.Enum where TBase : SampleBaseClass => throw null;
+                public void M<TAllowNull, TNew, TStruct, TClass, TEnum, TBase>() where TAllowNull : class where TNew : new() where TStruct : struct where TClass : class where TEnum : System.Enum where TBase : SampleBaseClass { }
             }
 
 
@@ -1213,7 +1213,7 @@ public sealed class PublicApiGeneratorTests
             public class Sample
             {
                 [System.Obsolete("Use M2 instead")]
-                public void M() => throw null;
+                public void M() { }
             }
             """);
     }

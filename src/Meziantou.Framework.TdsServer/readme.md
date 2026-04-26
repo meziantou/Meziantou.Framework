@@ -8,6 +8,7 @@
 - Callback for authentication (SQL login + token-based extension data)
 - Callback for query handling (SQL batch and RPC requests)
 - Serializes result sets and protocol tokens back to clients
+- Native JSON column type serialization (`TDSType.JSON`, UTF-8 payload)
 - ASP.NET Core hosting integration through `IHostApplicationBuilder`
 
 ## Usage
@@ -71,7 +72,7 @@ app.MapTdsHandlers(
             var rawValue = parameter.Value.RawValue;
             var stringValue = parameter.Value.AsString();
             var intValue = parameter.Value.AsInt32();
-            using var json = parameter.Value.AsJson();
+            var json = parameter.Value.AsJson();
             var xml = parameter.Value.AsXml();
         }
 

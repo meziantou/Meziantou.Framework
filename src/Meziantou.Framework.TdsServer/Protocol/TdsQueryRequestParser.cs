@@ -142,8 +142,10 @@ internal static class TdsQueryRequestParser
             0x26 => ParseIntNParameter(payload, ref position, name),
             0x68 => ParseBitNParameter(payload, ref position, name),
             0x6D => ParseFloatNParameter(payload, ref position, name),
+            0xA7 => ParseVarCharParameter(payload, ref position, name),
             0xE7 => ParseNVarCharParameter(payload, ref position, name),
             0xA5 => ParseVarBinaryParameter(payload, ref position, name),
+            0xF4 => ParseJsonParameter(payload, ref position, name),
             _ => null,
         };
     }
@@ -242,9 +244,25 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        _ = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
+        var maxLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
         position += 2;
         position += 5; // collation
+
+        if (maxLength == 0xFFFF)
+        {
+            var plpPayload = TryReadPlpPayload(payload, ref position, out var isNull);
+            if (isNull)
+            {
+                return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            }
+
+            if (plpPayload is null)
+            {
+                return null;
+            }
+
+            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(Encoding.Unicode.GetString(plpPayload)) };
+        }
 
         var valueLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
         position += 2;
@@ -260,6 +278,51 @@ internal static class TdsQueryRequestParser
         }
 
         var value = Encoding.Unicode.GetString(payload.Slice(position, valueLength));
+        position += valueLength;
+        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(value) };
+    }
+
+    private static TdsQueryParameter? ParseVarCharParameter(ReadOnlySpan<byte> payload, ref int position, string name)
+    {
+        if (position + 9 > payload.Length)
+        {
+            return null;
+        }
+
+        var maxLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
+        position += 2;
+        position += 5; // collation
+
+        if (maxLength == 0xFFFF)
+        {
+            var plpPayload = TryReadPlpPayload(payload, ref position, out var isNull);
+            if (isNull)
+            {
+                return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            }
+
+            if (plpPayload is null)
+            {
+                return null;
+            }
+
+            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(Encoding.UTF8.GetString(plpPayload)) };
+        }
+
+        var valueLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
+        position += 2;
+
+        if (valueLength == 0xFFFF)
+        {
+            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+        }
+
+        if (position + valueLength > payload.Length)
+        {
+            return null;
+        }
+
+        var value = Encoding.UTF8.GetString(payload.Slice(position, valueLength));
         position += valueLength;
         return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(value) };
     }
@@ -289,6 +352,73 @@ internal static class TdsQueryRequestParser
         var bytes = payload.Slice(position, valueLength).ToArray();
         position += valueLength;
         return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(bytes) };
+    }
+
+    private static TdsQueryParameter? ParseJsonParameter(ReadOnlySpan<byte> payload, ref int position, string name)
+    {
+        var plpPayload = TryReadPlpPayload(payload, ref position, out var isNull);
+        if (isNull)
+        {
+            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+        }
+
+        if (plpPayload is null)
+        {
+            return null;
+        }
+
+        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(Encoding.UTF8.GetString(plpPayload)) };
+    }
+
+    private static byte[]? TryReadPlpPayload(ReadOnlySpan<byte> payload, ref int position, out bool isNull)
+    {
+        isNull = false;
+
+        if (position + 8 > payload.Length)
+        {
+            return null;
+        }
+
+        var totalLength = BinaryPrimitives.ReadUInt64LittleEndian(payload.Slice(position, 8));
+        position += 8;
+
+        if (totalLength == ulong.MaxValue)
+        {
+            isNull = true;
+            return null;
+        }
+
+        using var stream = new MemoryStream();
+        while (true)
+        {
+            if (position + 4 > payload.Length)
+            {
+                return null;
+            }
+
+            var chunkLength = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(position, 4));
+            position += 4;
+
+            if (chunkLength == 0)
+            {
+                break;
+            }
+
+            if (position + chunkLength > payload.Length)
+            {
+                return null;
+            }
+
+            stream.Write(payload.Slice(position, (int)chunkLength));
+            position += (int)chunkLength;
+        }
+
+        if (totalLength != ulong.MaxValue - 1 && totalLength != (ulong)stream.Length)
+        {
+            return null;
+        }
+
+        return stream.ToArray();
     }
 
     private static string DecodeUnicode(byte[] payload)

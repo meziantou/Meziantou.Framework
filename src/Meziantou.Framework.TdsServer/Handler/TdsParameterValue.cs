@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Xml.Linq;
 
 namespace Meziantou.Framework.Tds.Handler;
@@ -144,14 +145,16 @@ public sealed class TdsParameterValue
     }
 
     /// <summary>Parses the value as JSON when possible.</summary>
-    public JsonDocument? AsJson()
+    public JsonObject? AsJson()
     {
         return RawValue switch
         {
             null => null,
-            string text => JsonDocument.Parse(text),
-            byte[] bytes => JsonDocument.Parse(bytes),
-            _ => JsonDocument.Parse(AsString() ?? string.Empty),
+            JsonObject jsonObject => jsonObject,
+            JsonNode jsonNode => jsonNode as JsonObject ?? throw new FormatException("JSON value is not an object."),
+            string text => ParseJsonObject(text),
+            byte[] bytes => ParseJsonObject(bytes),
+            _ => ParseJsonObject(AsString() ?? throw new FormatException("Parameter value cannot be converted to JSON.")),
         };
     }
 
@@ -160,5 +163,17 @@ public sealed class TdsParameterValue
     {
         var text = AsString();
         return text is null ? null : XDocument.Parse(text, LoadOptions.None);
+    }
+
+    private static JsonObject ParseJsonObject(string value)
+    {
+        var jsonNode = JsonNode.Parse(value);
+        return jsonNode as JsonObject ?? throw new FormatException("JSON value is not an object.");
+    }
+
+    private static JsonObject ParseJsonObject(byte[] value)
+    {
+        var jsonNode = JsonNode.Parse(value);
+        return jsonNode as JsonObject ?? throw new FormatException("JSON value is not an object.");
     }
 }

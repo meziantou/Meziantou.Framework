@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Meziantou.Framework.Tds.Handler;
 
 namespace Meziantou.Framework.Tds.Protocol;
@@ -288,6 +289,9 @@ internal static class TdsResponseSerializer
                     writer.Write((byte)0xA5); // VARBINARY
                     writer.Write(MaxVariableColumnLength);
                     break;
+                case TdsColumnType.Json:
+                    writer.Write((byte)0xF4); // JSON
+                    break;
                 default:
                     writer.Write((byte)0xE7); // NVARCHAR
                     writer.Write(MaxVariableColumnLength);
@@ -381,6 +385,10 @@ internal static class TdsResponseSerializer
                 writer.Write((ushort)binaryLength);
                 writer.Write(bytes, 0, binaryLength);
                 break;
+            case TdsColumnType.Json:
+                var json = ConvertToSqlText(value, column.ColumnType);
+                WritePartiallyLengthPrefixedUtf8(writer, json);
+                break;
             default:
                 var text = ConvertToSqlText(value, column.ColumnType);
                 var payload = Encoding.Unicode.GetBytes(text);
@@ -466,6 +474,9 @@ internal static class TdsResponseSerializer
                     writer.Write(0d);
                 }
                 break;
+            case TdsColumnType.Json:
+                WritePartiallyLengthPrefixedNull(writer);
+                break;
             default:
                 if (column.IsNullable)
                 {
@@ -500,8 +511,13 @@ internal static class TdsResponseSerializer
             TdsColumnType.DateTimeOffset => value is DateTimeOffset dto ? dto.ToString("O", System.Globalization.CultureInfo.InvariantCulture) : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
             TdsColumnType.Guid => value is Guid guid ? guid.ToString("D") : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
             TdsColumnType.Xml => value.ToString() ?? string.Empty,
-            // SQL Server JSON type currently appears as varchar(max)/nvarchar(max) to TDS clients, so we serialize as textual payload.
-            TdsColumnType.Json => value is string text ? text : JsonSerializer.Serialize(value),
+            // The JSON TDS payload is textual JSON encoded as UTF-8.
+            TdsColumnType.Json => value switch
+            {
+                string text => text,
+                JsonNode jsonNode => jsonNode.ToJsonString(),
+                _ => JsonSerializer.Serialize(value),
+            },
             TdsColumnType.Decimal => Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture).ToString(System.Globalization.CultureInfo.InvariantCulture),
             TdsColumnType.Money => Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture).ToString(System.Globalization.CultureInfo.InvariantCulture),
             TdsColumnType.SmallMoney => Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture).ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -531,5 +547,23 @@ internal static class TdsResponseSerializer
         Span<byte> bytes = stackalloc byte[4];
         BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
         writer.Write(bytes);
+    }
+
+    private static void WritePartiallyLengthPrefixedUtf8(BinaryWriter writer, string value)
+    {
+        var payload = Encoding.UTF8.GetBytes(value);
+        writer.Write((ulong)payload.Length);
+        if (payload.Length > 0)
+        {
+            writer.Write(payload.Length);
+            writer.Write(payload);
+        }
+
+        writer.Write(0);
+    }
+
+    private static void WritePartiallyLengthPrefixedNull(BinaryWriter writer)
+    {
+        writer.Write(ulong.MaxValue);
     }
 }

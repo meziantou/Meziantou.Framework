@@ -14,10 +14,21 @@ namespace Meziantou.Framework.Tds.Tests;
 public sealed class TdsServerProtocolTests
 {
     [Fact]
+    public void TdsParameterValue_AsJson_ReturnsJsonObject()
+    {
+        var parameterValue = new TdsParameterValue("{\"value\":42}");
+
+        var json = parameterValue.AsJson();
+
+        Assert.NotNull(json);
+        Assert.Equal(42, json!["value"]!.GetValue<int>());
+    }
+
+    [Fact]
     public async Task SqlClient_AuthenticationCallback_ReceivesCredentials()
     {
-        const string userName = "sa";
-        const string password = "Password123!";
+        const string UserName = "sa";
+        const string Password = "Password123!";
         var authenticationContextTask = new TaskCompletionSource<TdsAuthenticationContext>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var options = new TdsServerOptions();
@@ -35,11 +46,11 @@ public sealed class TdsServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port, userName, password));
+        await using var connection = new SqlConnection(CreateConnectionString(port, UserName, Password));
         await connection.OpenAsync();
 
         var capturedContext = await authenticationContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Equal(userName, capturedContext.UserName);
+        Assert.Equal(UserName, capturedContext.UserName);
         Assert.NotNull(capturedContext.Password);
         Assert.Equal("master", capturedContext.Database);
     }
@@ -511,10 +522,10 @@ public sealed class TdsServerProtocolTests
         request.CertificateExtensions.Add(sanBuilder.Build());
 
         using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
-        const string pfxPassword = "Password123!";
+        const string PfxPassword = "Password123!";
 
         var pfxPath = Path.Combine(directoryPath, "server.pfx");
-        File.WriteAllBytes(pfxPath, certificate.Export(X509ContentType.Pfx, pfxPassword));
+        File.WriteAllBytes(pfxPath, certificate.Export(X509ContentType.Pfx, PfxPassword));
 
         var pemCertificatePath = Path.Combine(directoryPath, "server.crt.pem");
         File.WriteAllText(pemCertificatePath, certificate.ExportCertificatePem());
@@ -522,7 +533,7 @@ public sealed class TdsServerProtocolTests
         var pemPrivateKeyPath = Path.Combine(directoryPath, "server.key.pem");
         File.WriteAllText(pemPrivateKeyPath, rsa.ExportPkcs8PrivateKeyPem());
 
-        return new TlsCertificateFiles(directoryPath, pfxPath, pfxPassword, pemCertificatePath, pemPrivateKeyPath);
+        return new TlsCertificateFiles(directoryPath, pfxPath, PfxPassword, pemCertificatePath, pemPrivateKeyPath);
     }
 
     private sealed class TlsCertificateFiles : IDisposable

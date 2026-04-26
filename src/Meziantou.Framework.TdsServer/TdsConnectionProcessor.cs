@@ -129,15 +129,15 @@ internal sealed class TdsConnectionProcessor
                 return;
             }
 
-            await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateLoginSuccess(authenticationResult), cancellationToken).ConfigureAwait(false);
             if (negotiationResult.Value.DowngradeAfterLogin && sslStream is not null)
             {
-                await sslStream.DisposeAsync().ConfigureAwait(false);
                 sslStream = null;
                 input = transportInput;
                 output = transportOutput;
                 writer = new TdsPacketWriter(output, _options.PacketSize);
             }
+
+            await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateLoginSuccess(authenticationResult), cancellationToken).ConfigureAwait(false);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -327,7 +327,7 @@ internal sealed class TdsConnectionProcessor
         {
             if (_useTdsPacketMode)
             {
-                return _packetWriter.WriteAsync(TdsPacketType.TabularResult, buffer, cancellationToken);
+                return _packetWriter.WriteAsync(TdsPacketType.PreLogin, buffer, cancellationToken);
             }
 
             return _writeStream.WriteAsync(buffer, cancellationToken);

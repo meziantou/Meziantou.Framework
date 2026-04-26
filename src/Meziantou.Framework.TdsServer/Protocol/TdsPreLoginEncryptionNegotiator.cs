@@ -25,7 +25,7 @@ internal static class TdsPreLoginEncryptionNegotiator
         return clientMode switch
         {
             TdsPreLoginEncryptionMode.NotSupported => new(TdsPreLoginEncryptionMode.NotSupported, UpgradeToTls: false, DowngradeAfterLogin: false, RejectConnection: false),
-            TdsPreLoginEncryptionMode.Off => new(TdsPreLoginEncryptionMode.NotSupported, UpgradeToTls: false, DowngradeAfterLogin: false, RejectConnection: false),
+            TdsPreLoginEncryptionMode.Off => new(TdsPreLoginEncryptionMode.Off, UpgradeToTls: true, DowngradeAfterLogin: true, RejectConnection: false),
             TdsPreLoginEncryptionMode.On => new(TdsPreLoginEncryptionMode.On, UpgradeToTls: true, DowngradeAfterLogin: false, RejectConnection: false),
             TdsPreLoginEncryptionMode.Required => new(TdsPreLoginEncryptionMode.Required, UpgradeToTls: true, DowngradeAfterLogin: false, RejectConnection: false),
             _ => throw new InvalidOperationException("Unsupported PRELOGIN encryption mode."),

@@ -8,6 +8,7 @@ using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
 using Microsoft.Data.SqlClient;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
+using TestUtilities;
 using SqlParser = Microsoft.SqlServer.Management.SqlParser.Parser.Parser;
 using SqlParserParseOptions = Microsoft.SqlServer.Management.SqlParser.Parser.ParseOptions;
 using SqlParserParseResult = Microsoft.SqlServer.Management.SqlParser.Parser.ParseResult;
@@ -15,6 +16,7 @@ using Xunit;
 
 namespace Meziantou.Framework.Tds.Tests;
 
+[RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
 public sealed class TdsServerProtocolTests
 {
     [Fact]

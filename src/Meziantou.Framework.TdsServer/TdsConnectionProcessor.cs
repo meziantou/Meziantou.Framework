@@ -342,6 +342,14 @@ internal sealed class TdsConnectionProcessor
 
             if (!_useTdsPacketMode)
             {
+                if (!_pendingReadPayload.IsEmpty)
+                {
+                    var bufferedBytesToCopy = Math.Min(destination.Length, _pendingReadPayload.Length);
+                    _pendingReadPayload[..bufferedBytesToCopy].CopyTo(destination);
+                    _pendingReadPayload = _pendingReadPayload[bufferedBytesToCopy..];
+                    return bufferedBytesToCopy;
+                }
+
                 return await _readStream.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
             }
 
@@ -371,7 +379,6 @@ internal sealed class TdsConnectionProcessor
 
         public void SwitchToRawMode()
         {
-            _pendingReadPayload = ReadOnlyMemory<byte>.Empty;
             _useTdsPacketMode = false;
         }
     }

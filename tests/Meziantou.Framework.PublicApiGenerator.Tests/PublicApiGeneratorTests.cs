@@ -1060,7 +1060,9 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
+                #nullable disable
                 public string M(string value) => throw null;
+                #nullable restore
                 public string? N(string? value) => throw null;
             }
             """);
@@ -1092,6 +1094,29 @@ public sealed class PublicApiGeneratorTests
                     ) => throw null;
             }
             """);
+    }
+
+    [Fact]
+    public async Task Nullable_DisabledAtCompilation()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public string M(string value) => value;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                #nullable disable
+                public string M(string value) => throw null;
+                #nullable restore
+            }
+            """, compilerOptions: new CompilerOptions
+        {
+            Nullable = false,
+        });
     }
 
     [Fact]
@@ -1405,7 +1430,7 @@ public sealed class PublicApiGeneratorTests
               <PropertyGroup>
                 <TargetFramework>{{compilerOptions.TargetFramework}}</TargetFramework>
                 <LangVersion>preview</LangVersion>
-                <Nullable>enable</Nullable>
+                <Nullable>{{(compilerOptions.Nullable ? "enable" : "disable")}}</Nullable>
                 <ImplicitUsings>enable</ImplicitUsings>
                 <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
               </PropertyGroup>

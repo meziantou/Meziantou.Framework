@@ -6,6 +6,8 @@ namespace Meziantou.Framework.PublicApiGenerator;
 
 internal static class PublicApiModelBuilder
 {
+    private static readonly NullabilityInfoContext NullabilityInfoContext = new();
+
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
     {
         "System.CodeDom.Compiler.GeneratedCodeAttribute",
@@ -263,7 +265,8 @@ internal static class PublicApiModelBuilder
             modifiers.Add("const");
         }
 
-        var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {FormatType(field.FieldType)} {EscapeIdentifier(field.Name)}";
+        var fieldNullable = NullabilityInfoContext.Create(field).ReadState == NullabilityState.Nullable;
+        var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {FormatType(field.FieldType, fieldNullable)} {EscapeIdentifier(field.Name)}";
         if (field.IsLiteral)
         {
             declaration += " = " + FormatConstant(field.GetRawConstantValue());
@@ -301,6 +304,10 @@ internal static class PublicApiModelBuilder
         var propertyName = property.GetIndexParameters().Length > 0
             ? $"this[{string.Join(", ", property.GetIndexParameters().Select(BuildParameter))}]"
             : EscapeIdentifier(property.Name);
+        var propertyNullable = property.GetMethod is not null
+            ? NullabilityInfoContext.Create(property.GetMethod.ReturnParameter).ReadState == NullabilityState.Nullable
+            : property.SetMethod is not null &&
+              NullabilityInfoContext.Create(property.SetMethod.GetParameters().Single()).ReadState == NullabilityState.Nullable;
         var accessorDeclarations = new List<string>();
 
         var getMethod = property.GetMethod;
@@ -321,7 +328,7 @@ internal static class PublicApiModelBuilder
         }
 
         var accessorText = string.Join(' ', accessorDeclarations);
-        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} {FormatType(property.PropertyType)} {propertyName} {{ {accessorText} }}");
+        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} {FormatType(property.PropertyType, propertyNullable)} {propertyName} {{ {accessorText} }}");
         return sb.ToString();
     }
 
@@ -343,7 +350,8 @@ internal static class PublicApiModelBuilder
             modifiers.Add("static");
         }
 
-        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} event {FormatType(@event.EventHandlerType!)} {EscapeIdentifier(@event.Name)};");
+        var eventNullable = NullabilityInfoContext.Create(addMethod.GetParameters().Single()).ReadState == NullabilityState.Nullable;
+        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} event {FormatType(@event.EventHandlerType!, eventNullable)} {EscapeIdentifier(@event.Name)};");
         return sb.ToString();
     }
 
@@ -474,7 +482,8 @@ internal static class PublicApiModelBuilder
         }
 
         var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
-        sb.Append(FormatType(parameterType));
+        var parameterNullable = NullabilityInfoContext.Create(parameter).ReadState == NullabilityState.Nullable;
+        sb.Append(FormatType(parameterType, parameterNullable));
         sb.Append(' ');
         sb.Append(EscapeIdentifier(parameter.Name ?? "value"));
         if (parameter.HasDefaultValue)
@@ -490,13 +499,17 @@ internal static class PublicApiModelBuilder
     {
         var returnType = returnParameter.ParameterType;
         if (!returnType.IsByRef)
-            return FormatType(returnType);
+        {
+            var isReturnNullable = NullabilityInfoContext.Create(returnParameter).ReadState == NullabilityState.Nullable;
+            return FormatType(returnType, isReturnNullable);
+        }
 
         var elementType = returnType.GetElementType()!;
+        var returnNullable = NullabilityInfoContext.Create(returnParameter).ReadState == NullabilityState.Nullable;
         if (returnParameter.GetRequiredCustomModifiers().Any(static modifier => modifier.FullName == "System.Runtime.InteropServices.InAttribute"))
-            return "ref readonly " + FormatType(elementType);
+            return "ref readonly " + FormatType(elementType, returnNullable);
 
-        return "ref " + FormatType(elementType);
+        return "ref " + FormatType(elementType, returnNullable);
     }
 
     private static string BuildAccessorModifier(MethodInfo accessor, MethodInfo representativeAccessor)
@@ -642,7 +655,7 @@ internal static class PublicApiModelBuilder
         var interfaces = type.GetInterfaces()
             .Where(@interface => IsExternallyVisible(@interface) || @interface.IsPublic)
             .OrderBy(static @interface => @interface.FullName, StringComparer.Ordinal)
-            .Select(FormatType)
+            .Select(static @interface => FormatType(@interface))
             .ToList();
         baseTypes.AddRange(interfaces);
 
@@ -949,16 +962,19 @@ internal static class PublicApiModelBuilder
         return FormatConstant(argument.Value);
     }
 
-    private static string FormatType(Type type)
+    private static string FormatType(Type type, bool nullableReference = false)
     {
         if (type.IsByRef)
-            return FormatType(type.GetElementType()!);
+            return FormatType(type.GetElementType()!, nullableReference);
 
         if (type.IsPointer)
             return FormatType(type.GetElementType()!) + "*";
 
         if (type.IsArray)
-            return FormatType(type.GetElementType()!) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
+        {
+            var arrayType = FormatType(type.GetElementType()!) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
+            return AppendNullableSuffix(type, arrayType, nullableReference);
+        }
 
         if (type.IsGenericParameter)
             return EscapeIdentifier(type.Name);
@@ -1006,18 +1022,18 @@ internal static class PublicApiModelBuilder
             return "char";
 
         if (type == typeof(string))
-            return "string";
+            return nullableReference ? "string?" : "string";
 
         if (type == typeof(object))
-            return "object";
+            return nullableReference ? "object?" : "object";
 
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             return FormatType(type.GetGenericArguments()[0]) + "?";
 
-        return BuildNamedType(type);
+        return BuildNamedType(type, nullableReference);
     }
 
-    private static string BuildNamedType(Type type)
+    private static string BuildNamedType(Type type, bool nullableReference)
     {
         var name = EscapeIdentifier(RemoveGenericArity(type.Name));
         var genericArguments = type.GetGenericArguments();
@@ -1025,24 +1041,32 @@ internal static class PublicApiModelBuilder
         {
             var declaringTypeArgumentCount = type.DeclaringType?.GetGenericArguments().Length ?? 0;
             var currentTypeArguments = genericArguments.Skip(declaringTypeArgumentCount);
-            var nestedName = BuildNamedType(type.DeclaringType!) + "." + name;
+            var nestedName = BuildNamedType(type.DeclaringType!, nullableReference: false) + "." + name;
             if (currentTypeArguments.Any())
             {
-                nestedName += "<" + string.Join(", ", currentTypeArguments.Select(FormatType)) + ">";
+                nestedName += "<" + string.Join(", ", currentTypeArguments.Select(static argument => FormatType(argument))) + ">";
             }
 
-            return nestedName;
+            return AppendNullableSuffix(type, nestedName, nullableReference);
         }
 
         if (genericArguments.Length > 0)
         {
-            name += "<" + string.Join(", ", genericArguments.Select(FormatType)) + ">";
+            name += "<" + string.Join(", ", genericArguments.Select(static argument => FormatType(argument))) + ">";
         }
 
         if (!string.IsNullOrEmpty(type.Namespace))
-            return "global::" + type.Namespace + "." + name;
+            return AppendNullableSuffix(type, "global::" + type.Namespace + "." + name, nullableReference);
 
-        return name;
+        return AppendNullableSuffix(type, name, nullableReference);
+    }
+
+    private static string AppendNullableSuffix(Type type, string name, bool nullableReference)
+    {
+        if (!nullableReference || type.IsValueType || type.IsGenericParameter || name.EndsWith("?", StringComparison.Ordinal))
+            return name;
+
+        return name + "?";
     }
 
     private static string FormatConstant(object? value)

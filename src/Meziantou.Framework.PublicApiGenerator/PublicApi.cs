@@ -8,14 +8,14 @@ public static class PublicApi
     {
         options ??= new PublicApiOptions();
         var model = ReadModel(assemblyPath);
-        return Build(model, options);
+        return Generate(model, options);
     }
 
     public static IReadOnlyList<PublicApiFile> Generate(Assembly assembly, PublicApiOptions? options = null)
     {
         options ??= new PublicApiOptions();
         var model = ReadModel(assembly);
-        return Build(model, options);
+        return Generate(model, options);
     }
 
     public static void GenerateToDirectory(string assemblyPath, string outputDirectory, PublicApiOptions? options = null)
@@ -42,7 +42,7 @@ public static class PublicApi
         return PublicApiModelReader.ReadFromReflection(assembly);
     }
 
-    private static IReadOnlyList<PublicApiFile> Build(PublicApiModel model, PublicApiOptions options)
+    private static IReadOnlyList<PublicApiFile> Generate(PublicApiModel model, PublicApiOptions options)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(options);

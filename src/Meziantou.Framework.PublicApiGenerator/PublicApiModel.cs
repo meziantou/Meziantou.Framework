@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Meziantou.Framework.PublicApiGenerator;
 
-public sealed record PublicApiModel(ImmutableArray<PublicApiTypeModel> Types)
+internal sealed record PublicApiModel(ImmutableArray<PublicApiTypeModel> Types)
 {
     public string ToNormalizedString()
     {

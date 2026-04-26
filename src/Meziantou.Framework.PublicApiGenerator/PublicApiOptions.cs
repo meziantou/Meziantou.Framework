@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.PublicApiGenerator;
 
-public sealed class PublicApiGeneratorOptions
+public sealed class PublicApiOptions
 {
     public PublicApiFileLayout FileLayout { get; set; } = PublicApiFileLayout.SingleFile;
 

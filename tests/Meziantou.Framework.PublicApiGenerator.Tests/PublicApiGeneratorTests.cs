@@ -168,6 +168,36 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Delegate_Basic()
+    {
+        await Validate("""
+            public delegate int SampleDelegate(string value);
+            """, """
+            #nullable enable
+
+            public delegate int SampleDelegate(string value);
+            """);
+    }
+
+    [Fact]
+    public async Task Method_Pointer()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public unsafe int* M(int* value) => value;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public unsafe int* M(int* value) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task RefStruct_Empty()
     {
         await Validate("""
@@ -1032,6 +1062,34 @@ public sealed class PublicApiGeneratorTests
             {
                 public string M(string value) => throw null;
                 public string? N(string? value) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Nullable_DisabledInParameterList()
+    {
+        await Validate("""
+            #nullable enable
+
+            public class SampleType
+            {
+                public string? Sample(
+            #nullable disable
+                    string a
+            #nullable restore
+                    ) => throw null;
+            }
+            """, """
+            #nullable enable
+
+            public class SampleType
+            {
+                public string? Sample(
+                #nullable disable
+                    string a
+                #nullable restore
+                    ) => throw null;
             }
             """);
     }

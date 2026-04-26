@@ -1,6 +1,30 @@
 # Meziantou.Framework.PublicApiGenerator.Tool
 
-CLI tool to generate compilable C# public API stubs from a .NET `.dll` or `.exe`.
+`Meziantou.Framework.PublicApiGenerator.Tool` is a CLI tool that reads a .NET `.dll` or `.exe` and generates compilable C# files describing its public API.
+
+## Install
+
+```bash
+dotnet tool install --global Meziantou.Framework.PublicApiGenerator.Tool
+```
+
+## Example
+
+```bash
+Meziantou.Framework.PublicApiGenerator.Tool \
+  --input ./bin/Release/net8.0/MyLibrary.dll \
+  --output ./public-api \
+  --file-layout OneFilePerNamespace \
+  --omit-auto-generated-comment
+```
+
+## Example output
+
+```text
+public-api/
+  Demo.g.cs
+  GlobalNamespace.g.cs
+```
 
 <!-- help -->
 ```

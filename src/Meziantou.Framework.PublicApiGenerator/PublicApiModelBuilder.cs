@@ -7,6 +7,8 @@ namespace Meziantou.Framework.PublicApiGenerator;
 internal static class PublicApiModelBuilder
 {
     private static readonly NullabilityInfoContext NullabilityInfoContext = new();
+    private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
+    private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
     {
@@ -29,6 +31,14 @@ internal static class PublicApiModelBuilder
         "System.Diagnostics.DebuggableAttribute",
         "System.Diagnostics.DebuggerNonUserCodeAttribute",
         "System.Diagnostics.DebuggerStepThroughAttribute",
+        "System.Runtime.InteropServices.DefaultParameterValueAttribute",
+        "System.Runtime.InteropServices.OptionalAttribute",
+        "System.Runtime.InteropServices.InAttribute",
+        "System.Runtime.InteropServices.OutAttribute",
+        "System.Runtime.CompilerServices.RequiresLocationAttribute",
+        "System.ParamArrayAttribute",
+        "System.Runtime.CompilerServices.ParamCollectionAttribute",
+        "System.Runtime.CompilerServices.ScopedRefAttribute",
         "System.Reflection.AssemblyCompanyAttribute",
         "System.Reflection.AssemblyConfigurationAttribute",
         "System.Reflection.AssemblyCopyrightAttribute",
@@ -112,11 +122,7 @@ internal static class PublicApiModelBuilder
         AppendAttributes(sb, type.CustomAttributes, indentationLevel);
 
         var typeHeader = BuildTypeHeader(type);
-        AppendIndentedLine(sb, indentationLevel, typeHeader.Declaration);
-        foreach (var constraint in typeHeader.Constraints)
-        {
-            AppendIndentedLine(sb, indentationLevel + 1, constraint);
-        }
+        AppendIndentedLine(sb, indentationLevel, typeHeader.Declaration + FormatConstraintsInline(typeHeader.Constraints));
 
         AppendIndentedLine(sb, indentationLevel, "{");
         if (!IsRecordClass(type) && !IsRecordStruct(type))
@@ -137,24 +143,15 @@ internal static class PublicApiModelBuilder
     {
         var nestedTypes = type.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
             .Where(IsExternallyVisible)
+            .Where(static nestedType => !nestedType.Name.Contains('<', StringComparison.Ordinal))
             .OrderBy(static nestedType => nestedType.Name, StringComparer.Ordinal)
             .ToList();
         if (nestedTypes.Count == 0)
             return;
 
-        if (sb.Length > 0 && sb[^1] != '\n')
+        foreach (var nestedType in nestedTypes)
         {
-            sb.AppendLine();
-        }
-
-        for (var i = 0; i < nestedTypes.Count; i++)
-        {
-            if (i > 0)
-            {
-                sb.AppendLine();
-            }
-
-            sb.Append(BuildTypeDeclaration(nestedTypes[i], indentationLevel));
+            sb.Append(BuildTypeDeclaration(nestedType, indentationLevel));
         }
     }
 
@@ -184,13 +181,37 @@ internal static class PublicApiModelBuilder
             members.Add(BuildEvent(@event, indentationLevel));
         }
 
-        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+        foreach (var constructor in type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
                      .Where(IsExternallyVisible)
-                     .Where(static method => !method.IsSpecialName)
-                     .Where(static method => !method.Name.Contains('<', StringComparison.Ordinal))
-                     .OrderBy(static method => method.MetadataToken))
+                     .OrderBy(static constructor => constructor.MetadataToken))
         {
+            var constructorText = BuildConstructor(constructor, indentationLevel);
+            if (constructorText is not null)
+            {
+                members.Add(constructorText);
+            }
+        }
+
+        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+            .Where(IsExternallyVisible)
+            .Where(static method => !method.IsSpecialName || IsOperatorMethod(method))
+            .Where(static method => !method.Name.Contains('<', StringComparison.Ordinal))
+            .OrderBy(static method => method.MetadataToken)
+            .ToArray();
+
+        var extensionPropertyBlocks = BuildExtensionPropertyBlocks(methods, indentationLevel);
+        var extensionPropertyAccessors = extensionPropertyBlocks.SelectMany(static block => block.Accessors).ToHashSet();
+        foreach (var method in methods)
+        {
+            if (extensionPropertyAccessors.Contains(method))
+                continue;
+
             members.Add(BuildMethod(method, indentationLevel));
+        }
+
+        foreach (var extensionPropertyBlock in extensionPropertyBlocks.OrderBy(static block => block.Order))
+        {
+            members.Add(extensionPropertyBlock.Content);
         }
 
         for (var i = 0; i < members.Count; i++)
@@ -206,16 +227,13 @@ internal static class PublicApiModelBuilder
         AppendAttributes(sb, type.CustomAttributes, indentationLevel);
 
         var modifiers = GetTypeAccessibility(type);
+        var unsafeModifier = RequiresUnsafeContext(invokeMethod) ? " unsafe" : string.Empty;
         var genericArguments = BuildGenericArguments(type);
-        var parameters = string.Join(", ", invokeMethod.GetParameters().Select(BuildParameter));
+        var parameters = string.Join(", ", invokeMethod.GetParameters().Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)));
         var returnType = FormatReturnType(invokeMethod.ReturnParameter);
         var constraints = BuildTypeConstraints(type, indentationLevel);
 
-        AppendIndentedLine(sb, indentationLevel, $"{modifiers} delegate {returnType} {EscapeIdentifier(RemoveGenericArity(type.Name))}{genericArguments}({parameters});");
-        foreach (var constraint in constraints)
-        {
-            AppendIndentedLine(sb, indentationLevel + 1, constraint);
-        }
+        AppendIndentedLine(sb, indentationLevel, $"{modifiers}{unsafeModifier} delegate {returnType} {EscapeIdentifier(RemoveGenericArity(type.Name))}{genericArguments}({parameters}){FormatConstraintsInline(constraints)};");
 
         return sb.ToString();
     }
@@ -250,12 +268,13 @@ internal static class PublicApiModelBuilder
         AppendAttributes(sb, field.CustomAttributes, indentationLevel);
 
         var modifiers = new List<string> { GetFieldAccessibility(field) };
+        var isByRefField = field.FieldType.IsByRef;
         if (field.IsStatic && !field.IsLiteral)
         {
             modifiers.Add("static");
         }
 
-        if (field.IsInitOnly)
+        if (field.IsInitOnly && !isByRefField)
         {
             modifiers.Add("readonly");
         }
@@ -266,7 +285,10 @@ internal static class PublicApiModelBuilder
         }
 
         var fieldNullability = NullabilityInfoContext.Create(field);
-        var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {FormatType(field.FieldType, fieldNullability)} {EscapeIdentifier(field.Name)}";
+        var fieldType = isByRefField
+            ? BuildByRefFieldType(field, fieldNullability)
+            : FormatType(field.FieldType, fieldNullability);
+        var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {fieldType} {EscapeIdentifier(field.Name)}";
         if (field.IsLiteral)
         {
             declaration += " = " + FormatConstant(field.GetRawConstantValue());
@@ -286,7 +308,8 @@ internal static class PublicApiModelBuilder
         var representativeAccessor = accessors.OrderByDescending(GetAccessibilityRank).First();
         var propertyAccessibility = GetMethodAccessibility(representativeAccessor);
         var modifiers = new List<string>();
-        if (!string.IsNullOrEmpty(propertyAccessibility))
+        var shouldEmitAccessibility = !(representativeAccessor.DeclaringType?.IsInterface == true && representativeAccessor.IsAbstract);
+        if (shouldEmitAccessibility && !string.IsNullOrEmpty(propertyAccessibility))
         {
             modifiers.Add(propertyAccessibility);
         }
@@ -301,13 +324,14 @@ internal static class PublicApiModelBuilder
             modifiers.Add("required");
         }
 
-        var propertyName = property.GetIndexParameters().Length > 0
-            ? $"this[{string.Join(", ", property.GetIndexParameters().Select(BuildParameter))}]"
+        var indexParameters = property.GetMethod?.GetParameters() ?? property.SetMethod?.GetParameters().SkipLast(1).ToArray() ?? [];
+        var propertyName = indexParameters.Length > 0
+            ? $"this[{string.Join(", ", indexParameters.Select(static parameter => BuildParameter(parameter, isExtensionReceiver: false)))}]"
             : EscapeIdentifier(property.Name);
         var propertyNullability = property.GetMethod is not null
             ? NullabilityInfoContext.Create(property.GetMethod.ReturnParameter)
             : property.SetMethod is not null
-                ? NullabilityInfoContext.Create(property.SetMethod.GetParameters().Single())
+                ? NullabilityInfoContext.Create(property.SetMethod.GetParameters().Last())
                 : null;
         var accessorDeclarations = new List<string>();
 
@@ -324,12 +348,13 @@ internal static class PublicApiModelBuilder
         {
             var accessorKeyword = IsInitOnly(setMethod) ? "init" : "set";
             var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor);
-            var setAccessor = setMethod.IsAbstract ? $"{accessorKeyword};" : $"{accessorKeyword} => throw null;";
+            var setAccessor = setMethod.IsAbstract ? $"{accessorKeyword};" : $"{accessorKeyword} {{ }}";
             accessorDeclarations.Add($"{accessorModifier}{setAccessor}");
         }
 
         var accessorText = string.Join(' ', accessorDeclarations);
-        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} {FormatType(property.PropertyType, propertyNullability)} {propertyName} {{ {accessorText} }}");
+        var modifiersPrefix = modifiers.Count > 0 ? string.Join(' ', modifiers) + " " : string.Empty;
+        AppendIndentedLine(sb, indentationLevel, $"{modifiersPrefix}{FormatType(property.PropertyType, propertyNullability)} {propertyName} {{ {accessorText} }}");
         return sb.ToString();
     }
 
@@ -356,9 +381,37 @@ internal static class PublicApiModelBuilder
         return sb.ToString();
     }
 
+    private static string? BuildConstructor(ConstructorInfo constructor, int indentationLevel)
+    {
+        var sb = new StringBuilder();
+        AppendAttributes(sb, constructor.CustomAttributes, indentationLevel);
+
+        var accessibility = GetMethodAccessibility(constructor);
+        var modifiersPrefix = string.IsNullOrEmpty(accessibility) ? string.Empty : accessibility + " ";
+        var unsafeModifier = RequiresUnsafeContext(constructor) ? "unsafe " : string.Empty;
+        var typeName = EscapeIdentifier(RemoveGenericArity(constructor.DeclaringType!.Name));
+        var parametersList = constructor.GetParameters();
+        var parameters = parametersList.Select(static parameter => BuildParameterDeclaration(parameter, isExtensionReceiver: false)).ToArray();
+        var requiresNullableDisableDirective = parametersList.Any(static parameter => RequiresNullableDisableDirective(parameter));
+        var initializer = BuildConstructorInitializer(constructor);
+        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer))
+            return null;
+
+        AppendMemberWithParameters(
+            sb,
+            indentationLevel,
+            modifiersPrefix + unsafeModifier + typeName,
+            parameters,
+            initializer + BuildConstructorBody(constructor),
+            requiresNullableDisableDirective);
+        return sb.ToString();
+    }
+
     private static string BuildMethod(MethodInfo method, int indentationLevel)
     {
         var sb = new StringBuilder();
+        var isDestructor = IsDestructor(method);
+        var isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(method);
         var methodAttributes = method.CustomAttributes;
         if (IsLibraryImportMethod(method))
         {
@@ -370,28 +423,131 @@ internal static class PublicApiModelBuilder
         AppendAttributes(sb, methodAttributes, indentationLevel);
         AppendReturnAttributes(sb, method, indentationLevel);
 
-        var modifiers = BuildMethodModifiers(method);
-        var methodName = EscapeIdentifier(method.Name);
-        var parameters = string.Join(", ", method.GetParameters().Select(BuildParameter));
-        var genericArguments = BuildGenericArguments(method);
-        var constraints = BuildMethodConstraints(method, indentationLevel);
-
-        var declaration = $"{string.Join(' ', modifiers)} {FormatReturnType(method.ReturnParameter)} {methodName}{genericArguments}({parameters})";
-        if (constraints.Count == 0)
+        if (isDestructor)
         {
-            declaration += BuildMethodBody(method);
-            AppendIndentedLine(sb, indentationLevel, declaration);
+            var typeName = EscapeIdentifier(RemoveGenericArity(method.DeclaringType!.Name));
+            AppendIndentedLine(sb, indentationLevel, $"~{typeName}(){BuildMethodBody(method)}");
             return sb.ToString();
         }
 
-        AppendIndentedLine(sb, indentationLevel, declaration);
-        foreach (var constraint in constraints)
+        var modifiers = isExplicitInterfaceImplementation ? [] : BuildMethodModifiers(method);
+        var methodName = isExplicitInterfaceImplementation
+            ? BuildExplicitInterfaceMethodName(method.Name)
+            : EscapeIdentifier(method.Name);
+        var isExtensionMethod = IsExtensionMethod(method);
+        var parameters = method.GetParameters().Select((parameter, index) => BuildParameterDeclaration(parameter, isExtensionMethod && index == 0)).ToArray();
+        var genericArguments = BuildGenericArguments(method);
+        var constraints = BuildMethodConstraints(method, indentationLevel);
+        var modifiersPrefix = modifiers.Count > 0 ? string.Join(' ', modifiers) + " " : string.Empty;
+        var unsafeModifier = RequiresUnsafeContext(method) ? "unsafe " : string.Empty;
+        var requiresNullableDisableDirective = RequiresNullableDisableDirective(method.ReturnParameter) ||
+                                               method.GetParameters().Any(static parameter => RequiresNullableDisableDirective(parameter));
+        var methodBody = BuildMethodBody(method);
+        var methodSuffix = FormatConstraintsInline(constraints) + methodBody;
+
+        if (TryGetOperatorKeyword(method.Name) is { } operatorKeyword && CanEmitOperator(method))
         {
-            AppendIndentedLine(sb, indentationLevel + 1, constraint);
+            var returnType = FormatReturnType(method.ReturnParameter);
+            var methodPrefix = operatorKeyword is "implicit" or "explicit"
+                ? $"{modifiersPrefix}{unsafeModifier}{operatorKeyword} operator {returnType}"
+                : $"{modifiersPrefix}{unsafeModifier}{returnType} operator {operatorKeyword}";
+            AppendMemberWithParameters(sb, indentationLevel, methodPrefix, parameters, methodSuffix, requiresNullableDisableDirective);
+        }
+        else
+        {
+            var methodPrefix = $"{modifiersPrefix}{unsafeModifier}{FormatReturnType(method.ReturnParameter)} {methodName}{genericArguments}";
+            AppendMemberWithParameters(sb, indentationLevel, methodPrefix, parameters, methodSuffix, requiresNullableDisableDirective);
         }
 
-        AppendIndentedLine(sb, indentationLevel, BuildMethodBody(method).TrimStart());
         return sb.ToString();
+    }
+
+    private static void AppendMemberWithParameters(
+        StringBuilder sb,
+        int indentationLevel,
+        string declarationPrefix,
+        IReadOnlyList<ParameterDeclaration> parameters,
+        string declarationSuffix,
+        bool wrapWithNullableDisableDirective = false)
+    {
+        var hasNullableAnnotations = declarationPrefix.Contains('?', StringComparison.Ordinal) ||
+                                     parameters.Any(static parameter => parameter.Text.Contains('?', StringComparison.Ordinal));
+        var shouldEmitNullableDirectives = parameters.Any(static parameter => parameter.RequiresNullableDirectives) && hasNullableAnnotations;
+        var shouldWrapWithNullableDisableDirective = wrapWithNullableDisableDirective && !hasNullableAnnotations;
+        if (shouldWrapWithNullableDisableDirective)
+        {
+            AppendIndentedLine(sb, indentationLevel, "#nullable disable");
+        }
+
+        if (!shouldEmitNullableDirectives)
+        {
+            AppendIndentedLine(sb, indentationLevel, $"{declarationPrefix}({string.Join(", ", parameters.Select(static parameter => parameter.Text))}){declarationSuffix}");
+            if (shouldWrapWithNullableDisableDirective)
+            {
+                AppendIndentedLine(sb, indentationLevel, "#nullable restore");
+            }
+
+            return;
+        }
+
+        AppendIndentedLine(sb, indentationLevel, declarationPrefix + "(");
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            var parameter = parameters[i];
+            var parameterSuffix = i < parameters.Count - 1 ? "," : string.Empty;
+            if (parameter.RequiresNullableDirectives)
+            {
+                AppendIndentedLine(sb, indentationLevel, "#nullable disable");
+                AppendIndentedLine(sb, indentationLevel + 1, parameter.Text + parameterSuffix);
+                AppendIndentedLine(sb, indentationLevel, "#nullable restore");
+            }
+            else
+            {
+                AppendIndentedLine(sb, indentationLevel + 1, parameter.Text + parameterSuffix);
+            }
+        }
+
+        AppendIndentedLine(sb, indentationLevel + 1, ")" + declarationSuffix);
+        if (shouldWrapWithNullableDisableDirective)
+        {
+            AppendIndentedLine(sb, indentationLevel, "#nullable restore");
+        }
+    }
+
+    private static string BuildConstructorBody(ConstructorInfo constructor)
+    {
+        if (constructor.GetMethodBody() is null)
+            return ";";
+
+        return " { }";
+    }
+
+    private static string BuildConstructorInitializer(ConstructorInfo constructor)
+    {
+        var declaringType = constructor.DeclaringType;
+        if (declaringType is null || declaringType.IsValueType)
+            return string.Empty;
+
+        var baseType = declaringType.BaseType;
+        if (baseType is null || baseType == typeof(object) || baseType == typeof(ValueType))
+            return string.Empty;
+
+        var baseConstructors = baseType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            .Where(IsExternallyVisible)
+            .OrderBy(static ctor => ctor.MetadataToken)
+            .ToList();
+        if (baseConstructors.Count == 0 || baseConstructors.Any(static ctor => ctor.GetParameters().Length == 0))
+            return string.Empty;
+
+        var selectedConstructor = baseConstructors[0];
+        var arguments = string.Join(", ", selectedConstructor.GetParameters().Select(static parameter =>
+        {
+            var parameterType = parameter.ParameterType.IsByRef
+                ? parameter.ParameterType.GetElementType()!
+                : parameter.ParameterType;
+            return "default(" + FormatType(parameterType) + ")";
+        }));
+        return " : base(" + arguments + ")";
     }
 
     private static string BuildMethodBody(MethodInfo method)
@@ -405,21 +561,42 @@ internal static class PublicApiModelBuilder
         if (method.GetMethodBody() is null)
             return ";";
 
+        if (method.ReturnType == typeof(void))
+            return BuildVoidMethodBody(method);
+
         return " => throw null;";
+    }
+
+    private static string BuildVoidMethodBody(MethodInfo method)
+    {
+        if (method.GetParameters().Any(static parameter => parameter.IsOut))
+            return " => throw null;";
+
+        return " { }";
     }
 
     private static List<string> BuildMethodModifiers(MethodInfo method)
     {
         var modifiers = new List<string>();
-        var accessibility = GetMethodAccessibility(method);
-        if (!string.IsNullOrEmpty(accessibility))
+        var declaringTypeIsInterface = method.DeclaringType?.IsInterface == true;
+        var shouldEmitAccessibility = !(declaringTypeIsInterface && method.IsAbstract);
+        if (shouldEmitAccessibility)
         {
-            modifiers.Add(accessibility);
+            var accessibility = GetMethodAccessibility(method);
+            if (!string.IsNullOrEmpty(accessibility))
+            {
+                modifiers.Add(accessibility);
+            }
         }
 
         if (method.IsStatic)
         {
             modifiers.Add("static");
+        }
+
+        if (declaringTypeIsInterface)
+        {
+            return modifiers;
         }
 
         if (method.IsAbstract)
@@ -457,10 +634,15 @@ internal static class PublicApiModelBuilder
         return modifiers;
     }
 
-    private static string BuildParameter(ParameterInfo parameter)
+    private static ParameterDeclaration BuildParameterDeclaration(ParameterInfo parameter, bool isExtensionReceiver)
     {
         var sb = new StringBuilder();
         AppendInlineAttributes(sb, parameter.CustomAttributes);
+
+        if (isExtensionReceiver)
+        {
+            sb.Append("this ");
+        }
 
         if (parameter.IsOut)
         {
@@ -470,14 +652,14 @@ internal static class PublicApiModelBuilder
         {
             if (parameter.IsIn)
             {
-                sb.Append("in ");
+                sb.Append(IsRefReadOnlyParameter(parameter) ? "ref readonly " : "in ");
             }
             else
             {
                 sb.Append("ref ");
             }
         }
-        else if (parameter.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.ParamArrayAttribute"))
+        else if (IsParamsParameter(parameter))
         {
             sb.Append("params ");
         }
@@ -493,7 +675,266 @@ internal static class PublicApiModelBuilder
             sb.Append(FormatConstant(parameter.DefaultValue));
         }
 
+        return new ParameterDeclaration(sb.ToString(), RequiresNullableDirectives(parameterType, parameterNullability));
+    }
+
+    private static string BuildParameter(ParameterInfo parameter, bool isExtensionReceiver)
+    {
+        return BuildParameterDeclaration(parameter, isExtensionReceiver).Text;
+    }
+
+    private static bool RequiresNullableDirectives(Type parameterType, NullabilityInfo nullabilityInfo)
+    {
+        if (parameterType.IsByRef || parameterType.IsPointer)
+        {
+            var elementType = parameterType.GetElementType();
+            return elementType is not null &&
+                   nullabilityInfo.ElementType is not null &&
+                   RequiresNullableDirectives(elementType, nullabilityInfo.ElementType);
+        }
+
+        return !parameterType.IsValueType &&
+               !parameterType.IsGenericParameter &&
+               nullabilityInfo.ReadState == NullabilityState.Unknown;
+    }
+
+    private static bool RequiresNullableDisableDirective(ParameterInfo parameter)
+    {
+        var parameterType = parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
+        var parameterNullability = NullabilityInfoContext.Create(parameter);
+        return RequiresNullableDirectives(parameterType, parameterNullability);
+    }
+
+    private static bool RequiresUnsafeContext(MethodBase method)
+    {
+        if (method is MethodInfo methodInfo && ContainsPointer(methodInfo.ReturnType))
+            return true;
+
+        return method.GetParameters().Any(parameter => ContainsPointer(parameter.ParameterType));
+    }
+
+    private static bool ContainsPointer(Type type)
+    {
+        if (type.IsPointer)
+            return true;
+
+        if (type.IsByRef || type.IsArray)
+        {
+            var elementType = type.GetElementType();
+            return elementType is not null && ContainsPointer(elementType);
+        }
+
+        if (!type.IsGenericType)
+            return false;
+
+        return type.GetGenericArguments().Any(ContainsPointer);
+    }
+
+    private static bool IsExtensionMethod(MethodInfo method)
+    {
+        return method.IsStatic &&
+               method.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute");
+    }
+
+    private static bool IsOperatorMethod(MethodInfo method)
+    {
+        return method.IsSpecialName && method.Name.StartsWith("op_", StringComparison.Ordinal);
+    }
+
+    private static List<ExtensionPropertyBlockReflection> BuildExtensionPropertyBlocks(IReadOnlyList<MethodInfo> methods, int indentationLevel)
+    {
+        var blocks = new Dictionary<(Type ReceiverType, string PropertyName), ExtensionPropertyBuilderReflection>();
+        foreach (var method in methods)
+        {
+            if (!TryGetExtensionPropertyAccessorInfo(method, out var accessorType, out var propertyName))
+                continue;
+
+            var parameters = method.GetParameters();
+            var receiverParameter = parameters[0];
+            var receiverType = receiverParameter.ParameterType.IsByRef
+                ? receiverParameter.ParameterType.GetElementType()!
+                : receiverParameter.ParameterType;
+            var key = (receiverType, propertyName);
+            if (!blocks.TryGetValue(key, out var block))
+            {
+                block = new ExtensionPropertyBuilderReflection(receiverParameter, propertyName, Getter: null, Setter: null, Order: method.MetadataToken);
+            }
+
+            if (accessorType == "get")
+            {
+                blocks[key] = block with { Getter = method, Order = Math.Min(block.Order, method.MetadataToken) };
+            }
+            else
+            {
+                blocks[key] = block with { Setter = method, Order = Math.Min(block.Order, method.MetadataToken) };
+            }
+        }
+
+        var result = new List<ExtensionPropertyBlockReflection>();
+        foreach (var block in blocks.Values)
+        {
+            if (block.Getter is null && block.Setter is null)
+                continue;
+
+            var content = BuildExtensionPropertyBlock(block, indentationLevel);
+            var accessors = new List<MethodInfo>();
+            if (block.Getter is not null)
+            {
+                accessors.Add(block.Getter);
+            }
+
+            if (block.Setter is not null)
+            {
+                accessors.Add(block.Setter);
+            }
+
+            result.Add(new ExtensionPropertyBlockReflection(content, accessors, block.Order));
+        }
+
+        return result;
+    }
+
+    private static bool TryGetExtensionPropertyAccessorInfo(MethodInfo method, out string accessorType, out string propertyName)
+    {
+        accessorType = string.Empty;
+        propertyName = string.Empty;
+
+        var declaringType = method.DeclaringType;
+        if (declaringType is null || !(declaringType.IsAbstract && declaringType.IsSealed))
+            return false;
+
+        if (!method.IsStatic || method.IsSpecialName)
+            return false;
+
+        if (method.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute"))
+            return false;
+
+        if (method.Name.StartsWith("get_", StringComparison.Ordinal))
+        {
+            if (method.GetParameters().Length < 1)
+                return false;
+
+            accessorType = "get";
+            propertyName = method.Name[4..];
+            return true;
+        }
+
+        if (method.Name.StartsWith("set_", StringComparison.Ordinal))
+        {
+            if (method.GetParameters().Length < 2)
+                return false;
+
+            accessorType = "set";
+            propertyName = method.Name[4..];
+            return true;
+        }
+
+        return false;
+    }
+
+    private static string BuildExtensionPropertyBlock(ExtensionPropertyBuilderReflection block, int indentationLevel)
+    {
+        var sb = new StringBuilder();
+        var receiverParameter = block.ReceiverParameter;
+        var receiverNullability = NullabilityInfoContext.Create(receiverParameter);
+        var receiverType = receiverParameter.ParameterType.IsByRef
+            ? receiverParameter.ParameterType.GetElementType()!
+            : receiverParameter.ParameterType;
+        var receiverTypeText = FormatType(receiverType, receiverNullability);
+        var receiverName = EscapeIdentifier(receiverParameter.Name ?? "value");
+
+        string propertyType;
+        if (block.Getter is not null)
+        {
+            propertyType = FormatReturnType(block.Getter.ReturnParameter);
+        }
+        else
+        {
+            var setterValueParameter = block.Setter!.GetParameters()[1];
+            propertyType = FormatType(setterValueParameter.ParameterType, NullabilityInfoContext.Create(setterValueParameter));
+        }
+
+        var accessorDeclarations = new List<string>();
+        if (block.Getter is not null)
+        {
+            accessorDeclarations.Add("get => throw null;");
+        }
+
+        if (block.Setter is not null)
+        {
+            accessorDeclarations.Add("set { }");
+        }
+
+        AppendIndentedLine(sb, indentationLevel, $"extension({receiverTypeText} {receiverName})");
+        AppendIndentedLine(sb, indentationLevel, "{");
+        AppendIndentedLine(sb, indentationLevel + 1, $"public {propertyType} {EscapeIdentifier(block.PropertyName)} {{ {string.Join(' ', accessorDeclarations)} }}");
+        AppendIndentedLine(sb, indentationLevel, "}");
         return sb.ToString();
+    }
+
+    private static bool CanEmitOperator(MethodInfo method)
+    {
+        var declaringType = method.DeclaringType;
+        if (declaringType is null)
+            return false;
+
+        return !(declaringType.IsAbstract && declaringType.IsSealed);
+    }
+
+    private static string? TryGetOperatorKeyword(string methodName)
+    {
+        return methodName switch
+        {
+            "op_UnaryPlus" => "+",
+            "op_UnaryNegation" => "-",
+            "op_LogicalNot" => "!",
+            "op_OnesComplement" => "~",
+            "op_Increment" => "++",
+            "op_Decrement" => "--",
+            "op_True" => "true",
+            "op_False" => "false",
+            "op_Implicit" => "implicit",
+            "op_Explicit" => "explicit",
+            "op_Addition" => "+",
+            "op_Subtraction" => "-",
+            "op_Multiply" => "*",
+            "op_Multiplication" => "*",
+            "op_Division" => "/",
+            "op_Modulus" => "%",
+            "op_BitwiseAnd" => "&",
+            "op_BitwiseOr" => "|",
+            "op_ExclusiveOr" => "^",
+            "op_LeftShift" => "<<",
+            "op_RightShift" => ">>",
+            "op_UnsignedRightShift" => ">>>",
+            "op_Equality" => "==",
+            "op_Inequality" => "!=",
+            "op_LessThan" => "<",
+            "op_GreaterThan" => ">",
+            "op_LessThanOrEqual" => "<=",
+            "op_GreaterThanOrEqual" => ">=",
+            "op_AdditionAssignment" => "+=",
+            "op_SubtractionAssignment" => "-=",
+            "op_MultiplyAssignment" => "*=",
+            "op_MultiplicationAssignment" => "*=",
+            "op_DivisionAssignment" => "/=",
+            "op_ModulusAssignment" => "%=",
+            "op_BitwiseAndAssignment" => "&=",
+            "op_BitwiseOrAssignment" => "|=",
+            "op_ExclusiveOrAssignment" => "^=",
+            "op_LeftShiftAssignment" => "<<=",
+            "op_RightShiftAssignment" => ">>=",
+            "op_UnsignedRightShiftAssignment" => ">>>=",
+            "op_IncrementAssignment" => "++",
+            "op_DecrementAssignment" => "--",
+            _ => null,
+        };
+    }
+
+    private static bool IsParamsParameter(ParameterInfo parameter)
+    {
+        return parameter.GetCustomAttributesData().Any(static attribute =>
+            attribute.AttributeType.FullName is "System.ParamArrayAttribute" or "System.Runtime.CompilerServices.ParamCollectionAttribute");
     }
 
     private static string FormatReturnType(ParameterInfo returnParameter)
@@ -585,14 +1026,23 @@ internal static class PublicApiModelBuilder
                 values.Add("struct");
             }
 
+            var hasStructConstraint = genericParameterAttributes.HasFlag(GenericParameterAttributes.NotNullableValueTypeConstraint);
             foreach (var constraint in genericArgument.GetGenericParameterConstraints())
             {
+                if (hasStructConstraint && constraint == typeof(ValueType))
+                    continue;
+
                 values.Add(FormatType(constraint));
             }
 
-            if (genericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint))
+            if (genericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint) && !hasStructConstraint)
             {
                 values.Add("new()");
+            }
+
+            if (genericParameterAttributes.HasFlag(AllowByRefLikeGenericParameterConstraint))
+            {
+                values.Add("allows ref struct");
             }
 
             if (values.Count == 0)
@@ -602,6 +1052,36 @@ internal static class PublicApiModelBuilder
         }
 
         return constraints;
+    }
+
+    private static string FormatConstraintsInline(IReadOnlyList<string> constraints)
+    {
+        if (constraints.Count == 0)
+            return string.Empty;
+
+        return " " + string.Join(" ", constraints);
+    }
+
+    private static bool IsRefReadOnlyParameter(ParameterInfo parameter)
+    {
+        return parameter.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.RequiresLocationAttribute");
+    }
+
+    private static string BuildByRefFieldType(FieldInfo field, NullabilityInfo fieldNullability)
+    {
+        var elementType = field.FieldType.GetElementType()!;
+        var elementNullability = fieldNullability.ElementType;
+        var isRefReadonly = field.CustomAttributes.Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsReadOnlyAttribute");
+        if (field.IsInitOnly)
+        {
+            return isRefReadonly
+                ? "readonly ref readonly " + FormatType(elementType, elementNullability)
+                : "readonly ref " + FormatType(elementType, elementNullability);
+        }
+
+        return isRefReadonly
+            ? "ref readonly " + FormatType(elementType, elementNullability)
+            : "ref " + FormatType(elementType, elementNullability);
     }
 
     private static (string Declaration, IReadOnlyList<string> Constraints) BuildTypeHeader(Type type)
@@ -755,10 +1235,43 @@ internal static class PublicApiModelBuilder
         if (method is null)
             return false;
 
+        if (method is MethodInfo methodInfo && IsExplicitInterfaceImplementation(methodInfo))
+            return IsExternallyVisible(method.DeclaringType!);
+
         if (method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly)
             return IsExternallyVisible(method.DeclaringType!);
 
         return false;
+    }
+
+    private static bool IsDestructor(MethodInfo method)
+    {
+        return !method.IsStatic &&
+               string.Equals(method.Name, "Finalize", StringComparison.Ordinal) &&
+               method.ReturnType == typeof(void) &&
+               method.GetParameters().Length == 0 &&
+               method.IsFamily &&
+               method.IsVirtual &&
+               method.GetBaseDefinition().DeclaringType == typeof(object);
+    }
+
+    private static bool IsExplicitInterfaceImplementation(MethodInfo method)
+    {
+        return method.IsPrivate &&
+               method.IsFinal &&
+               method.IsVirtual &&
+               method.Name.Contains('.', StringComparison.Ordinal);
+    }
+
+    private static string BuildExplicitInterfaceMethodName(string methodName)
+    {
+        var separatorIndex = methodName.LastIndexOf('.');
+        if (separatorIndex < 0)
+            return EscapeIdentifier(methodName);
+
+        var interfaceName = methodName[..separatorIndex];
+        var memberName = methodName[(separatorIndex + 1)..];
+        return interfaceName + "." + EscapeIdentifier(memberName);
     }
 
     private static bool IsExternallyVisible(FieldInfo field)
@@ -873,6 +1386,9 @@ internal static class PublicApiModelBuilder
         if (fullName == "System.Runtime.CompilerServices.RequiredMemberAttribute")
             return false;
 
+        if (IsCompilerGeneratedRefStructObsoleteAttribute(attribute))
+            return false;
+
         if (CompilerRuntimeAttributes.Contains(fullName))
             return true;
 
@@ -886,6 +1402,23 @@ internal static class PublicApiModelBuilder
             return true;
 
         return fullName.StartsWith("System.", StringComparison.Ordinal);
+    }
+
+    private static bool IsCompilerGeneratedRefStructObsoleteAttribute(CustomAttributeData attribute)
+    {
+        if (attribute.AttributeType.FullName != "System.ObsoleteAttribute")
+            return false;
+
+        if (attribute.ConstructorArguments.Count != 2)
+            return false;
+
+        if (attribute.ConstructorArguments[0].Value is not string message)
+            return false;
+
+        if (attribute.ConstructorArguments[1].Value is not bool isError)
+            return false;
+
+        return string.Equals(message, CompilerGeneratedRefStructObsoleteMessage, StringComparison.Ordinal) && isError;
     }
 
     private static bool IsRequiredMember(IEnumerable<CustomAttributeData> attributes)
@@ -1064,7 +1597,7 @@ internal static class PublicApiModelBuilder
         }
 
         if (!string.IsNullOrEmpty(type.Namespace))
-            return AppendNullableSuffix(type, "global::" + type.Namespace + "." + name, nullableReference);
+            return AppendNullableSuffix(type, type.Namespace + "." + name, nullableReference);
 
         return AppendNullableSuffix(type, name, nullableReference);
     }
@@ -1165,6 +1698,10 @@ internal static class PublicApiModelBuilder
 
         sb.AppendLine(text);
     }
+
+    private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives);
+    private sealed record ExtensionPropertyBuilderReflection(ParameterInfo ReceiverParameter, string PropertyName, MethodInfo? Getter, MethodInfo? Setter, int Order);
+    private sealed record ExtensionPropertyBlockReflection(string Content, IReadOnlyList<MethodInfo> Accessors, int Order);
 
     private static readonly HashSet<string> CSharpKeywords = new(StringComparer.Ordinal)
     {

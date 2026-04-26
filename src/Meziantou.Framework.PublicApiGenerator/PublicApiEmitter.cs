@@ -79,6 +79,7 @@ internal static class PublicApiEmitter
         if (orderedTypes.Count == 0)
             return;
 
+        var conflictingNamespaceIdentifiers = GetConflictingNamespaceIdentifiers(namespaceName);
         if (string.IsNullOrEmpty(namespaceName))
         {
             for (var i = 0; i < orderedTypes.Count; i++)
@@ -88,7 +89,8 @@ internal static class PublicApiEmitter
                     sb.AppendLine();
                 }
 
-                sb.AppendLine(orderedTypes[i].Source);
+                var source = conflictingNamespaceIdentifiers.Count > 0 ? QualifyConflictingNamespaceReferences(orderedTypes[i].Source, conflictingNamespaceIdentifiers) : orderedTypes[i].Source;
+                sb.AppendLine(source);
             }
 
             return;
@@ -104,10 +106,141 @@ internal static class PublicApiEmitter
                 sb.AppendLine();
             }
 
-            AppendIndented(sb, orderedTypes[i].Source, 1);
+            var source = conflictingNamespaceIdentifiers.Count > 0 ? QualifyConflictingNamespaceReferences(orderedTypes[i].Source, conflictingNamespaceIdentifiers) : orderedTypes[i].Source;
+            AppendIndented(sb, source, 1);
         }
 
         sb.AppendLine("}");
+    }
+
+    private static HashSet<string> GetConflictingNamespaceIdentifiers(string namespaceName)
+    {
+        if (string.IsNullOrEmpty(namespaceName))
+            return [];
+
+        var identifiers = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var segment in namespaceName.Split('.', StringSplitOptions.RemoveEmptyEntries))
+        {
+            identifiers.Add(segment);
+        }
+
+        return identifiers;
+    }
+
+    private static string QualifyConflictingNamespaceReferences(string source, HashSet<string> conflictingNamespaceIdentifiers)
+    {
+        var sb = new StringBuilder(source.Length);
+        var inString = false;
+        var inChar = false;
+        var escapeNext = false;
+        for (var i = 0; i < source.Length; i++)
+        {
+            if (!inString && !inChar && TryGetConflictingIdentifierLength(source, i, conflictingNamespaceIdentifiers, out var identifierLength))
+            {
+                sb.Append("global::");
+                sb.Append(source, i, identifierLength + 1);
+                i += identifierLength;
+                continue;
+            }
+
+            var ch = source[i];
+            sb.Append(ch);
+
+            if (inString)
+            {
+                if (escapeNext)
+                {
+                    escapeNext = false;
+                }
+                else if (ch == '\\')
+                {
+                    escapeNext = true;
+                }
+                else if (ch == '"')
+                {
+                    inString = false;
+                }
+
+                continue;
+            }
+
+            if (inChar)
+            {
+                if (escapeNext)
+                {
+                    escapeNext = false;
+                }
+                else if (ch == '\\')
+                {
+                    escapeNext = true;
+                }
+                else if (ch == '\'')
+                {
+                    inChar = false;
+                }
+
+                continue;
+            }
+
+            if (ch == '"')
+            {
+                inString = true;
+                continue;
+            }
+
+            if (ch == '\'')
+            {
+                inChar = true;
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static bool TryGetConflictingIdentifierLength(string source, int index, HashSet<string> conflictingNamespaceIdentifiers, out int identifierLength)
+    {
+        identifierLength = 0;
+        if (index >= source.Length || (!char.IsLetter(source[index]) && source[index] != '_'))
+            return false;
+
+        var currentIndex = index + 1;
+        while (currentIndex < source.Length && (char.IsLetterOrDigit(source[currentIndex]) || source[currentIndex] == '_'))
+        {
+            currentIndex++;
+        }
+
+        if (currentIndex >= source.Length || source[currentIndex] != '.')
+            return false;
+
+        var identifier = source[index..currentIndex];
+        if (!conflictingNamespaceIdentifiers.Contains(identifier))
+            return false;
+
+        if (index >= "global::".Length &&
+            source[index - 8] == 'g' &&
+            source[index - 7] == 'l' &&
+            source[index - 6] == 'o' &&
+            source[index - 5] == 'b' &&
+            source[index - 4] == 'a' &&
+            source[index - 3] == 'l' &&
+            source[index - 2] == ':' &&
+            source[index - 1] == ':')
+        {
+            return false;
+        }
+
+        if (index == 0)
+        {
+            identifierLength = identifier.Length;
+            return true;
+        }
+
+        var previousCharacter = source[index - 1];
+        if (char.IsLetterOrDigit(previousCharacter) || previousCharacter is '_' or '.')
+            return false;
+
+        identifierLength = identifier.Length;
+        return true;
     }
 
     private static void AppendIndented(StringBuilder sb, string text, int indentationLevel)

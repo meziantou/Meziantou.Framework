@@ -73,6 +73,45 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Namespace_ConflictsWithGlobalNamespace_UsesGlobalQualifier()
+    {
+        await Validate("""
+            namespace Sample.Dummy
+            {
+                public class A
+                {
+                    public A(global::Dummy.B value)
+                    {
+                    }
+                }
+            }
+
+            namespace Dummy
+            {
+                public class B
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            namespace Dummy
+            {
+                public class B
+                {
+                }
+            }
+            namespace Sample.Dummy
+            {
+                public class A
+                {
+                    public A(global::Dummy.B value) { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task NestedTypes_Basic()
     {
         await Validate("""

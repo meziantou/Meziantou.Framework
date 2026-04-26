@@ -46,7 +46,7 @@ internal static class PublicApiMultiTargetModelMerger
         return new PublicApiModel([.. mergedTypes]);
     }
 
-    private static PublicApiTypeModel MergeType(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, IReadOnlyList<string> orderedSymbols)
+    private static PublicApiTypeModel MergeType(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols)
     {
         var sampleType = typesBySymbol.Values.First();
         if (AllTypesAreIdentical(typesBySymbol, orderedSymbols))
@@ -54,7 +54,7 @@ internal static class PublicApiMultiTargetModelMerger
             return sampleType;
         }
 
-        if (typesBySymbol.Count == orderedSymbols.Count && TryMergeMembers(typesBySymbol, orderedSymbols, out var mergedSource))
+        if (typesBySymbol.Count == orderedSymbols.Length && TryMergeMembers(typesBySymbol, orderedSymbols, out var mergedSource))
         {
             return sampleType with
             {
@@ -69,9 +69,9 @@ internal static class PublicApiMultiTargetModelMerger
         };
     }
 
-    private static bool AllTypesAreIdentical(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, IReadOnlyList<string> orderedSymbols)
+    private static bool AllTypesAreIdentical(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols)
     {
-        if (typesBySymbol.Count != orderedSymbols.Count)
+        if (typesBySymbol.Count != orderedSymbols.Length)
         {
             return false;
         }
@@ -88,7 +88,7 @@ internal static class PublicApiMultiTargetModelMerger
         return true;
     }
 
-    private static bool TryMergeMembers(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, IReadOnlyList<string> orderedSymbols, out string mergedSource)
+    private static bool TryMergeMembers(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols, out string mergedSource)
     {
         mergedSource = string.Empty;
 
@@ -156,7 +156,7 @@ internal static class PublicApiMultiTargetModelMerger
         return true;
     }
 
-    private static void AppendConditionalSegment(StringBuilder sb, IReadOnlyDictionary<string, ImmutableArray<string>> segmentBySymbol, IReadOnlyList<string> orderedSymbols)
+    private static void AppendConditionalSegment(StringBuilder sb, IReadOnlyDictionary<string, ImmutableArray<string>> segmentBySymbol, string[] orderedSymbols)
     {
         var groups = GroupSegmentBySymbols(segmentBySymbol, orderedSymbols);
         var nonEmptyGroups = groups.Where(group => group.Members.Length > 0).ToArray();
@@ -165,7 +165,7 @@ internal static class PublicApiMultiTargetModelMerger
             return;
         }
 
-        if (nonEmptyGroups.Length == 1 && nonEmptyGroups[0].Symbols.Count == orderedSymbols.Count)
+        if (nonEmptyGroups.Length == 1 && nonEmptyGroups[0].Symbols.Count == orderedSymbols.Length)
         {
             AppendMembers(sb, nonEmptyGroups[0].Members);
             return;
@@ -189,7 +189,7 @@ internal static class PublicApiMultiTargetModelMerger
         AppendIndentedDirective(sb, "#endif");
     }
 
-    private static List<SegmentGroup> GroupSegmentBySymbols(IReadOnlyDictionary<string, ImmutableArray<string>> segmentBySymbol, IReadOnlyList<string> orderedSymbols)
+    private static List<SegmentGroup> GroupSegmentBySymbols(IReadOnlyDictionary<string, ImmutableArray<string>> segmentBySymbol, string[] orderedSymbols)
     {
         var groupsByKey = new Dictionary<string, SegmentGroup>(StringComparer.Ordinal);
         var groups = new List<SegmentGroup>();
@@ -233,10 +233,10 @@ internal static class PublicApiMultiTargetModelMerger
         sb.AppendLine(directive);
     }
 
-    private static string BuildConditionalTypeSource(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, IReadOnlyList<string> orderedSymbols)
+    private static string BuildConditionalTypeSource(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols)
     {
         var sourceGroups = GroupSources(typesBySymbol, orderedSymbols);
-        if (sourceGroups.Count == 1 && sourceGroups[0].Symbols.Count == orderedSymbols.Count)
+        if (sourceGroups.Count == 1 && sourceGroups[0].Symbols.Count == orderedSymbols.Length)
         {
             return sourceGroups[0].Source;
         }
@@ -256,7 +256,7 @@ internal static class PublicApiMultiTargetModelMerger
         return sb.ToString();
     }
 
-    private static List<SourceGroup> GroupSources(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, IReadOnlyList<string> orderedSymbols)
+    private static List<SourceGroup> GroupSources(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols)
     {
         var sourceGroupsBySource = new Dictionary<string, SourceGroup>(StringComparer.Ordinal);
         var sourceGroups = new List<SourceGroup>();
@@ -280,7 +280,7 @@ internal static class PublicApiMultiTargetModelMerger
         return sourceGroups;
     }
 
-    private static List<MemberAnchor> FindCommonAnchors(IReadOnlyDictionary<string, ImmutableArray<string>> membersBySymbol, IReadOnlyList<string> orderedSymbols)
+    private static List<MemberAnchor> FindCommonAnchors(Dictionary<string, ImmutableArray<string>> membersBySymbol, string[] orderedSymbols)
     {
         var anchors = new List<MemberAnchor>();
         var firstSymbol = orderedSymbols[0];

@@ -93,6 +93,7 @@
     <Project Path="src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
     <Project Path="src/Meziantou.Framework.StronglyTypedId.Interfaces/Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
     <Project Path="src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
+    <Project Path="src/Meziantou.Framework.TdsServer/Meziantou.Framework.TdsServer.csproj" />
     <Project Path="src/Meziantou.Framework.Templating.Html/Meziantou.Framework.Templating.Html.csproj" />
     <Project Path="src/Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />
     <Project Path="src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
@@ -187,6 +188,7 @@
     <Project Path="tests/Meziantou.Framework.Slug.Tests/Meziantou.Framework.Slug.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.TdsServer.Tests/Meziantou.Framework.TdsServer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Templating.Html.Tests/Meziantou.Framework.Templating.Html.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Templating.Tests/Meziantou.Framework.Templating.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />

@@ -193,11 +193,6 @@ internal static class PublicApiModelBuilder
 
         for (var i = 0; i < members.Count; i++)
         {
-            if (i > 0)
-            {
-                sb.AppendLine();
-            }
-
             sb.Append(members[i]);
         }
     }
@@ -306,23 +301,27 @@ internal static class PublicApiModelBuilder
         var propertyName = property.GetIndexParameters().Length > 0
             ? $"this[{string.Join(", ", property.GetIndexParameters().Select(BuildParameter))}]"
             : EscapeIdentifier(property.Name);
-        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} {FormatType(property.PropertyType)} {propertyName}");
-        AppendIndentedLine(sb, indentationLevel, "{");
+        var accessorDeclarations = new List<string>();
 
-        if (property.GetMethod is not null && IsExternallyVisible(property.GetMethod))
+        var getMethod = property.GetMethod;
+        if (getMethod is not null && IsExternallyVisible(getMethod))
         {
-            var accessorModifier = BuildAccessorModifier(property.GetMethod, representativeAccessor);
-            AppendIndentedLine(sb, indentationLevel + 1, $"{accessorModifier}get;");
+            var accessorModifier = BuildAccessorModifier(getMethod, representativeAccessor);
+            var getAccessor = getMethod.IsAbstract ? "get;" : "get => throw null;";
+            accessorDeclarations.Add($"{accessorModifier}{getAccessor}");
         }
 
-        if (property.SetMethod is not null && IsExternallyVisible(property.SetMethod))
+        var setMethod = property.SetMethod;
+        if (setMethod is not null && IsExternallyVisible(setMethod))
         {
-            var accessorKeyword = IsInitOnly(property.SetMethod) ? "init" : "set";
-            var accessorModifier = BuildAccessorModifier(property.SetMethod, representativeAccessor);
-            AppendIndentedLine(sb, indentationLevel + 1, $"{accessorModifier}{accessorKeyword};");
+            var accessorKeyword = IsInitOnly(setMethod) ? "init" : "set";
+            var accessorModifier = BuildAccessorModifier(setMethod, representativeAccessor);
+            var setAccessor = setMethod.IsAbstract ? $"{accessorKeyword};" : $"{accessorKeyword} => throw null;";
+            accessorDeclarations.Add($"{accessorModifier}{setAccessor}");
         }
 
-        AppendIndentedLine(sb, indentationLevel, "}");
+        var accessorText = string.Join(' ', accessorDeclarations);
+        AppendIndentedLine(sb, indentationLevel, $"{string.Join(' ', modifiers)} {FormatType(property.PropertyType)} {propertyName} {{ {accessorText} }}");
         return sb.ToString();
     }
 

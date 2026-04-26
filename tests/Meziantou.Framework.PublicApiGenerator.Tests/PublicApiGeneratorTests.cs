@@ -100,6 +100,114 @@ public sealed class PublicApiGeneratorTests
         });
     }
 
+    [Fact]
+    public async Task Methods_InstanceAndStatic()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public int GetValue() => 42;
+                public static void Reset() { }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int GetValue() => throw null;
+                public static void Reset() => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Event_Basic()
+    {
+        await Validate("""
+            using System;
+
+            public class Sample
+            {
+                public event EventHandler? Changed;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public event global::System.EventHandler? Changed;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Properties_GetSetInitRequired()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public int GetOnly { get; }
+                public int SetOnly { set { } }
+                public int InitOnly { get; init; }
+                public required int RequiredValue { get; set; }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int GetOnly { get => throw null; }
+                public int SetOnly { set => throw null; }
+                public int InitOnly { get => throw null; init => throw null; }
+                public required int RequiredValue { get => throw null; set => throw null; }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Fields_InstanceAndStaticReadonly()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public int Field;
+                public static readonly int StaticReadonlyField = 42;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int Field;
+                public static readonly int StaticReadonlyField;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task InterfaceMembers_StaticAndDefault()
+    {
+        await Validate("""
+            public interface ISample
+            {
+                void M();
+                static abstract int Counter { get; set; }
+                static virtual int StaticMethod() => 1;
+                int DefaultMethod() => 42;
+            }
+            """, """
+            #nullable enable
+
+            public interface ISample
+            {
+                public static int Counter { get; set; }
+                public abstract void M();
+                public static virtual int StaticMethod();
+                public virtual int DefaultMethod();
+            }
+            """);
+    }
+
     [InlineSnapshotAssertion(nameof(expected))]
     private static async Task Validate(string source, string expected, PublicApiGeneratorOptions options = null, CompilerOptions compilerOptions = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
     {

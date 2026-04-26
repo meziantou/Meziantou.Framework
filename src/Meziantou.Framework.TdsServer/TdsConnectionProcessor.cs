@@ -327,7 +327,7 @@ internal sealed class TdsConnectionProcessor
         {
             if (_useTdsPacketMode)
             {
-                return _packetWriter.WriteAsync(TdsPacketType.PreLogin, buffer, cancellationToken);
+                return _packetWriter.WriteAsync(TdsPacketType.TabularResult, buffer, cancellationToken);
             }
 
             return _writeStream.WriteAsync(buffer, cancellationToken);

@@ -1008,6 +1008,7 @@ internal static class PublicApiModelBuilder
 
     private static List<string> BuildConstraints(IEnumerable<Type> genericArguments, int indentationLevel)
     {
+        _ = indentationLevel;
         var constraints = new List<string>();
         foreach (var genericArgument in genericArguments)
         {

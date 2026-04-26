@@ -512,7 +512,7 @@ internal static class PublicApiModelReader
             modifiers.Add("required");
         }
 
-        var propertyNullableInfo = default(NullableMetadataInfo);
+        NullableMetadataInfo propertyNullableInfo;
         if (isGetVisible && !getAccessorHandle.IsNil && getAccessor is MethodDefinition getter)
         {
             propertyNullableInfo = GetNullableMetadataInfo(
@@ -1294,7 +1294,7 @@ internal static class PublicApiModelReader
         return modifiers;
     }
 
-    private static string FormatConstraintsInline(IReadOnlyList<string> constraints)
+    private static string FormatConstraintsInline(List<string> constraints)
     {
         if (constraints.Count == 0)
             return string.Empty;
@@ -1417,14 +1417,14 @@ internal static class PublicApiModelReader
         CustomAttributeHandleCollection? secondaryTargetAttributes = null,
         bool includeDeclaringTypeContext = true)
     {
-        ImmutableArray<byte> nullableFlags = default;
+        ImmutableArray<byte> nullableFlags;
         if (!TryGetNullableFlags(metadataReader, targetAttributes, out nullableFlags) &&
             secondaryTargetAttributes is not null)
         {
             _ = TryGetNullableFlags(metadataReader, secondaryTargetAttributes.Value, out nullableFlags);
         }
 
-        var nullableContextFlag = (byte)0;
+        byte nullableContextFlag;
         if (!TryGetNullableContextFlag(metadataReader, targetAttributes, out nullableContextFlag) &&
             !(secondaryTargetAttributes is not null && TryGetNullableContextFlag(metadataReader, secondaryTargetAttributes.Value, out nullableContextFlag)))
         {
@@ -1666,6 +1666,7 @@ internal static class PublicApiModelReader
 
     private static DecodedMethodSignature DecodeMethodSignature(MetadataReader metadataReader, MethodDefinition method)
     {
+        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
         var signature = method.DecodeSignature(provider, genericContext: null);
         return new DecodedMethodSignature(signature, provider.ContainsIsExternalInitModifier);
@@ -1673,12 +1674,14 @@ internal static class PublicApiModelReader
 
     private static DecodedType DecodeFieldType(MetadataReader metadataReader, FieldDefinition field)
     {
+        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
         return field.DecodeSignature(provider, genericContext: null);
     }
 
     private static MethodSignature<DecodedType> DecodePropertySignature(MetadataReader metadataReader, PropertyDefinition property)
     {
+        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
         return property.DecodeSignature(provider, genericContext: null);
     }
@@ -2057,7 +2060,6 @@ internal static class PublicApiModelReader
 
     private static bool TryReadObsoleteAttributeArguments(byte[] value, out string message, out bool? isError)
     {
-        message = string.Empty;
         isError = null;
 
         if (!TryReadStringAttributeArgument(value, out message))

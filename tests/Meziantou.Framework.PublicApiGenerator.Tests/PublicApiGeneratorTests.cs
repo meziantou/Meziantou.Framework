@@ -182,6 +182,53 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Method_Parameter_ReadonlyRefReadonly()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public void M(readonly ref readonly int value)
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public void M(readonly ref readonly int value) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Method_ParamsReadOnlySpanAndObjectArray()
+    {
+        await Validate("""
+            using System;
+
+            public class Sample
+            {
+                public void M1(params ReadOnlySpan<int> values)
+                {
+                }
+
+                public void M2(params object[] values)
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public void M1(params global::System.ReadOnlySpan<int> values) => throw null;
+                public void M2(params object[] values) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Method_NullableReferenceTypes()
     {
         await Validate("""
@@ -342,6 +389,59 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Constructor_NonDefault()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public Sample(int value)
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public Sample(int value) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Constructor_NonDefaultBaseAndDerived()
+    {
+        await Validate("""
+            public class SampleBase
+            {
+                public SampleBase(int value)
+                {
+                }
+            }
+
+            public class SampleDerived : SampleBase
+            {
+                public SampleDerived(int value) : base(value)
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            public class SampleBase
+            {
+                public SampleBase(int value) => throw null;
+            }
+
+
+            public class SampleDerived : SampleBase
+            {
+                public SampleDerived(int value) : base(default(int)) => throw null;
             }
             """);
     }

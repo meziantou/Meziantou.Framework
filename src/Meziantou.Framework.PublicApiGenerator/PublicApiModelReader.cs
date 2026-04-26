@@ -800,7 +800,13 @@ internal static class PublicApiModelReader
             if (!shouldWrapWithNullableDisableDirective)
                 return declaration;
 
-            return "#nullable disable\n    " + declaration + "\n    #nullable restore";
+            return string.Concat(
+                "#nullable disable",
+                Environment.NewLine,
+                "    ",
+                declaration,
+                Environment.NewLine,
+                "    #nullable restore");
         }
 
         var sb = new StringBuilder();

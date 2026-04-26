@@ -674,14 +674,7 @@ public sealed class PublicApiGeneratorTests
 
             public class Sample
             {
-                public void M<TAllowNull, TNew, TStruct, TClass, TEnum, TBase>()
-                    where TAllowNull : class
-                    where TNew : new()
-                    where TStruct : struct
-                    where TClass : class
-                    where TEnum : global::System.Enum
-                    where TBase : SampleBaseClass
-                => throw null;
+                public void M<TAllowNull, TNew, TStruct, TClass, TEnum, TBase>() where TAllowNull : class where TNew : new() where TStruct : struct where TClass : class where TEnum : global::System.Enum where TBase : SampleBaseClass => throw null;
             }
 
 
@@ -725,8 +718,7 @@ public sealed class PublicApiGeneratorTests
             """, """
             #nullable enable
 
-            public class Sample<T0>
-                where T0 : allows ref struct
+            public class Sample<T0> where T0 : allows ref struct
             {
             }
             """, compilerOptions: new CompilerOptions

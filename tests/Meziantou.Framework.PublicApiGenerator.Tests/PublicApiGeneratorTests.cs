@@ -50,6 +50,29 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Namespace_ConflictsWithSystem_UsesGlobalQualifier()
+    {
+        await Validate("""
+            namespace Sample.System;
+
+            public class SampleType
+            {
+                public global::System.Collections.Generic.List<int> M(global::System.Collections.Generic.Dictionary<string, int> value) => new();
+            }
+            """, """
+            #nullable enable
+
+            namespace Sample.System
+            {
+                public class SampleType
+                {
+                    public global::System.Collections.Generic.List<int> M(global::System.Collections.Generic.Dictionary<string, int> value) => throw null;
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task NestedTypes_Basic()
     {
         await Validate("""

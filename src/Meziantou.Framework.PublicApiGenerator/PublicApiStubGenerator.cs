@@ -36,22 +36,33 @@ public static class PublicApiStubGenerator
 
     public static IReadOnlyList<PublicApiGeneratedFile> GenerateFiles(PublicApiModel model, PublicApiFileLayout layout = PublicApiFileLayout.SingleFile)
     {
+        return GenerateFiles(
+            model,
+            new PublicApiGeneratorOptions
+            {
+                FileLayout = layout,
+            });
+    }
+
+    public static IReadOnlyList<PublicApiGeneratedFile> GenerateFiles(PublicApiModel model, PublicApiGeneratorOptions options)
+    {
         ArgumentNullException.ThrowIfNull(model);
-        return PublicApiEmitter.Generate(model, layout);
+        ArgumentNullException.ThrowIfNull(options);
+        return PublicApiEmitter.Generate(model, options);
     }
 
     public static IReadOnlyList<PublicApiGeneratedFile> GenerateFiles(string assemblyPath, PublicApiGeneratorOptions? options = null)
     {
         options ??= new PublicApiGeneratorOptions();
         var model = ReadModel(assemblyPath);
-        return GenerateFiles(model, options.FileLayout);
+        return GenerateFiles(model, options);
     }
 
     public static IReadOnlyList<PublicApiGeneratedFile> GenerateFiles(Assembly assembly, PublicApiGeneratorOptions? options = null)
     {
         options ??= new PublicApiGeneratorOptions();
         var model = ReadModel(assembly);
-        return GenerateFiles(model, options.FileLayout);
+        return GenerateFiles(model, options);
     }
 
     public static void GenerateToDirectory(string assemblyPath, string outputDirectory, PublicApiGeneratorOptions? options = null)

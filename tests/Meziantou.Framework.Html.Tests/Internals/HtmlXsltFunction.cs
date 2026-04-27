@@ -21,7 +21,12 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
     public static object CreateXsltArgument(HtmlXsltContext context) => new XsltArgument(context);
 
-    public abstract object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext);
+    object IXsltContextFunction.Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
+    {
+        return InvokeCore(xsltContext, args, docContext)!;
+    }
+
+    protected abstract object? InvokeCore(XsltContext? xsltContext, object[] args, XPathNavigator? docContext);
 
     public virtual int Maxargs => Minargs;
 
@@ -164,7 +169,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
         public string? Lowercase(object obj)
         {
-            return (string?)new Lowercase(Context, "Lowercase").Invoke(xsltContext: null!, [obj], docContext: null!);
+            return (string?)new Lowercase(Context, "Lowercase").InvokeCore(xsltContext: null, [obj], docContext: null);
         }
 
         // add methods as needed
@@ -188,9 +193,9 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
         }
 
         [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
-        public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
+        protected override object? InvokeCore(XsltContext? xsltContext, object[] args, XPathNavigator? docContext)
         {
-            return ConvertToString(args, outer: false, separator: null)?.ToLowerInvariant()!;
+            return ConvertToString(args, outer: false, separator: null)?.ToLowerInvariant();
         }
     }
 }

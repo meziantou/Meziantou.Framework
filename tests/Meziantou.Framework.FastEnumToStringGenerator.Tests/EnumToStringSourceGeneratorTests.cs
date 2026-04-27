@@ -9,7 +9,7 @@ namespace Meziantou.Framework.FastEnumToStringGenerator.Tests;
 
 public sealed class EnumToStringSourceGeneratorTests
 {
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, bool mustCompile = true, string[]? assemblyLocations = null)
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[]? Assembly)> GenerateFiles(string file, bool mustCompile = true, string[]? assemblyLocations = null)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
         assemblyLocations ??= [];
@@ -44,7 +44,7 @@ public sealed class EnumToStringSourceGeneratorTests
             Assert.Empty(result.Diagnostics);
         }
 
-        return (runResult, outputCompilation, result.Success ? ms.ToArray() : []);
+        return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class EnumToStringSourceGeneratorTests
         Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Microsoft.CodeAnalysis.EmbeddedAttribute.g.cs", StringComparison.Ordinal));
         Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Meziantou.Framework.Annotations.FastEnumToStringAttribute.g.cs", StringComparison.Ordinal));
 
-        var asm = Assembly.Load(assembly);
+        var asm = Assembly.Load(Assert.IsType<byte[]>(assembly));
         var type = asm.GetType("A.B.C");
         var method = type!.GetMethod("Sample", BindingFlags.Public | BindingFlags.Static);
         Assert.Equal("Value2", method!.Invoke(null, [1]));
@@ -118,7 +118,7 @@ public sealed class EnumToStringSourceGeneratorTests
         Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Microsoft.CodeAnalysis.EmbeddedAttribute.g.cs", StringComparison.Ordinal));
         Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Meziantou.Framework.Annotations.FastEnumToStringAttribute.g.cs", StringComparison.Ordinal));
 
-        var asm = Assembly.Load(assembly);
+        var asm = Assembly.Load(Assert.IsType<byte[]>(assembly));
         var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");
         var methods1 = ns1Type!.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .Where(m => m.Name == "ToStringFast")

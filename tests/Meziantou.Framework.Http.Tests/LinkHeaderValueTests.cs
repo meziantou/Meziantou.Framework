@@ -21,7 +21,7 @@ public sealed class LinkHeaderValueTests
                 Assert.Equal("plop", item.Url);
                 Assert.Equal("d\"e;f,", item.Rel);
                 Assert.Equal("test title", item.GetParameterValue("title"));
-                Assert.Empty(item.GetParameterValue("abc") ?? "");
+                Assert.Equal("", item.GetParameterValue("abc"));
                 Assert.Null(item.GetParameterValue("unknown"));
             });
     }

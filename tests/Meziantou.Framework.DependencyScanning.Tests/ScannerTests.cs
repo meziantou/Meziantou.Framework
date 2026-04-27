@@ -1314,8 +1314,8 @@ jobs:
                 d.Type == expected.Type &&
                 d.Name == expected.Name &&
                 d.Version == expected.Version &&
-                (expected.VersionLine == 0 || d.VersionLocation is ILocationLineInfo lineInfo1 && lineInfo1.LineNumber == expected.VersionLine) &&
-                (expected.VersionColumn == 0 || d.VersionLocation is ILocationLineInfo lineInfo2 && lineInfo2.LinePosition == expected.VersionColumn));
+                (expected.VersionLine == 0 || ((ILocationLineInfo)d.VersionLocation!).LineNumber == expected.VersionLine) &&
+                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation!).LinePosition == expected.VersionColumn));
         }
     }
 

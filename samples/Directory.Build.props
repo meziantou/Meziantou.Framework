@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <IsSampleProject>True</IsSampleProject>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
 </Project>

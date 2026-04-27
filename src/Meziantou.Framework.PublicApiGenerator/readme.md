@@ -24,6 +24,36 @@ foreach (var file in files)
 }
 ```
 
+## Multi-target usage
+
+You can merge multiple target frameworks into one output and emit conditional compilation blocks for target-specific differences:
+
+```csharp
+using Meziantou.Framework.PublicApiGenerator;
+
+var files = PublicApi.Generate(
+    assemblySources:
+    [
+        "/path/to/MyLibrary.netstandard2.0.dll",
+        "/path/to/MyLibrary.net8.0.dll",
+    ]);
+```
+
+If needed, you can provide explicit framework monikers for specific entries:
+
+```csharp
+using Meziantou.Framework.PublicApiGenerator;
+
+var files = PublicApi.Generate(
+    assemblySources:
+    [
+        new AssemblySource("/path/to/MyLibrary.netstandard2.0.dll", ".NETStandard,Version=v2.0"),
+        new AssemblySource("/path/to/MyLibrary.net8.0.dll", ".NETCoreApp,Version=v8.0"),
+    ]);
+```
+
+If `TargetFrameworkMoniker` is omitted (or empty), the generator infers it from assembly metadata.
+
 ## Example output
 
 Input API:

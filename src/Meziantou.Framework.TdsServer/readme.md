@@ -83,6 +83,7 @@ app.MapTdsHandlers(
 ## TLS configuration
 
 TLS uses SQL Server PRELOGIN encryption negotiation on the same TCP endpoint. Configure either a PFX file or a PEM certificate/private key pair.
+For `Microsoft.Data.SqlClient` interoperability, the server negotiates TLS 1.2 for encrypted TDS sessions.
 
 ### PFX
 

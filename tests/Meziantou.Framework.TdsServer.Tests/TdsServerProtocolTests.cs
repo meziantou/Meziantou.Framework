@@ -341,7 +341,6 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
-    [SkipOnGitHubActions(FactOperatingSystem.Windows | FactOperatingSystem.Linux)]
     public async Task SqlClient_EncryptTrue_WithPfxCertificate_Connects()
     {
         using var tlsCertificateFiles = CreateTlsCertificateFiles();
@@ -372,7 +371,6 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
-    [SkipOnGitHubActions(FactOperatingSystem.Windows | FactOperatingSystem.Linux)]
     public async Task SqlClient_EncryptTrue_WithPemCertificate_Connects()
     {
         using var tlsCertificateFiles = CreateTlsCertificateFiles();
@@ -403,7 +401,6 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
-    [SkipOnGitHubActions(FactOperatingSystem.Windows | FactOperatingSystem.Linux)]
     public async Task SqlClient_EncryptOptional_AndEncryptTrue_WorkOnSameEndpoint()
     {
         using var tlsCertificateFiles = CreateTlsCertificateFiles();

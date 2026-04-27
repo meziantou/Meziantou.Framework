@@ -78,7 +78,7 @@ internal sealed class TdsConnectionProcessor
                 serverSupportsEncryption: serverCertificate is not null,
                 serverRequiresEncryption: _options.RequireEncryption);
 
-            await writer.WriteAsync(TdsPacketType.TabularResult, TdsPreLoginMessage.CreateResponse(preLoginPacket.Payload, negotiationResult.Value.ResponseEncryptionMode), cancellationToken).ConfigureAwait(false);
+            await writer.WriteAsync(TdsPacketType.PreLogin, TdsPreLoginMessage.CreateResponse(preLoginPacket.Payload, negotiationResult.Value.ResponseEncryptionMode), cancellationToken).ConfigureAwait(false);
             if (negotiationResult.Value.RejectConnection)
             {
                 _logger.LogDebug("PRELOGIN encryption negotiation failed. ClientMode={ClientMode}, ServerResponse={ServerResponse}", clientEncryptionMode, negotiationResult.Value.ResponseEncryptionMode);
@@ -193,6 +193,7 @@ internal sealed class TdsConnectionProcessor
         }
     }
 
+    [SuppressMessage("Security", "CA5398:Do not hardcode SslProtocols", Justification = "SqlClient interoperability with TDS-over-TLS requires TLS 1.2 during PRELOGIN encryption upgrade.")]
     private static async Task<SslStream> UpgradeToTlsAsync(Stream input, Stream output, X509Certificate2 certificate, int packetSize, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -201,11 +202,12 @@ internal sealed class TdsConnectionProcessor
 
         var baseStream = new TdsTlsPacketStream(input, output, packetSize);
         var sslStream = new SslStream(baseStream, leaveInnerStreamOpen: true);
+
         await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
         {
             ServerCertificate = certificate,
             ClientCertificateRequired = false,
-            EnabledSslProtocols = SslProtocols.None,
+            EnabledSslProtocols = SslProtocols.Tls12,
             CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
         }, cancellationToken).ConfigureAwait(false);
 

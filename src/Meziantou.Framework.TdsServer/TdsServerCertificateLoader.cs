@@ -91,8 +91,17 @@ internal static class TdsServerCertificateLoader
         // Re-import as PKCS12 to ensure the private key is usable with SslStream on Schannel.
         var exportedCertificate = certificate.Export(X509ContentType.Pkcs12);
         certificate.Dispose();
-        var importedCertificate = new X509Certificate2(exportedCertificate, (string?)null, X509KeyStorageFlags.UserKeySet);
-        Array.Clear(exportedCertificate);
-        return importedCertificate;
+        try
+        {
+#if NET9_0_OR_GREATER
+            return X509CertificateLoader.LoadPkcs12(exportedCertificate, password: null, keyStorageFlags: X509KeyStorageFlags.UserKeySet);
+#else
+            return new X509Certificate2(exportedCertificate, (string?)null, X509KeyStorageFlags.UserKeySet);
+#endif
+        }
+        finally
+        {
+            Array.Clear(exportedCertificate);
+        }
     }
 }

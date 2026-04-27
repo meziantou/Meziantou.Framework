@@ -46,7 +46,7 @@ internal static class TdsServerCertificateLoader
 
         var certificatePath = EnsureFileExists(options.TlsPemCertificatePath!, nameof(TdsServerOptions.TlsPemCertificatePath));
         var privateKeyPath = EnsureFileExists(options.TlsPemPrivateKeyPath!, nameof(TdsServerOptions.TlsPemPrivateKeyPath));
-        return ValidateLoadedCertificate(X509Certificate2.CreateFromPemFile(certificatePath, privateKeyPath), configuration: nameof(TdsServerOptions.TlsPemCertificatePath));
+        return ValidateLoadedCertificate(LoadPemCertificate(certificatePath, privateKeyPath), configuration: nameof(TdsServerOptions.TlsPemCertificatePath));
     }
 
     private static string EnsureFileExists(string path, string optionName)
@@ -78,5 +78,21 @@ internal static class TdsServerCertificateLoader
 #else
         return new X509Certificate2(path, password);
 #endif
+    }
+
+    private static X509Certificate2 LoadPemCertificate(string certificatePath, string privateKeyPath)
+    {
+        var certificate = X509Certificate2.CreateFromPemFile(certificatePath, privateKeyPath);
+        if (!OperatingSystem.IsWindows())
+        {
+            return certificate;
+        }
+
+        // Re-import as PKCS12 to ensure the private key is usable with SslStream on Schannel.
+        var exportedCertificate = certificate.Export(X509ContentType.Pkcs12);
+        certificate.Dispose();
+        var importedCertificate = new X509Certificate2(exportedCertificate, (string?)null, X509KeyStorageFlags.UserKeySet);
+        Array.Clear(exportedCertificate);
+        return importedCertificate;
     }
 }

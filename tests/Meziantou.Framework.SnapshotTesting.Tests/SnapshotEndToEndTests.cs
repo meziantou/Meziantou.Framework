@@ -495,6 +495,58 @@ public sealed class SnapshotEndToEndTests
         ]);
     }
 
+    [Fact]
+    public async Task Validate_EndToEnd_UsesContainingMethodName_WhenCalledFromLambda()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            using System.Threading.Tasks;
+
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public async Task SampleTest()
+                {
+                    await Task.Run(() => Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings()));
+                }
+            }
+            """,
+            testFramework: SnapshotTestFramework.Xunit);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_UsesContainingMethodName_WhenCalledFromAsyncLambda()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            using System.Threading.Tasks;
+
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public async Task SampleTest()
+                {
+                    await Task.Run(async () =>
+                    {
+                        Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                        await Task.CompletedTask;
+                    });
+                }
+            }
+            """,
+            testFramework: SnapshotTestFramework.Xunit);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
     private static string GetFrameworkSmokeSource(SnapshotTestFramework framework)
     {
         return framework switch

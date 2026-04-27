@@ -496,7 +496,7 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
-    public async Task Validate_EndToEnd_IgnoresOutputSnapshots_WhenUsingArtifactsOutput()
+    public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutput()
     {
         var snapshotFiles = await AssertSnapshot(
             """
@@ -520,12 +520,7 @@ public sealed class SnapshotEndToEndTests
                 <UseArtifactsOutput>true</UseArtifactsOutput>
               </PropertyGroup>
             </Project>
-            """,
-            additionalFilesAfterTest:
-            [
-                new SnapshotFile("artifacts/bin/Project/debug/__snapshots__/SampleTest.verified.txt", "copied snapshot"u8.ToArray()),
-                new SnapshotFile("artifacts/obj/Project/debug/__snapshots__/SampleTest.verified.txt", "intermediate snapshot"u8.ToArray()),
-            ]);
+            """);
 
         AssertSnapshotContent(snapshotFiles,
         [
@@ -693,8 +688,7 @@ public sealed class SnapshotEndToEndTests
         bool expectFailure = false,
         IReadOnlyList<SnapshotFile>? existingFiles = null,
         string? testFilter = null,
-        string? directoryBuildPropsContent = null,
-        IReadOnlyList<SnapshotFile>? additionalFilesAfterTest = null)
+        string? directoryBuildPropsContent = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
@@ -749,14 +743,6 @@ public sealed class SnapshotEndToEndTests
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore", "--disable-build-servers"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, GetDotNetTestArguments(testFramework, testFilter), expectedExitCode: expectFailure ? 1 : 0);
-
-        if (additionalFilesAfterTest is not null)
-        {
-            foreach (var additionalFile in additionalFilesAfterTest)
-            {
-                CreateBinaryFile(additionalFile.RelativePath, additionalFile.Content);
-            }
-        }
 
         return GetGeneratedSnapshotFiles(directory.FullPath);
 

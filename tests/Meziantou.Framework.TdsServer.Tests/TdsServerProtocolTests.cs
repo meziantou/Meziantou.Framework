@@ -166,7 +166,7 @@ public sealed class TdsServerProtocolTests
             (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
             (context, cancellationToken) =>
             {
-                if (!TryParseCustomerQuery(context.CommandText, out var customerId))
+                if (!TryParseCustomerQuery(context.CommandText!, out var customerId))
                 {
                     parseSucceededTask.TrySetResult(false);
                     return ValueTask.FromResult(TdsQueryResult.FromError(new TdsQueryError
@@ -220,7 +220,7 @@ public sealed class TdsServerProtocolTests
             (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
             (context, cancellationToken) =>
             {
-                if (!TryParseCustomerQuery(context.CommandText, out _))
+                if (!TryParseCustomerQuery(context.CommandText!, out _))
                 {
                     invalidQueryTask.TrySetResult(true);
                     return ValueTask.FromResult(TdsQueryResult.FromError(new TdsQueryError

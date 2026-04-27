@@ -23,7 +23,7 @@ public class HtmlNodeTests
     {
         var doc = new HtmlDocument();
         doc.LoadHtml("<p>def</p>");
-        Assert.Null(doc.SelectSingleNode("/p").ParentElement);
+        Assert.Null(doc.SelectSingleNode("/p")!.ParentElement);
     }
 
     [Fact]
@@ -31,6 +31,6 @@ public class HtmlNodeTests
     {
         var doc = new HtmlDocument();
         doc.LoadHtml("<p>def</p>");
-        Assert.Equal("p", doc.SelectSingleNode("/p/node()").ParentElement.Name);
+        Assert.Equal("p", doc.SelectSingleNode("/p/node()")!.ParentElement!.Name);
     }
 }

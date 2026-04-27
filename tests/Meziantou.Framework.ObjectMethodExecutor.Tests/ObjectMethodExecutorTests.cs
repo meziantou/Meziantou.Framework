@@ -9,7 +9,7 @@ public sealed class ObjectMethodExecutorTests
     public void StaticSyncVoidTest()
     {
         var validator = new Validator();
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("StaticSyncVoid"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("StaticSyncVoid")!);
         var result = executor.Execute(target: null, [validator]);
 
         Assert.Null(result);
@@ -20,7 +20,7 @@ public sealed class ObjectMethodExecutorTests
     public void SyncVoidTest()
     {
         var validator = new Validator();
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid")!);
         var result = executor.Execute(new Test(), [validator]);
 
         Assert.Null(result);
@@ -30,7 +30,7 @@ public sealed class ObjectMethodExecutorTests
     [Fact]
     public void SyncInt32Test()
     {
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32")!);
         var result = executor.Execute(new Test(), []);
         Assert.Equal(1, result);
     }
@@ -38,7 +38,7 @@ public sealed class ObjectMethodExecutorTests
     [Fact]
     public void SyncInt32WithParamTest()
     {
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam")!);
         var result = executor.Execute(new Test(), [12]);
         Assert.Equal(12, result);
     }
@@ -47,7 +47,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task StaticAsyncTaskTests()
     {
         var validator = new Validator();
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("StaticAsyncTask"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("StaticAsyncTask")!);
         var result = await executor.ExecuteAsync(null, [validator]);
 
         Assert.Null(result);
@@ -58,7 +58,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task AsyncTaskTests()
     {
         var validator = new Validator();
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTask"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTask")!);
         var result = await executor.ExecuteAsync(new Test(), [validator]);
 
         Assert.Null(result);
@@ -68,7 +68,7 @@ public sealed class ObjectMethodExecutorTests
     [Fact]
     public async Task AsyncTaskInt32Tests()
     {
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32")!);
         var result = await executor.ExecuteAsync(new Test(), []);
         Assert.Equal(1, result);
     }
@@ -76,7 +76,7 @@ public sealed class ObjectMethodExecutorTests
     [Fact]
     public async Task ValueTaskInt32Tests()
     {
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("ValueTaskInt32"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("ValueTaskInt32")!);
         var result = await executor.ExecuteAsync(new Test(), []);
         Assert.Equal(1, result);
     }
@@ -84,7 +84,7 @@ public sealed class ObjectMethodExecutorTests
     [Fact]
     public async Task AsyncTaskInt32WithParamTests()
     {
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam")!);
         var result = await executor.ExecuteAsync(new Test(), [12]);
         Assert.Equal(12, result);
     }
@@ -92,7 +92,7 @@ public sealed class ObjectMethodExecutorTests
     [Fact]
     public async Task AsyncCustomAwaiter()
     {
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncCustomAwaiter"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncCustomAwaiter")!);
         var result = await executor.ExecuteAsync(new Test(), []);
         Assert.Null(result);
     }
@@ -101,7 +101,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task AsyncValueTaskTests()
     {
         var validator = new Validator();
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncValueTask"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncValueTask")!);
         var result = await executor.ExecuteAsync(new Test(), [validator]);
 
         Assert.Null(result);
@@ -112,7 +112,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task SyncVoidCalledAsyncTest()
     {
         var validator = new Validator();
-        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid"));
+        var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid")!);
         var result = await executor.ExecuteAsync(new Test(), [validator]);
 
         Assert.Null(result);
@@ -122,7 +122,7 @@ public sealed class ObjectMethodExecutorTests
     [Fact]
     public async Task FSharpAsync()
     {
-        var executor = ObjectMethodExecutor.Create(typeof(FSharpTests.Say).GetMethod("get_int32"));
+        var executor = ObjectMethodExecutor.Create(typeof(FSharpTests.Say).GetMethod("get_int32")!);
         var result = await executor.ExecuteAsync(new FSharpTests.Say(), []);
         Assert.Equal(42, result);
     }
@@ -130,7 +130,7 @@ public sealed class ObjectMethodExecutorTests
     [Fact]
     public async Task FSharpAsync_Unit()
     {
-        var executor = ObjectMethodExecutor.Create(typeof(FSharpTests.Say).GetMethod("get_dummyUnit"));
+        var executor = ObjectMethodExecutor.Create(typeof(FSharpTests.Say).GetMethod("get_dummyUnit")!);
         var result = await executor.ExecuteAsync(new FSharpTests.Say(), []);
         Assert.Null(result);
     }

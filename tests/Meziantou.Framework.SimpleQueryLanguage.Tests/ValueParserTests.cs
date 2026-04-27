@@ -86,7 +86,7 @@ public class ValueParserTests
 
     private sealed class CustomTypeWithTryParse
     {
-        public static bool TryParse(string value, out CustomTypeWithTryParse result)
+        public static bool TryParse(string value, out CustomTypeWithTryParse? result)
         {
             if (string.IsNullOrEmpty(value))
             {

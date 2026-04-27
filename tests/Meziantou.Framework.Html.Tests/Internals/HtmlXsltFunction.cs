@@ -6,16 +6,16 @@ namespace Meziantou.Framework.Html.Tests;
 
 internal abstract class HtmlXsltFunction : IXsltContextFunction
 {
-    protected HtmlXsltFunction(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
+    protected HtmlXsltFunction(HtmlXsltContext context, string? prefix, string name, XPathResultType[]? argTypes)
     {
         Context = context;
         Prefix = prefix;
         Name = name;
-        ArgTypes = argTypes;
+        ArgTypes = argTypes ?? [];
     }
 
     public HtmlXsltContext Context { get; }
-    public string Prefix { get; }
+    public string? Prefix { get; }
     public string Name { get; }
     public XPathResultType[] ArgTypes { get; }
 
@@ -62,7 +62,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
         return defaultValue;
     }
 
-    public static string ConvertToString(object argument, bool outer, string separator)
+    public static string? ConvertToString(object? argument, bool outer, string? separator)
     {
         if (argument is null)
             return null;
@@ -102,7 +102,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
         if (argument is IEnumerable enumerable)
         {
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             foreach (var arg in enumerable)
             {
                 sb ??= new StringBuilder();
@@ -124,7 +124,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
         return string.Format(CultureInfo.InvariantCulture, "{0}", argument);
     }
 
-    internal static bool IsNull(object arg)
+    internal static bool IsNull(object? arg)
     {
         if (arg is null || Convert.IsDBNull(arg))
             return true;
@@ -138,7 +138,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
             if (!it.MoveNext())
                 return true;
 
-            object current = it.Current;
+            object? current = it.Current;
             return IsNull(current);
         }
 
@@ -162,15 +162,15 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
         public HtmlXsltContext Context { get; }
 
-        public string Lowercase(object obj)
+        public string? Lowercase(object obj)
         {
-            return (string)new Lowercase(Context, "Lowercase").Invoke(xsltContext: null, [obj], docContext: null);
+            return (string?)new Lowercase(Context, "Lowercase").Invoke(xsltContext: null!, [obj], docContext: null!);
         }
 
         // add methods as needed
     }
 
-    public static IXsltContextFunction GetBuiltIn(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
+    public static IXsltContextFunction? GetBuiltIn(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
     {
         _ = prefix;
         _ = argTypes;
@@ -190,7 +190,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
         [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
         public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
         {
-            return ConvertToString(args, outer: false, separator: null)?.ToLowerInvariant();
+            return ConvertToString(args, outer: false, separator: null)?.ToLowerInvariant()!;
         }
     }
 }

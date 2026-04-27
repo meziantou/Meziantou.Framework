@@ -31,7 +31,7 @@ public class GlobParserTests
     [InlineData("")]
     public void InvalidPatterns(string? content)
     {
-        Assert.Throws<ArgumentException>(() => Glob.Parse(content, GlobOptions.None));
+        Assert.Throws<ArgumentException>(() => Glob.Parse(content!, GlobOptions.None));
     }
 
     [Fact]

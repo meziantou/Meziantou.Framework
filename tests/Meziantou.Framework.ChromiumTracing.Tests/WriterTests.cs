@@ -12,7 +12,7 @@ public sealed partial class WriterTests
         var eventTypes = typeof(ChromiumTracingWriter).Assembly.GetTypes().Where(t => !t.IsAbstract && t.IsAssignableTo(typeof(ChromiumTracingEvent)));
         foreach (var eventType in eventTypes)
         {
-            var instance = (ChromiumTracingEvent)Activator.CreateInstance(eventType);
+            var instance = (ChromiumTracingEvent)Activator.CreateInstance(eventType)!;
             await writer.WriteEventAsync(instance);
         }
 
@@ -29,7 +29,7 @@ public sealed partial class WriterTests
             ProcessId = 1,
             ThreadId = 2,
             ColorName = "yellow",
-            Arguments = new Dictionary<string, object>(StringComparer.Ordinal) { ["step"] = "sample" },
+            Arguments = new Dictionary<string, object?>(StringComparer.Ordinal) { ["step"] = "sample" },
         });
 
         // Custom writes
@@ -53,7 +53,7 @@ public sealed partial class WriterTests
         {
             Name = "Sample",
             Timestamp = DateTimeOffset.UtcNow,
-            Arguments = new Dictionary<string, object>(StringComparer.Ordinal)
+            Arguments = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["value"] = 123L,
             },
@@ -69,7 +69,7 @@ public sealed partial class WriterTests
         {
             Name = "Sample",
             Timestamp = DateTimeOffset.UtcNow,
-            Arguments = new Dictionary<string, object>(StringComparer.Ordinal)
+            Arguments = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["payload"] = new CustomPayload(42),
             },

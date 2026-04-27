@@ -18,7 +18,7 @@ public sealed class ArgumentPrinterClassFixture
     {
         var rootPath = FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
         _projectPath = rootPath / "tests" / "ArgumentsPrinter" / "ArgumentsPrinter.csproj";
-        _dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        _dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet") ?? throw new XunitException("Cannot find dotnet executable");
     }
 
     public async ValueTask<string[]> RoundtripArguments(string arguments)

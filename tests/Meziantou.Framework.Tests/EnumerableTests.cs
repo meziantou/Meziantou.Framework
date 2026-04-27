@@ -110,7 +110,7 @@ public class EnumerableTests
     [Fact]
     public void EmptyIfNull_Null()
     {
-        IEnumerable<string> items = null;
+        IEnumerable<string>? items = null;
         Assert.Equal([], items.EmptyIfNull());
     }
 
@@ -289,7 +289,7 @@ public class EnumerableTests
     [Fact]
     public void ParallelSort_NullArray_Throws()
     {
-        int[] values = null;
+        int[]? values = null;
         Assert.Throws<ArgumentNullException>(() => values!.ParallelSort());
     }
 
@@ -424,7 +424,7 @@ public class EnumerableTests
     [Fact]
     public void ParallelStableSort_NullArray_Throws()
     {
-        int[] values = null;
+        int[]? values = null;
         Assert.Throws<ArgumentNullException>(() => values!.ParallelStableSort());
     }
 
@@ -463,7 +463,7 @@ public class EnumerableTests
         public int Key { get; } = key;
         public int Order { get; } = order;
 
-        public int CompareTo(ComparableReferenceValue other)
+        public int CompareTo(ComparableReferenceValue? other)
         {
             if (other is null)
                 return 1;
@@ -471,7 +471,7 @@ public class EnumerableTests
             return Key.CompareTo(other.Key);
         }
 
-        public bool Equals(ComparableReferenceValue other)
+        public bool Equals(ComparableReferenceValue? other)
         {
             if (other is null)
                 return false;
@@ -479,7 +479,7 @@ public class EnumerableTests
             return Key == other.Key && Order == other.Order;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ComparableReferenceValue other && Equals(other);
         }

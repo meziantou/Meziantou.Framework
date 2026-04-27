@@ -68,7 +68,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void SerializeObject_Null() => AssertSerialization(null, "<null>");
 
     [Fact]
-    public void SerializeObject_Null_Nested() => AssertSerialization(new { Obj = (object)null }, "Obj: <null>");
+    public void SerializeObject_Null_Nested() => AssertSerialization(new { Obj = (object?)null }, "Obj: <null>");
 
     [Fact]
     public void SerializeArray_Empty()
@@ -1030,61 +1030,61 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void Type_AnonymType() => AssertSerialization(new { }.GetType(), "<>f__AnonymousType4, Meziantou.Framework.HumanReadableSerializer.Tests");
 
     [Fact]
-    public void MethodInfo() => AssertSerialization(typeof(object).GetMethod("ToString"), "System.Object.ToString()");
+    public void MethodInfo() => AssertSerialization(typeof(object).GetMethod("ToString")!, "System.Object.ToString()");
 
     [Fact]
-    public void MethodInfo_dynamic_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.Dynamic)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.Dynamic(dynamic value)");
+    public void MethodInfo_dynamic_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.Dynamic))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.Dynamic(dynamic value)");
 
     [Fact]
-    public void MethodInfo_dynamic_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ValueTupleDynamic)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ValueTupleDynamic((dynamic, System.Int32) value)");
+    public void MethodInfo_dynamic_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ValueTupleDynamic))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ValueTupleDynamic((dynamic, System.Int32) value)");
 
     [Fact]
-    public void MethodInfo_dynamic_Nested_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ValueTupleNestedDynamic)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ValueTupleNestedDynamic((dynamic A, (System.Int32 B, dynamic C) D) value)");
+    public void MethodInfo_dynamic_Nested_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ValueTupleNestedDynamic))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ValueTupleNestedDynamic((dynamic A, (System.Int32 B, dynamic C) D) value)");
 
     [Fact]
-    public void MethodInfo_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.NotNamed)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NotNamed((System.Int32, System.String) a)");
+    public void MethodInfo_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.NotNamed))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NotNamed((System.Int32, System.String) a)");
 
     [Fact]
-    public void MethodInfo_ValueTuple_Named_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.Named)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.Named((System.Int32 A, System.String B) a)");
+    public void MethodInfo_ValueTuple_Named_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.Named))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.Named((System.Int32 A, System.String B) a)");
 
     [Fact]
-    public void MethodInfo_ValueTuple_Named_ReturnType() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.NamedResult)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NamedResult()");
+    public void MethodInfo_ValueTuple_Named_ReturnType() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.NamedResult))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NamedResult()");
 
     [Fact]
-    public void PropertyInfo_ValueTuple_Named_ReturnType() => AssertSerialization(typeof(Methods).GetProperty(nameof(Methods.NamedProperty)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NamedProperty");
+    public void PropertyInfo_ValueTuple_Named_ReturnType() => AssertSerialization(typeof(Methods).GetProperty(nameof(Methods.NamedProperty))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NamedProperty");
 
     [Fact]
-    public void MethodInfo_WithParameters() => AssertSerialization(typeof(Guid).GetMethod("Parse", [typeof(string)]), "static System.Guid.Parse(System.String input)");
+    public void MethodInfo_WithParameters() => AssertSerialization(typeof(Guid).GetMethod("Parse", [typeof(string)])!, "static System.Guid.Parse(System.String input)");
 
     [Fact]
-    public void MethodInfo_Generic() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.GenericMethod)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.GenericMethod<TEnum>(System.String value)");
+    public void MethodInfo_Generic() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.GenericMethod))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.GenericMethod<TEnum>(System.String value)");
 
     [Fact]
-    public void MethodInfo_Generic_Constructed() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.GenericMethod)).MakeGenericMethod(typeof(DayOfWeek)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.GenericMethod<System.DayOfWeek>(System.String value)");
+    public void MethodInfo_Generic_Constructed() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.GenericMethod))!.MakeGenericMethod(typeof(DayOfWeek)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.GenericMethod<System.DayOfWeek>(System.String value)");
 
     [Fact]
-    public void FieldInfo() => AssertSerialization(typeof(Guid).GetField("_a", BindingFlags.NonPublic | BindingFlags.Instance), "System.Guid._a");
+    public void FieldInfo() => AssertSerialization(typeof(Guid).GetField("_a", BindingFlags.NonPublic | BindingFlags.Instance)!, "System.Guid._a");
 
     [Fact]
-    public void FieldInfo_OpenGenericType() => AssertSerialization(typeof(Nullable<>).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance), "System.Nullable<T>.hasValue");
+    public void FieldInfo_OpenGenericType() => AssertSerialization(typeof(Nullable<>).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance)!, "System.Nullable<T>.hasValue");
 
     [Fact]
-    public void FieldInfo_GenericType() => AssertSerialization(typeof(int?).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance), "System.Nullable<System.Int32>.hasValue");
+    public void FieldInfo_GenericType() => AssertSerialization(typeof(int?).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance)!, "System.Nullable<System.Int32>.hasValue");
 
     [Fact]
-    public void PropertyInfo() => AssertSerialization(typeof(string).GetProperty("Length"), "System.String.Length");
+    public void PropertyInfo() => AssertSerialization(typeof(string).GetProperty("Length")!, "System.String.Length");
 
     [Fact]
-    public void PropertyInfo_Indexer() => AssertSerialization(typeof(string).GetProperty("Chars"), "System.String.Chars[System.Int32 index]");
+    public void PropertyInfo_Indexer() => AssertSerialization(typeof(string).GetProperty("Chars")!, "System.String.Chars[System.Int32 index]");
 
     [Fact]
-    public void ConstructorInfo() => AssertSerialization(typeof(object).GetConstructor([]), "new System.Object()");
+    public void ConstructorInfo() => AssertSerialization(typeof(object).GetConstructor([])!, "new System.Object()");
 
     [Fact]
     public void ConstructorInfo_Static() => AssertSerialization(typeof(ClassWithStaticCtor).GetConstructors(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)[0], "static Meziantou.Framework.HumanReadable.Tests.SerializerTests+ClassWithStaticCtor()");
 
     [Fact]
-    public void ParameterInfo() => AssertSerialization(typeof(Guid).GetMethod("Parse", [typeof(string)]).GetParameters()[0], "System.String input");
+    public void ParameterInfo() => AssertSerialization(typeof(Guid).GetMethod("Parse", [typeof(string)])!.GetParameters()[0], "System.String input");
 
     [Fact]
     public void DateTime_Utc() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc), "2123-04-05T06:07:08Z");
@@ -1789,7 +1789,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
-            Subject = new { Dummy = "", Object = (object)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
             Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.Never },
             Expected = """
                 Dummy:
@@ -1805,7 +1805,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
-            Subject = new { Dummy = "", Object = (object)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
             Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull },
             Expected = """
                 Dummy:
@@ -1819,7 +1819,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
-            Subject = new { Dummy = "", Object = (object)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
             Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault },
             Expected = """
                 Dummy:
@@ -1996,7 +1996,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void WhenWritingEmptyCollection_Null()
     {
-        var obj = new { A = (string[])null, B = 2 };
+        var obj = new { A = (string[]?)null, B = 2 };
 
         AssertSerialization(new Validation
         {
@@ -2045,7 +2045,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void WhenWritingDefaultOrEmptyCollection_Null()
     {
-        var obj = new { A = (string[])null, B = 2 };
+        var obj = new { A = (string[]?)null, B = 2 };
 
         AssertSerialization(new Validation
         {
@@ -2143,7 +2143,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         var options = new HumanReadableSerializerOptions();
         options.PropertyOrder = StringComparer.Ordinal;
-        options.IgnoreMember<Exception>(exception => exception.TargetSite);
+        options.IgnoreMember<Exception>(exception => exception.TargetSite!);
 
         AssertSerialization(new Validation
         {
@@ -2166,8 +2166,8 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         var options = new HumanReadableSerializerOptions();
         options.PropertyOrder = StringComparer.Ordinal;
-        options.IgnoreMember<Exception>(exception => exception.TargetSite);
-        options.IgnoreMember<Exception>(exception => exception.InnerException.Message); // Detect Exception.Message
+        options.IgnoreMember<Exception>(exception => exception.TargetSite!);
+        options.IgnoreMember<Exception>(exception => exception.InnerException!.Message); // Detect Exception.Message
 
         AssertSerialization(new Validation
         {
@@ -2246,7 +2246,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         var options = new HumanReadableSerializerOptions();
         options.PropertyOrder = StringComparer.Ordinal;
-        options.AddAttribute<Exception>(e => e.Source, new HumanReadableIgnoreAttribute());
+        options.AddAttribute<Exception>(e => e.Source!, new HumanReadableIgnoreAttribute());
         options.AddAttribute<Exception>(e => new { e.HResult, e.TargetSite, e.Data }, new HumanReadableIgnoreAttribute());
 
         AssertSerialization(new Validation
@@ -2288,11 +2288,11 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
     private sealed class ObjectWithFields
     {
-        private string _privateField;
+        private string? _privateField;
 
         [HumanReadableInclude]
-        private string _privateFieldIncluded;
-        public string FieldString;
+        private string? _privateFieldIncluded;
+        public string? FieldString;
         public int FieldInt32;
 
         public int PropInt32 { get; set; }
@@ -2315,16 +2315,16 @@ public sealed partial class SerializerTests : SerializerTestsBase
         public int PropInt32_Null { get; set; }
 
         [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingNull)]
-        public object PropObject { get; set; }
+        public object? PropObject { get; set; }
 
         [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.Never)]
-        public object PropObject2 { get; set; }
+        public object? PropObject2 { get; set; }
 
         [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingDefault)]
-        public object PropObject3 { get; set; }
+        public object? PropObject3 { get; set; }
 
         [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.Always)]
-        public object PropObject4 { get; set; }
+        public object? PropObject4 { get; set; }
     }
 
     private sealed class OrderedMember
@@ -2348,31 +2348,31 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         private sealed class CustomTypeConverterImpl : TypeConverter
         {
-            public override bool CanConvertTo(ITypeDescriptorContext context, [NotNullWhen(true)] Type destinationType) => destinationType == typeof(string);
+            public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType) => destinationType == typeof(string);
 
-            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType) => "converter";
+            public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType) => "converter";
         }
     }
 
     private sealed class CustomConvertible : IConvertible
     {
         public TypeCode GetTypeCode() => throw new NotSupportedException();
-        public bool ToBoolean(IFormatProvider provider) => throw new NotSupportedException();
-        public byte ToByte(IFormatProvider provider) => throw new NotSupportedException();
-        public char ToChar(IFormatProvider provider) => throw new NotSupportedException();
-        public DateTime ToDateTime(IFormatProvider provider) => throw new NotSupportedException();
-        public decimal ToDecimal(IFormatProvider provider) => throw new NotSupportedException();
-        public double ToDouble(IFormatProvider provider) => throw new NotSupportedException();
-        public short ToInt16(IFormatProvider provider) => throw new NotSupportedException();
-        public int ToInt32(IFormatProvider provider) => throw new NotSupportedException();
-        public long ToInt64(IFormatProvider provider) => throw new NotSupportedException();
-        public sbyte ToSByte(IFormatProvider provider) => throw new NotSupportedException();
-        public float ToSingle(IFormatProvider provider) => throw new NotSupportedException();
-        public string ToString(IFormatProvider provider) => "convertible";
-        public object ToType(Type conversionType, IFormatProvider provider) => throw new NotSupportedException();
-        public ushort ToUInt16(IFormatProvider provider) => throw new NotSupportedException();
-        public uint ToUInt32(IFormatProvider provider) => throw new NotSupportedException();
-        public ulong ToUInt64(IFormatProvider provider) => throw new NotSupportedException();
+        public bool ToBoolean(IFormatProvider? provider) => throw new NotSupportedException();
+        public byte ToByte(IFormatProvider? provider) => throw new NotSupportedException();
+        public char ToChar(IFormatProvider? provider) => throw new NotSupportedException();
+        public DateTime ToDateTime(IFormatProvider? provider) => throw new NotSupportedException();
+        public decimal ToDecimal(IFormatProvider? provider) => throw new NotSupportedException();
+        public double ToDouble(IFormatProvider? provider) => throw new NotSupportedException();
+        public short ToInt16(IFormatProvider? provider) => throw new NotSupportedException();
+        public int ToInt32(IFormatProvider? provider) => throw new NotSupportedException();
+        public long ToInt64(IFormatProvider? provider) => throw new NotSupportedException();
+        public sbyte ToSByte(IFormatProvider? provider) => throw new NotSupportedException();
+        public float ToSingle(IFormatProvider? provider) => throw new NotSupportedException();
+        public string ToString(IFormatProvider? provider) => "convertible";
+        public object ToType(Type conversionType, IFormatProvider? provider) => throw new NotSupportedException();
+        public ushort ToUInt16(IFormatProvider? provider) => throw new NotSupportedException();
+        public uint ToUInt32(IFormatProvider? provider) => throw new NotSupportedException();
+        public ulong ToUInt64(IFormatProvider? provider) => throw new NotSupportedException();
     }
 
     private sealed class Recursive
@@ -2389,11 +2389,11 @@ public sealed partial class SerializerTests : SerializerTestsBase
         public int Prop2 { get; set; }
 
         [HumanReadableConverter(typeof(CustomStringConverter))]
-        public string Prop3 { get; set; }
+        public string? Prop3 { get; set; }
 
         private sealed class CustomStringConverter : HumanReadableConverter<string>
         {
-            protected override void WriteValue(HumanReadableTextWriter writer, string value, HumanReadableSerializerOptions options)
+            protected override void WriteValue(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
             {
                 writer.WriteValue("Custom");
             }
@@ -2407,7 +2407,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
         private sealed class CustomStringConverter : HumanReadableConverter<string>
         {
-            protected override void WriteValue(HumanReadableTextWriter writer, string value, HumanReadableSerializerOptions options)
+            protected override void WriteValue(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
             {
                 writer.WriteValue("Custom");
             }
@@ -2423,12 +2423,12 @@ public sealed partial class SerializerTests : SerializerTestsBase
     private sealed class DummyConverter : HumanReadableConverter
     {
         public override bool CanConvert(Type type) => throw new NotSupportedException();
-        public override void WriteValue(HumanReadableTextWriter writer, object value, Type valueType, HumanReadableSerializerOptions options) => throw new NotSupportedException();
+        public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options) => throw new NotSupportedException();
     }
 
     private sealed class CustomStringComparer : IEqualityComparer<string>
     {
-        public bool Equals(string x, string y) => x == y;
+        public bool Equals(string? x, string? y) => x == y;
         public int GetHashCode([DisallowNull] string obj) => 0;
     }
 
@@ -2437,7 +2437,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
     private sealed class ClassWithCustomConverterConverter : HumanReadableConverter<ClassWithCustomConverter>
     {
-        protected override void WriteValue(HumanReadableTextWriter writer, ClassWithCustomConverter value, HumanReadableSerializerOptions options)
+        protected override void WriteValue(HumanReadableTextWriter writer, ClassWithCustomConverter? value, HumanReadableSerializerOptions options)
         {
             writer.WriteValue("dummy");
         }
@@ -2473,12 +2473,12 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
         public (int A, int B) NamedProperty => default;
 
-        public void GenericMethod<TEnum>(string value) => throw null;
+        public void GenericMethod<TEnum>(string value) => throw new NotSupportedException();
 
-        public void Dynamic(dynamic value) => throw null;
+        public void Dynamic(dynamic value) => throw new NotSupportedException();
 
-        public void ValueTupleDynamic((dynamic, int) value) => throw null;
+        public void ValueTupleDynamic((dynamic, int) value) => throw new NotSupportedException();
 
-        public void ValueTupleNestedDynamic((dynamic A, (int B, dynamic C) D) value) => throw null;
+        public void ValueTupleNestedDynamic((dynamic A, (int B, dynamic C) D) value) => throw new NotSupportedException();
     }
 }

@@ -45,7 +45,7 @@ public class SemanticVersionTests
     [Fact]
     public void TryParse_ShouldNotParseNullVersion()
     {
-        Assert.False(SemanticVersion.TryParse((string)null, out _));
+        Assert.False(SemanticVersion.TryParse((string?)null, out _));
 #pragma warning restore IDE0004
     }
 
@@ -53,7 +53,7 @@ public class SemanticVersionTests
     public void Parse_ShouldNotParseNullVersion()
     {
 #pragma warning disable IDE0004 // Remove Unnecessary Cast
-        Assert.Throws<ArgumentNullException>(() => SemanticVersion.Parse((string)null));
+        Assert.Throws<ArgumentNullException>(() => SemanticVersion.Parse((string)null!));
 #pragma warning restore IDE0004
     }
 

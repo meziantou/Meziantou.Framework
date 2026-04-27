@@ -35,7 +35,7 @@ public sealed class ImmutableEquatableSetTests
         Assert.Contains("b", set);
         Assert.Contains("c", set);
         Assert.DoesNotContain("d", set);
-        Assert.DoesNotContain(null, set);
+        Assert.False(set.Contains(null!));
     }
 
     [Fact]
@@ -87,10 +87,10 @@ public sealed class ImmutableEquatableSetTests
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a" });
 
         Assert.False(set.Equals(null));
-        Assert.False(set == null);
-        Assert.False(null == set);
-        Assert.True(set != null);
-        Assert.True(null != set);
+        Assert.False(set is null);
+        Assert.False(set is null);
+        Assert.True(set is not null);
+        Assert.True(set is not null);
     }
 
     [Fact]

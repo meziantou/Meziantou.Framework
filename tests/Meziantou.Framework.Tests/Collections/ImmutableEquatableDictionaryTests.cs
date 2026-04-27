@@ -179,21 +179,21 @@ public sealed class ImmutableEquatableDictionaryTests
         var dict = new[] { ("a", 1) }.ToImmutableEquatableDictionary();
 
         Assert.False(dict.Equals(null));
-        Assert.False(dict == null);
-        Assert.False(null == dict);
-        Assert.True(dict != null);
-        Assert.True(null != dict);
-        Assert.False(dict.Equals((object)null));
+        Assert.False(dict is null);
+        Assert.False(dict is null);
+        Assert.True(dict is not null);
+        Assert.True(dict is not null);
+        Assert.False(dict.Equals((object?)null));
     }
 
     [Fact]
     public void Equals_BothNull_ShouldReturnTrue()
     {
-        ImmutableEquatableDictionary<string, int> dict1 = null;
-        ImmutableEquatableDictionary<string, int> dict2 = null;
+        ImmutableEquatableDictionary<string, int>? dict1 = null;
+        ImmutableEquatableDictionary<string, int>? dict2 = null;
 
-        Assert.True(dict1 == dict2);
-        Assert.False(dict1 != dict2);
+        Assert.True(dict1 is null && dict2 is null);
+        Assert.False(dict1 is not null || dict2 is not null);
     }
 
     [Fact]

@@ -191,12 +191,12 @@ public class ProcessExtensionsTests
     {
         var current = Process.GetCurrentProcess();
         var parent = current.GetParentProcess();
-        var grandParent = parent.GetParentProcess();
+        var grandParent = parent!.GetParentProcess();
 
         Assert.NotNull(grandParent);
 
         var descendants = grandParent.GetDescendantProcesses();
         Assert.Contains(descendants, p => p.Id == current.Id);
-        Assert.Contains(descendants, p => p.Id == parent.Id);
+        Assert.Contains(descendants, p => p.Id == parent!.Id);
     }
 }

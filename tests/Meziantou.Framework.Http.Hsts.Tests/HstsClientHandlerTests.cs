@@ -38,7 +38,7 @@ public sealed class HstsClientHandlerTests
         Assert.Equal(Uri.UriSchemeHttps, response2.RequestMessage!.RequestUri!.Scheme);
     }
 
-    private sealed class MockHttpMessageHandler(string headerResponse) : HttpMessageHandler
+    private sealed class MockHttpMessageHandler(string? headerResponse) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

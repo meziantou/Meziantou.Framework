@@ -120,7 +120,7 @@ public class ReflectionDynamicObjectTests
         private int this[int i] => i;
         private int this[int i, int j] => i + j;
 
-        private string _indexer;
+        private string? _indexer;
 
         private string this[string str]
         {

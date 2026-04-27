@@ -53,7 +53,7 @@ public static class NuGetHelpers
 
                 try
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(cacheFolder));
+                    Directory.CreateDirectory(Path.GetDirectoryName(cacheFolder)!);
                     Directory.Move(tempFolder, cacheFolder);
                 }
                 catch (Exception ex)

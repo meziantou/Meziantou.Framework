@@ -1670,7 +1670,7 @@ public sealed class PublicApiGeneratorTests
 #endif
 
     [InlineSnapshotAssertion(nameof(expected))]
-    private static async Task Validate(string source, string expected, PublicApiOptions options = null, CompilerOptions compilerOptions = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+    private static async Task Validate(string source, string expected, PublicApiOptions? options = null, CompilerOptions? compilerOptions = null, [CallerFilePath] string filePath = null!, [CallerLineNumber] int lineNumber = -1)
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         compilerOptions ??= new CompilerOptions();
@@ -1740,7 +1740,7 @@ public sealed class PublicApiGeneratorTests
         }
     }
 
-    private static async Task<IReadOnlyList<PublicApiFile>> BuildFiles(string source, PublicApiOptions options, CompilerOptions compilerOptions = null)
+    private static async Task<IReadOnlyList<PublicApiFile>> BuildFiles(string source, PublicApiOptions options, CompilerOptions? compilerOptions = null)
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         compilerOptions ??= new CompilerOptions();

@@ -10,11 +10,12 @@ public class DefaultConverterTests_Int32To
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType(1033, cultureInfo, out CultureInfo value);
+        var converted = converter.TryChangeType(1033, cultureInfo, out CultureInfo? value);
 
         if (OperatingSystem.IsWindows())
         {
             Assert.True(converted);
+            Assert.NotNull(value);
             Assert.Equal("en-US", value.Name);
         }
         else
@@ -58,7 +59,7 @@ public class DefaultConverterTests_Int32To
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType(0x12345678, cultureInfo, out byte[] value);
+        var converted = converter.TryChangeType(0x12345678, cultureInfo, out byte[]? value);
         Assert.True(converted);
         Assert.Equal([0x78, 0x56, 0x34, 0x12], value);
     }

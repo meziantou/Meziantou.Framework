@@ -19,6 +19,6 @@ public class XpathQueryTests
         var context = new HtmlXsltContext(document.ParentNamespaceResolver);
 
         var node = document.SelectSingleNode("//p[lowercase(@class)='abc']", context);
-        Assert.Equal("Sample1", node.InnerText);
+        Assert.Equal("Sample1", node!.InnerText);
     }
 }

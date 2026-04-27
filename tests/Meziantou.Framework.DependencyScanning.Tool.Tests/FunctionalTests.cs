@@ -562,6 +562,6 @@ public sealed class FunctionalTests
     private static async Task<IReadOnlyList<Dependency>> ScanDependencies(TemporaryDirectory temporaryDirectory)
     {
         var deps = (await DependencyScanner.ScanDirectoryAsync(temporaryDirectory.FullPath, options: null, XunitCancellationToken)).ToList();
-        return deps.OrderBy(dep => dep.VersionLocation.FilePath, System.StringComparer.Ordinal).ToArray();
+        return deps.OrderBy(dep => dep.VersionLocation?.FilePath, System.StringComparer.Ordinal).ToArray();
     }
 }

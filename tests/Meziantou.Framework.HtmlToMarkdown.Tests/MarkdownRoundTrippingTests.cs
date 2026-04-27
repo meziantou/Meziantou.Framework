@@ -18,7 +18,7 @@ public sealed class MarkdownRoundTrippingTests
             .Where(n => n.StartsWith(prefix, StringComparison.Ordinal) && n.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             .OrderBy(n => n, StringComparer.Ordinal))
         {
-            using var stream = assembly.GetManifestResourceStream(resourceName);
+            using var stream = assembly.GetManifestResourceStream(resourceName)!;
             using var reader = new StreamReader(stream);
             var content = reader.ReadToEnd();
 
@@ -79,8 +79,11 @@ public sealed class MarkdownRoundTrippingTests
             return true;
         }
 
-        if (SkippedExamples.TryGetValue((testCase.FileName, testCase.Example), out reason))
+        if (SkippedExamples.TryGetValue((testCase.FileName, testCase.Example), out var skippedReason))
+        {
+            reason = skippedReason;
             return true;
+        }
 
         reason = "";
         return false;

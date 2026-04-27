@@ -17,10 +17,10 @@ internal static class HtmlNormalizer
     {
         var parser = new HtmlParser();
         var document = parser.ParseDocument("<body>" + html + "</body>");
-        NormalizeNode(document.Body);
+        NormalizeNode(document.Body!);
 
         using var sw = new StringWriter();
-        foreach (var child in document.Body.ChildNodes)
+        foreach (var child in document.Body!.ChildNodes)
         {
             child.ToHtml(sw, new PrettyMarkupFormatter());
         }

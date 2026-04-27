@@ -215,7 +215,7 @@ public sealed class HttpBasicAuthenticationTests
             return SendAndAssert(url, null, null, assert);
         }
 
-        public async Task SendAndAssert(string url, string username, string password, Func<HttpResponseMessage, Task> assert)
+        public async Task SendAndAssert(string url, string? username, string? password, Func<HttpResponseMessage, Task> assert)
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             if (username != null && password != null)

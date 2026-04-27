@@ -46,14 +46,14 @@ public class HtmlSanitizerTests
         }
         else
         {
-            Assert.Equal(expectedDocument.Body.InnerHtml, actualDocument.Body.InnerHtml);
+            Assert.Equal(expectedDocument.Body!.InnerHtml, actualDocument.Body!.InnerHtml);
         }
     }
 
     private static string FormatDocument(IHtmlDocument document)
     {
         using var sw = new StringWriter();
-        document.Body.ToHtml(sw, new PrettyMarkupFormatter());
+        document.Body!.ToHtml(sw, new PrettyMarkupFormatter());
         return sw.ToString();
     }
 }

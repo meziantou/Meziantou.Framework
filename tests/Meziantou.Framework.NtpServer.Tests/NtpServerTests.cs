@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Ntp.Tests;
 
 public sealed class NtpServerTests : IAsyncLifetime
 {
-    private NtpServer _server;
+    private NtpServer? _server;
 
     public async ValueTask InitializeAsync()
     {
@@ -14,14 +14,14 @@ public sealed class NtpServerTests : IAsyncLifetime
 
     public ValueTask DisposeAsync()
     {
-        _server.Dispose();
+        _server?.Dispose();
         return ValueTask.CompletedTask;
     }
 
     [Fact]
     public async Task Query_ReturnsValidResponse()
     {
-        using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server.Port });
+        using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server!.Port });
         var response = await client.QueryAsync(XunitCancellationToken);
 
         Assert.True(response.Stratum > 0);
@@ -34,7 +34,7 @@ public sealed class NtpServerTests : IAsyncLifetime
     {
         using var client = new NtpClient("127.0.0.1", new NtpClientOptions
         {
-            Port = _server.Port,
+            Port = _server!.Port,
             Version = NtpVersion.V4,
         });
         var response = await client.QueryAsync(XunitCancellationToken);
@@ -47,7 +47,7 @@ public sealed class NtpServerTests : IAsyncLifetime
     {
         using var client = new NtpClient("127.0.0.1", new NtpClientOptions
         {
-            Port = _server.Port,
+            Port = _server!.Port,
             Version = NtpVersion.V3,
         });
         var response = await client.QueryAsync(XunitCancellationToken);
@@ -58,7 +58,7 @@ public sealed class NtpServerTests : IAsyncLifetime
     [Fact]
     public async Task Query_ClockOffset_IsSmall()
     {
-        using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server.Port });
+        using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server!.Port });
         var response = await client.QueryAsync(XunitCancellationToken);
 
         // Offset to a local server should be very small
@@ -68,7 +68,7 @@ public sealed class NtpServerTests : IAsyncLifetime
     [Fact]
     public async Task Query_RoundTripDelay_IsSmall()
     {
-        using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server.Port });
+        using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server!.Port });
         var response = await client.QueryAsync(XunitCancellationToken);
 
         // Round-trip to localhost should be very fast
@@ -80,7 +80,7 @@ public sealed class NtpServerTests : IAsyncLifetime
     {
         var tasks = Enumerable.Range(0, 10).Select(async _ =>
         {
-            using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server.Port });
+            using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server!.Port });
             return await client.QueryAsync(XunitCancellationToken);
         });
 
@@ -108,7 +108,7 @@ public sealed class NtpServerTests : IAsyncLifetime
     [Fact]
     public async Task Query_OriginateTimestamp_MatchesClientTransmit()
     {
-        using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server.Port });
+        using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server!.Port });
         var response = await client.QueryAsync(XunitCancellationToken);
 
         // The originate timestamp in the response should match what the client sent

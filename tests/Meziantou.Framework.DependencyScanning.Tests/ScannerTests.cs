@@ -599,7 +599,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         var result = await GetDependencies<GitSubmoduleDependencyScanner>();
         AssertContainDependency(result, (DependencyType.GitReference, remote.FullPath, head, 0, 0));
 
-        Assert.All(result, item => Assert.False(item.VersionLocation.IsUpdatable));
+        Assert.All(result, item => Assert.False(item.VersionLocation?.IsUpdatable ?? false));
 
         async Task ExecuteProcess(string process, string args, string workingDirectory)
         {
@@ -1253,11 +1253,11 @@ jobs:
         async Task<Dependency[]> Scan(ScannerOptions options)
         {
             var items = await DependencyScanner.ScanDirectoryAsync(_directory.FullPath, options);
-            return items.Where(d => d.Tags.Contains(typeof(T).FullName)).ToArray();
+            return items.Where(d => d.Tags.Contains(typeof(T).FullName!)).ToArray();
         }
     }
 
-    private sealed record DetectedDependency(Dependency Dependency, Location Location, Func<Task> UpdateText);
+    private sealed record DetectedDependency(Dependency Dependency, Location? Location, Func<Task> UpdateText);
 
     private static async Task UpdateDependencies(IEnumerable<Dependency> dependencies, string newName, string newVersion)
     {
@@ -1273,11 +1273,11 @@ jobs:
             .Where(item => item.Location is not null);
 
         // Group by file location and order by position desc
-        foreach (var locationsByFile in allLocations.Where(item => item.Location.IsUpdatable).GroupBy(item => item.Location.FilePath, StringComparer.Ordinal))
+        foreach (var locationsByFile in allLocations.Where(item => item.Location!.IsUpdatable).GroupBy(item => item.Location!.FilePath, StringComparer.Ordinal))
         {
             var locationsWithLineInfo = locationsByFile
                 .Where(item => item.Location is ILocationLineInfo)
-                .OrderByDescending(item => (((ILocationLineInfo)item.Location).LineNumber, ((ILocationLineInfo)item.Location).LinePosition))
+                .OrderByDescending(item => (((ILocationLineInfo)item.Location!).LineNumber, ((ILocationLineInfo)item.Location!).LinePosition))
                 .ToArray();
 
             var locationWithoutLineInfo = locationsByFile.Where(item => item.Location is not ILocationLineInfo).ToArray();
@@ -1306,7 +1306,7 @@ jobs:
         File.WriteAllBytes(fullPath, content);
     }
 
-    private static void AssertContainDependency(IEnumerable<Dependency> dependencies, params (DependencyType Type, string Name, string Version, int VersionLine, int VersionColumn)[] expectedDependencies)
+    private static void AssertContainDependency(IEnumerable<Dependency> dependencies, params (DependencyType Type, string? Name, string? Version, int VersionLine, int VersionColumn)[] expectedDependencies)
     {
         foreach (var expected in expectedDependencies)
         {
@@ -1314,8 +1314,8 @@ jobs:
                 d.Type == expected.Type &&
                 d.Name == expected.Name &&
                 d.Version == expected.Version &&
-                (expected.VersionLine == 0 || ((ILocationLineInfo)d.VersionLocation).LineNumber == expected.VersionLine) &&
-                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation).LinePosition == expected.VersionColumn));
+                (expected.VersionLine == 0 || d.VersionLocation is ILocationLineInfo lineInfo1 && lineInfo1.LineNumber == expected.VersionLine) &&
+                (expected.VersionColumn == 0 || d.VersionLocation is ILocationLineInfo lineInfo2 && lineInfo2.LinePosition == expected.VersionColumn));
         }
     }
 

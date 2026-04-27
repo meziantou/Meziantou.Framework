@@ -19,7 +19,7 @@ public class VisitorTests
 
     private static void VisitType(Type type)
     {
-        var instance = (CodeObject)Activator.CreateInstance(type);
+        var instance = (CodeObject)Activator.CreateInstance(type)!;
         var generator = new Visitor();
         generator.Visit(instance);
     }

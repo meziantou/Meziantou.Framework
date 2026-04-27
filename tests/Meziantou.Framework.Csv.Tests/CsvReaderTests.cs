@@ -21,10 +21,10 @@ public class CsvReaderTests
         var row2 = await reader.ReadRowAsync();
         var row3 = await reader.ReadRowAsync();
 
-        Assert.Equal("value1.1", row1[0]);
+        Assert.Equal("value1.1", row1![0]);
         Assert.Equal("value1.2", row1[1]);
         Assert.Equal("value1.3", row1[2]);
-        Assert.Equal("value2.1", row2[0]);
+        Assert.Equal("value2.1", row2![0]);
         Assert.Equal("value2.2", row2[1]);
         Assert.Equal("value2.3", row2[2]);
         Assert.Null(row3);
@@ -47,10 +47,10 @@ public class CsvReaderTests
         var row2 = await reader.ReadRowAsync();
         var row3 = await reader.ReadRowAsync();
 
-        Assert.Equal("value1.1", row1["column1"]);
+        Assert.Equal("value1.1", row1!["column1"]);
         Assert.Equal("value1.2", row1["column2"]);
         Assert.Equal("value1.3", row1["column3"]);
-        Assert.Equal("value2.1", row2["column1"]);
+        Assert.Equal("value2.1", row2!["column1"]);
         Assert.Equal("value2.2", row2["column2"]);
         Assert.Equal("value2.3", row2["column3"]);
 
@@ -74,10 +74,10 @@ public class CsvReaderTests
         var row2 = await reader.ReadRowAsync();
         var row3 = await reader.ReadRowAsync();
 
-        Assert.Equal("value1.1", row1["column1"]);
+        Assert.Equal("value1.1", row1!["column1"]);
         Assert.Equal("value1.2\r\nline2", row1["column2"]);
         Assert.Equal("value1.3", row1["column3"]);
-        Assert.Equal("value2.1", row2["column1"]);
+        Assert.Equal("value2.1", row2!["column1"]);
         Assert.Equal("value2.2", row2["column2"]);
         Assert.Equal("value2.3", row2["column3"]);
 
@@ -93,7 +93,7 @@ public class CsvReaderTests
         using var sr = new StringReader(sb.ToString());
         var reader = new CsvReader(sr);
         var row1 = await reader.ReadRowAsync();
-        Assert.Equal("a\"c", row1[0]);
+        Assert.Equal("a\"c", row1![0]);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class CsvReaderTests
         using var sr = new StringReader(sb.ToString());
         var reader = new CsvReader(sr);
         var row1 = await reader.ReadRowAsync();
-        Assert.Equal("\"bc", row1[0]);
+        Assert.Equal("\"bc", row1![0]);
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class CsvReaderTests
         using var sr = new StringReader(sb.ToString());
         var reader = new CsvReader(sr);
         var row1 = await reader.ReadRowAsync();
-        Assert.Equal("ab\"", row1[0]);
+        Assert.Equal("ab\"", row1![0]);
     }
 
     [Fact]
@@ -133,7 +133,7 @@ public class CsvReaderTests
             Separator = '\t',
         };
         var row1 = await reader.ReadRowAsync();
-        Assert.Equal("ab", row1[0]);
+        Assert.Equal("ab", row1![0]);
         Assert.Equal("cd", row1[1]);
     }
 

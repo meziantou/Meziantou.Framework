@@ -91,10 +91,10 @@ public sealed class ImmutableEquatableArrayTests
         var array = ImmutableEquatableArray.Create(new[] { "a" });
 
         Assert.False(array.Equals(null));
-        Assert.False(array == null);
-        Assert.False(null == array);
-        Assert.True(array != null);
-        Assert.True(null != array);
+        Assert.False(array is null);
+        Assert.False(array is null);
+        Assert.True(array is not null);
+        Assert.True(array is not null);
     }
 
     [Fact]

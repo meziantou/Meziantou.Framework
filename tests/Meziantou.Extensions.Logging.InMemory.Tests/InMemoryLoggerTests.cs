@@ -101,7 +101,7 @@ public sealed partial class InMemoryLoggerTests
         using (logger.BeginScope(new { Name = "test" }))
         using (logger.BeginScope(new { Age = 52, Name = "John" }))
         {
-            SampleMessage(logger, 1, null);
+            SampleMessage(logger, 1, null!);
         }
 
         var log = provider.Logs.Informations.Single();

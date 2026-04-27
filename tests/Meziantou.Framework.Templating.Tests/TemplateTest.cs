@@ -58,7 +58,7 @@ public class TemplateTest
         // Arrange
         var template = new Template();
         template.Load("Hello <%=Name%>!");
-        var arguments = new Dictionary<string, object>(StringComparer.Ordinal)
+        var arguments = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             { "Name", "Meziantou" },
         };

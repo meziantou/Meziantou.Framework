@@ -496,6 +496,44 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
+    public async Task Validate_EndToEnd_IgnoresOutputSnapshots_WhenUsingArtifactsOutput()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateFailureSettings());
+                }
+            }
+            """,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "sample"u8.ToArray()),
+            ],
+            directoryBuildPropsContent:
+            """
+            <Project>
+              <PropertyGroup>
+                <UseArtifactsOutput>true</UseArtifactsOutput>
+              </PropertyGroup>
+            </Project>
+            """,
+            additionalFilesAfterTest:
+            [
+                new SnapshotFile("artifacts/bin/Project/debug/__snapshots__/SampleTest.verified.txt", "copied snapshot"u8.ToArray()),
+                new SnapshotFile("artifacts/obj/Project/debug/__snapshots__/SampleTest.verified.txt", "intermediate snapshot"u8.ToArray()),
+            ]);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
     public async Task Validate_EndToEnd_UsesContainingMethodName_WhenCalledFromLambda()
     {
         var snapshotFiles = await AssertSnapshot(
@@ -654,7 +692,9 @@ public sealed class SnapshotEndToEndTests
         string? targetFramework = null,
         bool expectFailure = false,
         IReadOnlyList<SnapshotFile>? existingFiles = null,
-        string? testFilter = null)
+        string? testFilter = null,
+        string? directoryBuildPropsContent = null,
+        IReadOnlyList<SnapshotFile>? additionalFilesAfterTest = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
@@ -701,9 +741,22 @@ public sealed class SnapshotEndToEndTests
             }
         }
 
+        if (!string.IsNullOrEmpty(directoryBuildPropsContent))
+        {
+            CreateTextFile("Directory.Build.props", directoryBuildPropsContent);
+        }
+
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore", "--disable-build-servers"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, GetDotNetTestArguments(testFramework, testFilter), expectedExitCode: expectFailure ? 1 : 0);
+
+        if (additionalFilesAfterTest is not null)
+        {
+            foreach (var additionalFile in additionalFilesAfterTest)
+            {
+                CreateBinaryFile(additionalFile.RelativePath, additionalFile.Content);
+            }
+        }
 
         return GetGeneratedSnapshotFiles(directory.FullPath);
 
@@ -763,12 +816,37 @@ public sealed class SnapshotEndToEndTests
 
     private static SnapshotFile[] GetGeneratedSnapshotFiles(FullPath rootPath)
     {
-        return Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories)
-                    .Select(path => path.Replace('\\', '/'))
-                    .Where(path => path.Contains("/__snapshots__/", StringComparison.Ordinal))
-                    .Order(StringComparer.Ordinal)
-                    .Select(file => new SnapshotFile(Path.GetRelativePath(rootPath, file).Replace('\\', '/'), File.ReadAllBytes(file)))
-                    .ToArray();
+        var validSnapshotDirectories = Directory.GetFiles(rootPath, "*.cs", SearchOption.AllDirectories)
+            .Select(Path.GetDirectoryName)
+            .Where(path => path is not null)
+            .Select(path => path!)
+            .Where(path => !IsUnderBuildOutputDirectory(rootPath, path))
+            .Select(path => Path.Combine(path, "__snapshots__"))
+            .Where(Directory.Exists)
+            .ToHashSet(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+
+        return validSnapshotDirectories
+            .SelectMany(path => Directory.GetFiles(path, "*", SearchOption.AllDirectories))
+            .Select(path => (AbsolutePath: path, RelativePath: Path.GetRelativePath(rootPath, path).Replace('\\', '/')))
+            .OrderBy(path => path.RelativePath, StringComparer.Ordinal)
+            .Select(file => new SnapshotFile(file.RelativePath, File.ReadAllBytes(file.AbsolutePath)))
+            .ToArray();
+
+        static bool IsUnderBuildOutputDirectory(FullPath rootPath, string path)
+        {
+            var relativePath = Path.GetRelativePath(rootPath, path);
+            if (relativePath.StartsWith("..", StringComparison.Ordinal))
+                return false;
+
+            var segments = relativePath.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries);
+            foreach (var segment in segments)
+            {
+                if (segment.Equals("bin", StringComparison.OrdinalIgnoreCase) || segment.Equals("obj", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     private static string GetGlobalUsings(SnapshotTestFramework testFramework)

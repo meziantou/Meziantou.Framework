@@ -12,7 +12,8 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
     /// Newer Roslyn versions use the format "&lt;callerName&gt;g__functionName|x_y".
     /// Older versions use "&lt;callerName&gt;g__functionNamex_y".
     /// </summary>
-    private static readonly Regex LocalFunctionNameRegex = new(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeout: Timeout.InfiniteTimeSpan);
+    /// <see href="https://github.com/dotnet/roslyn/blob/aecd49800750d64e08767836e2678ffa62a4647f/src/Compilers/CSharp/Portable/Symbols/Synthesized/GeneratedNames.cs#L109" />
+    private static readonly Regex FunctionNameRegex = new(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeout: Timeout.InfiniteTimeSpan);
     private static readonly Regex LambdaContainingMethodNameRegex = new(@"^<(?<name>[^>]+)>b__[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeout: Timeout.InfiniteTimeSpan);
 
     private static readonly HashSet<string> TestAttributeNames = new(StringComparer.Ordinal)
@@ -243,7 +244,7 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
         if (TryGetLambdaContainingMethodName(name, out var lambdaContainingMethodName))
             return lambdaContainingMethodName;
 
-        if (TryGetLocalFunctionName(name, out var localFunctionName))
+        if (ParseLocalFunctionName(name, out var localFunctionName))
             return localFunctionName;
 
         return name;
@@ -263,17 +264,14 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
         return !string.IsNullOrEmpty(containingMethodName);
     }
 
-    private static bool TryGetLocalFunctionName(string name, [NotNullWhen(true)] out string? functionName)
+    internal static bool ParseLocalFunctionName(string name, [NotNullWhen(true)] out string? functionName)
     {
         functionName = null;
         if (string.IsNullOrWhiteSpace(name))
             return false;
 
-        var match = LocalFunctionNameRegex.Match(name);
-        if (!match.Success)
-            return false;
-
+        var match = FunctionNameRegex.Match(name);
         functionName = match.Groups["name"].Value;
-        return !string.IsNullOrEmpty(functionName);
+        return match.Success;
     }
 }

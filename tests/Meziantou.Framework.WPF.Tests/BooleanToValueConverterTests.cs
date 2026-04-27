@@ -28,7 +28,7 @@ public sealed class BooleanToValueConverterTests
     [InlineData(null, null)]
     [InlineData(null, "")]
     [InlineData(null, "abc")]
-    public void Test(bool? expectedValue, object value)
+    public void Test(bool? expectedValue, object? value)
     {
         var expected = expectedValue switch
         {

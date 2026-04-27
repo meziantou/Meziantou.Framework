@@ -121,7 +121,6 @@ public class EnumerableTests
         Assert.StrictEqual(items, items.EmptyIfNull());
     }
 
-#nullable enable
     [Fact]
     [SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Need to validate the type is non-nullable")]
     public void WhereNotNull()
@@ -147,8 +146,6 @@ public class EnumerableTests
         List<int> actual = list.WhereNotNull().ToList();
         Assert.Equal([0, 2], actual);
     }
-#nullable disable
-
     [Fact]
     public void ForeachEnumerator()
     {

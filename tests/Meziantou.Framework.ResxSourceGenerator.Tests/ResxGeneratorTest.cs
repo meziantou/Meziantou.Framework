@@ -76,7 +76,7 @@ public sealed class ResxGeneratorTest
     [InlineData("")]
     [InlineData("internal")]
     [InlineData("dummy")]
-    public async Task GenerateInternalClasses(string visibility)
+    public async Task GenerateInternalClasses(string? visibility)
     {
         var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
         var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider

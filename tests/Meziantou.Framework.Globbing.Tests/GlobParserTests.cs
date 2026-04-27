@@ -29,7 +29,7 @@ public class GlobParserTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void InvalidPatterns(string content)
+    public void InvalidPatterns(string? content)
     {
         Assert.Throws<ArgumentException>(() => Glob.Parse(content, GlobOptions.None));
     }

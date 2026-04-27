@@ -240,7 +240,6 @@ public sealed class HttpBasicAuthenticationTests
         }
     }
 
-#nullable enable
     private sealed class InMemoryIdentityUserStore : IUserPasswordStore<IdentityUser>
     {
         private readonly List<IdentityUser> _users;
@@ -339,5 +338,4 @@ public sealed class HttpBasicAuthenticationTests
             return Task.FromResult(IdentityResult.Success);
         }
     }
-    #nullable restore
 }

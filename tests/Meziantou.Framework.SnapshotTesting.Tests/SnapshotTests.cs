@@ -1,5 +1,3 @@
-#nullable enable
-
 using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;

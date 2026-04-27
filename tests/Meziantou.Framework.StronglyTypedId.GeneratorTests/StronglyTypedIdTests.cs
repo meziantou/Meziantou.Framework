@@ -465,7 +465,6 @@ public sealed partial class StronglyTypedIdTests
         public T? Value { get; set; }
     }
 
-#nullable enable
     [StronglyTypedId(typeof(bool))]
     private partial struct IdBoolean { }
 

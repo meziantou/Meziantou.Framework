@@ -29,7 +29,7 @@ public sealed class InlineSnapshotSettingsTests
 
         settings.ScrubLinesContaining(StringComparison.Ordinal, "test");
 
-        var clone = settings with { };
+        var clone = settings.Clone();
 
         Assert.Same(settings.SnapshotSerializer, clone.SnapshotSerializer);
         Assert.Same(settings.AssertionExceptionCreator, clone.AssertionExceptionCreator);

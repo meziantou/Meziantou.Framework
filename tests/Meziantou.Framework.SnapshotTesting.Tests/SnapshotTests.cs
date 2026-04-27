@@ -58,7 +58,7 @@ public sealed class SnapshotTests
         original.Comparers.Set(SnapshotType.Create("dummy"), ByteArraySnapshotComparer.Instance);
         var originalSerializerCount = original.Serializers.Count;
 
-        var clone = original with { };
+        var clone = original.Clone();
         clone.Serializers.Add(new FixedCountSerializer(count: 2));
 
         Assert.NotSame(original.Serializers, clone.Serializers);

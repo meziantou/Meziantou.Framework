@@ -1763,7 +1763,7 @@ public sealed class PublicApiGeneratorTests
         return PublicApi.Generate(assemblyPath, options);
     }
 
-    private static async Task<IReadOnlyList<PublicApiFile>> BuildFiles(IReadOnlyDictionary<string, string> sourcesByTargetFramework, PublicApiOptions options)
+    private static async Task<IReadOnlyList<PublicApiFile>> BuildFiles(Dictionary<string, string> sourcesByTargetFramework, PublicApiOptions options)
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
 
@@ -1788,7 +1788,7 @@ public sealed class PublicApiGeneratorTests
         };
     }
 
-    private static async Task<IReadOnlyList<PublicApiFile>> BuildFilesWithAutoDetectedTargetFramework(IReadOnlyDictionary<string, string> sourcesByTargetFramework, PublicApiOptions options)
+    private static async Task<IReadOnlyList<PublicApiFile>> BuildFilesWithAutoDetectedTargetFramework(Dictionary<string, string> sourcesByTargetFramework, PublicApiOptions options)
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
 

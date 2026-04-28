@@ -400,10 +400,9 @@ jobs:
         env:
           NEEDS_JSON: ${{ toJson(needs) }}
         run: |
+          $needs = $env:NEEDS_JSON | ConvertFrom-Json -AsHashtable
           $failedJobs = @(
-            $env:NEEDS_JSON
-            | ConvertFrom-Json -AsHashtable
-            | GetEnumerator
+            $needs.GetEnumerator()
             | Where-Object { $_.Value.result -notin @('success', 'skipped') }
           )
 

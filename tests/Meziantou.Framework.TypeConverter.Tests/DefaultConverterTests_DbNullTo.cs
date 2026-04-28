@@ -28,7 +28,7 @@ public class DefaultConverterTests_DbNullTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out string value);
+        var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out string? value);
         Assert.True(converted);
         Assert.Null(value);
     }

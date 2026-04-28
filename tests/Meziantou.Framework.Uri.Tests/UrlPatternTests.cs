@@ -1159,10 +1159,11 @@ public sealed class UrlPatternTests
 
         Assert.NotNull(result);
         Assert.Single(result.Inputs);
-        Assert.NotNull(result.Inputs[0].Init);
-        Assert.Equal("https", result.Inputs[0].Init.Protocol);
-        Assert.Equal("example.com", result.Inputs[0].Init.Hostname);
-        Assert.Equal("/books/123", result.Inputs[0].Init.Pathname);
+        var inputInit = result.Inputs[0].Init;
+        Assert.NotNull(inputInit);
+        Assert.Equal("https", inputInit.Protocol);
+        Assert.Equal("example.com", inputInit.Hostname);
+        Assert.Equal("/books/123", inputInit.Pathname);
     }
 
     [Fact]

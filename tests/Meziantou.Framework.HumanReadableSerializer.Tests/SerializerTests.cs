@@ -2288,11 +2288,11 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
     private sealed class ObjectWithFields
     {
-        private string _privateField = null!;
+        private string? _privateField;
 
         [HumanReadableInclude]
-        private string _privateFieldIncluded = null!;
-        public string FieldString = null!;
+        private string? _privateFieldIncluded;
+        public string? FieldString;
         public int FieldInt32;
 
         public int PropInt32 { get; set; }
@@ -2389,7 +2389,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
         public int Prop2 { get; set; }
 
         [HumanReadableConverter(typeof(CustomStringConverter))]
-        public string Prop3 { get; set; } = null!;
+        public string? Prop3 { get; set; }
 
         private sealed class CustomStringConverter : HumanReadableConverter<string>
         {

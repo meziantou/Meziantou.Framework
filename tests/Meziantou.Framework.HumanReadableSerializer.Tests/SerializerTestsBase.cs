@@ -6,7 +6,7 @@ public class SerializerTestsBase
     protected sealed record Validation
     {
         public object? Subject { get; init; }
-        public string Expected { get; init; } = null!;
+        public string? Expected { get; init; }
         public Type? Type { get; init; }
         public HumanReadableSerializerOptions? Options { get; init; }
     }
@@ -29,6 +29,7 @@ public class SerializerTestsBase
 
     protected static void AssertSerialization(Validation validation)
     {
-        AssertSerialization(validation.Subject, validation.Options, validation.Type, validation.Expected);
+        var expected = validation.Expected ?? throw new InvalidOperationException("Expected serialization output must be provided.");
+        AssertSerialization(validation.Subject, validation.Options, validation.Type, expected);
     }
 }

@@ -599,7 +599,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         var result = await GetDependencies<GitSubmoduleDependencyScanner>();
         AssertContainDependency(result, (DependencyType.GitReference, remote.FullPath, head, 0, 0));
 
-        Assert.All(result, item => Assert.False(item.VersionLocation?.IsUpdatable ?? false));
+        Assert.All(result, item => Assert.False(item.VersionLocation!.IsUpdatable));
 
         async Task ExecuteProcess(string process, string args, string workingDirectory)
         {
@@ -1315,8 +1315,8 @@ jobs:
                 d.Type == expected.Type &&
                 d.Name == expected.Name &&
                 d.Version == expected.Version &&
-                (expected.VersionLine == 0 || (d.VersionLocation is ILocationLineInfo versionLineInfo && versionLineInfo.LineNumber == expected.VersionLine)) &&
-                (expected.VersionColumn == 0 || (d.VersionLocation is ILocationLineInfo versionColumnInfo && versionColumnInfo.LinePosition == expected.VersionColumn)));
+                (expected.VersionLine == 0 || ((ILocationLineInfo)d.VersionLocation!).LineNumber == expected.VersionLine) &&
+                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation!).LinePosition == expected.VersionColumn));
         }
     }
 

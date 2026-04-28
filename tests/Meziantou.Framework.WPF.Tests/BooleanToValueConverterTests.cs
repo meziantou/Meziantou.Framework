@@ -11,7 +11,7 @@ public sealed class BooleanToValueConverterTests
         NullValue = "null",
     };
 
-    private object Convert(object value)
+    private object? Convert(object? value)
     {
         return _converter.Convert(value, typeof(object), parameter: null, culture: null);
     }
@@ -28,7 +28,7 @@ public sealed class BooleanToValueConverterTests
     [InlineData(null, null)]
     [InlineData(null, "")]
     [InlineData(null, "abc")]
-    public void Test(bool? expectedValue, object value)
+    public void Test(bool? expectedValue, object? value)
     {
         var expected = expectedValue switch
         {

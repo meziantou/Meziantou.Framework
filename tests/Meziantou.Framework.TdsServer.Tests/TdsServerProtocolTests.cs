@@ -20,14 +20,48 @@ namespace Meziantou.Framework.Tds.Tests;
 public sealed class TdsServerProtocolTests
 {
     [Fact]
-    public void TdsParameterValue_AsJson_ReturnsJsonObject()
+    public void TdsQueryParameter_AsJson_ReturnsJsonObject()
     {
-        var parameterValue = new TdsParameterValue("{\"value\":42}");
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@p",
+            Value = "{\"value\":42}",
+            Type = TdsColumnType.Json,
+        };
 
-        var json = parameterValue.AsJson();
+        var json = parameter.AsJson();
 
         Assert.NotNull(json);
         Assert.Equal(42, json!["value"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void TdsQueryParameter_Constructor_WithType_SetsType()
+    {
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@p",
+            Value = 42,
+            Type = TdsColumnType.Int32,
+        };
+
+        Assert.Equal(TdsColumnType.Int32, parameter.Type);
+    }
+
+    [Fact]
+    public void TdsQueryParameter_DbNull_IsHandledAsNull()
+    {
+        var parameter = new TdsQueryParameter
+        {
+            Name = "@p",
+            Value = DBNull.Value,
+            Type = TdsColumnType.NVarChar,
+        };
+
+        Assert.True(parameter.IsNull);
+        Assert.Null(parameter.AsString());
+        Assert.Null(parameter.AsInt32());
+        Assert.Null(parameter.AsJson());
     }
 
     [Fact]
@@ -117,7 +151,7 @@ public sealed class TdsServerProtocolTests
             {
                 if (context.RequestType == TdsQueryRequestType.Rpc &&
                     string.Equals(context.ProcedureName, "sp_executesql", StringComparison.OrdinalIgnoreCase) &&
-                    context.Parameters.Any(parameter => parameter.Value.AsString()?.Contains(Marker, StringComparison.Ordinal) == true) &&
+                    context.Parameters.Any(parameter => parameter.AsString()?.Contains(Marker, StringComparison.Ordinal) == true) &&
                     HasIntParameter(context.Parameters, 42))
                 {
                     queryContextTask.TrySetResult(context);
@@ -143,7 +177,7 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(42, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.Rpc, capturedContext.RequestType);
         Assert.Equal("sp_executesql", capturedContext.ProcedureName, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains(capturedContext.Parameters, parameter => IsExpectedIntParameter(parameter.Value, 42));
+        Assert.Contains(capturedContext.Parameters, parameter => parameter.Type == TdsColumnType.Int32 && IsExpectedIntParameter(parameter, 42));
     }
 
     [Fact]
@@ -309,7 +343,7 @@ public sealed class TdsServerProtocolTests
                 if (context.RequestType == TdsQueryRequestType.Rpc &&
                     string.Equals(context.ProcedureName, procedureName, StringComparison.OrdinalIgnoreCase) &&
                     HasIntParameter(context.Parameters, 7) &&
-                    context.Parameters.Any(parameter => string.Equals(parameter.Value.AsString(), "sample", StringComparison.Ordinal)))
+                    context.Parameters.Any(parameter => string.Equals(parameter.AsString(), "sample", StringComparison.Ordinal)))
                 {
                     queryContextTask.TrySetResult(context);
                     return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 7));
@@ -336,8 +370,8 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(7, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.Rpc, capturedContext.RequestType);
         Assert.Equal(procedureName, capturedContext.ProcedureName, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains(capturedContext.Parameters, parameter => IsExpectedIntParameter(parameter.Value, 7));
-        Assert.Contains(capturedContext.Parameters, parameter => string.Equals(parameter.Value.AsString(), "sample", StringComparison.Ordinal));
+        Assert.Contains(capturedContext.Parameters, parameter => IsExpectedIntParameter(parameter, 7));
+        Assert.Contains(capturedContext.Parameters, parameter => string.Equals(parameter.AsString(), "sample", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -576,12 +610,12 @@ public sealed class TdsServerProtocolTests
 
     private static bool HasIntParameter(IReadOnlyList<TdsQueryParameter> parameters, int expectedValue)
     {
-        return parameters.Any(parameter => IsExpectedIntParameter(parameter.Value, expectedValue));
+        return parameters.Any(parameter => IsExpectedIntParameter(parameter, expectedValue));
     }
 
-    private static bool IsExpectedIntParameter(TdsParameterValue value, int expectedValue)
+    private static bool IsExpectedIntParameter(TdsQueryParameter parameter, int expectedValue)
     {
-        return value.RawValue switch
+        return parameter.Value switch
         {
             byte typedValue => typedValue == expectedValue,
             short typedValue => typedValue == expectedValue,

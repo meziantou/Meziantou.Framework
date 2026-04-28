@@ -69,11 +69,12 @@ app.MapTdsHandlers(
         foreach (var parameter in context.Parameters)
         {
             var parameterName = parameter.Name;
-            var rawValue = parameter.Value.RawValue;
-            var stringValue = parameter.Value.AsString();
-            var intValue = parameter.Value.AsInt32();
-            var json = parameter.Value.AsJson();
-            var xml = parameter.Value.AsXml();
+            var rawValue = parameter.Value; // DBNull.Value for SQL NULL
+            var columnType = parameter.Type;
+            var stringValue = parameter.AsString();
+            var intValue = parameter.AsInt32();
+            var json = parameter.AsJson();
+            var xml = parameter.AsXml();
         }
 
         return new TdsQueryResult();

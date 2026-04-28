@@ -37,7 +37,7 @@ public sealed class ObjectGraphVisitorTests
         Assert.Empty(visitor.VisitedProperties);
     }
 
-    private sealed record Recursive(object Value, Recursive Parent);
+    private sealed record Recursive(object Value, Recursive? Parent);
 
     private sealed class Indexer
     {
@@ -49,7 +49,7 @@ public sealed class ObjectGraphVisitorTests
         public List<PropertyInfo> VisitedProperties { get; } = [];
         public List<object> VisitedValues { get; } = [];
 
-        protected override void VisitProperty(object parentInstance, PropertyInfo property, object value)
+        protected override void VisitProperty(object parentInstance, PropertyInfo property, object? value)
         {
             VisitedProperties.Add(property);
         }

@@ -9,7 +9,7 @@ namespace Meziantou.Framework.FastEnumToStringGenerator.Tests;
 
 public sealed class EnumToStringSourceGeneratorTests
 {
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, bool mustCompile = true, string[] assemblyLocations = null)
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[]? Assembly)> GenerateFiles(string file, bool mustCompile = true, string[]? assemblyLocations = null)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
         assemblyLocations ??= [];
@@ -70,6 +70,7 @@ public sealed class EnumToStringSourceGeneratorTests
             }
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
+        Assert.NotNull(assembly);
         Assert.Empty(generatorResult.Diagnostics);
         Assert.Equal(3, generatorResult.GeneratedTrees.Length);
         Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("FastEnumToStringExtensions.g.cs", StringComparison.Ordinal));
@@ -78,7 +79,9 @@ public sealed class EnumToStringSourceGeneratorTests
 
         var asm = Assembly.Load(assembly);
         var type = asm.GetType("A.B.C");
+        Assert.NotNull(type);
         var method = type.GetMethod("Sample", BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(method);
         Assert.Equal("Value2", method.Invoke(null, [1]));
         Assert.Equal("999", method.Invoke(null, [999]));
 
@@ -112,6 +115,7 @@ public sealed class EnumToStringSourceGeneratorTests
             }
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
+        Assert.NotNull(assembly);
         Assert.Empty(generatorResult.Diagnostics);
         Assert.Equal(3, generatorResult.GeneratedTrees.Length);
         Assert.Contains(generatorResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("FastEnumToStringExtensions.g.cs", StringComparison.Ordinal));
@@ -120,6 +124,7 @@ public sealed class EnumToStringSourceGeneratorTests
 
         var asm = Assembly.Load(assembly);
         var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");
+        Assert.NotNull(ns1Type);
         var methods1 = ns1Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .Where(m => m.Name == "ToStringFast")
             .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
@@ -130,6 +135,7 @@ public sealed class EnumToStringSourceGeneratorTests
             m => Assert.False(m.IsPublic));
 
         var ns3Type = asm.GetType("SampleNs3.FastEnumToStringExtensions");
+        Assert.NotNull(ns3Type);
         var methods3 = ns3Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .Where(m => string.Equals(m.Name, "ToStringFast", StringComparison.Ordinal))
             .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
@@ -137,6 +143,7 @@ public sealed class EnumToStringSourceGeneratorTests
         Assert.False(ns3Type.IsPublic);
 
         var ns4Type = asm.GetType("SampleNs4.FastEnumToStringExtensions");
+        Assert.NotNull(ns4Type);
         var methods4 = ns4Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .Where(m => m.Name == "ToStringFast")
             .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);

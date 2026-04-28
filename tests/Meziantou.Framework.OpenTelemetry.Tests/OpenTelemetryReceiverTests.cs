@@ -223,7 +223,7 @@ public sealed class OpenTelemetryReceiverTests
 
         public InMemoryOpenTelemetryHandler Receiver { get; } = receiver;
 
-        public static async Task<TestApplication> CreateAsync(InMemoryOpenTelemetryHandlerOptions options = null, Action<IServiceCollection> configureServices = null)
+        public static async Task<TestApplication> CreateAsync(InMemoryOpenTelemetryHandlerOptions? options = null, Action<IServiceCollection>? configureServices = null)
         {
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.UseTestServer();

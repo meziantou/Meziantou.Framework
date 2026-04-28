@@ -390,3 +390,28 @@ jobs:
         env:
           NUGETAPIKEY: ${{steps.login.outputs.NUGET_API_KEY}}
           FEEDZ_APIKEY: ${{ secrets.FEEDZ_APIKEY }}
+
+  final_status_check:
+    runs-on: ubuntu-24.04
+    if: always()
+    needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, create_nuget, validate_nuget, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
+    steps:
+      - name: Check previous jobs status
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        run: |
+          $failedJobs = @(
+            $env:NEEDS_JSON
+            | ConvertFrom-Json -AsHashtable
+            | GetEnumerator
+            | Where-Object { $_.Value.result -notin @('success', 'skipped') }
+          )
+
+          if ($failedJobs.Count -eq 0) {
+            Write-Host "All dependency jobs succeeded or were skipped."
+            exit 0
+          }
+
+          $failedJobNames = $failedJobs.Name | Sort-Object
+          Write-Host "::error::Some jobs did not succeed: $($failedJobNames -join ', ')"
+          exit 1

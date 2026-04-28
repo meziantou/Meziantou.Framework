@@ -675,6 +675,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
         {
+            Assert.NotNull(result.Assembly);
             var assembly = alc.LoadFromStream(new MemoryStream(result.Assembly), new MemoryStream(result.Symbols));
             var type = assembly.GetType(typeName ?? "Test");
             Assert.NotNull(type);

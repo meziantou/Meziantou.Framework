@@ -5,7 +5,7 @@ namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
 [Collection("Tool")] // Ensure tests run sequentially
 public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHelper)
 {
-    private sealed record RunResult(int ExitCode, string StdOutput, string StdError, ValidationResult ValidationResults, NuGetPackageValidationResult ValidationResult);
+    private sealed record RunResult(int ExitCode, string StdOutput, string StdError, ValidationResult? ValidationResults, NuGetPackageValidationResult? ValidationResult);
 
     private sealed record ValidationResult(bool IsValid, Dictionary<string, NuGetPackageValidationResult> Packages);
 
@@ -16,7 +16,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
 
         Assert.True(console.Output.Count(c => c == '\n') > 2); // Check if output is written indented
 
-        ValidationResult deserializedResult = null;
+        ValidationResult? deserializedResult = null;
         try
         {
             deserializedResult = JsonSerializer.Deserialize<ValidationResult>(console.Output);
@@ -41,7 +41,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
     {
         var result = await RunValidation("Packages/Debug.1.0.0.nupkg");
         Assert.Equal(1, result.ExitCode);
-        Assert.False(result.ValidationResult.IsValid);
+        Assert.False(result.ValidationResult!.IsValid);
         Assert.Contains(result.ValidationResult.Errors, item => item.ErrorCode == 81);
     }
 
@@ -52,7 +52,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
         var path2 = FullPath.FromPath("Packages/Release.1.0.0.nupkg");
         var result = await RunValidation(path1, path2);
         Assert.Equal(1, result.ExitCode);
-        Assert.Equal(2, result.ValidationResults.Packages.Count);
+        Assert.Equal(2, result.ValidationResults!.Packages.Count);
         Assert.False(result.ValidationResults.Packages[path1].IsValid);
         Assert.Contains(result.ValidationResults.Packages[path1].Errors, item => item.ErrorCode == 81);
         Assert.False(result.ValidationResults.Packages[path2].IsValid);
@@ -64,7 +64,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
     {
         var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "--excluded-rule-ids", "81,73;101", "--excluded-rule-ids", "75");
         Assert.Equal(1, result.ExitCode);
-        Assert.False(result.ValidationResult.IsValid);
+        Assert.False(result.ValidationResult!.IsValid);
         Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode == 73);
         Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode == 75);
         Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode == 81);
@@ -76,7 +76,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
     {
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized,AuthorMustBeSet");
         Assert.Equal(0, result.ExitCode);
-        Assert.True(result.ValidationResult.IsValid);
+        Assert.True(result.ValidationResult!.IsValid);
         Assert.Empty(result.ValidationResult.Errors);
     }
 
@@ -94,7 +94,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
     {
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized", "--rules", "AuthorMustBeSet");
         Assert.Equal(0, result.ExitCode);
-        Assert.True(result.ValidationResult.IsValid);
+        Assert.True(result.ValidationResult!.IsValid);
         Assert.Empty(result.ValidationResult.Errors);
     }
 }

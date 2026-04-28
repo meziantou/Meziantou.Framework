@@ -1708,7 +1708,7 @@ public sealed class PublicApiGeneratorTests
         var reflectionContent = SerializeFiles(reflectionFiles);
         var metadataContent = SerializeFiles(metadataFiles);
         Assert.Equal(reflectionContent, metadataContent);
-        InlineSnapshot.Validate(reflectionContent, expected, filePath!, lineNumber);
+        InlineSnapshot.Validate(reflectionContent, expected, filePath, lineNumber);
 
         // Ensure the generated files are compilable
         var generatedDirectory = temporaryDirectory / "generated";

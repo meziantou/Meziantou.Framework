@@ -52,7 +52,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
 
     public override int GetHashCode() => _values.Count;
 
-    public static bool operator ==(ImmutableEquatableDictionary<TKey, TValue> left, ImmutableEquatableDictionary<TKey, TValue> right)
+    public static bool operator ==(ImmutableEquatableDictionary<TKey, TValue>? left, ImmutableEquatableDictionary<TKey, TValue>? right)
     {
         if (ReferenceEquals(left, right))
             return true;
@@ -61,7 +61,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
         return left.Equals(right);
     }
 
-    public static bool operator !=(ImmutableEquatableDictionary<TKey, TValue> left, ImmutableEquatableDictionary<TKey, TValue> right)
+    public static bool operator !=(ImmutableEquatableDictionary<TKey, TValue>? left, ImmutableEquatableDictionary<TKey, TValue>? right)
     {
         if (ReferenceEquals(left, right))
             return false;

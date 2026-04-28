@@ -51,7 +51,7 @@ public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<
     public override bool Equals(object? obj) => obj is ImmutableEquatableSet<T> other && Equals(other);
     public override int GetHashCode() => _values.Count;
 
-    public static bool operator ==(ImmutableEquatableSet<T> left, ImmutableEquatableSet<T> right)
+    public static bool operator ==(ImmutableEquatableSet<T>? left, ImmutableEquatableSet<T>? right)
     {
         if (ReferenceEquals(left, right))
             return true;
@@ -60,7 +60,7 @@ public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<
         return left.Equals(right);
     }
 
-    public static bool operator !=(ImmutableEquatableSet<T> left, ImmutableEquatableSet<T> right)
+    public static bool operator !=(ImmutableEquatableSet<T>? left, ImmutableEquatableSet<T>? right)
     {
         if (ReferenceEquals(left, right))
             return false;

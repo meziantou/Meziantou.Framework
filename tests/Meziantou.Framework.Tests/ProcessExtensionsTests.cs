@@ -191,6 +191,7 @@ public class ProcessExtensionsTests
     {
         var current = Process.GetCurrentProcess();
         var parent = current.GetParentProcess();
+        Assert.NotNull(parent);
         var grandParent = parent.GetParentProcess();
 
         Assert.NotNull(grandParent);

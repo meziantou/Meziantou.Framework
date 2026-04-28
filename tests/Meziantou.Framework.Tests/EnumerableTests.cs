@@ -110,7 +110,7 @@ public class EnumerableTests
     [Fact]
     public void EmptyIfNull_Null()
     {
-        IEnumerable<string> items = null;
+        IEnumerable<string>? items = null;
         Assert.Equal([], items.EmptyIfNull());
     }
 

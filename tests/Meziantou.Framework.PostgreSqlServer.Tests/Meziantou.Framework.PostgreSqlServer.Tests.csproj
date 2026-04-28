@@ -1,0 +1,13 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="8.0.8" />
+    <ProjectReference Include="../../src/Meziantou.Framework.PostgreSqlServer/Meziantou.Framework.PostgreSqlServer.csproj" />
+    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

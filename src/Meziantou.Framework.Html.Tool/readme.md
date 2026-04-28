@@ -3,8 +3,6 @@
 <!-- help -->
 ## Help
 
-### (root)
-
 ```
 Description:
 

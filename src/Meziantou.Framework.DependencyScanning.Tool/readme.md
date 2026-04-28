@@ -25,8 +25,6 @@ Meziantou.Framework.DependencyScanning.Tool --help
 <!-- help -->
 ## Help
 
-### (root)
-
 ```
 Description:
   List and update dependencies detected in a folder.

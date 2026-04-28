@@ -219,12 +219,7 @@ static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? too
     for (var i = 0; i < sections.Count; i++)
     {
         var section = sections[i];
-        if (section.CommandPath.Length is 0)
-        {
-            sb.AppendLine("### (root)");
-            sb.AppendLine();
-        }
-        else
+        if (section.CommandPath.Length is not 0)
         {
             sb.Append("### ");
             sb.AppendLine(string.Join(' ', section.CommandPath));

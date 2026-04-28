@@ -59,14 +59,14 @@ public sealed class JsonPathParseTests
     [Fact]
     public void TryParse_NullExpression_ReturnsFalse()
     {
-        Assert.False(JsonPath.TryParse((string)null, out var result));
+        Assert.False(JsonPath.TryParse((string)null!, out var result));
         Assert.Null(result);
     }
 
     [Fact]
     public void Parse_NullExpression_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => JsonPath.Parse((string)null));
+        Assert.Throws<ArgumentNullException>(() => JsonPath.Parse((string)null!));
     }
 
     [Fact]

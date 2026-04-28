@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.JsonPathTests</RootNamespace>
-      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

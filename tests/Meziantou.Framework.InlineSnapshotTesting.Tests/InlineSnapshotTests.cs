@@ -1066,7 +1066,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 
     [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Not supported on .NET Framework")]
     [SuppressMessage("Performance", "CA1849:Call async methods when in an async method", Justification = "Not supported on .NET Framework")]
-    private async Task AssertSnapshot([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null, string[] preprocessorSymbols = null)
+    private async Task AssertSnapshot([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string? expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>>? environmentVariables = null, string[]? preprocessorSymbols = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var projectPath = CreateTextFile("Project.csproj", $$"""
@@ -1189,12 +1189,14 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         {
             var names = typeof(InlineSnapshotTests).Assembly.GetManifestResourceNames();
             using var stream = typeof(InlineSnapshotTests).Assembly.GetManifestResourceStream("Meziantou.Framework.InlineSnapshotTesting.Tests.Meziantou.Framework.InlineSnapshotTesting.csproj");
+            Assert.NotNull(stream);
             var doc = XDocument.Load(stream);
+            Assert.NotNull(doc.Root);
             var items = doc.Root.Descendants("PackageReference");
 
-            var packages = items.Where(item => item.Parent.Attribute("Condition") is null).ToList();
+            var packages = items.Where(item => item.Parent?.Attribute("Condition") is null).ToList();
 #if NET472 || NET48
-            packages.AddRange(items.Where(item => item.Parent.Attribute("Condition") is not null));
+            packages.AddRange(items.Where(item => item.Parent?.Attribute("Condition") is not null));
 #endif
 
             return string.Join('\n', packages.Select(item => item.ToString()));
@@ -1233,6 +1235,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             }
 
             using var process = Process.Start(psi);
+            Assert.NotNull(process);
             process.OutputDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
             process.ErrorDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
             process.BeginOutputReadLine();

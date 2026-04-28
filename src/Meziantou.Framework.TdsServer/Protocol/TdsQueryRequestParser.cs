@@ -158,10 +158,11 @@ internal static class TdsQueryRequestParser
         }
 
         var maxLength = payload[position++];
+        var columnType = GetIntNColumnType(maxLength);
         var valueLength = payload[position++];
         if (valueLength == 0)
         {
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            return CreateParameter(name, rawValue: null, columnType);
         }
 
         if (position + valueLength > payload.Length)
@@ -179,8 +180,7 @@ internal static class TdsQueryRequestParser
         };
 
         position += valueLength;
-        _ = maxLength;
-        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(value) };
+        return CreateParameter(name, value, columnType);
     }
 
     private static TdsQueryParameter? ParseBitNParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -194,7 +194,7 @@ internal static class TdsQueryRequestParser
         var valueLength = payload[position++];
         if (valueLength == 0)
         {
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            return CreateParameter(name, rawValue: null, TdsColumnType.Boolean);
         }
 
         if (position + valueLength > payload.Length)
@@ -204,7 +204,7 @@ internal static class TdsQueryRequestParser
 
         var value = payload[position] != 0;
         position += valueLength;
-        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(value) };
+        return CreateParameter(name, value, TdsColumnType.Boolean);
     }
 
     private static TdsQueryParameter? ParseFloatNParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -214,11 +214,12 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        _ = payload[position++]; // max length
+        var maxLength = payload[position++];
+        var columnType = GetFloatNColumnType(maxLength);
         var valueLength = payload[position++];
         if (valueLength == 0)
         {
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            return CreateParameter(name, rawValue: null, columnType);
         }
 
         if (position + valueLength > payload.Length)
@@ -234,7 +235,7 @@ internal static class TdsQueryRequestParser
         };
 
         position += valueLength;
-        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(value) };
+        return CreateParameter(name, value, columnType);
     }
 
     private static TdsQueryParameter? ParseNVarCharParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -253,7 +254,7 @@ internal static class TdsQueryRequestParser
             var plpPayload = TryReadPlpPayload(payload, ref position, out var isNull);
             if (isNull)
             {
-                return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+                return CreateParameter(name, rawValue: null, TdsColumnType.NVarChar);
             }
 
             if (plpPayload is null)
@@ -261,7 +262,7 @@ internal static class TdsQueryRequestParser
                 return null;
             }
 
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(Encoding.Unicode.GetString(plpPayload)) };
+            return CreateParameter(name, Encoding.Unicode.GetString(plpPayload), TdsColumnType.NVarChar);
         }
 
         var valueLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
@@ -269,7 +270,7 @@ internal static class TdsQueryRequestParser
 
         if (valueLength == 0xFFFF)
         {
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            return CreateParameter(name, rawValue: null, TdsColumnType.NVarChar);
         }
 
         if (position + valueLength > payload.Length)
@@ -279,7 +280,7 @@ internal static class TdsQueryRequestParser
 
         var value = Encoding.Unicode.GetString(payload.Slice(position, valueLength));
         position += valueLength;
-        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(value) };
+        return CreateParameter(name, value, TdsColumnType.NVarChar);
     }
 
     private static TdsQueryParameter? ParseVarCharParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -298,7 +299,7 @@ internal static class TdsQueryRequestParser
             var plpPayload = TryReadPlpPayload(payload, ref position, out var isNull);
             if (isNull)
             {
-                return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+                return CreateParameter(name, rawValue: null, TdsColumnType.NVarChar);
             }
 
             if (plpPayload is null)
@@ -306,7 +307,7 @@ internal static class TdsQueryRequestParser
                 return null;
             }
 
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(Encoding.UTF8.GetString(plpPayload)) };
+            return CreateParameter(name, Encoding.UTF8.GetString(plpPayload), TdsColumnType.NVarChar);
         }
 
         var valueLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
@@ -314,7 +315,7 @@ internal static class TdsQueryRequestParser
 
         if (valueLength == 0xFFFF)
         {
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            return CreateParameter(name, rawValue: null, TdsColumnType.NVarChar);
         }
 
         if (position + valueLength > payload.Length)
@@ -324,7 +325,7 @@ internal static class TdsQueryRequestParser
 
         var value = Encoding.UTF8.GetString(payload.Slice(position, valueLength));
         position += valueLength;
-        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(value) };
+        return CreateParameter(name, value, TdsColumnType.NVarChar);
     }
 
     private static TdsQueryParameter? ParseVarBinaryParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -341,7 +342,7 @@ internal static class TdsQueryRequestParser
 
         if (valueLength == 0xFFFF)
         {
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            return CreateParameter(name, rawValue: null, TdsColumnType.Binary);
         }
 
         if (position + valueLength > payload.Length)
@@ -351,7 +352,7 @@ internal static class TdsQueryRequestParser
 
         var bytes = payload.Slice(position, valueLength).ToArray();
         position += valueLength;
-        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(bytes) };
+        return CreateParameter(name, bytes, TdsColumnType.Binary);
     }
 
     private static TdsQueryParameter? ParseJsonParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -359,7 +360,7 @@ internal static class TdsQueryRequestParser
         var plpPayload = TryReadPlpPayload(payload, ref position, out var isNull);
         if (isNull)
         {
-            return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(rawValue: null) };
+            return CreateParameter(name, rawValue: null, TdsColumnType.Json);
         }
 
         if (plpPayload is null)
@@ -367,7 +368,7 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        return new TdsQueryParameter { Name = name, Value = new TdsParameterValue(Encoding.UTF8.GetString(plpPayload)) };
+        return CreateParameter(name, Encoding.UTF8.GetString(plpPayload), TdsColumnType.Json);
     }
 
     private static byte[]? TryReadPlpPayload(ReadOnlySpan<byte> payload, ref int position, out bool isNull)
@@ -419,6 +420,38 @@ internal static class TdsQueryRequestParser
         }
 
         return stream.ToArray();
+    }
+
+    private static TdsQueryParameter CreateParameter(string name, object? rawValue, TdsColumnType columnType)
+    {
+        return new TdsQueryParameter
+        {
+            Name = name,
+            Value = rawValue ?? DBNull.Value,
+            Type = columnType,
+        };
+    }
+
+    private static TdsColumnType GetIntNColumnType(byte maxLength)
+    {
+        return maxLength switch
+        {
+            1 => TdsColumnType.TinyInt,
+            2 => TdsColumnType.SmallInt,
+            4 => TdsColumnType.Int32,
+            8 => TdsColumnType.Int64,
+            _ => TdsColumnType.Variant,
+        };
+    }
+
+    private static TdsColumnType GetFloatNColumnType(byte maxLength)
+    {
+        return maxLength switch
+        {
+            4 => TdsColumnType.Real,
+            8 => TdsColumnType.Double,
+            _ => TdsColumnType.Variant,
+        };
     }
 
     private static string DecodeUnicode(byte[] payload)

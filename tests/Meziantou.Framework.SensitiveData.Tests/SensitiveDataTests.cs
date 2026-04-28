@@ -142,7 +142,7 @@ public sealed class SensitiveDataTests
     [Fact]
     public void CanConvertFromString()
     {
-        using var data = (SensitiveData<char>)TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertFromString("bar");
+        using var data = Assert.IsType<SensitiveData<char>>(TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertFromString("bar"));
         Assert.Equal("bar", data.RevealToString());
     }
 

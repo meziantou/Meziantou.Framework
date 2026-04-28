@@ -76,7 +76,7 @@ public sealed class ResxGeneratorTest
     [InlineData("")]
     [InlineData("internal")]
     [InlineData("dummy")]
-    public async Task GenerateInternalClasses(string visibility)
+    public async Task GenerateInternalClasses(string? visibility)
     {
         var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
         var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
@@ -240,16 +240,16 @@ public sealed class ResxGeneratorTest
 
     private sealed class OptionProvider : AnalyzerConfigOptionsProvider
     {
-        public string ProjectDir { get; set; }
-        public string RootNamespace { get; set; }
-        public string Namespace { get; set; }
-        public string ClassName { get; set; }
-        public string DefaultResourcesNamespace { get; set; }
-        public string ResourceName { get; set; }
-        public string DefaultResourcesVisibility { get; set; }
-        public string Visibility { get; set; }
-        public string GenerateResourcesType { get; set; }
-        public string GenerateKeyNamesType { get; set; }
+        public string? ProjectDir { get; set; }
+        public string? RootNamespace { get; set; }
+        public string? Namespace { get; set; }
+        public string? ClassName { get; set; }
+        public string? DefaultResourcesNamespace { get; set; }
+        public string? ResourceName { get; set; }
+        public string? DefaultResourcesVisibility { get; set; }
+        public string? Visibility { get; set; }
+        public string? GenerateResourcesType { get; set; }
+        public string? GenerateKeyNamesType { get; set; }
         public Dictionary<string, string> PerFileNamespace { get; set; } = new(StringComparer.Ordinal);
 
         public override AnalyzerConfigOptions GlobalOptions => new Options(this);
@@ -261,15 +261,15 @@ public sealed class ResxGeneratorTest
         private sealed class Options : AnalyzerConfigOptions
         {
             private readonly OptionProvider _optionProvider;
-            private readonly string _path;
+            private readonly string? _path;
 
-            public Options(OptionProvider optionProvider, string path = null)
+            public Options(OptionProvider optionProvider, string? path = null)
             {
                 _optionProvider = optionProvider;
                 _path = path;
             }
 
-            public override bool TryGetValue(string key, [NotNullWhen(true)] out string value)
+            public override bool TryGetValue(string key, [NotNullWhen(true)] out string? value)
             {
                 const string BuildMetadata = "build_metadata.AdditionalFiles.";
                 const string BuildProperties = "build_property.";
@@ -295,7 +295,7 @@ public sealed class ResxGeneratorTest
                 var prop = typeof(OptionProvider).GetProperty(key);
                 if (prop != null)
                 {
-                    var propValue = (string)prop.GetValue(_optionProvider, null);
+                    var propValue = prop.GetValue(_optionProvider, null) as string;
                     if (propValue is not null)
                     {
                         value = propValue;
@@ -318,7 +318,7 @@ public sealed class ResxGeneratorTest
             Path = path;
             _text = text;
         }
-        public TestAdditionalText(string path, string text, Encoding encoding = null)
+        public TestAdditionalText(string path, string text, Encoding? encoding = null)
             : this(path, SourceText.From(text, encoding))
         {
         }

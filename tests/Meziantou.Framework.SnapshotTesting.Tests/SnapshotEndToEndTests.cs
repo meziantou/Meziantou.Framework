@@ -558,6 +558,70 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
+    public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutputAndNonDeterministicBuild()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateFailureSettings());
+                }
+            }
+            """,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "sample"u8.ToArray()),
+            ],
+            directoryBuildPropsContent:
+            """
+            <Project>
+              <PropertyGroup>
+                <UseArtifactsOutput>true</UseArtifactsOutput>
+                <Deterministic>false</Deterministic>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutputAndNonDeterministicBuild_WithoutInitialSnapshot()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            directoryBuildPropsContent:
+            """
+            <Project>
+              <PropertyGroup>
+                <UseArtifactsOutput>true</UseArtifactsOutput>
+                <Deterministic>false</Deterministic>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
     public async Task Validate_EndToEnd_UsesContainingMethodName_WhenCalledFromLambda()
     {
         var snapshotFiles = await AssertSnapshot(
@@ -831,37 +895,15 @@ public sealed class SnapshotEndToEndTests
 
     private static SnapshotFile[] GetGeneratedSnapshotFiles(FullPath rootPath)
     {
-        var validSnapshotDirectories = Directory.GetFiles(rootPath, "*.cs", SearchOption.AllDirectories)
-            .Select(Path.GetDirectoryName)
-            .Where(path => path is not null)
-            .Select(path => path!)
-            .Where(path => !IsUnderBuildOutputDirectory(rootPath, path))
-            .Select(path => Path.Combine(path, "__snapshots__"))
-            .Where(Directory.Exists)
-            .ToHashSet(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        var snapshotDirectory = Path.Combine(rootPath, "__snapshots__");
+        if (!Directory.Exists(snapshotDirectory))
+            return [];
 
-        return validSnapshotDirectories
-            .SelectMany(path => Directory.GetFiles(path, "*", SearchOption.AllDirectories))
+        return Directory.GetFiles(snapshotDirectory, "*", SearchOption.AllDirectories)
             .Select(path => (AbsolutePath: path, RelativePath: Path.GetRelativePath(rootPath, path).Replace('\\', '/')))
             .OrderBy(path => path.RelativePath, StringComparer.Ordinal)
             .Select(file => new SnapshotFile(file.RelativePath, File.ReadAllBytes(file.AbsolutePath)))
             .ToArray();
-
-        static bool IsUnderBuildOutputDirectory(FullPath rootPath, string path)
-        {
-            var relativePath = Path.GetRelativePath(rootPath, path);
-            if (relativePath.StartsWith("..", StringComparison.Ordinal))
-                return false;
-
-            var segments = relativePath.Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries);
-            foreach (var segment in segments)
-            {
-                if (segment.Equals("bin", StringComparison.OrdinalIgnoreCase) || segment.Equals("obj", StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
-        }
     }
 
     private static string GetGlobalUsings(SnapshotTestFramework testFramework)
@@ -997,10 +1039,7 @@ public sealed class SnapshotEndToEndTests
                 foreach (var entry in Environment.GetEnvironmentVariables().Cast<DictionaryEntry>())
                 {
                     var key = (string)entry.Key;
-                    if (key == "GITHUB_WORKSPACE")
-                        continue;
-
-                    if (key.StartsWith("GITHUB", StringComparison.Ordinal))
+                    if (key.StartsWith("GITHUB_", StringComparison.Ordinal))
                     {
                         env.Remove(key);
                     }

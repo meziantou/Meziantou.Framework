@@ -61,7 +61,7 @@ public sealed class HarHttpRecordingStoreTests
         Assert.Equal("https://example.com/api/data", loaded[0].RequestUri);
         Assert.Equal(200, loaded[0].StatusCode);
         Assert.NotNull(loaded[0].ResponseBody);
-        Assert.Equal("{\"id\":1}", System.Text.Encoding.UTF8.GetString(loaded[0].ResponseBody));
+        Assert.Equal("{\"id\":1}", System.Text.Encoding.UTF8.GetString(loaded[0].ResponseBody!));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class HarHttpRecordingStoreTests
         Assert.Equal("POST", loaded[0].Method);
         Assert.Equal(201, loaded[0].StatusCode);
         Assert.NotNull(loaded[0].RequestHeaders);
-        Assert.True(loaded[0].RequestHeaders.ContainsKey("Content-Type"));
+        Assert.True(loaded[0].RequestHeaders!.ContainsKey("Content-Type"));
         Assert.NotNull(loaded[0].RequestBody);
     }
 

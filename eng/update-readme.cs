@@ -9,7 +9,7 @@ using System.Xml.Linq;
 if (args.Length > 0 && args[0] is "--help" or "-h")
 {
     Console.WriteLine("Usage: dotnet run update-readme.cs");
-    Console.WriteLine("Regenerates the NuGet packages table in README.md and updates tool README files with --help output.");
+    Console.WriteLine("Regenerates the NuGet packages table in README.md and updates tool README files with recursive --help output.");
     Console.WriteLine("Exit code 1 if any README was not up-to-date.");
     return 0;
 }
@@ -160,17 +160,11 @@ int UpdateToolReadmes()
 
         Console.WriteLine($"Processing {project.Csproj}");
 
-        string[] runArgs = ["run", "--no-build", "--project", project.Csproj, "--framework", latestTfm, "--", "--help"];
-        var helpText = RunProcessAndCaptureOutput("dotnet", runArgs, timeout: TimeSpan.FromMinutes(2));
-        helpText = TrimEndOfLines(helpText).TrimEnd('\r', '\n');
-        if (!string.IsNullOrEmpty(project.ToolName))
-        {
-            helpText = helpText.Replace(Path.GetFileNameWithoutExtension(project.Csproj), project.ToolName, StringComparison.Ordinal);
-        }
+        var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, latestTfm, project.ToolName);
 
         var toolReadmeContent = File.ReadAllText(project.ToolReadme);
         var pattern = new Regex("(?<=<!-- help -->)(.*?)(?=<!-- help -->)", RegexOptions.Singleline | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
-        var newToolReadmeContent = pattern.Replace(toolReadmeContent, $"\n```\n{helpText}\n```\n");
+        var newToolReadmeContent = pattern.Replace(toolReadmeContent, $"\n{helpMarkdown}\n");
         newToolReadmeContent = newToolReadmeContent.TrimEnd(' ', '\t', '\r', '\n');
 
         if (toolReadmeContent != newToolReadmeContent)
@@ -191,7 +185,155 @@ int UpdateToolReadmes()
     return 0;
 }
 
+static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? toolName)
+{
+    var sections = new List<(string[] CommandPath, string HelpText)>();
+    var visitedCommandPaths = new HashSet<string>(StringComparer.Ordinal);
+    AppendToolHelpSection(sections, visitedCommandPaths, csproj, latestTfm, toolName, []);
+
+    var hasRootSection = false;
+    for (var i = 0; i < sections.Count; i++)
+    {
+        var section = sections[i];
+        if (string.IsNullOrWhiteSpace(section.HelpText))
+        {
+            var commandPathDisplay = section.CommandPath.Length is 0 ? "(root)" : string.Join(' ', section.CommandPath);
+            throw new InvalidOperationException($"Tool '{csproj}' produced an empty help section for command '{commandPathDisplay}'.");
+        }
+
+        if (section.CommandPath.Length is 0)
+        {
+            hasRootSection = true;
+        }
+    }
+
+    if (!hasRootSection)
+    {
+        throw new InvalidOperationException($"Tool '{csproj}' did not produce a root help section.");
+    }
+
+    var sb = new StringBuilder();
+    sb.AppendLine("## Help");
+    sb.AppendLine();
+
+    for (var i = 0; i < sections.Count; i++)
+    {
+        var section = sections[i];
+        if (section.CommandPath.Length is 0)
+        {
+            sb.AppendLine("### (root)");
+            sb.AppendLine();
+        }
+        else
+        {
+            sb.Append("### ");
+            sb.AppendLine(string.Join(' ', section.CommandPath));
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("```");
+        sb.AppendLine(section.HelpText);
+        sb.AppendLine("```");
+
+        if (i < sections.Count - 1)
+        {
+            sb.AppendLine();
+        }
+    }
+
+    return sb.ToString().TrimEnd('\r', '\n');
+}
+
+static void AppendToolHelpSection(
+    List<(string[] CommandPath, string HelpText)> sections,
+    HashSet<string> visitedCommandPaths,
+    string csproj,
+    string latestTfm,
+    string? toolName,
+    string[] commandPath)
+{
+    var commandPathKey = string.Join('\u001F', commandPath);
+    if (!visitedCommandPaths.Add(commandPathKey))
+    {
+        return;
+    }
+
+    var helpText = GetToolHelpText(csproj, latestTfm, toolName, commandPath);
+    sections.Add((commandPath, helpText));
+
+    foreach (var subcommandName in GetSubcommandNames(csproj, latestTfm, commandPath))
+    {
+        var subcommandPath = new string[commandPath.Length + 1];
+        commandPath.CopyTo(subcommandPath, 0);
+        subcommandPath[^1] = subcommandName;
+        AppendToolHelpSection(sections, visitedCommandPaths, csproj, latestTfm, toolName, subcommandPath);
+    }
+}
+
+static string GetToolHelpText(string csproj, string latestTfm, string? toolName, string[] commandPath)
+{
+    var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--" };
+    runArgs.AddRange(commandPath);
+    runArgs.Add("--help");
+
+    var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
+    var helpText = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
+    helpText = TrimEndOfLines(helpText).TrimEnd('\r', '\n');
+    if (string.IsNullOrWhiteSpace(helpText))
+    {
+        throw new InvalidOperationException($"Process 'dotnet {string.Join(' ', runArgs)}' produced empty help output.");
+    }
+
+    if (!string.IsNullOrEmpty(toolName))
+    {
+        helpText = helpText.Replace(Path.GetFileNameWithoutExtension(csproj), toolName, StringComparison.Ordinal);
+    }
+
+    return helpText;
+}
+
+static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm, string[] commandPath)
+{
+    var commandLine = commandPath.Length is 0 ? string.Empty : string.Join(' ', commandPath) + " ";
+    var suggestDirective = $"[suggest:{commandLine.Length}]";
+    var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--", suggestDirective, commandLine };
+    var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
+    var suggestionsOutput = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
+    suggestionsOutput = TrimEndOfLines(suggestionsOutput).TrimEnd('\r', '\n');
+
+    var result = new List<string>();
+    var existingSuggestions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var rawLine in suggestionsOutput.Split('\n'))
+    {
+        var suggestion = rawLine.TrimEnd('\r').Trim();
+        if (string.IsNullOrEmpty(suggestion))
+        {
+            continue;
+        }
+
+        if (suggestion.StartsWith("-", StringComparison.Ordinal) || suggestion.StartsWith("/", StringComparison.Ordinal))
+        {
+            continue;
+        }
+
+        if (suggestion.Contains(" ", StringComparison.Ordinal) || suggestion.Contains("\t", StringComparison.Ordinal))
+        {
+            continue;
+        }
+
+        if (existingSuggestions.Add(suggestion))
+        {
+            result.Add(suggestion);
+        }
+    }
+
+    return result;
+}
+
 static string RunProcessAndCaptureOutput(string fileName, string[] arguments, TimeSpan? timeout = null)
+    => RunProcessAndCaptureOutputs(fileName, arguments, timeout).StandardOutput;
+
+static (string StandardOutput, string StandardError) RunProcessAndCaptureOutputs(string fileName, string[] arguments, TimeSpan? timeout = null)
 {
     var effectiveTimeout = timeout ?? TimeSpan.FromMinutes(2);
     var psi = new ProcessStartInfo(fileName)
@@ -222,7 +364,7 @@ static string RunProcessAndCaptureOutput(string fileName, string[] arguments, Ti
         throw new InvalidOperationException($"Process '{fileName} {string.Join(' ', arguments)}' exited with code {process.ExitCode}.{Environment.NewLine}{error}");
     }
 
-    return output;
+    return (output, error);
 }
 
 static bool IsExecutableProject(string csproj, string targetFramework)

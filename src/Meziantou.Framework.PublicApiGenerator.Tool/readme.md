@@ -39,6 +39,10 @@ public-api/
 ```
 
 <!-- help -->
+## Help
+
+### (root)
+
 ```
 Description:
   Generate public API stubs from a .NET assembly.

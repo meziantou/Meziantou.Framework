@@ -316,7 +316,7 @@ static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm,
             continue;
         }
 
-        if (suggestion.Contains(" ", StringComparison.Ordinal) || suggestion.Contains("\t", StringComparison.Ordinal))
+        if (suggestion.Contains(' ') || suggestion.Contains('\t'))
         {
             continue;
         }

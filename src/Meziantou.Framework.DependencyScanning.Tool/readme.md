@@ -23,6 +23,8 @@ Meziantou.Framework.DependencyScanning.Tool --help
 ````
 
 <!-- help -->
+## Help
+
 ```
 Description:
   List and update dependencies detected in a folder.
@@ -37,5 +39,39 @@ Options:
 Commands:
   update  Update dependencies
   list    List dependencies
+```
+
+### list
+
+```
+Description:
+  List dependencies
+
+Usage:
+  Meziantou.Framework.DependencyScanning.Tool list [options]
+
+Options:
+  --directory <directory>              Root directory
+  --files <files>                      Glob patterns to find files to scan
+  --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, MSBuildProjectReference
+  --format <Json|Text>                 Output format. Available values: Text, Json
+  -?, -h, --help                       Show help and usage information
+```
+
+### update
+
+```
+Description:
+  Update dependencies
+
+Usage:
+  Meziantou.Framework.DependencyScanning.Tool update [options]
+
+Options:
+  --directory <directory>              Root directory
+  --files <files>                      Glob patterns to find files to scan
+  --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, MSBuildProjectReference
+  --update-lock-files                  Update lock files when dependencies are updated
+  -?, -h, --help                       Show help and usage information
 ```
 <!-- help -->

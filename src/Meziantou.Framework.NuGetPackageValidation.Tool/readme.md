@@ -28,6 +28,8 @@ meziantou.validate-nuget-package --help
 ````
 
 <!-- help -->
+## Help
+
 ```
 Description:
   Validate a NuGet package

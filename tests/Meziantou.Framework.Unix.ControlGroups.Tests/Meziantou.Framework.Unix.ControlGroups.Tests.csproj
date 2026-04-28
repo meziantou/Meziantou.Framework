@@ -4,7 +4,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
-      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

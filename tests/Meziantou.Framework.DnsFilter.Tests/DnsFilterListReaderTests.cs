@@ -184,7 +184,7 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].AllowedDnsTypes);
-        Assert.Contains(DnsFilterQueryType.AAAA, rules[0].AllowedDnsTypes);
+        Assert.Contains(DnsFilterQueryType.AAAA, rules[0].AllowedDnsTypes!);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].ExcludedDnsTypes);
-        Assert.Contains(DnsFilterQueryType.AAAA, rules[0].ExcludedDnsTypes);
+        Assert.Contains(DnsFilterQueryType.AAAA, rules[0].ExcludedDnsTypes!);
     }
 
     [Fact]
@@ -208,9 +208,9 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].AllowedDnsTypes);
-        Assert.Equal(2, rules[0].AllowedDnsTypes.Count);
-        Assert.Contains(DnsFilterQueryType.A, rules[0].AllowedDnsTypes);
-        Assert.Contains(DnsFilterQueryType.AAAA, rules[0].AllowedDnsTypes);
+        Assert.Equal(2, rules[0].AllowedDnsTypes!.Count);
+        Assert.Contains(DnsFilterQueryType.A, rules[0].AllowedDnsTypes!);
+        Assert.Contains(DnsFilterQueryType.AAAA, rules[0].AllowedDnsTypes!);
     }
 
     [Fact]
@@ -222,7 +222,7 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].DenyAllowDomains);
-        Assert.Equal(2, rules[0].DenyAllowDomains.Count);
+        Assert.Equal(2, rules[0].DenyAllowDomains!.Count);
     }
 
     [Fact]
@@ -234,9 +234,9 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].Rewrite);
-        Assert.Equal(DnsFilterRewriteResponseCode.NoError, rules[0].Rewrite.ResponseCode);
-        Assert.Equal(DnsFilterQueryType.A, rules[0].Rewrite.RecordType);
-        Assert.Equal("1.2.3.4", rules[0].Rewrite.Value);
+        Assert.Equal(DnsFilterRewriteResponseCode.NoError, rules[0].Rewrite!.ResponseCode);
+        Assert.Equal(DnsFilterQueryType.A, rules[0].Rewrite!.RecordType);
+        Assert.Equal("1.2.3.4", rules[0].Rewrite!.Value);
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].Rewrite);
-        Assert.Equal(DnsFilterQueryType.AAAA, rules[0].Rewrite.RecordType);
+        Assert.Equal(DnsFilterQueryType.AAAA, rules[0].Rewrite!.RecordType);
     }
 
     [Fact]
@@ -260,7 +260,7 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].Rewrite);
-        Assert.Equal(DnsFilterRewriteResponseCode.NameError, rules[0].Rewrite.ResponseCode);
+        Assert.Equal(DnsFilterRewriteResponseCode.NameError, rules[0].Rewrite!.ResponseCode);
     }
 
     [Fact]
@@ -272,7 +272,7 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].Rewrite);
-        Assert.Equal(DnsFilterRewriteResponseCode.Refused, rules[0].Rewrite.ResponseCode);
+        Assert.Equal(DnsFilterRewriteResponseCode.Refused, rules[0].Rewrite!.ResponseCode);
     }
 
     [Fact]
@@ -284,9 +284,9 @@ public sealed class DnsFilterListReaderTests
 
         Assert.Single(rules);
         Assert.NotNull(rules[0].Rewrite);
-        Assert.Equal(DnsFilterRewriteResponseCode.NoError, rules[0].Rewrite.ResponseCode);
-        Assert.Equal(DnsFilterQueryType.A, rules[0].Rewrite.RecordType);
-        Assert.Equal("1.2.3.4", rules[0].Rewrite.Value);
+        Assert.Equal(DnsFilterRewriteResponseCode.NoError, rules[0].Rewrite!.ResponseCode);
+        Assert.Equal(DnsFilterQueryType.A, rules[0].Rewrite!.RecordType);
+        Assert.Equal("1.2.3.4", rules[0].Rewrite!.Value);
     }
 
     [Fact]
@@ -398,9 +398,9 @@ public sealed class DnsFilterListReaderTests
         Assert.Single(rules);
         Assert.True(rules[0].IsImportant);
         Assert.NotNull(rules[0].AllowedDnsTypes);
-        Assert.Contains(DnsFilterQueryType.AAAA, rules[0].AllowedDnsTypes);
+        Assert.Contains(DnsFilterQueryType.AAAA, rules[0].AllowedDnsTypes!);
         Assert.NotNull(rules[0].Rewrite);
-        Assert.Equal(DnsFilterRewriteResponseCode.Refused, rules[0].Rewrite.ResponseCode);
+        Assert.Equal(DnsFilterRewriteResponseCode.Refused, rules[0].Rewrite!.ResponseCode);
     }
 
     [Fact]

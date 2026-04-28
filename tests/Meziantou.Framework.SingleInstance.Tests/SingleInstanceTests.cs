@@ -33,7 +33,7 @@ public sealed class SingleInstanceTests
         Assert.Equal(["123"], orderedEvents[0].Arguments);
         Assert.Equal(["a", "b", "c"], orderedEvents[1].Arguments);
 
-        void SingleInstance_NewInstance(object sender, SingleInstanceEventArgs e)
+        void SingleInstance_NewInstance(object? sender, SingleInstanceEventArgs e)
         {
             Assert.Equal(singleInstance, sender);
             lock (events)

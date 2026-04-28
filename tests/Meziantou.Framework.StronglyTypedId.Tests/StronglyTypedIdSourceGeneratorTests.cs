@@ -53,7 +53,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
     private static ISourceGenerator InstantiateGenerator() => new StronglyTypedIdSourceGenerator().AsSourceGenerator();
 
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly, byte[] Symbols)> GenerateFiles(string sourceText, bool mustCompile = true)
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[]? Assembly, byte[] Symbols)> GenerateFiles(string sourceText, bool mustCompile = true)
     {
         var compilation = await CreateCompilation(sourceText,
         [
@@ -308,6 +308,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             {
                 var from = (MethodInfo)type.GetMember("FromInt32").Single();
                 var instance = from.Invoke(null, [-42]);
+                Assert.NotNull(instance);
                 var str = instance.ToString();
                 Assert.Equal("Test { Value = -42 }", str);
             });
@@ -335,6 +336,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         {
             var from = type.GetMember("TryParse").OfType<MethodInfo>().Single(m => m.GetParameters()[0].ParameterType == typeof(string));
             var parsed = from.Invoke(null, ["0", null]);
+            Assert.NotNull(parsed);
             Assert.False((bool)parsed);
         });
     }
@@ -387,7 +389,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         {
             var interfaces = type.GetInterfaces();
             Assert.Contains(interfaces, x => x.FullName == "Meziantou.Framework.IStronglyTypedId");
-            Assert.Contains(interfaces, x => x.FullName.StartsWith("Meziantou.Framework.IStronglyTypedId`1", StringComparison.Ordinal));
+            Assert.Contains(interfaces, x => x.FullName is not null && x.FullName.StartsWith("Meziantou.Framework.IStronglyTypedId`1", StringComparison.Ordinal));
         });
     }
 
@@ -459,14 +461,14 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
         // Replace struct with record struct
         compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText("[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial record struct Test { }"));
-        result = RunGenerator(validate: (_, symbol) => Assert.Equal((true, true), (symbol.IsRecord, symbol.IsValueType)));
+        result = RunGenerator(validate: (_, symbol) => Assert.Equal((true, true), (symbol!.IsRecord, symbol.IsValueType)));
         AssertSyntaxStepIsNotCached(result);
         AssertOutputIsNotCached(result);
 
         // Update references
         var newReferences = await NuGetHelpers.GetNuGetReferences("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/");
         compilation = compilation.AddReferences(newReferences.Select(path => MetadataReference.CreateFromFile(path)));
-        result = RunGenerator(validate: (_, symbol) => Assert.NotEmpty(symbol.GetTypeMembers("TestNewtonsoftJsonConverter")));
+        result = RunGenerator(validate: (_, symbol) => Assert.NotEmpty(symbol!.GetTypeMembers("TestNewtonsoftJsonConverter")));
         AssertOutputIsNotCached(result);
 
         // Update syntax
@@ -498,7 +500,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             Assert.DoesNotContain(IncrementalStepRunReason.Cached, result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Select(output => output.Reason));
         }
 
-        GeneratorRunResult RunGenerator(bool shouldGenerateFiles = true, Action<Compilation, INamedTypeSymbol> validate = null)
+        GeneratorRunResult RunGenerator(bool shouldGenerateFiles = true, Action<Compilation, INamedTypeSymbol?>? validate = null)
         {
             driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics, XunitCancellationToken);
             Assert.Empty(diagnostics);
@@ -655,7 +657,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         return TestGeneratedAssembly(sourceCode, typeName: null, assert);
     }
 
-    private static async Task TestGeneratedAssembly([StringSyntax("c#-test")] string sourceCode, string typeName, Action<Type> assert, bool mustGenerateTrees = true)
+    private static async Task TestGeneratedAssembly([StringSyntax("c#-test")] string sourceCode, string? typeName, Action<Type> assert, bool mustGenerateTrees = true)
     {
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
@@ -673,8 +675,10 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
         {
+            Assert.NotNull(result.Assembly);
             var assembly = alc.LoadFromStream(new MemoryStream(result.Assembly), new MemoryStream(result.Symbols));
             var type = assembly.GetType(typeName ?? "Test");
+            Assert.NotNull(type);
 
             assert(type);
         }

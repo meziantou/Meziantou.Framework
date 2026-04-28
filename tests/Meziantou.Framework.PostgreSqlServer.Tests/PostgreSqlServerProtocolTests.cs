@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -17,8 +18,8 @@ public sealed class PostgreSqlServerProtocolTests
     [Fact]
     public async Task Npgsql_ClearTextAuthentication_UsesCallbackValidation()
     {
-        const string userName = "app_user";
-        const string password = "Password123!";
+        const string UserName = "app_user";
+        const string Password = "Password123!";
         var authenticationContextTask = new TaskCompletionSource<PostgreSqlAuthenticationContext>(TaskCreationOptions.RunContinuationsAsynchronously);
         var options = new PostgreSqlServerOptions
         {
@@ -32,7 +33,7 @@ public sealed class PostgreSqlServerProtocolTests
             {
                 _ = cancellationToken;
                 authenticationContextTask.TrySetResult(context);
-                return ValueTask.FromResult(context.ValidatePassword(password)
+                return ValueTask.FromResult(context.ValidatePassword(Password)
                     ? PostgreSqlAuthenticationResult.Success()
                     : PostgreSqlAuthenticationResult.Fail("invalid password"));
             },
@@ -41,18 +42,18 @@ public sealed class PostgreSqlServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new NpgsqlConnection(CreateConnectionString(port, userName: userName, password: password));
+        await using var connection = new NpgsqlConnection(CreateConnectionString(port, userName: UserName, password: Password));
         await connection.OpenAsync();
 
         var capturedContext = await authenticationContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Equal(userName, capturedContext.UserName);
+        Assert.Equal(UserName, capturedContext.UserName);
         Assert.Equal(PostgreSqlAuthenticationMethod.ClearTextPassword, capturedContext.Method);
     }
 
     [Fact]
     public async Task Npgsql_Md5Authentication_UsesCallbackValidation()
     {
-        const string password = "Password123!";
+        const string Password = "Password123!";
         var options = new PostgreSqlServerOptions
         {
             AuthenticationMethod = PostgreSqlAuthenticationMethod.Md5Password,
@@ -64,7 +65,7 @@ public sealed class PostgreSqlServerProtocolTests
             (context, cancellationToken) =>
             {
                 _ = cancellationToken;
-                return ValueTask.FromResult(context.ValidatePassword(password)
+                return ValueTask.FromResult(context.ValidatePassword(Password)
                     ? PostgreSqlAuthenticationResult.Success()
                     : PostgreSqlAuthenticationResult.Fail("invalid password"));
             },
@@ -73,14 +74,14 @@ public sealed class PostgreSqlServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new NpgsqlConnection(CreateConnectionString(port, password: password));
+        await using var connection = new NpgsqlConnection(CreateConnectionString(port, password: Password));
         await connection.OpenAsync();
     }
 
     [Fact]
     public void ScramAuthenticationContext_ValidatePassword_ComputesServerProof()
     {
-        const string password = "Password123!";
+        const string Password = "Password123!";
         var salt = Convert.FromBase64String("W22ZaJ0SNY7soEsUEjb6gQ==");
         const int IterationCount = 4096;
         const string ClientFirstBare = "n=app,r=fyko+d2lbbFgONRv9qkxdawL";
@@ -96,17 +97,17 @@ public sealed class PostgreSqlServerProtocolTests
         };
         SetNonPublicProperty(context, "ScramSalt", salt);
         SetNonPublicProperty(context, "ScramIterationCount", IterationCount);
-        SetNonPublicProperty(context, "ScramClientProof", CreateScramClientProof(password, salt, IterationCount, authMessage));
+        SetNonPublicProperty(context, "ScramClientProof", CreateScramClientProof(Password, salt, IterationCount, authMessage));
         SetNonPublicProperty(context, "ScramAuthMessage", authMessage);
 
-        Assert.True(context.ValidatePassword(password));
+        Assert.True(context.ValidatePassword(Password));
         Assert.False(context.ValidatePassword("wrong-password"));
     }
 
     [Fact]
     public async Task Npgsql_ScramAuthentication_UsesCallbackValidation()
     {
-        const string password = "Password123!";
+        const string Password = "Password123!";
         var options = new PostgreSqlServerOptions
         {
             AuthenticationMethod = PostgreSqlAuthenticationMethod.ScramSha256,
@@ -118,7 +119,7 @@ public sealed class PostgreSqlServerProtocolTests
             (context, cancellationToken) =>
             {
                 _ = cancellationToken;
-                return ValueTask.FromResult(context.ValidatePassword(password)
+                return ValueTask.FromResult(context.ValidatePassword(Password)
                     ? PostgreSqlAuthenticationResult.Success()
                     : PostgreSqlAuthenticationResult.Fail("invalid password"));
             },
@@ -127,14 +128,14 @@ public sealed class PostgreSqlServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new NpgsqlConnection(CreateConnectionString(port, password: password));
+        await using var connection = new NpgsqlConnection(CreateConnectionString(port, password: Password));
         await connection.OpenAsync();
     }
 
     [Fact]
     public async Task Npgsql_SimpleQuery_UsesSimpleRequestType()
     {
-        const string marker = "simple-query-marker";
+        const string Marker = "simple-query-marker";
         var queryContextTask = new TaskCompletionSource<PostgreSqlQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var options = new PostgreSqlServerOptions
@@ -151,7 +152,7 @@ public sealed class PostgreSqlServerProtocolTests
             (context, cancellationToken) =>
             {
                 _ = cancellationToken;
-                if (context.CommandText?.Contains(marker, StringComparison.Ordinal) == true)
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
                 {
                     queryContextTask.TrySetResult(context);
                     return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 123));
@@ -167,20 +168,20 @@ public sealed class PostgreSqlServerProtocolTests
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT 1 /* {marker} */";
+        command.CommandText = $"SELECT 1 /* {Marker} */";
         command.AllResultTypesAreUnknown = true;
         var result = await command.ExecuteScalarAsync();
 
         var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(123, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.True(capturedContext.RequestType is PostgreSqlQueryRequestType.SimpleQuery or PostgreSqlQueryRequestType.ExtendedQuery);
-        Assert.Contains(marker, capturedContext.CommandText, StringComparison.Ordinal);
+        Assert.Contains(Marker, capturedContext.CommandText, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task Npgsql_ExtendedQuery_WithParameters_UsesExtendedRequestType()
     {
-        const string marker = "extended-query-marker";
+        const string Marker = "extended-query-marker";
         var queryContextTask = new TaskCompletionSource<PostgreSqlQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var options = new PostgreSqlServerOptions
@@ -206,7 +207,7 @@ public sealed class PostgreSqlServerProtocolTests
                     return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
                 }
 
-                if (context.CommandText?.Contains(marker, StringComparison.Ordinal) == true)
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
                 {
                     queryContextTask.TrySetResult(context);
                     return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
@@ -222,7 +223,7 @@ public sealed class PostgreSqlServerProtocolTests
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT @value WHERE @flag /* {marker} */";
+        command.CommandText = $"SELECT @value WHERE @flag /* {Marker} */";
         command.AllResultTypesAreUnknown = true;
         _ = command.Parameters.Add(new NpgsqlParameter("value", NpgsqlTypes.NpgsqlDbType.Integer) { Value = 42 });
         _ = command.Parameters.Add(new NpgsqlParameter("flag", NpgsqlTypes.NpgsqlDbType.Boolean) { Value = true });
@@ -245,7 +246,7 @@ public sealed class PostgreSqlServerProtocolTests
     [Fact]
     public async Task Npgsql_ExtendedQuery_WithNullParameter_UsesDBNullValue()
     {
-        const string marker = "extended-query-null-parameter-marker";
+        const string Marker = "extended-query-null-parameter-marker";
         var queryContextTask = new TaskCompletionSource<PostgreSqlQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var options = new PostgreSqlServerOptions
@@ -265,7 +266,7 @@ public sealed class PostgreSqlServerProtocolTests
                 if (context.RequestType == PostgreSqlQueryRequestType.ExtendedQuery &&
                     context.Parameters.Count == 1 &&
                     ReferenceEquals(context.Parameters[0].Value, DBNull.Value) &&
-                    context.CommandText?.Contains(marker, StringComparison.Ordinal) == true)
+                    context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
                 {
                     queryContextTask.TrySetResult(context);
                     return ValueTask.FromResult(CreateScalarResult(PostgreSqlColumnType.Int32, 42));
@@ -281,7 +282,7 @@ public sealed class PostgreSqlServerProtocolTests
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT @value /* {marker} */";
+        command.CommandText = $"SELECT @value /* {Marker} */";
         command.AllResultTypesAreUnknown = true;
         _ = command.Parameters.Add(new NpgsqlParameter("value", NpgsqlTypes.NpgsqlDbType.Integer) { Value = DBNull.Value });
         var result = await command.ExecuteScalarAsync();
@@ -340,7 +341,7 @@ public sealed class PostgreSqlServerProtocolTests
     [Fact]
     public async Task Npgsql_Cancellation_CancelsRunningQuery()
     {
-        const string marker = "cancel-query-marker";
+        const string Marker = "cancel-query-marker";
         var queryCanceledTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var options = new PostgreSqlServerOptions
@@ -356,7 +357,7 @@ public sealed class PostgreSqlServerProtocolTests
                 : PostgreSqlAuthenticationResult.Fail("invalid password")),
             async (context, cancellationToken) =>
             {
-                if (context.CommandText?.Contains(marker, StringComparison.Ordinal) == true)
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
                 {
                     try
                     {
@@ -379,7 +380,7 @@ public sealed class PostgreSqlServerProtocolTests
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT 1 /* {marker} */";
+        command.CommandText = $"SELECT 1 /* {Marker} */";
         command.AllResultTypesAreUnknown = true;
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
@@ -388,9 +389,10 @@ public sealed class PostgreSqlServerProtocolTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL text is generated from enum values controlled by the test itself.")]
     public async Task Npgsql_QueryResult_CoversColumnTypes()
     {
-        const string marker = "all-types-marker";
+        const string Marker = "all-types-marker";
         var guidValue = Guid.Parse("9f89d58d-f350-4ad6-af79-b2cbf2f65fd2", CultureInfo.InvariantCulture);
         var valuesByType = new Dictionary<PostgreSqlColumnType, (object Value, string ExpectedString)>
         {
@@ -424,7 +426,7 @@ public sealed class PostgreSqlServerProtocolTests
                 : PostgreSqlAuthenticationResult.Fail("invalid password")),
             (context, cancellationToken) =>
             {
-                if (context.CommandText?.Contains(marker, StringComparison.Ordinal) == true)
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
                 {
                     var type = ParseRequestedType(context.CommandText);
                     var (value, _) = valuesByType[type];
@@ -449,7 +451,7 @@ public sealed class PostgreSqlServerProtocolTests
         foreach (var (type, (_, expectedString)) in valuesByType)
         {
             await using var command = connection.CreateCommand();
-            command.CommandText = $"SELECT 1 /* {marker}:{type} */";
+            command.CommandText = $"SELECT 1 /* {Marker}:{type} */";
             command.AllResultTypesAreUnknown = true;
             var value = await command.ExecuteScalarAsync();
             Assert.Equal(expectedString, Convert.ToString(value, CultureInfo.InvariantCulture));
@@ -542,12 +544,12 @@ public sealed class PostgreSqlServerProtocolTests
         request.CertificateExtensions.Add(sanBuilder.Build());
 
         using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
-        const string pfxPassword = "Password123!";
+        const string PfxPassword = "Password123!";
 
         var pfxPath = Path.Combine(directoryPath, "server.pfx");
-        File.WriteAllBytes(pfxPath, certificate.Export(X509ContentType.Pfx, pfxPassword));
+        File.WriteAllBytes(pfxPath, certificate.Export(X509ContentType.Pfx, PfxPassword));
 
-        return new TlsCertificateFiles(directoryPath, pfxPath, pfxPassword);
+        return new TlsCertificateFiles(directoryPath, pfxPath, PfxPassword);
     }
 
     private sealed class TlsCertificateFiles : IDisposable

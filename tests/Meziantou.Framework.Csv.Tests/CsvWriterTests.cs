@@ -88,7 +88,7 @@ public class CsvWriterTests
         var reader = new CsvReader(sr);
 
         var rowIndex = -1;
-        CsvRow csvRow;
+        CsvRow? csvRow;
         while ((csvRow = await reader.ReadRowAsync()) is not null)
         {
             rowIndex++;

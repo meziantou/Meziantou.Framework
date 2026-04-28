@@ -19,7 +19,8 @@ public class VisitorTests
 
     private static void VisitType(Type type)
     {
-        var instance = (CodeObject)Activator.CreateInstance(type);
+        var instance = Activator.CreateInstance(type) as CodeObject;
+        Assert.NotNull(instance);
         var generator = new Visitor();
         generator.Visit(instance);
     }

@@ -4,7 +4,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
-      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

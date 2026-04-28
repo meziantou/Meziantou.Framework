@@ -22,7 +22,7 @@ public sealed class ServiceDefaultTests
         app.MapGet("/", () => TypedResults.Ok(new { Sample = Sample.Value1 }));
         var t = app.RunAsync();
 
-        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
         Assert.Equal("Healthy", await httpClient.GetStringAsync("health", XunitCancellationToken));
         Assert.Equal("Healthy", await httpClient.GetStringAsync("alive", XunitCancellationToken));
@@ -43,7 +43,7 @@ public sealed class ServiceDefaultTests
         app.MapGet("/", () => TypedResults.Ok(new { Sample = Sample.Value1 }));
         var t = app.RunAsync();
 
-        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
         Assert.Equal("Healthy", await httpClient.GetStringAsync("health", XunitCancellationToken));
         Assert.Equal("Healthy", await httpClient.GetStringAsync("alive", XunitCancellationToken));
@@ -84,7 +84,7 @@ public sealed class ServiceDefaultTests
         app.MapGet("/test", () => TypedResults.Ok(new { Value = "test" }));
         var t = app.RunAsync();
 
-        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
         using var response = await httpClient.GetAsync("/test", XunitCancellationToken);
 
@@ -110,7 +110,7 @@ public sealed class ServiceDefaultTests
         });
         var t = app.RunAsync();
 
-        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
         using var response = await httpClient.GetAsync("/test", XunitCancellationToken);
 
@@ -135,7 +135,7 @@ public sealed class ServiceDefaultTests
         app.MapGet("/test", () => TypedResults.Ok(new { Value = "test" }));
         var t = app.RunAsync();
 
-        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
         using var response = await httpClient.GetAsync("/test", XunitCancellationToken);
 
@@ -146,6 +146,14 @@ public sealed class ServiceDefaultTests
     {
         Value1,
         Value2,
+    }
+
+    private static string GetServerAddress(WebApplication app)
+    {
+        var addressesFeature = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>();
+        Assert.NotNull(addressesFeature);
+
+        return addressesFeature.Addresses.First();
     }
 
     private sealed class FooService(BarService bar) { public BarService Bar { get; } = bar; }

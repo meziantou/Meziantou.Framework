@@ -19,7 +19,7 @@ public sealed class ByteSizeTests
     [InlineData(1_510_000L, "f1", "1.5MB")]
     [InlineData(1_510_000L, "", "1.51MB")]
     [InlineData(1_510_000L, "f2", "1.51MB")]
-    public void ToString_Test(long length, string format, string expectedValue)
+    public void ToString_Test(long length, string? format, string expectedValue)
     {
         var byteSize = new ByteSize(length);
         var formattedValue = byteSize.ToString(format, CultureInfo.InvariantCulture);
@@ -92,7 +92,7 @@ public sealed class ByteSizeTests
     [InlineData(1_510_000L, "f1", "1.5MB")]
     [InlineData(1_510_000L, "", "1.51MB")]
     [InlineData(1_510_000L, "f2", "1.51MB")]
-    public void TryFormat_Test(long length, string format, string expectedValue)
+    public void TryFormat_Test(long length, string? format, string expectedValue)
     {
         var byteSize = new ByteSize(length);
         Span<char> destination = stackalloc char[100];
@@ -162,7 +162,7 @@ public sealed class ByteSizeTests
     [InlineData(1_510_000L, "f1", "1.5MB")]
     [InlineData(1_510_000L, "", "1.51MB")]
     [InlineData(1_510_000L, "f2", "1.51MB")]
-    public void TryFormat_Utf8_Test(long length, string format, string expectedValue)
+    public void TryFormat_Utf8_Test(long length, string? format, string expectedValue)
     {
         var byteSize = new ByteSize(length);
         Span<byte> destination = stackalloc byte[100];

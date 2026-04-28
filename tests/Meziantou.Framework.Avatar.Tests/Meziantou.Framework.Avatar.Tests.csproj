@@ -5,7 +5,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
-      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -34,7 +34,7 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
 
     public Enumerator GetEnumerator() => new(_values);
 
-    public static bool operator ==(ImmutableEquatableArray<T> left, ImmutableEquatableArray<T> right)
+    public static bool operator ==(ImmutableEquatableArray<T>? left, ImmutableEquatableArray<T>? right)
     {
         if (ReferenceEquals(left, right))
             return true;
@@ -43,7 +43,7 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
         return left.Equals(right);
     }
 
-    public static bool operator !=(ImmutableEquatableArray<T> left, ImmutableEquatableArray<T> right)
+    public static bool operator !=(ImmutableEquatableArray<T>? left, ImmutableEquatableArray<T>? right)
     {
         if (ReferenceEquals(left, right))
             return false;

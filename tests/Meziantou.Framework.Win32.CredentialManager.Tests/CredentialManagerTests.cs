@@ -122,7 +122,7 @@ public sealed class CredentialManagerTests : IDisposable
     [Trait("Issue", "https://github.com/meziantou/Meziantou.Framework/issues/263")]
     [InlineData(null)]
     [InlineData("*")]
-    public void CredentialManager_EnumerateCredential_FilterNull(string filter)
+    public void CredentialManager_EnumerateCredential_FilterNull(string? filter)
     {
         _mutex.WaitOne();
         try

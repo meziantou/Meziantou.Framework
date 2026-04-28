@@ -625,7 +625,7 @@ public sealed class TdsServerProtocolTests
         };
     }
 
-    private static bool TryParseCustomerQuery(string query, out int customerId)
+    private static bool TryParseCustomerQuery(string? query, out int customerId)
     {
         customerId = default;
         if (string.IsNullOrWhiteSpace(query))

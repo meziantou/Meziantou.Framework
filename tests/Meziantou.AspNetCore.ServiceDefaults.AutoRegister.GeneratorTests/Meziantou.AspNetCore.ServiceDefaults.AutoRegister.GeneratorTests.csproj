@@ -4,7 +4,6 @@
     <TargetFrameworks>$(LatestTargetFramework);net9.0</TargetFrameworks>
     <EmitCompilerGeneratedFiles>True</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)/GeneratedFiles</CompilerGeneratedFilesOutputPath>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

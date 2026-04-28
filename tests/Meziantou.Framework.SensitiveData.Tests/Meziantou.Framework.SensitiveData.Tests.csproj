@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
+      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

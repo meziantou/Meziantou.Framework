@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <PlatformTarget>x64</PlatformTarget>
+      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

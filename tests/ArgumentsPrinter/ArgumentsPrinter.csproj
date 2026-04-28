@@ -4,6 +4,7 @@
     <TargetFramework>$(LatestTargetFramework)</TargetFramework>
     <RollForward>LatestMajor</RollForward>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+      <Nullable>disable</Nullable>
   </PropertyGroup>
 
 </Project>

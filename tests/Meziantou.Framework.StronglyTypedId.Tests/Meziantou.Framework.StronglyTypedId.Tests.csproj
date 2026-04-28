@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -121,7 +121,11 @@ public sealed class DependencyScannerTests
             ],
         };
         var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
-        Assert.Collection(result, dep => Assert.Equal(file1, dep.VersionLocation.FilePath));
+        Assert.Collection(result, dep =>
+        {
+            Assert.NotNull(dep.VersionLocation);
+            Assert.Equal(file1, dep.VersionLocation.FilePath);
+        });
     }
 
     [Fact]

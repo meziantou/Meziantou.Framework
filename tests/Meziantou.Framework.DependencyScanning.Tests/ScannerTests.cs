@@ -599,7 +599,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         var result = await GetDependencies<GitSubmoduleDependencyScanner>();
         AssertContainDependency(result, (DependencyType.GitReference, remote.FullPath, head, 0, 0));
 
-        Assert.All(result, item => Assert.False(item.VersionLocation.IsUpdatable));
+        Assert.All(result, item => Assert.False(item.VersionLocation?.IsUpdatable ?? false));
 
         async Task ExecuteProcess(string process, string args, string workingDirectory)
         {
@@ -1253,7 +1253,8 @@ jobs:
         async Task<Dependency[]> Scan(ScannerOptions options)
         {
             var items = await DependencyScanner.ScanDirectoryAsync(_directory.FullPath, options);
-            return items.Where(d => d.Tags.Contains(typeof(T).FullName)).ToArray();
+            var scannerType = typeof(T).FullName ?? throw new InvalidOperationException("Type full name should not be null");
+            return items.Where(d => d.Tags.Contains(scannerType)).ToArray();
         }
     }
 
@@ -1267,8 +1268,8 @@ jobs:
         var allLocations = dependencies
             .SelectMany(d => new DetectedDependency[]
             {
-                new(d, d.NameLocation, () => d.UpdateNameAsync(newName + i--.ToStringInvariant())),
-                new(d, d.VersionLocation, () => d.UpdateVersionAsync(newVersion)),
+                new(d, d.NameLocation!, () => d.UpdateNameAsync(newName + i--.ToStringInvariant())),
+                new(d, d.VersionLocation!, () => d.UpdateVersionAsync(newVersion)),
             })
             .Where(item => item.Location is not null);
 
@@ -1306,7 +1307,7 @@ jobs:
         File.WriteAllBytes(fullPath, content);
     }
 
-    private static void AssertContainDependency(IEnumerable<Dependency> dependencies, params (DependencyType Type, string Name, string Version, int VersionLine, int VersionColumn)[] expectedDependencies)
+    private static void AssertContainDependency(IEnumerable<Dependency> dependencies, params (DependencyType Type, string? Name, string? Version, int VersionLine, int VersionColumn)[] expectedDependencies)
     {
         foreach (var expected in expectedDependencies)
         {
@@ -1314,8 +1315,8 @@ jobs:
                 d.Type == expected.Type &&
                 d.Name == expected.Name &&
                 d.Version == expected.Version &&
-                (expected.VersionLine == 0 || ((ILocationLineInfo)d.VersionLocation).LineNumber == expected.VersionLine) &&
-                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation).LinePosition == expected.VersionColumn));
+                (expected.VersionLine == 0 || (d.VersionLocation is ILocationLineInfo versionLineInfo && versionLineInfo.LineNumber == expected.VersionLine)) &&
+                (expected.VersionColumn == 0 || (d.VersionLocation is ILocationLineInfo versionColumnInfo && versionColumnInfo.LinePosition == expected.VersionColumn)));
         }
     }
 

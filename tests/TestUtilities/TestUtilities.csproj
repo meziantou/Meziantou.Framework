@@ -5,7 +5,6 @@
     <OutputType>Library</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
-      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

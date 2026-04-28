@@ -76,7 +76,7 @@ public sealed class ResxGeneratorTest
     [InlineData("")]
     [InlineData("internal")]
     [InlineData("dummy")]
-    public async Task GenerateInternalClasses(string visibility)
+    public async Task GenerateInternalClasses(string? visibility)
     {
         var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
         var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
@@ -269,7 +269,7 @@ public sealed class ResxGeneratorTest
                 _path = path;
             }
 
-            public override bool TryGetValue(string key, [NotNullWhen(true)] out string value)
+            public override bool TryGetValue(string key, [NotNullWhen(true)] out string? value)
             {
                 const string BuildMetadata = "build_metadata.AdditionalFiles.";
                 const string BuildProperties = "build_property.";
@@ -295,7 +295,7 @@ public sealed class ResxGeneratorTest
                 var prop = typeof(OptionProvider).GetProperty(key);
                 if (prop != null)
                 {
-                    var propValue = (string)prop.GetValue(_optionProvider, null);
+                    var propValue = prop.GetValue(_optionProvider, null) as string;
                     if (propValue is not null)
                     {
                         value = propValue;

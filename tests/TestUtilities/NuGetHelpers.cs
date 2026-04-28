@@ -53,7 +53,8 @@ public static class NuGetHelpers
 
                 try
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(cacheFolder));
+                    var cacheDirectory = Path.GetDirectoryName(cacheFolder) ?? throw new InvalidOperationException("Cannot determine cache directory path");
+                    Directory.CreateDirectory(cacheDirectory);
                     Directory.Move(tempFolder, cacheFolder);
                 }
                 catch (Exception ex)

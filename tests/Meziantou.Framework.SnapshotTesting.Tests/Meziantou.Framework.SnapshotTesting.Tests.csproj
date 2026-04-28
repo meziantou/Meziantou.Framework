@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.props" />

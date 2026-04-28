@@ -35,7 +35,7 @@ public sealed class ImmutableEquatableSetTests
         Assert.Contains("b", set);
         Assert.Contains("c", set);
         Assert.DoesNotContain("d", set);
-        Assert.DoesNotContain(null, set);
+        Assert.DoesNotContain(set, item => item is null);
     }
 
     [Fact]

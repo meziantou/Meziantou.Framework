@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

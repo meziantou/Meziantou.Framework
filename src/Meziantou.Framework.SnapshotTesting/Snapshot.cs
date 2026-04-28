@@ -7,6 +7,7 @@ public static class Snapshot
     public static AsyncLocal<SnapshotTestContext?> TestContext { get; } = new();
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    [OverloadResolutionPriority(-1)] // Snapshot type has an implicit conversion from string, so this method must be called only if the user explicitly specify the type of snapshot
     public static void Validate(object? value, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1, [CallerMemberName] string? memberName = null)
     {
         Validate(value, settings: null, filePath, lineNumber, memberName);

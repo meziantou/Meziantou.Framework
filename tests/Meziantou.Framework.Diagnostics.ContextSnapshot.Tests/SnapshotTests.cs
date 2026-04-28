@@ -41,7 +41,9 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         foreach (var folder in Enum.GetNames<Environment.SpecialFolder>())
         {
             var expectedValue = Environment.GetFolderPath(Enum.Parse<Environment.SpecialFolder>(folder, ignoreCase: false));
-            var actualValue = typeof(SpecialFolderSnapshot).GetProperty(folder).GetValue(snapshot);
+            var property = typeof(SpecialFolderSnapshot).GetProperty(folder);
+            Assert.NotNull(property);
+            var actualValue = property.GetValue(snapshot);
 
             Assert.Equal(expectedValue, actualValue);
         }

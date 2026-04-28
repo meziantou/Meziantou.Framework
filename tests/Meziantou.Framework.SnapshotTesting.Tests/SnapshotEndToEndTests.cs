@@ -438,6 +438,27 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
+    public async Task Validate_EndToEnd_UsesTypedExtension_WhenValueIsByteArray_StringSnapshotTypeValue()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var payload = new byte[] { 0x42, 0x00, 0x43 };
+                    Snapshot.Validate(payload, "png", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """);
+
+        var snapshotFile = Assert.Single(snapshotFiles);
+        Assert.Equal("__snapshots__/SampleTest.verified.png", snapshotFile.RelativePath);
+        Assert.Equal([0x42, 0x00, 0x43], snapshotFile.Content);
+    }
+
+    [Fact]
     public async Task Validate_EndToEnd_UsesTypedExtension_WhenValueIsByteArray()
     {
         var snapshotFiles = await AssertSnapshot(
@@ -488,6 +509,132 @@ public sealed class SnapshotEndToEndTests
     public async Task Validate_EndToEnd_Smoke_WorksAcrossFrameworks(SnapshotTestFramework testFramework)
     {
         var snapshotFiles = await AssertSnapshot(GetFrameworkSmokeSource(testFramework), testFramework);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutput()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateFailureSettings());
+                }
+            }
+            """,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "sample"u8.ToArray()),
+            ],
+            directoryBuildPropsContent:
+            """
+            <Project>
+              <PropertyGroup>
+                <UseArtifactsOutput>true</UseArtifactsOutput>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutput_WithoutInitialSnapshot()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            directoryBuildPropsContent:
+            """
+            <Project>
+              <PropertyGroup>
+                <UseArtifactsOutput>true</UseArtifactsOutput>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutputAndNonDeterministicBuild()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateFailureSettings());
+                }
+            }
+            """,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "sample"u8.ToArray()),
+            ],
+            directoryBuildPropsContent:
+            """
+            <Project>
+              <PropertyGroup>
+                <UseArtifactsOutput>true</UseArtifactsOutput>
+                <Deterministic>false</Deterministic>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutputAndNonDeterministicBuild_WithoutInitialSnapshot()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            directoryBuildPropsContent:
+            """
+            <Project>
+              <PropertyGroup>
+                <UseArtifactsOutput>true</UseArtifactsOutput>
+                <Deterministic>false</Deterministic>
+              </PropertyGroup>
+            </Project>
+            """);
 
         AssertSnapshotContent(snapshotFiles,
         [
@@ -654,7 +801,8 @@ public sealed class SnapshotEndToEndTests
         string? targetFramework = null,
         bool expectFailure = false,
         IReadOnlyList<SnapshotFile>? existingFiles = null,
-        string? testFilter = null)
+        string? testFilter = null,
+        string? directoryBuildPropsContent = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
@@ -699,6 +847,11 @@ public sealed class SnapshotEndToEndTests
             {
                 CreateBinaryFile(existingFile.RelativePath, existingFile.Content);
             }
+        }
+
+        if (!string.IsNullOrEmpty(directoryBuildPropsContent))
+        {
+            CreateTextFile("Directory.Build.props", directoryBuildPropsContent);
         }
 
         await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore", "--disable-build-servers"], expectedExitCode: 0);
@@ -763,12 +916,15 @@ public sealed class SnapshotEndToEndTests
 
     private static SnapshotFile[] GetGeneratedSnapshotFiles(FullPath rootPath)
     {
-        return Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories)
-                    .Select(path => path.Replace('\\', '/'))
-                    .Where(path => path.Contains("/__snapshots__/", StringComparison.Ordinal))
-                    .Order(StringComparer.Ordinal)
-                    .Select(file => new SnapshotFile(Path.GetRelativePath(rootPath, file).Replace('\\', '/'), File.ReadAllBytes(file)))
-                    .ToArray();
+        var snapshotDirectory = Path.Combine(rootPath, "__snapshots__");
+        if (!Directory.Exists(snapshotDirectory))
+            return [];
+
+        return Directory.GetFiles(snapshotDirectory, "*", SearchOption.AllDirectories)
+            .Select(path => (AbsolutePath: path, RelativePath: Path.GetRelativePath(rootPath, path).Replace('\\', '/')))
+            .OrderBy(path => path.RelativePath, StringComparer.Ordinal)
+            .Select(file => new SnapshotFile(file.RelativePath, File.ReadAllBytes(file.AbsolutePath)))
+            .ToArray();
     }
 
     private static string GetGlobalUsings(SnapshotTestFramework testFramework)
@@ -904,10 +1060,7 @@ public sealed class SnapshotEndToEndTests
                 foreach (var entry in Environment.GetEnvironmentVariables().Cast<DictionaryEntry>())
                 {
                     var key = (string)entry.Key;
-                    if (key == "GITHUB_WORKSPACE")
-                        continue;
-
-                    if (key.StartsWith("GITHUB", StringComparison.Ordinal))
+                    if (key.StartsWith("GITHUB_", StringComparison.Ordinal))
                     {
                         env.Remove(key);
                     }

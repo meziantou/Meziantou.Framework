@@ -122,7 +122,7 @@ public class AvatarGeneratorTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void CreateSvg_ThrowsWhenNameIsInvalid(string name)
+    public void CreateSvg_ThrowsWhenNameIsInvalid(string? name)
     {
         Assert.ThrowsAny<ArgumentException>(() => AvatarGenerator.CreateSvg(name!, new AvatarOptions()));
     }

@@ -863,6 +863,6 @@ public sealed class QueryBuilderTests
         public DateTime DateTimeValue { get; set; }
         public DateTimeOffset DateTimeOffsetValue { get; set; }
         public DayOfWeek DayOfWeekValue { get; set; }
-        public string StringValue { get; set; } = "";
+        public string? StringValue { get; set; }
     }
 }

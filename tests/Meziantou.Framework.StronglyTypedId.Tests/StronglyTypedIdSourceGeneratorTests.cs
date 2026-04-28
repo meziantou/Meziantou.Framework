@@ -53,7 +53,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
     private static ISourceGenerator InstantiateGenerator() => new StronglyTypedIdSourceGenerator().AsSourceGenerator();
 
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly, byte[] Symbols)> GenerateFiles(string sourceText, bool mustCompile = true)
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[]? Assembly, byte[] Symbols)> GenerateFiles(string sourceText, bool mustCompile = true)
     {
         var compilation = await CreateCompilation(sourceText,
         [
@@ -84,7 +84,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             Assert.True(result.Success);
         }
 
-        return (runResult, outputCompilation, result.Success ? outputStream.ToArray() : null!, pdbStream.ToArray());
+        return (runResult, outputCompilation, result.Success ? outputStream.ToArray() : null, pdbStream.ToArray());
     }
 
     private static async Task<ImmutableArray<Diagnostic>> Analyze(string sourceText)

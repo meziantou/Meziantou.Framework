@@ -240,16 +240,16 @@ public sealed class ResxGeneratorTest
 
     private sealed class OptionProvider : AnalyzerConfigOptionsProvider
     {
-        public string ProjectDir { get; set; }
-        public string RootNamespace { get; set; }
-        public string Namespace { get; set; }
-        public string ClassName { get; set; }
-        public string DefaultResourcesNamespace { get; set; }
-        public string ResourceName { get; set; }
-        public string DefaultResourcesVisibility { get; set; }
-        public string Visibility { get; set; }
-        public string GenerateResourcesType { get; set; }
-        public string GenerateKeyNamesType { get; set; }
+        public string? ProjectDir { get; set; }
+        public string? RootNamespace { get; set; }
+        public string? Namespace { get; set; }
+        public string? ClassName { get; set; }
+        public string? DefaultResourcesNamespace { get; set; }
+        public string? ResourceName { get; set; }
+        public string? DefaultResourcesVisibility { get; set; }
+        public string? Visibility { get; set; }
+        public string? GenerateResourcesType { get; set; }
+        public string? GenerateKeyNamesType { get; set; }
         public Dictionary<string, string> PerFileNamespace { get; set; } = new(StringComparer.Ordinal);
 
         public override AnalyzerConfigOptions GlobalOptions => new Options(this);
@@ -261,9 +261,9 @@ public sealed class ResxGeneratorTest
         private sealed class Options : AnalyzerConfigOptions
         {
             private readonly OptionProvider _optionProvider;
-            private readonly string _path;
+            private readonly string? _path;
 
-            public Options(OptionProvider optionProvider, string path = null)
+            public Options(OptionProvider optionProvider, string? path = null)
             {
                 _optionProvider = optionProvider;
                 _path = path;
@@ -318,7 +318,7 @@ public sealed class ResxGeneratorTest
             Path = path;
             _text = text;
         }
-        public TestAdditionalText(string path, string text, Encoding encoding = null)
+        public TestAdditionalText(string path, string text, Encoding? encoding = null)
             : this(path, SourceText.From(text, encoding))
         {
         }

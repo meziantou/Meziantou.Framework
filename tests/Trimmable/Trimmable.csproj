@@ -10,7 +10,6 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>full</TrimMode>
     <ExcludeFromGeneratedSlnx>true</ExcludeFromGeneratedSlnx>
-      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

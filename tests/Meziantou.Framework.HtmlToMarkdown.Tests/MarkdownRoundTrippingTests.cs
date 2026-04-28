@@ -20,7 +20,7 @@ public sealed class MarkdownRoundTrippingTests
         {
             using var stream = assembly.GetManifestResourceStream(resourceName);
             Assert.NotNull(stream);
-            using var reader = new StreamReader(stream!);
+            using var reader = new StreamReader(stream);
             var content = reader.ReadToEnd();
 
             // Extract filename: e.g., "PipeTableSpecs.md" from full resource name
@@ -82,7 +82,7 @@ public sealed class MarkdownRoundTrippingTests
 
         if (SkippedExamples.TryGetValue((testCase.FileName, testCase.Example), out var skippedReason))
         {
-            reason = skippedReason!;
+            reason = skippedReason;
             return true;
         }
 

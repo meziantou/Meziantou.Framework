@@ -48,7 +48,7 @@ public class HtmlSanitizerTests
         {
             Assert.NotNull(expectedDocument.Body);
             Assert.NotNull(actualDocument.Body);
-            Assert.Equal(expectedDocument.Body!.InnerHtml, actualDocument.Body!.InnerHtml);
+            Assert.Equal(expectedDocument.Body.InnerHtml, actualDocument.Body.InnerHtml);
         }
     }
 
@@ -56,7 +56,7 @@ public class HtmlSanitizerTests
     {
         using var sw = new StringWriter();
         Assert.NotNull(document.Body);
-        document.Body!.ToHtml(sw, new PrettyMarkupFormatter());
+        document.Body.ToHtml(sw, new PrettyMarkupFormatter());
         return sw.ToString();
     }
 }

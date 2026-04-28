@@ -18,7 +18,7 @@ internal static class HtmlNormalizer
         var parser = new HtmlParser();
         var document = parser.ParseDocument("<body>" + html + "</body>");
         Assert.NotNull(document.Body);
-        var body = document.Body!;
+        var body = document.Body;
         NormalizeNode(body);
 
         using var sw = new StringWriter();

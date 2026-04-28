@@ -136,6 +136,7 @@ public sealed class PostgreSqlAuthenticationContext
         return hmac.ComputeHash(data);
     }
 
+    [SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms", Justification = "PostgreSQL MD5 authentication requires MD5 hashing.")]
     private static string ComputeMd5Hex(byte[] bytes)
     {
         var hash = MD5.HashData(bytes);

@@ -226,7 +226,7 @@ internal sealed class PostgreSqlConnectionProcessor
         return true;
     }
 
-    private async ValueTask<PostgreSqlAuthenticationContext> HandleClearTextAuthenticationAsync(
+    private static async ValueTask<PostgreSqlAuthenticationContext> HandleClearTextAuthenticationAsync(
         Stream input,
         PostgreSqlMessageWriter writer,
         PostgreSqlAuthenticationContext context,
@@ -245,7 +245,7 @@ internal sealed class PostgreSqlConnectionProcessor
         };
     }
 
-    private async ValueTask<PostgreSqlAuthenticationContext> HandleMd5AuthenticationAsync(
+    private static async ValueTask<PostgreSqlAuthenticationContext> HandleMd5AuthenticationAsync(
         Stream input,
         PostgreSqlMessageWriter writer,
         PostgreSqlAuthenticationContext context,
@@ -268,7 +268,7 @@ internal sealed class PostgreSqlConnectionProcessor
         };
     }
 
-    private async ValueTask<PostgreSqlAuthenticationContext> HandleScramAuthenticationAsync(
+    private static async ValueTask<PostgreSqlAuthenticationContext> HandleScramAuthenticationAsync(
         Stream input,
         PostgreSqlMessageWriter writer,
         PostgreSqlAuthenticationContext context,
@@ -388,7 +388,7 @@ internal sealed class PostgreSqlConnectionProcessor
         _ = _options.TryCancelBackendSession(processId, secretKey);
     }
 
-    private void HandleParseMessage(IDictionary<string, PostgreSqlStatement> preparedStatements, PostgreSqlFrontendMessage message)
+    private static void HandleParseMessage(Dictionary<string, PostgreSqlStatement> preparedStatements, PostgreSqlFrontendMessage message)
     {
         var payload = message.Payload.AsSpan();
         var index = 0;
@@ -421,7 +421,7 @@ internal sealed class PostgreSqlConnectionProcessor
         };
     }
 
-    private void HandleBindMessage(IDictionary<string, PostgreSqlStatement> preparedStatements, IDictionary<string, PostgreSqlPortal> portals, PostgreSqlFrontendMessage message)
+    private static void HandleBindMessage(Dictionary<string, PostgreSqlStatement> preparedStatements, Dictionary<string, PostgreSqlPortal> portals, PostgreSqlFrontendMessage message)
     {
         var payload = message.Payload.AsSpan();
         var index = 0;
@@ -482,7 +482,7 @@ internal sealed class PostgreSqlConnectionProcessor
         };
     }
 
-    private async ValueTask HandleDescribeMessageAsync(
+    private static async ValueTask HandleDescribeMessageAsync(
         PostgreSqlMessageWriter writer,
         Dictionary<string, PostgreSqlStatement> preparedStatements,
         Dictionary<string, PostgreSqlPortal> portals,
@@ -602,12 +602,15 @@ internal sealed class PostgreSqlConnectionProcessor
 
     private async ValueTask<PostgreSqlQueryResult> ExecuteQueryHandlerAsync(PostgreSqlQueryContext context, PostgreSqlBackendSession? backendSession, CancellationToken cancellationToken)
     {
-        CancellationTokenSource? commandCancellationTokenSource = null;
+        var commandCancellationTokenSource = backendSession?.BeginCommand(cancellationToken);
+        CancellationTokenSource? linkedTokenSource = null;
         try
         {
-            commandCancellationTokenSource = backendSession is not null
-                ? backendSession.BeginCommand(cancellationToken)
-                : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            if (commandCancellationTokenSource is null)
+            {
+                linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                commandCancellationTokenSource = linkedTokenSource;
+            }
 
             return await _queryHandler(context, commandCancellationTokenSource.Token).ConfigureAwait(false);
         }
@@ -630,21 +633,16 @@ internal sealed class PostgreSqlConnectionProcessor
         }
         finally
         {
-            if (commandCancellationTokenSource is not null)
+            if (backendSession is not null && commandCancellationTokenSource is not null)
             {
-                if (backendSession is not null)
-                {
-                    backendSession.EndCommand(commandCancellationTokenSource);
-                }
-                else
-                {
-                    commandCancellationTokenSource.Dispose();
-                }
+                backendSession.EndCommand(commandCancellationTokenSource);
             }
+
+            linkedTokenSource?.Dispose();
         }
     }
 
-    private async ValueTask WriteQueryResultAsync(PostgreSqlMessageWriter writer, PostgreSqlQueryResult result, bool includeReadyForQuery, bool includeRowDescription, CancellationToken cancellationToken)
+    private static async ValueTask WriteQueryResultAsync(PostgreSqlMessageWriter writer, PostgreSqlQueryResult result, bool includeReadyForQuery, bool includeRowDescription, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(result);
@@ -667,7 +665,7 @@ internal sealed class PostgreSqlConnectionProcessor
 
         if (result.ResultSets.Count == 0)
         {
-            var commandTag = string.IsNullOrWhiteSpace(result.CommandTag) ? "OK" : result.CommandTag!;
+            var commandTag = string.IsNullOrWhiteSpace(result.CommandTag) ? "OK" : result.CommandTag;
             await writer.WriteMessageAsync((byte)'C', PostgreSqlResponseSerializer.CreateCommandComplete(commandTag, 0), cancellationToken).ConfigureAwait(false);
             if (includeReadyForQuery)
             {
@@ -689,7 +687,7 @@ internal sealed class PostgreSqlConnectionProcessor
                 await writer.WriteMessageAsync((byte)'D', PostgreSqlResponseSerializer.CreateDataRow(resultSet, row), cancellationToken).ConfigureAwait(false);
             }
 
-            var commandTag = string.IsNullOrWhiteSpace(result.CommandTag) ? "SELECT" : result.CommandTag!;
+            var commandTag = string.IsNullOrWhiteSpace(result.CommandTag) ? "SELECT" : result.CommandTag;
             await writer.WriteMessageAsync((byte)'C', PostgreSqlResponseSerializer.CreateCommandComplete(commandTag, resultSet.Rows.Count), cancellationToken).ConfigureAwait(false);
         }
 
@@ -699,7 +697,7 @@ internal sealed class PostgreSqlConnectionProcessor
         }
     }
 
-    private static void HandleCloseMessage(IDictionary<string, PostgreSqlStatement> preparedStatements, IDictionary<string, PostgreSqlPortal> portals, PostgreSqlFrontendMessage message)
+    private static void HandleCloseMessage(Dictionary<string, PostgreSqlStatement> preparedStatements, Dictionary<string, PostgreSqlPortal> portals, PostgreSqlFrontendMessage message)
     {
         var payload = message.Payload.AsSpan();
         var index = 0;
@@ -744,7 +742,7 @@ internal sealed class PostgreSqlConnectionProcessor
         return result;
     }
 
-    private static int ResolveFormatCode(IReadOnlyList<int> formatCodes, int parameterIndex)
+    private static int ResolveFormatCode(List<int> formatCodes, int parameterIndex)
     {
         if (formatCodes.Count == 0)
         {
@@ -814,12 +812,13 @@ internal sealed class PostgreSqlConnectionProcessor
         {
             ServerCertificate = certificate,
             ClientCertificateRequired = false,
-            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+            EnabledSslProtocols = SslProtocols.None,
             CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
         }, cancellationToken).ConfigureAwait(false);
         return sslStream;
     }
 
+    [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Input and output streams are owned and disposed by the caller.")]
     private sealed class DuplexStream : Stream
     {
         private readonly Stream _readStream;

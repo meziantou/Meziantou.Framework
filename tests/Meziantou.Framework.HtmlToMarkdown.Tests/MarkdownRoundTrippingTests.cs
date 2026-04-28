@@ -19,7 +19,8 @@ public sealed class MarkdownRoundTrippingTests
             .OrderBy(n => n, StringComparer.Ordinal))
         {
             using var stream = assembly.GetManifestResourceStream(resourceName);
-            using var reader = new StreamReader(stream);
+            Assert.NotNull(stream);
+            using var reader = new StreamReader(stream!);
             var content = reader.ReadToEnd();
 
             // Extract filename: e.g., "PipeTableSpecs.md" from full resource name
@@ -79,8 +80,11 @@ public sealed class MarkdownRoundTrippingTests
             return true;
         }
 
-        if (SkippedExamples.TryGetValue((testCase.FileName, testCase.Example), out reason))
+        if (SkippedExamples.TryGetValue((testCase.FileName, testCase.Example), out var skippedReason))
+        {
+            reason = skippedReason!;
             return true;
+        }
 
         reason = "";
         return false;

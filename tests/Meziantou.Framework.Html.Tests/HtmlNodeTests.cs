@@ -23,7 +23,9 @@ public class HtmlNodeTests
     {
         var doc = new HtmlDocument();
         doc.LoadHtml("<p>def</p>");
-        Assert.Null(doc.SelectSingleNode("/p").ParentElement);
+        var node = doc.SelectSingleNode("/p");
+        Assert.NotNull(node);
+        Assert.Null(node!.ParentElement);
     }
 
     [Fact]
@@ -31,6 +33,8 @@ public class HtmlNodeTests
     {
         var doc = new HtmlDocument();
         doc.LoadHtml("<p>def</p>");
-        Assert.Equal("p", doc.SelectSingleNode("/p/node()").ParentElement.Name);
+        var node = doc.SelectSingleNode("/p/node()");
+        Assert.NotNull(node);
+        Assert.Equal("p", node!.ParentElement!.Name);
     }
 }

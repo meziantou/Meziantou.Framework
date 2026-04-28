@@ -59,7 +59,7 @@ internal sealed class HtmlXsltContext : XsltContext
         var prefix = base.LookupPrefix(uri);
         if (prefix is null && Resolver is not null)
         {
-            prefix = Resolver.LookupPrefix(prefix);
+            prefix = Resolver.LookupPrefix(uri);
         }
 
         return prefix ?? "";

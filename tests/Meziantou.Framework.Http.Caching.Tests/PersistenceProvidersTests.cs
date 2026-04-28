@@ -490,7 +490,7 @@ public class PersistenceProvidersTests
         DateTimeOffset now,
         TimeSpan maxAge,
         bool mustRevalidate,
-        string eTag = null)
+        string? eTag = null)
     {
         var requestTime = now - TimeSpan.FromMinutes(3);
         var responseTime = now - TimeSpan.FromMinutes(2);

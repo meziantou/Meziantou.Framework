@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);IDE0370</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

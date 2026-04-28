@@ -73,7 +73,7 @@ public sealed class JsonHttpRecordingStoreTests : IDisposable
         Assert.Equal("https://example.com/api/test", loaded[0].RequestUri);
         Assert.Equal(200, loaded[0].StatusCode);
         Assert.NotNull(loaded[0].ResponseBody);
-        Assert.Equal("hello", System.Text.Encoding.UTF8.GetString(loaded[0].ResponseBody));
+        Assert.Equal("hello", System.Text.Encoding.UTF8.GetString(loaded[0].ResponseBody!));
 
         Assert.Equal("POST", loaded[1].Method);
         Assert.Equal(201, loaded[1].StatusCode);

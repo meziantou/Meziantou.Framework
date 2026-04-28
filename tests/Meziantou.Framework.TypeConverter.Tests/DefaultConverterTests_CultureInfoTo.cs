@@ -8,7 +8,7 @@ public class DefaultConverterTests_CultureInfoTo
     public void TryConvert_CultureInfoToString_UsingInvariantCulture()
     {
         var converter = new DefaultConverter();
-        var value = converter.ChangeType<string>(CultureInfo.GetCultureInfo("en"), defaultValue: null, CultureInfo.InvariantCulture);
+        var value = converter.ChangeType<string?>(CultureInfo.GetCultureInfo("en"), defaultValue: null, CultureInfo.InvariantCulture);
         Assert.Equal("en", value);
     }
 
@@ -16,7 +16,7 @@ public class DefaultConverterTests_CultureInfoTo
     public void TryConvert_CultureInfoToString_UsingSpecificCulture()
     {
         var converter = new DefaultConverter();
-        var value = converter.ChangeType<string>(CultureInfo.GetCultureInfo("en"), defaultValue: null, CultureInfo.GetCultureInfo("en-US"));
+        var value = converter.ChangeType<string?>(CultureInfo.GetCultureInfo("en"), defaultValue: null, CultureInfo.GetCultureInfo("en-US"));
         Assert.Equal("en", value);
     }
 }

@@ -5,23 +5,23 @@ public class SerializerTestsBase
 {
     protected sealed record Validation
     {
-        public object Subject { get; init; }
-        public string Expected { get; init; }
-        public Type Type { get; init; }
-        public HumanReadableSerializerOptions Options { get; init; }
+        public object? Subject { get; init; }
+        public string? Expected { get; init; }
+        public Type? Type { get; init; }
+        public HumanReadableSerializerOptions? Options { get; init; }
     }
 
-    protected static void AssertSerialization(object obj, string expected)
+    protected static void AssertSerialization(object? obj, string expected)
     {
         AssertSerialization(obj, options: null, expected);
     }
 
-    protected static void AssertSerialization(object obj, HumanReadableSerializerOptions options, string expected)
+    protected static void AssertSerialization(object? obj, HumanReadableSerializerOptions? options, string expected)
     {
         AssertSerialization(obj, options, type: null, expected);
     }
 
-    protected static void AssertSerialization(object obj, HumanReadableSerializerOptions options, Type type, string expected)
+    protected static void AssertSerialization(object? obj, HumanReadableSerializerOptions? options, Type? type, string expected)
     {
         var text = type == null ? HumanReadableSerializer.Serialize(obj, options) : HumanReadableSerializer.Serialize(obj, type, options);
         Assert.Equal(expected, text, ignoreLineEndingDifferences: true);
@@ -29,6 +29,7 @@ public class SerializerTestsBase
 
     protected static void AssertSerialization(Validation validation)
     {
-        AssertSerialization(validation.Subject, validation.Options, validation.Type, validation.Expected);
+        var expected = validation.Expected ?? throw new InvalidOperationException("Expected serialization output must be provided.");
+        AssertSerialization(validation.Subject, validation.Options, validation.Type, expected);
     }
 }

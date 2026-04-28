@@ -103,6 +103,7 @@ public sealed class FlacTests
     {
         var result = MediaFile.ReadTags(GetTestFilePath("long_values.flac"));
         Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.Title);
         Assert.True(result.Value.Title.Length > 100);
     }
 

@@ -12,7 +12,7 @@ public sealed class HttpRecordingHandlerTests
     private static HttpRecordingHandler CreateHandler(
         HttpMessageHandler innerHandler,
         IHttpRecordingStore store,
-        HttpRecordingOptions options = null)
+        HttpRecordingOptions? options = null)
     {
         return new HttpRecordingHandler(innerHandler, store, options);
     }

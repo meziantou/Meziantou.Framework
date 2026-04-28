@@ -12,6 +12,7 @@ public class EmailTemplateTest
         // Act 
         var result = template.Run(out var metadata);
         Assert.Equal("Hello Meziantou!", result);
+        Assert.NotNull(metadata);
         Assert.Null(metadata.Title);
     }
 
@@ -25,6 +26,7 @@ public class EmailTemplateTest
         // Act 
         var result = template.Run(out var metadata);
         Assert.Equal("Hello Meziantou!", result);
+        Assert.NotNull(metadata);
         Assert.Equal("Meziantou", metadata.Title);
     }
 
@@ -86,6 +88,8 @@ public class EmailTemplateTest
         // Act 
         var result = template.Run(out var metadata);
         Assert.Equal("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />", result);
+        Assert.NotNull(metadata);
+        Assert.NotNull(metadata.ContentIdentifiers);
         Assert.Collection(metadata.ContentIdentifiers,
              item => Assert.Equal("test1.png", item),
              item => Assert.Equal("test2.png", item));

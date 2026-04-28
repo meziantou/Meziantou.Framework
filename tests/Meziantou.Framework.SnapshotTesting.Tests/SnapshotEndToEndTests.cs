@@ -438,6 +438,27 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
+    public async Task Validate_EndToEnd_UsesTypedExtension_WhenValueIsByteArray_StringSnapshotTypeValue()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var payload = new byte[] { 0x42, 0x00, 0x43 };
+                    Snapshot.Validate(payload, "png", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """);
+
+        var snapshotFile = Assert.Single(snapshotFiles);
+        Assert.Equal("__snapshots__/SampleTest.verified.png", snapshotFile.RelativePath);
+        Assert.Equal([0x42, 0x00, 0x43], snapshotFile.Content);
+    }
+
+    [Fact]
     public async Task Validate_EndToEnd_UsesTypedExtension_WhenValueIsByteArray()
     {
         var snapshotFiles = await AssertSnapshot(

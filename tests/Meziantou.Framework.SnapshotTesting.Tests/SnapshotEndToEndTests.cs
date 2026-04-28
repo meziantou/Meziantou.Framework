@@ -529,6 +529,35 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
+    public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutput_WithoutInitialSnapshot()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            directoryBuildPropsContent:
+            """
+            <Project>
+              <PropertyGroup>
+                <UseArtifactsOutput>true</UseArtifactsOutput>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
     public async Task Validate_EndToEnd_UsesContainingMethodName_WhenCalledFromLambda()
     {
         var snapshotFiles = await AssertSnapshot(

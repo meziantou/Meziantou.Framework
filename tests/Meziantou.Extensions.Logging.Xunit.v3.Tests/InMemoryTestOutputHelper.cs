@@ -9,7 +9,7 @@ internal sealed class InMemoryTestOutputHelper : ITestOutputHelper
 
     public IEnumerable<string> Logs => _logs;
 
-    public string Output { get; } = string.Empty;
+    public string Output => string.Join(Environment.NewLine, _logs);
 
     public void Write(string message)
     {

@@ -122,7 +122,7 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
         // deterministic paths like /_1/foo are not mangled to drive-rooted paths on Windows.
         var relativePath = TryGetPathMappedRelativePath(sourceFilePath);
         if (relativePath is null)
-            return sourcePath;
+            throw new SnapshotException($"Cannot find source file path '{sourceFilePath}'.");
 
         var normalizedRelativePath = relativePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
 
@@ -148,7 +148,7 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
                 return candidatePath;
         }
 
-        return sourcePath;
+        throw new SnapshotException($"Cannot find source file path '{sourceFilePath}'.");
     }
 
     private static string? TryGetPathMappedRelativePath(string path)

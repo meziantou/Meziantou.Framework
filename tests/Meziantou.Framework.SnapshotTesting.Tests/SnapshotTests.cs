@@ -68,6 +68,15 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public void ResolveSourceFilePath_ThrowsWhenSourceFilePathIsNotFound()
+    {
+        var sourceFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "file.cs");
+
+        var exception = Assert.Throws<SnapshotException>(() => SnapshotCallerContext.ResolveSourceFilePath(sourceFilePath));
+        Assert.Contains(sourceFilePath, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SnapshotPathStrategy_UsesIndexPatternForShortName()
     {
         var settings = new SnapshotSettings();

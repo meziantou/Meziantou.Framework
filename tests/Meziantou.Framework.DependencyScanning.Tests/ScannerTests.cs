@@ -496,11 +496,17 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         const string Original = """
             FROM a.com/b:1.2.2
             FROM a.com/c:1.2.3 AS base
+            COPY --from a.com/d:4.5.6 /tool /tool
+            COPY --chown=app:app --from=a.com/e:7.8.9 /src /dest
+            COPY --from=base /output /output
             CMD  /code/run-app
             """;
         const string Expected = """
             FROM dummy1:2.0.0
             FROM dummy2:2.0.0 AS base
+            COPY --from dummy3:2.0.0 /tool /tool
+            COPY --chown=app:app --from=dummy4:2.0.0 /src /dest
+            COPY --from=base /output /output
             CMD  /code/run-app
             """;
 
@@ -508,7 +514,9 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         var result = await GetDependencies<DockerfileDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.DockerImage, "a.com/b", "1.2.2", 1, 14),
-            (DependencyType.DockerImage, "a.com/c", "1.2.3", 2, 14));
+            (DependencyType.DockerImage, "a.com/c", "1.2.3", 2, 14),
+            (DependencyType.DockerImage, "a.com/d", "4.5.6", 3, 21),
+            (DependencyType.DockerImage, "a.com/e", "7.8.9", 4, 37));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("Dockerfile", Expected, ignoreNewLines: false);

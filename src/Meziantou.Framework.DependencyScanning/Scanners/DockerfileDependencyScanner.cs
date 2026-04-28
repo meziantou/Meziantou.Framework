@@ -3,7 +3,7 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans Dockerfile and Containerfile for Docker image dependencies in FROM instructions.</summary>
+/// <summary>Scans Dockerfile and Containerfile for Docker image dependencies in FROM and COPY --from instructions.</summary>
 public sealed partial class DockerfileDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.DockerImage];
@@ -18,10 +18,17 @@ public sealed partial class DockerfileDependencyScanner : DependencyScanner
             lineNo++;
             var match = FromRegex().Match(line);
             if (!match.Success)
-                continue;
+            {
+                match = CopyFromRegex().Match(line);
+                if (!match.Success)
+                    continue;
+            }
 
             var packageNameGroup = match.Groups["ImageName"];
             var packageName = packageNameGroup.Value;
+            if (packageName.Contains('@', StringComparison.Ordinal))
+                continue;
+
             var versionGroup = match.Groups["Version"];
             var version = versionGroup.Value;
             context.ReportDependency(this, packageName, version, DependencyType.DockerImage,
@@ -37,4 +44,7 @@ public sealed partial class DockerfileDependencyScanner : DependencyScanner
 
     [GeneratedRegex(@"^FROM\s*(?<ImageName>[^\s]+):(?<Version>[^\s]+)(\s+AS\s+\w+)?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10000)]
     private static partial Regex FromRegex();
+
+    [GeneratedRegex(@"^\s*COPY\b.*?\s--from(?:=|\s+)(?<ImageName>[^\s]+):(?<Version>[^\s]+)(?:\s|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10000)]
+    private static partial Regex CopyFromRegex();
 }

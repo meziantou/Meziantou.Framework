@@ -27,8 +27,10 @@ public class HtmlParserTests
     {
         var document = new HtmlDocument();
         document.LoadHtml("<script type='text/javascript'>my script</script>");
-        Assert.Equal("my script", document.SelectSingleNode("//script").InnerHtml);
-        Assert.Equal("text/javascript", document.SelectSingleNode("//script").GetAttributeValue("type"));
+        var scriptNode = document.SelectSingleNode("//script");
+        Assert.NotNull(scriptNode);
+        Assert.Equal("my script", scriptNode!.InnerHtml);
+        Assert.Equal("text/javascript", scriptNode.GetAttributeValue("type"));
     }
 
     [Fact]
@@ -80,7 +82,8 @@ public class HtmlParserTests
     {
         var document = new HtmlDocument();
         document.LoadHtml("<!--Test-->");
-        Assert.Equal(HtmlNodeType.Comment, document.FirstChild.NodeType);
+        Assert.NotNull(document.FirstChild);
+        Assert.Equal(HtmlNodeType.Comment, document.FirstChild!.NodeType);
     }
 
     [Fact]

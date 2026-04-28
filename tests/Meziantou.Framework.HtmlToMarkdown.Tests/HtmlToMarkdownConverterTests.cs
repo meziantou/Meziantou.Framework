@@ -2,7 +2,7 @@ namespace Meziantou.Framework.HtmlToMarkdownTests;
 
 public sealed class HtmlToMarkdownConverterTests
 {
-    private static void AssertHtmlToMarkdown(string html, string expectedMarkdown, HtmlToMarkdownOptions options = null)
+    private static void AssertHtmlToMarkdown(string html, string expectedMarkdown, HtmlToMarkdownOptions? options = null)
     {
         var actual = options is null
             ? HtmlToMarkdown.Convert(html)

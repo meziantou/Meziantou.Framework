@@ -300,7 +300,7 @@ public sealed class SnapshotSerializerTests
         public int? NullableInt32_NotNull { get; set; } = 42;
         public int[] Int32Array { get; set; } = [1, 2, 3, 4, 5];
         public int[] EmptyArray { get; set; } = [];
-        public int[] NullArray { get; set; }
+        public int[]? NullArray { get; set; }
         public IEnumerable<int> IEnumerableInt32 { get; set; } = Enumerable.Range(0, 2);
         public IDictionary<int, int> IDictionary { get; set; } = new Dictionary<int, int>() { [1] = 2, [3] = 4 };
         public IReadOnlyDictionary<int, int> IReadOnlyDictionary { get; set; } = new ReadOnlyDictionary<int, int>(new Dictionary<int, int>() { [1] = 2, [3] = 4 });

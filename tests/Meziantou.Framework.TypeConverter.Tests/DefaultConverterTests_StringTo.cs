@@ -98,8 +98,9 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("fr-FR", cultureInfo, out CultureInfo value);
+        var converted = converter.TryChangeType("fr-FR", cultureInfo, out CultureInfo? value);
         Assert.True(converted);
+        Assert.NotNull(value);
         Assert.Equal("fr-FR", value.Name);
     }
 
@@ -108,8 +109,9 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("es", cultureInfo, out CultureInfo value);
+        var converted = converter.TryChangeType("es", cultureInfo, out CultureInfo? value);
         Assert.True(converted);
+        Assert.NotNull(value);
         Assert.Equal("es", value.Name);
     }
 
@@ -118,11 +120,12 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("1033", cultureInfo, out CultureInfo value);
+        var converted = converter.TryChangeType("1033", cultureInfo, out CultureInfo? value);
 
         if (OperatingSystem.IsWindows())
         {
             Assert.True(converted);
+            Assert.NotNull(value);
             Assert.Equal("en-US", value.Name);
         }
         else
@@ -136,7 +139,7 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("dfgnksdfklgfg", cultureInfo, out CultureInfo _);
+        var converted = converter.TryChangeType("dfgnksdfklgfg", cultureInfo, out CultureInfo? _);
         Assert.False(converted);
     }
 
@@ -145,7 +148,7 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("", cultureInfo, out CultureInfo value);
+        var converted = converter.TryChangeType("", cultureInfo, out CultureInfo? value);
         Assert.True(converted);
         Assert.Equal(CultureInfo.InvariantCulture, value);
     }
@@ -155,7 +158,7 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        string inputValue = null;
+        string? inputValue = null;
         var converted = converter.TryChangeType<CultureInfo>(inputValue, cultureInfo, out var value);
         Assert.True(converted);
         Assert.Null(value);
@@ -166,7 +169,7 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("", cultureInfo, out Uri value);
+        var converted = converter.TryChangeType("", cultureInfo, out Uri? value);
         Assert.True(converted);
         Assert.Null(value);
     }
@@ -176,7 +179,7 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("test.png", cultureInfo, out Uri value);
+        var converted = converter.TryChangeType("test.png", cultureInfo, out Uri? value);
         Assert.True(converted);
         Assert.Equal(new Uri("test.png", UriKind.Relative), value);
     }
@@ -186,7 +189,7 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("https://meziantou.net", cultureInfo, out Uri value);
+        var converted = converter.TryChangeType("https://meziantou.net", cultureInfo, out Uri? value);
         Assert.True(converted);
         Assert.Equal(new Uri("https://meziantou.net", UriKind.Absolute), value);
     }
@@ -226,8 +229,9 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("0x0AFF", cultureInfo, out byte[] value);
+        var converted = converter.TryChangeType("0x0AFF", cultureInfo, out byte[]? value);
         Assert.True(converted);
+        Assert.NotNull(value);
         Assert.Equal([0x0A, 0xFF], value);
     }
 
@@ -236,8 +240,9 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("AQIDBA==", cultureInfo, out byte[] value);
+        var converted = converter.TryChangeType("AQIDBA==", cultureInfo, out byte[]? value);
         Assert.True(converted);
+        Assert.NotNull(value);
         Assert.Equal([1, 2, 3, 4], value);
     }
 
@@ -246,7 +251,7 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("AQIDBA=", cultureInfo, out byte[] _);
+        var converted = converter.TryChangeType("AQIDBA=", cultureInfo, out byte[]? _);
         Assert.False(converted);
     }
 
@@ -275,8 +280,9 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("0d0102", cultureInfo, out byte[] value);
+        var converted = converter.TryChangeType("0d0102", cultureInfo, out byte[]? value);
         Assert.True(converted);
+        Assert.NotNull(value);
         Assert.Equal([0x0d, 0x01, 0x02], value);
     }
 
@@ -285,8 +291,9 @@ public class DefaultConverterTests_StringTo
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType("0x0d01", cultureInfo, out byte[] value);
+        var converted = converter.TryChangeType("0x0d01", cultureInfo, out byte[]? value);
         Assert.True(converted);
+        Assert.NotNull(value);
         Assert.Equal([0x0d, 0x01], value);
     }
 

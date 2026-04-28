@@ -6,7 +6,7 @@ namespace Meziantou.Extensions.Logging.InMemory.Tests;
 
 public sealed partial class InMemoryLoggerTests
 {
-    private static readonly Action<ILogger, int, Exception> SampleMessage = LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "Sample Event Id"), "Test {Number}");
+    private static readonly Action<ILogger, int, Exception?> SampleMessage = LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "Sample Event Id"), "Test {Number}");
 
     [Fact]
     public void CreateLogger()

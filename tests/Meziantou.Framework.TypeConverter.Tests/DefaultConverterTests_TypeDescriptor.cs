@@ -9,22 +9,22 @@ public sealed class DefaultConverterTests_TypeDescriptor
     {
         public static Dummy Instance { get; } = new Dummy();
 
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(int);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             return Instance;
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return destinationType == typeof(int);
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             return 10;
         }
@@ -50,7 +50,7 @@ public sealed class DefaultConverterTests_TypeDescriptor
     {
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
-        var converted = converter.TryChangeType(1, cultureInfo, out Dummy value);
+        var converted = converter.TryChangeType(1, cultureInfo, out Dummy? value);
         Assert.True(converted);
         Assert.Equal(CustomTypeConverter.Instance, value);
     }
@@ -61,7 +61,7 @@ public sealed class DefaultConverterTests_TypeDescriptor
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
 
-        var converted = converter.TryChangeType("", cultureInfo, out Dummy _);
+        var converted = converter.TryChangeType("", cultureInfo, out Dummy? _);
         Assert.False(converted);
     }
 }

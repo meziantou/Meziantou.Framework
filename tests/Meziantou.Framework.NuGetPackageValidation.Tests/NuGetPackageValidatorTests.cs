@@ -4,13 +4,13 @@ namespace Meziantou.Framework.NuGetPackageValidation.Tests;
 
 public sealed class NuGetPackageValidatorTests
 {
-    private static Task<NuGetPackageValidationResult> ValidateAsync(string packageName, int[] excludedRuleIds, params NuGetPackageValidationRule[] rules)
+    private static Task<NuGetPackageValidationResult> ValidateAsync(string packageName, int[]? excludedRuleIds, params NuGetPackageValidationRule[] rules)
     {
         var path = FullPath.FromPath(typeof(NuGetPackageValidatorTests).Assembly.Location).Parent / "Packages" / packageName;
         return ValidateAsync(path, excludedRuleIds, rules);
     }
 
-    private static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, int[] excludedRuleIds, params NuGetPackageValidationRule[] rules)
+    private static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, int[]? excludedRuleIds, params NuGetPackageValidationRule[] rules)
     {
         var options = new NuGetPackageValidationOptions();
         options.Rules.AddRange(rules);

@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <EnableCodeCoverage>false</EnableCodeCoverage>
-    <Nullable>disable</Nullable>
+    <Nullable>enable</Nullable>
     <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
     <IncludeDefaultTestReferences Condition="'$(IncludeDefaultTestReferences)' == ''">true</IncludeDefaultTestReferences>
     <DefineConstants Condition="'$(GITHUB_ACTIONS)' == 'true'">$(DefineConstants);GITHUB_ACTIONS</DefineConstants>

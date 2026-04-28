@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
+      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

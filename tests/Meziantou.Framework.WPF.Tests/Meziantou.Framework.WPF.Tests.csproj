@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
     <UseWpf>true</UseWpf>
+      <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472' ">

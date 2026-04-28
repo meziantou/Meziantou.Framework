@@ -170,13 +170,13 @@ public class GlobTests
         Assert.True(glob.IsMatch(directoryName, fileName, itemType));
         Assert.True(globi.IsMatch(path));
         Assert.True(globi.IsMatch(directoryName, fileName, itemType));
-        Assert.True(glob.IsPartialMatch(directoryName));
-        Assert.True(globi.IsPartialMatch(directoryName));
+        Assert.True(glob.IsPartialMatch(directoryName!));
+        Assert.True(globi.IsPartialMatch(directoryName!));
 
         if (OperatingSystem.IsWindows())
         {
             Assert.True(glob.IsMatch(path.Replace('/', '\\')));
-            Assert.True(glob.IsMatch(directoryName.Replace('/', '\\'), fileName, itemType));
+            Assert.True(glob.IsMatch(directoryName!.Replace('/', '\\'), fileName, itemType));
         }
     }
 
@@ -230,7 +230,7 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobOptions.IgnoreCase);
         Assert.True(glob.IsMatch(path));
-        Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
     }
 
     [Theory]
@@ -362,7 +362,7 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobOptions.None);
         Assert.False(glob.IsMatch(path));
-        Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.False(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
     }
 
     [Theory]
@@ -535,16 +535,16 @@ public class GlobTests
         var glob = Glob.Parse(pattern, GlobOptions.Git);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase | GlobOptions.Git);
         Assert.True(glob.IsMatch(path));
-        Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
         Assert.True(globi.IsMatch(path));
-        Assert.True(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
-        Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)));
-        Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)));
+        Assert.True(globi.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+        Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)!));
+        Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)!));
 
         if (OperatingSystem.IsWindows())
         {
             Assert.True(glob.IsMatch(path.Replace('/', '\\')));
-            Assert.True(glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)));
+            Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!.Replace('/', '\\'), Path.GetFileName(path)));
         }
     }
 
@@ -561,9 +561,9 @@ public class GlobTests
         var glob = Glob.Parse(pattern, GlobOptions.Git);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase | GlobOptions.Git);
         Assert.False(glob.IsMatch(path));
-        Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.False(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
         Assert.False(globi.IsMatch(path));
-        Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.False(globi.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
     }
 
     // Corpus source: https://raw.githubusercontent.com/git/git/master/Documentation/gitignore.adoc

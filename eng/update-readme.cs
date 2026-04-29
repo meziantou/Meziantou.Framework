@@ -36,13 +36,13 @@ return 0;
 int UpdateNuGetReadme()
 {
     var readmePath = rootPath / "README.md";
-    Console.WriteLine("[update-readme] Starting NuGet README update");
+    Console.WriteLine("[update-nuget-readme] Starting NuGet README update");
     var nugetUpdateStopwatch = Stopwatch.StartNew();
 
     // Enumerate all .csproj files under src/, sorted by file name (without extension)
     var csprojFiles = new List<string>(Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories));
     csprojFiles.Sort((a, b) => string.Compare(Path.GetFileNameWithoutExtension(a), Path.GetFileNameWithoutExtension(b), StringComparison.OrdinalIgnoreCase));
-    Console.WriteLine($"[update-readme] NuGet discovery: found {csprojFiles.Count} project files");
+    Console.WriteLine($"[update-nuget-readme] NuGet discovery: found {csprojFiles.Count} project files");
 
     // Build the NuGet packages Markdown table
     var sb = new StringBuilder();
@@ -78,7 +78,7 @@ int UpdateNuGetReadme()
     }
 
     nugetUpdateStopwatch.Stop();
-    Console.WriteLine($"[update-readme] NuGet metrics: packable={packableProjectCount}, with-readme={projectWithReadmeCount}, elapsed={nugetUpdateStopwatch.Elapsed.TotalSeconds:F2}s");
+    Console.WriteLine($"[update-nuget-readme] NuGet metrics: packable={packableProjectCount}, with-readme={projectWithReadmeCount}, elapsed={nugetUpdateStopwatch.Elapsed.TotalSeconds:F2}s");
 
     // Read existing README
     var originalLines = File.ReadAllLines(readmePath);
@@ -128,7 +128,7 @@ int UpdateToolReadmes()
     var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
     var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
 
-    Console.WriteLine("[update-readme] Starting tool project discovery");
+    Console.WriteLine("[update-tool-readme] Starting tool project discovery");
     var discoveryStopwatch = Stopwatch.StartNew();
     var scannedProjectCount = 0;
     var executableProjectCount = 0;
@@ -170,17 +170,17 @@ int UpdateToolReadmes()
     }
 
     discoveryStopwatch.Stop();
-    Console.WriteLine($"[update-readme] Discovery metrics: scanned={scannedProjectCount}, executable={executableProjectCount}, system-commandline={commandLineProjectCount}, tool-projects={toolProjects.Count}, elapsed={discoveryStopwatch.Elapsed.TotalSeconds:F2}s");
+    Console.WriteLine($"[update-tool-readme] Discovery metrics: scanned={scannedProjectCount}, executable={executableProjectCount}, system-commandline={commandLineProjectCount}, tool-projects={toolProjects.Count}, elapsed={discoveryStopwatch.Elapsed.TotalSeconds:F2}s");
 
     var editedFiles = 0;
     for (var i = 0; i < toolProjects.Count; i++)
     {
         var project = toolProjects[i];
-        Console.WriteLine($"[update-readme] [{i + 1}/{toolProjects.Count}] Building tool project: {project.Csproj}");
+        Console.WriteLine($"[update-tool-readme] [{i + 1}/{toolProjects.Count}] Building tool project: {project.Csproj}");
         string[] buildArgs = ["build", project.Csproj, "--framework", latestTfm, "-p:RunAnalyzers=false", "-p:RunAnalyzersDuringBuild=false"];
         _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2));
 
-        Console.WriteLine($"[update-readme] [{i + 1}/{toolProjects.Count}] Generating help output for tool project: {project.Csproj}");
+        Console.WriteLine($"[update-tool-readme] [{i + 1}/{toolProjects.Count}] Generating help output for tool project: {project.Csproj}");
 
         var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, latestTfm, project.ToolName);
 
@@ -292,7 +292,7 @@ static string GetToolHelpText(string csproj, string latestTfm, string? toolName,
     var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--" };
     runArgs.AddRange(commandPath);
     runArgs.Add("--help");
-    Console.WriteLine($"[update-readme] Getting --help for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
+    Console.WriteLine($"[update-tool-readme] Getting --help for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
 
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
     var helpText = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
@@ -315,7 +315,7 @@ static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm,
     var commandLine = commandPath.Length is 0 ? string.Empty : string.Join(' ', commandPath) + " ";
     var suggestDirective = $"[suggest:{commandLine.Length}]";
     var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--", suggestDirective, commandLine };
-    Console.WriteLine($"[update-readme] Getting subcommands for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
+    Console.WriteLine($"[update-tool-readme] Getting subcommands for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
     var suggestionsOutput = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
     suggestionsOutput = TrimEndOfLines(suggestionsOutput).TrimEnd('\r', '\n');

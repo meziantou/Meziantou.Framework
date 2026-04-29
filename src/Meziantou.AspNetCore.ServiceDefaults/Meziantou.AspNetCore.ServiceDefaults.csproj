@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework);net9.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
     <Version>1.0.34</Version>
     <Description>Default configuration for meziantou applications</Description>
   </PropertyGroup>
@@ -15,10 +15,6 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(TargetFramework) == 'net9.0'">
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.15" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net10.0'">

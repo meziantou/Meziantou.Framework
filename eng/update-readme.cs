@@ -152,13 +152,14 @@ int UpdateToolReadmes()
     }
 
     var editedFiles = 0;
-    foreach (var project in toolProjects)
+    for (var i = 0; i < toolProjects.Count; i++)
     {
-        Console.WriteLine($"Building {project.Csproj}");
+        var project = toolProjects[i];
+        Console.WriteLine($"[update-readme] [{i + 1}/{toolProjects.Count}] Building tool project: {project.Csproj}");
         string[] buildArgs = ["build", project.Csproj, "--framework", latestTfm, "-p:RunAnalyzers=false", "-p:RunAnalyzersDuringBuild=false"];
         _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2));
 
-        Console.WriteLine($"Processing {project.Csproj}");
+        Console.WriteLine($"[update-readme] [{i + 1}/{toolProjects.Count}] Generating help output for tool project: {project.Csproj}");
 
         var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, latestTfm, project.ToolName);
 
@@ -197,7 +198,7 @@ static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? too
         var section = sections[i];
         if (string.IsNullOrWhiteSpace(section.HelpText))
         {
-            var commandPathDisplay = section.CommandPath.Length is 0 ? "(root)" : string.Join(' ', section.CommandPath);
+            var commandPathDisplay = FormatCommandPath(section.CommandPath);
             throw new InvalidOperationException($"Tool '{csproj}' produced an empty help section for command '{commandPathDisplay}'.");
         }
 
@@ -270,6 +271,7 @@ static string GetToolHelpText(string csproj, string latestTfm, string? toolName,
     var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--" };
     runArgs.AddRange(commandPath);
     runArgs.Add("--help");
+    Console.WriteLine($"[update-readme] Getting --help for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
 
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
     var helpText = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
@@ -292,6 +294,7 @@ static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm,
     var commandLine = commandPath.Length is 0 ? string.Empty : string.Join(' ', commandPath) + " ";
     var suggestDirective = $"[suggest:{commandLine.Length}]";
     var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--", suggestDirective, commandLine };
+    Console.WriteLine($"[update-readme] Getting subcommands for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
     var suggestionsOutput = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
     suggestionsOutput = TrimEndOfLines(suggestionsOutput).TrimEnd('\r', '\n');
@@ -386,6 +389,9 @@ static string? ExtractMsBuildPropertyValue(string output, string propertyName)
 
 static string TrimEndOfLines(string text) =>
     Regex.Replace(text, "[ \\t]+(?=\\r?\\n|$)", string.Empty, RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
+
+static string FormatCommandPath(string[] commandPath) =>
+    commandPath.Length is 0 ? "(root)" : string.Join(' ', commandPath);
 
 static void RunProcess(string fileName, string[] arguments)
 {

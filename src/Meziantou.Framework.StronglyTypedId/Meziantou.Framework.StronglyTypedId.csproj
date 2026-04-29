@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFramework_Roslyn)</TargetFrameworks>
     <Version>2.3.13</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>

@@ -3,6 +3,7 @@
   <!-- Build options -->
   <PropertyGroup>
     <LatestTargetFramework>net10.0</LatestTargetFramework>
+    <LatestTargetFramework_Roslyn>netstandard2.0;$(LatestTargetFramework)</LatestTargetFramework_Roslyn>
 
     <LatestTargetFrameworks>net10.0;net9.0;net8.0</LatestTargetFrameworks>
     <LatestTargetFrameworksWindows>net10.0-windows;net9.0-windows;net8.0-windows</LatestTargetFrameworksWindows>

@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFramework_Roslyn)</TargetFrameworks>
     <Version>1.0.3</Version>
     <Description>Auto register services and map routes</Description>
 

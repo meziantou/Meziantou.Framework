@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFramework_Roslyn)</TargetFrameworks>
     <Version>2.0.6</Version>
     <Description>Generate a faster ToString method for enumerations</Description>
 

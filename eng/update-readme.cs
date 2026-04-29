@@ -36,15 +36,20 @@ return 0;
 int UpdateNuGetReadme()
 {
     var readmePath = rootPath / "README.md";
+    Console.WriteLine("[update-readme] Starting NuGet README update");
+    var nugetUpdateStopwatch = Stopwatch.StartNew();
 
     // Enumerate all .csproj files under src/, sorted by file name (without extension)
     var csprojFiles = new List<string>(Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories));
     csprojFiles.Sort((a, b) => string.Compare(Path.GetFileNameWithoutExtension(a), Path.GetFileNameWithoutExtension(b), StringComparison.OrdinalIgnoreCase));
+    Console.WriteLine($"[update-readme] NuGet discovery: found {csprojFiles.Count} project files");
 
     // Build the NuGet packages Markdown table
     var sb = new StringBuilder();
     sb.Append("| Name | Version | Readme |\n");
     sb.Append("| :--- | :---: | :---: |\n");
+    var packableProjectCount = 0;
+    var projectWithReadmeCount = 0;
 
     foreach (var csproj in csprojFiles)
     {
@@ -55,12 +60,14 @@ int UpdateNuGetReadme()
             continue;
         }
 
+        packableProjectCount++;
         var fileName = Path.GetFileNameWithoutExtension(csproj);
         sb.Append($"| {fileName} | [![NuGet](https://img.shields.io/nuget/v/{fileName}.svg)](https://www.nuget.org/packages/{fileName}/) |");
 
         var packageReadmePath = FullPath.FromPath(csproj).Parent / "readme.md";
         if (File.Exists(packageReadmePath))
         {
+            projectWithReadmeCount++;
             var relativePath = packageReadmePath.MakePathRelativeTo(rootPath).Replace('\\', '/');
             sb.Append($" [readme]({relativePath}) |\n");
         }
@@ -69,6 +76,9 @@ int UpdateNuGetReadme()
             sb.Append(" |\n");
         }
     }
+
+    nugetUpdateStopwatch.Stop();
+    Console.WriteLine($"[update-readme] NuGet metrics: packable={packableProjectCount}, with-readme={projectWithReadmeCount}, elapsed={nugetUpdateStopwatch.Elapsed.TotalSeconds:F2}s");
 
     // Read existing README
     var originalLines = File.ReadAllLines(readmePath);

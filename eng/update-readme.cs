@@ -118,16 +118,23 @@ int UpdateToolReadmes()
     var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
     var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
 
+    Console.WriteLine("[update-readme] Starting tool project discovery");
+    var discoveryStopwatch = Stopwatch.StartNew();
+    var scannedProjectCount = 0;
+    var executableProjectCount = 0;
+    var commandLineProjectCount = 0;
     var toolProjects = new List<(string Csproj, string? ToolName, string ToolReadme)>();
 
     foreach (var csproj in Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories))
     {
+        scannedProjectCount++;
         var doc = XDocument.Load(csproj);
         if (!IsExecutableProject(csproj, latestTfm))
         {
             continue;
         }
 
+        executableProjectCount++;
         var referencesSystemCommandLine = doc.Root?
             .Descendants("PackageReference")
             .Any(static node => string.Equals(
@@ -139,6 +146,7 @@ int UpdateToolReadmes()
             continue;
         }
 
+        commandLineProjectCount++;
         var toolName = doc.Root?.Descendants("ToolCommandName").FirstOrDefault()?.Value;
 
         var toolReadme = FullPath.FromPath(csproj).Parent / "readme.md";
@@ -150,6 +158,9 @@ int UpdateToolReadmes()
 
         toolProjects.Add((csproj, toolName, toolReadme));
     }
+
+    discoveryStopwatch.Stop();
+    Console.WriteLine($"[update-readme] Discovery metrics: scanned={scannedProjectCount}, executable={executableProjectCount}, system-commandline={commandLineProjectCount}, tool-projects={toolProjects.Count}, elapsed={discoveryStopwatch.Elapsed.TotalSeconds:F2}s");
 
     var editedFiles = 0;
     for (var i = 0; i < toolProjects.Count; i++)

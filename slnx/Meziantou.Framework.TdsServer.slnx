@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.TdsServer/Meziantou.Framework.TdsServer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.TdsServer.Tests/Meziantou.Framework.TdsServer.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  </Folder>
+</Solution>

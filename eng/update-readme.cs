@@ -2,6 +2,7 @@
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -239,7 +240,7 @@ static int GetUpdateReadmeMaxDegreeOfParallelism()
         return Math.Clamp(Environment.ProcessorCount, 1, 4);
     }
 
-    if (int.TryParse(value, out var parsedValue) && parsedValue > 0)
+    if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedValue) && parsedValue > 0)
     {
         return parsedValue;
     }
@@ -471,9 +472,9 @@ static void RunProcess(string fileName, string[] arguments)
 
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
 
-readonly record struct ToolProject(string Csproj, string? ToolName, string ToolReadme);
+internal readonly record struct ToolProject(string Csproj, string? ToolName, string ToolReadme);
 
-readonly record struct ToolReadmeUpdate(string ToolReadme, string OriginalContent, string NewContent)
+internal readonly record struct ToolReadmeUpdate(string ToolReadme, string OriginalContent, string NewContent)
 {
     public bool HasChanges => !string.Equals(OriginalContent, NewContent, StringComparison.Ordinal);
 }

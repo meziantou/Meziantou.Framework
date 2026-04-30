@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.PostgreSqlServer/Meziantou.Framework.PostgreSqlServer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.PostgreSqlServer.Tests/Meziantou.Framework.PostgreSqlServer.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  </Folder>
+</Solution>

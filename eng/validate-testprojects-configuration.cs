@@ -21,6 +21,7 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
 var rootPath = GetRepositoryRoot();
 var testsRootPath = rootPath / "tests";
 var utilsPath = testsRootPath / "TestUtilities" / "TestUtilities.csproj";
+var tfmCache = new ConcurrentDictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
 var testProjects = Directory.GetFiles(testsRootPath, "*.csproj", SearchOption.AllDirectories);
 var errors = new ConcurrentBag<string>();
@@ -28,9 +29,7 @@ var errors = new ConcurrentBag<string>();
 var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 5 };
 await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
 {
-    await Task.Yield(); // ensure async context
-
-    var testProjectTfms = DotNetBuildGetTfmsWithRetry(proj)
+    var testProjectTfms = GetProjectTargetFrameworksWithRetry(proj)
         .Select(SimplifyTfm)
         .ToList();
 
@@ -51,7 +50,7 @@ await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
         if (!Path.GetFileNameWithoutExtension(proj).StartsWith(Path.GetFileNameWithoutExtension(refProj), StringComparison.Ordinal))
             continue;
 
-        var refTfms = DotNetBuildGetTfmsWithRetry(refProj);
+        var refTfms = GetProjectTargetFrameworksWithRetry(refProj);
         foreach (var refTfmRaw in refTfms)
         {
             var refTfm = SimplifyTfm(refTfmRaw);
@@ -79,6 +78,12 @@ if (!errors.IsEmpty)
 
 return 0;
 
+string[] GetProjectTargetFrameworksWithRetry(string projectPath)
+{
+    projectPath = Path.GetFullPath(projectPath);
+    return tfmCache.GetOrAdd(projectPath, key => DotNetBuildGetTfmsWithRetry(key));
+}
+
 static string SimplifyTfm(string tfm)
 {
     var dashIndex = tfm.IndexOf('-', StringComparison.Ordinal);
@@ -96,6 +101,7 @@ static string[] DotNetBuildGetTfmsWithRetry(string projectPath, int maxAttempts 
             UseShellExecute = false,
         };
         psi.ArgumentList.Add("build");
+        psi.ArgumentList.Add("--no-restore");
         psi.ArgumentList.Add("--getProperty:TargetFrameworks");
         psi.ArgumentList.Add(projectPath);
 

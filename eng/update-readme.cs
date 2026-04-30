@@ -200,7 +200,8 @@ int UpdateToolReadmes()
 
         Console.WriteLine($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Generating help output for tool project: {project.Csproj}");
 
-        var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, latestTfm, project.ToolName);
+        var executionContext = BuildToolExecutionContext(project.Csproj, latestTfm, project.ToolName);
+        var helpMarkdown = BuildToolHelpMarkdown(executionContext);
 
         var toolReadmeContent = File.ReadAllText(project.ToolReadme);
         var newToolReadmeContent = helpSectionPattern.Replace(toolReadmeContent, $"\n{helpMarkdown}\n");
@@ -248,11 +249,36 @@ static int GetUpdateReadmeMaxDegreeOfParallelism()
     throw new InvalidOperationException($"Environment variable UPDATE_README_MAX_PARALLELISM must be a positive integer. Current value: '{value}'.");
 }
 
-static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? toolName)
+static ToolExecutionContext BuildToolExecutionContext(string csproj, string latestTfm, string? toolName)
+{
+    string[] arguments = ["msbuild", csproj, "-nologo", "-v:q", "-p:TargetFramework=" + latestTfm, "-getProperty:TargetPath"];
+    var output = RunProcessAndCaptureOutput("dotnet", arguments, timeout: TimeSpan.FromMinutes(2));
+    var targetPath = output
+        .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .LastOrDefault();
+    if (string.IsNullOrWhiteSpace(targetPath))
+    {
+        throw new InvalidOperationException($"Cannot determine TargetPath for project '{csproj}'.");
+    }
+
+    if (!Path.IsPathRooted(targetPath))
+    {
+        targetPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(csproj) ?? throw new InvalidOperationException($"Cannot determine the directory for project '{csproj}'."), targetPath));
+    }
+
+    if (!File.Exists(targetPath))
+    {
+        throw new InvalidOperationException($"TargetPath '{targetPath}' for project '{csproj}' does not exist after build.");
+    }
+
+    return new ToolExecutionContext(csproj, toolName, targetPath);
+}
+
+static string BuildToolHelpMarkdown(ToolExecutionContext executionContext)
 {
     var sections = new List<(string[] CommandPath, string HelpText)>();
     var visitedCommandPaths = new HashSet<string>(StringComparer.Ordinal);
-    AppendToolHelpSection(sections, visitedCommandPaths, csproj, latestTfm, toolName, []);
+    AppendToolHelpSection(sections, visitedCommandPaths, executionContext, []);
 
     var hasRootSection = false;
     for (var i = 0; i < sections.Count; i++)
@@ -261,7 +287,7 @@ static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? too
         if (string.IsNullOrWhiteSpace(section.HelpText))
         {
             var commandPathDisplay = FormatCommandPath(section.CommandPath);
-            throw new InvalidOperationException($"Tool '{csproj}' produced an empty help section for command '{commandPathDisplay}'.");
+            throw new InvalidOperationException($"Tool '{executionContext.Csproj}' produced an empty help section for command '{commandPathDisplay}'.");
         }
 
         if (section.CommandPath.Length is 0)
@@ -272,7 +298,7 @@ static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? too
 
     if (!hasRootSection)
     {
-        throw new InvalidOperationException($"Tool '{csproj}' did not produce a root help section.");
+        throw new InvalidOperationException($"Tool '{executionContext.Csproj}' did not produce a root help section.");
     }
 
     var sb = new StringBuilder();
@@ -305,9 +331,7 @@ static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? too
 static void AppendToolHelpSection(
     List<(string[] CommandPath, string HelpText)> sections,
     HashSet<string> visitedCommandPaths,
-    string csproj,
-    string latestTfm,
-    string? toolName,
+    ToolExecutionContext executionContext,
     string[] commandPath)
 {
     var commandPathKey = string.Join('\u001F', commandPath);
@@ -316,24 +340,24 @@ static void AppendToolHelpSection(
         return;
     }
 
-    var helpText = GetToolHelpText(csproj, latestTfm, toolName, commandPath);
+    var helpText = GetToolHelpText(executionContext, commandPath);
     sections.Add((commandPath, helpText));
 
-    foreach (var subcommandName in GetSubcommandNames(csproj, latestTfm, commandPath))
+    foreach (var subcommandName in GetSubcommandNames(executionContext, commandPath))
     {
         var subcommandPath = new string[commandPath.Length + 1];
         commandPath.CopyTo(subcommandPath, 0);
         subcommandPath[^1] = subcommandName;
-        AppendToolHelpSection(sections, visitedCommandPaths, csproj, latestTfm, toolName, subcommandPath);
+        AppendToolHelpSection(sections, visitedCommandPaths, executionContext, subcommandPath);
     }
 }
 
-static string GetToolHelpText(string csproj, string latestTfm, string? toolName, string[] commandPath)
+static string GetToolHelpText(ToolExecutionContext executionContext, string[] commandPath)
 {
-    var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--" };
+    var runArgs = new List<string> { executionContext.TargetPath };
     runArgs.AddRange(commandPath);
     runArgs.Add("--help");
-    Console.WriteLine($"[update-tool-readme] Getting --help for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
+    Console.WriteLine($"[update-tool-readme] Getting --help for '{executionContext.Csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
 
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
     var helpText = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
@@ -343,20 +367,21 @@ static string GetToolHelpText(string csproj, string latestTfm, string? toolName,
         throw new InvalidOperationException($"Process 'dotnet {string.Join(' ', runArgs)}' produced empty help output.");
     }
 
-    if (!string.IsNullOrEmpty(toolName))
+    if (!string.IsNullOrEmpty(executionContext.ToolName))
     {
-        helpText = helpText.Replace(Path.GetFileNameWithoutExtension(csproj), toolName, StringComparison.Ordinal);
+        helpText = helpText.Replace(Path.GetFileNameWithoutExtension(executionContext.Csproj), executionContext.ToolName, StringComparison.Ordinal);
+        helpText = helpText.Replace(Path.GetFileNameWithoutExtension(executionContext.TargetPath), executionContext.ToolName, StringComparison.Ordinal);
     }
 
     return helpText;
 }
 
-static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm, string[] commandPath)
+static IReadOnlyList<string> GetSubcommandNames(ToolExecutionContext executionContext, string[] commandPath)
 {
     var commandLine = commandPath.Length is 0 ? string.Empty : string.Join(' ', commandPath) + " ";
     var suggestDirective = $"[suggest:{commandLine.Length}]";
-    var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--", suggestDirective, commandLine };
-    Console.WriteLine($"[update-tool-readme] Getting subcommands for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
+    var runArgs = new List<string> { executionContext.TargetPath, suggestDirective, commandLine };
+    Console.WriteLine($"[update-tool-readme] Getting subcommands for '{executionContext.Csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
     var suggestionsOutput = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
     suggestionsOutput = TrimEndOfLines(suggestionsOutput).TrimEnd('\r', '\n');
@@ -473,6 +498,8 @@ static void RunProcess(string fileName, string[] arguments)
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
 
 internal readonly record struct ToolProject(string Csproj, string? ToolName, string ToolReadme);
+
+internal readonly record struct ToolExecutionContext(string Csproj, string? ToolName, string TargetPath);
 
 internal readonly record struct ToolReadmeUpdate(string ToolReadme, string OriginalContent, string NewContent)
 {

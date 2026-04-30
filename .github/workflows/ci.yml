@@ -54,8 +54,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
       - name: Validate Readme
+        env:
+          UPDATE_README_MAX_PARALLELISM: 8
         run: dotnet run ./eng/update-readme.cs
 
   validate_test_projects:

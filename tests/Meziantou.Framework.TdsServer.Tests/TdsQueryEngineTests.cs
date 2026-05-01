@@ -75,6 +75,154 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_WhereEqualsOperator_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id = 2";
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 2)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotEqualsOperator_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id <> 2";
+            },
+            """
+            Id
+            1
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id != 2)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereGreaterThanOperator_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id > 2";
+            },
+            """
+            Id
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 2)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereGreaterThanOrEqualOperator_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id >= 2";
+            },
+            """
+            Id
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id >= 2)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereLessThanOperator_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id < 2";
+            },
+            """
+            Id
+            1
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id < 2)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereLessThanOrEqualOperator_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id <= 2";
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id <= 2)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereAnd_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id > 1 AND Id < 4";
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => ((row.Id > 1) AndAlso (row.Id < 4))).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereInCollection_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id IN (1, 4)";
+            },
+            """
+            Id
+            1
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => new [] {1, 4}.Contains(row.Id)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_WhereInSubquery_ReturnsFilteredRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -191,6 +339,114 @@ public sealed class TdsQueryEngineTests
             North 2
             """,
             expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() > 1)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingEqualsOperator_FiltersGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) = 2";
+            },
+            """
+            Region Count
+            North 2
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() == 2)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingNotEqualsOperator_FiltersGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) <> 2";
+            },
+            """
+            Region Count
+            South 1
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() != 2)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingGreaterThanOperator_FiltersGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) > 1";
+            },
+            """
+            Region Count
+            North 2
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() > 1)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingGreaterThanOrEqualOperator_FiltersGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) >= 2";
+            },
+            """
+            Region Count
+            North 2
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() >= 2)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingLessThanOperator_FiltersGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) < 2";
+            },
+            """
+            Region Count
+            South 1
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() < 2)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingLessThanOrEqualOperator_FiltersGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) <= 1";
+            },
+            """
+            Region Count
+            South 1
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() <= 1)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
     }
 
     [Fact]

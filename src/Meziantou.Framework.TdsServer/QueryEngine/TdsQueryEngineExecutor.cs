@@ -515,6 +515,7 @@ internal sealed class TdsQueryEngineExecutor
         {
             SqlComparisonBooleanExpressionType.Equals => Expression.Equal(left, right),
             SqlComparisonBooleanExpressionType.NotEqual => Expression.NotEqual(left, right),
+            SqlComparisonBooleanExpressionType.LessOrGreaterThan => Expression.NotEqual(left, right),
             SqlComparisonBooleanExpressionType.GreaterThan => Expression.GreaterThan(left, right),
             SqlComparisonBooleanExpressionType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
             SqlComparisonBooleanExpressionType.LessThan => Expression.LessThan(left, right),
@@ -635,6 +636,7 @@ internal sealed class TdsQueryEngineExecutor
         {
             SqlComparisonBooleanExpressionType.Equals => Expression.Equal(left, right),
             SqlComparisonBooleanExpressionType.NotEqual => Expression.NotEqual(left, right),
+            SqlComparisonBooleanExpressionType.LessOrGreaterThan => Expression.NotEqual(left, right),
             SqlComparisonBooleanExpressionType.GreaterThan => Expression.GreaterThan(left, right),
             SqlComparisonBooleanExpressionType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
             SqlComparisonBooleanExpressionType.LessThan => Expression.LessThan(left, right),

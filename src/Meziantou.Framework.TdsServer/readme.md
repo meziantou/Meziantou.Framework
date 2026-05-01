@@ -74,6 +74,8 @@ By default, the query engine materializes translated queries by enumerating the 
 
 The initial SQL text support is intentionally small: one `SELECT` statement with `FROM`, `INNER JOIN`, `WHERE` comparisons combined with `AND`, `IN`/`NOT IN` (value lists and simple subqueries), SQL parameters, `SELECT *` for single-table queries, selected columns with aliases, `ORDER BY`, single-column `GROUP BY`, `HAVING`, and grouped aggregates (`COUNT(*)`, `SUM`, `MIN`, `MAX`, `AVG`).
 
+Main unsupported SQL features include `OR`, `LIKE`, `IS NULL`, arithmetic expressions, `DISTINCT`, `TOP`, `OFFSET/FETCH`, `UNION`, subqueries outside `IN`, correlated subqueries, `ORDER BY` with `GROUP BY`, multi-column `GROUP BY`, non-aggregate functions, DML (`INSERT`/`UPDATE`/`DELETE`), and multiple statements/result sets.
+
 ## Access command text, stored procedure name, and parameters
 
 The query callback gives you access to both SQL batch text and RPC/stored-procedure metadata:

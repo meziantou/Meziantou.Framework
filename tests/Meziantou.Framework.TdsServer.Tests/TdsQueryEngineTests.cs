@@ -94,6 +94,24 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotInSubquery_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id NOT IN (SELECT Id FROM orders)";
+            },
+            """
+            Id
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => Not(Order[].Select(row => row.Id).Contains(row.Id))).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_OrderBy_ReturnsOrderedRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

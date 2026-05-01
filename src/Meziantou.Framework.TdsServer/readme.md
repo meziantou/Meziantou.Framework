@@ -72,7 +72,7 @@ app.MapTdsQueryEngine(queryEngineOptions);
 
 By default, the query engine materializes translated queries by enumerating the `IQueryable`. You can replace `MaterializeAsync` to use an async provider-specific materializer such as Entity Framework Core's `ToListAsync`.
 
-The initial SQL text support is intentionally small: one `SELECT` statement with `FROM`, `INNER JOIN`, `WHERE` comparisons combined with `AND`, `IN` (value lists and simple subqueries), SQL parameters, `SELECT *` for single-table queries, selected columns with aliases, `ORDER BY`, single-column `GROUP BY`, `HAVING`, and grouped aggregates (`COUNT(*)`, `SUM`, `MIN`, `MAX`, `AVG`).
+The initial SQL text support is intentionally small: one `SELECT` statement with `FROM`, `INNER JOIN`, `WHERE` comparisons combined with `AND`, `IN`/`NOT IN` (value lists and simple subqueries), SQL parameters, `SELECT *` for single-table queries, selected columns with aliases, `ORDER BY`, single-column `GROUP BY`, `HAVING`, and grouped aggregates (`COUNT(*)`, `SUM`, `MIN`, `MAX`, `AVG`).
 
 ## Access command text, stored procedure name, and parameters
 

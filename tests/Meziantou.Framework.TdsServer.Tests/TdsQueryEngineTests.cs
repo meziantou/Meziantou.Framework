@@ -2,6 +2,7 @@ using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
+using System.Text;
 using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
 using Meziantou.Framework.Tds.QueryEngine;
@@ -31,7 +32,7 @@ public sealed class TdsQueryEngineTests
             2 Bob
             4 David
             """,
-            expectedMaterializationCount: 1);
+            expectedMaterializedQueries: "Customer[].Select(row => new TdsProjection() {Id = row.Id, Name = row.Name})");
     }
 
     [Fact]
@@ -51,7 +52,7 @@ public sealed class TdsQueryEngineTests
             2 Bob
             4 David
             """,
-            expectedMaterializationCount: 1);
+            expectedMaterializedQueries: "Customer[]");
     }
 
     [Fact]
@@ -70,7 +71,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializationCount: 1);
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id})");
     }
 
     [Fact]
@@ -90,7 +91,7 @@ public sealed class TdsQueryEngineTests
             2
             1
             """,
-            expectedMaterializationCount: 1);
+            expectedMaterializedQueries: "Customer[].OrderByDescending(row => row.Name).Select(row => new TdsProjection() {Id = row.Id})");
     }
 
     [Fact]
@@ -115,7 +116,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializationCount: 1);
+            expectedMaterializedQueries: "Customer[].Join(Customer[], left => left.Id, right => right.Id, (left, right) => new TdsCarrier() {c1 = left, c2 = right}).Select(row => new TdsProjection() {Id = row.c1.Id})");
     }
 
     [Fact]
@@ -134,7 +135,7 @@ public sealed class TdsQueryEngineTests
             North
             South
             """,
-            expectedMaterializationCount: 1);
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key})");
     }
 
     [Fact]
@@ -152,7 +153,7 @@ public sealed class TdsQueryEngineTests
             Region Count
             North 2
             """,
-            expectedMaterializationCount: 1);
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() > 1)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
     }
 
     [Fact]
@@ -172,7 +173,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializationCount: 1);
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id})");
     }
 
     [Fact]
@@ -195,7 +196,7 @@ public sealed class TdsQueryEngineTests
             Id Name
             2 Bob
             """,
-            expectedMaterializationCount: 0);
+            expectedMaterializedQueries: "");
     }
 
     [Fact]
@@ -259,13 +260,13 @@ public sealed class TdsQueryEngineTests
         ];
     }
 
-    private static async Task ExecuteQuery(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand, string expected, int expectedMaterializationCount)
+    private static async Task ExecuteQuery(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand, string expected, string expectedMaterializedQueries)
     {
-        var materializationCount = 0;
+        var materializedQueries = new List<string>();
         var materializeAsync = queryEngineOptions.MaterializeAsync;
         queryEngineOptions.MaterializeAsync = async (query, cancellationToken) =>
         {
-            materializationCount++;
+            materializedQueries.Add(NormalizeMaterializedQuery(query.ToString() ?? string.Empty));
             return await materializeAsync(query, cancellationToken);
         };
 
@@ -288,7 +289,44 @@ public sealed class TdsQueryEngineTests
 
         await using var reader = await command.ExecuteReaderAsync();
         Assert.Equal(NormalizeMultilineString(expected), await ReadResultAsync(reader));
-        Assert.Equal(expectedMaterializationCount, materializationCount);
+        Assert.Equal(NormalizeMultilineString(expectedMaterializedQueries), NormalizeMultilineString(string.Join('\n', materializedQueries)));
+    }
+
+    private static string NormalizeMaterializedQuery(string query)
+    {
+        query = query.Replace(typeof(TdsQueryEngineTests).FullName + "+", "", StringComparison.Ordinal);
+        query = RemoveGeneratedTypeSuffix(query, "TdsProjection");
+
+        return RemoveGeneratedTypeSuffix(query, "TdsCarrier");
+    }
+
+    private static string RemoveGeneratedTypeSuffix(string value, string typeName)
+    {
+        var index = value.IndexOf(typeName, StringComparison.Ordinal);
+        if (index < 0)
+        {
+            return value;
+        }
+
+        var builder = new StringBuilder(value.Length);
+        var startIndex = 0;
+        while (index >= 0)
+        {
+            builder.Append(value, startIndex, index + typeName.Length - startIndex);
+
+            var endIndex = index + typeName.Length;
+            while (endIndex < value.Length && char.IsDigit(value[endIndex]))
+            {
+                endIndex++;
+            }
+
+            startIndex = endIndex;
+            index = value.IndexOf(typeName, startIndex, StringComparison.Ordinal);
+        }
+
+        builder.Append(value, startIndex, value.Length - startIndex);
+
+        return builder.ToString();
     }
 
     private static async Task<string> ReadResultAsync(SqlDataReader reader)

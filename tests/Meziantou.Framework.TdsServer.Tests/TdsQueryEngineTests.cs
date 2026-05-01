@@ -758,7 +758,7 @@ public sealed class TdsQueryEngineTests
             1
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => Order[].Select(row => row.Id).Contains(row.Id)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(row => Order[].Select(order => order.Id).Contains(row.Id)).Select(row => new TdsProjection() {Id = row.Id})");
     }
 
     [Fact]
@@ -781,7 +781,7 @@ public sealed class TdsQueryEngineTests
             Id
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => Not(Order[].Select(row => row.Id).Contains(row.Id))).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(row => Not(Order[].Select(order => order.Id).Contains(row.Id))).Select(row => new TdsProjection() {Id = row.Id})");
     }
 
     [Fact]
@@ -808,7 +808,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => Order[].Where(row => (row.Id == 1)).Any()).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(row => Order[].Where(order => (order.Id == 1)).Any()).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
     }
 
     [Fact]

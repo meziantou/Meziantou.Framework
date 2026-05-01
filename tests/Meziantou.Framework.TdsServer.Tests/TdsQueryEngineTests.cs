@@ -157,6 +157,82 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_Sum_ReturnsGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, SUM(Amount) AS TotalAmount FROM orders GROUP BY Region";
+            },
+            """
+            Region TotalAmount
+            North 30
+            South 5
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, TotalAmount = group.Sum(row => row.Amount)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Min_ReturnsGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, MIN(Amount) AS MinAmount FROM orders GROUP BY Region";
+            },
+            """
+            Region MinAmount
+            North 10
+            South 5
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, MinAmount = group.Min(row => row.Amount)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Max_ReturnsGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, MAX(Amount) AS MaxAmount FROM orders GROUP BY Region";
+            },
+            """
+            Region MaxAmount
+            North 20
+            South 5
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, MaxAmount = group.Max(row => row.Amount)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Avg_ReturnsGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, AVG(Amount) AS AvgAmount FROM orders GROUP BY Region";
+            },
+            """
+            Region AvgAmount
+            North 15
+            South 5
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, AvgAmount = group.Average(row => row.Amount)})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_Parameters_UsesSpExecuteSqlParameters()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -254,9 +330,9 @@ public sealed class TdsQueryEngineTests
     {
         return
         [
-            new Order(1, "North"),
-            new Order(2, "North"),
-            new Order(3, "South"),
+            new Order(1, "North", 10),
+            new Order(2, "North", 20),
+            new Order(3, "South", 5),
         ];
     }
 
@@ -364,5 +440,5 @@ public sealed class TdsQueryEngineTests
 
     private sealed record Customer(int Id, string Name);
 
-    private sealed record Order(int Id, string Region);
+    private sealed record Order(int Id, string Region, int Amount);
 }

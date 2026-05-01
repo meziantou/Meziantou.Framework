@@ -387,7 +387,8 @@ internal sealed class TdsQueryEngineExecutor
             query,
             query.ElementType,
             source.RowType,
-            new GroupKeyBinding(keyName));
+            new GroupKeyBinding(keyName),
+            source.Aliases);
     }
 
     private static GroupedQuerySource ApplyHaving(GroupedQuerySource source, SqlBooleanExpression expression, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
@@ -588,21 +589,81 @@ internal sealed class TdsQueryEngineExecutor
                 return Expression.Constant(ConvertValue(queryParameter.Value, variableType), variableType);
         }
 
-        throw new TdsQueryEngineException("Only GROUP BY columns, COUNT(*) aggregates, literals, and SQL parameters are supported in grouped expressions.");
+        throw new TdsQueryEngineException("Only GROUP BY columns, aggregate functions, literals, and SQL parameters are supported in grouped expressions.");
     }
 
     private static MethodCallExpression BuildAggregateFunction(SqlAggregateFunctionCallExpression aggregateFunction, GroupedQuerySource source, ParameterExpression parameter)
     {
-        if (!string.Equals(aggregateFunction.FunctionName, "COUNT", StringComparison.OrdinalIgnoreCase) || !aggregateFunction.IsStar)
+        if (string.Equals(aggregateFunction.FunctionName, "COUNT", StringComparison.OrdinalIgnoreCase))
         {
-            throw new TdsQueryEngineException("Only COUNT(*) aggregate is supported.");
+            if (!aggregateFunction.IsStar || aggregateFunction.ArgCount != 0)
+            {
+                throw new TdsQueryEngineException("Only COUNT(*) aggregate is supported.");
+            }
+
+            return Expression.Call(
+                typeof(Enumerable),
+                nameof(Enumerable.Count),
+                [source.SourceRowType],
+                parameter);
         }
 
-        return Expression.Call(
-            typeof(Enumerable),
-            nameof(Enumerable.Count),
-            [source.SourceRowType],
-            parameter);
+        return aggregateFunction.FunctionName.ToUpperInvariant() switch
+        {
+            "SUM" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, nameof(Enumerable.Sum)),
+            "MIN" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, nameof(Enumerable.Min)),
+            "MAX" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, nameof(Enumerable.Max)),
+            "AVG" => BuildAggregateFunctionWithSelector(aggregateFunction, source, parameter, nameof(Enumerable.Average)),
+            _ => throw new TdsQueryEngineException($"Aggregate function '{aggregateFunction.FunctionName}' is not supported."),
+        };
+    }
+
+    private static MethodCallExpression BuildAggregateFunctionWithSelector(SqlAggregateFunctionCallExpression aggregateFunction, GroupedQuerySource source, ParameterExpression parameter, string methodName)
+    {
+        if (aggregateFunction.IsStar || aggregateFunction.ArgCount != 1 || aggregateFunction.Arguments.SingleOrDefault() is not SqlScalarExpression argumentExpression)
+        {
+            throw new TdsQueryEngineException($"Aggregate function '{aggregateFunction.FunctionName}' requires exactly one column argument.");
+        }
+
+        var rowParameter = Expression.Parameter(source.SourceRowType, "row");
+        var selectorBody = BuildScalar(argumentExpression, source.Aliases, rowParameter, parameters: null);
+        var selector = Expression.Lambda(selectorBody, rowParameter);
+        var aggregateMethod = ResolveEnumerableAggregateMethod(methodName, source.SourceRowType, selectorBody.Type);
+
+        return Expression.Call(aggregateMethod, parameter, selector);
+    }
+
+    private static MethodInfo ResolveEnumerableAggregateMethod(string methodName, Type sourceType, Type selectorType)
+    {
+        var sourceSequenceType = typeof(IEnumerable<>).MakeGenericType(sourceType);
+        var selectorTypeDefinition = typeof(Func<,>).MakeGenericType(sourceType, selectorType);
+        var methods = typeof(Enumerable)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => string.Equals(method.Name, methodName, StringComparison.Ordinal) && method.IsGenericMethodDefinition && method.GetParameters().Length == 2)
+            .OrderBy(method => method.GetGenericArguments().Length);
+        foreach (var method in methods)
+        {
+            MethodInfo closedMethod;
+            switch (method.GetGenericArguments().Length)
+            {
+                case 1:
+                    closedMethod = method.MakeGenericMethod(sourceType);
+                    break;
+                case 2:
+                    closedMethod = method.MakeGenericMethod(sourceType, selectorType);
+                    break;
+                default:
+                    continue;
+            }
+
+            var parameters = closedMethod.GetParameters();
+            if (parameters[0].ParameterType == sourceSequenceType && parameters[1].ParameterType == selectorTypeDefinition)
+            {
+                return closedMethod;
+            }
+        }
+
+        throw new TdsQueryEngineException($"Aggregate function '{methodName}' does not support values of type '{selectorType.Name}'.");
     }
 
     private static Expression BuildScalar(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType = null)
@@ -857,7 +918,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private sealed record QuerySource(IQueryable Query, Type RowType, IReadOnlyDictionary<string, AliasBinding> Aliases);
 
-    private sealed record GroupedQuerySource(IQueryable Query, Type GroupType, Type SourceRowType, GroupKeyBinding Key);
+    private sealed record GroupedQuerySource(IQueryable Query, Type GroupType, Type SourceRowType, GroupKeyBinding Key, IReadOnlyDictionary<string, AliasBinding> Aliases);
 
     private sealed record GroupKeyBinding(string Name);
 

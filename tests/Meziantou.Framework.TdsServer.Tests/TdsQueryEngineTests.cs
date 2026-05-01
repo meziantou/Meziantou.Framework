@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Tds.Tests;
 public sealed class TdsQueryEngineTests
 {
     [Fact]
-    public async Task SqlClient_QueryEngine_TextQuery_ReturnsFilteredCustomers()
+    public async Task SqlClient_QueryEngine_SelectColumns_ReturnsProjectedColumns()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
 
@@ -23,10 +23,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id, Name FROM customers WHERE Id > 1 ORDER BY Id";
+                command.CommandText = "SELECT Id, Name FROM customers";
             },
             """
             Id Name
+            1 Alice
             2 Bob
             4 David
             """,
@@ -34,7 +35,66 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
-    public async Task SqlClient_QueryEngine_TextQuery_WithInnerJoin_ReturnsProjectedRows()
+    public async Task SqlClient_QueryEngine_SelectStar_ReturnsAllColumns()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT * FROM customers";
+            },
+            """
+            Id Name
+            1 Alice
+            2 Bob
+            4 David
+            """,
+            expectedMaterializationCount: 1);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Where_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id > 1";
+            },
+            """
+            Id
+            2
+            4
+            """,
+            expectedMaterializationCount: 1);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_OrderBy_ReturnsOrderedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers ORDER BY Name DESC";
+            },
+            """
+            Id
+            4
+            2
+            1
+            """,
+            expectedMaterializationCount: 1);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_InnerJoin_ReturnsProjectedRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
 
@@ -47,7 +107,6 @@ public sealed class TdsQueryEngineTests
                 SELECT c1.Id
                 FROM customers c1
                 INNER JOIN customers c2 ON c1.Id = c2.Id
-                ORDER BY c1.Id
                 """;
             },
             """
@@ -60,7 +119,7 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
-    public async Task SqlClient_QueryEngine_TextQuery_WithParameters_UsesSpExecuteSqlParameters()
+    public async Task SqlClient_QueryEngine_GroupBy_ReturnsGroupedRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
 
@@ -68,7 +127,44 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id > @id ORDER BY Id";
+                command.CommandText = "SELECT Region FROM orders GROUP BY Region";
+            },
+            """
+            Region
+            North
+            South
+            """,
+            expectedMaterializationCount: 1);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Having_FiltersGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) > 1";
+            },
+            """
+            Region Count
+            North 2
+            """,
+            expectedMaterializationCount: 1);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Parameters_UsesSpExecuteSqlParameters()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id > @id";
                 _ = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 1 });
             },
             """
@@ -103,7 +199,7 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
-    public async Task SqlClient_QueryEngine_TextQuery_InvalidQuery_ReturnsServerError()
+    public async Task SqlClient_QueryEngine_InvalidQuery_ReturnsServerError()
     {
         var invalidQueryTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -135,28 +231,11 @@ public sealed class TdsQueryEngineTests
         Assert.True(await invalidQueryTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 
-    [Fact]
-    public async Task SqlClient_QueryEngine_TextQuery_SelectStar_ReturnsAllColumns()
-    {
-        var queryEngineOptions = CreateQueryEngineOptions();
-
-        await ExecuteQuery(
-            queryEngineOptions,
-            command =>
-            {
-                command.CommandText = "SELECT * FROM customers WHERE Id = 1";
-            },
-            """
-            Id Name
-            1 Alice
-            """,
-            expectedMaterializationCount: 1);
-    }
-
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();
         options.AddQueryRoot("customers", GetCustomers());
+        options.AddQueryRoot("orders", GetOrders());
         return options;
     }
 
@@ -167,6 +246,16 @@ public sealed class TdsQueryEngineTests
             new Customer(1, "Alice"),
             new Customer(2, "Bob"),
             new Customer(4, "David"),
+        ];
+    }
+
+    private static Order[] GetOrders()
+    {
+        return
+        [
+            new Order(1, "North"),
+            new Order(2, "North"),
+            new Order(3, "South"),
         ];
     }
 
@@ -236,4 +325,6 @@ public sealed class TdsQueryEngineTests
     }
 
     private sealed record Customer(int Id, string Name);
+
+    private sealed record Order(int Id, string Region);
 }

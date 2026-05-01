@@ -150,8 +150,6 @@ internal sealed class TdsQueryEngineExecutor
         if (querySpecification.SelectClause.IsDistinct ||
             querySpecification.SelectClause.Top is not null ||
             querySpecification.IntoClause is not null ||
-            querySpecification.GroupByClause is not null ||
-            querySpecification.HavingClause is not null ||
             querySpecification.WindowClause is not null ||
             querySpecification.ForClause is not null ||
             selectStatement.SelectSpecification.ForClause is not null)
@@ -166,6 +164,27 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var orderByClause = selectStatement.SelectSpecification.OrderByClause ?? querySpecification.OrderByClause;
+        if (querySpecification.GroupByClause is not null)
+        {
+            var groupedSource = ApplyGroupBy(source, querySpecification.GroupByClause);
+            if (querySpecification.HavingClause?.Expression is not null)
+            {
+                groupedSource = ApplyHaving(groupedSource, querySpecification.HavingClause.Expression, parameters);
+            }
+
+            if (orderByClause is not null)
+            {
+                throw new TdsQueryEngineException("ORDER BY with GROUP BY is not supported.");
+            }
+
+            return ApplyGroupSelect(groupedSource, querySpecification.SelectClause);
+        }
+
+        if (querySpecification.HavingClause is not null)
+        {
+            throw new TdsQueryEngineException("HAVING requires GROUP BY.");
+        }
+
         if (orderByClause is not null)
         {
             source = ApplyOrderBy(source, orderByClause, parameters);
@@ -341,6 +360,87 @@ internal sealed class TdsQueryEngineExecutor
         return source with { Query = query };
     }
 
+    private static GroupedQuerySource ApplyGroupBy(QuerySource source, SqlGroupByClause groupByClause)
+    {
+        if (groupByClause.HasAll || groupByClause.Option != SqlGroupByOptionType.None || groupByClause.Items.Count != 1)
+        {
+            throw new TdsQueryEngineException("Only single-column GROUP BY is supported.");
+        }
+
+        if (groupByClause.Items[0] is not SqlSimpleGroupByItem groupByItem)
+        {
+            throw new TdsQueryEngineException("Only simple GROUP BY expressions are supported.");
+        }
+
+        var parameter = Expression.Parameter(source.RowType, "row");
+        var key = BuildScalar(groupByItem.Expression, source.Aliases, parameter, parameters: null);
+        var keyName = GetColumnName(groupByItem.Expression);
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.GroupBy),
+            [source.RowType, key.Type],
+            source.Query.Expression,
+            Expression.Quote(Expression.Lambda(key, parameter)));
+        var query = source.Query.Provider.CreateQuery(call);
+
+        return new GroupedQuerySource(
+            query,
+            query.ElementType,
+            source.RowType,
+            new GroupKeyBinding(keyName));
+    }
+
+    private static GroupedQuerySource ApplyHaving(GroupedQuerySource source, SqlBooleanExpression expression, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        var parameter = Expression.Parameter(source.GroupType, "group");
+        var predicate = BuildGroupBoolean(expression, source, parameter, parameters);
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Where),
+            [source.GroupType],
+            source.Query.Expression,
+            Expression.Quote(Expression.Lambda(predicate, parameter)));
+
+        return source with { Query = source.Query.Provider.CreateQuery(call) };
+    }
+
+    private static IQueryable ApplyGroupSelect(GroupedQuerySource source, SqlSelectClause selectClause)
+    {
+        var parameter = Expression.Parameter(source.GroupType, "group");
+        var members = new List<TdsProjectionMember>();
+        var values = new List<Expression>();
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var selectExpression in selectClause.SelectExpressions)
+        {
+            if (selectExpression is not SqlSelectScalarExpression scalarExpression)
+            {
+                throw new TdsQueryEngineException("Only scalar GROUP BY SELECT expressions are supported.");
+            }
+
+            var value = BuildGroupScalar(scalarExpression.Expression, source, parameter, parameters: null);
+            var name = scalarExpression.Alias?.Value ?? GetGroupColumnName(scalarExpression.Expression);
+            if (!names.Add(name))
+            {
+                throw new TdsQueryEngineException($"Duplicate SELECT column name '{name}'.");
+            }
+
+            members.Add(new TdsProjectionMember(name, value.Type));
+            values.Add(value);
+        }
+
+        var projectionType = TdsProjectionTypeFactory.GetProjectionType(members);
+        var bindings = members.Select((member, index) => Expression.Bind(projectionType.GetProperty(member.Name)!, values[index])).ToArray();
+        var body = Expression.MemberInit(Expression.New(projectionType), bindings);
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Select),
+            [source.GroupType, projectionType],
+            source.Query.Expression,
+            Expression.Quote(Expression.Lambda(body, parameter)));
+
+        return source.Query.Provider.CreateQuery(call);
+    }
+
     private IQueryable ApplySelect(QuerySource source, SqlSelectClause selectClause)
     {
         if (selectClause.SelectExpressions.Count == 1 && selectClause.SelectExpressions[0] is SqlSelectStarExpression)
@@ -419,6 +519,90 @@ internal sealed class TdsQueryEngineExecutor
             SqlComparisonBooleanExpressionType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
             _ => throw new TdsQueryEngineException($"Comparison operator '{comparison.ComparisonOperator}' is not supported."),
         };
+    }
+
+    private static BinaryExpression BuildGroupBoolean(SqlBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        return expression switch
+        {
+            SqlComparisonBooleanExpression comparison => BuildGroupComparison(comparison, source, parameter, parameters),
+            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
+                BuildGroupBoolean(binary.Left, source, parameter, parameters),
+                BuildGroupBoolean(binary.Right, source, parameter, parameters)),
+            _ => throw new TdsQueryEngineException("Only GROUP BY comparison predicates combined with AND are supported."),
+        };
+    }
+
+    private static BinaryExpression BuildGroupComparison(SqlComparisonBooleanExpression comparison, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        var left = BuildGroupScalar(comparison.Left, source, parameter, parameters);
+        var right = BuildGroupScalar(comparison.Right, source, parameter, parameters, left.Type);
+        if (left.Type != right.Type)
+        {
+            right = ConvertExpression(right, left.Type);
+        }
+
+        return comparison.ComparisonOperator switch
+        {
+            SqlComparisonBooleanExpressionType.Equals => Expression.Equal(left, right),
+            SqlComparisonBooleanExpressionType.NotEqual => Expression.NotEqual(left, right),
+            SqlComparisonBooleanExpressionType.GreaterThan => Expression.GreaterThan(left, right),
+            SqlComparisonBooleanExpressionType.GreaterThanOrEqual => Expression.GreaterThanOrEqual(left, right),
+            SqlComparisonBooleanExpressionType.LessThan => Expression.LessThan(left, right),
+            SqlComparisonBooleanExpressionType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
+            _ => throw new TdsQueryEngineException($"HAVING comparison operator '{comparison.ComparisonOperator}' is not supported."),
+        };
+    }
+
+    private static Expression BuildGroupScalar(SqlScalarExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType = null)
+    {
+        switch (expression)
+        {
+            case SqlScalarRefExpression column:
+                var columnName = GetColumnName(column);
+                if (!string.Equals(columnName, source.Key.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new TdsQueryEngineException($"Column '{columnName}' must appear in GROUP BY or be used in an aggregate function.");
+                }
+
+                return Expression.Property(parameter, nameof(IGrouping<object, object>.Key));
+
+            case SqlAggregateFunctionCallExpression aggregateFunction:
+                return BuildAggregateFunction(aggregateFunction, source, parameter);
+
+            case SqlLiteralExpression literal:
+                return Expression.Constant(ConvertLiteral(literal, targetType), targetType ?? GetLiteralType(literal));
+
+            case SqlScalarVariableRefExpression variable:
+                if (parameters is null)
+                {
+                    break;
+                }
+
+                if (!parameters.TryGetValue(NormalizeName(variable.VariableName), out var queryParameter))
+                {
+                    throw new TdsQueryEngineException($"Missing SQL parameter '{variable.VariableName}'.");
+                }
+
+                var variableType = targetType ?? queryParameter.Value.GetType();
+                return Expression.Constant(ConvertValue(queryParameter.Value, variableType), variableType);
+        }
+
+        throw new TdsQueryEngineException("Only GROUP BY columns, COUNT(*) aggregates, literals, and SQL parameters are supported in grouped expressions.");
+    }
+
+    private static MethodCallExpression BuildAggregateFunction(SqlAggregateFunctionCallExpression aggregateFunction, GroupedQuerySource source, ParameterExpression parameter)
+    {
+        if (!string.Equals(aggregateFunction.FunctionName, "COUNT", StringComparison.OrdinalIgnoreCase) || !aggregateFunction.IsStar)
+        {
+            throw new TdsQueryEngineException("Only COUNT(*) aggregate is supported.");
+        }
+
+        return Expression.Call(
+            typeof(Enumerable),
+            nameof(Enumerable.Count),
+            [source.SourceRowType],
+            parameter);
     }
 
     private static Expression BuildScalar(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Type? targetType = null)
@@ -656,12 +840,26 @@ internal sealed class TdsQueryEngineExecutor
         return expression is SqlScalarRefExpression column ? GetColumnName(column) : throw new TdsQueryEngineException("SELECT expression must have an alias.");
     }
 
+    private static string GetGroupColumnName(SqlScalarExpression expression)
+    {
+        return expression switch
+        {
+            SqlScalarRefExpression column => GetColumnName(column),
+            SqlAggregateFunctionCallExpression aggregateFunction => aggregateFunction.FunctionName,
+            _ => throw new TdsQueryEngineException("GROUP BY SELECT expression must have an alias."),
+        };
+    }
+
     private static string GetColumnName(SqlScalarRefExpression column)
     {
         return column is SqlColumnRefExpression columnRef ? columnRef.ColumnName.Value : column.MultipartIdentifier[column.MultipartIdentifier.Count - 1].Value;
     }
 
     private sealed record QuerySource(IQueryable Query, Type RowType, IReadOnlyDictionary<string, AliasBinding> Aliases);
+
+    private sealed record GroupedQuerySource(IQueryable Query, Type GroupType, Type SourceRowType, GroupKeyBinding Key);
+
+    private sealed record GroupKeyBinding(string Name);
 
     private sealed record AliasBinding(Type Type, Func<Expression, Expression> Access);
 }

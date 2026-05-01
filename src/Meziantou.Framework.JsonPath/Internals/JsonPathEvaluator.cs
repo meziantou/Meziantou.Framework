@@ -9,6 +9,11 @@ internal static class JsonPathEvaluator
 {
     public static JsonPathResult Evaluate(JsonPathExpression expression, JsonNode? root)
     {
+        return Evaluate(expression, root, JsonPathEvaluationMode.Lax);
+    }
+
+    public static JsonPathResult Evaluate(JsonPathExpression expression, JsonNode? root, JsonPathEvaluationMode mode)
+    {
         // Start with the root node
         var currentNodes = new List<(JsonNode? Node, List<PathComponent> Path)>
         {
@@ -18,7 +23,7 @@ internal static class JsonPathEvaluator
         // Apply each segment in sequence
         foreach (var segment in expression.Segments)
         {
-            currentNodes = ApplySegment(segment, currentNodes, root);
+            currentNodes = ApplySegment(segment, currentNodes, root, mode);
         }
 
         // Build results
@@ -34,7 +39,8 @@ internal static class JsonPathEvaluator
     private static List<(JsonNode? Node, List<PathComponent> Path)> ApplySegment(
         Segment segment,
         List<(JsonNode? Node, List<PathComponent> Path)> inputNodes,
-        JsonNode? root)
+        JsonNode? root,
+        JsonPathEvaluationMode mode)
     {
         var result = new List<(JsonNode? Node, List<PathComponent> Path)>();
 
@@ -42,11 +48,11 @@ internal static class JsonPathEvaluator
         {
             if (segment.Kind is SegmentKind.Child)
             {
-                ApplyChildSegment(segment.Selectors, node, path, root, result);
+                ApplyChildSegment(segment.Selectors, node, path, root, mode, result, strictFailure: true);
             }
             else
             {
-                ApplyDescendantSegment(segment.Selectors, node, path, root, result);
+                ApplyDescendantSegment(segment.Selectors, node, path, root, mode, result);
             }
         }
 
@@ -58,11 +64,13 @@ internal static class JsonPathEvaluator
         JsonNode? node,
         List<PathComponent> path,
         JsonNode? root,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        JsonPathEvaluationMode mode,
+        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        bool strictFailure)
     {
         foreach (var selector in selectors)
         {
-            ApplySelector(selector, node, path, root, result);
+            ApplySelector(selector, node, path, root, mode, result, strictFailure);
         }
     }
 
@@ -71,11 +79,12 @@ internal static class JsonPathEvaluator
         JsonNode? node,
         List<PathComponent> path,
         JsonNode? root,
+        JsonPathEvaluationMode mode,
         List<(JsonNode? Node, List<PathComponent> Path)> result)
     {
         // Visit nodes in pre-order: node first, then descendants
         // For each visited node, apply the selectors as a child segment
-        VisitDescendants(node, path, selectors, root, result);
+        VisitDescendants(node, path, selectors, root, mode, result);
     }
 
     private static void VisitDescendants(
@@ -83,10 +92,11 @@ internal static class JsonPathEvaluator
         List<PathComponent> path,
         Selector[] selectors,
         JsonNode? root,
+        JsonPathEvaluationMode mode,
         List<(JsonNode? Node, List<PathComponent> Path)> result)
     {
         // Apply selectors to current node
-        ApplyChildSegment(selectors, node, path, root, result);
+        ApplyChildSegment(selectors, node, path, root, mode, result, strictFailure: false);
 
         // Recurse into children
         switch (node)
@@ -98,7 +108,7 @@ internal static class JsonPathEvaluator
                     {
                         PathComponent.FromName(property.Key),
                     };
-                    VisitDescendants(property.Value, childPath, selectors, root, result);
+                    VisitDescendants(property.Value, childPath, selectors, root, mode, result);
                 }
 
                 break;
@@ -109,7 +119,7 @@ internal static class JsonPathEvaluator
                     {
                         PathComponent.FromIndex(i),
                     };
-                    VisitDescendants(array[i], childPath, selectors, root, result);
+                    VisitDescendants(array[i], childPath, selectors, root, mode, result);
                 }
 
                 break;
@@ -121,24 +131,26 @@ internal static class JsonPathEvaluator
         JsonNode? node,
         List<PathComponent> path,
         JsonNode? root,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        JsonPathEvaluationMode mode,
+        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        bool strictFailure)
     {
         switch (selector)
         {
             case NameSelector nameSelector:
-                ApplyNameSelector(nameSelector, node, path, result);
+                ApplyNameSelector(nameSelector, node, path, mode, result, strictFailure);
                 break;
             case WildcardSelector:
-                ApplyWildcardSelector(node, path, result);
+                ApplyWildcardSelector(node, path, mode, result, strictFailure);
                 break;
             case IndexSelector indexSelector:
-                ApplyIndexSelector(indexSelector, node, path, result);
+                ApplyIndexSelector(indexSelector, node, path, mode, result, strictFailure);
                 break;
             case SliceSelector sliceSelector:
-                ApplySliceSelector(sliceSelector, node, path, result);
+                ApplySliceSelector(sliceSelector, node, path, mode, result, strictFailure);
                 break;
             case FilterSelector filterSelector:
-                ApplyFilterSelector(filterSelector, node, path, root, result);
+                ApplyFilterSelector(filterSelector, node, path, root, mode, result, strictFailure);
                 break;
         }
     }
@@ -147,22 +159,35 @@ internal static class JsonPathEvaluator
         NameSelector selector,
         JsonNode? node,
         List<PathComponent> path,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        JsonPathEvaluationMode mode,
+        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        bool strictFailure)
     {
-        if (node is JsonObject obj && obj.TryGetPropertyValue(selector.Name, out var value))
+        if (node is JsonObject obj)
         {
+            if (!obj.TryGetPropertyValue(selector.Name, out var value))
+            {
+                ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Object member '{selector.Name}' does not exist");
+                return;
+            }
+
             var newPath = new List<PathComponent>(path)
             {
                 PathComponent.FromName(selector.Name),
             };
             result.Add((value, newPath));
+            return;
         }
+
+        ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Name selector '{selector.Name}' requires an object");
     }
 
     private static void ApplyWildcardSelector(
         JsonNode? node,
         List<PathComponent> path,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        JsonPathEvaluationMode mode,
+        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        bool strictFailure)
     {
         switch (node)
         {
@@ -188,6 +213,9 @@ internal static class JsonPathEvaluator
                 }
 
                 break;
+            default:
+                ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Wildcard selector requires an object or an array");
+                break;
         }
     }
 
@@ -195,10 +223,13 @@ internal static class JsonPathEvaluator
         IndexSelector selector,
         JsonNode? node,
         List<PathComponent> path,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        JsonPathEvaluationMode mode,
+        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        bool strictFailure)
     {
         if (node is not JsonArray array)
         {
+            ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Index selector [{selector.Index}] requires an array");
             return;
         }
 
@@ -210,17 +241,23 @@ internal static class JsonPathEvaluator
                 PathComponent.FromIndex(index),
             };
             result.Add((array[(int)index], newPath));
+            return;
         }
+
+        ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Array index [{selector.Index}] is out of range");
     }
 
     private static void ApplySliceSelector(
         SliceSelector selector,
         JsonNode? node,
         List<PathComponent> path,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        JsonPathEvaluationMode mode,
+        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        bool strictFailure)
     {
         if (node is not JsonArray array)
         {
+            ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Slice selector requires an array");
             return;
         }
 
@@ -279,7 +316,9 @@ internal static class JsonPathEvaluator
         JsonNode? node,
         List<PathComponent> path,
         JsonNode? root,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        JsonPathEvaluationMode mode,
+        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        bool strictFailure)
     {
         switch (node)
         {
@@ -311,7 +350,20 @@ internal static class JsonPathEvaluator
                 }
 
                 break;
+            default:
+                ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Filter selector requires an object or an array");
+                break;
         }
+    }
+
+    private static void ThrowPathEvaluationErrorIfStrict(JsonPathEvaluationMode mode, bool strictFailure, List<PathComponent> path, string error)
+    {
+        if (mode is not JsonPathEvaluationMode.Strict || !strictFailure)
+        {
+            return;
+        }
+
+        throw new JsonPathEvaluationException($"Path error at {NormalizedPathBuilder.Build(path)}: {error}");
     }
 
     // ---- Filter Expression Evaluation ----
@@ -658,7 +710,7 @@ internal static class JsonPathEvaluator
 
         foreach (var segment in query.Segments)
         {
-            nodes = ApplySegment(segment, nodes, root);
+            nodes = ApplySegment(segment, nodes, root, JsonPathEvaluationMode.Lax);
         }
 
         var result = new List<JsonNode?>(nodes.Count);

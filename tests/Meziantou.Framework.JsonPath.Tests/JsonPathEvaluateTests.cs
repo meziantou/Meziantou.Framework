@@ -46,6 +46,24 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void Evaluate_NameSelector_MissingMember_LaxMode()
+    {
+        var doc = JsonNode.Parse("""{"a": 1}""");
+        var path = JsonPath.Parse("$.b");
+        var result = path.Evaluate(doc, JsonPathEvaluationMode.Lax);
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void Evaluate_NameSelector_MissingMember_StrictMode()
+    {
+        var doc = JsonNode.Parse("""{"a": 1}""");
+        var path = JsonPath.Parse("$.b");
+        var exception = Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(doc, JsonPathEvaluationMode.Strict));
+        Assert.Contains("$", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Evaluate_WildcardSelector_Array()
     {
         var doc = JsonNode.Parse("""[1, 2, 3]""");
@@ -86,6 +104,39 @@ public sealed class JsonPathEvaluateTests
         var path = JsonPath.Parse("$[5]");
         var result = path.Evaluate(doc);
         Assert.Empty(result);
+    }
+
+    [Fact]
+    public void Evaluate_IndexSelector_OutOfRange_StrictMode()
+    {
+        var doc = JsonNode.Parse("""["a"]""");
+        var path = JsonPath.Parse("$[5]");
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(doc, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void Evaluate_NameSelector_RequiresObject_StrictMode()
+    {
+        var doc = JsonNode.Parse("""["a"]""");
+        var path = JsonPath.Parse("$.a");
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(doc, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void EvaluateValue_NameSelector_MissingMember_LaxMode()
+    {
+        var doc = JsonNode.Parse("""{"a": 1}""");
+        var path = JsonPath.Parse("$.b");
+        var result = path.EvaluateValue(doc, JsonPathEvaluationMode.Lax);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void EvaluateValue_NameSelector_MissingMember_StrictMode()
+    {
+        var doc = JsonNode.Parse("""{"a": 1}""");
+        var path = JsonPath.Parse("$.b");
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(doc, JsonPathEvaluationMode.Strict));
     }
 
     [Fact]

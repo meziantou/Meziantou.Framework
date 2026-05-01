@@ -204,6 +204,62 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_WhereOr_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id = 1 OR Id = 4";
+            },
+            """
+            Id
+            1
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => ((row.Id == 1) OrElse (row.Id == 4))).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereIsNull_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM nullable_customers WHERE Name IS NULL";
+            },
+            """
+            Id
+            3
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(row => (row.Name == null)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereIsNotNull_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM nullable_customers WHERE Name IS NOT NULL";
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(row => Not((row.Name == null))).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_WhereInCollection_ReturnsFilteredRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -257,6 +313,44 @@ public sealed class TdsQueryEngineTests
             4
             """,
             expectedMaterializedQueries: "Customer[].Where(row => Not(Order[].Select(row => row.Id).Contains(row.Id))).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Top_ReturnsFirstRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT TOP 2 Id FROM customers ORDER BY Id";
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id}).Take(2)");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_OffsetFetch_ReturnsPagedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers ORDER BY Id OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY";
+            },
+            """
+            Id
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].OrderBy(row => row.Id).Skip(1).Take(2).Select(row => new TdsProjection() {Id = row.Id})");
     }
 
     [Fact]
@@ -324,6 +418,25 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_OrderByWithGroupBy_ReturnsOrderedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region ORDER BY Region DESC";
+            },
+            """
+            Region Count
+            South 1
+            North 2
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()}).OrderByDescending(row => row.Region)");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_Having_FiltersGroupedRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -339,6 +452,25 @@ public sealed class TdsQueryEngineTests
             North 2
             """,
             expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() > 1)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_HavingOr_FiltersGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) = 1 OR COUNT(*) = 2 ORDER BY Region";
+            },
+            """
+            Region Count
+            North 2
+            South 1
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => ((group.Count() == 1) OrElse (group.Count() == 2))).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()}).OrderBy(row => row.Region)");
     }
 
     [Fact]
@@ -606,6 +738,7 @@ public sealed class TdsQueryEngineTests
         var options = new TdsQueryEngineOptions();
         options.AddQueryRoot("customers", GetCustomers());
         options.AddQueryRoot("orders", GetOrders());
+        options.AddQueryRoot("nullable_customers", GetNullableCustomers());
         return options;
     }
 
@@ -626,6 +759,16 @@ public sealed class TdsQueryEngineTests
             new Order(1, "North", 10),
             new Order(2, "North", 20),
             new Order(3, "South", 5),
+        ];
+    }
+
+    private static NullableCustomer[] GetNullableCustomers()
+    {
+        return
+        [
+            new NullableCustomer(1, "Alice"),
+            new NullableCustomer(2, "Bob"),
+            new NullableCustomer(3, null),
         ];
     }
 
@@ -734,4 +877,6 @@ public sealed class TdsQueryEngineTests
     private sealed record Customer(int Id, string Name);
 
     private sealed record Order(int Id, string Region, int Amount);
+
+    private sealed record NullableCustomer(int Id, string? Name);
 }

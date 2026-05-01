@@ -24,7 +24,10 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id, Name FROM customers";
+                command.CommandText = """
+                    SELECT Id, Name
+                    FROM customers
+                    """;
             },
             """
             Id Name
@@ -44,7 +47,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT DISTINCT Region FROM orders ORDER BY Region";
+                command.CommandText = """
+                    SELECT DISTINCT Region
+                    FROM orders
+                    ORDER BY Region
+                    """;
             },
             """
             Region
@@ -63,7 +70,15 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id <= 2 UNION SELECT Id FROM customers WHERE Id >= 2 ORDER BY Id";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id <= 2
+                    UNION SELECT Id
+                    FROM customers
+                    WHERE Id >= 2
+                    ORDER BY Id
+                    """;
             },
             """
             Id
@@ -83,7 +98,10 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT * FROM customers";
+                command.CommandText = """
+                    SELECT *
+                    FROM customers
+                    """;
             },
             """
             Id Name
@@ -103,7 +121,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id > 1";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id > 1
+                    """;
             },
             """
             Id
@@ -122,7 +144,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id = 2";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id = 2
+                    """;
             },
             """
             Id
@@ -140,7 +166,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id <> 2";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id <> 2
+                    """;
             },
             """
             Id
@@ -159,7 +189,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id > 2";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id > 2
+                    """;
             },
             """
             Id
@@ -177,7 +211,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id >= 2";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id >= 2
+                    """;
             },
             """
             Id
@@ -196,7 +234,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id < 2";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id < 2
+                    """;
             },
             """
             Id
@@ -214,7 +256,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id <= 2";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id <= 2
+                    """;
             },
             """
             Id
@@ -233,7 +279,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id > 1 AND Id < 4";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id > 1 AND Id < 4
+                    """;
             },
             """
             Id
@@ -251,7 +301,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id = 1 OR Id = 4";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id = 1 OR Id = 4
+                    """;
             },
             """
             Id
@@ -270,7 +324,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM nullable_customers WHERE Name IS NULL";
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name IS NULL
+                    """;
             },
             """
             Id
@@ -288,7 +346,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM nullable_customers WHERE Name IS NOT NULL";
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE Name IS NOT NULL
+                    """;
             },
             """
             Id
@@ -307,7 +369,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id IN (1, 4)";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id IN (1, 4)
+                    """;
             },
             """
             Id
@@ -326,7 +392,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id IN (SELECT Id FROM orders)";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id IN (SELECT Id
+                    FROM orders)
+                    """;
             },
             """
             Id
@@ -345,7 +416,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id NOT IN (SELECT Id FROM orders)";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id NOT IN (SELECT Id
+                    FROM orders)
+                    """;
             },
             """
             Id
@@ -363,7 +439,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT TOP 2 Id FROM customers ORDER BY Id";
+                command.CommandText = """
+                    SELECT TOP 2 Id
+                    FROM customers
+                    ORDER BY Id
+                    """;
             },
             """
             Id
@@ -382,7 +462,13 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers ORDER BY Id OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    ORDER BY Id
+                    OFFSET 1 ROWS
+                    FETCH NEXT 2 ROWS ONLY
+                    """;
             },
             """
             Id
@@ -401,7 +487,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers ORDER BY Name DESC";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    ORDER BY Name DESC
+                    """;
             },
             """
             Id
@@ -446,7 +536,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region FROM orders GROUP BY Region";
+                command.CommandText = """
+                    SELECT Region
+                    FROM orders
+                    GROUP BY Region
+                    """;
             },
             """
             Region
@@ -465,7 +559,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, Amount, COUNT(*) AS Count FROM orders GROUP BY Region, Amount ORDER BY Region, Amount";
+                command.CommandText = """
+                    SELECT Region, Amount, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region, Amount
+                    ORDER BY Region, Amount
+                    """;
             },
             """
             Region Amount Count
@@ -485,7 +584,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region ORDER BY Region DESC";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    ORDER BY Region DESC
+                    """;
             },
             """
             Region Count
@@ -504,7 +608,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) > 1";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    HAVING COUNT(*) > 1
+                    """;
             },
             """
             Region Count
@@ -522,7 +631,13 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) = 1 OR COUNT(*) = 2 ORDER BY Region";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    HAVING COUNT(*) = 1 OR COUNT(*) = 2
+                    ORDER BY Region
+                    """;
             },
             """
             Region Count
@@ -541,7 +656,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) = 2";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    HAVING COUNT(*) = 2
+                    """;
             },
             """
             Region Count
@@ -559,7 +679,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) <> 2";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    HAVING COUNT(*) <> 2
+                    """;
             },
             """
             Region Count
@@ -577,7 +702,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) > 1";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    HAVING COUNT(*) > 1
+                    """;
             },
             """
             Region Count
@@ -595,7 +725,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) >= 2";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    HAVING COUNT(*) >= 2
+                    """;
             },
             """
             Region Count
@@ -613,7 +748,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) < 2";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    HAVING COUNT(*) < 2
+                    """;
             },
             """
             Region Count
@@ -631,7 +771,12 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, COUNT(*) AS Count FROM orders GROUP BY Region HAVING COUNT(*) <= 1";
+                command.CommandText = """
+                    SELECT Region, COUNT(*) AS Count
+                    FROM orders
+                    GROUP BY Region
+                    HAVING COUNT(*) <= 1
+                    """;
             },
             """
             Region Count
@@ -649,7 +794,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, SUM(Amount) AS TotalAmount FROM orders GROUP BY Region";
+                command.CommandText = """
+                    SELECT Region, SUM(Amount) AS TotalAmount
+                    FROM orders
+                    GROUP BY Region
+                    """;
             },
             """
             Region TotalAmount
@@ -668,7 +817,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, MIN(Amount) AS MinAmount FROM orders GROUP BY Region";
+                command.CommandText = """
+                    SELECT Region, MIN(Amount) AS MinAmount
+                    FROM orders
+                    GROUP BY Region
+                    """;
             },
             """
             Region MinAmount
@@ -687,7 +840,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, MAX(Amount) AS MaxAmount FROM orders GROUP BY Region";
+                command.CommandText = """
+                    SELECT Region, MAX(Amount) AS MaxAmount
+                    FROM orders
+                    GROUP BY Region
+                    """;
             },
             """
             Region MaxAmount
@@ -706,7 +863,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Region, AVG(Amount) AS AvgAmount FROM orders GROUP BY Region";
+                command.CommandText = """
+                    SELECT Region, AVG(Amount) AS AvgAmount
+                    FROM orders
+                    GROUP BY Region
+                    """;
             },
             """
             Region AvgAmount
@@ -725,7 +886,11 @@ public sealed class TdsQueryEngineTests
             queryEngineOptions,
             command =>
             {
-                command.CommandText = "SELECT Id FROM customers WHERE Id > @id";
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id > @id
+                    """;
                 _ = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 1 });
             },
             """
@@ -785,7 +950,11 @@ public sealed class TdsQueryEngineTests
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT Id FROM customers WHERE Id = ";
+        command.CommandText = """
+            SELECT Id
+            FROM customers
+            WHERE Id =
+            """;
 
         var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
         Assert.Equal(50004, exception.Number);

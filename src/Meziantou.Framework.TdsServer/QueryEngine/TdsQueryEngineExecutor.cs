@@ -176,17 +176,57 @@ internal sealed class TdsQueryEngineExecutor
 
         foreach (var cte in withClause.CommonTableExpressions)
         {
-            if (cte.ColumnList is not null && cte.ColumnList.Count > 0)
-            {
-                throw new TdsQueryEngineException("CTE column lists are not supported.");
-            }
-
             var cteName = cte.Name.Value;
             var query = TranslateQueryExpression(cte.QueryExpression, parameters, result);
+            if (cte.ColumnList is not null && cte.ColumnList.Count > 0)
+            {
+                query = ApplyCteColumnList(query, cte.ColumnList);
+            }
+
             result.Add(cteName, new TdsQueryRoot(cteName, query));
         }
 
         return result;
+    }
+
+    private static IQueryable ApplyCteColumnList(IQueryable query, SqlIdentifierCollection columnList)
+    {
+        var members = GetReadableMembers(query.ElementType);
+        if (members.Count != columnList.Count)
+        {
+            throw new TdsQueryEngineException("CTE column list count must match the number of projected columns.");
+        }
+
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var projectionMembers = new List<TdsProjectionMember>(columnList.Count);
+        foreach (var (column, member) in columnList.Zip(members))
+        {
+            if (!names.Add(column.Value))
+            {
+                throw new TdsQueryEngineException($"Duplicate CTE column name '{column.Value}'.");
+            }
+
+            projectionMembers.Add(new TdsProjectionMember(column.Value, GetMemberType(member)));
+        }
+
+        var projectionType = TdsProjectionTypeFactory.GetProjectionType(projectionMembers);
+        var parameter = Expression.Parameter(query.ElementType, "row");
+        var bindings = new List<MemberBinding>(columnList.Count);
+        for (var i = 0; i < columnList.Count; i++)
+        {
+            var memberAccess = BuildMemberAccess(parameter, members[i]);
+            bindings.Add(Expression.Bind(projectionType.GetProperty(columnList[i].Value)!, memberAccess));
+        }
+
+        var body = Expression.MemberInit(Expression.New(projectionType), bindings);
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Select),
+            [query.ElementType, projectionType],
+            query.Expression,
+            Expression.Quote(Expression.Lambda(body, parameter)));
+
+        return query.Provider.CreateQuery(call);
     }
 
     private IQueryable TranslateQueryExpression(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
@@ -889,7 +929,7 @@ internal sealed class TdsQueryEngineExecutor
                 return BuildAggregateFunction(aggregateFunction, source, parameter);
 
             case SqlLiteralExpression literal:
-                return Expression.Constant(ConvertLiteral(literal, targetType), targetType ?? GetLiteralType(literal));
+                return BuildLiteralExpression(literal, targetType);
 
             case SqlScalarVariableRefExpression variable:
                 if (parameters is null)
@@ -1002,7 +1042,7 @@ internal sealed class TdsQueryEngineExecutor
                 return true;
 
             case SqlLiteralExpression literal:
-                result = Expression.Constant(ConvertLiteral(literal, targetType), targetType ?? GetLiteralType(literal));
+                result = BuildLiteralExpression(literal, targetType);
                 return true;
 
             case SqlBinaryScalarExpression binary:
@@ -1011,6 +1051,10 @@ internal sealed class TdsQueryEngineExecutor
 
             case SqlUnaryScalarExpression unary:
                 result = BuildUnaryScalar(unary, aliases, parameter, parameters, targetType);
+                return true;
+
+            case SqlNullScalarExpression nullFunction:
+                result = BuildNullScalarFunction(nullFunction, aliases, parameter, parameters);
                 return true;
 
             case SqlScalarFunctionCallExpression scalarFunction:
@@ -1085,6 +1129,8 @@ internal sealed class TdsQueryEngineExecutor
     {
         Expression result = function switch
         {
+            SqlConvertExpression convert => BuildConvertScalarFunction(convert, aliases, parameter, parameters),
+            SqlCastExpression cast => BuildCastScalarFunction(cast, aliases, parameter, parameters),
             SqlBuiltinScalarFunctionCallExpression builtin => BuildBuiltinScalarFunction(builtin, aliases, parameter, parameters),
             _ => throw new TdsQueryEngineException($"Scalar function '{function.GetType().Name}' is not supported."),
         };
@@ -1104,13 +1150,172 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' does not support '*'.");
         }
 
-        var arguments = function.Arguments.Select(argument => BuildScalar(argument, aliases, parameter, parameters)).ToArray();
+        var functionName = function.FunctionName.ToUpperInvariant();
+        if (functionName == "DATEADD")
+        {
+            return BuildDateAddScalarFunction(function, aliases, parameter, parameters);
+        }
+
+        if (functionName == "DATEDIFF")
+        {
+            return BuildDateDiffScalarFunction(function, aliases, parameter, parameters);
+        }
+
+        var arguments = function.Arguments?.Select(argument => BuildScalar(argument, aliases, parameter, parameters)).ToArray() ?? [];
         if (!_options.ScalarFunctions.TryGetValue(function.FunctionName, out var mapping))
         {
             throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' is not supported.");
         }
 
         return mapping(arguments);
+    }
+
+    private Expression BuildCastScalarFunction(SqlCastExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        var functionName = function.FunctionName.ToUpperInvariant();
+        if (functionName is not ("CAST" or "TRY_CAST"))
+        {
+            throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' is not supported.");
+        }
+
+        if (function.IsStar || function.ArgCount != 1 || function.Arguments.SingleOrDefault() is not SqlScalarExpression valueExpression)
+        {
+            throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' requires exactly one argument.");
+        }
+
+        var value = BuildScalar(valueExpression, aliases, parameter, parameters);
+        var targetType = GetClrType(function.DataTypeSpec);
+        var useTryConvert = functionName == "TRY_CAST";
+        return BuildTypeConversion(value, targetType, useTryConvert);
+    }
+
+    private Expression BuildConvertScalarFunction(SqlConvertExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        if (function.IsStar || function.ArgCount is < 1 or > 2 || function.Arguments.FirstOrDefault() is not SqlScalarExpression valueExpression)
+        {
+            throw new TdsQueryEngineException($"Scalar function '{function.FunctionName}' requires one value argument and an optional style argument.");
+        }
+
+        var value = BuildScalar(valueExpression, aliases, parameter, parameters);
+        var targetType = GetClrType(function.DataTypeSpec);
+        var useTryConvert = function.FunctionName.StartsWith("TRY_", StringComparison.OrdinalIgnoreCase);
+        return BuildTypeConversion(value, targetType, useTryConvert);
+    }
+
+    private Expression BuildNullScalarFunction(SqlNullScalarExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        if (!TryGetFunctionCallText(function.Xml, out var functionName, out var argumentTexts))
+        {
+            throw new TdsQueryEngineException("Unsupported NULL/conditional scalar expression.");
+        }
+
+        var normalizedName = functionName.ToUpperInvariant();
+        return normalizedName switch
+        {
+            "COALESCE" => BuildCoalesceFunction(argumentTexts, aliases, parameter, parameters),
+            "NULLIF" => BuildNullIfFunction(argumentTexts, aliases, parameter, parameters),
+            "IIF" => BuildIifFunction(argumentTexts, aliases, parameter, parameters),
+            _ => throw new TdsQueryEngineException($"Scalar function '{functionName}' is not supported."),
+        };
+    }
+
+    private Expression BuildCoalesceFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        if (argumentTexts.Count == 0)
+        {
+            throw new TdsQueryEngineException("COALESCE requires at least one argument.");
+        }
+
+        var expressions = argumentTexts.Select(argument => BuildScalar(ParseScalarExpression(argument), aliases, parameter, parameters)).ToArray();
+        var result = EnsureNullableExpression(expressions[0]);
+        for (var i = 1; i < expressions.Length; i++)
+        {
+            var right = EnsureExpressionType(EnsureNullableExpression(expressions[i]), result.Type);
+            result = Expression.Coalesce(result, right);
+        }
+
+        return result;
+    }
+
+    private Expression BuildNullIfFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        if (argumentTexts.Count != 2)
+        {
+            throw new TdsQueryEngineException("NULLIF requires exactly two arguments.");
+        }
+
+        var left = BuildScalar(ParseScalarExpression(argumentTexts[0]), aliases, parameter, parameters);
+        var right = BuildScalar(ParseScalarExpression(argumentTexts[1]), aliases, parameter, parameters, left.Type);
+        if (left.Type != right.Type)
+        {
+            right = ConvertExpression(right, left.Type);
+        }
+
+        var nullableLeft = EnsureNullableExpression(left);
+        var nullableType = nullableLeft.Type;
+        var nullableRight = EnsureExpressionType(EnsureNullableExpression(right), nullableType);
+        return Expression.Condition(
+            Expression.Equal(nullableLeft, nullableRight),
+            Expression.Constant(null, nullableType),
+            nullableLeft);
+    }
+
+    private Expression BuildIifFunction(IReadOnlyList<string> argumentTexts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        if (argumentTexts.Count != 3)
+        {
+            throw new TdsQueryEngineException("IIF requires exactly three arguments.");
+        }
+
+        var conditionExpression = ParseBooleanExpression(argumentTexts[0]);
+        var condition = BuildBoolean(
+            conditionExpression,
+            aliases,
+            parameter,
+            parameters ?? new Dictionary<string, TdsQueryParameter>(StringComparer.OrdinalIgnoreCase),
+            cteRoots: new Dictionary<string, TdsQueryRoot>(StringComparer.OrdinalIgnoreCase));
+        var ifTrue = BuildScalar(ParseScalarExpression(argumentTexts[1]), aliases, parameter, parameters);
+        var ifFalse = BuildScalar(ParseScalarExpression(argumentTexts[2]), aliases, parameter, parameters, ifTrue.Type);
+        if (ifTrue.Type != ifFalse.Type)
+        {
+            ifFalse = ConvertExpression(ifFalse, ifTrue.Type);
+        }
+
+        return Expression.Condition(condition, ifTrue, ifFalse);
+    }
+
+    private Expression BuildDateAddScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        if (function.ArgCount != 3)
+        {
+            throw new TdsQueryEngineException("DATEADD requires exactly three arguments.");
+        }
+
+        var datePart = Expression.Constant(ReadDatePartName(function.Arguments[0]), typeof(string));
+        var value = BuildScalar(function.Arguments[1], aliases, parameter, parameters, targetType: typeof(int));
+        var dateValue = BuildScalar(function.Arguments[2], aliases, parameter, parameters, targetType: typeof(DateTime));
+        return Expression.Call(
+            typeof(TdsQueryEngineExecutor).GetMethod(nameof(DateAddCore), BindingFlags.NonPublic | BindingFlags.Static)!,
+            datePart,
+            value,
+            dateValue);
+    }
+
+    private Expression BuildDateDiffScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        if (function.ArgCount != 3)
+        {
+            throw new TdsQueryEngineException("DATEDIFF requires exactly three arguments.");
+        }
+
+        var datePart = Expression.Constant(ReadDatePartName(function.Arguments[0]), typeof(string));
+        var startDate = BuildScalar(function.Arguments[1], aliases, parameter, parameters, targetType: typeof(DateTime));
+        var endDate = BuildScalar(function.Arguments[2], aliases, parameter, parameters, targetType: typeof(DateTime));
+        return Expression.Call(
+            typeof(TdsQueryEngineExecutor).GetMethod(nameof(DateDiffCore), BindingFlags.NonPublic | BindingFlags.Static)!,
+            datePart,
+            startDate,
+            endDate);
     }
 
     private Expression BuildArithmeticBinary(Expression left, Expression right, Func<Expression, Expression, BinaryExpression> operation)
@@ -1253,6 +1458,35 @@ internal sealed class TdsQueryEngineExecutor
                 .FirstOrDefault(field => string.Equals(field.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
+    private static List<MemberInfo> GetReadableMembers(Type type)
+    {
+        return type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(property => property.GetIndexParameters().Length == 0 && property.CanRead)
+            .Cast<MemberInfo>()
+            .Concat(type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+            .ToList();
+    }
+
+    private static Type GetMemberType(MemberInfo member)
+    {
+        return member switch
+        {
+            PropertyInfo property => property.PropertyType,
+            FieldInfo field => field.FieldType,
+            _ => throw new TdsQueryEngineException($"Unsupported member '{member.Name}'."),
+        };
+    }
+
+    private static Expression BuildMemberAccess(Expression expression, MemberInfo member)
+    {
+        return member switch
+        {
+            PropertyInfo property => Expression.Property(expression, property),
+            FieldInfo field => Expression.Field(expression, field),
+            _ => throw new TdsQueryEngineException($"Unsupported member '{member.Name}'."),
+        };
+    }
+
     private static bool ReferencesAliases(SqlScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases)
     {
         if (expression is not SqlScalarRefExpression column)
@@ -1280,12 +1514,257 @@ internal sealed class TdsQueryEngineExecutor
         return Expression.Convert(expression, targetType);
     }
 
+    private static Expression EnsureNullableExpression(Expression expression)
+    {
+        if (!expression.Type.IsValueType || Nullable.GetUnderlyingType(expression.Type) is not null)
+        {
+            return expression;
+        }
+
+        var nullableType = typeof(Nullable<>).MakeGenericType(expression.Type);
+        return Expression.Convert(expression, nullableType);
+    }
+
+    private static Expression EnsureExpressionType(Expression expression, Type targetType)
+    {
+        return expression.Type == targetType ? expression : ConvertExpression(expression, targetType);
+    }
+
+    private static Expression BuildTypeConversion(Expression value, Type targetType, bool useTryConvert)
+    {
+        var method = typeof(TdsQueryEngineExecutor).GetMethod(
+            useTryConvert ? nameof(TryConvertToTypeCore) : nameof(ConvertToTypeCore),
+            BindingFlags.NonPublic | BindingFlags.Static)!;
+        var converted = Expression.Call(
+            method,
+            Expression.Convert(value, typeof(object)),
+            Expression.Constant(targetType, typeof(Type)));
+        var expressionType = useTryConvert && targetType.IsValueType && Nullable.GetUnderlyingType(targetType) is null
+            ? typeof(Nullable<>).MakeGenericType(targetType)
+            : targetType;
+        return Expression.Convert(converted, expressionType);
+    }
+
+    private static object? ConvertToTypeCore(object? value, Type targetType)
+    {
+        return ConvertValue(value, targetType);
+    }
+
+    private static object? TryConvertToTypeCore(object? value, Type targetType)
+    {
+        try
+        {
+            return ConvertValue(value, targetType);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static Type GetClrType(SqlDataTypeSpecification dataTypeSpec)
+    {
+        var typeName = dataTypeSpec.DataType.ObjectIdentifier.ObjectName.Value;
+        return typeName.ToUpperInvariant() switch
+        {
+            "BIT" => typeof(bool),
+            "TINYINT" => typeof(byte),
+            "SMALLINT" => typeof(short),
+            "INT" => typeof(int),
+            "BIGINT" => typeof(long),
+            "REAL" => typeof(float),
+            "FLOAT" => typeof(double),
+            "DECIMAL" or "NUMERIC" or "MONEY" or "SMALLMONEY" => typeof(decimal),
+            "CHAR" or "NCHAR" or "VARCHAR" or "NVARCHAR" or "TEXT" or "NTEXT" or "XML" or "SYSNAME" => typeof(string),
+            "UNIQUEIDENTIFIER" => typeof(Guid),
+            "DATE" => typeof(DateOnly),
+            "TIME" => typeof(TimeSpan),
+            "DATETIMEOFFSET" => typeof(DateTimeOffset),
+            "DATETIME" or "DATETIME2" or "SMALLDATETIME" => typeof(DateTime),
+            "BINARY" or "VARBINARY" or "IMAGE" or "ROWVERSION" or "TIMESTAMP" => typeof(byte[]),
+            _ => throw new TdsQueryEngineException($"SQL data type '{typeName}' is not supported."),
+        };
+    }
+
+    private static bool TryGetFunctionCallText(string xml, out string functionName, out IReadOnlyList<string> argumentTexts)
+    {
+        functionName = string.Empty;
+        argumentTexts = [];
+        if (!TryExtractExpressionComment(xml, out var invocation))
+        {
+            return false;
+        }
+
+        var startIndex = invocation.IndexOf('(');
+        var endIndex = invocation.LastIndexOf(')');
+        if (startIndex <= 0 || endIndex <= startIndex)
+        {
+            return false;
+        }
+
+        functionName = invocation[..startIndex].Trim();
+        argumentTexts = SplitTopLevelArguments(invocation[(startIndex + 1)..endIndex]);
+        return !string.IsNullOrWhiteSpace(functionName);
+    }
+
+    private static bool TryExtractExpressionComment(string xml, out string expressionText)
+    {
+        expressionText = string.Empty;
+        const string startMarker = "<!--";
+        const string endMarker = "-->";
+        var start = xml.IndexOf(startMarker, StringComparison.Ordinal);
+        if (start < 0)
+        {
+            return false;
+        }
+
+        start += startMarker.Length;
+        var end = xml.IndexOf(endMarker, start, StringComparison.Ordinal);
+        if (end < 0)
+        {
+            return false;
+        }
+
+        expressionText = xml[start..end].Trim();
+        return expressionText.Length > 0;
+    }
+
+    private static IReadOnlyList<string> SplitTopLevelArguments(string argumentsText)
+    {
+        var result = new List<string>();
+        var start = 0;
+        var depth = 0;
+        var inString = false;
+        for (var index = 0; index < argumentsText.Length; index++)
+        {
+            var current = argumentsText[index];
+            if (current == '\'')
+            {
+                if (inString && index + 1 < argumentsText.Length && argumentsText[index + 1] == '\'')
+                {
+                    index++;
+                    continue;
+                }
+
+                inString = !inString;
+                continue;
+            }
+
+            if (inString)
+            {
+                continue;
+            }
+
+            if (current == '(')
+            {
+                depth++;
+            }
+            else if (current == ')')
+            {
+                depth--;
+            }
+            else if (current == ',' && depth == 0)
+            {
+                result.Add(argumentsText[start..index].Trim());
+                start = index + 1;
+            }
+        }
+
+        result.Add(argumentsText[start..].Trim());
+        return result;
+    }
+
+    private static SqlScalarExpression ParseScalarExpression(string expressionText)
+    {
+        var parseResult = SqlParser.Parse("SELECT " + expressionText, new SqlParserParseOptions(), out _);
+        if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
+        {
+            throw new TdsQueryEngineException($"Invalid scalar expression '{expressionText}'.");
+        }
+
+        if (parseResult.Script.Batches.Count != 1 ||
+            parseResult.Script.Batches[0].Statements.Count != 1 ||
+            parseResult.Script.Batches[0].Statements[0] is not SqlSelectStatement selectStatement ||
+            selectStatement.SelectSpecification.QueryExpression is not SqlQuerySpecification querySpecification ||
+            querySpecification.SelectClause.SelectExpressions.Count != 1 ||
+            querySpecification.SelectClause.SelectExpressions[0] is not SqlSelectScalarExpression selectExpression)
+        {
+            throw new TdsQueryEngineException($"Invalid scalar expression '{expressionText}'.");
+        }
+
+        return selectExpression.Expression;
+    }
+
+    private static SqlBooleanExpression ParseBooleanExpression(string expressionText)
+    {
+        var parseResult = SqlParser.Parse("SELECT 1 WHERE " + expressionText, new SqlParserParseOptions(), out _);
+        if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
+        {
+            throw new TdsQueryEngineException($"Invalid boolean expression '{expressionText}'.");
+        }
+
+        if (parseResult.Script.Batches.Count != 1 ||
+            parseResult.Script.Batches[0].Statements.Count != 1 ||
+            parseResult.Script.Batches[0].Statements[0] is not SqlSelectStatement selectStatement ||
+            selectStatement.SelectSpecification.QueryExpression is not SqlQuerySpecification querySpecification ||
+            querySpecification.WhereClause?.Expression is not SqlBooleanExpression expression)
+        {
+            throw new TdsQueryEngineException($"Invalid boolean expression '{expressionText}'.");
+        }
+
+        return expression;
+    }
+
+    private static string ReadDatePartName(SqlScalarExpression expression)
+    {
+        return expression switch
+        {
+            SqlLiteralExpression literal when literal.Type is LiteralValueType.String or LiteralValueType.UnicodeString or LiteralValueType.Identifier => literal.Value,
+            SqlColumnRefExpression column => column.ColumnName.Value,
+            _ => throw new TdsQueryEngineException("DATEADD and DATEDIFF require a date part identifier as first argument."),
+        };
+    }
+
+    private static DateTime DateAddCore(string datePart, int value, DateTime dateValue)
+    {
+        return datePart.ToUpperInvariant() switch
+        {
+            "YEAR" or "YY" or "YYYY" => dateValue.AddYears(value),
+            "QUARTER" or "QQ" or "Q" => dateValue.AddMonths(value * 3),
+            "MONTH" or "MM" or "M" => dateValue.AddMonths(value),
+            "DAYOFYEAR" or "DY" or "Y" or "DAY" or "DD" or "D" => dateValue.AddDays(value),
+            "WEEK" or "WK" or "WW" => dateValue.AddDays(value * 7d),
+            "HOUR" or "HH" => dateValue.AddHours(value),
+            "MINUTE" or "MI" or "N" => dateValue.AddMinutes(value),
+            "SECOND" or "SS" or "S" => dateValue.AddSeconds(value),
+            "MILLISECOND" or "MS" => dateValue.AddMilliseconds(value),
+            _ => throw new TdsQueryEngineException($"DATEADD date part '{datePart}' is not supported."),
+        };
+    }
+
+    private static int DateDiffCore(string datePart, DateTime startDate, DateTime endDate)
+    {
+        return datePart.ToUpperInvariant() switch
+        {
+            "YEAR" or "YY" or "YYYY" => endDate.Year - startDate.Year,
+            "QUARTER" or "QQ" or "Q" => ((endDate.Year - startDate.Year) * 12 + endDate.Month - startDate.Month) / 3,
+            "MONTH" or "MM" or "M" => (endDate.Year - startDate.Year) * 12 + endDate.Month - startDate.Month,
+            "DAYOFYEAR" or "DY" or "Y" or "DAY" or "DD" or "D" => (int)(endDate - startDate).TotalDays,
+            "WEEK" or "WK" or "WW" => (int)((endDate - startDate).TotalDays / 7d),
+            "HOUR" or "HH" => (int)(endDate - startDate).TotalHours,
+            "MINUTE" or "MI" or "N" => (int)(endDate - startDate).TotalMinutes,
+            "SECOND" or "SS" or "S" => (int)(endDate - startDate).TotalSeconds,
+            "MILLISECOND" or "MS" => (int)(endDate - startDate).TotalMilliseconds,
+            _ => throw new TdsQueryEngineException($"DATEDIFF date part '{datePart}' is not supported."),
+        };
+    }
+
     private static object? ConvertLiteral(SqlLiteralExpression literal, Type? targetType)
     {
         object? value = literal.Type switch
         {
             LiteralValueType.Null => null,
-            LiteralValueType.Integer => long.Parse(literal.Value, NumberStyles.Integer, CultureInfo.InvariantCulture),
+            LiteralValueType.Integer => ConvertIntegerLiteral(literal.Value),
             LiteralValueType.Numeric or LiteralValueType.Money => decimal.Parse(literal.Value, NumberStyles.Number, CultureInfo.InvariantCulture),
             LiteralValueType.Real => double.Parse(literal.Value, NumberStyles.Float, CultureInfo.InvariantCulture),
             LiteralValueType.String or LiteralValueType.UnicodeString or LiteralValueType.Identifier => literal.Value,
@@ -1293,6 +1772,24 @@ internal sealed class TdsQueryEngineExecutor
         };
 
         return targetType is null ? value : ConvertValue(value, targetType);
+    }
+
+    private static Expression BuildLiteralExpression(SqlLiteralExpression literal, Type? targetType)
+    {
+        var value = ConvertLiteral(literal, targetType);
+        var type = targetType ?? value?.GetType() ?? typeof(object);
+        if (value is null)
+        {
+            return Expression.Constant(null, type);
+        }
+
+        if (type.IsInstanceOfType(value))
+        {
+            return Expression.Constant(value, type);
+        }
+
+        var constant = Expression.Constant(value, value.GetType());
+        return constant.Type == type ? constant : ConvertExpression(constant, type);
     }
 
     private static int ReadNonNegativeInt(SqlScalarExpression expression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, string clauseName)
@@ -1313,17 +1810,11 @@ internal sealed class TdsQueryEngineExecutor
         return count;
     }
 
-    private static Type GetLiteralType(SqlLiteralExpression literal)
+    private static object ConvertIntegerLiteral(string value)
     {
-        return literal.Type switch
-        {
-            LiteralValueType.Null => typeof(object),
-            LiteralValueType.Integer => typeof(long),
-            LiteralValueType.Numeric or LiteralValueType.Money => typeof(decimal),
-            LiteralValueType.Real => typeof(double),
-            LiteralValueType.String or LiteralValueType.UnicodeString or LiteralValueType.Identifier => typeof(string),
-            _ => typeof(object),
-        };
+        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue)
+            ? (object)intValue
+            : long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
     }
 
     private static object? ConvertValue(object? value, Type targetType)

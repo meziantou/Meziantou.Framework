@@ -141,17 +141,70 @@ internal sealed class TdsQueryEngineExecutor
 
         if (parseResult.Script.Batches.Count != 1 ||
             parseResult.Script.Batches[0].Statements.Count != 1 ||
-            parseResult.Script.Batches[0].Statements[0] is not SqlSelectStatement selectStatement ||
-            selectStatement.SelectSpecification.QueryExpression is not SqlQuerySpecification querySpecification)
+            parseResult.Script.Batches[0].Statements[0] is not SqlSelectStatement selectStatement)
         {
             throw new TdsQueryEngineException("Only a single SELECT statement is supported.");
         }
 
-        if (querySpecification.SelectClause.IsDistinct ||
-            querySpecification.IntoClause is not null ||
+        if (selectStatement.SelectSpecification.ForClause is not null)
+        {
+            throw new TdsQueryEngineException("The SQL query uses a SELECT feature that is not supported.");
+        }
+
+        if (selectStatement.SelectSpecification.QueryExpression is SqlQuerySpecification querySpecification)
+        {
+            return TranslateQuerySpecification(querySpecification, selectStatement.SelectSpecification.OrderByClause, parameters);
+        }
+
+        var query = TranslateQueryExpression(selectStatement.SelectSpecification.QueryExpression, parameters);
+        if (selectStatement.SelectSpecification.OrderByClause is not null)
+        {
+            query = ApplyOrderBy(CreateProjectionSource(query), selectStatement.SelectSpecification.OrderByClause, parameters).Query;
+        }
+
+        return query;
+    }
+
+    private IQueryable TranslateQueryExpression(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        return queryExpression switch
+        {
+            SqlQuerySpecification querySpecification => TranslateQuerySpecification(querySpecification, orderByOverride: null, parameters),
+            SqlBinaryQueryExpression binaryQueryExpression => TranslateBinaryQueryExpression(binaryQueryExpression, parameters),
+            _ => throw new TdsQueryEngineException("Only query specifications and UNION query expressions are supported."),
+        };
+    }
+
+    private IQueryable TranslateBinaryQueryExpression(SqlBinaryQueryExpression queryExpression, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        var left = TranslateQueryExpression(queryExpression.Left, parameters);
+        var right = TranslateQueryExpression(queryExpression.Right, parameters);
+        if (left.ElementType != right.ElementType)
+        {
+            throw new TdsQueryEngineException("UNION query expressions must project the same columns and types.");
+        }
+
+        var methodName = queryExpression.Operator switch
+        {
+            SqlBinaryQueryOperatorType.Union => nameof(Queryable.Union),
+            SqlBinaryQueryOperatorType.UnionAll => nameof(Queryable.Concat),
+            _ => throw new TdsQueryEngineException($"Set operator '{queryExpression.Operator}' is not supported."),
+        };
+        var call = Expression.Call(
+            typeof(Queryable),
+            methodName,
+            [left.ElementType],
+            left.Expression,
+            right.Expression);
+
+        return left.Provider.CreateQuery(call);
+    }
+
+    private IQueryable TranslateQuerySpecification(SqlQuerySpecification querySpecification, SqlOrderByClause? orderByOverride, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        if (querySpecification.IntoClause is not null ||
             querySpecification.WindowClause is not null ||
-            querySpecification.ForClause is not null ||
-            selectStatement.SelectSpecification.ForClause is not null)
+            querySpecification.ForClause is not null)
         {
             throw new TdsQueryEngineException("The SQL query uses a SELECT feature that is not supported.");
         }
@@ -162,7 +215,7 @@ internal sealed class TdsQueryEngineExecutor
             source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters);
         }
 
-        var orderByClause = selectStatement.SelectSpecification.OrderByClause ?? querySpecification.OrderByClause;
+        var orderByClause = orderByOverride ?? querySpecification.OrderByClause;
         if (querySpecification.GroupByClause is not null)
         {
             var groupedSource = ApplyGroupBy(source, querySpecification.GroupByClause);
@@ -172,6 +225,11 @@ internal sealed class TdsQueryEngineExecutor
             }
 
             var groupedProjection = ApplyGroupSelect(groupedSource, querySpecification.SelectClause);
+            if (querySpecification.SelectClause.IsDistinct)
+            {
+                groupedProjection = ApplyDistinct(groupedProjection);
+            }
+
             if (orderByClause is not null)
             {
                 var orderedGroupedSource = ApplyOrderBy(CreateProjectionSource(groupedProjection), orderByClause, parameters);
@@ -197,6 +255,11 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var query = ApplySelect(source, querySpecification.SelectClause);
+        if (querySpecification.SelectClause.IsDistinct)
+        {
+            query = ApplyDistinct(query);
+        }
+
         if (querySpecification.SelectClause.Top is not null)
         {
             query = ApplyTop(query, querySpecification.SelectClause.Top, parameters);
@@ -420,25 +483,69 @@ internal sealed class TdsQueryEngineExecutor
         return query.Provider.CreateQuery(call);
     }
 
+    private static IQueryable ApplyDistinct(IQueryable query)
+    {
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Distinct),
+            [query.ElementType],
+            query.Expression);
+
+        return query.Provider.CreateQuery(call);
+    }
+
     private static GroupedQuerySource ApplyGroupBy(QuerySource source, SqlGroupByClause groupByClause)
     {
-        if (groupByClause.HasAll || groupByClause.Option != SqlGroupByOptionType.None || groupByClause.Items.Count != 1)
-        {
-            throw new TdsQueryEngineException("Only single-column GROUP BY is supported.");
-        }
-
-        if (groupByClause.Items[0] is not SqlSimpleGroupByItem groupByItem)
+        if (groupByClause.HasAll || groupByClause.Option != SqlGroupByOptionType.None || groupByClause.Items.Count == 0)
         {
             throw new TdsQueryEngineException("Only simple GROUP BY expressions are supported.");
         }
 
         var parameter = Expression.Parameter(source.RowType, "row");
-        var key = BuildScalar(groupByItem.Expression, source.Aliases, parameter, parameters: null);
-        var keyName = GetColumnName(groupByItem.Expression);
+        var keyValues = new List<Expression>();
+        var keyMembers = new List<TdsProjectionMember>();
+        var keyAliases = new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in groupByClause.Items)
+        {
+            if (item is not SqlSimpleGroupByItem groupByItem)
+            {
+                throw new TdsQueryEngineException("Only simple GROUP BY expressions are supported.");
+            }
+
+            var keyValue = BuildScalar(groupByItem.Expression, source.Aliases, parameter, parameters: null);
+            var keyName = GetColumnName(groupByItem.Expression);
+            if (keyAliases.ContainsKey(keyName))
+            {
+                throw new TdsQueryEngineException($"Duplicate GROUP BY column '{keyName}'.");
+            }
+
+            keyValues.Add(keyValue);
+            keyMembers.Add(new TdsProjectionMember(keyName, keyValue.Type));
+        }
+
+        Expression key;
+        Type keyType;
+        if (keyValues.Count == 1)
+        {
+            key = keyValues[0];
+            keyType = key.Type;
+            keyAliases.Add(keyMembers[0].Name, new AliasBinding(keyType, expression => expression));
+        }
+        else
+        {
+            keyType = TdsProjectionTypeFactory.GetCarrierType(keyMembers);
+            var bindings = keyMembers.Select((member, index) => Expression.Bind(keyType.GetProperty(member.Name)!, keyValues[index])).ToArray();
+            key = Expression.MemberInit(Expression.New(keyType), bindings);
+            foreach (var member in keyMembers)
+            {
+                keyAliases.Add(member.Name, new AliasBinding(member.Type, expression => Expression.Property(expression, member.Name)));
+            }
+        }
+
         var call = Expression.Call(
             typeof(Queryable),
             nameof(Queryable.GroupBy),
-            [source.RowType, key.Type],
+            [source.RowType, keyType],
             source.Query.Expression,
             Expression.Quote(Expression.Lambda(key, parameter)));
         var query = source.Query.Provider.CreateQuery(call);
@@ -447,7 +554,7 @@ internal sealed class TdsQueryEngineExecutor
             query,
             query.ElementType,
             source.RowType,
-            new GroupKeyBinding(keyName),
+            keyAliases,
             source.Aliases);
     }
 
@@ -745,12 +852,12 @@ internal sealed class TdsQueryEngineExecutor
         {
             case SqlScalarRefExpression column:
                 var columnName = GetColumnName(column);
-                if (!string.Equals(columnName, source.Key.Name, StringComparison.OrdinalIgnoreCase))
+                if (!source.Keys.TryGetValue(columnName, out var keyBinding))
                 {
                     throw new TdsQueryEngineException($"Column '{columnName}' must appear in GROUP BY or be used in an aggregate function.");
                 }
 
-                return Expression.Property(parameter, nameof(IGrouping<object, object>.Key));
+                return keyBinding.Access(Expression.Property(parameter, nameof(IGrouping<object, object>.Key)));
 
             case SqlAggregateFunctionCallExpression aggregateFunction:
                 return BuildAggregateFunction(aggregateFunction, source, parameter);
@@ -1120,9 +1227,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private sealed record QuerySource(IQueryable Query, Type RowType, IReadOnlyDictionary<string, AliasBinding> Aliases);
 
-    private sealed record GroupedQuerySource(IQueryable Query, Type GroupType, Type SourceRowType, GroupKeyBinding Key, IReadOnlyDictionary<string, AliasBinding> Aliases);
-
-    private sealed record GroupKeyBinding(string Name);
+    private sealed record GroupedQuerySource(IQueryable Query, Type GroupType, Type SourceRowType, IReadOnlyDictionary<string, AliasBinding> Keys, IReadOnlyDictionary<string, AliasBinding> Aliases);
 
     private sealed record AliasBinding(Type Type, Func<Expression, Expression> Access);
 }

@@ -36,6 +36,45 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_SelectDistinct_ReturnsDistinctRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT DISTINCT Region FROM orders ORDER BY Region";
+            },
+            """
+            Region
+            North
+            South
+            """,
+            expectedMaterializedQueries: "Order[].OrderBy(row => row.Region).Select(row => new TdsProjection() {Region = row.Region}).Distinct()");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Union_ReturnsDistinctRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id <= 2 UNION SELECT Id FROM customers WHERE Id >= 2 ORDER BY Id";
+            },
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id <= 2)).Select(row => new TdsProjection() {Id = row.Id}).Union(Customer[].Where(row => (row.Id >= 2)).Select(row => new TdsProjection() {Id = row.Id})).OrderBy(row => row.Id)");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_SelectStar_ReturnsAllColumns()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -415,6 +454,26 @@ public sealed class TdsQueryEngineTests
             South
             """,
             expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_GroupByMultiColumns_ReturnsGroupedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Region, Amount, COUNT(*) AS Count FROM orders GROUP BY Region, Amount ORDER BY Region, Amount";
+            },
+            """
+            Region Amount Count
+            North 10 1
+            North 20 1
+            South 5 1
+            """,
+            expectedMaterializedQueries: "Order[].GroupBy(row => new TdsCarrier() {Region = row.Region, Amount = row.Amount}).Select(group => new TdsProjection() {Region = group.Key.Region, Amount = group.Key.Amount, Count = group.Count()}).OrderBy(row => row.Region).ThenBy(row => row.Amount)");
     }
 
     [Fact]

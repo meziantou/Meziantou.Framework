@@ -54,15 +54,19 @@ internal static class TdsProjectionTypeFactory
             TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed);
 
         _ = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+        var fields = new List<FieldBuilder>(members.Count);
         foreach (var member in members)
         {
-            DefineProperty(typeBuilder, member.Name, member.Type);
+            fields.Add(DefineProperty(typeBuilder, member.Name, member.Type));
         }
+
+        DefineEqualsMethod(typeBuilder, fields);
+        DefineGetHashCodeMethod(typeBuilder, fields);
 
         return typeBuilder.CreateType();
     }
 
-    private static void DefineProperty(TypeBuilder typeBuilder, string name, Type type)
+    private static FieldBuilder DefineProperty(TypeBuilder typeBuilder, string name, Type type)
     {
         var fieldBuilder = typeBuilder.DefineField("_" + name, type, FieldAttributes.Private);
         var propertyBuilder = typeBuilder.DefineProperty(name, PropertyAttributes.HasDefault, type, null);
@@ -90,6 +94,76 @@ internal static class TdsProjectionTypeFactory
 
         propertyBuilder.SetGetMethod(getMethod);
         propertyBuilder.SetSetMethod(setMethod);
+        return fieldBuilder;
+    }
+
+    private static void DefineEqualsMethod(TypeBuilder typeBuilder, IReadOnlyList<FieldBuilder> fields)
+    {
+        var equalsMethod = typeBuilder.DefineMethod(
+            nameof(Equals),
+            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+            typeof(bool),
+            [typeof(object)]);
+        var il = equalsMethod.GetILGenerator();
+        var other = il.DeclareLocal(typeBuilder);
+        var hasOtherLabel = il.DefineLabel();
+
+        il.Emit(OpCodes.Ldarg_1);
+        il.Emit(OpCodes.Isinst, typeBuilder);
+        il.Emit(OpCodes.Stloc, other);
+        il.Emit(OpCodes.Ldloc, other);
+        il.Emit(OpCodes.Brtrue_S, hasOtherLabel);
+        il.Emit(OpCodes.Ldc_I4_0);
+        il.Emit(OpCodes.Ret);
+
+        il.MarkLabel(hasOtherLabel);
+        il.Emit(OpCodes.Ldc_I4_1);
+        foreach (var field in fields)
+        {
+            var comparerType = typeof(EqualityComparer<>).MakeGenericType(field.FieldType);
+            var defaultGetter = comparerType.GetProperty(nameof(EqualityComparer<object>.Default), BindingFlags.Public | BindingFlags.Static)!.GetMethod!;
+            var equalsMethodInfo = comparerType.GetMethod(nameof(EqualityComparer<object>.Equals), [field.FieldType, field.FieldType])!;
+
+            il.Emit(OpCodes.Call, defaultGetter);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, field);
+            il.Emit(OpCodes.Ldloc, other);
+            il.Emit(OpCodes.Ldfld, field);
+            il.Emit(OpCodes.Callvirt, equalsMethodInfo);
+            il.Emit(OpCodes.And);
+        }
+
+        il.Emit(OpCodes.Ret);
+        typeBuilder.DefineMethodOverride(equalsMethod, typeof(object).GetMethod(nameof(Equals), [typeof(object)])!);
+    }
+
+    private static void DefineGetHashCodeMethod(TypeBuilder typeBuilder, IReadOnlyList<FieldBuilder> fields)
+    {
+        var getHashCodeMethod = typeBuilder.DefineMethod(
+            nameof(GetHashCode),
+            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+            typeof(int),
+            Type.EmptyTypes);
+        var il = getHashCodeMethod.GetILGenerator();
+
+        il.Emit(OpCodes.Ldc_I4_S, 17);
+        foreach (var field in fields)
+        {
+            var comparerType = typeof(EqualityComparer<>).MakeGenericType(field.FieldType);
+            var defaultGetter = comparerType.GetProperty(nameof(EqualityComparer<object>.Default), BindingFlags.Public | BindingFlags.Static)!.GetMethod!;
+            var getHashCodeMethodInfo = comparerType.GetMethod(nameof(EqualityComparer<object>.GetHashCode), [field.FieldType])!;
+
+            il.Emit(OpCodes.Ldc_I4_S, 31);
+            il.Emit(OpCodes.Mul);
+            il.Emit(OpCodes.Call, defaultGetter);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, field);
+            il.Emit(OpCodes.Callvirt, getHashCodeMethodInfo);
+            il.Emit(OpCodes.Add);
+        }
+
+        il.Emit(OpCodes.Ret);
+        typeBuilder.DefineMethodOverride(getHashCodeMethod, typeof(object).GetMethod(nameof(GetHashCode), Type.EmptyTypes)!);
     }
 
     private static string CreateKey(string prefix, IReadOnlyList<TdsProjectionMember> members)

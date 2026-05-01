@@ -5,8 +5,17 @@ namespace Meziantou.Framework.Json;
 /// </summary>
 public sealed class JsonPathEvaluationException : InvalidOperationException
 {
+    public JsonPathEvaluationException()
+    {
+    }
+
     public JsonPathEvaluationException(string message)
         : base(message)
+    {
+    }
+
+    public JsonPathEvaluationException(string message, Exception innerException)
+        : base(message, innerException)
     {
     }
 }

@@ -936,6 +936,57 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_DerivedTableInFrom_ReturnsProjectedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT d.Id
+                    FROM (SELECT Id
+                    FROM customers
+                    WHERE Id > 1) d
+                    ORDER BY d.Id
+                    """;
+            },
+            """
+            Id
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id}).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_DerivedTableInJoin_ReturnsProjectedRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id
+                    FROM customers c
+                    INNER JOIN (SELECT Id
+                    FROM customers
+                    WHERE Id > 1) d ON c.Id = d.Id
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Join(Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id}), left => left.Id, right => right.Id, (left, right) => new TdsCarrier() {c = left, d = right}).OrderBy(row => row.c.Id).Select(row => new TdsProjection() {Id = row.c.Id})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_GroupBy_ReturnsGroupedRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

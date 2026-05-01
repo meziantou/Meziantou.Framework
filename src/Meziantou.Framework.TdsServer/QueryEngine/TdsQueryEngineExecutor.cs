@@ -180,7 +180,7 @@ internal sealed class TdsQueryEngineExecutor
             var query = TranslateQueryExpression(cte.QueryExpression, parameters, result);
             if (cte.ColumnList is not null && cte.ColumnList.Count > 0)
             {
-                query = ApplyCteColumnList(query, cte.ColumnList);
+                query = ApplyColumnList(query, cte.ColumnList, scopeName: "CTE");
             }
 
             result.Add(cteName, new TdsQueryRoot(cteName, query));
@@ -189,12 +189,12 @@ internal sealed class TdsQueryEngineExecutor
         return result;
     }
 
-    private static IQueryable ApplyCteColumnList(IQueryable query, SqlIdentifierCollection columnList)
+    private static IQueryable ApplyColumnList(IQueryable query, SqlIdentifierCollection columnList, string scopeName)
     {
         var members = GetReadableMembers(query.ElementType);
         if (members.Count != columnList.Count)
         {
-            throw new TdsQueryEngineException("CTE column list count must match the number of projected columns.");
+            throw new TdsQueryEngineException($"{scopeName} column list count must match the number of projected columns.");
         }
 
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -203,7 +203,7 @@ internal sealed class TdsQueryEngineExecutor
         {
             if (!names.Add(column.Value))
             {
-                throw new TdsQueryEngineException($"Duplicate CTE column name '{column.Value}'.");
+                throw new TdsQueryEngineException($"Duplicate {scopeName} column name '{column.Value}'.");
             }
 
             projectionMembers.Add(new TdsProjectionMember(column.Value, GetMemberType(member)));
@@ -273,7 +273,7 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("The SQL query uses a SELECT feature that is not supported.");
         }
 
-        var source = BuildSource(querySpecification.FromClause, cteRoots);
+        var source = BuildSource(querySpecification.FromClause, cteRoots, parameters);
         if (querySpecification.WhereClause?.Expression is not null)
         {
             source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters, cteRoots);
@@ -332,29 +332,34 @@ internal sealed class TdsQueryEngineExecutor
         return query;
     }
 
-    private QuerySource BuildSource(SqlFromClause? fromClause, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    private QuerySource BuildSource(SqlFromClause? fromClause, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
         if (fromClause is null || fromClause.TableExpressions.Count != 1)
         {
             throw new TdsQueryEngineException("The SQL query must contain exactly one FROM table expression.");
         }
 
-        return BuildSource(fromClause.TableExpressions[0], cteRoots);
+        return BuildSource(fromClause.TableExpressions[0], cteRoots, parameters);
     }
 
-    private QuerySource BuildSource(SqlTableExpression tableExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    private QuerySource BuildSource(SqlTableExpression tableExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
         if (tableExpression is SqlTableRefExpression tableRefExpression)
         {
             return BuildTableSource(tableRefExpression, cteRoots);
         }
 
-        if (tableExpression is SqlQualifiedJoinTableExpression joinExpression)
+        if (tableExpression is SqlDerivedTableExpression derivedTableExpression)
         {
-            return BuildJoinSource(joinExpression, cteRoots);
+            return BuildDerivedTableSource(derivedTableExpression, cteRoots, parameters);
         }
 
-        throw new TdsQueryEngineException("Only table references and INNER JOIN table expressions are supported.");
+        if (tableExpression is SqlQualifiedJoinTableExpression joinExpression)
+        {
+            return BuildJoinSource(joinExpression, cteRoots, parameters);
+        }
+
+        throw new TdsQueryEngineException("Only table references, derived tables, and INNER JOIN table expressions are supported.");
     }
 
     private QuerySource BuildTableSource(SqlTableRefExpression tableExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
@@ -378,20 +383,38 @@ internal sealed class TdsQueryEngineExecutor
             });
     }
 
-    private QuerySource BuildJoinSource(SqlQualifiedJoinTableExpression joinExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    private QuerySource BuildDerivedTableSource(SqlDerivedTableExpression tableExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        if (tableExpression.Alias is null)
+        {
+            throw new TdsQueryEngineException("Derived tables must have an alias.");
+        }
+
+        var query = TranslateQueryExpression(tableExpression.QueryExpression, parameters, cteRoots);
+        if (tableExpression.ColumnList is not null && tableExpression.ColumnList.Count > 0)
+        {
+            query = ApplyColumnList(query, tableExpression.ColumnList, scopeName: "Derived table");
+        }
+
+        var alias = tableExpression.Alias.Value;
+        return new QuerySource(
+            query,
+            query.ElementType,
+            new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase)
+            {
+                [alias] = new AliasBinding(query.ElementType, expression => expression),
+            });
+    }
+
+    private QuerySource BuildJoinSource(SqlQualifiedJoinTableExpression joinExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
         if (joinExpression.JoinOperator != SqlJoinOperatorType.InnerJoin)
         {
             throw new TdsQueryEngineException("Only INNER JOIN is supported.");
         }
 
-        var left = BuildSource(joinExpression.Left, cteRoots);
-        if (joinExpression.Right is not SqlTableRefExpression rightTable)
-        {
-            throw new TdsQueryEngineException("Only table references are supported on the right side of INNER JOIN.");
-        }
-
-        var right = BuildTableSource(rightTable, cteRoots);
+        var left = BuildSource(joinExpression.Left, cteRoots, parameters);
+        var right = BuildSource(joinExpression.Right, cteRoots, parameters);
         if (joinExpression.OnClause?.Expression is not SqlComparisonBooleanExpression { ComparisonOperator: SqlComparisonBooleanExpressionType.Equals } comparison)
         {
             throw new TdsQueryEngineException("INNER JOIN requires a simple equality ON clause.");
@@ -850,7 +873,7 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("The IN subquery must select exactly one scalar expression.");
         }
 
-        var source = BuildSource(querySpecification.FromClause, cteRoots);
+        var source = BuildSource(querySpecification.FromClause, cteRoots, parameters);
         if (querySpecification.WhereClause?.Expression is not null)
         {
             source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters, cteRoots);
@@ -889,7 +912,7 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("The EXISTS subquery uses a SELECT feature that is not supported.");
         }
 
-        var source = BuildSource(querySpecification.FromClause, cteRoots);
+        var source = BuildSource(querySpecification.FromClause, cteRoots, parameters);
         if (querySpecification.WhereClause?.Expression is not null)
         {
             source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters, cteRoots);

@@ -1,4 +1,5 @@
 using Meziantou.Framework.Tds.Handler;
+using Meziantou.Framework.Tds.QueryEngine;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +25,16 @@ public static class TdsEndpointRouteBuilderExtensions
         ArgumentNullException.ThrowIfNull(handler);
 
         endpoints.ServiceProvider.GetRequiredService<TdsQueryDelegateHolder>().Handler = handler;
+        return endpoints;
+    }
+
+    /// <summary>Registers the built-in TDS query engine as the query callback.</summary>
+    public static IEndpointRouteBuilder MapTdsQueryEngine(this IEndpointRouteBuilder endpoints, TdsQueryEngineOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+        ArgumentNullException.ThrowIfNull(options);
+
+        endpoints.ServiceProvider.GetRequiredService<TdsQueryDelegateHolder>().Handler = TdsQueryEngine.CreateQueryHandler(options);
         return endpoints;
     }
 

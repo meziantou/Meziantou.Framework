@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.SqlServer.Management.SqlParser" Version="173.8.0" />
   </ItemGroup>
 
 </Project>

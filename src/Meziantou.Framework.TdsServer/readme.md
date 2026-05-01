@@ -7,6 +7,7 @@
 - Accepts TDS client connections over TCP
 - Callback for authentication (SQL login + token-based extension data)
 - Callback for query handling (SQL batch and RPC requests)
+- Optional query engine for stored procedures and a small SQL `SELECT` subset over `IQueryable` roots
 - Serializes result sets and protocol tokens back to clients
 - Native JSON column type serialization (`TDSType.JSON`, UTF-8 payload)
 - ASP.NET Core hosting integration through `IHostApplicationBuilder`
@@ -47,6 +48,31 @@ app.MapTdsHandlers(
 
 app.Run();
 ```
+
+## Built-in query engine
+
+The low-level query callback can be backed by the built-in query engine. It maps RPC requests to configured delegates and translates simple SQL text queries to typed `IQueryable` expressions.
+
+```csharp
+using Meziantou.Framework.Tds.QueryEngine;
+
+var customers = new[]
+{
+    new Customer(1, "Alice"),
+    new Customer(2, "Bob"),
+}.AsQueryable();
+
+var queryEngineOptions = new TdsQueryEngineOptions();
+queryEngineOptions.AddQueryRoot("customers", customers);
+queryEngineOptions.StoredProcedures.Add("GetCustomer", (int id) => customers.Where(customer => customer.Id == id));
+
+app.MapTdsAuthenticationHandler((context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()));
+app.MapTdsQueryEngine(queryEngineOptions);
+```
+
+By default, the query engine materializes translated queries by enumerating the `IQueryable`. You can replace `MaterializeAsync` to use an async provider-specific materializer such as Entity Framework Core's `ToListAsync`.
+
+The initial SQL text support is intentionally small: one `SELECT` statement with `FROM`, `INNER JOIN`, `WHERE` comparisons combined with `AND`, SQL parameters, `SELECT *` for single-table queries, selected columns with aliases, and `ORDER BY`.
 
 ## Access command text, stored procedure name, and parameters
 

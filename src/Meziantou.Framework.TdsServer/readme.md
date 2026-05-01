@@ -16,6 +16,7 @@
 
 ```csharp
 using System.Net;
+using System.Security.Claims;
 using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
 using Meziantou.Framework.Tds.Hosting;
@@ -31,12 +32,22 @@ app.MapTdsHandlers(
     authenticate: async (context, cancellationToken) =>
     {
         if (context.UserName == "sa" && context.Password == "Password123!")
-            return TdsAuthenticationResult.Success();
+        {
+            var identity = new ClaimsIdentity(
+            [
+                new Claim(ClaimTypes.NameIdentifier, "42"),
+                new Claim(ClaimTypes.Name, context.UserName ?? "sa"),
+            ],
+            authenticationType: "password");
+            return TdsAuthenticationResult.Success(userContext: new ClaimsPrincipal(identity));
+        }
 
         return TdsAuthenticationResult.Fail("Login failed");
     },
     query: async (context, cancellationToken) =>
     {
+        var user = context.UserContext;
+
         var resultSet = new TdsResultSet();
         resultSet.Columns.Add(new TdsColumn("Message", TdsColumnType.NVarChar));
         resultSet.Rows.Add(["Hello from TDS server"]);
@@ -106,6 +117,8 @@ app.MapTdsHandlers(
             var json = parameter.AsJson();
             var xml = parameter.AsXml();
         }
+
+        var user = context.UserContext; // ClaimsPrincipal from authentication result, if any
 
         return new TdsQueryResult();
     });

@@ -785,6 +785,60 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_WhereExistsSubquery_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE EXISTS (SELECT 1
+                    FROM orders
+                    WHERE Id = 1)
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => Order[].Where(row => (row.Id == 1)).Any()).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereNotExistsSubquery_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE NOT EXISTS (SELECT 1
+                    FROM orders
+                    WHERE Id = 999)
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => Not(Order[].Where(row => (row.Id == 999)).Any())).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_Top_ReturnsFirstRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

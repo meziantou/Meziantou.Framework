@@ -729,13 +729,15 @@ internal sealed class TdsQueryEngineExecutor
             SqlComparisonBooleanExpression comparison => BuildComparison(comparison, aliases, parameter, parameters),
             SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters, cteRoots),
             SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters),
+            SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, parameters, cteRoots),
+            SqlNotBooleanExpression notExpression => Expression.Not(BuildBoolean(notExpression.Expression, aliases, parameter, parameters, cteRoots)),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
                 BuildBoolean(binary.Left, aliases, parameter, parameters, cteRoots),
                 BuildBoolean(binary.Right, aliases, parameter, parameters, cteRoots)),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => Expression.OrElse(
                 BuildBoolean(orBinary.Left, aliases, parameter, parameters, cteRoots),
                 BuildBoolean(orBinary.Right, aliases, parameter, parameters, cteRoots)),
-            _ => throw new TdsQueryEngineException("Only comparison, IN, and IS NULL predicates combined with AND/OR are supported."),
+            _ => throw new TdsQueryEngineException("Only comparison, IN, EXISTS, and IS NULL predicates combined with AND/OR/NOT are supported."),
         };
     }
 
@@ -800,6 +802,16 @@ internal sealed class TdsQueryEngineExecutor
             inExpression);
     }
 
+    private MethodCallExpression BuildExistsBoolean(SqlExistsBooleanExpression expression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    {
+        var subquery = TranslateExistsSubquery(expression.QueryExpression, parameters, cteRoots);
+        return Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Any),
+            [subquery.ElementType],
+            subquery.Expression);
+    }
+
     private Expression BuildIsNullBoolean(SqlIsNullBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
         var value = BuildScalar(expression.Expression, aliases, parameter, parameters);
@@ -859,6 +871,31 @@ internal sealed class TdsQueryEngineExecutor
             Expression.Quote(Expression.Lambda(value, parameter)));
 
         return source.Query.Provider.CreateQuery(call);
+    }
+
+    private IQueryable TranslateExistsSubquery(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    {
+        if (queryExpression is not SqlQuerySpecification querySpecification)
+        {
+            throw new TdsQueryEngineException("Only simple query specifications are supported in EXISTS subqueries.");
+        }
+
+        if (querySpecification.IntoClause is not null ||
+            querySpecification.WindowClause is not null ||
+            querySpecification.ForClause is not null ||
+            querySpecification.GroupByClause is not null ||
+            querySpecification.HavingClause is not null)
+        {
+            throw new TdsQueryEngineException("The EXISTS subquery uses a SELECT feature that is not supported.");
+        }
+
+        var source = BuildSource(querySpecification.FromClause, cteRoots);
+        if (querySpecification.WhereClause?.Expression is not null)
+        {
+            source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters, cteRoots);
+        }
+
+        return source.Query;
     }
 
     private Expression BuildGroupBoolean(SqlBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)

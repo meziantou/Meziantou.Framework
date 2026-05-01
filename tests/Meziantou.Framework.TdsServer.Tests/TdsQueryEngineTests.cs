@@ -1,6 +1,7 @@
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Net;
 using System.Text;
 using Meziantou.Framework.Tds;
@@ -116,6 +117,61 @@ public sealed class TdsQueryEngineTests
             4
             """,
             expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id, Name = row.Name}).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_NonAggregateFunctions_ReturnsComputedColumns()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT UPPER(Name) AS UpperName, LEN(Name) AS NameLength
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            UpperName NameLength
+            ALICE 5
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {UpperName = row.Name.ToUpperInvariant(), NameLength = row.Name.Length})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_CustomFunctionMapping_UsesConfiguredMethod()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.AddScalarFunction(
+            "UPPER",
+            arguments =>
+            {
+                if (arguments.Count != 1)
+                {
+                    throw new InvalidOperationException("UPPER requires exactly one argument.");
+                }
+
+                return Expression.Call(arguments[0], typeof(string).GetMethod(nameof(string.ToUpper), Type.EmptyTypes)!);
+            });
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT UPPER(Name) AS UpperName
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            UpperName
+            ALICE
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {UpperName = row.Name.ToUpper()})");
     }
 
     [Fact]

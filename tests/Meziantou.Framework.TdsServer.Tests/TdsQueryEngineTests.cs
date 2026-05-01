@@ -90,6 +90,57 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_Cte_ReturnsRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    WITH filtered_customers AS
+                    (
+                        SELECT Id, Name
+                        FROM customers
+                        WHERE Id > 1
+                    )
+                    SELECT Id
+                    FROM filtered_customers
+                    ORDER BY Id
+                    """;
+            },
+            """
+            Id
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id, Name = row.Name}).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_StringConcatenationAndArithmetic_ReturnsComputedColumns()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Name + Name AS NameConcat, Id + Id AS SumId
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            NameConcat SumId
+            AliceAlice 2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {NameConcat = Concat(row.Name, row.Name), SumId = (row.Id + row.Id)})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_SelectStar_ReturnsAllColumns()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -268,6 +319,50 @@ public sealed class TdsQueryEngineTests
             2
             """,
             expectedMaterializedQueries: "Customer[].Where(row => (row.Id <= 2)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereArithmeticExpression_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id + Id = 4
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => ((row.Id + row.Id) == 4)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereScalarFunctionExpression_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE LEN(Name) = 3
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => (row.Name.Length == 3)).Select(row => new TdsProjection() {Id = row.Id})");
     }
 
     [Fact]

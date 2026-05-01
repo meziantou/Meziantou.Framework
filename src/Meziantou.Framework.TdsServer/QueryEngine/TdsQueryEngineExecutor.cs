@@ -489,19 +489,20 @@ internal sealed class TdsQueryEngineExecutor
         return source.Query.Provider.CreateQuery(call);
     }
 
-    private static BinaryExpression BuildBoolean(SqlBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private Expression BuildBoolean(SqlBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
         return expression switch
         {
             SqlComparisonBooleanExpression comparison => BuildComparison(comparison, aliases, parameter, parameters),
+            SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
                 BuildBoolean(binary.Left, aliases, parameter, parameters),
                 BuildBoolean(binary.Right, aliases, parameter, parameters)),
-            _ => throw new TdsQueryEngineException("Only comparison predicates combined with AND are supported."),
+            _ => throw new TdsQueryEngineException("Only comparison and IN predicates combined with AND are supported."),
         };
     }
 
-    private static BinaryExpression BuildComparison(SqlComparisonBooleanExpression comparison, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private static BinaryExpression BuildComparison(SqlComparisonBooleanExpression comparison, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
         var left = BuildScalar(comparison.Left, aliases, parameter, parameters);
         var right = BuildScalar(comparison.Right, aliases, parameter, parameters, left.Type);
@@ -520,6 +521,93 @@ internal sealed class TdsQueryEngineExecutor
             SqlComparisonBooleanExpressionType.LessThanOrEqual => Expression.LessThanOrEqual(left, right),
             _ => throw new TdsQueryEngineException($"Comparison operator '{comparison.ComparisonOperator}' is not supported."),
         };
+    }
+
+    private Expression BuildInBoolean(SqlInBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        var inExpression = BuildScalar(expression.InExpression, aliases, parameter, parameters);
+        Expression containsExpression = expression.ComparisonValue switch
+        {
+            SqlInBooleanExpressionCollectionValue collectionValue => BuildInCollectionExpression(collectionValue, inExpression, aliases, parameter, parameters),
+            SqlInBooleanExpressionQueryValue queryValue => BuildInSubqueryExpression(queryValue, inExpression, parameters),
+            _ => throw new TdsQueryEngineException("Only IN collections and simple IN subqueries are supported."),
+        };
+
+        return expression.HasNot ? Expression.Not(containsExpression) : containsExpression;
+    }
+
+    private static MethodCallExpression BuildInCollectionExpression(SqlInBooleanExpressionCollectionValue collectionValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        var values = collectionValue.Values
+            .Select(value => BuildScalar(value, aliases, parameter, parameters, inExpression.Type))
+            .Select(value => value.Type == inExpression.Type ? value : ConvertExpression(value, inExpression.Type));
+        var valuesArray = Expression.NewArrayInit(inExpression.Type, values);
+
+        return Expression.Call(
+            typeof(Enumerable),
+            nameof(Enumerable.Contains),
+            [inExpression.Type],
+            valuesArray,
+            inExpression);
+    }
+
+    private MethodCallExpression BuildInSubqueryExpression(SqlInBooleanExpressionQueryValue queryValue, Expression inExpression, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        var subquery = TranslateInSubquery(queryValue.Value, inExpression.Type, parameters);
+        return Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Contains),
+            [inExpression.Type],
+            subquery.Expression,
+            inExpression);
+    }
+
+    private IQueryable TranslateInSubquery(SqlQueryExpression queryExpression, Type targetType, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        if (queryExpression is not SqlQuerySpecification querySpecification)
+        {
+            throw new TdsQueryEngineException("Only simple query specifications are supported in IN subqueries.");
+        }
+
+        if (querySpecification.SelectClause.IsDistinct ||
+            querySpecification.SelectClause.Top is not null ||
+            querySpecification.IntoClause is not null ||
+            querySpecification.WindowClause is not null ||
+            querySpecification.ForClause is not null ||
+            querySpecification.GroupByClause is not null ||
+            querySpecification.HavingClause is not null ||
+            querySpecification.OrderByClause is not null)
+        {
+            throw new TdsQueryEngineException("The IN subquery uses a SELECT feature that is not supported.");
+        }
+
+        if (querySpecification.SelectClause.SelectExpressions.Count != 1 ||
+            querySpecification.SelectClause.SelectExpressions[0] is not SqlSelectScalarExpression selectExpression)
+        {
+            throw new TdsQueryEngineException("The IN subquery must select exactly one scalar expression.");
+        }
+
+        var source = BuildSource(querySpecification.FromClause);
+        if (querySpecification.WhereClause?.Expression is not null)
+        {
+            source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters);
+        }
+
+        var parameter = Expression.Parameter(source.RowType, "row");
+        var value = BuildScalar(selectExpression.Expression, source.Aliases, parameter, parameters, targetType);
+        if (value.Type != targetType)
+        {
+            value = ConvertExpression(value, targetType);
+        }
+
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Select),
+            [source.RowType, targetType],
+            source.Query.Expression,
+            Expression.Quote(Expression.Lambda(value, parameter)));
+
+        return source.Query.Provider.CreateQuery(call);
     }
 
     private static BinaryExpression BuildGroupBoolean(SqlBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)

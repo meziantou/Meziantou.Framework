@@ -75,6 +75,25 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_WhereInSubquery_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = "SELECT Id FROM customers WHERE Id IN (SELECT Id FROM orders)";
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(row => Order[].Select(row => row.Id).Contains(row.Id)).Select(row => new TdsProjection() {Id = row.Id})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_OrderBy_ReturnsOrderedRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

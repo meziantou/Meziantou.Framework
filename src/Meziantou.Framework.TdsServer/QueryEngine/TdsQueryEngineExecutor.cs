@@ -148,7 +148,6 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         if (querySpecification.SelectClause.IsDistinct ||
-            querySpecification.SelectClause.Top is not null ||
             querySpecification.IntoClause is not null ||
             querySpecification.WindowClause is not null ||
             querySpecification.ForClause is not null ||
@@ -172,12 +171,19 @@ internal sealed class TdsQueryEngineExecutor
                 groupedSource = ApplyHaving(groupedSource, querySpecification.HavingClause.Expression, parameters);
             }
 
+            var groupedProjection = ApplyGroupSelect(groupedSource, querySpecification.SelectClause);
             if (orderByClause is not null)
             {
-                throw new TdsQueryEngineException("ORDER BY with GROUP BY is not supported.");
+                var orderedGroupedSource = ApplyOrderBy(CreateProjectionSource(groupedProjection), orderByClause, parameters);
+                groupedProjection = orderedGroupedSource.Query;
             }
 
-            return ApplyGroupSelect(groupedSource, querySpecification.SelectClause);
+            if (querySpecification.SelectClause.Top is not null)
+            {
+                groupedProjection = ApplyTop(groupedProjection, querySpecification.SelectClause.Top, parameters);
+            }
+
+            return groupedProjection;
         }
 
         if (querySpecification.HavingClause is not null)
@@ -190,7 +196,13 @@ internal sealed class TdsQueryEngineExecutor
             source = ApplyOrderBy(source, orderByClause, parameters);
         }
 
-        return ApplySelect(source, querySpecification.SelectClause);
+        var query = ApplySelect(source, querySpecification.SelectClause);
+        if (querySpecification.SelectClause.Top is not null)
+        {
+            query = ApplyTop(query, querySpecification.SelectClause.Top, parameters);
+        }
+
+        return query;
     }
 
     private QuerySource BuildSource(SqlFromClause? fromClause)
@@ -327,11 +339,6 @@ internal sealed class TdsQueryEngineExecutor
 
     private QuerySource ApplyOrderBy(QuerySource source, SqlOrderByClause orderByClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
-        if (orderByClause.OffsetFetchClause is not null)
-        {
-            throw new TdsQueryEngineException("OFFSET/FETCH is not supported.");
-        }
-
         var query = source.Query;
         var first = true;
         foreach (var item in orderByClause.Items)
@@ -357,7 +364,60 @@ internal sealed class TdsQueryEngineExecutor
             first = false;
         }
 
+        if (orderByClause.OffsetFetchClause is not null)
+        {
+            var offset = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Offset, parameters, "OFFSET");
+            var skipCall = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Skip),
+                [source.RowType],
+                query.Expression,
+                Expression.Constant(offset));
+            query = query.Provider.CreateQuery(skipCall);
+
+            if (orderByClause.OffsetFetchClause.Fetch is not null)
+            {
+                var fetch = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Fetch, parameters, "FETCH");
+                var takeCall = Expression.Call(
+                    typeof(Queryable),
+                    nameof(Queryable.Take),
+                    [source.RowType],
+                    query.Expression,
+                    Expression.Constant(fetch));
+                query = query.Provider.CreateQuery(takeCall);
+            }
+        }
+
         return source with { Query = query };
+    }
+
+    private static QuerySource CreateProjectionSource(IQueryable query)
+    {
+        return new QuerySource(
+            query,
+            query.ElementType,
+            new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["result"] = new AliasBinding(query.ElementType, expression => expression),
+            });
+    }
+
+    private static IQueryable ApplyTop(IQueryable query, SqlTopSpecification topSpecification, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        if (topSpecification.IsPercent || topSpecification.IsWithTies)
+        {
+            throw new TdsQueryEngineException("TOP PERCENT and TOP WITH TIES are not supported.");
+        }
+
+        var count = ReadNonNegativeInt(topSpecification.Value, parameters, "TOP");
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Take),
+            [query.ElementType],
+            query.Expression,
+            Expression.Constant(count));
+
+        return query.Provider.CreateQuery(call);
     }
 
     private static GroupedQuerySource ApplyGroupBy(QuerySource source, SqlGroupByClause groupByClause)
@@ -495,10 +555,14 @@ internal sealed class TdsQueryEngineExecutor
         {
             SqlComparisonBooleanExpression comparison => BuildComparison(comparison, aliases, parameter, parameters),
             SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters),
+            SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
                 BuildBoolean(binary.Left, aliases, parameter, parameters),
                 BuildBoolean(binary.Right, aliases, parameter, parameters)),
-            _ => throw new TdsQueryEngineException("Only comparison and IN predicates combined with AND are supported."),
+            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => Expression.OrElse(
+                BuildBoolean(orBinary.Left, aliases, parameter, parameters),
+                BuildBoolean(orBinary.Right, aliases, parameter, parameters)),
+            _ => throw new TdsQueryEngineException("Only comparison, IN, and IS NULL predicates combined with AND/OR are supported."),
         };
     }
 
@@ -563,6 +627,19 @@ internal sealed class TdsQueryEngineExecutor
             inExpression);
     }
 
+    private static Expression BuildIsNullBoolean(SqlIsNullBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        var value = BuildScalar(expression.Expression, aliases, parameter, parameters);
+        if (value.Type.IsValueType && Nullable.GetUnderlyingType(value.Type) is null)
+        {
+            return Expression.Constant(expression.HasNot, typeof(bool));
+        }
+
+        var nullExpression = Expression.Constant(null, value.Type);
+        var isNullExpression = Expression.Equal(value, nullExpression);
+        return expression.HasNot ? Expression.Not(isNullExpression) : isNullExpression;
+    }
+
     private IQueryable TranslateInSubquery(SqlQueryExpression queryExpression, Type targetType, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
         if (queryExpression is not SqlQuerySpecification querySpecification)
@@ -611,16 +688,33 @@ internal sealed class TdsQueryEngineExecutor
         return source.Query.Provider.CreateQuery(call);
     }
 
-    private static BinaryExpression BuildGroupBoolean(SqlBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    private static Expression BuildGroupBoolean(SqlBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
     {
         return expression switch
         {
             SqlComparisonBooleanExpression comparison => BuildGroupComparison(comparison, source, parameter, parameters),
+            SqlIsNullBooleanExpression isNullExpression => BuildGroupIsNullBoolean(isNullExpression, source, parameter, parameters),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
                 BuildGroupBoolean(binary.Left, source, parameter, parameters),
                 BuildGroupBoolean(binary.Right, source, parameter, parameters)),
-            _ => throw new TdsQueryEngineException("Only GROUP BY comparison predicates combined with AND are supported."),
+            SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.Or } orBinary => Expression.OrElse(
+                BuildGroupBoolean(orBinary.Left, source, parameter, parameters),
+                BuildGroupBoolean(orBinary.Right, source, parameter, parameters)),
+            _ => throw new TdsQueryEngineException("Only GROUP BY comparison and IS NULL predicates combined with AND/OR are supported."),
         };
+    }
+
+    private static Expression BuildGroupIsNullBoolean(SqlIsNullBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        var value = BuildGroupScalar(expression.Expression, source, parameter, parameters);
+        if (value.Type.IsValueType && Nullable.GetUnderlyingType(value.Type) is null)
+        {
+            return Expression.Constant(expression.HasNot, typeof(bool));
+        }
+
+        var nullExpression = Expression.Constant(null, value.Type);
+        var isNullExpression = Expression.Equal(value, nullExpression);
+        return expression.HasNot ? Expression.Not(isNullExpression) : isNullExpression;
     }
 
     private static BinaryExpression BuildGroupComparison(SqlComparisonBooleanExpression comparison, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
@@ -887,6 +981,24 @@ internal sealed class TdsQueryEngineExecutor
         };
 
         return targetType is null ? value : ConvertValue(value, targetType);
+    }
+
+    private static int ReadNonNegativeInt(SqlScalarExpression expression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, string clauseName)
+    {
+        object? value = expression switch
+        {
+            SqlLiteralExpression literal => ConvertLiteral(literal, typeof(int)),
+            SqlScalarVariableRefExpression variable when parameters.TryGetValue(NormalizeName(variable.VariableName), out var parameter) => ConvertValue(parameter.Value, typeof(int)),
+            SqlScalarVariableRefExpression variable => throw new TdsQueryEngineException($"Missing SQL parameter '{variable.VariableName}'."),
+            _ => throw new TdsQueryEngineException($"{clauseName} requires an integer literal or SQL parameter."),
+        };
+        var count = value is null ? throw new TdsQueryEngineException($"{clauseName} value cannot be NULL.") : (int)value;
+        if (count < 0)
+        {
+            throw new TdsQueryEngineException($"{clauseName} value cannot be negative.");
+        }
+
+        return count;
     }
 
     private static Type GetLiteralType(SqlLiteralExpression literal)

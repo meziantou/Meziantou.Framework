@@ -72,13 +72,33 @@ public sealed class JsonPath
     /// <returns>A <see cref="JsonPathResult"/> containing all matched nodes.</returns>
     public JsonPathResult Evaluate(JsonNode? root)
     {
-        return JsonPathEvaluator.Evaluate(_ast, root);
+        return Evaluate(root, JsonPathEvaluationMode.Lax);
+    }
+
+    /// <summary>Evaluates this JSONPath expression against a JSON value.</summary>
+    /// <param name="root">The root JSON value to query. May be <see langword="null"/>.</param>
+    /// <param name="mode">The evaluation mode.</param>
+    /// <returns>A <see cref="JsonPathResult"/> containing all matched nodes.</returns>
+    /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
+    public JsonPathResult Evaluate(JsonNode? root, JsonPathEvaluationMode mode)
+    {
+        return JsonPathEvaluator.Evaluate(_ast, root, mode);
     }
 
     /// <summary>Evaluates this JSONPath expression against a JSON document.</summary>
     /// <param name="root">The root JSON document to query. May be <see langword="null"/>.</param>
     /// <returns>A <see cref="JsonPathResult"/> containing all matched nodes.</returns>
     public JsonPathResult Evaluate(JsonDocument? root)
+    {
+        return Evaluate(root, JsonPathEvaluationMode.Lax);
+    }
+
+    /// <summary>Evaluates this JSONPath expression against a JSON document.</summary>
+    /// <param name="root">The root JSON document to query. May be <see langword="null"/>.</param>
+    /// <param name="mode">The evaluation mode.</param>
+    /// <returns>A <see cref="JsonPathResult"/> containing all matched nodes.</returns>
+    /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
+    public JsonPathResult Evaluate(JsonDocument? root, JsonPathEvaluationMode mode)
     {
         JsonNode? node = null;
         if (root is not null)
@@ -87,7 +107,53 @@ public sealed class JsonPath
             node = JsonNode.Parse(json);
         }
 
-        return JsonPathEvaluator.Evaluate(_ast, node);
+        return JsonPathEvaluator.Evaluate(_ast, node, mode);
+    }
+
+    /// <summary>
+    /// Evaluates this JSONPath expression and returns the first matched value, or <see langword="null"/> when there is no match.
+    /// </summary>
+    /// <param name="root">The root JSON value to query. May be <see langword="null"/>.</param>
+    /// <returns>The first matched value, or <see langword="null"/> when there is no match.</returns>
+    public JsonNode? EvaluateValue(JsonNode? root)
+    {
+        return EvaluateValue(root, JsonPathEvaluationMode.Lax);
+    }
+
+    /// <summary>
+    /// Evaluates this JSONPath expression and returns the first matched value, or <see langword="null"/> when there is no match.
+    /// </summary>
+    /// <param name="root">The root JSON value to query. May be <see langword="null"/>.</param>
+    /// <param name="mode">The evaluation mode.</param>
+    /// <returns>The first matched value, or <see langword="null"/> when there is no match.</returns>
+    /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
+    public JsonNode? EvaluateValue(JsonNode? root, JsonPathEvaluationMode mode)
+    {
+        var result = Evaluate(root, mode);
+        return result.Count > 0 ? result[0].Value : null;
+    }
+
+    /// <summary>
+    /// Evaluates this JSONPath expression and returns the first matched value, or <see langword="null"/> when there is no match.
+    /// </summary>
+    /// <param name="root">The root JSON document to query. May be <see langword="null"/>.</param>
+    /// <returns>The first matched value, or <see langword="null"/> when there is no match.</returns>
+    public JsonNode? EvaluateValue(JsonDocument? root)
+    {
+        return EvaluateValue(root, JsonPathEvaluationMode.Lax);
+    }
+
+    /// <summary>
+    /// Evaluates this JSONPath expression and returns the first matched value, or <see langword="null"/> when there is no match.
+    /// </summary>
+    /// <param name="root">The root JSON document to query. May be <see langword="null"/>.</param>
+    /// <param name="mode">The evaluation mode.</param>
+    /// <returns>The first matched value, or <see langword="null"/> when there is no match.</returns>
+    /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
+    public JsonNode? EvaluateValue(JsonDocument? root, JsonPathEvaluationMode mode)
+    {
+        var result = Evaluate(root, mode);
+        return result.Count > 0 ? result[0].Value : null;
     }
 
     /// <summary>Returns the original JSONPath expression string.</summary>

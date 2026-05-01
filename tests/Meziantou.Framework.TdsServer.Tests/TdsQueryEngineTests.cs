@@ -36,7 +36,102 @@ public sealed class TdsQueryEngineTests
             2 Bob
             4 David
             """,
-            expectedMaterializedQueries: "Customer[].Select(row => new TdsProjection() {Id = row.Id, Name = row.Name})");
+            expectedMaterializedQueries: "Customer[].Select(customer => new TdsProjection() {Id = customer.Id, Name = customer.Name})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ParameterNames_AreTypeBasedAndUnique()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Id
+            1
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ParameterNames_AreTypeBasedInSelect()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, Name
+                    FROM customers
+                    """;
+            },
+            """
+            Id Name
+            1 Alice
+            2 Bob
+            4 David
+            """,
+            expectedMaterializedQueries: "Customer[].Select(customer => new TdsProjection() {Id = customer.Id, Name = customer.Name})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ParameterNames_AreTypeBasedInJoinSelect()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c1.Id
+                    FROM customers c1
+                    INNER JOIN customers c2 ON c1.Id = c2.Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            4
+            """,
+            expectedMaterializedQueries: "Customer[].Join(Customer[], customer => customer.Id, customer2 => customer2.Id, (customer3, customer4) => new TdsCarrier() {c1 = customer3, c2 = customer4}).Select(carrier => new TdsProjection() {Id = carrier.c1.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_ParameterNames_AreTypeBasedInCorrelatedSubquery()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id
+                    FROM customers c
+                    WHERE EXISTS (SELECT 1
+                    FROM orders o
+                    WHERE o.Id = c.Id)
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => Order[].Where(order => (order.Id == customer.Id)).Any()).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
     }
 
     [Fact]
@@ -59,7 +154,7 @@ public sealed class TdsQueryEngineTests
             North
             South
             """,
-            expectedMaterializedQueries: "Order[].OrderBy(row => row.Region).Select(row => new TdsProjection() {Region = row.Region}).Distinct()");
+            expectedMaterializedQueries: "Order[].OrderBy(order => order.Region).Select(order2 => new TdsProjection() {Region = order2.Region}).Distinct()");
     }
 
     [Fact]
@@ -87,7 +182,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id <= 2)).Select(row => new TdsProjection() {Id = row.Id}).Union(Customer[].Where(row => (row.Id >= 2)).Select(row => new TdsProjection() {Id = row.Id})).OrderBy(row => row.Id)");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id <= 2)).Select(customer2 => new TdsProjection() {Id = customer2.Id}).Union(Customer[].Where(customer3 => (customer3.Id >= 2)).Select(customer4 => new TdsProjection() {Id = customer4.Id})).OrderBy(projection => projection.Id)");
     }
 
     [Fact]
@@ -116,7 +211,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id, Name = row.Name}).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id > 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id, Name = customer2.Name}).OrderBy(projection => projection.Id).Select(projection2 => new TdsProjection() {Id = projection2.Id})");
     }
 
     [Fact]
@@ -143,7 +238,7 @@ public sealed class TdsQueryEngineTests
             CustomerId CustomerName
             1 Alice
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {Id = row.Id, Name = row.Name}).Select(row => new TdsProjection() {CustomerId = row.Id, CustomerName = row.Name}).Select(row => new TdsProjection() {CustomerId = row.CustomerId, CustomerName = row.CustomerName})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id, Name = customer2.Name}).Select(projection => new TdsProjection() {CustomerId = projection.Id, CustomerName = projection.Name}).Select(projection2 => new TdsProjection() {CustomerId = projection2.CustomerId, CustomerName = projection2.CustomerName})");
     }
 
     [Fact]
@@ -165,7 +260,7 @@ public sealed class TdsQueryEngineTests
             UpperName NameLength
             ALICE 5
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {UpperName = row.Name.ToUpperInvariant(), NameLength = row.Name.Length})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {UpperName = customer2.Name.ToUpperInvariant(), NameLength = customer2.Name.Length})");
     }
 
     [Fact]
@@ -198,7 +293,7 @@ public sealed class TdsQueryEngineTests
             UpperName
             ALICE
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {UpperName = row.Name.ToUpper()})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {UpperName = customer2.Name.ToUpper()})");
     }
 
     [Fact]
@@ -220,7 +315,7 @@ public sealed class TdsQueryEngineTests
             NameConcat SumId
             AliceAlice 2
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {NameConcat = Concat(row.Name, row.Name), SumId = (row.Id + row.Id)})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {NameConcat = Concat(customer2.Name, customer2.Name), SumId = (customer2.Id + customer2.Id)})");
     }
 
     [Fact]
@@ -242,7 +337,7 @@ public sealed class TdsQueryEngineTests
             Value
             Alice!
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {Value = Concat(row.Name, "!")})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {Value = Concat(customer2.Name, \"!\")})");
     }
 
     [Fact]
@@ -264,7 +359,7 @@ public sealed class TdsQueryEngineTests
             Value
             Alice!
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (row.Id == 1)).Select(row => new TdsProjection() {Value = Concat(row.Name, "!")})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {Value = Concat(customer2.Name, \"!\")})");
     }
 
     [Fact]
@@ -286,7 +381,7 @@ public sealed class TdsQueryEngineTests
             Value
             5
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (row.Id == 4)).Select(row => new TdsProjection() {Value = (row.Id + 1)})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 4)).Select(customer2 => new TdsProjection() {Value = (customer2.Id + 1)})");
     }
 
     [Fact]
@@ -308,7 +403,7 @@ public sealed class TdsQueryEngineTests
             Value
             3
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (row.Id == 4)).Select(row => new TdsProjection() {Value = (row.Id - 1)})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 4)).Select(customer2 => new TdsProjection() {Value = (customer2.Id - 1)})");
     }
 
     [Fact]
@@ -330,7 +425,7 @@ public sealed class TdsQueryEngineTests
             Value
             3
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (row.Id == 4)).Select(row => new TdsProjection() {Value = (row.Id - Convert(ConvertToTypeCore(Convert(1, Object), System.Int32), Int32))})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 4)).Select(customer2 => new TdsProjection() {Value = (customer2.Id - Convert(ConvertToTypeCore(Convert(1, Object), System.Int32), Int32))})");
     }
 
     [Fact]
@@ -352,7 +447,7 @@ public sealed class TdsQueryEngineTests
             Value
             8
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (row.Id == 4)).Select(row => new TdsProjection() {Value = (row.Id * 2)})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 4)).Select(customer2 => new TdsProjection() {Value = (customer2.Id * 2)})");
     }
 
     [Fact]
@@ -374,7 +469,7 @@ public sealed class TdsQueryEngineTests
             Value
             2
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (row.Id == 4)).Select(row => new TdsProjection() {Value = (row.Id / 2)})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 4)).Select(customer2 => new TdsProjection() {Value = (customer2.Id / 2)})");
     }
 
     [Fact]
@@ -396,7 +491,7 @@ public sealed class TdsQueryEngineTests
             Value
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (row.Id == 4)).Select(row => new TdsProjection() {Value = (row.Id % 3)})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 4)).Select(customer2 => new TdsProjection() {Value = (customer2.Id % 3)})");
     }
 
     [Fact]
@@ -442,7 +537,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id > 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -464,7 +559,7 @@ public sealed class TdsQueryEngineTests
             Id
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id == 2)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 2)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -487,7 +582,7 @@ public sealed class TdsQueryEngineTests
             1
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id != 2)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id != 2)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -509,7 +604,7 @@ public sealed class TdsQueryEngineTests
             Id
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 2)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id > 2)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -532,7 +627,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id >= 2)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id >= 2)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -554,7 +649,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id < 2)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id < 2)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -577,7 +672,7 @@ public sealed class TdsQueryEngineTests
             1
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id <= 2)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id <= 2)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -599,7 +694,7 @@ public sealed class TdsQueryEngineTests
             Id
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => ((row.Id + row.Id) == 4)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Id + customer.Id) == 4)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -621,7 +716,7 @@ public sealed class TdsQueryEngineTests
             Id
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Name.Length == 3)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Name.Length == 3)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -643,7 +738,7 @@ public sealed class TdsQueryEngineTests
             Id
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => ((row.Id > 1) AndAlso (row.Id < 4))).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Id > 1) AndAlso (customer.Id < 4))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -666,7 +761,7 @@ public sealed class TdsQueryEngineTests
             1
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => ((row.Id == 1) OrElse (row.Id == 4))).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Id == 1) OrElse (customer.Id == 4))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -688,7 +783,7 @@ public sealed class TdsQueryEngineTests
             Id
             3
             """,
-            expectedMaterializedQueries: "NullableCustomer[].Where(row => (row.Name == null)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (nullableCustomer.Name == null)).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
     }
 
     [Fact]
@@ -711,7 +806,7 @@ public sealed class TdsQueryEngineTests
             1
             2
             """,
-            expectedMaterializedQueries: "NullableCustomer[].Where(row => Not((row.Name == null))).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => Not((nullableCustomer.Name == null))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
     }
 
     [Fact]
@@ -734,7 +829,7 @@ public sealed class TdsQueryEngineTests
             1
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => new [] {1, 4}.Contains(row.Id)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => new [] {1, 4}.Contains(customer.Id)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -758,7 +853,7 @@ public sealed class TdsQueryEngineTests
             1
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => Order[].Select(order => order.Id).Contains(row.Id)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => Order[].Select(order => order.Id).Contains(customer.Id)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -781,7 +876,7 @@ public sealed class TdsQueryEngineTests
             Id
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => Not(Order[].Select(order => order.Id).Contains(row.Id))).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => Not(Order[].Select(order => order.Id).Contains(customer.Id))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -808,7 +903,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => Order[].Where(order => (order.Id == 1)).Any()).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => Order[].Where(order => (order.Id == 1)).Any()).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
     }
 
     [Fact]
@@ -835,7 +930,60 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => Not(Order[].Where(row => (row.Id == 999)).Any())).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => Not(Order[].Where(order => (order.Id == 999)).Any())).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_CorrelatedExistsSubquery_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id
+                    FROM customers c
+                    WHERE EXISTS (
+                        SELECT 1
+                        FROM orders o
+                        WHERE o.Id = c.Id)
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => Order[].Where(order => (order.Id == customer.Id)).Any()).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_CorrelatedInSubquery_ReturnsFilteredRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id
+                    FROM customers c
+                    WHERE c.Id IN (SELECT o.Id
+                    FROM orders o
+                    WHERE o.Id = c.Id)
+                    ORDER BY c.Id
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => Order[].Where(order => (order.Id == customer.Id)).Select(order2 => order2.Id).Contains(customer.Id)).OrderBy(customer2 => customer2.Id).Select(customer3 => new TdsProjection() {Id = customer3.Id})");
     }
 
     [Fact]
@@ -858,7 +1006,7 @@ public sealed class TdsQueryEngineTests
             1
             2
             """,
-            expectedMaterializedQueries: "Customer[].OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id}).Take(2)");
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id}).Take(2)");
     }
 
     [Fact]
@@ -883,7 +1031,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].OrderBy(row => row.Id).Skip(1).Take(2).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Skip(1).Take(2).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -907,7 +1055,7 @@ public sealed class TdsQueryEngineTests
             2
             1
             """,
-            expectedMaterializedQueries: "Customer[].OrderByDescending(row => row.Name).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].OrderByDescending(customer => customer.Name).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -932,7 +1080,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Join(Customer[], left => left.Id, right => right.Id, (left, right) => new TdsCarrier() {c1 = left, c2 = right}).Select(row => new TdsProjection() {Id = row.c1.Id})");
+            expectedMaterializedQueries: "Customer[].Join(Customer[], customer => customer.Id, customer2 => customer2.Id, (customer3, customer4) => new TdsCarrier() {c1 = customer3, c2 = customer4}).Select(carrier => new TdsProjection() {Id = carrier.c1.Id})");
     }
 
     [Fact]
@@ -957,7 +1105,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id}).OrderBy(row => row.Id).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id > 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id}).OrderBy(projection => projection.Id).Select(projection2 => new TdsProjection() {Id = projection2.Id})");
     }
 
     [Fact]
@@ -983,7 +1131,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Join(Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id}), left => left.Id, right => right.Id, (left, right) => new TdsCarrier() {c = left, d = right}).OrderBy(row => row.c.Id).Select(row => new TdsProjection() {Id = row.c.Id})");
+            expectedMaterializedQueries: "Customer[].Join(Customer[].Where(customer => (customer.Id > 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id}), customer3 => customer3.Id, projection => projection.Id, (customer4, projection2) => new TdsCarrier() {c = customer4, d = projection2}).OrderBy(carrier => carrier.c.Id).Select(carrier2 => new TdsProjection() {Id = carrier2.c.Id})");
     }
 
     [Fact]
@@ -1006,7 +1154,7 @@ public sealed class TdsQueryEngineTests
             North
             South
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Select(group => new TdsProjection() {Region = group.Key})");
     }
 
     [Fact]
@@ -1031,7 +1179,7 @@ public sealed class TdsQueryEngineTests
             North 20 1
             South 5 1
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => new TdsCarrier() {Region = row.Region, Amount = row.Amount}).Select(group => new TdsProjection() {Region = group.Key.Region, Amount = group.Key.Amount, Count = group.Count()}).OrderBy(row => row.Region).ThenBy(row => row.Amount)");
+            expectedMaterializedQueries: "Order[].GroupBy(order => new TdsCarrier() {Region = order.Region, Amount = order.Amount}).Select(group => new TdsProjection() {Region = group.Key.Region, Amount = group.Key.Amount, Count = group.Count()}).OrderBy(projection => projection.Region).ThenBy(projection2 => projection2.Amount)");
     }
 
     [Fact]
@@ -1055,7 +1203,7 @@ public sealed class TdsQueryEngineTests
             South 1
             North 2
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()}).OrderByDescending(row => row.Region)");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()}).OrderByDescending(projection => projection.Region)");
     }
 
     [Fact]
@@ -1078,7 +1226,7 @@ public sealed class TdsQueryEngineTests
             Region Count
             North 2
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() > 1)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Where(group => (group.Count() > 1)).Select(group2 => new TdsProjection() {Region = group2.Key, Count = group2.Count()})");
     }
 
     [Fact]
@@ -1103,7 +1251,7 @@ public sealed class TdsQueryEngineTests
             North 2
             South 1
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => ((group.Count() == 1) OrElse (group.Count() == 2))).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()}).OrderBy(row => row.Region)");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Where(group => ((group.Count() == 1) OrElse (group.Count() == 2))).Select(group2 => new TdsProjection() {Region = group2.Key, Count = group2.Count()}).OrderBy(projection => projection.Region)");
     }
 
     [Fact]
@@ -1126,7 +1274,7 @@ public sealed class TdsQueryEngineTests
             Region Count
             North 2
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() == 2)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Where(group => (group.Count() == 2)).Select(group2 => new TdsProjection() {Region = group2.Key, Count = group2.Count()})");
     }
 
     [Fact]
@@ -1149,7 +1297,7 @@ public sealed class TdsQueryEngineTests
             Region Count
             South 1
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() != 2)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Where(group => (group.Count() != 2)).Select(group2 => new TdsProjection() {Region = group2.Key, Count = group2.Count()})");
     }
 
     [Fact]
@@ -1172,7 +1320,7 @@ public sealed class TdsQueryEngineTests
             Region Count
             North 2
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() > 1)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Where(group => (group.Count() > 1)).Select(group2 => new TdsProjection() {Region = group2.Key, Count = group2.Count()})");
     }
 
     [Fact]
@@ -1195,7 +1343,7 @@ public sealed class TdsQueryEngineTests
             Region Count
             North 2
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() >= 2)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Where(group => (group.Count() >= 2)).Select(group2 => new TdsProjection() {Region = group2.Key, Count = group2.Count()})");
     }
 
     [Fact]
@@ -1218,7 +1366,7 @@ public sealed class TdsQueryEngineTests
             Region Count
             South 1
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() < 2)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Where(group => (group.Count() < 2)).Select(group2 => new TdsProjection() {Region = group2.Key, Count = group2.Count()})");
     }
 
     [Fact]
@@ -1241,7 +1389,7 @@ public sealed class TdsQueryEngineTests
             Region Count
             South 1
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Where(group => (group.Count() <= 1)).Select(group => new TdsProjection() {Region = group.Key, Count = group.Count()})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Where(group => (group.Count() <= 1)).Select(group2 => new TdsProjection() {Region = group2.Key, Count = group2.Count()})");
     }
 
     [Fact]
@@ -1264,7 +1412,7 @@ public sealed class TdsQueryEngineTests
             North 30
             South 5
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, TotalAmount = group.Sum(row => row.Amount)})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Select(group => new TdsProjection() {Region = group.Key, TotalAmount = group.Sum(order2 => order2.Amount)})");
     }
 
     [Fact]
@@ -1287,7 +1435,7 @@ public sealed class TdsQueryEngineTests
             North 10
             South 5
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, MinAmount = group.Min(row => row.Amount)})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Select(group => new TdsProjection() {Region = group.Key, MinAmount = group.Min(order2 => order2.Amount)})");
     }
 
     [Fact]
@@ -1310,7 +1458,7 @@ public sealed class TdsQueryEngineTests
             North 20
             South 5
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, MaxAmount = group.Max(row => row.Amount)})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Select(group => new TdsProjection() {Region = group.Key, MaxAmount = group.Max(order2 => order2.Amount)})");
     }
 
     [Fact]
@@ -1333,7 +1481,7 @@ public sealed class TdsQueryEngineTests
             North 15
             South 5
             """,
-            expectedMaterializedQueries: "Order[].GroupBy(row => row.Region).Select(group => new TdsProjection() {Region = group.Key, AvgAmount = group.Average(row => row.Amount)})");
+            expectedMaterializedQueries: "Order[].GroupBy(order => order.Region).Select(group => new TdsProjection() {Region = group.Key, AvgAmount = group.Average(order2 => order2.Amount)})");
     }
 
     [Fact]
@@ -1355,7 +1503,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (("  Alice".TrimStart() == "Alice") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((\"  Alice\".TrimStart() == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1377,7 +1525,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (("Alice  ".TrimEnd() == "Alice") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((\"Alice  \".TrimEnd() == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1399,7 +1547,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => (("  Alice  ".Trim() == "Alice") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((\"  Alice  \".Trim() == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1421,7 +1569,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((SubstringCore(row.Name, 0, 2) == "Al") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((SubstringCore(customer.Name, 0, 2) == \"Al\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1443,7 +1591,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((SubstringCore(row.Name, (row.Name.Length - 2), 2) == "ce") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((SubstringCore(customer.Name, (customer.Name.Length - 2), 2) == \"ce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1465,7 +1613,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((SubstringCore(row.Name, (2 - 1), 3) == "lic") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((SubstringCore(customer.Name, (2 - 1), 3) == \"lic\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1487,7 +1635,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((row.Name.Replace("li", "xx") == "Axxce") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Name.Replace(\"li\", \"xx\") == \"Axxce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1509,7 +1657,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((TranslateCore(row.Name, "Aie", "a13") == "al1c3") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((TranslateCore(customer.Name, \"Aie\", \"a13\") == \"al1c3\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1531,7 +1679,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((StuffCore(row.Name, 2, 2, "XX") == "AXXce") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((StuffCore(customer.Name, 2, 2, \"XX\") == \"AXXce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1553,7 +1701,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((StringEscapeCore("a"b", "json") == "a\u0022b") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((StringEscapeCore(\"a\"b\", \"json\") == \"a\\u0022b\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1575,7 +1723,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((FormatCore(Convert(row.Id, Object), "D4") == "0001") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((FormatCore(Convert(customer.Id, Object), \"D4\") == \"0001\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1597,7 +1745,7 @@ public sealed class TdsQueryEngineTests
             Id
             3
             """,
-            expectedMaterializedQueries: """NullableCustomer[].Where(row => ((row.Name ?? "fallback") == "fallback")).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name ?? \"fallback\") == \"fallback\")).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
     }
 
     [Fact]
@@ -1619,7 +1767,7 @@ public sealed class TdsQueryEngineTests
             Id
             3
             """,
-            expectedMaterializedQueries: """NullableCustomer[].Where(row => ((row.Name ?? "fallback") == "fallback")).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((nullableCustomer.Name ?? \"fallback\") == \"fallback\")).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
     }
 
     [Fact]
@@ -1641,7 +1789,7 @@ public sealed class TdsQueryEngineTests
             Id
             3
             """,
-            expectedMaterializedQueries: """NullableCustomer[].Where(row => (((row.Name ?? "fallback") ?? "other") == "fallback")).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => (((nullableCustomer.Name ?? \"fallback\") ?? \"other\") == \"fallback\")).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
     }
 
     [Fact]
@@ -1663,7 +1811,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((IIF((row.Name == "Alice"), null, row.Name) == null) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((IIF((customer.Name == \"Alice\"), null, customer.Name) == null) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1685,7 +1833,7 @@ public sealed class TdsQueryEngineTests
             Id
             2
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((IIF((row.Id > 1), "Y", "N") == "Y") AndAlso (row.Id == 2))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((IIF((customer.Id > 1), \"Y\", \"N\") == \"Y\") AndAlso (customer.Id == 2))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1707,7 +1855,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((IIF((2 == 1), "A", IIF((2 == 2), "B", IIF((2 == 3), "C", null))) == "B") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((IIF((2 == 1), \"A\", IIF((2 == 2), \"B\", IIF((2 == 3), \"C\", null))) == \"B\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1729,7 +1877,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Convert(ConvertToTypeCore(Convert(row.Id, Object), System.Int64), Int64) == 1) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Convert(ConvertToTypeCore(Convert(customer.Id, Object), System.Int64), Int64) == 1) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1751,7 +1899,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Convert(ConvertToTypeCore(Convert(row.Id, Object), System.String), String) == "1") AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Convert(ConvertToTypeCore(Convert(customer.Id, Object), System.String), String) == \"1\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1773,7 +1921,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Convert(TryConvertToTypeCore(Convert("1", Object), System.Int32), Nullable`1) == 1) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Convert(TryConvertToTypeCore(Convert(\"1\", Object), System.Int32), Nullable`1) == 1) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1795,7 +1943,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Convert(TryConvertToTypeCore(Convert("1", Object), System.Int32), Nullable`1) == 1) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Convert(TryConvertToTypeCore(Convert(\"1\", Object), System.Int32), Nullable`1) == 1) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1859,7 +2007,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((DateTime.UtcNow > Convert(ConvertToTypeCore(Convert("1970-01-01", Object), System.DateTime), DateTime)) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((DateTime.UtcNow > Convert(ConvertToTypeCore(Convert(\"1970-01-01\", Object), System.DateTime), DateTime)) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1881,7 +2029,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((DateTime.UtcNow > Convert(ConvertToTypeCore(Convert("1970-01-01", Object), System.DateTime), DateTime)) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((DateTime.UtcNow > Convert(ConvertToTypeCore(Convert(\"1970-01-01\", Object), System.DateTime), DateTime)) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1903,7 +2051,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((DateAddCore("day", 1, Convert(ConvertToTypeCore(Convert("2024-01-01", Object), System.DateTime), DateTime)) > Convert(ConvertToTypeCore(Convert("2024-01-01", Object), System.DateTime), DateTime)) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((DateAddCore(\"day\", 1, Convert(ConvertToTypeCore(Convert(\"2024-01-01\", Object), System.DateTime), DateTime)) > Convert(ConvertToTypeCore(Convert(\"2024-01-01\", Object), System.DateTime), DateTime)) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1925,7 +2073,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((DateDiffCore("day", Convert(ConvertToTypeCore(Convert("2024-01-01", Object), System.DateTime), DateTime), Convert(ConvertToTypeCore(Convert("2024-01-03", Object), System.DateTime), DateTime)) == 2) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((DateDiffCore(\"day\", Convert(ConvertToTypeCore(Convert(\"2024-01-01\", Object), System.DateTime), DateTime), Convert(ConvertToTypeCore(Convert(\"2024-01-03\", Object), System.DateTime), DateTime)) == 2) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1947,7 +2095,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((EoMonthCore(Convert(ConvertToTypeCore(Convert("2024-02-10", Object), System.DateTime), DateTime), 0).Day == 29) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((EoMonthCore(Convert(ConvertToTypeCore(Convert(\"2024-02-10\", Object), System.DateTime), DateTime), 0).Day == 29) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1969,7 +2117,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Convert(ConvertToTypeCore(Convert("2024-02-10", Object), System.DateTime), DateTime).Year == 2024) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Convert(ConvertToTypeCore(Convert(\"2024-02-10\", Object), System.DateTime), DateTime).Year == 2024) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1991,7 +2139,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Convert(ConvertToTypeCore(Convert("2024-02-10", Object), System.DateTime), DateTime).Month == 2) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Convert(ConvertToTypeCore(Convert(\"2024-02-10\", Object), System.DateTime), DateTime).Month == 2) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2013,7 +2161,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Convert(ConvertToTypeCore(Convert("2024-02-10", Object), System.DateTime), DateTime).Day == 10) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Convert(ConvertToTypeCore(Convert(\"2024-02-10\", Object), System.DateTime), DateTime).Day == 10) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2035,7 +2183,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Abs(-3) == 3) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Abs(-3) == 3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2057,7 +2205,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1) == 1.3) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2079,7 +2227,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Ceiling(Convert(ConvertToTypeCore(Convert(1.2, Object), System.Double), Double)) == 2) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Ceiling(Convert(ConvertToTypeCore(Convert(1.2, Object), System.Double), Double)) == 2) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2101,7 +2249,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Floor(Convert(ConvertToTypeCore(Convert(1.8, Object), System.Double), Double)) == 1) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Floor(Convert(ConvertToTypeCore(Convert(1.8, Object), System.Double), Double)) == 1) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2123,7 +2271,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Pow(Convert(ConvertToTypeCore(Convert(2, Object), System.Double), Double), Convert(ConvertToTypeCore(Convert(3, Object), System.Double), Double)) == 8) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Pow(Convert(ConvertToTypeCore(Convert(2, Object), System.Double), Double), Convert(ConvertToTypeCore(Convert(3, Object), System.Double), Double)) == 8) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2145,7 +2293,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Sqrt(Convert(ConvertToTypeCore(Convert(9, Object), System.Double), Double)) == 3) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Sqrt(Convert(ConvertToTypeCore(Convert(9, Object), System.Double), Double)) == 3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2167,7 +2315,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Exp(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) > 2) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Exp(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) > 2) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2189,7 +2337,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Log(Convert(ConvertToTypeCore(Convert(8, Object), System.Double), Double)) > 2) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Log(Convert(ConvertToTypeCore(Convert(8, Object), System.Double), Double)) > 2) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2211,7 +2359,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Sin(Convert(ConvertToTypeCore(Convert(0, Object), System.Double), Double)) == 0) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Sin(Convert(ConvertToTypeCore(Convert(0, Object), System.Double), Double)) == 0) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2233,7 +2381,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Cos(Convert(ConvertToTypeCore(Convert(0, Object), System.Double), Double)) == 1) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Cos(Convert(ConvertToTypeCore(Convert(0, Object), System.Double), Double)) == 1) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2255,7 +2403,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Tan(Convert(ConvertToTypeCore(Convert(0, Object), System.Double), Double)) == 0) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Tan(Convert(ConvertToTypeCore(Convert(0, Object), System.Double), Double)) == 0) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2277,7 +2425,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Asin(Convert(ConvertToTypeCore(Convert(0, Object), System.Double), Double)) == 0) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Asin(Convert(ConvertToTypeCore(Convert(0, Object), System.Double), Double)) == 0) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2299,7 +2447,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Acos(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) == 0) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Acos(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) == 0) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2321,7 +2469,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Atan(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) > 0) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Atan(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) > 0) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2343,7 +2491,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((Atan2(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double), Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) > 0) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Atan2(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double), Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) > 0) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2365,7 +2513,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: """Customer[].Where(row => ((CotCore(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) > 0) AndAlso (row.Id == 1))).Select(row => new TdsProjection() {Id = row.Id})""");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((CotCore(Convert(ConvertToTypeCore(Convert(1, Object), System.Double), Double)) > 0) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2389,7 +2537,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].Where(row => (row.Id > 1)).Select(row => new TdsProjection() {Id = row.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id > 1)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]

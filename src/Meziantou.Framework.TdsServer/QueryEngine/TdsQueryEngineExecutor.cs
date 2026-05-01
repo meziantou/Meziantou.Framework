@@ -152,18 +152,28 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var cteRoots = BuildCteRoots(selectStatement.QueryWithClause, parameters);
+        IQueryable query;
         if (selectStatement.SelectSpecification.QueryExpression is SqlQuerySpecification querySpecification)
         {
-            return TranslateQuerySpecification(querySpecification, selectStatement.SelectSpecification.OrderByClause, parameters, cteRoots);
+            query = TranslateQuerySpecification(querySpecification, selectStatement.SelectSpecification.OrderByClause, parameters, cteRoots);
         }
-
-        var query = TranslateQueryExpression(selectStatement.SelectSpecification.QueryExpression, parameters, cteRoots);
-        if (selectStatement.SelectSpecification.OrderByClause is not null)
+        else
         {
-            query = ApplyOrderBy(CreateProjectionSource(query), selectStatement.SelectSpecification.OrderByClause, parameters).Query;
+            query = TranslateQueryExpression(selectStatement.SelectSpecification.QueryExpression, parameters, cteRoots);
+            if (selectStatement.SelectSpecification.OrderByClause is not null)
+            {
+                query = ApplyOrderBy(CreateProjectionSource(query), selectStatement.SelectSpecification.OrderByClause, parameters).Query;
+            }
         }
 
-        return query;
+        return RenameQueryParameters(query);
+    }
+
+    private static IQueryable RenameQueryParameters(IQueryable query)
+    {
+        var visitor = new ParameterNameVisitor();
+        var expression = visitor.Visit(query.Expression);
+        return expression is null ? query : query.Provider.CreateQuery(expression);
     }
 
     private IReadOnlyDictionary<string, TdsQueryRoot> BuildCteRoots(SqlQueryWithClause? withClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
@@ -752,7 +762,7 @@ internal sealed class TdsQueryEngineExecutor
             SqlComparisonBooleanExpression comparison => BuildComparison(comparison, aliases, parameter, parameters),
             SqlInBooleanExpression inExpression => BuildInBoolean(inExpression, aliases, parameter, parameters, cteRoots),
             SqlIsNullBooleanExpression isNullExpression => BuildIsNullBoolean(isNullExpression, aliases, parameter, parameters),
-            SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, parameters, cteRoots),
+            SqlExistsBooleanExpression existsExpression => BuildExistsBoolean(existsExpression, aliases, parameter, parameters, cteRoots),
             SqlNotBooleanExpression notExpression => Expression.Not(BuildBoolean(notExpression.Expression, aliases, parameter, parameters, cteRoots)),
             SqlBinaryBooleanExpression { Operator: SqlBooleanOperatorType.And } binary => Expression.AndAlso(
                 BuildBoolean(binary.Left, aliases, parameter, parameters, cteRoots),
@@ -792,7 +802,7 @@ internal sealed class TdsQueryEngineExecutor
         Expression containsExpression = expression.ComparisonValue switch
         {
             SqlInBooleanExpressionCollectionValue collectionValue => BuildInCollectionExpression(collectionValue, inExpression, aliases, parameter, parameters),
-            SqlInBooleanExpressionQueryValue queryValue => BuildInSubqueryExpression(queryValue, inExpression, parameters, cteRoots),
+            SqlInBooleanExpressionQueryValue queryValue => BuildInSubqueryExpression(queryValue, inExpression, aliases, parameter, parameters, cteRoots),
             _ => throw new TdsQueryEngineException("Only IN collections and simple IN subqueries are supported."),
         };
 
@@ -814,9 +824,9 @@ internal sealed class TdsQueryEngineExecutor
             inExpression);
     }
 
-    private MethodCallExpression BuildInSubqueryExpression(SqlInBooleanExpressionQueryValue queryValue, Expression inExpression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    private MethodCallExpression BuildInSubqueryExpression(SqlInBooleanExpressionQueryValue queryValue, Expression inExpression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
     {
-        var subquery = TranslateInSubquery(queryValue.Value, inExpression.Type, parameters, cteRoots);
+        var subquery = TranslateInSubquery(queryValue.Value, inExpression.Type, aliases, parameter, parameters, cteRoots);
         return Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Contains),
@@ -825,9 +835,9 @@ internal sealed class TdsQueryEngineExecutor
             inExpression);
     }
 
-    private MethodCallExpression BuildExistsBoolean(SqlExistsBooleanExpression expression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    private MethodCallExpression BuildExistsBoolean(SqlExistsBooleanExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
     {
-        var subquery = TranslateExistsSubquery(expression.QueryExpression, parameters, cteRoots);
+        var subquery = TranslateExistsSubquery(expression.QueryExpression, aliases, parameter, parameters, cteRoots);
         return Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Any),
@@ -848,7 +858,7 @@ internal sealed class TdsQueryEngineExecutor
         return expression.HasNot ? Expression.Not(isNullExpression) : isNullExpression;
     }
 
-    private IQueryable TranslateInSubquery(SqlQueryExpression queryExpression, Type targetType, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    private IQueryable TranslateInSubquery(SqlQueryExpression queryExpression, Type targetType, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
     {
         if (queryExpression is not SqlQuerySpecification querySpecification)
         {
@@ -874,13 +884,22 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var source = BuildSource(querySpecification.FromClause, cteRoots, parameters);
+        var parameter = Expression.Parameter(source.RowType, GetUniqueParameterName(GetTypeParameterName(source.RowType), outerParameter.Name));
+        var scopedAliases = CreateScopedAliases(source.Aliases, outerAliases, outerParameter);
         if (querySpecification.WhereClause?.Expression is not null)
         {
-            source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters, cteRoots);
+            var predicate = BuildBoolean(querySpecification.WhereClause.Expression, scopedAliases, parameter, parameters, cteRoots);
+            var whereCall = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Where),
+                [source.RowType],
+                source.Query.Expression,
+                Expression.Quote(Expression.Lambda(predicate, parameter)));
+
+            source = source with { Query = source.Query.Provider.CreateQuery(whereCall) };
         }
 
-        var parameter = Expression.Parameter(source.RowType, "row");
-        var value = BuildScalar(selectExpression.Expression, source.Aliases, parameter, parameters, targetType);
+        var value = BuildScalar(selectExpression.Expression, scopedAliases, parameter, parameters, targetType);
         if (value.Type != targetType)
         {
             value = ConvertExpression(value, targetType);
@@ -896,7 +915,7 @@ internal sealed class TdsQueryEngineExecutor
         return source.Query.Provider.CreateQuery(call);
     }
 
-    private IQueryable TranslateExistsSubquery(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
+    private IQueryable TranslateExistsSubquery(SqlQueryExpression queryExpression, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
     {
         if (queryExpression is not SqlQuerySpecification querySpecification)
         {
@@ -913,12 +932,78 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var source = BuildSource(querySpecification.FromClause, cteRoots, parameters);
+        var parameter = Expression.Parameter(source.RowType, GetUniqueParameterName(GetTypeParameterName(source.RowType), outerParameter.Name));
+        var scopedAliases = CreateScopedAliases(source.Aliases, outerAliases, outerParameter);
         if (querySpecification.WhereClause?.Expression is not null)
         {
-            source = ApplyWhere(source, querySpecification.WhereClause.Expression, parameters, cteRoots);
+            var predicate = BuildBoolean(querySpecification.WhereClause.Expression, scopedAliases, parameter, parameters, cteRoots);
+            var whereCall = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Where),
+                [source.RowType],
+                source.Query.Expression,
+                Expression.Quote(Expression.Lambda(predicate, parameter)));
+
+            source = source with { Query = source.Query.Provider.CreateQuery(whereCall) };
         }
 
         return source.Query;
+    }
+
+    private static IReadOnlyDictionary<string, AliasBinding> CreateScopedAliases(IReadOnlyDictionary<string, AliasBinding> sourceAliases, IReadOnlyDictionary<string, AliasBinding> outerAliases, ParameterExpression outerParameter)
+    {
+        var aliases = new Dictionary<string, AliasBinding>(sourceAliases, StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, binding) in outerAliases)
+        {
+            if (aliases.ContainsKey(name))
+            {
+                continue;
+            }
+
+            aliases[name] = new AliasBinding(binding.Type, _ => binding.Access(outerParameter), IsOuter: true);
+        }
+
+        return aliases;
+    }
+
+    private static string GetTypeParameterName(Type type)
+    {
+        var name = type.Name;
+        var genericMarkerIndex = name.IndexOf('`');
+        if (genericMarkerIndex >= 0)
+        {
+            name = name[..genericMarkerIndex];
+        }
+
+        if (name.StartsWith("TdsProjection", StringComparison.Ordinal))
+        {
+            return "projection";
+        }
+
+        if (name.StartsWith("TdsCarrier", StringComparison.Ordinal))
+        {
+            return "carrier";
+        }
+
+        if (string.Equals(name, "IGrouping", StringComparison.Ordinal))
+        {
+            return "group";
+        }
+
+        return name.Length == 0 ? "value" : char.ToLowerInvariant(name[0]) + name[1..];
+    }
+
+    private static string GetUniqueParameterName(string baseName, params string?[] usedNames)
+    {
+        var name = baseName;
+        var index = 2;
+        while (usedNames.Any(usedName => string.Equals(usedName, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            name = baseName + index.ToString(CultureInfo.InvariantCulture);
+            index++;
+        }
+
+        return name;
     }
 
     private Expression BuildGroupBoolean(SqlBooleanExpression expression, GroupedQuerySource source, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
@@ -1489,7 +1574,9 @@ internal sealed class TdsQueryEngineExecutor
         }
         else
         {
-            binding = aliases.Values.SingleOrDefault(candidate => FindMember(candidate.Type, columnName) is not null);
+            var localBindings = aliases.Values.Where(candidate => !candidate.IsOuter).ToArray();
+            var candidates = localBindings.Length == 0 ? aliases.Values : localBindings;
+            binding = candidates.SingleOrDefault(candidate => FindMember(candidate.Type, columnName) is not null);
             if (binding is null)
             {
                 throw new TdsQueryEngineException($"Ambiguous or unknown column '{columnName}'.");
@@ -1981,9 +2068,48 @@ internal sealed class TdsQueryEngineExecutor
         return column is SqlColumnRefExpression columnRef ? columnRef.ColumnName.Value : column.MultipartIdentifier[column.MultipartIdentifier.Count - 1].Value;
     }
 
+    private sealed class ParameterNameVisitor : ExpressionVisitor
+    {
+        private Dictionary<ParameterExpression, ParameterExpression> _scope = [];
+        private readonly Dictionary<string, int> _nameCounters = new(StringComparer.OrdinalIgnoreCase);
+
+        protected override Expression VisitLambda<T>(Expression<T> node)
+        {
+            var previousScope = _scope;
+            _scope = new Dictionary<ParameterExpression, ParameterExpression>(previousScope);
+
+            var renamedParameters = new ParameterExpression[node.Parameters.Count];
+            for (var i = 0; i < node.Parameters.Count; i++)
+            {
+                var parameter = node.Parameters[i];
+                var renamedParameter = CreateRenamedParameter(parameter.Type);
+                _scope[parameter] = renamedParameter;
+                renamedParameters[i] = renamedParameter;
+            }
+
+            var body = Visit(node.Body);
+            _scope = previousScope;
+            return Expression.Lambda(body, node.Name, node.TailCall, renamedParameters);
+        }
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            return _scope.TryGetValue(node, out var renamedParameter) ? renamedParameter : node;
+        }
+
+        private ParameterExpression CreateRenamedParameter(Type parameterType)
+        {
+            var baseName = GetTypeParameterName(parameterType);
+            var nextIndex = _nameCounters.TryGetValue(baseName, out var currentIndex) ? currentIndex + 1 : 1;
+            _nameCounters[baseName] = nextIndex;
+            var parameterName = nextIndex == 1 ? baseName : baseName + nextIndex.ToString(CultureInfo.InvariantCulture);
+            return Expression.Parameter(parameterType, parameterName);
+        }
+    }
+
     private sealed record QuerySource(IQueryable Query, Type RowType, IReadOnlyDictionary<string, AliasBinding> Aliases);
 
     private sealed record GroupedQuerySource(IQueryable Query, Type GroupType, Type SourceRowType, IReadOnlyDictionary<string, AliasBinding> Keys, IReadOnlyDictionary<string, AliasBinding> Aliases);
 
-    private sealed record AliasBinding(Type Type, Func<Expression, Expression> Access);
+    private sealed record AliasBinding(Type Type, Func<Expression, Expression> Access, bool IsOuter = false);
 }

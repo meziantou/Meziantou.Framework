@@ -108,8 +108,7 @@ public static class InlineSnapshot
 
         var normalizedActual = settings.SnapshotComparer.NormalizeValue(actual);
         var normalizedExpected = settings.SnapshotComparer.NormalizeValue(expected);
-        CallerContext? callerContext = null;
-        CallerContext GetCallerContext() => callerContext ??= CallerContext.Get(settings, filePath, lineNumber);
+        CallerContext GetCallerContext() => CallerContext.Get(settings, filePath, lineNumber);
 
         if (!settings.SnapshotComparer.AreEqual(normalizedActual, normalizedExpected))
         {

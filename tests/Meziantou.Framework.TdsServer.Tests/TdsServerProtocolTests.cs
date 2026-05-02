@@ -2,6 +2,7 @@ using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Meziantou.Framework.Tds;
@@ -133,6 +134,46 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(123, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
         Assert.Contains(Marker, capturedContext.CommandText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SqlClient_TextQuery_UserContext_FromAuthentication_IsAvailableInQueryContext()
+    {
+        const string Marker = "TextQueryUserContextMarker";
+        const string UserId = "42";
+        var queryUserIdTask = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master", CreateUserContext(UserId))),
+            (context, cancellationToken) =>
+            {
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
+                {
+                    queryUserIdTask.TrySetResult(context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier));
+                    return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+                }
+
+                return ValueTask.FromResult(new TdsQueryResult());
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT 1 /* {Marker} */";
+
+        var result = await command.ExecuteScalarAsync();
+        var capturedUserId = await queryUserIdTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
+        Assert.Equal(UserId, capturedUserId);
     }
 
     [Fact]
@@ -323,6 +364,49 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(TdsQueryRequestType.Rpc, capturedContext.RequestType);
         Assert.Equal(procedureName, capturedContext.ProcedureName, StringComparer.OrdinalIgnoreCase);
         Assert.Empty(capturedContext.Parameters);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
+    public async Task SqlClient_StoredProcedure_UserContext_FromAuthentication_IsAvailableInQueryContext()
+    {
+        const string UserId = "42";
+        var procedureName = "proc_user_context_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+        var queryUserIdTask = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master", CreateUserContext(UserId))),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == TdsQueryRequestType.Rpc &&
+                    string.Equals(context.ProcedureName, procedureName, StringComparison.OrdinalIgnoreCase))
+                {
+                    queryUserIdTask.TrySetResult(context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier));
+                    return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+                }
+
+                return ValueTask.FromResult(new TdsQueryResult());
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = procedureName;
+
+        var result = await command.ExecuteScalarAsync();
+        var capturedUserId = await queryUserIdTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
+        Assert.Equal(UserId, capturedUserId);
     }
 
     [Fact]
@@ -697,6 +781,18 @@ public sealed class TdsServerProtocolTests
         var result = new TdsQueryResult();
         result.ResultSets.Add(resultSet);
         return result;
+    }
+
+    private static ClaimsPrincipal CreateUserContext(string userId)
+    {
+        var identity = new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(ClaimTypes.Name, "test-user"),
+        ],
+        authenticationType: "Test");
+
+        return new ClaimsPrincipal(identity);
     }
 
     private static async Task<int> ExecuteScalarAsync(int port, string encrypt)

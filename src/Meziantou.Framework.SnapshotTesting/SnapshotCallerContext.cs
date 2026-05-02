@@ -17,11 +17,6 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
         "TestMethodAttribute",
     };
 
-    internal static void RegisterSourceRootMapping(string mappedPath, string realPath)
-    {
-        CallerContextUtilities.RegisterSourceRootMapping(mappedPath, realPath);
-    }
-
     public static SnapshotCallerContext Create(string? filePath, int lineNumber, string? memberName)
     {
         var stackTrace = new StackTrace(fNeedFileInfo: true);

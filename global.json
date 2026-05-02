@@ -4,7 +4,6 @@
     "rollForward": "latestFeature"
   },
   "msbuild-sdks": {
-    "Microsoft.Build.NoTargets": "3.7.0",
     "Microsoft.Build.Traversal": "4.1.82",
     "Meziantou.NET.Sdk": "1.0.83",
     "Meziantou.NET.Sdk.BlazorWebAssembly": "1.0.83",

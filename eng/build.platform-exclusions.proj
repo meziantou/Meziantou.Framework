@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Remove="../src/Meziantou.Framework.SnapshotTesting.Common/Meziantou.Framework.SnapshotTesting.Common.csproj" />
     <ProjectReference Remove="../tests/Trimmable/Trimmable.csproj" />
     <ProjectReference Remove="../tests/Trimmable.Wpf/Trimmable.Wpf.csproj" />
   </ItemGroup>

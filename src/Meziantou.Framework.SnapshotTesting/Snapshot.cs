@@ -7,6 +7,12 @@ public static class Snapshot
 {
     public static AsyncLocal<SnapshotTestContext?> TestContext { get; } = new();
 
+    /// <summary>
+    /// Registers a deterministic source-root mapping so generated paths (for example <c>/_/</c>)
+    /// can be resolved back to real source files on disk.
+    /// </summary>
+    /// <param name="mappedPath">Deterministic mapped prefix emitted by the compiler.</param>
+    /// <param name="realPath">Real source-root path on disk.</param>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static void RegisterSourceRootMapping(string mappedPath, string realPath)
     {

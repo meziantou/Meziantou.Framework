@@ -59,6 +59,19 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void Validate_DoesNotComputeCallerContextWhenSnapshotMatches()
+    {
+        var exception = Record.Exception(() => InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "{}", "invalid\0path", 1));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void Validate_ComputesCallerContextWhenSnapshotDiffers()
+    {
+        Assert.Throws<ArgumentException>(() => InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "invalid snapshot", "invalid\0path", 1));
+    }
+
+    [Fact]
     public async Task UpdateSnapshotUsingQuotedString_WithSettings()
     {
         await AssertSnapshot(

@@ -90,7 +90,7 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceFilePath);
 
         if (CallerContextUtilities.TryResolveSourceFilePath(sourceFilePath, out var resolvedSourceFilePath))
-            return FullPath.FromPath(resolvedSourceFilePath);
+            return resolvedSourceFilePath;
 
         throw new SnapshotException($"Cannot find source file path '{sourceFilePath}'.");
     }

@@ -63,27 +63,39 @@ internal static class CallerContextUtilities
         SourceRootMappings[mappedPath] = realPath;
     }
 
-    internal static bool TryResolveSourceFilePath(string sourceFilePath, [NotNullWhen(true)] out string? resolvedPath)
+    internal static FullPath? ResolveSourceFilePath(string? sourceFilePath, bool fallbackToOriginalPath)
+    {
+        if (sourceFilePath is null)
+            return null;
+
+        if (TryResolveSourceFilePath(sourceFilePath, out var resolvedPath))
+            return FullPath.FromPath(resolvedPath);
+
+        return fallbackToOriginalPath ? FullPath.FromPath(sourceFilePath) : null;
+    }
+
+    internal static bool TryResolveSourceFilePath(string sourceFilePath, [NotNullWhen(true)] out FullPath resolvedPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceFilePath);
 
-        if (File.Exists(sourceFilePath))
+        var result = FullPath.FromPath(sourceFilePath);
+        if (File.Exists(result))
         {
-            resolvedPath = sourceFilePath;
+            resolvedPath = result;
             return true;
         }
 
         var relativePath = TryGetPathMappedRelativePath(sourceFilePath);
         if (relativePath is null)
         {
-            resolvedPath = null;
+            resolvedPath = default;
             return false;
         }
 
         var normalizedRelativePath = relativePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
         foreach (var realRoot in SourceRootMappings.Values)
         {
-            var candidatePath = Path.Combine(realRoot, normalizedRelativePath);
+            var candidatePath = FullPath.Combine(realRoot, normalizedRelativePath);
             if (File.Exists(candidatePath))
             {
                 resolvedPath = candidatePath;
@@ -91,7 +103,7 @@ internal static class CallerContextUtilities
             }
         }
 
-        resolvedPath = null;
+        resolvedPath = default;
         return false;
     }
 

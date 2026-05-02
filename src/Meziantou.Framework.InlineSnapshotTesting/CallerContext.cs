@@ -67,8 +67,8 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
             throw new InlineSnapshotException($"Cannot find the method to update in the call stack. Be sure at least one method from the stack is decorated with '{nameof(InlineSnapshotAssertionAttribute)}'.");
 
         var pdbFileName = callerFrame.GetFileName();
-        var stackTraceFilePath = ResolveSourceFilePath(pdbFileName);
-        var callerFilePath = ResolveSourceFilePath(filePath);
+        var stackTraceFilePath = CallerContextUtilities.ResolveSourceFilePath(pdbFileName, fallbackToOriginalPath: true);
+        var callerFilePath = CallerContextUtilities.ResolveSourceFilePath(filePath, fallbackToOriginalPath: true);
 
         if (settings.ValidateSourceFilePathUsingPdbInfoWhenAvailable && stackTraceFilePath is not null && callerFilePath is not null && stackTraceFilePath != callerFilePath)
         {
@@ -179,17 +179,6 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
         }
 
         return formats;
-    }
-
-    internal static FullPath? ResolveSourceFilePath(string? sourceFilePath)
-    {
-        if (sourceFilePath is null)
-            return null;
-
-        if (CallerContextUtilities.TryResolveSourceFilePath(sourceFilePath, out var resolvedPath))
-            return FullPath.FromPath(resolvedPath);
-
-        return FullPath.FromPath(sourceFilePath);
     }
 
     private static Version? GetCSharpLanguageVersionFromAssemblyLocation(string assemblyLocation)

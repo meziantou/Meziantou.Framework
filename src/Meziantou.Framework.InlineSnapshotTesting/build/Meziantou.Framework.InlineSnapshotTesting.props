@@ -1,62 +1,21 @@
 <Project>
+  <PropertyGroup>
+    <_MeziantouSharedSourceRootPropsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'Meziantou.Framework.SnapshotTesting', 'common', 'Meziantou.Framework.SourceRootRegistration.props'))</_MeziantouSharedSourceRootPropsPath>
+    <_MeziantouSourceRootGeneratedFileName>InlineSnapshotTestingSourceRoot.g.cs</_MeziantouSourceRootGeneratedFileName>
+    <_MeziantouSourceRootRegistrationMethod>global::Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.RegisterSourceRootMapping</_MeziantouSourceRootRegistrationMethod>
+    <_MeziantouSourceRootAssemblyMetadataName>InlineSnapshotTestingSourceRootMappings</_MeziantouSourceRootAssemblyMetadataName>
+    <_MeziantouSourceRootInitializerClassName>InlineSnapshotTestingSourceRootInitializer</_MeziantouSourceRootInitializerClassName>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.props')" />
+  <Import Project="$(_MeziantouSharedSourceRootPropsPath)"
+          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.props') and Exists('$(_MeziantouSharedSourceRootPropsPath)')" />
+
   <Target Name="GenerateInlineSnapshotTestingSourceRoots"
           DependsOnTargets="InitializeSourceRootMappedPaths"
           BeforeTargets="CoreCompile"
           Condition="'$(InlineSnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'">
-
-    <PropertyGroup>
-      <_InlineSnapshotTestingSourceRootFile>$(IntermediateOutputPath)InlineSnapshotTestingSourceRoot.g.cs</_InlineSnapshotTestingSourceRootFile>
-      <_InlineSnapshotTestingSourceRootNamespace Condition="'$(RootNamespace)' != ''">$(RootNamespace)</_InlineSnapshotTestingSourceRootNamespace>
-      <_InlineSnapshotTestingSourceRootNamespace Condition="'$(_InlineSnapshotTestingSourceRootNamespace)' == ''">$(MSBuildProjectName)</_InlineSnapshotTestingSourceRootNamespace>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_InlineSnapshotTestingSourceRoot Include="@(SourceRoot)"
-          Condition="'%(SourceRoot.NestedRoot)' == '' and '%(SourceRoot.MappedPath)' != ''">
-        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
-      </_InlineSnapshotTestingSourceRoot>
-    </ItemGroup>
-
-    <ItemGroup>
-      <_InlineSnapshotTestingSourceRootRegistrationLines
-          Include="@(_InlineSnapshotTestingSourceRoot->'        global::Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.RegisterSourceRootMapping(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'@(_InlineSnapshotTestingSourceRootRegistrationLines)' != ''">
-      <_InlineSnapshotTestingSourceRootFileLines Include="// &lt;auto-generated/&gt;" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="using System.Runtime.CompilerServices%3B" />
-      <_InlineSnapshotTestingSourceRootFileLines Include=" " />
-      <_InlineSnapshotTestingSourceRootFileLines Include="[assembly: System.Reflection.AssemblyMetadata(%22InlineSnapshotTestingSourceRootMappings%22, %22generated%22)]" />
-      <_InlineSnapshotTestingSourceRootFileLines Include=" " />
-      <_InlineSnapshotTestingSourceRootFileLines Include="namespace $(_InlineSnapshotTestingSourceRootNamespace)%3B" />
-      <_InlineSnapshotTestingSourceRootFileLines Include=" " />
-      <_InlineSnapshotTestingSourceRootFileLines Include="[System.CodeDom.Compiler.GeneratedCode(%22Meziantou.Framework.SourceRootRegistration%22, %22%22)]" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="internal static class InlineSnapshotTestingSourceRootInitializer" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="{" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="    [ModuleInitializer]" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="    internal static void Initialize()" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="    {" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="@(_InlineSnapshotTestingSourceRootRegistrationLines)" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="    }" />
-      <_InlineSnapshotTestingSourceRootFileLines Include="}" />
-    </ItemGroup>
-
-    <WriteLinesToFile
-        File="$(_InlineSnapshotTestingSourceRootFile)"
-        Lines="@(_InlineSnapshotTestingSourceRootFileLines)"
-        Overwrite="true"
-        WriteOnlyWhenDifferent="true"
-        Condition="'@(_InlineSnapshotTestingSourceRootFileLines)' != ''" />
-
-    <ItemGroup Condition="'@(_InlineSnapshotTestingSourceRootFileLines)' != ''">
-      <Compile Include="$(_InlineSnapshotTestingSourceRootFile)" />
-      <EmbedInBinlog Include="$(_InlineSnapshotTestingSourceRootFile)" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <_InlineSnapshotTestingSourceRoot Remove="@(_InlineSnapshotTestingSourceRoot)" />
-      <_InlineSnapshotTestingSourceRootRegistrationLines Remove="@(_InlineSnapshotTestingSourceRootRegistrationLines)" />
-      <_InlineSnapshotTestingSourceRootFileLines Remove="@(_InlineSnapshotTestingSourceRootFileLines)" />
-    </ItemGroup>
+    <CallTarget Targets="_MeziantouGenerateSourceRootsCore" />
   </Target>
 </Project>

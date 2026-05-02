@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Text.Encodings.Web;
@@ -7,6 +8,7 @@ using Meziantou.Framework.Json;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
+[SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Expression tree builders intentionally return Expression for composability.")]
 internal static class SqlFunctions
 {
     internal static IDictionary<string, TdsQueryScalarFunction> CreateDefaultScalarFunctions()

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -13,6 +14,7 @@ using SqlParserParseOptions = Microsoft.SqlServer.Management.SqlParser.Parser.Pa
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
+[SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Query translation helpers intentionally use abstract return types for flexibility.")]
 internal sealed class TdsQueryEngineExecutor
 {
     private readonly TdsQueryEngineOptions _options;
@@ -1127,7 +1129,7 @@ internal sealed class TdsQueryEngineExecutor
     private static string GetTypeParameterName(Type type)
     {
         var name = type.Name;
-        var genericMarkerIndex = name.IndexOf('`');
+        var genericMarkerIndex = name.IndexOf('`', StringComparison.Ordinal);
         if (genericMarkerIndex >= 0)
         {
             name = name[..genericMarkerIndex];
@@ -1701,7 +1703,7 @@ internal sealed class TdsQueryEngineExecutor
             endDate);
     }
 
-    private Expression BuildArithmeticBinary(Expression left, Expression right, Func<Expression, Expression, BinaryExpression> operation)
+    private static Expression BuildArithmeticBinary(Expression left, Expression right, Func<Expression, Expression, BinaryExpression> operation)
     {
         var leftType = GetNonNullableType(left.Type);
         var rightType = GetNonNullableType(right.Type);
@@ -1737,9 +1739,9 @@ internal sealed class TdsQueryEngineExecutor
             Expression.Constant(CultureInfo.InvariantCulture));
     }
 
-    private bool IsStringType(Type type) => GetNonNullableType(type) == typeof(string);
+    private static bool IsStringType(Type type) => GetNonNullableType(type) == typeof(string);
 
-    private bool IsNumericType(Type type)
+    private static bool IsNumericType(Type type)
     {
         type = GetNonNullableType(type);
         return type == typeof(byte) ||
@@ -1755,9 +1757,9 @@ internal sealed class TdsQueryEngineExecutor
                type == typeof(decimal);
     }
 
-    private Type GetNonNullableType(Type type) => Nullable.GetUnderlyingType(type) ?? type;
+    private static Type GetNonNullableType(Type type) => Nullable.GetUnderlyingType(type) ?? type;
 
-    private Type GetNumericPromotionType(Type left, Type right)
+    private static Type GetNumericPromotionType(Type left, Type right)
     {
         left = GetNonNullableType(left);
         right = GetNonNullableType(right);
@@ -1800,17 +1802,17 @@ internal sealed class TdsQueryEngineExecutor
         var parts = new List<string>(capacity: 3);
         if (!string.IsNullOrEmpty(objectIdentifier.ServerName?.Value))
         {
-            parts.Add(objectIdentifier.ServerName!.Value);
+            parts.Add(objectIdentifier.ServerName.Value);
         }
 
         if (!string.IsNullOrEmpty(objectIdentifier.DatabaseName?.Value))
         {
-            parts.Add(objectIdentifier.DatabaseName!.Value);
+            parts.Add(objectIdentifier.DatabaseName.Value);
         }
 
         if (!string.IsNullOrEmpty(objectIdentifier.SchemaName?.Value))
         {
-            parts.Add(objectIdentifier.SchemaName!.Value);
+            parts.Add(objectIdentifier.SchemaName.Value);
         }
 
         receiverParts = parts;
@@ -2077,7 +2079,9 @@ internal sealed class TdsQueryEngineExecutor
             var fragments = new List<string>();
             while (iterator.MoveNext())
             {
-                fragments.Add(iterator.Current.OuterXml);
+                var current = iterator.Current
+                    ?? throw new TdsQueryEngineException("xml.query returned an invalid sequence.");
+                fragments.Add(current.OuterXml);
             }
 
             return new SqlXmlValue(string.Concat(fragments), xmlValue.SchemaCollection);
@@ -2103,10 +2107,12 @@ internal sealed class TdsQueryEngineExecutor
                 throw new TdsQueryEngineException("xml.value returned an empty sequence.");
             }
 
-            var rawNodeValue = iterator.Current.Value;
+            var current = iterator.Current
+                ?? throw new TdsQueryEngineException("xml.value returned an invalid sequence.");
+            var rawNodeValue = current.Value;
             if (targetType == typeof(SqlXmlValue))
             {
-                return new SqlXmlValue(iterator.Current.OuterXml, xmlValue.SchemaCollection);
+                return new SqlXmlValue(current.OuterXml, xmlValue.SchemaCollection);
             }
 
             return ConvertValue(rawNodeValue, targetType)
@@ -2162,7 +2168,13 @@ internal sealed class TdsQueryEngineExecutor
         var result = new List<SqlXmlValue>();
         while (iterator.MoveNext())
         {
-            result.Add(new SqlXmlValue(iterator.Current.OuterXml, xmlValue.SchemaCollection));
+            var current = iterator.Current;
+            if (current is null)
+            {
+                continue;
+            }
+
+            result.Add(new SqlXmlValue(current.OuterXml, xmlValue.SchemaCollection));
         }
 
         return result;
@@ -2262,7 +2274,7 @@ internal sealed class TdsQueryEngineExecutor
             return false;
         }
 
-        var startIndex = invocation.IndexOf('(');
+        var startIndex = invocation.IndexOf('(', StringComparison.Ordinal);
         var endIndex = invocation.LastIndexOf(')');
         if (startIndex <= 0 || endIndex <= startIndex)
         {
@@ -2277,16 +2289,16 @@ internal sealed class TdsQueryEngineExecutor
     private static bool TryExtractExpressionComment(string xml, out string expressionText)
     {
         expressionText = string.Empty;
-        const string startMarker = "<!--";
-        const string endMarker = "-->";
-        var start = xml.IndexOf(startMarker, StringComparison.Ordinal);
+        const string StartMarker = "<!--";
+        const string EndMarker = "-->";
+        var start = xml.IndexOf(StartMarker, StringComparison.Ordinal);
         if (start < 0)
         {
             return false;
         }
 
-        start += startMarker.Length;
-        var end = xml.IndexOf(endMarker, start, StringComparison.Ordinal);
+        start += StartMarker.Length;
+        var end = xml.IndexOf(EndMarker, start, StringComparison.Ordinal);
         if (end < 0)
         {
             return false;

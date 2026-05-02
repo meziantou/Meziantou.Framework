@@ -89,11 +89,10 @@ public static class InlineSnapshot
     public static void Validate(object? subject, InlineSnapshotSettings? settings, string? expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
         settings ??= InlineSnapshotSettings.Default;
-        var context = CallerContext.Get(settings, filePath, lineNumber);
-        ShouldMatchInlineSnapshot(subject, context, settings, expected);
+        ShouldMatchInlineSnapshot(subject, settings, expected, filePath, lineNumber);
     }
 
-    internal static void ShouldMatchInlineSnapshot(object? subject, CallerContext context, InlineSnapshotSettings settings, string? expected)
+    internal static void ShouldMatchInlineSnapshot(object? subject, InlineSnapshotSettings settings, string? expected, string? filePath, int lineNumber)
     {
         var actual = settings.SnapshotSerializer.Serialize(subject);
         if (actual is not null)
@@ -109,8 +108,12 @@ public static class InlineSnapshot
 
         var normalizedActual = settings.SnapshotComparer.NormalizeValue(actual);
         var normalizedExpected = settings.SnapshotComparer.NormalizeValue(expected);
+        CallerContext? callerContext = null;
+        CallerContext GetCallerContext() => callerContext ??= CallerContext.Get(settings, filePath, lineNumber);
+
         if (!settings.SnapshotComparer.AreEqual(normalizedActual, normalizedExpected))
         {
+            var context = GetCallerContext();
             if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
             {
                 FileEditor.UpdateFile(context, settings, expected, actual);
@@ -127,6 +130,7 @@ public static class InlineSnapshot
         }
         else if (settings.ForceUpdateSnapshots)
         {
+            var context = GetCallerContext();
             FileEditor.UpdateFile(context, settings, expected, actual);
         }
     }

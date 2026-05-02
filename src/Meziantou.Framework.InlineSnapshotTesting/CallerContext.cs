@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -239,6 +238,4 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
 
         return null;
     }
-
-    internal static bool ParseLocalFunctionName(string name, [NotNullWhen(true)] out string? functionName) => CallerContextUtilities.TryParseLocalFunctionName(name, out functionName);
 }

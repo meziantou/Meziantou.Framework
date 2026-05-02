@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.SnapshotTesting;
@@ -6,6 +7,7 @@ public static class Snapshot
 {
     public static AsyncLocal<SnapshotTestContext?> TestContext { get; } = new();
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static void RegisterSourceRootMapping(string mappedPath, string realPath)
     {
         CallerContextUtilities.RegisterSourceRootMapping(mappedPath, realPath);

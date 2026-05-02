@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
@@ -17,6 +19,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 /// </example>
 public static class InlineSnapshot
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static void RegisterSourceRootMapping(string mappedPath, string realPath)
     {
         CallerContextUtilities.RegisterSourceRootMapping(mappedPath, realPath);

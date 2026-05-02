@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <_MeziantouSharedSourceRootPropsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'Meziantou.Framework.SnapshotTesting.Common', 'build', 'Meziantou.Framework.SourceRootRegistration.props'))</_MeziantouSharedSourceRootPropsPath>
+    <_MeziantouSharedSourceRootPropsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'Meziantou.Framework.SnapshotTesting', 'common', 'Meziantou.Framework.SourceRootRegistration.props'))</_MeziantouSharedSourceRootPropsPath>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.props"

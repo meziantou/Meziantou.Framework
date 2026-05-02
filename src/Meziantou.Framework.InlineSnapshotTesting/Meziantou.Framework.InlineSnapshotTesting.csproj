@@ -12,18 +12,18 @@
   <ItemGroup>
     <Compile Include="../Meziantou.Framework.HumanReadableSerializer/Utils/StringUtils.cs" Link="Utils/StringUtils.cs" />
     <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
-    <Compile Include="../Meziantou.Framework.SnapshotTesting.Common/BuildServerDetector.cs" Link="Utils/BuildServerDetector.cs" />
-    <Compile Include="../Meziantou.Framework.SnapshotTesting.Common/ContinuousTestingDetector.cs" Link="Utils/ContinuousTestingDetector.cs" />
-    <Compile Include="../Meziantou.Framework.SnapshotTesting.Common/CallerContextUtilities.cs" Link="Utils/CallerContextUtilities.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/BuildServerDetector.cs" Link="Utils/BuildServerDetector.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/ContinuousTestingDetector.cs" Link="Utils/ContinuousTestingDetector.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/CallerContextUtilities.cs" Link="Utils/CallerContextUtilities.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="build/**" Pack="true" PackagePath="build" />
     <None Include="buildTransitive/**" Pack="true" PackagePath="buildTransitive" />
     <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting" />
-    <None Include="../Meziantou.Framework.SnapshotTesting.Common/build/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="build/Meziantou.Framework.SourceRootRegistration.props" />
-    <None Include="../Meziantou.Framework.SnapshotTesting.Common/build/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SourceRootRegistration.props" />
-    <None Include="../Meziantou.Framework.SnapshotTesting.Common/build/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="buildMultiTargeting/Meziantou.Framework.SourceRootRegistration.props" />
+    <None Include="../Meziantou.Framework.SnapshotTesting/common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="build/Meziantou.Framework.SourceRootRegistration.props" />
+    <None Include="../Meziantou.Framework.SnapshotTesting/common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SourceRootRegistration.props" />
+    <None Include="../Meziantou.Framework.SnapshotTesting/common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="buildMultiTargeting/Meziantou.Framework.SourceRootRegistration.props" />
   </ItemGroup>
 
   <ItemGroup>

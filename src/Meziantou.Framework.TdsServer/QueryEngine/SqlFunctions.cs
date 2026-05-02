@@ -1,6 +1,9 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Meziantou.Framework.Json;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
@@ -49,6 +52,10 @@ internal static class SqlFunctions
             ["ATAN"] = BuildAtanFunction,
             ["ATN2"] = BuildAtn2Function,
             ["COT"] = BuildCotFunction,
+            ["ISJSON"] = BuildIsJsonFunction,
+            ["JSON_VALUE"] = BuildJsonValueFunction,
+            ["JSON_PATH_EXISTS"] = BuildJsonPathExistsFunction,
+            ["JSON_QUERY"] = BuildJsonQueryFunction,
         };
     }
 
@@ -393,6 +400,50 @@ internal static class SqlFunctions
             EnsureDouble(arguments[0]));
     }
 
+    private static Expression BuildIsJsonFunction(IReadOnlyList<Expression> arguments)
+    {
+        if (arguments.Count is < 1 or > 2)
+        {
+            throw new TdsQueryEngineException("ISJSON requires one or two arguments.");
+        }
+
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(IsJsonCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]),
+            arguments.Count == 2 ? EnsureString(arguments[1]) : Expression.Constant(null, typeof(string)));
+    }
+
+    private static Expression BuildJsonValueFunction(IReadOnlyList<Expression> arguments)
+    {
+        ValidateArgCount(arguments, expectedCount: 2, "JSON_VALUE");
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(JsonValueCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]),
+            EnsureString(arguments[1]));
+    }
+
+    private static Expression BuildJsonPathExistsFunction(IReadOnlyList<Expression> arguments)
+    {
+        ValidateArgCount(arguments, expectedCount: 2, "JSON_PATH_EXISTS");
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(JsonPathExistsCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]),
+            EnsureString(arguments[1]));
+    }
+
+    private static Expression BuildJsonQueryFunction(IReadOnlyList<Expression> arguments)
+    {
+        if (arguments.Count is < 1 or > 2)
+        {
+            throw new TdsQueryEngineException("JSON_QUERY requires one or two arguments.");
+        }
+
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(JsonQueryCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]),
+            arguments.Count == 2 ? EnsureString(arguments[1]) : Expression.Constant("$"));
+    }
+
     private static void ValidateArgCount(IReadOnlyList<Expression> arguments, int expectedCount, string functionName)
     {
         if (arguments.Count != expectedCount)
@@ -631,5 +682,200 @@ internal static class SqlFunctions
     private static double CotCore(double value)
     {
         return 1.0d / Math.Tan(value);
+    }
+
+    private static int? IsJsonCore(string? json, string? jsonTypeConstraint)
+    {
+        if (json is null)
+        {
+            return null;
+        }
+
+        if (!TryParseJson(json, out var document))
+        {
+            return 0;
+        }
+
+        using (document)
+        {
+            var rootKind = document.RootElement.ValueKind;
+            return jsonTypeConstraint switch
+            {
+                null => 1,
+                var value when value.Equals("VALUE", StringComparison.OrdinalIgnoreCase) => rootKind != JsonValueKind.Undefined ? 1 : 0,
+                var value when value.Equals("ARRAY", StringComparison.OrdinalIgnoreCase) => rootKind == JsonValueKind.Array ? 1 : 0,
+                var value when value.Equals("OBJECT", StringComparison.OrdinalIgnoreCase) => rootKind == JsonValueKind.Object ? 1 : 0,
+                var value when value.Equals("SCALAR", StringComparison.OrdinalIgnoreCase) => rootKind is JsonValueKind.String or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False ? 1 : 0,
+                _ => throw new TdsQueryEngineException("ISJSON supports only VALUE, ARRAY, OBJECT, or SCALAR as the second argument."),
+            };
+        }
+    }
+
+    private static int? JsonPathExistsCore(string? json, string? path)
+    {
+        if (json is null || path is null)
+        {
+            return null;
+        }
+
+        var node = ParseJsonNode(json, "JSON_PATH_EXISTS");
+        var (jsonPath, mode) = ParseJsonPath(path, "JSON_PATH_EXISTS");
+        try
+        {
+            return jsonPath.Evaluate(node, mode).Count > 0 ? 1 : 0;
+        }
+        catch (JsonPathEvaluationException ex)
+        {
+            throw new TdsQueryEngineException($"JSON_PATH_EXISTS failed to evaluate path '{path}': {ex.Message}");
+        }
+    }
+
+    private static string? JsonValueCore(string? json, string? path)
+    {
+        if (json is null || path is null)
+        {
+            return null;
+        }
+
+        var node = ParseJsonNode(json, "JSON_VALUE");
+        var (jsonPath, mode) = ParseJsonPath(path, "JSON_VALUE");
+        JsonPathResult result;
+        try
+        {
+            result = jsonPath.Evaluate(node, mode);
+        }
+        catch (JsonPathEvaluationException ex)
+        {
+            throw new TdsQueryEngineException($"JSON_VALUE failed to evaluate path '{path}': {ex.Message}");
+        }
+
+        if (result.Count == 0)
+        {
+            if (mode == JsonPathEvaluationMode.Strict)
+            {
+                throw new TdsQueryEngineException($"JSON_VALUE path '{path}' did not match any value.");
+            }
+
+            return null;
+        }
+
+        return JsonNodeToSqlScalarString(result[0].Value, "JSON_VALUE", path, mode);
+    }
+
+    private static string? JsonQueryCore(string? json, string? path)
+    {
+        if (json is null || path is null)
+        {
+            return null;
+        }
+
+        var node = ParseJsonNode(json, "JSON_QUERY");
+        var (jsonPath, mode) = ParseJsonPath(path, "JSON_QUERY");
+        JsonPathResult result;
+        try
+        {
+            result = jsonPath.Evaluate(node, mode);
+        }
+        catch (JsonPathEvaluationException ex)
+        {
+            throw new TdsQueryEngineException($"JSON_QUERY failed to evaluate path '{path}': {ex.Message}");
+        }
+
+        if (result.Count == 0)
+        {
+            if (mode == JsonPathEvaluationMode.Strict)
+            {
+                throw new TdsQueryEngineException($"JSON_QUERY path '{path}' did not match any value.");
+            }
+
+            return null;
+        }
+
+        var matchedValue = result[0].Value;
+        if (matchedValue is JsonObject or JsonArray)
+        {
+            return matchedValue.ToJsonString();
+        }
+
+        if (mode == JsonPathEvaluationMode.Strict)
+        {
+            throw new TdsQueryEngineException($"JSON_QUERY path '{path}' resolved to a scalar value.");
+        }
+
+        return null;
+    }
+
+    private static (JsonPath JsonPath, JsonPathEvaluationMode Mode) ParseJsonPath(string path, string functionName)
+    {
+        var trimmedPath = path.Trim();
+        var mode = JsonPathEvaluationMode.Lax;
+        if (trimmedPath.StartsWith("strict ", StringComparison.OrdinalIgnoreCase))
+        {
+            mode = JsonPathEvaluationMode.Strict;
+            trimmedPath = trimmedPath[7..].TrimStart();
+        }
+        else if (trimmedPath.StartsWith("lax ", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmedPath = trimmedPath[4..].TrimStart();
+        }
+
+        if (trimmedPath.Length == 0)
+        {
+            throw new TdsQueryEngineException($"{functionName} requires a non-empty JSON path.");
+        }
+
+        try
+        {
+            return (JsonPath.Parse(trimmedPath), mode);
+        }
+        catch (FormatException ex)
+        {
+            throw new TdsQueryEngineException($"{functionName} path '{path}' is not a valid JSON path: {ex.Message}");
+        }
+    }
+
+    private static JsonNode ParseJsonNode(string json, string functionName)
+    {
+        try
+        {
+            return JsonNode.Parse(json) ?? throw new TdsQueryEngineException($"{functionName} does not support null JSON roots.");
+        }
+        catch (JsonException ex)
+        {
+            throw new TdsQueryEngineException($"{functionName} input is not a valid JSON document: {ex.Message}");
+        }
+    }
+
+    private static string? JsonNodeToSqlScalarString(JsonNode? node, string functionName, string path, JsonPathEvaluationMode mode)
+    {
+        if (node is null)
+        {
+            return null;
+        }
+
+        var element = JsonSerializer.SerializeToElement(node);
+        return element.ValueKind switch
+        {
+            JsonValueKind.Null => null,
+            JsonValueKind.String => element.GetString(),
+            JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => element.GetRawText(),
+            _ => mode == JsonPathEvaluationMode.Strict
+                ? throw new TdsQueryEngineException($"{functionName} path '{path}' resolved to a non-scalar value.")
+                : null,
+        };
+    }
+
+    private static bool TryParseJson(string json, [NotNullWhen(true)] out JsonDocument? document)
+    {
+        try
+        {
+            document = JsonDocument.Parse(json);
+            return true;
+        }
+        catch (JsonException)
+        {
+            document = null;
+            return false;
+        }
     }
 }

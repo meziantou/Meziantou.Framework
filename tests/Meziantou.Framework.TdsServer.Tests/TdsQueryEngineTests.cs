@@ -2517,6 +2517,128 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_IsJsonFunction_ReturnsExpectedValues()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT ISJSON(Payload) AS IsJson
+                    FROM json_docs
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            IsJson
+            1
+            """,
+            expectedMaterializedQueries: "JsonDocumentRow[].Where(jsonDocumentRow => (jsonDocumentRow.Id == 1)).Select(jsonDocumentRow2 => new TdsProjection() {IsJson = IsJsonCore(jsonDocumentRow2.Payload, null)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_JsonValueFunction_LaxMode_ReturnsNullForMissingPath()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT JSON_VALUE(Payload, 'lax $.address.country') AS Country
+                    FROM json_docs
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Country
+            NULL
+            """,
+            expectedMaterializedQueries: "JsonDocumentRow[].Where(jsonDocumentRow => (jsonDocumentRow.Id == 1)).Select(jsonDocumentRow2 => new TdsProjection() {Country = JsonValueCore(jsonDocumentRow2.Payload, \"lax $.address.country\")})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_JsonValueFunction_StrictMode_ThrowsForMissingPath()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT JSON_VALUE(Payload, 'strict $.address.country') AS Country
+                    FROM json_docs
+                    WHERE Id = 1
+                    """;
+            });
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_JsonPathExistsFunction_SupportsLaxAndStrictModes()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT JSON_PATH_EXISTS(Payload, 'lax $.address.country') AS LaxExists, JSON_PATH_EXISTS(Payload, 'strict $.address.city') AS StrictExists
+                    FROM json_docs
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            LaxExists StrictExists
+            0 1
+            """,
+            expectedMaterializedQueries: "JsonDocumentRow[].Where(jsonDocumentRow => (jsonDocumentRow.Id == 1)).Select(jsonDocumentRow2 => new TdsProjection() {LaxExists = JsonPathExistsCore(jsonDocumentRow2.Payload, \"lax $.address.country\"), StrictExists = JsonPathExistsCore(jsonDocumentRow2.Payload, \"strict $.address.city\")})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_JsonQueryFunction_LaxMode_ReturnsNullForScalar()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT JSON_QUERY(Payload, 'lax $.name') AS NameFragment
+                    FROM json_docs
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            NameFragment
+            NULL
+            """,
+            expectedMaterializedQueries: "JsonDocumentRow[].Where(jsonDocumentRow => (jsonDocumentRow.Id == 1)).Select(jsonDocumentRow2 => new TdsProjection() {NameFragment = JsonQueryCore(jsonDocumentRow2.Payload, \"lax $.name\")})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_JsonQueryFunction_StrictMode_ThrowsForScalar()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT JSON_QUERY(Payload, 'strict $.name') AS NameFragment
+                    FROM json_docs
+                    WHERE Id = 1
+                    """;
+            });
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_XmlDataType_UntypedCast_ReturnsXml()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -2769,6 +2891,7 @@ public sealed class TdsQueryEngineTests
         options.AddQueryRoot("customers", GetCustomers());
         options.AddQueryRoot("orders", GetOrders());
         options.AddQueryRoot("nullable_customers", GetNullableCustomers());
+        options.AddQueryRoot("json_docs", GetJsonDocuments());
         options.AddQueryRoot("xml_docs", GetXmlDocuments());
         return options;
     }
@@ -2812,6 +2935,17 @@ public sealed class TdsQueryEngineTests
         ];
     }
 
+    private static JsonDocumentRow[] GetJsonDocuments()
+    {
+        return
+        [
+            new JsonDocumentRow(1, """{"name":"Alice","address":{"city":"Paris"},"items":[1,2]}"""),
+            new JsonDocumentRow(2, """{"name":"Bob"}"""),
+            new JsonDocumentRow(3, "{ invalid }"),
+            new JsonDocumentRow(4, null),
+        ];
+    }
+
     private static async Task ExecuteQuery(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand, string expected, string expectedMaterializedQueries)
     {
         var materializedQueries = new List<string>();
@@ -2843,6 +2977,29 @@ public sealed class TdsQueryEngineTests
         Assert.Equal(NormalizeMultilineString(expected), await ReadResultAsync(reader));
         var actualMaterializedQueries = NormalizeMultilineString(string.Join('\n', materializedQueries));
         AssertMaterializedQueries(expectedMaterializedQueries, actualMaterializedQueries);
+    }
+
+    private static async Task ExecuteQueryExpectingServerError(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand)
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        configureCommand(command);
+
+        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
+        Assert.Equal(50004, exception.Number);
     }
 
     private static void AssertMaterializedQueries(string expectedMaterializedQueries, string actualMaterializedQueries)
@@ -2926,6 +3083,8 @@ public sealed class TdsQueryEngineTests
     private sealed record Order(int Id, string Region, int Amount);
 
     private sealed record NullableCustomer(int Id, string? Name);
+
+    private sealed record JsonDocumentRow(int Id, string? Payload);
 
     private sealed record XmlDocumentRow(int Id, string Payload);
 }

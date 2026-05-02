@@ -1,24 +1,18 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using Meziantou.Framework;
+using Meziantou.Framework.SnapshotTesting;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 internal record struct CallerContext(FullPath FilePath, int LineNumber, int ColumnNumber, string MethodName, string? ParameterName, int ParameterIndex, string? AssemblyLocation)
 {
     private static readonly ConcurrentDictionary<string, Version?> LanguageVersionCache = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// Newer Roslyn versions use the format "&lt;callerName&gt;g__functionName|x_y".
-    /// Older versions use "&lt;callerName&gt;g__functionNamex_y".
-    /// </summary>
-    /// <see href="https://github.com/dotnet/roslyn/blob/aecd49800750d64e08767836e2678ffa62a4647f/src/Compilers/CSharp/Portable/Symbols/Synthesized/GeneratedNames.cs#L109" />
-    private static readonly Regex FunctionNameRegex = new(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeout: Timeout.InfiniteTimeSpan);
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static CallerContext Get(InlineSnapshotSettings settings, string? filePath, int lineNumber)
@@ -39,14 +33,14 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
             if (method == null)
                 continue;
 
-            method = GetActualMethod(method);
+            method = CallerContextUtilities.ResolveActualMethod(method);
 
             var attribute = method.GetCustomAttribute<InlineSnapshotAssertionAttribute>();
             if (attribute is null)
                 continue;
 
             methodName = method.Name;
-            if (ParseLocalFunctionName(methodName, out var localFunctionName))
+            if (CallerContextUtilities.TryParseLocalFunctionName(methodName, out var localFunctionName))
             {
                 methodName = localFunctionName;
             }
@@ -73,8 +67,8 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
             throw new InlineSnapshotException($"Cannot find the method to update in the call stack. Be sure at least one method from the stack is decorated with '{nameof(InlineSnapshotAssertionAttribute)}'.");
 
         var pdbFileName = callerFrame.GetFileName();
-        var stackTraceFilePath = pdbFileName is not null ? (FullPath?)FullPath.FromPath(pdbFileName) : null;
-        var callerFilePath = filePath is not null ? (FullPath?)FullPath.FromPath(filePath) : null;
+        var stackTraceFilePath = ResolveSourceFilePath(pdbFileName);
+        var callerFilePath = ResolveSourceFilePath(filePath);
 
         if (settings.ValidateSourceFilePathUsingPdbInfoWhenAvailable && stackTraceFilePath is not null && callerFilePath is not null && stackTraceFilePath != callerFilePath)
         {
@@ -187,48 +181,15 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
         return formats;
     }
 
-    private static MethodBase GetActualMethod(MethodBase method)
+    internal static FullPath? ResolveSourceFilePath(string? sourceFilePath)
     {
-        if (method.DeclaringType is not null && method.DeclaringType.IsAssignableTo(typeof(IAsyncStateMachine)))
-        {
-            var parentType = method.DeclaringType.DeclaringType;
-            if (parentType is not null)
-            {
-                static MethodInfo[] GetDeclaredMethods(Type type) => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                var methods = GetDeclaredMethods(parentType);
-                if (methods is not null)
-                {
-                    foreach (var candidateMethod in methods)
-                    {
-                        var attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
-                        if (attributes is null)
-                        {
-                            continue;
-                        }
+        if (sourceFilePath is null)
+            return null;
 
-                        bool foundAttribute = false, foundIteratorAttribute = false;
-                        foreach (var asma in attributes)
-                        {
-                            if (asma.StateMachineType == method.DeclaringType)
-                            {
-                                foundAttribute = true;
-                                foundIteratorAttribute |= asma is IteratorStateMachineAttribute || typeof(AsyncIteratorStateMachineAttribute).IsInstanceOfType(asma);
-                            }
-                        }
+        if (CallerContextUtilities.TryResolveSourceFilePath(sourceFilePath, out var resolvedPath))
+            return FullPath.FromPath(resolvedPath);
 
-                        if (foundAttribute)
-                        {
-                            // If this is an iterator (sync or async), mark the iterator as changed, so it gets the + annotation
-                            // of the original method. Non-iterator async state machines resolve directly to their builder methods
-                            // so aren't marked as changed.
-                            return candidateMethod;
-                        }
-                    }
-                }
-            }
-        }
-
-        return method;
+        return FullPath.FromPath(sourceFilePath);
     }
 
     private static Version? GetCSharpLanguageVersionFromAssemblyLocation(string assemblyLocation)
@@ -290,14 +251,5 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
         return null;
     }
 
-    internal static bool ParseLocalFunctionName(string name, [NotNullWhen(true)] out string? functionName)
-    {
-        functionName = null;
-        if (string.IsNullOrWhiteSpace(name))
-            return false;
-
-        var match = FunctionNameRegex.Match(name);
-        functionName = match.Groups["name"].Value;
-        return match.Success;
-    }
+    internal static bool ParseLocalFunctionName(string name, [NotNullWhen(true)] out string? functionName) => CallerContextUtilities.TryParseLocalFunctionName(name, out functionName);
 }

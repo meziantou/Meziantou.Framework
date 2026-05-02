@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
+using Meziantou.Framework.SnapshotTesting;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -16,6 +17,11 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 /// </example>
 public static class InlineSnapshot
 {
+    public static void RegisterSourceRootMapping(string mappedPath, string realPath)
+    {
+        CallerContextUtilities.RegisterSourceRootMapping(mappedPath, realPath);
+    }
+
     /// <summary>Creates a new <see cref="InlineSnapshotBuilder"/> with the specified settings.</summary>
     public static InlineSnapshotBuilder WithSettings(InlineSnapshotSettings? settings) => new(settings);
 

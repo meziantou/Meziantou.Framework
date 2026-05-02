@@ -1,6 +1,6 @@
 namespace Meziantou.Framework;
 
-public static class ContinuousTestingDetector
+internal static class ContinuousTestingDetector
 {
     private static bool HasEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name) is not null;
 

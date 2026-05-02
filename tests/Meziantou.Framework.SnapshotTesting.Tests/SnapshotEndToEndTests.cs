@@ -901,15 +901,8 @@ public sealed class SnapshotEndToEndTests
 
     private static FullPath GetRepositoryRoot([CallerFilePath] string? filePath = null)
     {
-        return GetRepositoryRoot(filePath, sourceRoots: null);
-    }
-
-    private static FullPath GetRepositoryRoot(string? filePath, IEnumerable<string?>? sourceRoots)
-    {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        var resolvedSourceFilePath = sourceRoots is null
-            ? SnapshotCallerContext.ResolveSourceFilePath(filePath)
-            : SnapshotCallerContext.ResolveSourceFilePath(filePath, sourceRoots);
+        var resolvedSourceFilePath = SnapshotCallerContext.ResolveSourceFilePath(filePath);
 
         return resolvedSourceFilePath.Parent.Parent.Parent;
     }

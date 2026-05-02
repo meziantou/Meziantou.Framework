@@ -77,6 +77,22 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public void ResolveSourceFilePath_UsesRegisteredSourceRootMapping()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFilePath = directory.GetFullPath("sub/file.cs");
+        sourceFilePath.CreateParentDirectory();
+        File.WriteAllText(sourceFilePath, "class C {}");
+
+        var sourceRoot = directory.FullPath.Value.Replace('\\', '/');
+        Snapshot.RegisterSourceRootMapping("/_snapshot_tests_/", sourceRoot + "/");
+
+        var resolvedPath = SnapshotCallerContext.ResolveSourceFilePath("/_snapshot_tests_/sub/file.cs");
+
+        Assert.Equal(sourceFilePath, resolvedPath);
+    }
+
+    [Fact]
     public void SnapshotPathStrategy_UsesIndexPatternForShortName()
     {
         var settings = new SnapshotSettings();

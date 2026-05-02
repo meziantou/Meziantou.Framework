@@ -144,6 +144,7 @@ internal static class TdsQueryResultBuilder
             TypeCode.String => TdsColumnType.NVarChar,
             TypeCode.DateTime => TdsColumnType.DateTime2,
             _ when type == typeof(byte[]) => TdsColumnType.Binary,
+            _ when type == typeof(SqlXmlValue) => TdsColumnType.Xml,
             _ when type == typeof(Guid) => TdsColumnType.Guid,
             _ when type == typeof(DateOnly) => TdsColumnType.Date,
             _ when type == typeof(TimeOnly) || type == typeof(TimeSpan) => TdsColumnType.Time,
@@ -164,6 +165,7 @@ internal static class TdsQueryResultBuilder
             type == typeof(TimeOnly) ||
             type == typeof(TimeSpan) ||
             type == typeof(DateTimeOffset) ||
+            type == typeof(SqlXmlValue) ||
             type == typeof(Guid) ||
             type == typeof(byte[]);
     }
@@ -175,6 +177,11 @@ internal static class TdsQueryResultBuilder
 
     private static object? NormalizeDbNull(object? value)
     {
+        if (value is SqlXmlValue xml)
+        {
+            return xml.Value;
+        }
+
         return value is DBNull ? null : value;
     }
 

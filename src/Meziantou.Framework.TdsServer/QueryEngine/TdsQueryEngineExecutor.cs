@@ -1,6 +1,11 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Security;
+using System.Xml;
+using System.Xml.Linq;
+using System.Xml.Schema;
+using System.Xml.XPath;
 using Meziantou.Framework.Tds.Handler;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
 using SqlParser = Microsoft.SqlServer.Management.SqlParser.Parser.Parser;
@@ -369,7 +374,12 @@ internal sealed class TdsQueryEngineExecutor
             return BuildJoinSource(joinExpression, cteRoots, parameters);
         }
 
-        throw new TdsQueryEngineException("Only table references, derived tables, and INNER JOIN table expressions are supported.");
+        if (tableExpression is SqlUnqualifiedJoinTableExpression unqualifiedJoinExpression)
+        {
+            return BuildUnqualifiedJoinSource(unqualifiedJoinExpression, cteRoots, parameters);
+        }
+
+        throw new TdsQueryEngineException("Only table references, derived tables, INNER JOIN table expressions, and CROSS APPLY table expressions are supported.");
     }
 
     private QuerySource BuildTableSource(SqlTableRefExpression tableExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
@@ -474,6 +484,99 @@ internal sealed class TdsQueryEngineExecutor
             right.Query.Expression,
             Expression.Quote(Expression.Lambda(leftKey, leftParameter)),
             Expression.Quote(Expression.Lambda(rightKey, rightParameter)),
+            Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)));
+
+        var aliases = new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase);
+        foreach (var member in carrierMembers)
+        {
+            aliases.Add(member.Name, new AliasBinding(member.Type, expression => Expression.Property(expression, member.Name)));
+        }
+
+        return new QuerySource(left.Query.Provider.CreateQuery(call), carrierType, aliases);
+    }
+
+    private QuerySource BuildUnqualifiedJoinSource(SqlUnqualifiedJoinTableExpression joinExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        if (joinExpression.JoinOperator != SqlJoinOperatorType.CrossApply)
+        {
+            throw new TdsQueryEngineException("Only CROSS APPLY is supported for unqualified joins.");
+        }
+
+        var left = BuildSource(joinExpression.Left, cteRoots, parameters);
+        if (joinExpression.Right is not SqlTableValuedFunctionRefExpression tableValuedFunction)
+        {
+            throw new TdsQueryEngineException("CROSS APPLY currently supports only table-valued function expressions.");
+        }
+
+        if (!TryGetMethodInvocation(tableValuedFunction.ObjectIdentifier, out var receiverParts, out var methodName) ||
+            !string.Equals(methodName, "nodes", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new TdsQueryEngineException("CROSS APPLY currently supports only xml.nodes(...) table-valued calls.");
+        }
+
+        if (tableValuedFunction.Arguments.Count != 1)
+        {
+            throw new TdsQueryEngineException("xml.nodes requires exactly one XQuery argument.");
+        }
+
+        if (tableValuedFunction.Alias is null)
+        {
+            throw new TdsQueryEngineException("xml.nodes CROSS APPLY requires a table alias.");
+        }
+
+        if (tableValuedFunction.ColumnList is null || tableValuedFunction.ColumnList.Count != 1)
+        {
+            throw new TdsQueryEngineException("xml.nodes CROSS APPLY requires exactly one output column alias.");
+        }
+
+        var rightAlias = tableValuedFunction.Alias.Value;
+        if (left.Aliases.ContainsKey(rightAlias))
+        {
+            throw new TdsQueryEngineException($"Duplicate alias '{rightAlias}'.");
+        }
+
+        var rightColumnName = tableValuedFunction.ColumnList[0].Value;
+        var rightType = TdsProjectionTypeFactory.GetProjectionType([new TdsProjectionMember(rightColumnName, typeof(SqlXmlValue))]);
+
+        var leftParameter = Expression.Parameter(left.RowType, "left");
+        var xmlExpression = BuildColumnByParts(receiverParts, left.Aliases, leftParameter);
+        var xqueryExpression = BuildScalar(tableValuedFunction.Arguments[0], left.Aliases, leftParameter, parameters, targetType: typeof(string));
+        var nodesCall = Expression.Call(
+            typeof(TdsQueryEngineExecutor).GetMethod(nameof(XmlNodesCore), BindingFlags.NonPublic | BindingFlags.Static)!,
+            Expression.Convert(xmlExpression, typeof(object)),
+            xqueryExpression);
+
+        var xmlNodeParameter = Expression.Parameter(typeof(SqlXmlValue), "xmlNode");
+        var rightProjection = Expression.MemberInit(
+            Expression.New(rightType),
+            Expression.Bind(rightType.GetProperty(rightColumnName)!, xmlNodeParameter));
+        var projectedNodes = Expression.Call(
+            typeof(Enumerable),
+            nameof(Enumerable.Select),
+            [typeof(SqlXmlValue), rightType],
+            nodesCall,
+            Expression.Lambda(rightProjection, xmlNodeParameter));
+
+        var carrierMembers = left.Aliases
+            .Select(alias => new TdsProjectionMember(alias.Key, alias.Value.Type))
+            .Append(new TdsProjectionMember(rightAlias, rightType))
+            .ToArray();
+        var carrierType = TdsProjectionTypeFactory.GetCarrierType(carrierMembers);
+        var rightParameter = Expression.Parameter(rightType, "right");
+        var bindings = new List<MemberBinding>();
+        foreach (var alias in left.Aliases)
+        {
+            bindings.Add(Expression.Bind(carrierType.GetProperty(alias.Key)!, alias.Value.Access(leftParameter)));
+        }
+
+        bindings.Add(Expression.Bind(carrierType.GetProperty(rightAlias)!, rightParameter));
+        var resultBody = Expression.MemberInit(Expression.New(carrierType), bindings);
+        var call = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.SelectMany),
+            [left.RowType, rightType, carrierType],
+            left.Query.Expression,
+            Expression.Quote(Expression.Lambda(projectedNodes, leftParameter)),
             Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)));
 
         var aliases = new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase);
@@ -1277,6 +1380,7 @@ internal sealed class TdsQueryEngineExecutor
             SqlConvertExpression convert => BuildConvertScalarFunction(convert, aliases, parameter, parameters),
             SqlCastExpression cast => BuildCastScalarFunction(cast, aliases, parameter, parameters),
             SqlBuiltinScalarFunctionCallExpression builtin => BuildBuiltinScalarFunction(builtin, aliases, parameter, parameters),
+            SqlUserDefinedScalarFunctionCallExpression userDefined => BuildUserDefinedScalarFunction(userDefined, aliases, parameter, parameters),
             _ => throw new TdsQueryEngineException($"Scalar function '{function.GetType().Name}' is not supported."),
         };
 
@@ -1286,6 +1390,74 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         return result;
+    }
+
+    private Expression BuildUserDefinedScalarFunction(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
+    {
+        if (!TryGetMethodInvocation(function.ObjectIdentifier, out var receiverParts, out var methodName))
+        {
+            throw new TdsQueryEngineException($"Scalar function '{function.ObjectIdentifier.Sql}' is not supported.");
+        }
+
+        var xmlExpression = BuildColumnByParts(receiverParts, aliases, parameter);
+        return methodName.ToUpperInvariant() switch
+        {
+            "QUERY" => BuildXmlQueryMethod(function, aliases, parameter, parameters, xmlExpression),
+            "VALUE" => BuildXmlValueMethod(function, aliases, parameter, parameters, xmlExpression),
+            "EXIST" => BuildXmlExistMethod(function, aliases, parameter, parameters, xmlExpression),
+            _ => throw new TdsQueryEngineException($"Scalar function '{function.ObjectIdentifier.Sql}' is not supported."),
+        };
+    }
+
+    private Expression BuildXmlQueryMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Expression xmlExpression)
+    {
+        if (function.Arguments.Count != 1)
+        {
+            throw new TdsQueryEngineException("xml.query requires exactly one XQuery argument.");
+        }
+
+        var xqueryExpression = BuildScalar(function.Arguments[0], aliases, parameter, parameters, targetType: typeof(string));
+        return Expression.Call(
+            typeof(TdsQueryEngineExecutor).GetMethod(nameof(XmlQueryCore), BindingFlags.NonPublic | BindingFlags.Static)!,
+            Expression.Convert(xmlExpression, typeof(object)),
+            xqueryExpression);
+    }
+
+    private Expression BuildXmlValueMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Expression xmlExpression)
+    {
+        if (function.Arguments.Count != 2)
+        {
+            throw new TdsQueryEngineException("xml.value requires an XQuery argument and a SQL type argument.");
+        }
+
+        var xqueryExpression = BuildScalar(function.Arguments[0], aliases, parameter, parameters, targetType: typeof(string));
+        if (function.Arguments[1] is not SqlLiteralExpression { Type: LiteralValueType.String or LiteralValueType.UnicodeString } typeLiteral)
+        {
+            throw new TdsQueryEngineException("xml.value requires a string SQL type literal as second argument.");
+        }
+
+        var targetType = ResolveSqlTypeFromText(typeLiteral.Value);
+        var call = Expression.Call(
+            typeof(TdsQueryEngineExecutor).GetMethod(nameof(XmlValueCore), BindingFlags.NonPublic | BindingFlags.Static)!,
+            Expression.Convert(xmlExpression, typeof(object)),
+            xqueryExpression,
+            Expression.Constant(targetType, typeof(Type)));
+
+        return targetType == typeof(SqlXmlValue) ? Expression.Convert(call, typeof(SqlXmlValue)) : Expression.Convert(call, targetType);
+    }
+
+    private Expression BuildXmlExistMethod(SqlUserDefinedScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters, Expression xmlExpression)
+    {
+        if (function.Arguments.Count != 1)
+        {
+            throw new TdsQueryEngineException("xml.exist requires exactly one XQuery argument.");
+        }
+
+        var xqueryExpression = BuildScalar(function.Arguments[0], aliases, parameter, parameters, targetType: typeof(string));
+        return Expression.Call(
+            typeof(TdsQueryEngineExecutor).GetMethod(nameof(XmlExistCore), BindingFlags.NonPublic | BindingFlags.Static)!,
+            Expression.Convert(xmlExpression, typeof(object)),
+            xqueryExpression);
     }
 
     private Expression BuildBuiltinScalarFunction(SqlBuiltinScalarFunctionCallExpression function, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter>? parameters)
@@ -1329,6 +1501,12 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var value = BuildScalar(valueExpression, aliases, parameter, parameters);
+        if (IsXmlDataType(function.DataTypeSpec))
+        {
+            var useTryConvertForXml = functionName == "TRY_CAST";
+            return BuildXmlTypeConversion(value, function.DataTypeSpec, useTryConvertForXml);
+        }
+
         var targetType = GetClrType(function.DataTypeSpec);
         var useTryConvert = functionName == "TRY_CAST";
         return BuildTypeConversion(value, targetType, useTryConvert);
@@ -1342,8 +1520,13 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var value = BuildScalar(valueExpression, aliases, parameter, parameters);
-        var targetType = GetClrType(function.DataTypeSpec);
         var useTryConvert = function.FunctionName.StartsWith("TRY_", StringComparison.OrdinalIgnoreCase);
+        if (IsXmlDataType(function.DataTypeSpec))
+        {
+            return BuildXmlTypeConversion(value, function.DataTypeSpec, useTryConvert);
+        }
+
+        var targetType = GetClrType(function.DataTypeSpec);
         return BuildTypeConversion(value, targetType, useTryConvert);
     }
 
@@ -1556,19 +1739,43 @@ internal sealed class TdsQueryEngineExecutor
         return typeof(int);
     }
 
-    private static MemberExpression BuildColumn(SqlScalarRefExpression column, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter)
+    private static bool TryGetMethodInvocation(SqlObjectIdentifier objectIdentifier, out IReadOnlyList<string> receiverParts, out string methodName)
     {
-        var qualifier = GetQualifier(column);
-        var columnName = GetColumnName(column);
-        AliasBinding? binding;
-        if (qualifier is not null)
+        methodName = objectIdentifier.ObjectName.Value;
+        var parts = new List<string>(capacity: 3);
+        if (!string.IsNullOrEmpty(objectIdentifier.ServerName?.Value))
         {
-            if (!aliases.TryGetValue(qualifier, out binding))
-            {
-                throw new TdsQueryEngineException($"Unknown table alias '{qualifier}'.");
-            }
+            parts.Add(objectIdentifier.ServerName!.Value);
         }
-        else if (aliases.Count == 1)
+
+        if (!string.IsNullOrEmpty(objectIdentifier.DatabaseName?.Value))
+        {
+            parts.Add(objectIdentifier.DatabaseName!.Value);
+        }
+
+        if (!string.IsNullOrEmpty(objectIdentifier.SchemaName?.Value))
+        {
+            parts.Add(objectIdentifier.SchemaName!.Value);
+        }
+
+        receiverParts = parts;
+        return parts.Count > 0 && methodName.Length > 0;
+    }
+
+    private static Expression BuildColumnByParts(IReadOnlyList<string> parts, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter)
+    {
+        return parts.Count switch
+        {
+            1 => BuildUnqualifiedColumn(parts[0], aliases, parameter),
+            2 => BuildQualifiedColumn(parts[0], parts[1], aliases, parameter),
+            _ => throw new TdsQueryEngineException($"Invalid xml method target '{string.Join(".", parts)}'."),
+        };
+    }
+
+    private static Expression BuildUnqualifiedColumn(string columnName, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter)
+    {
+        AliasBinding? binding;
+        if (aliases.Count == 1)
         {
             binding = aliases.Values.Single();
         }
@@ -1583,18 +1790,29 @@ internal sealed class TdsQueryEngineExecutor
             }
         }
 
-        var member = FindMember(binding.Type, columnName);
-        if (member is null)
+        var member = FindMember(binding.Type, columnName) ?? throw new TdsQueryEngineException($"Unknown column '{columnName}'.");
+        return BuildMemberAccess(binding.Access(parameter), member);
+    }
+
+    private static Expression BuildQualifiedColumn(string alias, string columnName, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter)
+    {
+        if (!aliases.TryGetValue(alias, out var binding))
         {
-            throw new TdsQueryEngineException($"Unknown column '{columnName}'.");
+            throw new TdsQueryEngineException($"Unknown table alias '{alias}'.");
         }
 
-        return member switch
-        {
-            PropertyInfo property => Expression.Property(binding.Access(parameter), property),
-            FieldInfo field => Expression.Field(binding.Access(parameter), field),
-            _ => throw new TdsQueryEngineException($"Unsupported member '{member.Name}'."),
-        };
+        var member = FindMember(binding.Type, columnName) ?? throw new TdsQueryEngineException($"Unknown column '{columnName}'.");
+        return BuildMemberAccess(binding.Access(parameter), member);
+    }
+
+    private static MemberExpression BuildColumn(SqlScalarRefExpression column, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter)
+    {
+        var qualifier = GetQualifier(column);
+        var columnName = GetColumnName(column);
+        var access = qualifier is null
+            ? BuildUnqualifiedColumn(columnName, aliases, parameter)
+            : BuildQualifiedColumn(qualifier, columnName, aliases, parameter);
+        return (MemberExpression)access;
     }
 
     private static MemberInfo? FindMember(Type type, string name)
@@ -1677,6 +1895,33 @@ internal sealed class TdsQueryEngineExecutor
         return expression.Type == targetType ? expression : ConvertExpression(expression, targetType);
     }
 
+    private Expression BuildXmlTypeConversion(Expression value, SqlDataTypeSpecification dataTypeSpec, bool useTryConvert)
+    {
+        var schemaCollectionName = dataTypeSpec.XmlSchemaCollection is null
+            ? null
+            : NormalizeObjectIdentifier(dataTypeSpec.XmlSchemaCollection.Sql);
+        XmlSchemaSet? schemaSet = null;
+        if (schemaCollectionName is not null && !_options.XmlSchemaCollections.TryGetValue(schemaCollectionName, out schemaSet))
+        {
+            throw new TdsQueryEngineException($"Unknown XML schema collection '{schemaCollectionName}'.");
+        }
+
+        var method = typeof(TdsQueryEngineExecutor).GetMethod(
+            useTryConvert ? nameof(TryConvertToXmlCore) : nameof(ConvertToXmlCore),
+            BindingFlags.NonPublic | BindingFlags.Static)!;
+        return Expression.Call(
+            method,
+            Expression.Convert(value, typeof(object)),
+            Expression.Constant(schemaCollectionName, typeof(string)),
+            Expression.Constant(schemaSet, typeof(XmlSchemaSet)),
+            Expression.Constant(dataTypeSpec.XmlDocumentConstraint));
+    }
+
+    private static bool IsXmlDataType(SqlDataTypeSpecification dataTypeSpec)
+    {
+        return string.Equals(dataTypeSpec.DataType.ObjectIdentifier.ObjectName.Value, "XML", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static Expression BuildTypeConversion(Expression value, Type targetType, bool useTryConvert)
     {
         var method = typeof(TdsQueryEngineExecutor).GetMethod(
@@ -1709,6 +1954,201 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
+    private static SqlXmlValue ConvertToXmlCore(object? value, string? schemaCollectionName, XmlSchemaSet? schemaSet, SqlXmlDocumentConstraint documentConstraint)
+    {
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName, out var xmlValue) || xmlValue is null)
+        {
+            throw new TdsQueryEngineException("Cannot convert NULL to 'XML'.");
+        }
+
+        EnsureXmlConstraint(xmlValue.Value, documentConstraint);
+        if (schemaSet is not null)
+        {
+            ValidateXmlAgainstSchema(xmlValue.Value, schemaSet, schemaCollectionName);
+        }
+
+        return schemaCollectionName is null ? xmlValue : xmlValue with { SchemaCollection = schemaCollectionName };
+    }
+
+    private static SqlXmlValue? TryConvertToXmlCore(object? value, string? schemaCollectionName, XmlSchemaSet? schemaSet, SqlXmlDocumentConstraint documentConstraint)
+    {
+        try
+        {
+            return value is null
+                ? null
+                : ConvertToXmlCore(value, schemaCollectionName, schemaSet, documentConstraint);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static SqlXmlValue? XmlQueryCore(object? value, string xquery)
+    {
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        {
+            return null;
+        }
+
+        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var evaluation = navigator.Evaluate(xquery);
+        if (evaluation is XPathNodeIterator iterator)
+        {
+            var fragments = new List<string>();
+            while (iterator.MoveNext())
+            {
+                fragments.Add(iterator.Current.OuterXml);
+            }
+
+            return new SqlXmlValue(string.Concat(fragments), xmlValue.SchemaCollection);
+        }
+
+        var scalar = Convert.ToString(evaluation, CultureInfo.InvariantCulture) ?? string.Empty;
+        return new SqlXmlValue(SecurityElement.Escape(scalar) ?? string.Empty, xmlValue.SchemaCollection);
+    }
+
+    private static object XmlValueCore(object? value, string xquery, Type targetType)
+    {
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        {
+            throw new TdsQueryEngineException("xml.value cannot be evaluated on NULL.");
+        }
+
+        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var evaluation = navigator.Evaluate(xquery);
+        if (evaluation is XPathNodeIterator iterator)
+        {
+            if (!iterator.MoveNext())
+            {
+                throw new TdsQueryEngineException("xml.value returned an empty sequence.");
+            }
+
+            var rawNodeValue = iterator.Current.Value;
+            if (targetType == typeof(SqlXmlValue))
+            {
+                return new SqlXmlValue(iterator.Current.OuterXml, xmlValue.SchemaCollection);
+            }
+
+            return ConvertValue(rawNodeValue, targetType)
+                ?? throw new TdsQueryEngineException($"xml.value returned NULL for target type '{targetType.Name}'.");
+        }
+
+        if (targetType == typeof(SqlXmlValue))
+        {
+            var scalar = Convert.ToString(evaluation, CultureInfo.InvariantCulture) ?? string.Empty;
+            return new SqlXmlValue(SecurityElement.Escape(scalar) ?? string.Empty, xmlValue.SchemaCollection);
+        }
+
+        return ConvertValue(evaluation, targetType)
+            ?? throw new TdsQueryEngineException($"xml.value returned NULL for target type '{targetType.Name}'.");
+    }
+
+    private static int? XmlExistCore(object? value, string xquery)
+    {
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        {
+            return null;
+        }
+
+        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var evaluation = navigator.Evaluate(xquery);
+        if (evaluation is XPathNodeIterator iterator)
+        {
+            return iterator.MoveNext() ? 1 : 0;
+        }
+
+        return evaluation switch
+        {
+            bool boolResult => boolResult ? 1 : 0,
+            string textResult => string.IsNullOrEmpty(textResult) ? 0 : 1,
+            _ => evaluation is null ? 0 : 1,
+        };
+    }
+
+    private static IEnumerable<SqlXmlValue> XmlNodesCore(object? value, string xquery)
+    {
+        if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var xmlValue) || xmlValue is null)
+        {
+            return [];
+        }
+
+        var navigator = CreateXmlContextNavigator(xmlValue.Value);
+        var evaluation = navigator.Evaluate(xquery);
+        if (evaluation is not XPathNodeIterator iterator)
+        {
+            return [];
+        }
+
+        var result = new List<SqlXmlValue>();
+        while (iterator.MoveNext())
+        {
+            result.Add(new SqlXmlValue(iterator.Current.OuterXml, xmlValue.SchemaCollection));
+        }
+
+        return result;
+    }
+
+    private static bool TryConvertToSqlXmlValue(object? value, string? schemaCollectionName, out SqlXmlValue? xmlValue)
+    {
+        if (value is null or DBNull)
+        {
+            xmlValue = null;
+            return true;
+        }
+
+        xmlValue = value switch
+        {
+            SqlXmlValue typedXml => schemaCollectionName is null ? typedXml : typedXml with { SchemaCollection = schemaCollectionName },
+            string text => new SqlXmlValue(text, schemaCollectionName),
+            XDocument document => new SqlXmlValue(document.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
+            XElement element => new SqlXmlValue(element.ToString(SaveOptions.DisableFormatting), schemaCollectionName),
+            XmlDocument document => new SqlXmlValue(document.OuterXml, schemaCollectionName),
+            _ => null,
+        };
+
+        if (xmlValue is null)
+        {
+            return false;
+        }
+
+        _ = XDocument.Parse(xmlValue.Value, LoadOptions.PreserveWhitespace);
+        return true;
+    }
+
+    private static void ValidateXmlAgainstSchema(string xml, XmlSchemaSet schemaSet, string? schemaCollectionName)
+    {
+        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
+        string? validationError = null;
+        document.Validate(schemaSet, (_, args) =>
+        {
+            validationError ??= args.Message;
+        });
+
+        if (validationError is not null)
+        {
+            throw new TdsQueryEngineException($"XML value is not valid for schema collection '{schemaCollectionName}': {validationError}");
+        }
+    }
+
+    private static XPathNavigator CreateXmlContextNavigator(string xml)
+    {
+        var document = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
+        return document.Root?.CreateNavigator()
+            ?? throw new TdsQueryEngineException("Cannot evaluate XML query on an empty document.");
+    }
+
+    private static void EnsureXmlConstraint(string xml, SqlXmlDocumentConstraint documentConstraint)
+    {
+        _ = XDocument.Parse(xml, LoadOptions.PreserveWhitespace);
+        if (documentConstraint == SqlXmlDocumentConstraint.None)
+        {
+            return;
+        }
+
+        // XDocument parsing already enforces a single root element, which matches DOCUMENT/CONTENT checks in this engine.
+    }
+
     private static Type GetClrType(SqlDataTypeSpecification dataTypeSpec)
     {
         var typeName = dataTypeSpec.DataType.ObjectIdentifier.ObjectName.Value;
@@ -1722,7 +2162,8 @@ internal sealed class TdsQueryEngineExecutor
             "REAL" => typeof(float),
             "FLOAT" => typeof(double),
             "DECIMAL" or "NUMERIC" or "MONEY" or "SMALLMONEY" => typeof(decimal),
-            "CHAR" or "NCHAR" or "VARCHAR" or "NVARCHAR" or "TEXT" or "NTEXT" or "XML" or "SYSNAME" => typeof(string),
+            "CHAR" or "NCHAR" or "VARCHAR" or "NVARCHAR" or "TEXT" or "NTEXT" or "SYSNAME" => typeof(string),
+            "XML" => typeof(SqlXmlValue),
             "UNIQUEIDENTIFIER" => typeof(Guid),
             "DATE" => typeof(DateOnly),
             "TIME" => typeof(TimeSpan),
@@ -1906,6 +2347,51 @@ internal sealed class TdsQueryEngineExecutor
         };
     }
 
+    private static Type ResolveSqlTypeFromText(string sqlTypeText)
+    {
+        var parseResult = SqlParser.Parse("SELECT CAST(NULL AS " + sqlTypeText + ")", new SqlParserParseOptions(), out _);
+        if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
+        {
+            throw new TdsQueryEngineException($"xml.value SQL type '{sqlTypeText}' is invalid.");
+        }
+
+        if (parseResult.Script.Batches.Count != 1 ||
+            parseResult.Script.Batches[0].Statements.Count != 1 ||
+            parseResult.Script.Batches[0].Statements[0] is not SqlSelectStatement selectStatement ||
+            selectStatement.SelectSpecification.QueryExpression is not SqlQuerySpecification querySpecification ||
+            querySpecification.SelectClause.SelectExpressions.Count != 1 ||
+            querySpecification.SelectClause.SelectExpressions[0] is not SqlSelectScalarExpression { Expression: SqlCastExpression castExpression })
+        {
+            throw new TdsQueryEngineException($"xml.value SQL type '{sqlTypeText}' is invalid.");
+        }
+
+        return GetClrType(castExpression.DataTypeSpec);
+    }
+
+    private static string NormalizeObjectIdentifier(string identifier)
+    {
+        var parts = identifier.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return identifier.Trim();
+        }
+
+        return string.Join(".", parts.Select(static part =>
+        {
+            if (part.Length >= 2 && part[0] == '[' && part[^1] == ']')
+            {
+                return part[1..^1];
+            }
+
+            if (part.Length >= 2 && part[0] == '"' && part[^1] == '"')
+            {
+                return part[1..^1];
+            }
+
+            return part;
+        }));
+    }
+
     private static object? ConvertLiteral(SqlLiteralExpression literal, Type? targetType)
     {
         object? value = literal.Type switch
@@ -1990,6 +2476,26 @@ internal sealed class TdsQueryEngineExecutor
         if (targetType.IsInstanceOfType(value))
         {
             return value;
+        }
+
+        if (targetType == typeof(SqlXmlValue))
+        {
+            if (!TryConvertToSqlXmlValue(value, schemaCollectionName: null, out var sqlXmlValue) || sqlXmlValue is null)
+            {
+                throw new TdsQueryEngineException($"Cannot convert value of type '{value.GetType().Name}' to 'XML'.");
+            }
+
+            return sqlXmlValue;
+        }
+
+        if (value is SqlXmlValue xmlValue)
+        {
+            if (targetType == typeof(string))
+            {
+                return xmlValue.Value;
+            }
+
+            value = xmlValue.Value;
         }
 
         if (targetType.IsEnum)

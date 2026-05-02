@@ -2517,6 +2517,169 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_XmlDataType_UntypedCast_ReturnsXml()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT CAST(Payload AS XML) AS PayloadXml
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            PayloadXml
+            <root><item id="1">Alpha</item><item id="2">Beta</item></root>
+            """,
+            expectedMaterializedQueries: "XmlDocumentRow[].Where(xmlDocumentRow => (xmlDocumentRow.Id == 1)).Select(xmlDocumentRow2 => new TdsProjection() {PayloadXml = ConvertToXmlCore(Convert(xmlDocumentRow2.Payload, Object), null, null, None)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_Query_ReturnsXmlFragment()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Payload.query('/root/item[@id="1"]') AS Fragment
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Fragment
+            <item id="1">Alpha</item>
+            """,
+            expectedMaterializedQueries: "XmlDocumentRow[].Where(xmlDocumentRow => (xmlDocumentRow.Id == 1)).Select(xmlDocumentRow2 => new TdsProjection() {Fragment = XmlQueryCore(Convert(xmlDocumentRow2.Payload, Object), \"/root/item[@id=\"1\"]\")})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_Value_ReturnsScalarValue()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Payload.value('(/root/item[@id="2"]/text())[1]', 'nvarchar(max)') AS ItemValue
+                    FROM xml_docs
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            ItemValue
+            Beta
+            """,
+            expectedMaterializedQueries: "XmlDocumentRow[].Where(xmlDocumentRow => (xmlDocumentRow.Id == 1)).Select(xmlDocumentRow2 => new TdsProjection() {ItemValue = Convert(XmlValueCore(Convert(xmlDocumentRow2.Payload, Object), \"(/root/item[@id=\"2\"]/text())[1]\", System.String), String)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_Exist_FiltersRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM xml_docs
+                    WHERE Payload.exist('/root/item[@id=2]') = 1
+                    """;
+            },
+            """
+            Id
+            1
+            """,
+            expectedMaterializedQueries: "XmlDocumentRow[].Where(xmlDocumentRow => (XmlExistCore(Convert(xmlDocumentRow.Payload, Object), \"/root/item[@id=2]\") == 1)).Select(xmlDocumentRow2 => new TdsProjection() {Id = xmlDocumentRow2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlMethod_Nodes_ReturnsRowsFromCrossApply()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT n.Item.value('(@id)[1]', 'int') AS ItemId
+                    FROM xml_docs
+                    CROSS APPLY Payload.nodes('/root/item') AS n(Item)
+                    WHERE Id = 1
+                    ORDER BY n.Item.value('(@id)[1]', 'int')
+                    """;
+            },
+            """
+            ItemId
+            1
+            2
+            """,
+            expectedMaterializedQueries: "XmlDocumentRow[].SelectMany(xmlDocumentRow => XmlNodesCore(Convert(xmlDocumentRow.Payload, Object), \"/root/item\").Select(sqlXmlValue => new TdsProjection() {Item = sqlXmlValue}), (xmlDocumentRow2, projection) => new TdsCarrier() {xml_docs = xmlDocumentRow2, n = projection}).Where(carrier => (carrier.xml_docs.Id == 1)).OrderBy(carrier2 => Convert(XmlValueCore(Convert(carrier2.n.Item, Object), \"(@id)[1]\", System.Int32), Int32)).Select(carrier3 => new TdsProjection() {ItemId = Convert(XmlValueCore(Convert(carrier3.n.Item, Object), \"(@id)[1]\", System.Int32), Int32)})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_XmlSchemaCollection_FromOptions_ValidatesTypedXmlCast()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.AddXmlSchemaCollection("dbo.BasicXml", """
+            <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <xsd:element name="root">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="item" minOccurs="0" maxOccurs="unbounded">
+                      <xsd:complexType>
+                        <xsd:simpleContent>
+                          <xsd:extension base="xsd:string">
+                            <xsd:attribute name="id" type="xsd:int" use="required" />
+                          </xsd:extension>
+                        </xsd:simpleContent>
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:schema>
+            """);
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var selectCommand = connection.CreateCommand();
+        selectCommand.CommandText = """
+            SELECT CAST(Payload AS XML(dbo.BasicXml)) AS PayloadXml
+            FROM xml_docs
+            WHERE Id = 1
+            """;
+        await using var reader = await selectCommand.ExecuteReaderAsync();
+
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal("<root><item id=\"1\">Alpha</item><item id=\"2\">Beta</item></root>", reader.GetString(0));
+        Assert.False(await reader.ReadAsync());
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_Parameters_UsesSpExecuteSqlParameters()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -2606,6 +2769,7 @@ public sealed class TdsQueryEngineTests
         options.AddQueryRoot("customers", GetCustomers());
         options.AddQueryRoot("orders", GetOrders());
         options.AddQueryRoot("nullable_customers", GetNullableCustomers());
+        options.AddQueryRoot("xml_docs", GetXmlDocuments());
         return options;
     }
 
@@ -2636,6 +2800,15 @@ public sealed class TdsQueryEngineTests
             new NullableCustomer(1, "Alice"),
             new NullableCustomer(2, "Bob"),
             new NullableCustomer(3, null),
+        ];
+    }
+
+    private static XmlDocumentRow[] GetXmlDocuments()
+    {
+        return
+        [
+            new XmlDocumentRow(1, "<root><item id=\"1\">Alpha</item><item id=\"2\">Beta</item></root>"),
+            new XmlDocumentRow(2, "<root><item id=\"3\">Gamma</item></root>"),
         ];
     }
 
@@ -2753,4 +2926,6 @@ public sealed class TdsQueryEngineTests
     private sealed record Order(int Id, string Region, int Amount);
 
     private sealed record NullableCustomer(int Id, string? Name);
+
+    private sealed record XmlDocumentRow(int Id, string Payload);
 }

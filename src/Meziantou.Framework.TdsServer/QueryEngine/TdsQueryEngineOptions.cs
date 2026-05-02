@@ -1,4 +1,7 @@
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Xml;
+using System.Xml.Schema;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
@@ -16,6 +19,9 @@ public sealed class TdsQueryEngineOptions
 
     /// <summary>Gets the scalar SQL function mappings used by the query translator.</summary>
     public IDictionary<string, TdsQueryScalarFunction> ScalarFunctions { get; } = SqlFunctions.CreateDefaultScalarFunctions();
+
+    /// <summary>Gets the XML schema collections available to typed XML casts.</summary>
+    public IDictionary<string, XmlSchemaSet> XmlSchemaCollections { get; } = new Dictionary<string, XmlSchemaSet>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Adds an <see cref="IQueryable{T}"/> query root.</summary>
     public TdsQueryEngineOptions AddQueryRoot<T>(string name, IQueryable<T> query)
@@ -42,6 +48,33 @@ public sealed class TdsQueryEngineOptions
         return this;
     }
 
+    /// <summary>Adds or replaces an XML schema collection from an XSD definition string.</summary>
+    public TdsQueryEngineOptions AddXmlSchemaCollection(string name, string schemaDefinition)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentException.ThrowIfNullOrWhiteSpace(schemaDefinition);
+
+        using var reader = XmlReader.Create(new StringReader(schemaDefinition));
+        var schema = XmlSchema.Read(reader, ValidationCallback)
+            ?? throw new TdsQueryEngineException($"Invalid XML schema collection definition for '{name}'.");
+        var schemaSet = new XmlSchemaSet();
+        schemaSet.Add(schema);
+        schemaSet.Compile();
+
+        XmlSchemaCollections[name] = schemaSet;
+        return this;
+    }
+
+    /// <summary>Adds or replaces an XML schema collection.</summary>
+    public TdsQueryEngineOptions AddXmlSchemaCollection(string name, XmlSchemaSet schemaSet)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(schemaSet);
+
+        XmlSchemaCollections[name] = schemaSet;
+        return this;
+    }
+
     private static ValueTask<IReadOnlyList<object?>> DefaultMaterializeAsync(IQueryable query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -55,5 +88,10 @@ public sealed class TdsQueryEngineOptions
         }
 
         return ValueTask.FromResult<IReadOnlyList<object?>>(rows);
+    }
+
+    private static void ValidationCallback(object? sender, ValidationEventArgs args)
+    {
+        throw new TdsQueryEngineException($"Invalid XML schema collection definition: {args.Message}");
     }
 }

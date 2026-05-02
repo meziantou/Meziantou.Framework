@@ -23,6 +23,22 @@ foreach (var match in result)
 }
 ```
 
+## Evaluation modes
+
+`Evaluate` supports two modes:
+
+- `JsonPathEvaluationMode.Lax` (default): path evaluation errors produce no match.
+- `JsonPathEvaluationMode.Strict`: path evaluation errors throw `JsonPathEvaluationException`.
+
+```csharp
+var doc = JsonNode.Parse("""{"a": 1}""");
+var path = JsonPath.Parse("$.name");
+
+var laxValue = path.EvaluateValue(doc, JsonPathEvaluationMode.Lax); // null
+
+var strictValue = path.EvaluateValue(doc, JsonPathEvaluationMode.Strict); // throws JsonPathEvaluationException
+```
+
 ## Supported Features
 
 Full RFC 9535 compliance:

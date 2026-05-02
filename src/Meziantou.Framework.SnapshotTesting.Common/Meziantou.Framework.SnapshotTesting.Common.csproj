@@ -1,9 +1,13 @@
-<Project Sdk="Meziantou.NET.Sdk">
+<Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
+    <TargetFramework>$(LatestTargetFramework)</TargetFramework>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="**\*.cs" />
+  </ItemGroup>
 
 </Project>

@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.TdsServer/Meziantou.Framework.TdsServer.csproj" />
   </Folder>
   <Folder Name="/tests/">

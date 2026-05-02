@@ -379,7 +379,7 @@ internal sealed class TdsQueryEngineExecutor
             return BuildUnqualifiedJoinSource(unqualifiedJoinExpression, cteRoots, parameters);
         }
 
-        throw new TdsQueryEngineException("Only table references, derived tables, INNER JOIN table expressions, and CROSS APPLY table expressions are supported.");
+        throw new TdsQueryEngineException("Only table references, derived tables, INNER JOIN/LEFT JOIN/RIGHT JOIN table expressions, and CROSS APPLY table expressions are supported.");
     }
 
     private QuerySource BuildTableSource(SqlTableRefExpression tableExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots)
@@ -428,21 +428,32 @@ internal sealed class TdsQueryEngineExecutor
 
     private QuerySource BuildJoinSource(SqlQualifiedJoinTableExpression joinExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
     {
-        if (joinExpression.JoinOperator != SqlJoinOperatorType.InnerJoin)
+        var isLeftJoin = joinExpression.JoinOperator == SqlJoinOperatorType.LeftOuterJoin;
+        var isRightJoin = joinExpression.JoinOperator == SqlJoinOperatorType.RightOuterJoin;
+        if (joinExpression.JoinOperator != SqlJoinOperatorType.InnerJoin && !isLeftJoin && !isRightJoin)
         {
-            throw new TdsQueryEngineException("Only INNER JOIN is supported.");
+            throw new TdsQueryEngineException("Only INNER JOIN, LEFT JOIN, and RIGHT JOIN are supported.");
         }
+
+#if !NET10_0_OR_GREATER
+        if (isLeftJoin || isRightJoin)
+        {
+            throw new TdsQueryEngineException("LEFT JOIN and RIGHT JOIN require .NET 10 or later.");
+        }
+#endif
 
         var left = BuildSource(joinExpression.Left, cteRoots, parameters);
         var right = BuildSource(joinExpression.Right, cteRoots, parameters);
         if (joinExpression.OnClause?.Expression is not SqlComparisonBooleanExpression { ComparisonOperator: SqlComparisonBooleanExpressionType.Equals } comparison)
         {
-            throw new TdsQueryEngineException("INNER JOIN requires a simple equality ON clause.");
+            var joinName = isLeftJoin ? "LEFT JOIN" : isRightJoin ? "RIGHT JOIN" : "INNER JOIN";
+            throw new TdsQueryEngineException($"{joinName} requires a simple equality ON clause.");
         }
 
         if (!ReferencesAliases(comparison.Left, left.Aliases) && !ReferencesAliases(comparison.Right, left.Aliases))
         {
-            throw new TdsQueryEngineException("INNER JOIN must compare a column from the left source.");
+            var joinName = isLeftJoin ? "LEFT JOIN" : isRightJoin ? "RIGHT JOIN" : "INNER JOIN";
+            throw new TdsQueryEngineException($"{joinName} must compare a column from the left source.");
         }
 
         var leftParameter = Expression.Parameter(left.RowType, "left");
@@ -476,7 +487,25 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var resultBody = Expression.MemberInit(Expression.New(carrierType), bindings);
-        var call = Expression.Call(
+        var call = isLeftJoin
+            ? BuildLeftJoinCall(left, right, leftKey, rightKey, leftParameter, rightParameter, carrierType, resultBody)
+            : isRightJoin
+                ? BuildRightJoinCall(left, right, leftKey, rightKey, leftParameter, rightParameter, carrierType, resultBody)
+                : BuildInnerJoinCall(left, right, leftKey, rightKey, leftParameter, rightParameter, carrierType, resultBody);
+
+        var aliases = new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase);
+        foreach (var member in carrierMembers)
+        {
+            var isNullableAlias = (isLeftJoin && right.Aliases.ContainsKey(member.Name)) || (isRightJoin && left.Aliases.ContainsKey(member.Name));
+            aliases.Add(member.Name, new AliasBinding(member.Type, expression => Expression.Property(expression, member.Name), IsNullable: isNullableAlias));
+        }
+
+        return new QuerySource(left.Query.Provider.CreateQuery(call), carrierType, aliases);
+    }
+
+    private static MethodCallExpression BuildInnerJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)
+    {
+        return Expression.Call(
             typeof(Queryable),
             nameof(Queryable.Join),
             [left.RowType, right.RowType, leftKey.Type, carrierType],
@@ -485,14 +514,40 @@ internal sealed class TdsQueryEngineExecutor
             Expression.Quote(Expression.Lambda(leftKey, leftParameter)),
             Expression.Quote(Expression.Lambda(rightKey, rightParameter)),
             Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)));
+    }
 
-        var aliases = new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase);
-        foreach (var member in carrierMembers)
-        {
-            aliases.Add(member.Name, new AliasBinding(member.Type, expression => Expression.Property(expression, member.Name)));
-        }
+    private static MethodCallExpression BuildLeftJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)
+    {
+#if NET10_0_OR_GREATER
+        return Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.LeftJoin),
+            [left.RowType, right.RowType, leftKey.Type, carrierType],
+            left.Query.Expression,
+            right.Query.Expression,
+            Expression.Quote(Expression.Lambda(leftKey, leftParameter)),
+            Expression.Quote(Expression.Lambda(rightKey, rightParameter)),
+            Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)));
+#else
+        throw new TdsQueryEngineException("LEFT JOIN requires .NET 10 or later.");
+#endif
+    }
 
-        return new QuerySource(left.Query.Provider.CreateQuery(call), carrierType, aliases);
+    private static MethodCallExpression BuildRightJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)
+    {
+#if NET10_0_OR_GREATER
+        return Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.RightJoin),
+            [left.RowType, right.RowType, leftKey.Type, carrierType],
+            left.Query.Expression,
+            right.Query.Expression,
+            Expression.Quote(Expression.Lambda(leftKey, leftParameter)),
+            Expression.Quote(Expression.Lambda(rightKey, rightParameter)),
+            Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)));
+#else
+        throw new TdsQueryEngineException("RIGHT JOIN requires .NET 10 or later.");
+#endif
     }
 
     private QuerySource BuildUnqualifiedJoinSource(SqlUnqualifiedJoinTableExpression joinExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
@@ -1791,7 +1846,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var member = FindMember(binding.Type, columnName) ?? throw new TdsQueryEngineException($"Unknown column '{columnName}'.");
-        return BuildMemberAccess(binding.Access(parameter), member);
+        return BuildColumnAccess(binding, member, parameter);
     }
 
     private static Expression BuildQualifiedColumn(string alias, string columnName, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter)
@@ -1802,17 +1857,41 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var member = FindMember(binding.Type, columnName) ?? throw new TdsQueryEngineException($"Unknown column '{columnName}'.");
-        return BuildMemberAccess(binding.Access(parameter), member);
+        return BuildColumnAccess(binding, member, parameter);
     }
 
-    private static MemberExpression BuildColumn(SqlScalarRefExpression column, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter)
+    private static Expression BuildColumn(SqlScalarRefExpression column, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter)
     {
         var qualifier = GetQualifier(column);
         var columnName = GetColumnName(column);
-        var access = qualifier is null
+        return qualifier is null
             ? BuildUnqualifiedColumn(columnName, aliases, parameter)
             : BuildQualifiedColumn(qualifier, columnName, aliases, parameter);
-        return (MemberExpression)access;
+    }
+
+    private static Expression BuildColumnAccess(AliasBinding binding, MemberInfo member, ParameterExpression parameter)
+    {
+        var instance = binding.Access(parameter);
+        var memberAccess = BuildMemberAccess(instance, member);
+        if (!binding.IsNullable || instance.Type.IsValueType)
+        {
+            return memberAccess;
+        }
+
+        var nullCheck = Expression.Equal(instance, Expression.Constant(null, instance.Type));
+        if (memberAccess.Type.IsValueType && Nullable.GetUnderlyingType(memberAccess.Type) is null)
+        {
+            var nullableType = typeof(Nullable<>).MakeGenericType(memberAccess.Type);
+            return Expression.Condition(
+                nullCheck,
+                Expression.Constant(null, nullableType),
+                Expression.Convert(memberAccess, nullableType));
+        }
+
+        return Expression.Condition(
+            nullCheck,
+            Expression.Constant(null, memberAccess.Type),
+            memberAccess);
     }
 
     private static MemberInfo? FindMember(Type type, string name)
@@ -2617,5 +2696,5 @@ internal sealed class TdsQueryEngineExecutor
 
     private sealed record GroupedQuerySource(IQueryable Query, Type GroupType, Type SourceRowType, IReadOnlyDictionary<string, AliasBinding> Keys, IReadOnlyDictionary<string, AliasBinding> Aliases);
 
-    private sealed record AliasBinding(Type Type, Func<Expression, Expression> Access, bool IsOuter = false);
+    private sealed record AliasBinding(Type Type, Func<Expression, Expression> Access, bool IsOuter = false, bool IsNullable = false);
 }

@@ -1,0 +1,59 @@
+<Project>
+  <Target Name="_MeziantouGenerateSourceRootsCore">
+
+    <PropertyGroup>
+      <_MeziantouSourceRootFile>$(IntermediateOutputPath)$(_MeziantouSourceRootGeneratedFileName)</_MeziantouSourceRootFile>
+      <_MeziantouSourceRootNamespace Condition="'$(RootNamespace)' != ''">$(RootNamespace)</_MeziantouSourceRootNamespace>
+      <_MeziantouSourceRootNamespace Condition="'$(_MeziantouSourceRootNamespace)' == ''">$(MSBuildProjectName)</_MeziantouSourceRootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MeziantouSourceRoot Include="@(SourceRoot)"
+          Condition="'%(SourceRoot.NestedRoot)' == '' and '%(SourceRoot.MappedPath)' != ''">
+        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
+      </_MeziantouSourceRoot>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_MeziantouSourceRootRegistrationLines
+          Include="@(_MeziantouSourceRoot->'        $(_MeziantouSourceRootRegistrationMethod)(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(_MeziantouSourceRootRegistrationLines)' != ''">
+      <_MeziantouSourceRootFileLines Include="// &lt;auto-generated/&gt;" />
+      <_MeziantouSourceRootFileLines Include="using System.Runtime.CompilerServices%3B" />
+      <_MeziantouSourceRootFileLines Include=" " />
+      <_MeziantouSourceRootFileLines Include="[assembly: System.Reflection.AssemblyMetadata(%22$(_MeziantouSourceRootAssemblyMetadataName)%22, %22generated%22)]" />
+      <_MeziantouSourceRootFileLines Include=" " />
+      <_MeziantouSourceRootFileLines Include="namespace $(_MeziantouSourceRootNamespace)%3B" />
+      <_MeziantouSourceRootFileLines Include=" " />
+      <_MeziantouSourceRootFileLines Include="[System.CodeDom.Compiler.GeneratedCode(%22Meziantou.Framework.SourceRootRegistration%22, %22%22)]" />
+      <_MeziantouSourceRootFileLines Include="internal static class $(_MeziantouSourceRootInitializerClassName)" />
+      <_MeziantouSourceRootFileLines Include="{" />
+      <_MeziantouSourceRootFileLines Include="    [ModuleInitializer]" />
+      <_MeziantouSourceRootFileLines Include="    internal static void Initialize()" />
+      <_MeziantouSourceRootFileLines Include="    {" />
+      <_MeziantouSourceRootFileLines Include="@(_MeziantouSourceRootRegistrationLines)" />
+      <_MeziantouSourceRootFileLines Include="    }" />
+      <_MeziantouSourceRootFileLines Include="}" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+        File="$(_MeziantouSourceRootFile)"
+        Lines="@(_MeziantouSourceRootFileLines)"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true"
+        Condition="'@(_MeziantouSourceRootFileLines)' != ''" />
+
+    <ItemGroup Condition="'@(_MeziantouSourceRootFileLines)' != ''">
+      <Compile Include="$(_MeziantouSourceRootFile)" />
+      <EmbedInBinlog Include="$(_MeziantouSourceRootFile)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_MeziantouSourceRoot Remove="@(_MeziantouSourceRoot)" />
+      <_MeziantouSourceRootRegistrationLines Remove="@(_MeziantouSourceRootRegistrationLines)" />
+      <_MeziantouSourceRootFileLines Remove="@(_MeziantouSourceRootFileLines)" />
+    </ItemGroup>
+  </Target>
+</Project>

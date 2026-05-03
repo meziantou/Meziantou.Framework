@@ -112,6 +112,32 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task UpdateSnapshot_UsingMappedCallerFilePath()
+    {
+        await AssertSnapshot(
+            """"
+            var projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+            InlineSnapshot.RegisterSourceRootMapping("/_inline_snapshot_/", projectRoot.Replace('\\', '/') + "/");
+            var settings = InlineSnapshotSettings.Default with
+            {
+                ValidateSourceFilePathUsingPdbInfoWhenAvailable = false,
+                ValidateLineNumberUsingPdbInfoWhenAvailable = false,
+            };
+            InlineSnapshot.Validate(new { Value = 1 }, settings, "", filePath: "/_inline_snapshot_/Program.cs");
+            """",
+            """"
+            var projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+            InlineSnapshot.RegisterSourceRootMapping("/_inline_snapshot_/", projectRoot.Replace('\\', '/') + "/");
+            var settings = InlineSnapshotSettings.Default with
+            {
+                ValidateSourceFilePathUsingPdbInfoWhenAvailable = false,
+                ValidateLineNumberUsingPdbInfoWhenAvailable = false,
+            };
+            InlineSnapshot.Validate(new { Value = 1 }, settings, "Value: 1", filePath: "/_inline_snapshot_/Program.cs");
+            """");
+    }
+
+    [Fact]
     public async Task UpdateSnapshotPreserveComments()
     {
         await AssertSnapshot(

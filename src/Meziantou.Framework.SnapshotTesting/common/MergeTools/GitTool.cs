@@ -1,6 +1,10 @@
 using System.Diagnostics;
 
+#if MEZIANTOU_INLINE_SNAPSHOT_TESTING
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
+#else
+namespace Meziantou.Framework.SnapshotTesting.MergeTools;
+#endif
 
 internal abstract class GitTool : MergeTool
 {

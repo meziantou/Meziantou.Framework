@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net472;net48</TargetFrameworks>
     <Description>Enables verification of objects using inline snapshots</Description>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_INLINE_SNAPSHOT_TESTING</DefineConstants>
     <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 
     <Version>4.0.4</Version>
@@ -15,6 +16,10 @@
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/BuildServerDetector.cs" Link="Utils/BuildServerDetector.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/ContinuousTestingDetector.cs" Link="Utils/ContinuousTestingDetector.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/CallerContextUtilities.cs" Link="Utils/CallerContextUtilities.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeTools/GitTool.cs" Link="MergeTools/GitTool.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/FileInfoExtensions.cs" Link="Utils/FileInfoExtensions.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/ProcessEntry.cs" Link="Utils/ProcessEntry.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/ProcessExtensions.cs" Link="Utils/ProcessExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -32,5 +32,16 @@ jobs:
             8.0.x
             9.0.x
 
+      - name: Install .NET agent skills
+        continue-on-error: true
+        run: |
+          copilot plugin marketplace add dotnet/skills || true
+          copilot plugin install dotnet@dotnet-agent-skills || true
+          copilot plugin install dotnet-diag@dotnet-agent-skills || true
+          copilot plugin install dotnet-msbuild@dotnet-agent-skills || true
+          copilot plugin install dotnet-nuget@dotnet-agent-skills || true
+          copilot plugin install dotnet-test@dotnet-agent-skills || true
+          copilot plugin list || true
+
       - name: Restore solution
         run: dotnet restore

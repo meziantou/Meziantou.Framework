@@ -16,6 +16,43 @@ public class StringSearchUtilitiesTests
     }
 
     [Theory]
+    [InlineData("", "", 0)]
+    [InlineData("kitten", "sitting", 3)]
+    [InlineData("abc", "abc", 0)]
+    [InlineData("a", "b", 1)]
+    [InlineData("élan", "elan", 1)]
+    [InlineData("😀abc", "😀axc", 1)]
+    public void Levenshtein_SpanOverload_Tests(string word1, string word2, int expected)
+    {
+        Assert.Equal(expected, StringSearchUtilities.Levenshtein(word1.AsSpan(), word2.AsSpan()));
+    }
+
+    [Theory]
+    [InlineData("", "", 0, 0)]
+    [InlineData("kitten", "sitting", 2, 3)]
+    [InlineData("kitten", "sitting", 3, 3)]
+    [InlineData("abc", "abc", 0, 0)]
+    [InlineData("abcdefgh", "abc", 2, 3)]
+    public void Levenshtein_Bounded_Tests(string word1, string word2, int maxDistance, int expected)
+    {
+        Assert.Equal(expected, StringSearchUtilities.Levenshtein(word1.AsSpan(), word2.AsSpan(), maxDistance));
+    }
+
+    [Fact]
+    public void LevenshteinBatch_Test()
+    {
+        var distances = StringSearchUtilities.LevenshteinBatch("kitten", ["sitting", "kitten", "mitten"]);
+        Assert.Equal([3, 0, 1], distances);
+    }
+
+    [Fact]
+    public void LevenshteinBatch_WithNullCandidate_Throws()
+    {
+        IReadOnlyList<string> candidates = ["a", null!];
+        Assert.Throws<ArgumentException>(() => StringSearchUtilities.LevenshteinBatch("abc", candidates));
+    }
+
+    [Theory]
     [InlineData(0b101010u, 0b101010u, 0u)]
     [InlineData(0b010101u, 0b101010u, 6u)]
     [InlineData(0b1111u, 0b0u, 4u)]

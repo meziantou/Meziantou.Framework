@@ -10,7 +10,6 @@
     <Project Path="../src/Meziantou.Framework.Http.Recording/Meziantou.Framework.Http.Recording.csproj" />
     <Project Path="../src/Meziantou.Framework.HttpArchive/Meziantou.Framework.HttpArchive.csproj" />
     <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
-    <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />

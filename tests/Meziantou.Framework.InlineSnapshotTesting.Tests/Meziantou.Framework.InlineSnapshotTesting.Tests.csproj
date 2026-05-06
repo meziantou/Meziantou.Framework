@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />

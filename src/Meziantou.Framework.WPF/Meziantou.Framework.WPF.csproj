@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <UseWPF>true</UseWPF>
-    <Version>1.5.25</Version>
+    <Version>2.0.0</Version>
     <Description>Collection of Commands, Markup extensions, DependencyProperty, and collections for WPF</Description>
   </PropertyGroup>
 

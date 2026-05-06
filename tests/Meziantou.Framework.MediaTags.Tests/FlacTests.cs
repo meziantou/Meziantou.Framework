@@ -184,6 +184,15 @@ public sealed class FlacTests
     }
 
     [Fact]
+    public void ReadTags_Duration_IsPopulated()
+    {
+        var result = MediaFile.ReadTags(GetTestFilePath("basic.flac"));
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.Duration);
+        Assert.True(result.Value.Duration!.Value.TotalSeconds is > 0.9 and < 1.1);
+    }
+
+    [Fact]
     public void ReadTags_InvalidFile_ReturnsError()
     {
         using var stream = new MemoryStream([0x00, 0x01, 0x02, 0x03]);

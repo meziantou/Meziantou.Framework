@@ -159,7 +159,7 @@ internal sealed class TdsConnectionProcessor
                     continue;
                 }
 
-                var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint);
+                var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, authenticationResult.UserContext);
                 TdsQueryResult queryResult;
                 try
                 {

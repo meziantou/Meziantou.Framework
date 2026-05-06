@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 namespace Meziantou.Framework.Tds.Handler;
 
 /// <summary>Represents the result of an authentication attempt.</summary>
@@ -25,13 +27,17 @@ public sealed class TdsAuthenticationResult
     /// <summary>Gets the default database to report after login, if any.</summary>
     public string? Database { get; private init; }
 
+    /// <summary>Gets the authenticated user context that will be propagated to query handlers.</summary>
+    public ClaimsPrincipal? UserContext { get; private init; }
+
     /// <summary>Creates a successful authentication result.</summary>
-    public static TdsAuthenticationResult Success(string? database = null)
+    public static TdsAuthenticationResult Success(string? database = null, ClaimsPrincipal? userContext = null)
     {
         return new TdsAuthenticationResult
         {
             IsAuthenticated = true,
             Database = database,
+            UserContext = userContext,
         };
     }
 

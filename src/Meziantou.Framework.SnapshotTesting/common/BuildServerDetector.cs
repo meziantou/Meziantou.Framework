@@ -1,6 +1,6 @@
 namespace Meziantou.Framework;
 
-public static class BuildServerDetector
+internal static class BuildServerDetector
 {
     private static bool HasEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name) is not null;
 

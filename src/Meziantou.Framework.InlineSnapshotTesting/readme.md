@@ -102,6 +102,13 @@ InlineSnapshot.CreateBuilder()
     .Validate(data, "");
 ````
 
+When deterministic source paths are enabled, `CallerFilePath` values can be path-mapped (for example `/_/Program.cs`).
+`Meziantou.Framework.InlineSnapshotTesting` registers source roots automatically from NuGet build props, and you can also register them manually:
+
+````c#
+InlineSnapshot.RegisterSourceRootMapping("/_/", @"C:/agent/_work/1/s/");
+````
+
 ## Serializer
 
 By default, `InlineSnapshot` uses the [`HumanReadableSerializer`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer) to serialize the object. This is the recommended serializer for most cases. However, you can provide your own serializer if needed.

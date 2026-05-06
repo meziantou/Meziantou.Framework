@@ -7,6 +7,7 @@
 - Accepts TDS client connections over TCP
 - Callback for authentication (SQL login + token-based extension data)
 - Callback for query handling (SQL batch and RPC requests)
+- Optional query engine for stored procedures and a small SQL `SELECT` subset over `IQueryable` roots
 - Serializes result sets and protocol tokens back to clients
 - Native JSON column type serialization (`TDSType.JSON`, UTF-8 payload)
 - ASP.NET Core hosting integration through `IHostApplicationBuilder`
@@ -15,6 +16,7 @@
 
 ```csharp
 using System.Net;
+using System.Security.Claims;
 using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
 using Meziantou.Framework.Tds.Hosting;
@@ -30,12 +32,22 @@ app.MapTdsHandlers(
     authenticate: async (context, cancellationToken) =>
     {
         if (context.UserName == "sa" && context.Password == "Password123!")
-            return TdsAuthenticationResult.Success();
+        {
+            var identity = new ClaimsIdentity(
+            [
+                new Claim(ClaimTypes.NameIdentifier, "42"),
+                new Claim(ClaimTypes.Name, context.UserName ?? "sa"),
+            ],
+            authenticationType: "password");
+            return TdsAuthenticationResult.Success(userContext: new ClaimsPrincipal(identity));
+        }
 
         return TdsAuthenticationResult.Fail("Login failed");
     },
     query: async (context, cancellationToken) =>
     {
+        var user = context.UserContext;
+
         var resultSet = new TdsResultSet();
         resultSet.Columns.Add(new TdsColumn("Message", TdsColumnType.NVarChar));
         resultSet.Rows.Add(["Hello from TDS server"]);
@@ -47,6 +59,35 @@ app.MapTdsHandlers(
 
 app.Run();
 ```
+
+## Built-in query engine
+
+The low-level query callback can be backed by the built-in query engine. It maps RPC requests to configured delegates and translates simple SQL text queries to typed `IQueryable` expressions.
+
+```csharp
+using Meziantou.Framework.Tds.QueryEngine;
+
+var customers = new[]
+{
+    new Customer(1, "Alice"),
+    new Customer(2, "Bob"),
+}.AsQueryable();
+
+var queryEngineOptions = new TdsQueryEngineOptions();
+queryEngineOptions.AddQueryRoot("customers", customers);
+queryEngineOptions.StoredProcedures.Add("GetCustomer", (int id) => customers.Where(customer => customer.Id == id));
+
+app.MapTdsAuthenticationHandler((context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()));
+app.MapTdsQueryEngine(queryEngineOptions);
+```
+
+By default, the query engine materializes translated queries by enumerating the `IQueryable`. You can replace `MaterializeAsync` to use an async provider-specific materializer such as Entity Framework Core's `ToListAsync`.
+
+The initial SQL text support is intentionally small: one `SELECT` statement with optional non-recursive CTEs (`WITH ... AS (...)`) including CTE column lists, `FROM` (including derived tables), `INNER JOIN` (including derived tables), and `.NET 10+` `LEFT JOIN` / `RIGHT JOIN` (including derived tables), `CROSS APPLY` for `xml.nodes(...)`, `WHERE` comparisons combined with `AND`/`OR`/`NOT`, `IS NULL`/`IS NOT NULL`, `IN`/`NOT IN` (value lists and simple subqueries, including correlated references), `EXISTS`/`NOT EXISTS` (simple subqueries, including correlated references), SQL parameters, `TOP`, `DISTINCT`, `SELECT *` for single-table queries, selected columns with aliases, `ORDER BY` (including `OFFSET/FETCH`), `UNION`/`UNION ALL`, multi-column `GROUP BY`, `HAVING`, grouped aggregates (`COUNT(*)`, `SUM`, `MIN`, `MAX`, `AVG`), scalar arithmetic operators (`+`, `-`, `*`, `/`, `%`), string concatenation (`+`, `||`, `CONCAT`), and scalar functions (`UPPER`, `LOWER`, `LEN`, `LTRIM`, `RTRIM`, `TRIM`, `LEFT`, `RIGHT`, `SUBSTRING`, `REPLACE`, `TRANSLATE`, `STUFF`, `STRING_ESCAPE`, `FORMAT`, `ISNULL`, `COALESCE`, `NULLIF`, `IIF`, `CHOOSE`, `CAST`, `CONVERT`, `TRY_CAST`, `TRY_CONVERT`, `GETDATE`, `SYSDATETIME`, `DATEADD`, `DATEDIFF`, `EOMONTH`, `YEAR`, `MONTH`, `DAY`, `ABS`, `ROUND`, `CEILING`, `FLOOR`, `POWER`, `SQRT`, `EXP`, `LOG`, `SIN`, `COS`, `TAN`, `ASIN`, `ACOS`, `ATAN`, `ATN2`, `COT`, `ISJSON`, `JSON_VALUE`, `JSON_PATH_EXISTS`, `JSON_QUERY`) with SQL-style `lax`/`strict` path mode support for JSON path arguments, plus XML methods (`.query()`, `.value()`, `.exist()`, `.nodes()`) and typed/untyped XML casts.
+
+Built-in scalar function mappings can be customized through `TdsQueryEngineOptions.ScalarFunctions` (or `AddScalarFunction`). By default `UPPER` maps to `string.ToUpperInvariant` and `LOWER` maps to `string.ToLowerInvariant`, but you can replace them (for example with provider-specific `ToUpper` / `ToLower` mappings).
+
+Main unsupported SQL features include `LIKE`, recursive CTEs, many advanced subquery forms (for example scalar subqueries in projections), DML (`INSERT`/`UPDATE`/`DELETE`), and multiple statements/result sets.
 
 ## Access command text, stored procedure name, and parameters
 
@@ -76,6 +117,8 @@ app.MapTdsHandlers(
             var json = parameter.AsJson();
             var xml = parameter.AsXml();
         }
+
+        var user = context.UserContext; // ClaimsPrincipal from authentication result, if any
 
         return new TdsQueryResult();
     });

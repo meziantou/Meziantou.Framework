@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Text.RegularExpressions;
+using Meziantou.Framework.SnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
@@ -74,6 +75,22 @@ public sealed class SnapshotTests
 
         var exception = Assert.Throws<SnapshotException>(() => SnapshotCallerContext.ResolveSourceFilePath(sourceFilePath));
         Assert.Contains(sourceFilePath, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ResolveSourceFilePath_UsesRegisteredSourceRootMapping()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFilePath = directory.GetFullPath("sub/file.cs");
+        sourceFilePath.CreateParentDirectory();
+        File.WriteAllText(sourceFilePath, "class C {}");
+
+        var sourceRoot = directory.FullPath.Value.Replace('\\', '/');
+        Snapshot.RegisterSourceRootMapping("/_snapshot_tests_/", sourceRoot + "/");
+
+        var resolvedPath = SnapshotCallerContext.ResolveSourceFilePath("/_snapshot_tests_/sub/file.cs");
+
+        Assert.Equal(sourceFilePath, resolvedPath);
     }
 
     [Fact]
@@ -384,6 +401,18 @@ public sealed class SnapshotTests
         };
 
         ValidateWithSerializerCount(validateSettings, count: 2);
+    }
+
+    [Theory]
+    [InlineData("ping", "ping", "")]
+    [InlineData("ping ", "ping", "")]
+    [InlineData("ping a b", "ping", "a b")]
+    [InlineData("\"ping\"", "ping", "")]
+    [InlineData("\"ping\" ", "ping", "")]
+    [InlineData("\"ping\" a b", "ping", "a b")]
+    public void GitTool_ParseCommand(string value, string command, string arguments)
+    {
+        Assert.Equal((command, arguments), GitTool.ParseCommandFromConfiguration(value));
     }
 
     private static void ValidateWithSerializerCount(SnapshotSettings settings, int count)

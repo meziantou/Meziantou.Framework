@@ -59,6 +59,19 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void Validate_DoesNotComputeCallerContextWhenSnapshotMatches()
+    {
+        var exception = Record.Exception(() => InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "{}", "invalid\0path", 1));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void Validate_ComputesCallerContextWhenSnapshotDiffers()
+    {
+        Assert.Throws<ArgumentException>(() => InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "invalid snapshot", "invalid\0path", 1));
+    }
+
+    [Fact]
     public async Task UpdateSnapshotUsingQuotedString_WithSettings()
     {
         await AssertSnapshot(
@@ -96,6 +109,32 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             """
             InlineSnapshot.Validate(new object(), "{}");
             """);
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_UsingMappedCallerFilePath()
+    {
+        await AssertSnapshot(
+            """"
+            var projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+            InlineSnapshot.RegisterSourceRootMapping("/_inline_snapshot_/", projectRoot.Replace('\\', '/') + "/");
+            var settings = InlineSnapshotSettings.Default with
+            {
+                ValidateSourceFilePathUsingPdbInfoWhenAvailable = false,
+                ValidateLineNumberUsingPdbInfoWhenAvailable = false,
+            };
+            InlineSnapshot.Validate(new { Value = 1 }, settings, "", filePath: "/_inline_snapshot_/Program.cs");
+            """",
+            """"
+            var projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+            InlineSnapshot.RegisterSourceRootMapping("/_inline_snapshot_/", projectRoot.Replace('\\', '/') + "/");
+            var settings = InlineSnapshotSettings.Default with
+            {
+                ValidateSourceFilePathUsingPdbInfoWhenAvailable = false,
+                ValidateLineNumberUsingPdbInfoWhenAvailable = false,
+            };
+            InlineSnapshot.Validate(new { Value = 1 }, settings, "Value: 1", filePath: "/_inline_snapshot_/Program.cs");
+            """");
     }
 
     [Fact]

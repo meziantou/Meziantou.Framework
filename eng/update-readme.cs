@@ -1,10 +1,12 @@
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
-using Meziantou.Framework;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Meziantou.Framework;
 
 if (args.Length > 0 && args[0] is "--help" or "-h")
 {
@@ -36,15 +38,20 @@ return 0;
 int UpdateNuGetReadme()
 {
     var readmePath = rootPath / "README.md";
+    Console.WriteLine("[update-nuget-readme] Starting NuGet README update");
+    var nugetUpdateStopwatch = Stopwatch.StartNew();
 
     // Enumerate all .csproj files under src/, sorted by file name (without extension)
     var csprojFiles = new List<string>(Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories));
     csprojFiles.Sort((a, b) => string.Compare(Path.GetFileNameWithoutExtension(a), Path.GetFileNameWithoutExtension(b), StringComparison.OrdinalIgnoreCase));
+    Console.WriteLine($"[update-nuget-readme] NuGet discovery: found {csprojFiles.Count} project files");
 
     // Build the NuGet packages Markdown table
     var sb = new StringBuilder();
     sb.Append("| Name | Version | Readme |\n");
     sb.Append("| :--- | :---: | :---: |\n");
+    var packableProjectCount = 0;
+    var projectWithReadmeCount = 0;
 
     foreach (var csproj in csprojFiles)
     {
@@ -55,12 +62,14 @@ int UpdateNuGetReadme()
             continue;
         }
 
+        packableProjectCount++;
         var fileName = Path.GetFileNameWithoutExtension(csproj);
         sb.Append($"| {fileName} | [![NuGet](https://img.shields.io/nuget/v/{fileName}.svg)](https://www.nuget.org/packages/{fileName}/) |");
 
         var packageReadmePath = FullPath.FromPath(csproj).Parent / "readme.md";
         if (File.Exists(packageReadmePath))
         {
+            projectWithReadmeCount++;
             var relativePath = packageReadmePath.MakePathRelativeTo(rootPath).Replace('\\', '/');
             sb.Append($" [readme]({relativePath}) |\n");
         }
@@ -69,6 +78,9 @@ int UpdateNuGetReadme()
             sb.Append(" |\n");
         }
     }
+
+    nugetUpdateStopwatch.Stop();
+    Console.WriteLine($"[update-nuget-readme] NuGet metrics: packable={packableProjectCount}, with-readme={projectWithReadmeCount}, elapsed={nugetUpdateStopwatch.Elapsed.TotalSeconds:F2}s");
 
     // Read existing README
     var originalLines = File.ReadAllLines(readmePath);
@@ -117,17 +129,26 @@ int UpdateToolReadmes()
     // Read the latest TFM from Directory.Build.props so we don't hardcode "net10.0"
     var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
     var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
+    var maxDegreeOfParallelism = GetUpdateReadmeMaxDegreeOfParallelism();
 
-    var toolProjects = new List<(string Csproj, string? ToolName, string ToolReadme)>();
-
-    foreach (var csproj in Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories))
+    Console.WriteLine($"[update-tool-readme] Starting tool project discovery (max-degree-of-parallelism={maxDegreeOfParallelism})");
+    var discoveryStopwatch = Stopwatch.StartNew();
+    var csprojFiles = Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories).ToArray();
+    var scannedProjectCount = csprojFiles.Length;
+    var executableProjectCount = 0;
+    var commandLineProjectCount = 0;
+    var toolProjects = new ConcurrentBag<ToolProject>();
+    var missingReadmeErrors = new ConcurrentBag<string>();
+    var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDegreeOfParallelism };
+    Parallel.ForEach(csprojFiles, parallelOptions, csproj =>
     {
         var doc = XDocument.Load(csproj);
         if (!IsExecutableProject(csproj, latestTfm))
         {
-            continue;
+            return;
         }
 
+        Interlocked.Increment(ref executableProjectCount);
         var referencesSystemCommandLine = doc.Root?
             .Descendants("PackageReference")
             .Any(static node => string.Equals(
@@ -136,42 +157,68 @@ int UpdateToolReadmes()
                 StringComparison.OrdinalIgnoreCase)) is true;
         if (!referencesSystemCommandLine)
         {
-            continue;
+            return;
         }
 
+        Interlocked.Increment(ref commandLineProjectCount);
         var toolName = doc.Root?.Descendants("ToolCommandName").FirstOrDefault()?.Value;
 
         var toolReadme = FullPath.FromPath(csproj).Parent / "readme.md";
         if (!File.Exists(toolReadme))
         {
-            Console.Error.WriteLine($"ERROR: Tool {csproj} does not have a readme.md file");
-            return 1;
+            missingReadmeErrors.Add($"ERROR: Tool {csproj} does not have a readme.md file");
+            return;
         }
 
-        toolProjects.Add((csproj, toolName, toolReadme));
+        toolProjects.Add(new ToolProject(csproj, toolName, toolReadme));
+    });
+    var orderedToolProjects = toolProjects.OrderBy(static project => project.Csproj, StringComparer.OrdinalIgnoreCase).ToArray();
+
+    discoveryStopwatch.Stop();
+    Console.WriteLine($"[update-tool-readme] Discovery metrics: scanned={scannedProjectCount}, executable={executableProjectCount}, system-commandline={commandLineProjectCount}, tool-projects={orderedToolProjects.Length}, elapsed={discoveryStopwatch.Elapsed.TotalSeconds:F2}s");
+
+    if (!missingReadmeErrors.IsEmpty)
+    {
+        foreach (var error in missingReadmeErrors.OrderBy(static error => error, StringComparer.Ordinal))
+        {
+            Console.Error.WriteLine(error);
+        }
+
+        return 1;
     }
 
-    var editedFiles = 0;
-    foreach (var project in toolProjects)
+    Console.WriteLine("[update-tool-readme] Starting parallel --help generation");
+    var generationStopwatch = Stopwatch.StartNew();
+    var helpSectionPattern = new Regex("(?<=<!-- help -->)(.*?)(?=<!-- help -->)", RegexOptions.Singleline | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
+    var readmeUpdates = new ToolReadmeUpdate?[orderedToolProjects.Length];
+    Parallel.For(0, orderedToolProjects.Length, parallelOptions, index =>
     {
-        Console.WriteLine($"Building {project.Csproj}");
+        var project = orderedToolProjects[index];
+        Console.WriteLine($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Building tool project: {project.Csproj}");
         string[] buildArgs = ["build", project.Csproj, "--framework", latestTfm, "-p:RunAnalyzers=false", "-p:RunAnalyzersDuringBuild=false"];
         _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2));
 
-        Console.WriteLine($"Processing {project.Csproj}");
+        Console.WriteLine($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Generating help output for tool project: {project.Csproj}");
 
         var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, latestTfm, project.ToolName);
 
         var toolReadmeContent = File.ReadAllText(project.ToolReadme);
-        var pattern = new Regex("(?<=<!-- help -->)(.*?)(?=<!-- help -->)", RegexOptions.Singleline | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
-        var newToolReadmeContent = pattern.Replace(toolReadmeContent, $"\n{helpMarkdown}\n");
+        var newToolReadmeContent = helpSectionPattern.Replace(toolReadmeContent, $"\n{helpMarkdown}\n");
         newToolReadmeContent = newToolReadmeContent.TrimEnd(' ', '\t', '\r', '\n');
+        readmeUpdates[index] = new ToolReadmeUpdate(project.ToolReadme, toolReadmeContent, newToolReadmeContent);
+    });
+    generationStopwatch.Stop();
+    Console.WriteLine($"[update-tool-readme] --help generation metrics: tool-projects={orderedToolProjects.Length}, elapsed={generationStopwatch.Elapsed.TotalSeconds:F2}s");
 
-        if (toolReadmeContent != newToolReadmeContent)
+    var editedFiles = 0;
+    for (var i = 0; i < orderedToolProjects.Length; i++)
+    {
+        var update = readmeUpdates[i] ?? throw new InvalidOperationException($"Internal error: missing README update result for index {i}.");
+        if (update.HasChanges)
         {
-            File.WriteAllText(project.ToolReadme, newToolReadmeContent);
-            Console.WriteLine($"WARNING: {project.ToolReadme} was not up-to-date");
-            Interlocked.Increment(ref editedFiles);
+            File.WriteAllText(update.ToolReadme, update.NewContent);
+            Console.WriteLine($"WARNING: {update.ToolReadme} was not up-to-date");
+            editedFiles++;
         }
     }
 
@@ -183,6 +230,22 @@ int UpdateToolReadmes()
     }
 
     return 0;
+}
+
+static int GetUpdateReadmeMaxDegreeOfParallelism()
+{
+    var value = Environment.GetEnvironmentVariable("UPDATE_README_MAX_PARALLELISM");
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return Math.Clamp(Environment.ProcessorCount, 1, 4);
+    }
+
+    if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedValue) && parsedValue > 0)
+    {
+        return parsedValue;
+    }
+
+    throw new InvalidOperationException($"Environment variable UPDATE_README_MAX_PARALLELISM must be a positive integer. Current value: '{value}'.");
 }
 
 static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? toolName)
@@ -197,7 +260,7 @@ static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? too
         var section = sections[i];
         if (string.IsNullOrWhiteSpace(section.HelpText))
         {
-            var commandPathDisplay = section.CommandPath.Length is 0 ? "(root)" : string.Join(' ', section.CommandPath);
+            var commandPathDisplay = FormatCommandPath(section.CommandPath);
             throw new InvalidOperationException($"Tool '{csproj}' produced an empty help section for command '{commandPathDisplay}'.");
         }
 
@@ -270,6 +333,7 @@ static string GetToolHelpText(string csproj, string latestTfm, string? toolName,
     var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--" };
     runArgs.AddRange(commandPath);
     runArgs.Add("--help");
+    Console.WriteLine($"[update-tool-readme] Getting --help for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
 
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
     var helpText = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
@@ -292,6 +356,7 @@ static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm,
     var commandLine = commandPath.Length is 0 ? string.Empty : string.Join(' ', commandPath) + " ";
     var suggestDirective = $"[suggest:{commandLine.Length}]";
     var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--", suggestDirective, commandLine };
+    Console.WriteLine($"[update-tool-readme] Getting subcommands for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
     var suggestionsOutput = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
     suggestionsOutput = TrimEndOfLines(suggestionsOutput).TrimEnd('\r', '\n');
@@ -387,6 +452,9 @@ static string? ExtractMsBuildPropertyValue(string output, string propertyName)
 static string TrimEndOfLines(string text) =>
     Regex.Replace(text, "[ \\t]+(?=\\r?\\n|$)", string.Empty, RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
 
+static string FormatCommandPath(string[] commandPath) =>
+    commandPath.Length is 0 ? "(root)" : string.Join(' ', commandPath);
+
 static void RunProcess(string fileName, string[] arguments)
 {
     var psi = new ProcessStartInfo(fileName)
@@ -403,3 +471,10 @@ static void RunProcess(string fileName, string[] arguments)
 }
 
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
+
+internal readonly record struct ToolProject(string Csproj, string? ToolName, string ToolReadme);
+
+internal readonly record struct ToolReadmeUpdate(string ToolReadme, string OriginalContent, string NewContent)
+{
+    public bool HasChanges => !string.Equals(OriginalContent, NewContent, StringComparison.Ordinal);
+}

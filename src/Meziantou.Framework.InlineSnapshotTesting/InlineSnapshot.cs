@@ -1,6 +1,9 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
+using Meziantou.Framework.SnapshotTesting;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -16,6 +19,18 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 /// </example>
 public static class InlineSnapshot
 {
+    /// <summary>
+    /// Registers a deterministic source-root mapping so generated paths (for example <c>/_/</c>)
+    /// can be resolved back to real source files on disk.
+    /// </summary>
+    /// <param name="mappedPath">Deterministic mapped prefix emitted by the compiler.</param>
+    /// <param name="realPath">Real source-root path on disk.</param>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static void RegisterSourceRootMapping(string mappedPath, string realPath)
+    {
+        CallerContextUtilities.RegisterSourceRootMapping(mappedPath, realPath);
+    }
+
     /// <summary>Creates a new <see cref="InlineSnapshotBuilder"/> with the specified settings.</summary>
     public static InlineSnapshotBuilder WithSettings(InlineSnapshotSettings? settings) => new(settings);
 
@@ -89,11 +104,10 @@ public static class InlineSnapshot
     public static void Validate(object? subject, InlineSnapshotSettings? settings, string? expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
         settings ??= InlineSnapshotSettings.Default;
-        var context = CallerContext.Get(settings, filePath, lineNumber);
-        ShouldMatchInlineSnapshot(subject, context, settings, expected);
+        ShouldMatchInlineSnapshot(subject, settings, expected, filePath, lineNumber);
     }
 
-    internal static void ShouldMatchInlineSnapshot(object? subject, CallerContext context, InlineSnapshotSettings settings, string? expected)
+    internal static void ShouldMatchInlineSnapshot(object? subject, InlineSnapshotSettings settings, string? expected, string? filePath, int lineNumber)
     {
         var actual = settings.SnapshotSerializer.Serialize(subject);
         if (actual is not null)
@@ -109,8 +123,11 @@ public static class InlineSnapshot
 
         var normalizedActual = settings.SnapshotComparer.NormalizeValue(actual);
         var normalizedExpected = settings.SnapshotComparer.NormalizeValue(expected);
+        CallerContext GetCallerContext() => CallerContext.Get(settings, filePath, lineNumber);
+
         if (!settings.SnapshotComparer.AreEqual(normalizedActual, normalizedExpected))
         {
+            var context = GetCallerContext();
             if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
             {
                 FileEditor.UpdateFile(context, settings, expected, actual);
@@ -127,6 +144,7 @@ public static class InlineSnapshot
         }
         else if (settings.ForceUpdateSnapshots)
         {
+            var context = GetCallerContext();
             FileEditor.UpdateFile(context, settings, expected, actual);
         }
     }

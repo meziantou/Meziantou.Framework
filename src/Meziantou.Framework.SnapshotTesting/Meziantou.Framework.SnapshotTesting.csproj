@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of objects using file-based snapshots</Description>
-    <Version>1.0.4</Version>
+    <Version>1.0.6</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +13,9 @@
     <None Include="build/**" Pack="true" PackagePath="build" />
     <None Include="buildTransitive/**" Pack="true" PackagePath="buildTransitive" />
     <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting" />
+    <None Include="common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="build/Meziantou.Framework.SourceRootRegistration.props" />
+    <None Include="common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SourceRootRegistration.props" />
+    <None Include="common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="buildMultiTargeting/Meziantou.Framework.SourceRootRegistration.props" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.SnapshotTesting.Common/Meziantou.Framework.SnapshotTesting.Common.csproj" />
     <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="../Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
   </ItemGroup>

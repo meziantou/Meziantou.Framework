@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Net;
+using System.Security.Claims;
 using System.Text;
 using Meziantou.Framework.Tds.Handler;
 
@@ -7,7 +8,7 @@ namespace Meziantou.Framework.Tds.Protocol;
 
 internal static class TdsQueryRequestParser
 {
-    public static TdsQueryContext Parse(TdsPacket packet, EndPoint remoteEndPoint)
+    public static TdsQueryContext Parse(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext)
     {
         ArgumentNullException.ThrowIfNull(packet);
         ArgumentNullException.ThrowIfNull(remoteEndPoint);
@@ -19,13 +20,14 @@ internal static class TdsQueryRequestParser
                 RemoteEndPoint = remoteEndPoint,
                 RequestType = TdsQueryRequestType.SqlBatch,
                 CommandText = DecodeUnicode(packet.Payload),
+                UserContext = userContext,
             },
-            TdsPacketType.Rpc => CreateRpcContext(packet.Payload, remoteEndPoint),
+            TdsPacketType.Rpc => CreateRpcContext(packet.Payload, remoteEndPoint, userContext),
             _ => throw new InvalidOperationException($"Unsupported query packet type '{packet.Type}'."),
         };
     }
 
-    private static TdsQueryContext CreateRpcContext(byte[] payload, EndPoint remoteEndPoint)
+    private static TdsQueryContext CreateRpcContext(byte[] payload, EndPoint remoteEndPoint, ClaimsPrincipal? userContext)
     {
         var request = TryParseRpc(payload) ?? new TdsRpcRequest
         {
@@ -38,6 +40,7 @@ internal static class TdsQueryRequestParser
             RequestType = TdsQueryRequestType.Rpc,
             ProcedureName = request.ProcedureName,
             Parameters = request.Parameters,
+            UserContext = userContext,
         };
     }
 

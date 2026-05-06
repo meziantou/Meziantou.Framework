@@ -74,7 +74,6 @@ public readonly struct InlineSnapshotBuilder
     public void Validate(object? subject, string? expected = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
         var settings = _settings;
-        var context = CallerContext.Get(settings, filePath, lineNumber);
-        InlineSnapshot.ShouldMatchInlineSnapshot(subject, context, settings, expected);
+        InlineSnapshot.ShouldMatchInlineSnapshot(subject, settings, expected, filePath, lineNumber);
     }
 }

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 
 namespace Meziantou.Framework.Tds.Handler;
 
@@ -19,4 +20,7 @@ public sealed class TdsQueryContext
 
     /// <summary>Gets the decoded RPC parameters.</summary>
     public IReadOnlyList<TdsQueryParameter> Parameters { get; init; } = [];
+
+    /// <summary>Gets the authenticated user context associated with this query request.</summary>
+    public ClaimsPrincipal? UserContext { get; init; }
 }

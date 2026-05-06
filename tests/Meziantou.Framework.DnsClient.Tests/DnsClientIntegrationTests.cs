@@ -11,9 +11,14 @@ public sealed class DnsClientIntegrationTests
     private const string CloudflareDoH = "https://cloudflare-dns.com/dns-query";
     private const string Quad9DoH = "https://dns.quad9.net/dns-query";
 
-    private static DnsClient CreateDoHClient(string url = CloudflareDoH)
+    private static DnsClient CreateDoHClient(string url = CloudflareDoH, TimeSpan? timeout = null)
     {
-        return new DnsClient(url, DnsClientProtocol.Https);
+        var options = timeout is null ? null : new DnsClientOptions
+        {
+            Timeout = timeout.Value,
+        };
+
+        return new DnsClient(url, DnsClientProtocol.Https, options);
     }
 
     private static Task<DnsResponseMessage> QueryWithRetryAsync(DnsClient client, string domain, DnsQueryType queryType, DnsQueryClass queryClass = DnsQueryClass.IN)
@@ -326,7 +331,7 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_WithDnsOverHttps_Quad9()
     {
-        using var client = CreateDoHClient(Quad9DoH);
+        using var client = CreateDoHClient(Quad9DoH, timeout: TimeSpan.FromSeconds(20));
         var response = await QueryWithRetryAsync(client, "example.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);

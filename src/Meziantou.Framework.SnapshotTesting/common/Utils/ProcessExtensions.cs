@@ -3,10 +3,51 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
+#if MEZIANTOU_INLINE_SNAPSHOT_TESTING
+namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
+#else
 namespace Meziantou.Framework.SnapshotTesting.Utils;
+#endif
 
 internal static partial class ProcessExtensions
 {
+    [SupportedOSPlatform("windows")]
+    public static IEnumerable<int> GetAncestorProcessIds(this Process process)
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("Only supported on Windows");
+
+        return GetAncestorProcessIdsIterator();
+
+        IEnumerable<int> GetAncestorProcessIdsIterator()
+        {
+            var returnedProcesses = new HashSet<int>();
+
+            var processId = process.Id;
+            var processes = GetProcesses().ToList();
+            var found = true;
+            while (found)
+            {
+                found = false;
+                foreach (var entry in processes)
+                {
+                    if (entry.ProcessId == processId)
+                    {
+                        if (returnedProcesses.Add(entry.ParentProcessId))
+                        {
+                            yield return entry.ParentProcessId;
+                            processId = entry.ParentProcessId;
+                            found = true;
+                        }
+                    }
+                }
+
+                if (!found)
+                    yield break;
+            }
+        }
+    }
+
     [SupportedOSPlatform("windows")]
     public static IEnumerable<Process> GetAncestorProcesses(this Process process)
     {

@@ -6,10 +6,7 @@ using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class SnapshotSerializerTests
 {
-    private static readonly InlineSnapshotSettings Settings = InlineSnapshotSettings.Default with
-    {
-        ValidateLineNumberUsingPdbInfoWhenAvailable = false,
-    };
+    private static readonly InlineSnapshotSettings Settings = InlineSnapshotSettings.Default;
 
     [Fact]
     public void Argon()

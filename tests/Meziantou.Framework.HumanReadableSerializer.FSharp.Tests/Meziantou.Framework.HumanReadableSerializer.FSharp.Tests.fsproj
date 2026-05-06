@@ -3,7 +3,7 @@
   <PropertyGroup>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

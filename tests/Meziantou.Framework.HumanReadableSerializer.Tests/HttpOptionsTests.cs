@@ -25,20 +25,6 @@ public sealed class HttpOptionsTests : SerializerTestsBase
             RequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.com/foo"),
         };
 
-#if NET472
-        AssertSerialization(httpContent, new HumanReadableHttpResponseMessageOptions { RequestMessageFormat = HttpRequestMessageFormat.Full }, """
-            StatusCode: 200 (OK)
-            Content:
-              Headers:
-                Content-Type: text/plain; charset=utf-8
-              Value: test
-            RequestMessage:
-              Method: GET
-              RequestUri: http://example.com/foo
-              Version: 1.1
-              Content: <null>
-            """);
-#else
         AssertSerialization(httpContent, new HumanReadableHttpResponseMessageOptions { RequestMessageFormat = HttpRequestMessageFormat.Full }, """
             StatusCode: 200 (OK)
             Content:
@@ -52,7 +38,6 @@ public sealed class HttpOptionsTests : SerializerTestsBase
               VersionPolicy: RequestVersionOrLower
               Content: <null>
             """);
-#endif
     }
     [Fact]
     public void RequestMessage_Uri()

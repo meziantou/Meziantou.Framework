@@ -3,16 +3,12 @@ using System.Net;
 using System.Net.Http.Headers;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
-#if NET472 || NET48
-using System.Net.Http;
-#endif
-
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class SnapshotSerializerTests
 {
     private static readonly InlineSnapshotSettings Settings = InlineSnapshotSettings.Default with
     {
-        ValidateLineNumberUsingPdbInfoWhenAvailable = false, // Fail on net472
+        ValidateLineNumberUsingPdbInfoWhenAvailable = false,
     };
 
     [Fact]

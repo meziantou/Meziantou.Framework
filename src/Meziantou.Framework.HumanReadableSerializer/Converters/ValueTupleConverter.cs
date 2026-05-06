@@ -1,4 +1,3 @@
-#if NETCOREAPP2_0_OR_GREATER || NET471_OR_GREATER
 using System.Diagnostics;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
@@ -30,4 +29,3 @@ internal sealed class ValueTupleConverter : HumanReadableConverter
         }
     }
 }
-#endif

@@ -4,7 +4,6 @@
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
     <OutputType>Library</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,14 +12,6 @@
 
   <ItemGroup>
     <PackageReference Include="xunit.v3.extensibility.core" Version="3.2.2" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageReference Include="System.Reflection.Metadata" Version="10.0.7" Condition="'$(TargetFramework)' == 'net472'" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
 </Project>

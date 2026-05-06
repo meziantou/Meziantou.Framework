@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);net472;net48</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Serializer based on Argon for Meziantou.Framework.InlineSnapshotTesting</Description>
     <Version>2.0.33</Version>
   </PropertyGroup>

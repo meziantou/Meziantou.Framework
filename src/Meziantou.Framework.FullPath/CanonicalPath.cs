@@ -12,13 +12,7 @@ internal static class CanonicalPath
             return WindowsCanonicalPath.TryGetCanonicalPath(path, out canonicalPath);
         }
 
-#if NETCOREAPP3_1_OR_GREATER
         return UnixCanonicalPath.TryGetCanonicalPath(path, out canonicalPath);
-#elif NET472
-        throw new PlatformNotSupportedException();
-#else
-#error Platform not supported
-#endif
     }
 
     private static class WindowsCanonicalPath
@@ -75,7 +69,6 @@ internal static class CanonicalPath
         }
     }
 
-#if NETCOREAPP3_1_OR_GREATER
     private static class UnixCanonicalPath
     {
         public static bool TryGetCanonicalPath(string path, [NotNullWhen(true)] out string? canonicalPath)
@@ -120,5 +113,4 @@ internal static class CanonicalPath
             }
         }
     }
-#endif
 }

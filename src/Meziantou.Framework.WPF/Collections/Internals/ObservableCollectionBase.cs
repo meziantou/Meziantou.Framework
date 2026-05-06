@@ -28,15 +28,10 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
         }
     }
 
-#if NET6_0_OR_GREATER
     public void EnsureCapacity(int capacity)
     {
         Items.EnsureCapacity(capacity);
     }
-#elif NET461 || NET462 || NET472
-#else
-#error Platform not supported
-#endif
 
     protected void ReplaceItem(int index, T item)
     {

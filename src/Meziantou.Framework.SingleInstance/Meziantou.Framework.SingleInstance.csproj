@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);net462</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.1.11</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>SingleInstance allows to ensure only one instance of an application runs. Following instances can notify the main instance before closing.</Description>

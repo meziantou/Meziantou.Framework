@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);net472</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>A globbing library for .NET. Can be used to match any string or with System.IO.Enumeration.</Description>
     <Version>2.1.2</Version>
     <IsTrimmable>true</IsTrimmable>
@@ -10,11 +10,6 @@
   <ItemGroup>
     <Compile Include="../Meziantou.Framework/StringExtensions.SplitLines.cs" Link="Internals/StringExtensions.SplitLines.cs" />
     <Compile Include="../Meziantou.Framework.ValueStringBuilder/ValueStringBuilder.cs" Link="Internals/ValueStringBuilder/ValueStringBuilder.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <PackageReference Include="System.Memory" Version="4.6.3" />
-    <PackageReference Include="Microsoft.IO.Redist" Version="6.1.3" />
   </ItemGroup>
 
 </Project>

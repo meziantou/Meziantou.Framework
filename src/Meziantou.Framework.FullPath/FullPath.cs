@@ -31,12 +31,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         // The checks are already performed in the static methods
         // No need to check if the path is null or absolute here
         Debug.Assert(path is not null);
-#if NETCOREAPP3_1_OR_GREATER
         Debug.Assert(Path.IsPathFullyQualified(path));
-#elif NETSTANDARD2_0 || NET472
-#else
-#error Platform not supported
-#endif
         Debug.Assert(Path.GetFullPath(path) == path);
         _value = path;
     }
@@ -387,19 +382,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     private static string TrimEndingDirectorySeparator(string path)
     {
-#if NETCOREAPP3_1_OR_GREATER
         return Path.TrimEndingDirectorySeparator(path);
-#elif NETSTANDARD2_0 || NET472
-        if (!path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal) && !path.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal))
-            return path;
-
-        if (path.StartsWith("\\", StringComparison.Ordinal))
-            throw new ArgumentException("UNC paths are not supported", nameof(path));
-
-        return path[0..^1];
-#else
-#error Platform not supported
-#endif
     }
 
     /// <summary>Combines two path strings into a full path.</summary>

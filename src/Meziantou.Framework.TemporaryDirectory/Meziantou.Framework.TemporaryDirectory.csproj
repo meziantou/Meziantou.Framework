@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);net472</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.0.40</Version>
     <IsTrimmable>true</IsTrimmable>
@@ -14,10 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(TargetFramework) == 'net472'">
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.7" />
   </ItemGroup>
 
 </Project>

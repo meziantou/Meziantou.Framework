@@ -559,12 +559,8 @@ public sealed record HumanReadableSerializerOptions
             new JsonNodeConverter(),
             new JsonDocumentConverter(),
             new JsonElementConverter(),
-#if NETCOREAPP2_0_OR_GREATER || NET471_OR_GREATER
             new ValueTupleConverter(),
-#endif
-#if NETCOREAPP2_1_OR_GREATER
             new UnixDomainSocketEndPointConverter(),
-#endif
 
             // Last converters
             new NullableConverterFactory(),

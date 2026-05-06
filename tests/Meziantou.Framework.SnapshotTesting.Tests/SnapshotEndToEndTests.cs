@@ -951,11 +951,7 @@ public sealed class SnapshotEndToEndTests
 
     private static string GetTargetFramework()
     {
-#if NET472
-        return "net472";
-#elif NET48
-        return "net48";
-#elif NET8_0
+#if NET8_0
         return "net8.0";
 #elif NET9_0
         return "net9.0";

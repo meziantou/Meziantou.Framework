@@ -53,13 +53,7 @@ public sealed class FullPathComparer : IComparer<FullPath>, IEqualityComparer<Fu
     {
         get
         {
-#if NET5_0_OR_GREATER
             return OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS();
-#elif NETCOREAPP3_1 || NETSTANDARD2_0
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.iOS) || RuntimeInformation.IsOSPlatform(OSPlatform.tvOS);
-#else
-            return Environment.OSVersion.Platform is PlatformID.Win32NT or PlatformID.MacOSX;
-#endif
         }
     }
 }

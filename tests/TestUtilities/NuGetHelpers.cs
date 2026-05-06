@@ -8,19 +8,13 @@ using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using Meziantou.Framework;
 
-#if NETFRAMEWORK
-using System.Net.Http;
-#endif
-
 namespace TestUtilities;
 
 public static class NuGetHelpers
 {
     private static readonly ConcurrentDictionary<string, Lazy<Task<string[]>>> NuGetPackagesCache = new(StringComparer.Ordinal);
 
-#if NET
     [SuppressMessage("Performance", "MA0106:Avoid closure by using an overload with the 'factoryArgument' parameter", Justification = "Not important in tests")]
-#endif
     public static async Task<string[]> GetNuGetReferences(string packageName, string version, params string[] paths)
     {
         var bytes = Encoding.UTF8.GetBytes(packageName + '@' + version + ':' + string.Join(',', paths));

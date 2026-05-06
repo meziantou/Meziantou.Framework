@@ -4,8 +4,8 @@ Compute text differences at line, word, or character level with configurable com
 
 Install the NuGet package `Meziantou.Framework.TextDiff` ([NuGet](https://www.nuget.org/packages/Meziantou.Framework.TextDiff/))
 
-````xml
-<PackageReference Include="Meziantou.Framework.TextDiff" Version="1.0.0" />
+````bash
+dotnet package add Meziantou.Framework.TextDiff
 ````
 
 ## Basic usage

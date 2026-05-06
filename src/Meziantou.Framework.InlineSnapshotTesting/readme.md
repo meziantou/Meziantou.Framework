@@ -127,11 +127,23 @@ InlineSnapshot.CreateBuilder()
     .Validate(data);
 ````
 
-If you use Verify and want to use the same serializer, you can use the `Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon` package.
+You can also create your own serializer by inheriting `SnapshotSerializer`:
 
 ````c#
+public sealed class MySnapshotSerializer : SnapshotSerializer
+{
+    public override string? Serialize(object? value)
+    {
+        return value switch
+        {
+            null => "<null>",
+            _ => value.ToString(),
+        };
+    }
+}
+
 InlineSnapshot.CreateBuilder()
-    .WithSerializer(new ArgonSnapshotSerializer())
+    .WithSerializer(new MySnapshotSerializer())
     .Validate(data);
 ````
 

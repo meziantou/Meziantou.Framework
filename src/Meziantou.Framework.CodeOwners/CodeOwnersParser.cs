@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.ObjectPool;
+using Meziantou.Framework;
 
 namespace Meziantou.Framework.CodeOwners;
 
@@ -34,18 +34,10 @@ public static class CodeOwnersParser
     [StructLayout(LayoutKind.Auto)]
     private struct CodeOwnersParserContext
     {
-        private static readonly ObjectPool<StringBuilder> StringBuilderPool = CreateStringBuilderPool();
-
         private readonly List<CodeOwnersEntry> _entries = [];
         private readonly StringLexer _lexer;
         private CodeOwnersSection? _currentSection;
         private int _index;
-
-        private static ObjectPool<StringBuilder> CreateStringBuilderPool()
-        {
-            var objectPoolProvider = new DefaultObjectPoolProvider();
-            return objectPoolProvider.CreateStringBuilderPool();
-        }
 
         public CodeOwnersParserContext(string content)
         {
@@ -143,36 +135,40 @@ public static class CodeOwnersParser
 
         private readonly string? ParsePattern()
         {
-            var sb = StringBuilderPool.Get();
+            Span<char> initialBuffer = stackalloc char[128];
+            using var sb = new ValueStringBuilder(initialBuffer);
             while (!_lexer.EndOfFile)
             {
                 var c = _lexer.Peek();
                 if (c is null or '\r' or '\n')
-                    return StringBuilderPool.ToStringAndReturn(sb);
+                    return sb.ToString();
 
                 c = _lexer.Consume();
+                if (c is null)
+                    return sb.ToString();
+
                 switch (c)
                 {
                     // The next character is escaped
                     case '\\':
                         c = _lexer.Consume();
                         if (c is null) // end of file
-                            return StringBuilderPool.ToStringAndReturn(sb);
+                            return sb.ToString();
 
-                        sb.Append(c);
+                        sb.Append(c.GetValueOrDefault());
                         break;
 
                     case ' ':
                     case '\t':
-                        return StringBuilderPool.ToStringAndReturn(sb);
+                        return sb.ToString();
 
                     default:
-                        sb.Append(c);
+                        sb.Append(c.GetValueOrDefault());
                         break;
                 }
             }
 
-            return StringBuilderPool.ToStringAndReturn(sb);
+            return sb.ToString();
         }
 
         private readonly void ParseMembers(string pattern, int patternIndex)
@@ -185,7 +181,7 @@ public static class CodeOwnersParser
                 if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                     break;
 
-                var sb = StringBuilderPool.Get();
+                using var sb = new ValueStringBuilder(initialCapacity: 128);
 
                 var c = _lexer.Consume();
 
@@ -199,26 +195,32 @@ public static class CodeOwnersParser
                 var isMember = c == '@';
                 if (!isMember)
                 {
-                    sb.Append(c);
+                    if (c is not null)
+                    {
+                        sb.Append(c.GetValueOrDefault());
+                    }
                 }
 
                 while (!_lexer.EndOfFile)
                 {
                     if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                     {
-                        AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern, patternIndex);
+                        AddEntry(isMember, sb.ToString(), pattern, patternIndex);
                         return;
                     }
 
                     c = _lexer.Consume();
                     if (c is ' ' or '\t')
                     {
-                        AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern, patternIndex);
+                        AddEntry(isMember, sb.ToString(), pattern, patternIndex);
                         foundMember = true;
                         break;
                     }
 
-                    sb.Append(c);
+                    if (c is not null)
+                    {
+                        sb.Append(c.GetValueOrDefault());
+                    }
                 }
             }
 
@@ -258,38 +260,61 @@ public static class CodeOwnersParser
         private readonly string ParseSectionName()
         {
             _lexer.Consume();
-            var sb = StringBuilderPool.Get();
-            _lexer.ConsumeUntil(']', sb);
-
-            return StringBuilderPool.ToStringAndReturn(sb);
+            Span<char> initialBuffer = stackalloc char[32];
+            var sb = new ValueStringBuilder(initialBuffer);
+            try
+            {
+                _lexer.ConsumeUntil(']', ref sb);
+                return sb.AsSpan().ToString();
+            }
+            finally
+            {
+                sb.Dispose();
+            }
         }
 
         private readonly int ParseSectionRequiredReviewerCount()
         {
-            var sb = StringBuilderPool.Get();
-
-            var c = _lexer.Peek();
-            if (c == '[')
+            Span<char> initialBuffer = stackalloc char[16];
+            var sb = new ValueStringBuilder(initialBuffer);
+            try
             {
-                _lexer.Consume();
-                _lexer.ConsumeUntil(']', sb);
-            }
-            else
-            {
-                // If no count is specified in section headers, only one reviewer is required by default.
-                return 1;
-            }
+                var c = _lexer.Peek();
+                if (c == '[')
+                {
+                    _lexer.Consume();
+                    _lexer.ConsumeUntil(']', ref sb);
+                }
+                else
+                {
+                    // If no count is specified in section headers, only one reviewer is required by default.
+                    return 1;
+                }
 
-            var requiredReviewerCountString = StringBuilderPool.ToStringAndReturn(sb);
-            var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount);
-            return isParseValid ? requiredReviewerCount : 1;
+                var requiredReviewerCountString = sb.AsSpan().ToString();
+                var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount);
+                return isParseValid ? requiredReviewerCount : 1;
+            }
+            finally
+            {
+                sb.Dispose();
+            }
         }
 
         private readonly List<string> ParseSectionDefaultOwners()
         {
-            var sb = StringBuilderPool.Get();
-            _lexer.ConsumeUntil('\n', sb);
-            var defaultOwnersString = StringBuilderPool.ToStringAndReturn(sb).Trim();
+            Span<char> initialBuffer = stackalloc char[128];
+            var sb = new ValueStringBuilder(initialBuffer);
+            string defaultOwnersString;
+            try
+            {
+                _lexer.ConsumeUntil('\n', ref sb);
+                defaultOwnersString = sb.AsSpan().ToString().Trim();
+            }
+            finally
+            {
+                sb.Dispose();
+            }
 
             var defaultOwners = new List<string>();
             if (!string.IsNullOrEmpty(defaultOwnersString))
@@ -387,7 +412,7 @@ public static class CodeOwnersParser
             }
         }
 
-        public void ConsumeUntil(char character, StringBuilder sb)
+        public void ConsumeUntil(char character, ref ValueStringBuilder sb)
         {
             while (_currentIndex + 1 < _content.Length)
             {

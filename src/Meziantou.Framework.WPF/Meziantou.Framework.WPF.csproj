@@ -8,8 +8,4 @@
     <Description>Collection of Commands, Markup extensions, DependencyProperty, and collections for WPF</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Collections.Immutable" Version="10.0.7" />
-  </ItemGroup>
-
 </Project>

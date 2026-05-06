@@ -21,6 +21,12 @@ The generator also supports binary resources and expose them as `byte[]`.
 
 ## How to configure the source generator
 
+Install the NuGet package `Meziantou.Framework.ResxSourceGenerator` ([NuGet](https://www.nuget.org/packages/Meziantou.Framework.ResxSourceGenerator/))
+
+````bash
+dotnet package add Meziantou.Framework.ResxSourceGenerator
+````
+
 ````xml
 <Project Sdk="Microsoft.NET.Sdk">
 
@@ -34,9 +40,6 @@ The generator also supports binary resources and expose them as `byte[]`.
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Reference the source generator -->
-    <PackageReference Include="Meziantou.Framework.ResxSourceGenerator" Version="1.0.0" />
-
     <!-- Enable the source generator for all resx files in the project -->
     <AdditionalFiles Include="**/*.resx" />
 

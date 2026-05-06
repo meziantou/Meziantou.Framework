@@ -15,8 +15,8 @@
 
 Install the NuGet package `Meziantou.Framework.Globbing` ([NuGet](https://www.nuget.org/packages/Meziantou.Framework.Globbing/))
 
-````xml
-<PackageReference Include="Meziantou.Framework.Globbing" Version="1.0.4" />
+````bash
+dotnet package add Meziantou.Framework.Globbing
 ````
 
 - `IsMatch` tests whether a file matches the glob pattern

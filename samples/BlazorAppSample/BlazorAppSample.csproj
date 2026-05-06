@@ -8,13 +8,13 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.7" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />
-    <PackageReference Include="LoremNET" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.AspNetCore.Components.LogViewer/Meziantou.AspNetCore.Components.LogViewer.csproj" />
     <ProjectReference Include="../../src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj" />
     <ProjectReference Include="../../src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
   </ItemGroup>
 
 </Project>

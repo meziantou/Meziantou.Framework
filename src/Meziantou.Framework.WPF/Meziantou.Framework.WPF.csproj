@@ -1,19 +1,11 @@
 <Project Sdk="Meziantou.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworksWindows);net462</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <UseWPF>true</UseWPF>
-    <Version>1.5.25</Version>
+    <Version>2.0.0</Version>
     <Description>Collection of Commands, Markup extensions, DependencyProperty, and collections for WPF</Description>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Collections.Immutable" Version="10.0.7" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'net472'">
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-  </ItemGroup>
 
 </Project>

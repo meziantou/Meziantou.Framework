@@ -36,6 +36,8 @@ await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
     var doc = XDocument.Load(proj);
     var projDir = FullPath.FromPath(proj).Parent;
     var references = doc.Descendants("ProjectReference")
+        .Where(e => !string.Equals((string?)e.Attribute("OutputItemType"), "Analyzer", StringComparison.OrdinalIgnoreCase))
+        .Where(e => !string.Equals((string?)e.Attribute("ReferenceOutputAssembly"), "false", StringComparison.OrdinalIgnoreCase))
         .Select(e => e.Attribute("Include")?.Value)
         .Where(v => v is not null)
         .Select(v => (string)(projDir / v!))
@@ -55,10 +57,7 @@ await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
         {
             var refTfm = SimplifyTfm(refTfmRaw);
 
-            if (refTfm is "netstandard2.0" or "netstandard2.1")
-                continue;
-
-            if (refTfm == "net462" && testProjectTfms.Contains("net472", StringComparer.Ordinal))
+            if (refTfm == "netstandard2.0")
                 continue;
 
             if (!testProjectTfms.Contains(refTfm, StringComparer.Ordinal))

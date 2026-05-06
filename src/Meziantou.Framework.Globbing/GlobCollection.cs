@@ -47,11 +47,7 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     {
         ArgumentNullException.ThrowIfNull(path);
 
-#if NET472
-        using var stream = File.OpenRead(path);
-#else
         await using var stream = File.OpenRead(path);
-#endif
         using var reader = new StreamReader(stream);
         return await LoadGitIgnoreAsync(reader, cancellationToken).ConfigureAwait(false);
     }
@@ -80,12 +76,7 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
         {
 
             string? line;
-#if NET472
-            cancellationToken.ThrowIfCancellationRequested();
-            line = await reader.ReadLineAsync().ConfigureAwait(false);
-#else
             line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-#endif
             if (line is null)
                 break;
 

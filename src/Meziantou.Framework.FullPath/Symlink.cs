@@ -15,13 +15,7 @@ internal static class Symlink
         }
         else
         {
-#if NETCOREAPP3_1_OR_GREATER
             return UnixSymlink.IsSymbolicLink(path);
-#elif NET472
-            throw new PlatformNotSupportedException();
-#else
-#error Platform not supported
-#endif
         }
     }
 
@@ -33,17 +27,10 @@ internal static class Symlink
         }
         else
         {
-#if NETCOREAPP3_1_OR_GREATER
             return UnixSymlink.TryGetSymLinkTarget(path, out target);
-#elif NET472
-            throw new PlatformNotSupportedException();
-#else
-#error Platform not supported
-#endif
         }
     }
 
-#if NETCOREAPP3_1_OR_GREATER
     private static class UnixSymlink
     {
         internal static bool TryGetSymLinkTarget(string path, [NotNullWhen(true)] out string? target)
@@ -116,7 +103,6 @@ internal static class Symlink
             private static extern nint ReadLinkCore(byte[] path, byte[] buffer, nuint bufferSize);
         }
     }
-#endif
 
     private static class WindowsSymlink
     {

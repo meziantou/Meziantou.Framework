@@ -1162,21 +1162,6 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             }
             """");
 
-#if NET472 || NET48
-        CreateTextFile("ModuleInitializerAttribute.cs", $$""""
-            namespace System.Runtime.CompilerServices
-            {
-                [AttributeUsage(AttributeTargets.Method, Inherited = false)]
-                public sealed class ModuleInitializerAttribute : Attribute
-                {
-                    public ModuleInitializerAttribute()
-                    {
-                    }
-                }
-            }
-            """");
-#endif
-
         var mainPath = CreateTextFile("Program.cs", source);
 
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
@@ -1211,11 +1196,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 
         static string GetTargetFramework()
         {
-#if NET472
-            return "net472";
-#elif NET48
-            return "net48";
-#elif NET8_0
+#if NET8_0
             return "net8.0";
 #elif NET9_0
             return "net9.0";
@@ -1234,10 +1215,6 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             var items = doc.Root.Descendants("PackageReference");
 
             var packages = items.Where(item => item.Parent?.Attribute("Condition") is null).ToList();
-#if NET472 || NET48
-            packages.AddRange(items.Where(item => item.Parent?.Attribute("Condition") is not null));
-#endif
-
             return string.Join('\n', packages.Select(item => item.ToString()));
         }
 

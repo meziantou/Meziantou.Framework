@@ -2,11 +2,6 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.Versioning;
 
-#if NET461 || NET462 || NET472
-using System.Security.AccessControl;
-using System.Security.Principal;
-#endif
-
 namespace Meziantou.Framework;
 
 /// <summary>Ensures that only a single instance of an application can run at a time and provides communication between instances.</summary>
@@ -84,7 +79,6 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         if (!StartServer)
             return;
 
-#if NETCOREAPP2_1_OR_GREATER
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
 
@@ -94,32 +88,6 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
                 NamedPipeServerStream.MaxAllowedServerInstances,
                 PipeTransmissionMode.Message,
                 PipeOptions.CurrentUserOnly);
-#elif NET461 || NET462 || NET472
-        using (var currentIdentity = WindowsIdentity.GetCurrent())
-        {
-            var identifier = currentIdentity.Owner;
-
-            // Grant full control to the owner so multiple servers can be opened.
-            // Full control is the default per MSDN docs for CreateNamedPipe.
-            var rule = new PipeAccessRule(identifier, PipeAccessRights.FullControl, AccessControlType.Allow);
-            var pipeSecurity = new PipeSecurity();
-
-            pipeSecurity.AddAccessRule(rule);
-            pipeSecurity.SetOwner(identifier);
-
-            _server = new NamedPipeServerStream(
-                       PipeName,
-                       PipeDirection.In,
-                       NamedPipeServerStream.MaxAllowedServerInstances,
-                       PipeTransmissionMode.Message,
-                       PipeOptions.Asynchronous,
-                       0,
-                       0,
-                       pipeSecurity);
-        }
-#else
-#error Platform not supported
-#endif
         try
         {
             _server.BeginWaitForConnection(Listen, state: null);

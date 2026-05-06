@@ -2,14 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
     <UseWpf>true</UseWpf>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net472' ">
-    <Reference Include="System.Windows" />
-    <PackageReference Include="System.Text.Json" Version="10.0.7" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />

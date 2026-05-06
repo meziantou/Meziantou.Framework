@@ -29,11 +29,7 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
         Debug.Assert(value is not null);
         var hasValue = false;
 
-#if NETSTANDARD2_0 || NETFRAMEWORK
-        IEnumerable<KeyValuePair<string, IEnumerable<string>>> values = value;
-#else
         IEnumerable<KeyValuePair<string, HeaderStringValues>> values = value.NonValidated;
-#endif
 
         if (options.PropertyOrder is not null)
         {
@@ -53,11 +49,7 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
 
             writer.WritePropertyName(header.Key);
 
-#if NETSTANDARD2_0 || NETFRAMEWORK
-            var headerValueCount = header.Value.Count();
-#else
             var headerValueCount = header.Value.Count;
-#endif
             if (headerValueCount == 0)
             {
                 writer.WriteValue("");

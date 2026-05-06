@@ -1,11 +1,7 @@
 using Meziantou.Framework;
 using Meziantou.Framework.Globbing.Internals;
 
-#if NET472
-using Microsoft.IO.Enumeration;
-#else
 using System.IO.Enumeration;
-#endif
 
 namespace Meziantou.Framework.Globbing;
 

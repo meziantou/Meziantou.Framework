@@ -106,11 +106,12 @@ internal sealed class FlacReader : IMediaTagReader
 
         stream.Position = 0;
         var id3v2TagSize = Id3v2.Id3v2Reader.GetTagSize(stream);
-        if (id3v2TagSize <= 0 || stream.Length < id3v2TagSize + 4)
+        if (id3v2TagSize <= 0)
             return false;
 
-        stream.Position = id3v2TagSize;
-        return TryReadFlacMagic(stream);
+        return TryReadFlacMagicAtOffset(stream, id3v2TagSize)
+            || TryReadFlacMagicAtOffset(stream, id3v2TagSize + 10)
+            || TryReadFlacMagicAtOffset(stream, id3v2TagSize - 10);
     }
 
     private static bool TryReadFlacMagic(Stream stream)
@@ -118,5 +119,14 @@ internal sealed class FlacReader : IMediaTagReader
         Span<byte> magic = stackalloc byte[4];
         return stream.ReadAtLeast(magic, magic.Length, throwOnEndOfStream: false) == magic.Length
             && magic is [(byte)'f', (byte)'L', (byte)'a', (byte)'C'];
+    }
+
+    private static bool TryReadFlacMagicAtOffset(Stream stream, long offset)
+    {
+        if (offset < 0 || stream.Length < offset + 4)
+            return false;
+
+        stream.Position = offset;
+        return TryReadFlacMagic(stream);
     }
 }

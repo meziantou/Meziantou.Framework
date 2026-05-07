@@ -220,6 +220,36 @@ public sealed class FlacTests
     }
 
     [Fact]
+    public void ReadTags_WithLeadingId3TagAndExtraFooterBytes_UsesFlacReader()
+    {
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            using (var output = File.Create(tempFile))
+            {
+                output.Write("ID3"u8);
+                output.Write([0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+                // Some files contain extra 10 bytes after the declared ID3 tag size.
+                output.Write(new byte[10]);
+
+                using var input = File.OpenRead(GetTestFilePath("basic.flac"));
+                input.CopyTo(output);
+            }
+
+            var result = MediaFile.ReadTags(tempFile);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(MediaFormat.Flac, result.Value.Format);
+            Assert.NotNull(result.Value.Duration);
+            Assert.True(result.Value.Duration!.Value.TotalSeconds is > 0.9 and < 1.1);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
     public void ReadTags_InvalidFile_ReturnsError()
     {
         using var stream = new MemoryStream([0x00, 0x01, 0x02, 0x03]);

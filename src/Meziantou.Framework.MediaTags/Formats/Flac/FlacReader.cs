@@ -1,3 +1,5 @@
+using Meziantou.Framework.MediaTags.Formats.Id3v2;
+
 namespace Meziantou.Framework.MediaTags.Formats.Flac;
 
 internal sealed class FlacReader : IMediaTagReader
@@ -104,14 +106,11 @@ internal sealed class FlacReader : IMediaTagReader
         if (id3Header is not [(byte)'I', (byte)'D', (byte)'3'])
             return false;
 
-        stream.Position = 0;
-        var id3v2TagSize = Id3v2.Id3v2Reader.GetTagSize(stream);
-        if (id3v2TagSize <= 0)
+        if (!Id3v2TagLocator.TryGetAudioDataOffsets(stream, 0, out var primaryOffset, out var secondaryOffset))
             return false;
 
-        return TryReadFlacMagicAtOffset(stream, id3v2TagSize)
-            || TryReadFlacMagicAtOffset(stream, id3v2TagSize + 10)
-            || TryReadFlacMagicAtOffset(stream, id3v2TagSize - 10);
+        return TryReadFlacMagicAtOffset(stream, primaryOffset)
+            || (secondaryOffset >= 0 && TryReadFlacMagicAtOffset(stream, secondaryOffset));
     }
 
     private static bool TryReadFlacMagic(Stream stream)

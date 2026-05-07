@@ -71,4 +71,28 @@ public sealed class MediaFileDetectionTests
         var format = MediaFile.DetectFormat(stream);
         Assert.Null(format);
     }
+
+    [Fact]
+    public void DetectFormat_FlacWithLeadingId3AndFooter_DetectsFlac()
+    {
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            using (var output = File.Create(tempFile))
+            {
+                output.Write("ID3"u8);
+                output.Write([0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+                output.Write([(byte)'3', (byte)'D', (byte)'I', 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+                using var input = File.OpenRead(GetTestFilePath("basic.flac"));
+                input.CopyTo(output);
+            }
+
+            var format = MediaFile.DetectFormat(tempFile);
+            Assert.Equal(MediaFormat.Flac, format);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
 }

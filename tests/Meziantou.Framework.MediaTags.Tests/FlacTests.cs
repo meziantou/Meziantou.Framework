@@ -220,7 +220,7 @@ public sealed class FlacTests
     }
 
     [Fact]
-    public void ReadTags_WithLeadingId3TagAndExtraFooterBytes_UsesFlacReader()
+    public void ReadTags_WithLeadingId3TagAndFooter_UsesFlacReader()
     {
         var tempFile = Path.GetTempFileName() + ".flac";
         try
@@ -230,8 +230,7 @@ public sealed class FlacTests
                 output.Write("ID3"u8);
                 output.Write([0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
 
-                // Some files contain extra 10 bytes after the declared ID3 tag size.
-                output.Write(new byte[10]);
+                output.Write([(byte)'3', (byte)'D', (byte)'I', 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
 
                 using var input = File.OpenRead(GetTestFilePath("basic.flac"));
                 input.CopyTo(output);

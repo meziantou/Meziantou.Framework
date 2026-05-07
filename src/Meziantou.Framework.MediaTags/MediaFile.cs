@@ -154,16 +154,11 @@ public static class MediaFile
             var format = DetectFormatFromCurrentPosition(stream);
             if (format == MediaFormat.Mp3 && stream.Length >= originalPosition + 10)
             {
-                stream.Position = originalPosition;
-                var id3v2Size = Id3v2Reader.GetTagSize(stream);
-                if (id3v2Size > 0)
+                if (Id3v2TagLocator.TryGetAudioDataOffsets(stream, originalPosition, out var primaryOffset, out var secondaryOffset)
+                    && (TryDetectNestedFormatAtOffset(stream, primaryOffset, out var nestedFormat)
+                        || (secondaryOffset >= 0 && TryDetectNestedFormatAtOffset(stream, secondaryOffset, out nestedFormat))))
                 {
-                    if (TryDetectNestedFormatAtOffset(stream, originalPosition + id3v2Size, out var nestedFormat)
-                        || TryDetectNestedFormatAtOffset(stream, originalPosition + id3v2Size + 10, out nestedFormat)
-                        || TryDetectNestedFormatAtOffset(stream, originalPosition + id3v2Size - 10, out nestedFormat))
-                    {
-                        return nestedFormat;
-                    }
+                    return nestedFormat;
                 }
             }
 

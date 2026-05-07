@@ -226,15 +226,13 @@ internal sealed class Mp4Reader : IMediaTagReader
             return;
 
         // mean and name atoms have 4-byte version/flags prefix
-        var mean = meanAtom.Data.Length > 4 ? Encoding.UTF8.GetString(meanAtom.Data.AsSpan(4)) : "";
-        var name = nameAtom.Data.Length > 4 ? Encoding.UTF8.GetString(nameAtom.Data.AsSpan(4)) : "";
-
-        if (dataAtom.Data.Length < 8)
+        var mean = ReadFreeformText(meanAtom.Data);
+        var name = ReadFreeformText(nameAtom.Data);
+        var value = ReadFreeformDataValue(dataAtom.Data);
+        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(value))
             return;
 
-        var value = Encoding.UTF8.GetString(dataAtom.Data.AsSpan(8));
-
-        if (mean == "com.apple.iTunes")
+        if (string.Equals(mean, "com.apple.iTunes", StringComparison.OrdinalIgnoreCase))
         {
             if (string.Equals(name, "MusicBrainz Track Id", StringComparison.OrdinalIgnoreCase))
                 tags.MusicBrainzTrackId ??= value;
@@ -253,7 +251,7 @@ internal sealed class Mp4Reader : IMediaTagReader
             }
             else if (string.Equals(name, "REPLAYGAIN_TRACK_PEAK", StringComparison.OrdinalIgnoreCase))
             {
-                if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var peak))
+                if (TryParseFloatingPointValue(value, out var peak))
                     tags.ReplayGain = (tags.ReplayGain ?? default) with { TrackPeak = peak };
             }
             else if (string.Equals(name, "REPLAYGAIN_ALBUM_GAIN", StringComparison.OrdinalIgnoreCase))
@@ -263,7 +261,7 @@ internal sealed class Mp4Reader : IMediaTagReader
             }
             else if (string.Equals(name, "REPLAYGAIN_ALBUM_PEAK", StringComparison.OrdinalIgnoreCase))
             {
-                if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var peak))
+                if (TryParseFloatingPointValue(value, out var peak))
                     tags.ReplayGain = (tags.ReplayGain ?? default) with { AlbumPeak = peak };
             }
             else
@@ -277,13 +275,49 @@ internal sealed class Mp4Reader : IMediaTagReader
         }
     }
 
-    private static string ReadUtf8Value(ReadOnlySpan<byte> data) => Encoding.UTF8.GetString(data);
+    private static string ReadUtf8Value(ReadOnlySpan<byte> data) => TrimTrailingNullCharacters(Encoding.UTF8.GetString(data));
+
+    private static string ReadFreeformText(byte[] atomData)
+    {
+        if (atomData.Length <= 4)
+            return "";
+
+        return TrimTrailingNullCharacters(Encoding.UTF8.GetString(atomData.AsSpan(4)));
+    }
+
+    private static string ReadFreeformDataValue(byte[] atomData)
+    {
+        if (atomData.Length < 8)
+            return "";
+
+        var typeIndicator = BinaryPrimitives.ReadUInt32BigEndian(atomData);
+        var valueData = atomData.AsSpan(8);
+        var text = typeIndicator switch
+        {
+            2 => Encoding.BigEndianUnicode.GetString(valueData),
+            _ => Encoding.UTF8.GetString(valueData),
+        };
+
+        return TrimTrailingNullCharacters(text);
+    }
 
     private static bool TryParseReplayGainValue(string value, out double result)
     {
         var trimmed = value.AsSpan().Trim();
         if (trimmed.EndsWith(" dB", StringComparison.OrdinalIgnoreCase))
             trimmed = trimmed[..^3].Trim();
-        return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+
+        return TryParseFloatingPointValue(trimmed, out result);
     }
+
+    private static bool TryParseFloatingPointValue(ReadOnlySpan<char> value, out double result)
+    {
+        var trimmed = value.Trim();
+        if (double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out result))
+            return true;
+
+        return double.TryParse(trimmed.ToString().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+    }
+
+    private static string TrimTrailingNullCharacters(string value) => value.TrimEnd('\0');
 }

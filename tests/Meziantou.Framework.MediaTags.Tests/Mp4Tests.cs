@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Text;
 using Meziantou.Framework.MediaTags;
 
 namespace Meziantou.Framework.MediaTags.Tests;
@@ -165,5 +167,86 @@ public sealed class Mp4Tests
         var result = MediaFile.ReadTags(stream, MediaFormat.Mp4);
         // Very short ftyp, should succeed with empty tags or handle gracefully
         Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public void ReadTags_FreeformReplayGain_NullTerminatedText()
+    {
+        using var stream = new MemoryStream(CreateMp4WithFreeformTags([
+            ("com.apple.iTunes\0", "REPLAYGAIN_TRACK_GAIN\0", "-6.25 dB\0", 1u),
+            ("com.apple.iTunes", "REPLAYGAIN_ALBUM_PEAK", "0.987654\0", 1u),
+        ]));
+
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp4);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.ReplayGain);
+        Assert.Equal(-6.25, result.Value.ReplayGain.Value.TrackGain);
+        Assert.Equal(0.987654, result.Value.ReplayGain.Value.AlbumPeak);
+    }
+
+    [Fact]
+    public void ReadTags_FreeformReplayGain_Utf16Text()
+    {
+        using var stream = new MemoryStream(CreateMp4WithFreeformTags([
+            ("com.apple.iTunes", "REPLAYGAIN_TRACK_GAIN", "-7.50 dB", 2u),
+            ("com.apple.iTunes", "REPLAYGAIN_TRACK_PEAK", "0.998877", 2u),
+        ]));
+
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp4);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.ReplayGain);
+        Assert.Equal(-7.5, result.Value.ReplayGain.Value.TrackGain);
+        Assert.Equal(0.998877, result.Value.ReplayGain.Value.TrackPeak);
+    }
+
+    private static byte[] CreateMp4WithFreeformTags((string Mean, string Name, string Value, uint DataType)[] freeformTags)
+    {
+        using var ilstPayload = new MemoryStream();
+        foreach (var (mean, name, value, dataType) in freeformTags)
+        {
+            ilstPayload.Write(CreateFreeformAtom(mean, name, value, dataType));
+        }
+
+        var ilstAtom = CreateAtom("ilst", ilstPayload.ToArray());
+        var metaPayload = new byte[4 + ilstAtom.Length];
+        ilstAtom.CopyTo(metaPayload, 4); // Full box version/flags
+        var metaAtom = CreateAtom("meta", metaPayload);
+        var udtaAtom = CreateAtom("udta", metaAtom);
+        return CreateAtom("moov", udtaAtom);
+    }
+
+    private static byte[] CreateFreeformAtom(string mean, string name, string value, uint dataType)
+    {
+        var meanAtom = CreateTextAtom("mean", mean);
+        var nameAtom = CreateTextAtom("name", name);
+
+        var valueBytes = dataType == 2 ? Encoding.BigEndianUnicode.GetBytes(value) : Encoding.UTF8.GetBytes(value);
+        var dataPayload = new byte[8 + valueBytes.Length];
+        BinaryPrimitives.WriteUInt32BigEndian(dataPayload, dataType);
+        valueBytes.CopyTo(dataPayload, 8);
+        var dataAtom = CreateAtom("data", dataPayload);
+
+        var freeformPayload = new byte[meanAtom.Length + nameAtom.Length + dataAtom.Length];
+        meanAtom.CopyTo(freeformPayload, 0);
+        nameAtom.CopyTo(freeformPayload, meanAtom.Length);
+        dataAtom.CopyTo(freeformPayload, meanAtom.Length + nameAtom.Length);
+        return CreateAtom("----", freeformPayload);
+    }
+
+    private static byte[] CreateTextAtom(string atomType, string value)
+    {
+        var valueBytes = Encoding.UTF8.GetBytes(value);
+        var payload = new byte[4 + valueBytes.Length]; // Full box version/flags + UTF-8 data
+        valueBytes.CopyTo(payload, 4);
+        return CreateAtom(atomType, payload);
+    }
+
+    private static byte[] CreateAtom(string atomType, byte[] payload)
+    {
+        var atom = new byte[8 + payload.Length];
+        BinaryPrimitives.WriteUInt32BigEndian(atom, (uint)atom.Length);
+        Encoding.Latin1.GetBytes(atomType, atom.AsSpan(4, 4));
+        payload.CopyTo(atom, 8);
+        return atom;
     }
 }

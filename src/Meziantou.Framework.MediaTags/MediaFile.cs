@@ -156,12 +156,14 @@ public static class MediaFile
             {
                 stream.Position = originalPosition;
                 var id3v2Size = Id3v2Reader.GetTagSize(stream);
-                if (id3v2Size > 0 && stream.Length >= originalPosition + id3v2Size + 4)
+                if (id3v2Size > 0)
                 {
-                    stream.Position = originalPosition + id3v2Size;
-                    var nestedFormat = DetectFormatFromCurrentPosition(stream);
-                    if (nestedFormat is not null and not MediaFormat.Mp3)
+                    if (TryDetectNestedFormatAtOffset(stream, originalPosition + id3v2Size, out var nestedFormat)
+                        || TryDetectNestedFormatAtOffset(stream, originalPosition + id3v2Size + 10, out nestedFormat)
+                        || TryDetectNestedFormatAtOffset(stream, originalPosition + id3v2Size - 10, out nestedFormat))
+                    {
                         return nestedFormat;
+                    }
                 }
             }
 
@@ -178,6 +180,24 @@ public static class MediaFile
         Span<byte> header = stackalloc byte[FormatDetector.MinHeaderSize];
         var bytesRead = stream.ReadAtLeast(header, FormatDetector.MinHeaderSize, throwOnEndOfStream: false);
         return FormatDetector.DetectFromHeader(header[..bytesRead]);
+    }
+
+    private static bool TryDetectNestedFormatAtOffset(Stream stream, long offset, out MediaFormat nestedFormat)
+    {
+        nestedFormat = default;
+
+        if (offset < 0 || stream.Length < offset + 4)
+            return false;
+
+        stream.Position = offset;
+        var detectedFormat = DetectFormatFromCurrentPosition(stream);
+        if (detectedFormat is not null and not MediaFormat.Mp3)
+        {
+            nestedFormat = detectedFormat.Value;
+            return true;
+        }
+
+        return false;
     }
 
     private static MediaTagResult<MediaTagInfo> ReadTagsCore(Stream stream, MediaFormat format)

@@ -151,14 +151,33 @@ public static class MediaFile
         var originalPosition = stream.Position;
         try
         {
-            Span<byte> header = stackalloc byte[FormatDetector.MinHeaderSize];
-            var bytesRead = stream.ReadAtLeast(header, FormatDetector.MinHeaderSize, throwOnEndOfStream: false);
-            return FormatDetector.DetectFromHeader(header[..bytesRead]);
+            var format = DetectFormatFromCurrentPosition(stream);
+            if (format == MediaFormat.Mp3 && stream.Length >= originalPosition + 10)
+            {
+                stream.Position = originalPosition;
+                var id3v2Size = Id3v2Reader.GetTagSize(stream);
+                if (id3v2Size > 0 && stream.Length >= originalPosition + id3v2Size + 4)
+                {
+                    stream.Position = originalPosition + id3v2Size;
+                    var nestedFormat = DetectFormatFromCurrentPosition(stream);
+                    if (nestedFormat is not null and not MediaFormat.Mp3)
+                        return nestedFormat;
+                }
+            }
+
+            return format;
         }
         finally
         {
             stream.Position = originalPosition;
         }
+    }
+
+    private static MediaFormat? DetectFormatFromCurrentPosition(Stream stream)
+    {
+        Span<byte> header = stackalloc byte[FormatDetector.MinHeaderSize];
+        var bytesRead = stream.ReadAtLeast(header, FormatDetector.MinHeaderSize, throwOnEndOfStream: false);
+        return FormatDetector.DetectFromHeader(header[..bytesRead]);
     }
 
     private static MediaTagResult<MediaTagInfo> ReadTagsCore(Stream stream, MediaFormat format)

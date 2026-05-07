@@ -6,15 +6,15 @@ internal sealed class FlacReader : IMediaTagReader
     {
         try
         {
-            stream.Position = 0;
+            if (!TrySeekAfterFlacMagic(stream))
+            {
+                stream.Position = 0;
+                Span<byte> magic = stackalloc byte[4];
+                if (stream.ReadAtLeast(magic, magic.Length, throwOnEndOfStream: false) < magic.Length)
+                    return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, "File too small for FLAC.");
 
-            // Verify "fLaC" magic
-            Span<byte> magic = stackalloc byte[4];
-            if (stream.ReadAtLeast(magic, 4, throwOnEndOfStream: false) < 4)
-                return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, "File too small for FLAC.");
-
-            if (magic[0] != 'f' || magic[1] != 'L' || magic[2] != 'a' || magic[3] != 'C')
                 return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.UnsupportedFormat, "Not a FLAC file.");
+            }
 
             var tags = new MediaTagInfo();
             Span<byte> blockHeader = stackalloc byte[4];
@@ -85,5 +85,38 @@ internal sealed class FlacReader : IMediaTagReader
         {
             return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
         }
+    }
+
+    private static bool TrySeekAfterFlacMagic(Stream stream)
+    {
+        if (!stream.CanSeek)
+            return false;
+
+        stream.Position = 0;
+        if (TryReadFlacMagic(stream))
+            return true;
+
+        stream.Position = 0;
+        Span<byte> id3Header = stackalloc byte[3];
+        if (stream.ReadAtLeast(id3Header, id3Header.Length, throwOnEndOfStream: false) < id3Header.Length)
+            return false;
+
+        if (id3Header is not [(byte)'I', (byte)'D', (byte)'3'])
+            return false;
+
+        stream.Position = 0;
+        var id3v2TagSize = Id3v2.Id3v2Reader.GetTagSize(stream);
+        if (id3v2TagSize <= 0 || stream.Length < id3v2TagSize + 4)
+            return false;
+
+        stream.Position = id3v2TagSize;
+        return TryReadFlacMagic(stream);
+    }
+
+    private static bool TryReadFlacMagic(Stream stream)
+    {
+        Span<byte> magic = stackalloc byte[4];
+        return stream.ReadAtLeast(magic, magic.Length, throwOnEndOfStream: false) == magic.Length
+            && magic is [(byte)'f', (byte)'L', (byte)'a', (byte)'C'];
     }
 }

@@ -19,6 +19,8 @@ public sealed class OggOpusTests
         Assert.Equal("Test Artist", tags.Artist);
         Assert.Equal("Test Album", tags.Album);
         Assert.Equal(2024, tags.Year);
+        Assert.NotNull(tags.Duration);
+        Assert.InRange(tags.Duration.Value.TotalSeconds, 0.95, 1.1);
     }
 
     [Fact]

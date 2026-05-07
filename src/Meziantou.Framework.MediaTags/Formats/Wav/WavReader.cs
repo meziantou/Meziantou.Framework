@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text;
 
 namespace Meziantou.Framework.MediaTags.Formats.Wav;
@@ -42,12 +43,65 @@ internal sealed class WavReader : IMediaTagReader
                 }
             }
 
+            tags.Duration ??= TryReadDuration(chunks);
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
         catch (Exception ex)
         {
             return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.CorruptFile, ex.Message);
         }
+    }
+
+    private static TimeSpan? TryReadDuration(List<RiffChunk> chunks)
+    {
+        RiffChunk? formatChunk = null;
+        RiffChunk? dataChunk = null;
+        RiffChunk? factChunk = null;
+
+        foreach (var chunk in chunks)
+        {
+            switch (chunk.Id)
+            {
+                case "fmt ":
+                    formatChunk = chunk;
+                    break;
+
+                case "data":
+                    dataChunk = chunk;
+                    break;
+
+                case "fact":
+                    factChunk = chunk;
+                    break;
+            }
+        }
+
+        if (formatChunk?.Data is not { Length: >= 16 } formatData)
+            return null;
+
+        var sampleRate = BinaryPrimitives.ReadUInt32LittleEndian(formatData.AsSpan(4));
+        var byteRate = BinaryPrimitives.ReadUInt32LittleEndian(formatData.AsSpan(8));
+        var blockAlign = BinaryPrimitives.ReadUInt16LittleEndian(formatData.AsSpan(12));
+        if (sampleRate == 0)
+            return null;
+
+        if (factChunk?.Data is { Length: >= 4 } factData)
+        {
+            var sampleCount = BinaryPrimitives.ReadUInt32LittleEndian(factData);
+            if (sampleCount > 0)
+                return TimeSpan.FromSeconds(sampleCount / (double)sampleRate);
+        }
+
+        if (dataChunk is null || dataChunk.Size <= 0)
+            return null;
+
+        if (byteRate > 0)
+            return TimeSpan.FromSeconds(dataChunk.Size / (double)byteRate);
+
+        if (blockAlign > 0)
+            return TimeSpan.FromSeconds(dataChunk.Size / (double)(sampleRate * blockAlign));
+
+        return null;
     }
 
     private static void ReadInfoChunks(List<RiffChunk> chunks, MediaTagInfo tags)

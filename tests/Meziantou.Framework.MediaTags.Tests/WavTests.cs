@@ -14,6 +14,8 @@ public sealed class WavTests
 
         var tags = result.Value;
         Assert.Equal(MediaFormat.Wav, tags.Format);
+        Assert.NotNull(tags.Duration);
+        Assert.InRange(tags.Duration.Value.TotalSeconds, 0.95, 1.05);
         // WAV metadata support varies by ffmpeg version; check at least title
         if (tags.Title is not null)
             Assert.Equal("Test Title", tags.Title);

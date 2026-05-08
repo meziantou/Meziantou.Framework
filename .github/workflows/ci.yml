@@ -162,7 +162,6 @@ jobs:
       configuration: ${{ matrix.configuration }}
       additional-arguments: ${{ matrix.additionalArguments }}
       total-shards: 3
-      shard-matrix: '[1, 2, 3]'
 
   test_trimming:
     runs-on: ubuntu-24.04

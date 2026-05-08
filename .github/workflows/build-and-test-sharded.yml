@@ -15,10 +15,6 @@ on:
         type: number
         required: false
         default: 3
-      shard-matrix:
-        type: string
-        required: false
-        default: '[1, 2, 3]'
 
 defaults:
   run:
@@ -29,6 +25,22 @@ env:
   DOTNET_NOLOGO: true
 
 jobs:
+  compute_shards:
+    runs-on: ubuntu-24.04
+    outputs:
+      shard-matrix: ${{ steps.compute-shards.outputs.shard-matrix }}
+    steps:
+      - id: compute-shards
+        name: Compute shard matrix
+        run: |
+          $totalShards = [int]${{ inputs.total-shards }}
+          if ($totalShards -lt 1) {
+            throw "total-shards must be greater than 0"
+          }
+
+          $shards = 1..$totalShards | ConvertTo-Json -Compress
+          "shard-matrix=$shards" >> $env:GITHUB_OUTPUT
+
   build:
     runs-on: ${{ inputs.runs-on }}
     timeout-minutes: 60
@@ -78,7 +90,7 @@ jobs:
             eng/delta.proj
 
   test:
-    needs: [ build ]
+    needs: [ build, compute_shards ]
     if: needs.build.outputs.has-project == 'true'
     runs-on: ${{ inputs.runs-on }}
     timeout-minutes: 75
@@ -86,7 +98,7 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        shard-index: ${{ fromJson(inputs.shard-matrix) }}
+        shard-index: ${{ fromJson(needs.compute_shards.outputs.shard-matrix) }}
       fail-fast: false
     steps:
       - id: compute-artifact-name

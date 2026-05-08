@@ -149,10 +149,6 @@ jobs:
           NUGET_VALIDATION_IS_DELTA: ${{ case(github.event_name == 'pull_request' && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
 
   build_and_test:
-    runs-on: ${{ matrix.runs-on }}
-    timeout-minutes: 90
-    env:
-      TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
         # x64, arm64
@@ -160,78 +156,13 @@ jobs:
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
       fail-fast: false
-    steps:
-      - id: compute-artifact-name
-        name: Compute artifact name
-        run: |
-          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=$Name" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: ${{ case(github.event_name == 'pull_request', 0, 1) }}
-      - run: git config --global protocol.file.allow always
-
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-
-      - name: Generate delta build file
-        id: build-project
-        uses: ./.github/actions/deltabuild
-        with:
-          input-project: eng/build.proj
-          output-project: eng/delta.proj
-          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
-          full-rebuild-triggers: |
-            .github/workflows/ci.yml
-            eng/**/*.proj
-
-      - name: PATH
-        if: steps.build-project.outputs.has-project == 'true'
-        run: echo $env:PATH
-
-      - name: .NET info
-        if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet --info
-
-      - name: Enable ProjFS
-        if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
-        run: |
-          $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
-          if ($feature.State -ne 'Enabled') {
-            Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
-          }
-
-      - name: Build
-        if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
-
-      - name: List environment variables
-        if: steps.build-project.outputs.has-project == 'true'
-        run: "Get-ChildItem env: | Sort-Object Name"
-
-      - name: Run tests
-        if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
-
-      - uses: actions/upload-artifact@v7
-        if: always() && steps.build-project.outputs.has-project == 'true'
-        with:
-          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
-          retention-days: 3
-          path: |
-            !**/*.coverage
-            **/*.binlog
-            ${{ env.TestResultsDirectory }}/**/*
-
-      - uses: actions/upload-artifact@v7
-        if: always() && steps.build-project.outputs.has-project == 'true'
-        with:
-          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
-          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
-          retention-days: 3
-          path: |
-            **/*.coverage
+    uses: ./.github/workflows/build-and-test-sharded.yml
+    with:
+      runs-on: ${{ matrix.runs-on }}
+      configuration: ${{ matrix.configuration }}
+      additional-arguments: ${{ matrix.additionalArguments }}
+      total-shards: 3
+      shard-matrix: '[1, 2, 3]'
 
   test_trimming:
     runs-on: ubuntu-24.04

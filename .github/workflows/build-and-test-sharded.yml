@@ -1,0 +1,146 @@
+name: build-and-test-sharded
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        type: string
+        required: true
+      configuration:
+        type: string
+        required: true
+      additional-arguments:
+        type: string
+        required: true
+      total-shards:
+        type: number
+        required: false
+        default: 3
+      shard-matrix:
+        type: string
+        required: false
+        default: '[1, 2, 3]'
+
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 60
+    outputs:
+      artifact-name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
+      has-project: ${{ steps.build-project.outputs.has-project }}
+      project: ${{ steps.build-project.outputs.project }}
+    steps:
+      - id: compute-artifact-name
+        name: Compute build artifact name
+        run: |
+          $Name = "build-output-${{ inputs.runs-on }}-${{ inputs.configuration }}-${{ inputs.additional-arguments }}".Replace(":", "_").Replace("/", "_").Replace(" ", "_")
+          "artifact-name=$Name" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ case(github.event_name == 'pull_request', 0, 1) }}
+      - run: git config --global protocol.file.allow always
+
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Generate delta build file
+        id: build-project
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          output-project: eng/delta.proj
+          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            .github/workflows/build-and-test-sharded.yml
+            eng/**/*.proj
+
+      - name: Build
+        if: steps.build-project.outputs.has-project == 'true'
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} /bl /p:IsLinuxArm64=${{ inputs.runs-on == 'ubuntu-24.04-arm' }} ${{ inputs.additional-arguments }}
+
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.build-project.outputs.has-project == 'true'
+        with:
+          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
+          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+          retention-days: 3
+          path: |
+            **/bin/**/*
+            **/obj/**/*
+            eng/delta.proj
+
+  test:
+    needs: [ build ]
+    if: needs.build.outputs.has-project == 'true'
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 75
+    env:
+      TestResultsDirectory: ${{ github.workspace}}/TestResults
+    strategy:
+      matrix:
+        shard-index: ${{ fromJson(inputs.shard-matrix) }}
+      fail-fast: false
+    steps:
+      - id: compute-artifact-name
+        name: Compute test artifact name
+        run: |
+          $Name = "test-results-${{ inputs.runs-on }}-${{ inputs.configuration }}-${{ inputs.additional-arguments }}-shard-${{ matrix.shard-index }}".Replace(":", "_").Replace("/", "_").Replace(" ", "_")
+          "artifact-name=$Name" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.artifact-name }}
+          path: ${{ github.workspace }}
+
+      - name: Install ShardedTest
+        run: dotnet tool install --global Meziantou.ShardedTest
+
+      - name: PATH
+        run: echo $env:PATH
+
+      - name: .NET info
+        run: dotnet --info
+
+      - name: Enable ProjFS
+        if: startsWith(inputs.runs-on, 'windows')
+        run: |
+          $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
+          if ($feature.State -ne 'Enabled') {
+            Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
+          }
+
+      - name: List environment variables
+        run: "Get-ChildItem env: | Sort-Object Name"
+
+      - name: Run tests
+        run: sharded-test --shard-index ${{ matrix.shard-index }} --total-shards ${{ inputs.total-shards }} ${{ needs.build.outputs.project }} --configuration ${{ inputs.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ inputs.runs-on == 'ubuntu-24.04-arm' }} ${{ inputs.additional-arguments }}
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
+          if-no-files-found: ${{ case(needs.build.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+          retention-days: 3
+          path: |
+            !**/*.coverage
+            **/*.binlog
+            ${{ env.TestResultsDirectory }}/**/*
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
+          if-no-files-found: ${{ case(needs.build.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+          retention-days: 3
+          path: |
+            **/*.coverage

@@ -70,7 +70,7 @@ jobs:
 
       - name: Build
         if: matrix.build-mode == 'manual' && steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release /p:IsLinuxArm64=false
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release
 
       - name: Perform CodeQL Analysis
         if: matrix.language != 'csharp' || steps.build-project.outputs.has-project == 'true'

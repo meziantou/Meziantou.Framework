@@ -152,6 +152,7 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 90
     env:
+      RUNS_ON: ${{ matrix.runs-on }}
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
@@ -203,7 +204,7 @@ jobs:
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
 
       - name: List environment variables
         if: steps.build-project.outputs.has-project == 'true'
@@ -211,7 +212,7 @@ jobs:
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ matrix.runs-on == 'ubuntu-24.04-arm' }} ${{ matrix.additionalArguments }}
+        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v7
         if: always() && steps.build-project.outputs.has-project == 'true'

@@ -1,6 +1,12 @@
 name: publish
 on:
   workflow_dispatch:
+    inputs:
+      enable_code_coverage:
+        description: Enable code coverage collection
+        type: boolean
+        default: false
+        required: false
   push:
     branches:
       - 'main'
@@ -154,6 +160,7 @@ jobs:
     env:
       RUNS_ON: ${{ matrix.runs-on }}
       TestResultsDirectory: ${{ github.workspace}}/TestResults
+      EnableCodeCoverage: ${{ case(github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage, 'true', 'false') }}
     strategy:
       matrix:
         # x64, arm64
@@ -212,7 +219,7 @@ jobs:
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" ${{ matrix.additionalArguments }}
+        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v7
         if: always() && steps.build-project.outputs.has-project == 'true'
@@ -226,7 +233,7 @@ jobs:
             ${{ env.TestResultsDirectory }}/**/*
 
       - uses: actions/upload-artifact@v7
-        if: always() && steps.build-project.outputs.has-project == 'true'
+        if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
           if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
@@ -262,6 +269,7 @@ jobs:
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   merge_coverage:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage }}
     runs-on: ubuntu-24.04
     needs: [build_and_test]
     steps:

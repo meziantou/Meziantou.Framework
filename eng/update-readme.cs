@@ -395,6 +395,30 @@ static string RunProcessAndCaptureOutput(string fileName, string[] arguments, Ti
 
 static (string StandardOutput, string StandardError) RunProcessAndCaptureOutputs(string fileName, string[] arguments, TimeSpan? timeout = null)
 {
+    TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3)];
+    for (var attempt = 0; ; attempt++)
+    {
+        try
+        {
+            return RunProcessAndCaptureOutputsCore(fileName, arguments, timeout);
+        }
+        catch (TimeoutException) when (attempt < retryDelays.Length)
+        {
+            var retryDelay = retryDelays[attempt];
+            Console.Error.WriteLine($"WARNING: Process '{fileName} {string.Join(' ', arguments)}' timed out on attempt {attempt + 1}/{retryDelays.Length + 1}. Retrying in {retryDelay.TotalSeconds:F0}s...");
+            Thread.Sleep(retryDelay);
+        }
+        catch (InvalidOperationException) when (attempt < retryDelays.Length)
+        {
+            var retryDelay = retryDelays[attempt];
+            Console.Error.WriteLine($"WARNING: Process '{fileName} {string.Join(' ', arguments)}' failed on attempt {attempt + 1}/{retryDelays.Length + 1}. Retrying in {retryDelay.TotalSeconds:F0}s...");
+            Thread.Sleep(retryDelay);
+        }
+    }
+}
+
+static (string StandardOutput, string StandardError) RunProcessAndCaptureOutputsCore(string fileName, string[] arguments, TimeSpan? timeout = null)
+{
     var effectiveTimeout = timeout ?? TimeSpan.FromMinutes(2);
     var psi = new ProcessStartInfo(fileName)
     {

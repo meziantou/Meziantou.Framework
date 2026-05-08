@@ -135,7 +135,7 @@ jobs:
         run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
-        run: sharded-test --shard-index ${{ matrix.shard-index }} --total-shards ${{ inputs.total-shards }} ${{ needs.build.outputs.project }} --configuration ${{ inputs.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ inputs.runs-on == 'ubuntu-24.04-arm' }} ${{ inputs.additional-arguments }}
+        run: sharded-test --verbose --shard-index ${{ matrix.shard-index }} --total-shards ${{ inputs.total-shards }} ${{ needs.build.outputs.project }} --configuration ${{ inputs.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:IsLinuxArm64=${{ inputs.runs-on == 'ubuntu-24.04-arm' }} ${{ inputs.additional-arguments }}
 
       - uses: actions/upload-artifact@v7
         if: always()

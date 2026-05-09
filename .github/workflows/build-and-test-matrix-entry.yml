@@ -63,22 +63,6 @@ jobs:
             eng/**/*.proj
             eng/test-target-frameworks.json
 
-      - name: PATH
-        if: steps.build-project.outputs.has-project == 'true'
-        run: echo $env:PATH
-
-      - name: .NET info
-        if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet --info
-
-      - name: Enable ProjFS
-        if: startsWith(inputs.runs_on, 'windows') && steps.build-project.outputs.has-project == 'true'
-        run: |
-          $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
-          if ($feature.State -ne 'Enabled') {
-            Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
-          }
-
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} /bl ${{ inputs.additional_arguments }}

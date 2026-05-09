@@ -267,8 +267,17 @@ public sealed partial class ObservableCollectionTests
 
     private sealed class SampleComparer : IComparer<Sample>
     {
-        public int Compare(Sample x, Sample y)
+        public int Compare(Sample? x, Sample? y)
         {
+            if (ReferenceEquals(x, y))
+                return 0;
+
+            if (x is null)
+                return -1;
+
+            if (y is null)
+                return 1;
+
             return StringComparer.Ordinal.Compare(x.Value, y.Value);
         }
     }
@@ -307,12 +316,12 @@ public sealed partial class ObservableCollectionTests
             }
         }
 
-        private void NotifyCollectionChanged_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void NotifyCollectionChanged_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             CollectionChangedArgs.Add(e);
         }
 
-        private void NotifyPropertyChanged_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void NotifyPropertyChanged_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             PropertyChangedArgs.Add(e);
         }
@@ -326,6 +335,7 @@ public sealed partial class ObservableCollectionTests
         {
             Assert.Single(CollectionChangedArgs);
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Add);
+            Assert.NotNull(args.NewItems);
             Assert.Equal(obj, args.NewItems[0]);
             Assert.Equal(0, args.NewStartingIndex);
             Assert.Equal(-1, args.OldStartingIndex);
@@ -336,6 +346,7 @@ public sealed partial class ObservableCollectionTests
         {
             Assert.Single(CollectionChangedArgs);
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Add);
+            Assert.NotNull(args.NewItems);
             Assert.Equal(obj, args.NewItems.OfType<object>());
             Assert.Equal(startIndex, args.NewStartingIndex);
             Assert.Equal(-1, args.OldStartingIndex);
@@ -346,6 +357,7 @@ public sealed partial class ObservableCollectionTests
         {
             Assert.Single(CollectionChangedArgs);
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Remove);
+            Assert.NotNull(args.OldItems);
             Assert.Equal(obj, args.OldItems[0]);
             Assert.Equal(-1, args.NewStartingIndex);
             Assert.Equal(0, args.OldStartingIndex);
@@ -366,6 +378,8 @@ public sealed partial class ObservableCollectionTests
         {
             Assert.Single(CollectionChangedArgs);
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Replace);
+            Assert.NotNull(args.NewItems);
+            Assert.NotNull(args.OldItems);
             Assert.Equal(newValue, args.NewItems[0]);
             Assert.Equal(oldValue, args.OldItems[0]);
             Assert.Equal(0, args.NewStartingIndex);

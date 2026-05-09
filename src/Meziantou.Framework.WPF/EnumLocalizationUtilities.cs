@@ -8,7 +8,7 @@ namespace Meziantou.Framework.WPF;
 internal static class EnumLocalizationUtilities
 {
     private static readonly Dictionary<Type, LocalizedEnumValueCollection> EnumsCache = [];
-    private static readonly Dictionary<Expression, object> PropertiesCache = [];
+    private static readonly Dictionary<Expression, string?> PropertiesCache = [];
 
     public static LocalizedEnumValueCollection GetEnumLocalization<T>()
         where T : struct
@@ -53,22 +53,12 @@ internal static class EnumLocalizationUtilities
         {
             var memberExpression = (MemberExpression)exp.Body;
             var displayAttribute = memberExpression.Member.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute is null)
-            {
-                value = memberExpression.Member.Name;
-            }
-            else
-            {
-                value = displayAttribute.GetName();
-            }
+            value = displayAttribute?.GetName() ?? memberExpression.Member.Name;
 
             PropertiesCache.Add(exp, value);
         }
 
-        if (value is DisplayAttribute attribute)
-            return attribute.GetName();
-
-        return value.ToString();
+        return value;
     }
 
     public static string GetEnumMemberLocalization(Enum value)

@@ -237,7 +237,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
                     break;
 
                 case PendingEventType.AddRange:
-                    AddItems(pendingEvent.Items);
+                    AddItems(pendingEvent.Items!);
                     break;
 
                 case PendingEventType.Remove:
@@ -253,7 +253,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
                     break;
 
                 case PendingEventType.InsertRange:
-                    InsertItems(pendingEvent.Index, pendingEvent.Items);
+                    InsertItems(pendingEvent.Index, pendingEvent.Items!);
                     break;
 
                 case PendingEventType.RemoveAt:
@@ -265,7 +265,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
                     break;
 
                 case PendingEventType.Reset:
-                    Reset(pendingEvent.Items);
+                    Reset(pendingEvent.Items!);
                     break;
             }
         }

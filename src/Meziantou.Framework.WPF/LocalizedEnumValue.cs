@@ -38,7 +38,7 @@ public sealed class LocalizedEnumValue
         get
         {
             if (_displayAttribute is not null)
-                return _displayAttribute.GetName();
+                return _displayAttribute.GetName() ?? Value.ToString()!;
 
             return field!;
         }

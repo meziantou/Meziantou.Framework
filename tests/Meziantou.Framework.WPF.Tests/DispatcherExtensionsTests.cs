@@ -8,7 +8,7 @@ public sealed class DispatcherExtensionsTests
     [Fact(Timeout = 95000)]
     public async Task SwitchToUIThreadTests()
     {
-        Dispatcher dispatcher = null;
+        Dispatcher? dispatcher = null;
         var t = new Thread(() =>
         {
             dispatcher = Dispatcher.CurrentDispatcher;
@@ -19,15 +19,18 @@ public sealed class DispatcherExtensionsTests
         };
         t.Start();
 
-        while ((dispatcher = Volatile.Read(ref dispatcher)) is null)
+        while (Volatile.Read(ref dispatcher) is null)
         {
             await Task.Delay(1);
         }
 
+        var currentDispatcher = Volatile.Read(ref dispatcher);
+        Assert.NotNull(currentDispatcher);
+
         Assert.NotEqual(t.ManagedThreadId, Environment.CurrentManagedThreadId);
-        await dispatcher.SwitchToDispatcherThread();
+        await currentDispatcher.SwitchToDispatcherThread();
         Assert.Equal(t.ManagedThreadId, Environment.CurrentManagedThreadId);
 
-        dispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
+        currentDispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
     }
 }

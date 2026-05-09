@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 [AttributeUsage(AttributeTargets.All)]
 public sealed class ProjectedFileSystemFactAttribute : FactAttribute
 {
-    public ProjectedFileSystemFactAttribute([CallerFilePath] string sourceFilePath = null, [CallerLineNumber] int sourceLineNumber = -1)
+    public ProjectedFileSystemFactAttribute([CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = -1)
         : base(sourceFilePath, sourceLineNumber)
     {
         var guid = Guid.NewGuid();

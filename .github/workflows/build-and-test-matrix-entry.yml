@@ -103,6 +103,10 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: 90
     needs: [build]
+    strategy:
+      matrix:
+        shard: [1, 2]
+      fail-fast: false
     env:
       RUNS_ON: ${{ inputs.runs_on }}
       TestResultsDirectory: ${{ github.workspace}}/TestResults
@@ -112,7 +116,7 @@ jobs:
         name: Compute artifact name
         run: |
           $SanitizedName = "${{ inputs.runs_on }}-${{ inputs.configuration }}-${{inputs.additional_arguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=test-results-$SanitizedName" >> $env:GITHUB_OUTPUT
+          "artifact-name=test-results-$SanitizedName-shard-${{ matrix.shard }}" >> $env:GITHUB_OUTPUT
           "build-artifact-name=build-output-$SanitizedName" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v6
         with:
@@ -129,6 +133,9 @@ jobs:
           input-project: eng/build.proj
           output-project: eng/delta.proj
           run-generate: ${{ case(inputs.is_pull_request, 'true', 'false') }}
+          test-projects-only: "true"
+          shard: ${{ matrix.shard }}
+          total-shards: 2
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             .github/workflows/build-and-test-matrix-entry.yml

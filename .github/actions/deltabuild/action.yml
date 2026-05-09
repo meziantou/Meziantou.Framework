@@ -22,6 +22,18 @@ inputs:
     description: Whether to run DeltaBuild generation
     required: false
     default: "true"
+  test-projects-only:
+    description: Whether to include only test projects
+    required: false
+    default: "false"
+  shard:
+    description: Optional shard number to pass to DeltaBuild
+    required: false
+    default: ""
+  total-shards:
+    description: Optional total shard count to pass to DeltaBuild
+    required: false
+    default: ""
 
 outputs:
   project:
@@ -48,6 +60,9 @@ runs:
         OUTPUT_PROJECT: ${{ inputs.output-project }}
         TRAVERSAL_AFTER_IMPORT: ${{ inputs.traversal-after-import }}
         FULL_REBUILD_TRIGGERS: ${{ inputs.full-rebuild-triggers }}
+        TEST_PROJECTS_ONLY: ${{ inputs.test-projects-only }}
+        SHARD: ${{ inputs.shard }}
+        TOTAL_SHARDS: ${{ inputs.total-shards }}
       run: |
         $arguments = @(
           "generate"
@@ -56,6 +71,18 @@ runs:
           "--traversal-after-import", $env:TRAVERSAL_AFTER_IMPORT
           "--no-output-if-empty"
         )
+
+        if ($env:TEST_PROJECTS_ONLY -eq "true") {
+          $arguments += "--test-projects-only"
+        }
+
+        if ($env:SHARD) {
+          $arguments += @("--shard", $env:SHARD)
+        }
+
+        if ($env:TOTAL_SHARDS) {
+          $arguments += @("--total-shards", $env:TOTAL_SHARDS)
+        }
 
         $env:FULL_REBUILD_TRIGGERS -split "`n" | ForEach-Object {
           $trigger = $_.Trim()

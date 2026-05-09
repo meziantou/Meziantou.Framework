@@ -735,10 +735,22 @@ public sealed class TdsServerProtocolTests
             return false;
         }
 
-        if (querySpecification.SelectClause.SelectExpressions.Count != 2 ||
-            querySpecification.SelectClause.SelectExpressions[0] is not SqlSelectScalarExpression { Expression: SqlColumnRefExpression firstSelectColumn } ||
-            querySpecification.SelectClause.SelectExpressions[1] is not SqlSelectScalarExpression { Expression: SqlColumnRefExpression secondSelectColumn } ||
-            !string.Equals(firstSelectColumn.ColumnName.Value, "Id", StringComparison.OrdinalIgnoreCase) ||
+        if (querySpecification.SelectClause.SelectExpressions.Count != 2)
+        {
+            return false;
+        }
+
+        if (querySpecification.SelectClause.SelectExpressions[0] is not SqlSelectScalarExpression { Expression: SqlColumnRefExpression firstSelectColumn })
+        {
+            return false;
+        }
+
+        if (querySpecification.SelectClause.SelectExpressions[1] is not SqlSelectScalarExpression { Expression: SqlColumnRefExpression secondSelectColumn })
+        {
+            return false;
+        }
+
+        if (!string.Equals(firstSelectColumn.ColumnName.Value, "Id", StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(secondSelectColumn.ColumnName.Value, "Name", StringComparison.OrdinalIgnoreCase))
         {
             return false;

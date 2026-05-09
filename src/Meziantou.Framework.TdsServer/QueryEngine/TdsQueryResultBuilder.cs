@@ -85,7 +85,14 @@ internal static class TdsQueryResultBuilder
 
     private static bool IsEnumerable(object value, out IReadOnlyList<object?> rows, out Type elementType)
     {
-        if (value is string or byte[] || value is not IEnumerable enumerable)
+        if (value is string or byte[])
+        {
+            rows = [];
+            elementType = typeof(object);
+            return false;
+        }
+
+        if (value is not IEnumerable enumerable)
         {
             rows = [];
             elementType = typeof(object);

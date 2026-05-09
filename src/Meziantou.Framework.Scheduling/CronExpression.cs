@@ -843,7 +843,7 @@ public sealed class CronExpression : IRecurrenceRule, IParsable<CronExpression>,
             var daysInMonth = DateTime.DaysInMonth(year, month);
             var lastDay = new DateTime(year, month, daysInMonth);
 
-            while (lastDay.DayOfWeek is DayOfWeek.Saturday || lastDay.DayOfWeek is DayOfWeek.Sunday)
+            while (lastDay.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
             {
                 lastDay = lastDay.AddDays(-1);
             }

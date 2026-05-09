@@ -162,6 +162,7 @@ jobs:
               [string]$OutputPath,
 
               [Parameter(Mandatory = $true)]
+              [AllowEmptyCollection()]
               [string[]]$Projects,
 
               [Parameter(Mandatory = $true)]

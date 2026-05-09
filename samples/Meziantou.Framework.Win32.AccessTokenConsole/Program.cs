@@ -18,8 +18,11 @@ internal static class Program
         Console.WriteLine("IsAdministrator " + IsAdministrator());
     }
 
-    private static void PrintToken(AccessToken token)
+    private static void PrintToken(AccessToken? token)
     {
+        if (token is null)
+            return;
+
         Console.WriteLine("Owner: " + token.GetOwner());
         Console.WriteLine("TokenType: " + token.GetTokenType());
         Console.WriteLine("ElevationType: " + token.GetElevationType());
@@ -27,17 +30,17 @@ internal static class Program
         Console.WriteLine("IsRestricted: " + token.IsRestricted());
         Console.WriteLine("MandatoryIntegrityLevel: " + token.GetMandatoryIntegrityLevel()?.Sid);
 
-        foreach (var group in token.EnumerateGroups())
+        foreach (var group in token.EnumerateGroups() ?? [])
         {
             Console.WriteLine($"Group: {group.Sid} ({group.Attributes})");
         }
 
-        foreach (var group in token.EnumerateRestrictedSid())
+        foreach (var group in token.EnumerateRestrictedSid() ?? [])
         {
             Console.WriteLine($"Restricted Group: {group.Sid} ({group.Attributes})");
         }
 
-        foreach (var privilege in token.EnumeratePrivileges())
+        foreach (var privilege in token.EnumeratePrivileges() ?? [])
         {
             Console.WriteLine($"Privilege: {privilege.Name} ({privilege.Attributes})");
         }
@@ -46,6 +49,9 @@ internal static class Program
     public static bool IsAdministrator()
     {
         using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+        if (token is null)
+            return false;
+
         if (!IsAdministrator(token) && token.GetElevationType() == TokenElevationType.Limited)
         {
             using var linkedToken = token.GetLinkedToken();
@@ -54,10 +60,13 @@ internal static class Program
 
         return false;
 
-        static bool IsAdministrator(AccessToken accessToken)
+        static bool IsAdministrator(AccessToken? accessToken)
         {
+            if (accessToken is null)
+                return false;
+
             var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
-            foreach (var group in accessToken.EnumerateGroups())
+            foreach (var group in accessToken.EnumerateGroups() ?? [])
             {
                 if (group.Attributes.HasFlag(GroupSidAttributes.SE_GROUP_ENABLED) && group.Sid == adminSid)
                     return true;

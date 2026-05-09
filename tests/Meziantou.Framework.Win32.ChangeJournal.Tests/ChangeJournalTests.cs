@@ -12,7 +12,7 @@ public class ChangeJournalTests
         {
             var file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".tmp");
             var fileName = Path.GetFileName(file);
-            var drive = Path.GetPathRoot(file);
+            var drive = Path.GetPathRoot(file) ?? throw new InvalidOperationException("Cannot determine drive root");
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
             var item = changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
             Assert.Null(item);
@@ -37,7 +37,7 @@ public class ChangeJournalTests
         {
             var file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".tmp");
             var fileName = Path.GetFileName(file);
-            var drive = Path.GetPathRoot(file);
+            var drive = Path.GetPathRoot(file) ?? throw new InvalidOperationException("Cannot determine drive root");
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
             var item = changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
             Assert.Null(item);
@@ -56,7 +56,7 @@ public class ChangeJournalTests
         Retry(() =>
         {
             var file = Path.GetTempFileName();
-            var drive = Path.GetPathRoot(file);
+            var drive = Path.GetPathRoot(file) ?? throw new InvalidOperationException("Cannot determine drive root");
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
             var entries = changeJournal.Entries.ToList();
             Assert.True(entries.Count >= 0);
@@ -69,7 +69,7 @@ public class ChangeJournalTests
         Retry(() =>
         {
             var file = Path.GetTempFileName();
-            var drive = Path.GetPathRoot(file);
+            var drive = Path.GetPathRoot(file) ?? throw new InvalidOperationException("Cannot determine drive root");
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive), unprivileged: true);
             var entries = changeJournal.GetEntries(ChangeReason.FileCreate, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
             Assert.True(entries.Count >= 0);

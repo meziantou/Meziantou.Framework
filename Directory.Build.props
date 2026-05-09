@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
-  <PropertyGroup Condition="'$(TargetFramework)' != '$(LatestTargetFramework)'">
+  <PropertyGroup Condition="!$(TargetFramework.StartsWith('$(LatestTargetFramework)'))">
     <NoWarn>$(NoWarn);nullable;IDE0370</NoWarn>
   </PropertyGroup>
 

@@ -27,6 +27,7 @@ public sealed class CredentialManagerTests : IDisposable
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
 
         var cred = CredentialManager.ReadCredential(_credentialName1);
+        Assert.NotNull(cred);
         Assert.Equal(_credentialName1, cred.ApplicationName);
         Assert.Equal("John", cred.UserName);
         Assert.Equal("Doe", cred.Password);
@@ -61,6 +62,7 @@ public sealed class CredentialManagerTests : IDisposable
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", comment, CredentialPersistence.Session);
 
         var cred = CredentialManager.ReadCredential(_credentialName1);
+        Assert.NotNull(cred);
         Assert.Equal(_credentialName1, cred.ApplicationName);
         Assert.Equal("John", cred.UserName);
         Assert.Equal("Doe", cred.Password);
@@ -82,6 +84,7 @@ public sealed class CredentialManagerTests : IDisposable
         CredentialManager.WriteCredential(_credentialName1, "John", secret, CredentialPersistence.Session);
 
         var cred = CredentialManager.ReadCredential(_credentialName1);
+        Assert.NotNull(cred);
         Assert.Equal(secret, cred.Password);
 
         CredentialManager.DeleteCredential(_credentialName1);

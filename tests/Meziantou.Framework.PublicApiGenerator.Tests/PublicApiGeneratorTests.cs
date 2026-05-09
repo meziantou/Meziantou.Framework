@@ -1836,7 +1836,7 @@ public sealed class PublicApiGeneratorTests
         if (File.Exists(cachedAssemblyPath))
             return cachedAssemblyPath;
 
-        using var _ = AcquireCompilationLock(cacheKey);
+        await using var _ = await AcquireCompilationLockAsync(cacheDirectory, cacheKey);
         if (File.Exists(cachedAssemblyPath))
             return cachedAssemblyPath;
 
@@ -1921,53 +1921,21 @@ public sealed class PublicApiGeneratorTests
         hash.AppendData(value);
     }
 
-    private static MutexLock AcquireCompilationLock(string cacheKey)
+    private static async Task<FileStream> AcquireCompilationLockAsync(FullPath cacheDirectory, string cacheKey)
     {
-        const string MutexPrefix = "meziantou-framework-publicapi-generator-tests-compile-";
-        var mutex = new Mutex(initiallyOwned: false, name: MutexPrefix + cacheKey);
-        var lockTaken = false;
+        var lockFilePath = cacheDirectory / "locks" / $"{cacheKey}.lock";
+        lockFilePath.CreateParentDirectory();
 
-        try
+        while (true)
         {
             try
             {
-                lockTaken = mutex.WaitOne();
+                return new FileStream(lockFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
-            catch (AbandonedMutexException)
+            catch (IOException)
             {
-                lockTaken = true;
+                await Task.Delay(50, XunitCancellationToken);
             }
-
-            if (!lockTaken)
-            {
-                mutex.Dispose();
-                throw new XunitException($"Cannot acquire mutex for compilation cache key '{cacheKey}'");
-            }
-
-            return new MutexLock(mutex);
-        }
-        catch
-        {
-            if (!lockTaken)
-                mutex.Dispose();
-
-            throw;
-        }
-    }
-
-    private sealed class MutexLock : IDisposable
-    {
-        private readonly Mutex _mutex;
-
-        public MutexLock(Mutex mutex)
-        {
-            _mutex = mutex;
-        }
-
-        public void Dispose()
-        {
-            _mutex.ReleaseMutex();
-            _mutex.Dispose();
         }
     }
 

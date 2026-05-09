@@ -166,6 +166,10 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true'
         run: "Get-ChildItem env: | Sort-Object Name"
 
+      - name: Restore test dependencies
+        if: steps.build-project.outputs.has-project == 'true'
+        run: dotnet restore ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} --framework ${{ matrix.target_framework }} ${{ inputs.additional_arguments }}
+
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} --framework ${{ matrix.target_framework }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ inputs.additional_arguments }}

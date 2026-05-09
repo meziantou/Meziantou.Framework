@@ -59,16 +59,20 @@ jobs:
             .github/workflows/build-and-test-matrix-entry.yml
             eng/**/*.proj
 
+      - id: select-build-project
+        name: Select build project
+        run: |
+          $Project = if (Test-Path -LiteralPath "eng/delta.proj") { "eng/delta.proj" } else { "eng/build.proj" }
+          "project=$Project" >> $env:GITHUB_OUTPUT
+
       - name: PATH
-        if: steps.build-project.outputs.has-project == 'true'
         run: echo $env:PATH
 
       - name: .NET info
-        if: steps.build-project.outputs.has-project == 'true'
         run: dotnet --info
 
       - name: Enable ProjFS
-        if: startsWith(inputs.runs_on, 'windows') && steps.build-project.outputs.has-project == 'true'
+        if: startsWith(inputs.runs_on, 'windows')
         run: |
           $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
           if ($feature.State -ne 'Enabled') {
@@ -76,12 +80,10 @@ jobs:
           }
 
       - name: Build
-        if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} /bl ${{ inputs.additional_arguments }}
+        run: dotnet build ${{ steps.select-build-project.outputs.project }} --configuration ${{ inputs.configuration }} /bl ${{ inputs.additional_arguments }}
 
       - id: pack-build-output
         name: Archive build outputs
-        if: steps.build-project.outputs.has-project == 'true'
         run: |
           $ArchivePath = Join-Path $env:RUNNER_TEMP "build-output.tar"
           if (Test-Path $ArchivePath) {
@@ -92,10 +94,10 @@ jobs:
           "archive-path=$ArchivePath" >> $env:GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v7
-        if: always() && steps.build-project.outputs.has-project == 'true'
+        if: always()
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+          if-no-files-found: ${{ case(steps.select-build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
           retention-days: 3
           path: ${{ steps.pack-build-output.outputs.archive-path }}
 
@@ -103,6 +105,10 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     timeout-minutes: 90
     needs: [build]
+    strategy:
+      matrix:
+        shard: [0, 1]
+      fail-fast: false
     env:
       RUNS_ON: ${{ inputs.runs_on }}
       TestResultsDirectory: ${{ github.workspace}}/TestResults
@@ -112,7 +118,7 @@ jobs:
         name: Compute artifact name
         run: |
           $SanitizedName = "${{ inputs.runs_on }}-${{ inputs.configuration }}-${{inputs.additional_arguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=test-results-$SanitizedName" >> $env:GITHUB_OUTPUT
+          "artifact-name=test-results-$SanitizedName-shard-${{ matrix.shard }}" >> $env:GITHUB_OUTPUT
           "build-artifact-name=build-output-$SanitizedName" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v6
         with:
@@ -134,8 +140,153 @@ jobs:
             .github/workflows/build-and-test-matrix-entry.yml
             eng/**/*.proj
 
+      - id: generate-test-shards
+        name: Generate test shards
+        run: |
+          function Test-IsChildPath {
+            param(
+              [Parameter(Mandatory = $true)]
+              [string]$ParentPath,
+
+              [Parameter(Mandatory = $true)]
+              [string]$ChildPath
+            )
+
+            $relativePath = [System.IO.Path]::GetRelativePath($ParentPath, $ChildPath)
+            return -not $relativePath.StartsWith("..", [System.StringComparison]::Ordinal) -and $relativePath -ne "."
+          }
+
+          function Write-TestShardProject {
+            param(
+              [Parameter(Mandatory = $true)]
+              [string]$OutputPath,
+
+              [Parameter(Mandatory = $true)]
+              [string[]]$Projects,
+
+              [Parameter(Mandatory = $true)]
+              [string]$PlatformExclusionsPath
+            )
+
+            $outputDirectory = [System.IO.Path]::GetDirectoryName($OutputPath)
+            if ($outputDirectory)
+            {
+              New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+            }
+
+            $importPath = [System.IO.Path]::GetRelativePath($outputDirectory, $PlatformExclusionsPath).Replace('\', '/')
+            $lineFeed = "`n"
+            $builder = [System.Text.StringBuilder]::new()
+            $null = $builder.Append("<Project Sdk=`"Microsoft.Build.Traversal`">$lineFeed")
+            $null = $builder.Append("  <ItemGroup>$lineFeed")
+            foreach ($project in $Projects)
+            {
+              $relativeProjectPath = [System.IO.Path]::GetRelativePath($outputDirectory, $project).Replace('\', '/')
+              $null = $builder.Append("    <ProjectReference Include=`"$relativeProjectPath`" />$lineFeed")
+            }
+
+            $null = $builder.Append("  </ItemGroup>$lineFeed")
+            $null = $builder.Append("$lineFeed")
+            $null = $builder.Append("  <Import Project=`"$importPath`" />$lineFeed")
+            $null = $builder.Append("</Project>$lineFeed")
+            Set-Content -LiteralPath $OutputPath -Value $builder.ToString() -Encoding UTF8 -NoNewline
+          }
+
+          $repositoryRoot = (Get-Location).Path
+          $testsRoot = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot "tests"))
+          $platformExclusionsPath = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot "eng/build.platform-exclusions.proj"))
+          $deltaProjectPath = [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot "eng/delta.proj"))
+          $outputShardPaths = @(
+            [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot "eng/tests.shard.0.proj")),
+            [System.IO.Path]::GetFullPath((Join-Path $repositoryRoot "eng/tests.shard.1.proj"))
+          )
+
+          $testProjects = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+          if (Test-Path -LiteralPath $deltaProjectPath)
+          {
+            [xml]$deltaProjectXml = Get-Content -LiteralPath $deltaProjectPath
+            $deltaProjectDirectory = [System.IO.Path]::GetDirectoryName($deltaProjectPath)
+            foreach ($projectReference in @($deltaProjectXml.Project.ItemGroup.ProjectReference))
+            {
+              $includePath = $projectReference.Include
+              if ([string]::IsNullOrWhiteSpace($includePath))
+              {
+                continue
+              }
+
+              if ($includePath.Contains('*') -or $includePath.Contains('?'))
+              {
+                continue
+              }
+
+              $absoluteProjectPath = [System.IO.Path]::GetFullPath((Join-Path $deltaProjectDirectory $includePath))
+              if ([System.IO.Path]::GetExtension($absoluteProjectPath) -ne ".csproj")
+              {
+                continue
+              }
+
+              if (-not (Test-IsChildPath -ParentPath $testsRoot -ChildPath $absoluteProjectPath))
+              {
+                continue
+              }
+
+              $null = $testProjects.Add($absoluteProjectPath)
+            }
+          }
+          else
+          {
+            foreach ($project in Get-ChildItem -Path $testsRoot -Recurse -Filter "*.csproj" -File)
+            {
+              $null = $testProjects.Add($project.FullName)
+            }
+          }
+
+          $orderedProjects = @($testProjects | Sort-Object)
+          $shard0Projects = [System.Collections.Generic.List[string]]::new()
+          $shard1Projects = [System.Collections.Generic.List[string]]::new()
+          for ($index = 0; $index -lt $orderedProjects.Count; $index++)
+          {
+            if ($index % 2 -eq 0)
+            {
+              $shard0Projects.Add($orderedProjects[$index])
+            }
+            else
+            {
+              $shard1Projects.Add($orderedProjects[$index])
+            }
+          }
+
+          Write-TestShardProject -OutputPath $outputShardPaths[0] -Projects $shard0Projects.ToArray() -PlatformExclusionsPath $platformExclusionsPath
+          Write-TestShardProject -OutputPath $outputShardPaths[1] -Projects $shard1Projects.ToArray() -PlatformExclusionsPath $platformExclusionsPath
+
+          "shard0_project=eng/tests.shard.0.proj" >> $env:GITHUB_OUTPUT
+          "shard0_has_project=$($shard0Projects.Count -gt 0 ? 'true' : 'false')" >> $env:GITHUB_OUTPUT
+          "shard1_project=eng/tests.shard.1.proj" >> $env:GITHUB_OUTPUT
+          "shard1_has_project=$($shard1Projects.Count -gt 0 ? 'true' : 'false')" >> $env:GITHUB_OUTPUT
+
+      - id: select-test-shard
+        name: Select test shard
+        run: |
+          switch ("${{ matrix.shard }}")
+          {
+            "0"
+            {
+              "project=${{ steps.generate-test-shards.outputs.shard0_project }}" >> $env:GITHUB_OUTPUT
+              "has-project=${{ steps.generate-test-shards.outputs.shard0_has_project }}" >> $env:GITHUB_OUTPUT
+            }
+            "1"
+            {
+              "project=${{ steps.generate-test-shards.outputs.shard1_project }}" >> $env:GITHUB_OUTPUT
+              "has-project=${{ steps.generate-test-shards.outputs.shard1_has_project }}" >> $env:GITHUB_OUTPUT
+            }
+            default
+            {
+              throw "Unsupported shard index '${{ matrix.shard }}'"
+            }
+          }
+
       - name: Enable ProjFS
-        if: startsWith(inputs.runs_on, 'windows') && steps.build-project.outputs.has-project == 'true'
+        if: startsWith(inputs.runs_on, 'windows') && steps.select-test-shard.outputs.has-project == 'true'
         run: |
           $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
           if ($feature.State -ne 'Enabled') {
@@ -143,28 +294,28 @@ jobs:
           }
 
       - uses: actions/download-artifact@v8
-        if: steps.build-project.outputs.has-project == 'true'
+        if: steps.select-test-shard.outputs.has-project == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.build-artifact-name }}
           path: ${{ runner.temp }}/build-output
 
       - name: Extract build outputs
-        if: steps.build-project.outputs.has-project == 'true'
+        if: steps.select-test-shard.outputs.has-project == 'true'
         run: tar -xf "${{ runner.temp }}/build-output/build-output.tar" -C ${{ github.workspace }}
 
       - name: List environment variables
-        if: steps.build-project.outputs.has-project == 'true'
+        if: steps.select-test-shard.outputs.has-project == 'true'
         run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
-        if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ inputs.additional_arguments }}
+        if: steps.select-test-shard.outputs.has-project == 'true'
+        run: dotnet test ${{ steps.select-test-shard.outputs.project }} --configuration ${{ inputs.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ inputs.additional_arguments }}
 
       - uses: actions/upload-artifact@v7
-        if: always() && steps.build-project.outputs.has-project == 'true'
+        if: always() && steps.select-test-shard.outputs.has-project == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+          if-no-files-found: error
           retention-days: 3
           path: |
             !**/*.coverage
@@ -172,10 +323,10 @@ jobs:
             ${{ env.TestResultsDirectory }}/**/*
 
       - uses: actions/upload-artifact@v7
-        if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
+        if: always() && steps.select-test-shard.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
-          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+          if-no-files-found: error
           retention-days: 3
           path: |
             **/*.coverage

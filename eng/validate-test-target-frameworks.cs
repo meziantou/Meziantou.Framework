@@ -189,4 +189,4 @@ static string[] GetRequiredStringArray(JsonElement root, string propertyName, Fu
         .ToArray();
 }
 
-readonly record struct TestTargetFrameworkManifest(string[] Linux, string[] Mac, string[] Windows);
+internal readonly record struct TestTargetFrameworkManifest(string[] Linux, string[] Mac, string[] Windows);

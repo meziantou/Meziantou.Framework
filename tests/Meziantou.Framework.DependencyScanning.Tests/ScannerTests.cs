@@ -1005,7 +1005,7 @@ jobs:
             (DependencyType.SwiftPackage, "apple/swift-collections", ".upToNextMajor(from: \"1.1.0\")", 0, 0),
             (DependencyType.SwiftPackage, "../LocalPackage", null, 0, 0));
 
-        var swiftNioDependency = Assert.Single(result.Where(d => d.Name == "https://github.com/apple/swift-nio.git"));
+        var swiftNioDependency = Assert.Single(result, d => d.Name == "https://github.com/apple/swift-nio.git");
         await swiftNioDependency.UpdateVersionAsync("exact: \"2.0.0\"");
         AssertFileContentEqual("Package.swift", Expected, ignoreNewLines: false);
     }

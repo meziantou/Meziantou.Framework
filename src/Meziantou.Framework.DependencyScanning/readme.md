@@ -28,6 +28,7 @@ The library can detect the following dependency types:
 - **HelmChart** - Helm chart dependencies
 - **RubyGem** - Ruby gems
 - **RenovateConfiguration** - Renovate configuration extends
+- **SwiftPackage** - Swift Package Manager dependencies
 - **MSBuildProjectReference** - MSBuild project references
 
 ## Usage

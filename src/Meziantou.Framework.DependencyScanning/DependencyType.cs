@@ -48,6 +48,9 @@ public enum DependencyType
     /// <summary>Renovate configuration extends reference.</summary>
     RenovateConfiguration,
 
+    /// <summary>Swift package dependency from Swift Package Manager.</summary>
+    SwiftPackage,
+
     /// <summary>MSBuild project reference.</summary>
     MSBuildProjectReference,
 }

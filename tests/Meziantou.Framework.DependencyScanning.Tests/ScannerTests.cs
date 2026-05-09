@@ -851,6 +851,166 @@ jobs:
     }
 
     [Fact]
+    public async Task SwiftPackageResolvedDependencies()
+    {
+        const string Original = /*lang=json,strict*/ """
+{
+  "version": 2,
+  "pins": [
+    {
+      "identity": "swift-nio",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-nio.git",
+      "state": {
+        "revision": "3ef4f4ec7fcd0d949f79e421bd1209e7ee48357f",
+        "version": "2.76.0"
+      }
+    },
+    {
+      "identity": "swift-log",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-log.git",
+      "state": {
+        "branch": "main",
+        "revision": "01f8f2c34d3ebd20e607d06c3ca4d62f6ec4f234"
+      }
+    }
+  ]
+}
+""";
+
+        const string Expected = /*lang=json,strict*/ """
+{
+  "version": 2,
+  "pins": [
+    {
+      "identity": "dummy1",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-nio.git",
+      "state": {
+        "revision": "3ef4f4ec7fcd0d949f79e421bd1209e7ee48357f",
+        "version": "2.0.0"
+      }
+    },
+    {
+      "identity": "dummy2",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-log.git",
+      "state": {
+        "branch": "2.0.0",
+        "revision": "01f8f2c34d3ebd20e607d06c3ca4d62f6ec4f234"
+      }
+    }
+  ]
+}
+""";
+
+        AddFile("Package.resolved", Original);
+        var result = await GetDependencies<SwiftPackageDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.SwiftPackage, "swift-nio", "2.76.0", 0, 0),
+            (DependencyType.SwiftPackage, "swift-log", "main", 0, 0));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("Package.resolved", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task SwiftPackageResolvedDependencies_V1Schema()
+    {
+        const string Original = /*lang=json,strict*/ """
+{
+  "object": {
+    "pins": [
+      {
+        "package": "alamofire",
+        "repositoryURL": "https://github.com/alamofire/alamofire.git",
+        "state": {
+          "branch": null,
+          "revision": "1c8560d32e6c41f6ad4c235f5be9c6f2248f5d7c",
+          "version": "5.8.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
+""";
+
+        const string Expected = /*lang=json,strict*/ """
+{
+  "object": {
+    "pins": [
+      {
+        "package": "dummy1",
+        "repositoryURL": "https://github.com/alamofire/alamofire.git",
+        "state": {
+          "branch": null,
+          "revision": "1c8560d32e6c41f6ad4c235f5be9c6f2248f5d7c",
+          "version": "2.0.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
+""";
+
+        AddFile("Package.resolved", Original);
+        var result = await GetDependencies<SwiftPackageDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.SwiftPackage, "alamofire", "5.8.0", 0, 0));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("Package.resolved", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task SwiftPackageManifestDependencies()
+    {
+        const string Original = """
+            // .package(url: "https://example.com/ignored.git", from: "0.0.1")
+            let package = Package(
+                name: "Sample",
+                dependencies: [
+                    .package(url: "https://github.com/apple/swift-nio.git", from: "2.76.0"),
+                    .package(
+                        id: "apple/swift-collections",
+                        .upToNextMajor(from: "1.1.0")
+                    ),
+                    .package(path: "../LocalPackage")
+                ]
+            )
+            """;
+
+        const string Expected = """
+            // .package(url: "https://example.com/ignored.git", from: "0.0.1")
+            let package = Package(
+                name: "Sample",
+                dependencies: [
+                    .package(url: "https://github.com/apple/swift-nio.git", exact: "2.0.0"),
+                    .package(
+                        id: "apple/swift-collections",
+                        .upToNextMajor(from: "1.1.0")
+                    ),
+                    .package(path: "../LocalPackage")
+                ]
+            )
+            """;
+
+        AddFile("Package.swift", Original);
+        var result = await GetDependencies<SwiftPackageDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.SwiftPackage, "https://github.com/apple/swift-nio.git", "from: \"2.76.0\"", 0, 0),
+            (DependencyType.SwiftPackage, "apple/swift-collections", ".upToNextMajor(from: \"1.1.0\")", 0, 0),
+            (DependencyType.SwiftPackage, "../LocalPackage", null, 0, 0));
+
+        var swiftNioDependency = Assert.Single(result.Where(d => d.Name == "https://github.com/apple/swift-nio.git"));
+        await swiftNioDependency.UpdateVersionAsync("exact: \"2.0.0\"");
+        AssertFileContentEqual("Package.swift", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
     public async Task AzureDevOpsContainerDependencies()
     {
         AddFile("sample.yml", """

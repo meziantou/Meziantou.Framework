@@ -36,6 +36,7 @@ public sealed class ScannerOptions
         new ProjectJsonDependencyScanner(),
         new PythonRequirementsDependencyScanner(),
         new RenovateExtendsDependencyScanner(),
+        new SwiftPackageDependencyScanner(),
     ];
 
     internal static ScannerOptions Default { get; } = new ScannerOptions();

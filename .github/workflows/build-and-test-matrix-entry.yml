@@ -79,15 +79,25 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} /bl ${{ inputs.additional_arguments }}
 
+      - id: pack-build-output
+        name: Archive build outputs
+        if: steps.build-project.outputs.has-project == 'true'
+        run: |
+          $ArchivePath = Join-Path $env:RUNNER_TEMP "build-output.tar"
+          if (Test-Path $ArchivePath) {
+            Remove-Item $ArchivePath -Force
+          }
+
+          tar -cf $ArchivePath artifacts/bin artifacts/obj
+          "archive-path=$ArchivePath" >> $env:GITHUB_OUTPUT
+
       - uses: actions/upload-artifact@v7
         if: always() && steps.build-project.outputs.has-project == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
           if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
           retention-days: 3
-          path: |
-            **/bin/**/*
-            **/obj/**/*
+          path: ${{ steps.pack-build-output.outputs.archive-path }}
 
   test:
     runs-on: ${{ inputs.runs_on }}
@@ -136,7 +146,11 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.build-artifact-name }}
-          path: ${{ github.workspace }}
+          path: ${{ runner.temp }}/build-output
+
+      - name: Extract build outputs
+        if: steps.build-project.outputs.has-project == 'true'
+        run: tar -xf "${{ runner.temp }}/build-output/build-output.tar" -C ${{ github.workspace }}
 
       - name: List environment variables
         if: steps.build-project.outputs.has-project == 'true'

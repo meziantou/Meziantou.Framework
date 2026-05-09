@@ -10,12 +10,12 @@ public static class TestEnvironment
         return false;
     }
 
-    public static bool IsOnContinuousIntegration(ContinuousIntegrationEnvironment environment)
+    public static bool IsOnContinuousIntegration(ContinuousIntegrationEnvironments environment)
     {
-        if (environment == ContinuousIntegrationEnvironment.None)
+        if (environment == ContinuousIntegrationEnvironments.None)
             return false;
 
-        if (environment.HasFlag(ContinuousIntegrationEnvironment.GitHubActions) && IsOnGitHubActions())
+        if (environment.HasFlag(ContinuousIntegrationEnvironments.GitHubActions) && IsOnGitHubActions())
             return true;
 
         return false;

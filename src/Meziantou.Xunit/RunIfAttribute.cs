@@ -26,7 +26,5 @@ public sealed class RunIfAttribute : ConditionalTestAttributeBase
     {
     }
 
-    public static bool IsGlobalizationInvariant() => TestEnvironment.IsGlobalizationInvariant();
-
     protected override bool InvertCondition => false;
 }

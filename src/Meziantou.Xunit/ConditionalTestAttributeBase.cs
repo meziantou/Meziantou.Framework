@@ -33,7 +33,7 @@ public abstract class ConditionalTestAttributeBase : BeforeAfterTestAttribute
 
     public TestOperatingSystems OperatingSystem { get; set; }
     public TestGlobalizationMode GlobalizationMode { get; set; } = TestGlobalizationMode.Any;
-    public ContinuousIntegrationEnvironment ContinuousIntegration { get; set; }
+    public ContinuousIntegrationEnvironments ContinuousIntegration { get; set; }
     public WindowsGroups WindowsGroup { get; set; } = WindowsGroups.Any;
 
     protected abstract bool InvertCondition { get; }
@@ -55,11 +55,11 @@ public abstract class ConditionalTestAttributeBase : BeforeAfterTestAttribute
         throw new InvalidOperationException("$XunitDynamicSkip$" + reason);
     }
 
-    private static ConditionEvaluation EvaluateConditions(TestOperatingSystems operatingSystem, TestGlobalizationMode globalizationMode, ContinuousIntegrationEnvironment continuousIntegration, WindowsGroups windowsGroup)
+    private static ConditionEvaluation EvaluateConditions(TestOperatingSystems operatingSystem, TestGlobalizationMode globalizationMode, ContinuousIntegrationEnvironments continuousIntegration, WindowsGroups windowsGroup)
     {
         var hasCondition = operatingSystem != TestOperatingSystems.None ||
                            globalizationMode != TestGlobalizationMode.Any ||
-                           continuousIntegration != ContinuousIntegrationEnvironment.None ||
+                           continuousIntegration != ContinuousIntegrationEnvironments.None ||
                            windowsGroup != WindowsGroups.Any;
 
         if (!hasCondition)
@@ -82,7 +82,7 @@ public abstract class ConditionalTestAttributeBase : BeforeAfterTestAttribute
         if (operatingSystem != TestOperatingSystems.None && !IsMatchingOperatingSystem(operatingSystem))
             return new ConditionEvaluation(HasCondition: true, IsMatch: false, MatchDescription: string.Empty, FailureReason: "Run only on " + operatingSystem);
 
-        if (continuousIntegration != ContinuousIntegrationEnvironment.None && !TestEnvironment.IsOnContinuousIntegration(continuousIntegration))
+        if (continuousIntegration != ContinuousIntegrationEnvironments.None && !TestEnvironment.IsOnContinuousIntegration(continuousIntegration))
             return new ConditionEvaluation(HasCondition: true, IsMatch: false, MatchDescription: string.Empty, FailureReason: "Run only on " + continuousIntegration);
 
         if (windowsGroup != WindowsGroups.Any)
@@ -98,7 +98,7 @@ public abstract class ConditionalTestAttributeBase : BeforeAfterTestAttribute
         return new ConditionEvaluation(HasCondition: true, IsMatch: true, MatchDescription: matchDescription, FailureReason: null);
     }
 
-    private static string GetMatchDescription(TestOperatingSystems operatingSystem, TestGlobalizationMode globalizationMode, ContinuousIntegrationEnvironment continuousIntegration, WindowsGroups windowsGroup)
+    private static string GetMatchDescription(TestOperatingSystems operatingSystem, TestGlobalizationMode globalizationMode, ContinuousIntegrationEnvironments continuousIntegration, WindowsGroups windowsGroup)
     {
         var conditions = new List<string>(capacity: 4);
         if (operatingSystem != TestOperatingSystems.None)
@@ -107,7 +107,7 @@ public abstract class ConditionalTestAttributeBase : BeforeAfterTestAttribute
         if (globalizationMode != TestGlobalizationMode.Any)
             conditions.Add(nameof(GlobalizationMode) + " = " + globalizationMode);
 
-        if (continuousIntegration != ContinuousIntegrationEnvironment.None)
+        if (continuousIntegration != ContinuousIntegrationEnvironments.None)
             conditions.Add(nameof(ContinuousIntegration) + " = " + continuousIntegration);
 
         if (windowsGroup != WindowsGroups.Any)

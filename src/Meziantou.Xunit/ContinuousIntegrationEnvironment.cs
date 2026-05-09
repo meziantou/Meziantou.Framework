@@ -1,7 +1,7 @@
 namespace Meziantou.Xunit;
 
 [Flags]
-public enum ContinuousIntegrationEnvironment
+public enum ContinuousIntegrationEnvironments
 {
     None = 0,
     GitHubActions = 1,

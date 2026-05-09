@@ -103,7 +103,7 @@ internal ref struct JsonPathParser
                     return true;
                 }
 
-                if (_current.Kind is JsonPathTokenKind.Identifier || _current.Kind is JsonPathTokenKind.True || _current.Kind is JsonPathTokenKind.False || _current.Kind is JsonPathTokenKind.Null)
+                if (_current.Kind is JsonPathTokenKind.Identifier or JsonPathTokenKind.True or JsonPathTokenKind.False or JsonPathTokenKind.Null)
                 {
                     var name = _current.Kind switch
                     {
@@ -142,7 +142,7 @@ internal ref struct JsonPathParser
                     return true;
                 }
 
-                if (_current.Kind is JsonPathTokenKind.Identifier || _current.Kind is JsonPathTokenKind.True || _current.Kind is JsonPathTokenKind.False || _current.Kind is JsonPathTokenKind.Null)
+                if (_current.Kind is JsonPathTokenKind.Identifier or JsonPathTokenKind.True or JsonPathTokenKind.False or JsonPathTokenKind.Null)
                 {
                     var name = _current.Kind switch
                     {
@@ -574,7 +574,7 @@ internal ref struct JsonPathParser
             else if (_current.Kind is JsonPathTokenKind.Dot)
             {
                 Advance();
-                if (_current.Kind is JsonPathTokenKind.Identifier || _current.Kind is JsonPathTokenKind.True || _current.Kind is JsonPathTokenKind.False || _current.Kind is JsonPathTokenKind.Null)
+                if (_current.Kind is JsonPathTokenKind.Identifier or JsonPathTokenKind.True or JsonPathTokenKind.False or JsonPathTokenKind.Null)
                 {
                     var name = _current.Kind switch
                     {

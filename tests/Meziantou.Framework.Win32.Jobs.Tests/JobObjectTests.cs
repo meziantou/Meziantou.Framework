@@ -25,6 +25,7 @@ public class JobObjectTests
         };
 
         using var process = Process.Start(psi);
+        Assert.NotNull(process);
         Assert.False(process.WaitForExit(500)); // Ensure process is started
 
         job.AssignProcess(process);
@@ -51,6 +52,7 @@ public class JobObjectTests
         };
 
         using var process = Process.Start(psi);
+        Assert.NotNull(process);
         Assert.False(process.WaitForExit(500)); // Ensure process is started
 
         job.AssignProcess(process);
@@ -100,12 +102,12 @@ public class JobObjectTests
 
             using (new JobObject("JobObjectTests"))
             {
-                JobObject job = JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests");
+                using var job = JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests");
                 Assert.NotNull(job);
-                job.Dispose();
-                Assert.True(JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out job));
-                Assert.NotNull(job);
-                job.Dispose();
+
+                Assert.True(JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out JobObject? openedJob));
+                Assert.NotNull(openedJob);
+                openedJob.Dispose();
             }
         }
         finally

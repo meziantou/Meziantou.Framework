@@ -1,6 +1,6 @@
 using Meziantou.Framework.Win32;
 
-CredentialResult creds;
+CredentialResult? creds;
 
 creds = CredentialManager.PromptForCredentialsConsole(
     target: "test",

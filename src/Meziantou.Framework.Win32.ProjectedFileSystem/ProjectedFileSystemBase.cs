@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 ///         }
 ///     }
 ///
-///     protected override Stream OpenRead(string path)
+///     protected override Stream? OpenRead(string path)
 ///     {
 ///         if (AreFileNamesEqual(path, "file.txt"))
 ///             return new MemoryStream(Encoding.UTF8.GetBytes("Hello, World!"));
@@ -238,7 +238,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
     /// <summary>When overridden in a derived class, opens a stream to read the content of a file at the specified path.</summary>
     /// <param name="path">The relative path of the file to read.</param>
     /// <returns>A <see cref="Stream"/> to read the file content, or <see langword="null"/> if the file does not exist.</returns>
-    protected abstract Stream OpenRead(string path);
+    protected abstract Stream? OpenRead(string path);
 
     public void Dispose()
     {

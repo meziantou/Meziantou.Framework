@@ -42,7 +42,7 @@ public class MyVirtualFileSystem : ProjectedFileSystemBase
     }
 
     // Return a stream to read the file content
-    protected override Stream OpenRead(string path)
+    protected override Stream? OpenRead(string path)
     {
         if (AreFileNamesEqual(path, "file1.txt"))
         {

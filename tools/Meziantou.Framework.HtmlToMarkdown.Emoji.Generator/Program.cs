@@ -222,7 +222,7 @@ static string EscapeString(string value)
     foreach (var rune in value.EnumerateRunes())
     {
         var scalar = rune.Value;
-        if (scalar is >= 0x20 and <= 0x7E && scalar is not '"' and not '\\')
+        if (scalar is >= 0x20 and <= 0x7E and not (0x22 or 0x5C))
         {
             sb.Append((char)scalar);
         }

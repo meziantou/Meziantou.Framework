@@ -129,7 +129,7 @@ internal sealed class MiddlewarePipelineCaptureApplicationBuilder : IApplication
         {
             foreach (var item in enumerable)
             {
-                if (item is not string && item is not null && !item.GetType().IsValueType && TryGetMiddlewareType(item, visited, maxDepth - 1, out middlewareType))
+                if (item is { } and not string && !item.GetType().IsValueType && TryGetMiddlewareType(item, visited, maxDepth - 1, out middlewareType))
                     return true;
             }
         }

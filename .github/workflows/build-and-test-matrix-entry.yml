@@ -28,17 +28,23 @@ defaults:
     shell: pwsh
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ${{ inputs.runs_on }}
-    timeout-minutes: 90
+    timeout-minutes: 120
+    strategy:
+      matrix:
+        shard: [1, 2]
+      fail-fast: false
     env:
       RUNS_ON: ${{ inputs.runs_on }}
+      TestResultsDirectory: ${{ github.workspace}}/TestResults
+      EnableCodeCoverage: ${{ case(inputs.enable_code_coverage, 'true', 'false') }}
     steps:
       - id: compute-artifact-name
         name: Compute artifact name
         run: |
-          $Name = "build-output-${{ inputs.runs_on }}-${{ inputs.configuration }}-${{inputs.additional_arguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=$Name" >> $env:GITHUB_OUTPUT
+          $SanitizedName = "${{ inputs.runs_on }}-${{ inputs.configuration }}-${{inputs.additional_arguments}}".Replace(":", "_").Replace("/", "_")
+          "artifact-name=test-results-$SanitizedName-shard-${{ matrix.shard }}" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v6
         with:
           fetch-depth: ${{ case(inputs.is_pull_request, 0, 1) }}
@@ -54,6 +60,9 @@ jobs:
           input-project: eng/build.proj
           output-project: eng/delta.proj
           run-generate: ${{ case(inputs.is_pull_request, 'true', 'false') }}
+          test-projects-only: "true"
+          shard: ${{ matrix.shard }}
+          total-shards: 2
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             .github/workflows/build-and-test-matrix-entry.yml
@@ -78,86 +87,6 @@ jobs:
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} /bl ${{ inputs.additional_arguments }}
-
-      - id: pack-build-output
-        name: Archive build outputs
-        if: steps.build-project.outputs.has-project == 'true'
-        run: |
-          $ArchivePath = Join-Path $env:RUNNER_TEMP "build-output.tar"
-          if (Test-Path $ArchivePath) {
-            Remove-Item $ArchivePath -Force
-          }
-
-          tar -cf $ArchivePath artifacts/bin artifacts/obj
-          "archive-path=$ArchivePath" >> $env:GITHUB_OUTPUT
-
-      - uses: actions/upload-artifact@v7
-        if: always() && steps.build-project.outputs.has-project == 'true'
-        with:
-          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
-          retention-days: 3
-          path: ${{ steps.pack-build-output.outputs.archive-path }}
-
-  test:
-    runs-on: ${{ inputs.runs_on }}
-    timeout-minutes: 90
-    needs: [build]
-    strategy:
-      matrix:
-        shard: [1, 2]
-      fail-fast: false
-    env:
-      RUNS_ON: ${{ inputs.runs_on }}
-      TestResultsDirectory: ${{ github.workspace}}/TestResults
-      EnableCodeCoverage: ${{ case(inputs.enable_code_coverage, 'true', 'false') }}
-    steps:
-      - id: compute-artifact-name
-        name: Compute artifact name
-        run: |
-          $SanitizedName = "${{ inputs.runs_on }}-${{ inputs.configuration }}-${{inputs.additional_arguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=test-results-$SanitizedName-shard-${{ matrix.shard }}" >> $env:GITHUB_OUTPUT
-          "build-artifact-name=build-output-$SanitizedName" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: ${{ case(inputs.is_pull_request, 0, 1) }}
-      - run: git config --global protocol.file.allow always
-
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-
-      - name: Generate delta build file
-        id: build-project
-        uses: ./.github/actions/deltabuild
-        with:
-          input-project: eng/build.proj
-          output-project: eng/delta.proj
-          run-generate: ${{ case(inputs.is_pull_request, 'true', 'false') }}
-          test-projects-only: "true"
-          shard: ${{ matrix.shard }}
-          total-shards: 2
-          full-rebuild-triggers: |
-            .github/workflows/ci.yml
-            .github/workflows/build-and-test-matrix-entry.yml
-            eng/**/*.proj
-
-      - name: Enable ProjFS
-        if: startsWith(inputs.runs_on, 'windows') && steps.build-project.outputs.has-project == 'true'
-        run: |
-          $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
-          if ($feature.State -ne 'Enabled') {
-            Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
-          }
-
-      - uses: actions/download-artifact@v8
-        if: steps.build-project.outputs.has-project == 'true'
-        with:
-          name: ${{ steps.compute-artifact-name.outputs.build-artifact-name }}
-          path: ${{ runner.temp }}/build-output
-
-      - name: Extract build outputs
-        if: steps.build-project.outputs.has-project == 'true'
-        run: tar -xf "${{ runner.temp }}/build-output/build-output.tar" -C ${{ github.workspace }}
 
       - name: List environment variables
         if: steps.build-project.outputs.has-project == 'true'

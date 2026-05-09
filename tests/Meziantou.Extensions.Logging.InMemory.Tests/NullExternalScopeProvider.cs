@@ -1,4 +1,3 @@
-﻿#nullable enable
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory.Tests;

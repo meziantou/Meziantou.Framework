@@ -1,5 +1,3 @@
-#nullable enable
-
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
 public sealed class SnapshotTypeTests

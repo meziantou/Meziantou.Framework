@@ -74,6 +74,39 @@ jobs:
       - name: Validate
         run: dotnet run ./eng/validate-testprojects-configuration.cs
 
+  load_test_target_frameworks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      linux_tfms: ${{ steps.load.outputs.linux_tfms }}
+      mac_tfms: ${{ steps.load.outputs.mac_tfms }}
+      windows_tfms: ${{ steps.load.outputs.windows_tfms }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Load test target frameworks
+        id: load
+        run: |
+          $manifestPath = Join-Path $env:GITHUB_WORKSPACE "eng/test-target-frameworks.json"
+          $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json -AsHashtable
+
+          if (-not $manifest.ContainsKey("linux")) { throw "Missing 'linux' key in $manifestPath" }
+          if (-not $manifest.ContainsKey("mac")) { throw "Missing 'mac' key in $manifestPath" }
+          if (-not $manifest.ContainsKey("windows")) { throw "Missing 'windows' key in $manifestPath" }
+
+          "linux_tfms=$($manifest.linux | ConvertTo-Json -Compress)" >> $env:GITHUB_OUTPUT
+          "mac_tfms=$($manifest.mac | ConvertTo-Json -Compress)" >> $env:GITHUB_OUTPUT
+          "windows_tfms=$($manifest.windows | ConvertTo-Json -Compress)" >> $env:GITHUB_OUTPUT
+
+  validate_test_target_frameworks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+      - name: Validate
+        run: dotnet run ./eng/validate-test-target-frameworks.cs
+
   validate_trimmable_projects:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -155,6 +188,7 @@ jobs:
           NUGET_VALIDATION_IS_DELTA: ${{ case(github.event_name == 'pull_request' && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
 
   build_and_test:
+    needs: [load_test_target_frameworks]
     strategy:
       matrix:
         # x64, arm64
@@ -169,6 +203,7 @@ jobs:
       additional_arguments: ${{ matrix.additionalArguments }}
       is_pull_request: ${{ github.event_name == 'pull_request' }}
       enable_code_coverage: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage }}
+      test_target_frameworks: ${{ case(startsWith(matrix.runs-on, 'windows'), needs.load_test_target_frameworks.outputs.windows_tfms, case(startsWith(matrix.runs-on, 'macos'), needs.load_test_target_frameworks.outputs.mac_tfms, needs.load_test_target_frameworks.outputs.linux_tfms)) }}
     secrets: inherit
 
   test_trimming:
@@ -232,7 +267,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-24.04
-    needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
+    needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, validate_test_target_frameworks, validate_trimmable_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
     permissions:
       contents: read
       id-token: write
@@ -333,7 +368,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-24.04
     if: always()
-    needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, create_nuget, validate_nuget, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
+    needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, load_test_target_frameworks, validate_test_target_frameworks, validate_trimmable_projects, create_nuget, validate_nuget, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
     steps:
       - name: Check previous jobs status
         env:

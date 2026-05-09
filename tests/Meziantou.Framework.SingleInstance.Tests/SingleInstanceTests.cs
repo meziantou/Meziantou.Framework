@@ -1,11 +1,11 @@
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
 public sealed class SingleInstanceTests
 {
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public async Task TestSingleInstance_NotifyFirstInstance()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));

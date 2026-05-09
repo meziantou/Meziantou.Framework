@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -491,7 +491,7 @@ public sealed class FullPathTests
     }
 
     [Fact]
-    [RunIf(FactOperatingSystem.Windows)]
+    [RunIf(TestOperatingSystems.Windows)]
     public void KnownFolderTest()
     {
         var fullPath = FullPath.GetKnownFolderPath(KnownFolder.Downloads);
@@ -499,7 +499,7 @@ public sealed class FullPathTests
     }
 
     [Fact]
-    [RunIf(FactOperatingSystem.Windows)]
+    [RunIf(TestOperatingSystems.Windows)]
     public void ToWindowsExtendedPath_RegularPath()
     {
         var path = FullPath.FromPath(@"C:\temp\test.txt");
@@ -508,7 +508,7 @@ public sealed class FullPathTests
     }
 
     [Fact]
-    [RunIf(FactOperatingSystem.Windows)]
+    [RunIf(TestOperatingSystems.Windows)]
     public void ToWindowsExtendedPath_UNCPath()
     {
         var path = FullPath.FromPath(@"\\server\share\folder\file.txt");
@@ -517,7 +517,7 @@ public sealed class FullPathTests
     }
 
     [Fact]
-    [RunIf(FactOperatingSystem.Windows)]
+    [RunIf(TestOperatingSystems.Windows)]
     public void ToWindowsExtendedPath_AlreadyExtended()
     {
         var path = FullPath.FromPath(@"C:\temp\test.txt");
@@ -527,7 +527,7 @@ public sealed class FullPathTests
     }
 
     [Fact]
-    [RunIf(FactOperatingSystem.Windows)]
+    [RunIf(TestOperatingSystems.Windows)]
     public void ToWindowsExtendedPath_Empty()
     {
         var extended = FullPath.Empty.ToWindowsExtendedPath();
@@ -535,7 +535,7 @@ public sealed class FullPathTests
     }
 
     [Fact]
-    [RunIf(FactOperatingSystem.Windows)]
+    [RunIf(TestOperatingSystems.Windows)]
     public void ToWindowsExtendedPath_LongPath()
     {
         var longSegment = new string('a', 250);

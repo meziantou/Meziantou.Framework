@@ -1,13 +1,13 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Jobs.Tests;
 
 [Collection("JobObjectTests")]
 public class JobObjectTests
 {
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void ShouldKillProcessOnTerminate()
     {
         using var job = new JobObject();
@@ -34,7 +34,7 @@ public class JobObjectTests
         process.WaitForExit();
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void KillOnJobClose_ShouldKillProcessOnClose()
     {
         using var job = new JobObject();
@@ -61,7 +61,7 @@ public class JobObjectTests
         process.WaitForExit();
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CreateAndOpenJobObject()
     {
         var objectName = Guid.NewGuid().ToString("N");
@@ -72,21 +72,21 @@ public class JobObjectTests
         }
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void InvalidName_TooLong()
     {
         var objectName = "Local\\" + new string('a', 40000);
         Assert.Throws<Win32Exception>(() => new JobObject(objectName));
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void InvalidName_InvalidCharacter()
     {
         var objectName = "Local\\a\\b";
         Assert.Throws<Win32Exception>(() => new JobObject(objectName));
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void TryOpen()
     {
         // The project is multi-targeted, so multiple process can run in parallel
@@ -116,7 +116,7 @@ public class JobObjectTests
         }
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CpuHardRateCap()
     {
         using var job = new JobObject();
@@ -135,14 +135,14 @@ public class JobObjectTests
         Assert.False(cap.Enabled);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void SetUILimits()
     {
         using var job = new JobObject();
         job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void SetIoRateLimits()
     {
         using var job = new JobObject();
@@ -155,7 +155,7 @@ public class JobObjectTests
         });
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetBasicAccountingInformation()
     {
         using var job = new JobObject();
@@ -164,7 +164,7 @@ public class JobObjectTests
         Assert.NotEqual(TimeSpan.Zero, info.TotalUserTime);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetBasicAndIoAccountingInformation()
     {
         using var job = new JobObject();
@@ -174,7 +174,7 @@ public class JobObjectTests
         Assert.NotEqual((ulong)0, info.IoInfo.ReadOperationCount);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetMemoryAccountingInformation()
     {
         using var job = new JobObject();
@@ -183,14 +183,14 @@ public class JobObjectTests
         Assert.NotEqual((ulong)0, info.PeakProcessMemoryUsed);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void IsAssignedToProcess_NotAssociated()
     {
         using var job = new JobObject();
         Assert.False(job.IsAssignedToProcess(Process.GetCurrentProcess()));
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void IsAssignedToProcess_Associated()
     {
         using var job = new JobObject();

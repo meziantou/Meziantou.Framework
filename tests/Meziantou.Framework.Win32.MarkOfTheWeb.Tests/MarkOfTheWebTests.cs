@@ -1,10 +1,10 @@
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
 
 public sealed class MarkOfTheWebTests
 {
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void Get()
     {
         var path = Path.GetTempFileName();
@@ -15,7 +15,7 @@ public sealed class MarkOfTheWebTests
         File.Delete(path);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void Set_Get()
     {
         var path = Path.GetTempFileName();
@@ -32,7 +32,7 @@ public sealed class MarkOfTheWebTests
         File.Delete(path);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void Set_Delete()
     {
         var path = Path.GetTempFileName();

@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <Project Path="../src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />

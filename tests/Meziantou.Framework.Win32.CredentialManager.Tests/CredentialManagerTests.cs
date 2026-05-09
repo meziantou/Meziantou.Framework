@@ -1,4 +1,4 @@
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
 
@@ -21,7 +21,7 @@ public sealed class CredentialManagerTests : IDisposable
         _mutex = new Mutex(initiallyOwned: false, typeof(CredentialManagerTests).FullName);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_01()
     {
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
@@ -38,7 +38,7 @@ public sealed class CredentialManagerTests : IDisposable
         Assert.Null(cred);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_Enumerate()
     {
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
@@ -55,7 +55,7 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_LimitComment()
     {
         var comment = new string('a', 255);
@@ -73,7 +73,7 @@ public sealed class CredentialManagerTests : IDisposable
         Assert.Null(cred);
     }
 
-    [Theory, RunIf(FactOperatingSystem.Windows)]
+    [Theory, RunIf(TestOperatingSystems.Windows)]
     [InlineData(512)]
     [InlineData(513)]
     [InlineData(1024)]
@@ -92,7 +92,7 @@ public sealed class CredentialManagerTests : IDisposable
         Assert.Null(cred);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     [Trait("Issue", "https://github.com/meziantou/Meziantou.Framework/issues/32")]
     public void CredentialManager_EnumerateCredential()
     {
@@ -121,7 +121,7 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
-    [Theory, RunIf(FactOperatingSystem.Windows)]
+    [Theory, RunIf(TestOperatingSystems.Windows)]
     [Trait("Issue", "https://github.com/meziantou/Meziantou.Framework/issues/263")]
     [InlineData(null)]
     [InlineData("*")]
@@ -152,7 +152,7 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_CredentialType_DomainPassword()
     {
         var credType = CredentialType.DomainPassword;
@@ -172,7 +172,7 @@ public sealed class CredentialManagerTests : IDisposable
         Assert.Null(cred);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_CredentialType_DomainPassword_Enumerate()
     {
         var credType = CredentialType.DomainPassword;
@@ -192,7 +192,7 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_CredentialType_Invalid()
     {
         var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainCertificate));

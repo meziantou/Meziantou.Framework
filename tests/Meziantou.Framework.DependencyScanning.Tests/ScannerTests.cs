@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 
@@ -561,7 +561,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         AssertFileContentEqual("global.json", Expected, ignoreNewLines: true);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public async Task GitSubmodulesFromDependencies()
     {
         // Initialize remote repository

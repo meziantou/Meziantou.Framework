@@ -1,0 +1,16 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+
+    <Description>xUnit.v3 attributes to conditionally run or skip tests based on environment</Description>
+    <PackageTags>xunit, xunit.v3, tests, operating-system, globalization, ci</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.extensibility.core" Version="3.2.2" />
+  </ItemGroup>
+
+</Project>

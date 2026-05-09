@@ -1,3 +1,4 @@
+using TestUtilities;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
@@ -13,7 +14,7 @@ using Meziantou.Framework.DnsServer.Protocol.Wire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 using ClientDns = Meziantou.Framework.DnsClient;
 

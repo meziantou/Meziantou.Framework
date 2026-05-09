@@ -1,4 +1,4 @@
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Unix.ControlGroups.Tests;
 
@@ -25,7 +25,7 @@ public sealed class CGroup2Tests : IDisposable
             throw new Exception("$XunitDynamicSkip$Test requires elevated privileges");
         }
 
-        if (SkipOnGitHubActionsAttribute.IsOnGitHubActions())
+        if (TestEnvironment.IsOnGitHubActions())
         {
             throw new Exception("$XunitDynamicSkip$Test cannot run in GitHub Actions");
         }

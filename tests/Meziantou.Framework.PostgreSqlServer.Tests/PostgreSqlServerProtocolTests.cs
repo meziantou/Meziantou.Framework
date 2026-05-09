@@ -7,12 +7,12 @@ using System.Text;
 using Meziantou.Framework.PostgreSql;
 using Meziantou.Framework.PostgreSql.Handler;
 using Npgsql;
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.PostgreSql.Tests;
 
-[RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+[RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
 public sealed class PostgreSqlServerProtocolTests
 {
     [Fact]

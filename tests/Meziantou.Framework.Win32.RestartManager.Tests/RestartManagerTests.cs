@@ -1,4 +1,4 @@
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
@@ -12,7 +12,7 @@ public class RestartManagerTests
         _currentProcessId = System.Environment.ProcessId;
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetProcessesLockingFile()
     {
         var path = Path.GetTempFileName();
@@ -30,7 +30,7 @@ public class RestartManagerTests
         }
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void IsFileLocked_True()
     {
         var path = Path.GetTempFileName();
@@ -47,7 +47,7 @@ public class RestartManagerTests
         }
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void IsFileLocked_False()
     {
         var path = Path.GetTempFileName();

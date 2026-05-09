@@ -2,6 +2,7 @@
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Meziantou.Xunit;
 using TestUtilities;
 using Xunit;
 

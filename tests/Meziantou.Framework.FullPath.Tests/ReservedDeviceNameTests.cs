@@ -1,4 +1,4 @@
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Tests;
 public sealed class ReservedDeviceNameTests
 {
     [Theory]
-    [RunIf(FactOperatingSystem.Windows)]
+    [RunIf(TestOperatingSystems.Windows)]
     [InlineData(@"C:\temp\CON")]
     [InlineData(@"C:\COM¹")]
     [InlineData(@"C:\LPT²")]
@@ -26,7 +26,7 @@ public sealed class ReservedDeviceNameTests
     }
 
     [Theory]
-    [RunIf(FactOperatingSystem.Windows)]
+    [RunIf(TestOperatingSystems.Windows)]
     [InlineData(@"C:\ACON")]
     [InlineData(@"C:\CONX")]
     [InlineData(@"C:\COM10")]

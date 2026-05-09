@@ -1,4 +1,3 @@
-#nullable enable
 using System.Net;
 using Meziantou.Framework.Ntp;
 using TestUtilities;

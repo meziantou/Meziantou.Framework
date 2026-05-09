@@ -1,5 +1,3 @@
-#nullable enable
-
 namespace Meziantou.Framework;
 
 internal static class SharedHttpClient

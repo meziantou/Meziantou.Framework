@@ -1,5 +1,3 @@
-#nullable enable
-
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 using TestUtilities;

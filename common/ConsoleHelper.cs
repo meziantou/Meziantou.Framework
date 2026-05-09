@@ -1,4 +1,3 @@
-#nullable enable
 #pragma warning disable CA1001
 #pragma warning disable CA2213
 #pragma warning disable CA2215

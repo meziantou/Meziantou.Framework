@@ -168,7 +168,7 @@ jobs:
 
       - name: Restore test dependencies
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet restore ${{ steps.build-project.outputs.project }} --configuration ${{ inputs.configuration }} --framework ${{ matrix.target_framework }} ${{ inputs.additional_arguments }}
+        run: dotnet restore ${{ steps.build-project.outputs.project }} ${{ inputs.additional_arguments }}
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'

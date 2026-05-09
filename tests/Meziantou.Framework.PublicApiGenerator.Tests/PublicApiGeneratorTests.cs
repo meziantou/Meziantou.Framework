@@ -1,5 +1,8 @@
+using System.Buffers.Binary;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 using Meziantou.Framework;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Meziantou.Framework.PublicApiGenerator;
@@ -11,6 +14,9 @@ namespace Meziantou.Framework.PublicApiGenerator.Tests;
 //[Collection("Tool")] // Ensure tests run sequentially
 public sealed class PublicApiGeneratorTests
 {
+    private const string CompilationCacheVersion = "v1";
+    private const string CompilationCacheDirectoryEnvironmentVariable = "MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY";
+
     [Fact]
     public async Task EmptyClass()
     {
@@ -1823,15 +1829,39 @@ public sealed class PublicApiGeneratorTests
 
     private static async Task<FullPath> Compile(FullPath temporaryDirectory)
     {
-        var projectPath = Assert.Single(Directory.EnumerateFiles(temporaryDirectory, "*.csproj", SearchOption.TopDirectoryOnly));
+        var projectPath = FullPath.FromPath(Assert.Single(Directory.EnumerateFiles(temporaryDirectory, "*.csproj", SearchOption.TopDirectoryOnly)));
+        var cacheDirectory = GetCompilationCacheDirectory();
+        var cacheKey = ComputeCompilationCacheKey(temporaryDirectory);
+        var cachedAssemblyPath = cacheDirectory / cacheKey / "Source.dll";
+        if (File.Exists(cachedAssemblyPath))
+            return cachedAssemblyPath;
+
+        using var _ = AcquireCompilationLock(cacheKey);
+        if (File.Exists(cachedAssemblyPath))
+            return cachedAssemblyPath;
 
         var outputPath = temporaryDirectory / "bin";
-
         await RunDotNetAsync(temporaryDirectory, ["restore", projectPath, "-nologo", "--disable-build-servers"]);
         await RunDotNetAsync(temporaryDirectory, ["build", projectPath, "-nologo", "--disable-build-servers", "--no-restore", "--output", outputPath, "/p:AssemblyName=Source"]);
-        return outputPath / "Source.dll";
 
-        static async Task RunDotNetAsync(string workingDirectory, IReadOnlyList<string> arguments)
+        var builtAssemblyPath = outputPath / "Source.dll";
+        var stagingAssemblyPath = cacheDirectory / "staging" / cacheKey / $"{Guid.NewGuid():N}.dll";
+        stagingAssemblyPath.CreateParentDirectory();
+        File.Copy(builtAssemblyPath, stagingAssemblyPath, overwrite: true);
+
+        cachedAssemblyPath.CreateParentDirectory();
+        if (!File.Exists(cachedAssemblyPath))
+        {
+            File.Move(stagingAssemblyPath, cachedAssemblyPath);
+        }
+        else
+        {
+            File.Delete(stagingAssemblyPath);
+        }
+
+        return cachedAssemblyPath;
+
+        static async Task RunDotNetAsync(FullPath workingDirectory, IReadOnlyList<string> arguments)
         {
             var processResult = await ProcessWrapper.Create("dotnet")
                 .WithArguments(arguments)
@@ -1846,6 +1876,98 @@ public sealed class PublicApiGeneratorTests
                 var standardError = string.Join('\n', processResult.Output.StandardError.Select(line => line.Text));
                 throw new XunitException($"Command failed: dotnet {string.Join(' ', arguments)}\nstdout:\n{standardOutput}\nstderr:\n{standardError}");
             }
+        }
+    }
+
+    private static FullPath GetCompilationCacheDirectory()
+    {
+        var configuredPath = Environment.GetEnvironmentVariable(CompilationCacheDirectoryEnvironmentVariable);
+        if (!string.IsNullOrEmpty(configuredPath))
+            return FullPath.FromPath(configuredPath);
+
+        return FullPath.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) / "Meziantou.Framework" / "PublicApiGeneratorTests" / "CompilationCache";
+    }
+
+    private static string ComputeCompilationCacheKey(FullPath sourceProjectDirectory)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        AddHashData(hash, CompilationCacheVersion);
+
+        var files = Directory
+            .EnumerateFiles(sourceProjectDirectory, "*", SearchOption.AllDirectories)
+            .Select(FullPath.FromPath)
+            .Select(path => (Path: path, RelativePath: path.MakePathRelativeTo(sourceProjectDirectory).Replace('\\', '/')))
+            .OrderBy(path => path.RelativePath, StringComparer.Ordinal);
+
+        foreach (var file in files)
+        {
+            AddHashData(hash, file.RelativePath);
+            AddHashData(hash, File.ReadAllBytes(file.Path));
+        }
+
+        return Convert.ToHexString(hash.GetHashAndReset());
+    }
+
+    private static void AddHashData(IncrementalHash hash, string value)
+    {
+        AddHashData(hash, Encoding.UTF8.GetBytes(value));
+    }
+
+    private static void AddHashData(IncrementalHash hash, byte[] value)
+    {
+        Span<byte> lengthBuffer = stackalloc byte[sizeof(int)];
+        BinaryPrimitives.WriteInt32LittleEndian(lengthBuffer, value.Length);
+        hash.AppendData(lengthBuffer);
+        hash.AppendData(value);
+    }
+
+    private static MutexLock AcquireCompilationLock(string cacheKey)
+    {
+        const string MutexPrefix = "meziantou-framework-publicapi-generator-tests-compile-";
+        var mutex = new Mutex(initiallyOwned: false, name: MutexPrefix + cacheKey);
+        var lockTaken = false;
+
+        try
+        {
+            try
+            {
+                lockTaken = mutex.WaitOne();
+            }
+            catch (AbandonedMutexException)
+            {
+                lockTaken = true;
+            }
+
+            if (!lockTaken)
+            {
+                mutex.Dispose();
+                throw new XunitException($"Cannot acquire mutex for compilation cache key '{cacheKey}'");
+            }
+
+            return new MutexLock(mutex);
+        }
+        catch
+        {
+            if (!lockTaken)
+                mutex.Dispose();
+
+            throw;
+        }
+    }
+
+    private sealed class MutexLock : IDisposable
+    {
+        private readonly Mutex _mutex;
+
+        public MutexLock(Mutex mutex)
+        {
+            _mutex = mutex;
+        }
+
+        public void Dispose()
+        {
+            _mutex.ReleaseMutex();
+            _mutex.Dispose();
         }
     }
 

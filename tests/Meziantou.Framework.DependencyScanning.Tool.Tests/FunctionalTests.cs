@@ -8,7 +8,6 @@ using NuGet.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool.Tests;
 
-[Collection("Tool")] // Ensure tests run sequentially
 public sealed class FunctionalTests
 {
     private readonly ITestOutputHelper _testOutputHelper;

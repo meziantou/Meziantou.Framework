@@ -605,17 +605,9 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.AppendLine();
             sb.AppendLine("        while (true)");
             sb.AppendLine("        {");
-            sb.AppendLine("            var separatorIndex = -1;");
-            sb.AppendLine("            for (var i = 0; i < remaining.Length; i++)");
-            sb.AppendLine("            {");
-            sb.AppendLine("                if (remaining[i] != ',')");
-            sb.AppendLine("                    continue;");
-            sb.AppendLine();
-            sb.AppendLine("                separatorIndex = i;");
-            sb.AppendLine("                break;");
-            sb.AppendLine("            }");
+            sb.AppendLine("            var separatorIndex = global::System.MemoryExtensions.IndexOf(remaining, ',');");
             sb.AppendLine("            var token = separatorIndex >= 0 ? remaining[..separatorIndex] : remaining;");
-            sb.Append("            token = TrimToken_").Append(enumIndex).AppendLine("(token);");
+            sb.AppendLine("            token = global::System.MemoryExtensions.Trim(token);");
             sb.AppendLine("            if (token.IsEmpty)");
             sb.AppendLine("            {");
             sb.AppendLine("                result = default;");
@@ -644,27 +636,6 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.AppendLine();
             sb.Append("        result = FromUInt64_").Append(enumIndex).AppendLine("(parsedValue);");
             sb.AppendLine("        return true;");
-            sb.AppendLine("    }");
-            sb.AppendLine();
-
-            sb.Append("    private static global::System.ReadOnlySpan<char> TrimToken_").Append(enumIndex).AppendLine("(global::System.ReadOnlySpan<char> value)");
-            sb.AppendLine("    {");
-            sb.AppendLine("        var start = 0;");
-            sb.AppendLine("        while (start < value.Length && char.IsWhiteSpace(value[start]))");
-            sb.AppendLine("        {");
-            sb.AppendLine("            start++;");
-            sb.AppendLine("        }");
-            sb.AppendLine();
-            sb.AppendLine("        var end = value.Length - 1;");
-            sb.AppendLine("        while (end >= start && char.IsWhiteSpace(value[end]))");
-            sb.AppendLine("        {");
-            sb.AppendLine("            end--;");
-            sb.AppendLine("        }");
-            sb.AppendLine();
-            sb.AppendLine("        if (end < start)");
-            sb.AppendLine("            return global::System.ReadOnlySpan<char>.Empty;");
-            sb.AppendLine();
-            sb.AppendLine("        return value[start..(end + 1)];");
             sb.AppendLine("    }");
             sb.AppendLine();
         }

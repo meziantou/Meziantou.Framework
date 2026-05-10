@@ -3,7 +3,6 @@ using System.Text;
 
 namespace Meziantou.Framework.Tests;
 
-[Collection("ProcessWrapper")]
 public class ProcessWrapperTests
 {
     [Fact]

@@ -1,6 +1,8 @@
 #pragma warning disable MA0101 // String contains an implicit end of line character
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Meziantou.Framework.FastEnumGenerator;
 using TestUtilities;
 using Xunit;
@@ -119,11 +121,69 @@ public sealed class FastEnumSourceGeneratorTests
         Assert.DoesNotContain("GetValues()", generatedCode, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task AnalyzerReportsNonEnumType()
+    {
+        var sourceCode = """
+            [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(string))]
+            """;
+
+        var diagnostics = await AnalyzeFiles(sourceCode);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFEG0001", diagnostic.Id);
+        Assert.Contains("string", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnalyzerReportsNullType()
+    {
+        var sourceCode = """
+            [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(null)]
+            """;
+
+        var diagnostics = await AnalyzeFiles(sourceCode);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("MFEG0001", diagnostic.Id);
+        Assert.Contains("(null)", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnalyzerDoesNotReportForEnumType()
+    {
+        var sourceCode = """
+            [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Sample.Color))]
+            namespace Sample
+            {
+                public enum Color
+                {
+                    Blue,
+                    Red,
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeFiles(sourceCode);
+        Assert.Empty(diagnostics);
+    }
+
     private static async Task<string> GenerateCode(string sourceCode, LanguageVersion languageVersion = LanguageVersion.Preview)
     {
         var (runResult, _) = await GenerateFiles(sourceCode, languageVersion);
         var generatedTree = Assert.Single(runResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("FastEnumExtensions.g.cs", StringComparison.Ordinal));
         return (await generatedTree.GetRootAsync()).ToFullString();
+    }
+
+    private static async Task<ImmutableArray<Diagnostic>> AnalyzeFiles(string sourceCode, LanguageVersion languageVersion = LanguageVersion.Preview)
+    {
+        var (_, compilation) = await GenerateFiles(sourceCode, languageVersion);
+        var analyzer = new FastEnumAnalyzer();
+        var diagnostics = await compilation
+            .WithAnalyzers([analyzer])
+            .GetAnalyzerDiagnosticsAsync();
+
+        return [.. diagnostics
+            .Where(static diagnostic => diagnostic.Id.StartsWith("MFEG", StringComparison.Ordinal))
+            .OrderBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal)];
     }
 
     private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateFiles(string sourceCode, LanguageVersion languageVersion = LanguageVersion.Preview)

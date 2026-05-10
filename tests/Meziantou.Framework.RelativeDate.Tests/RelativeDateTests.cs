@@ -3,7 +3,6 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.Tests;
 
-[Collection("RelativeDateTests")] // because DateTimeService.Clock is static
 public class RelativeDateTests
 {
     [Fact]

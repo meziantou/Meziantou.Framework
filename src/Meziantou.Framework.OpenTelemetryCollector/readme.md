@@ -24,11 +24,21 @@ app.Run();
 Use request filters to drop logs, traces, or metrics before they are dispatched to handlers:
 
 ```csharp
+public sealed class KeepOnlyNonEmptyRequestsFilter : OpenTelemetryFilter
+{
+    public override ValueTask<bool> ShouldProcessLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
+        => ValueTask.FromResult(request.ResourceLogs.Count > 0);
+
+    public override ValueTask<bool> ShouldProcessTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
+        => ValueTask.FromResult(request.ResourceSpans.Count > 0);
+
+    public override ValueTask<bool> ShouldProcessMetricsAsync(OpenTelemetryHandlerContext context, ExportMetricsServiceRequest request, CancellationToken cancellationToken)
+        => ValueTask.FromResult(request.ResourceMetrics.Count > 0);
+}
+
 builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
 {
-    options.LogsFilter = static (_, request, _) => ValueTask.FromResult(request.ResourceLogs.Count > 0);
-    options.TracesFilter = static (_, request, _) => ValueTask.FromResult(request.ResourceSpans.Count > 0);
-    options.MetricsFilter = static (_, request, _) => ValueTask.FromResult(request.ResourceMetrics.Count > 0);
+    options.Filters.Add(new KeepOnlyNonEmptyRequestsFilter());
 });
 ```
 
@@ -42,13 +52,15 @@ Use tail filtering for traces when child spans can arrive before the root span. 
 ```csharp
 builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
 {
-    options.TailSampling.Enabled = true;
-    options.TailSampling.MaxTraceDuration = TimeSpan.FromSeconds(30);
-    options.TailSampling.MaxBufferedSpansPerTrace = 5000;
-    options.TailSampling.MaxBufferedSpans = 100_000;
-    options.TailSampling.OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace;
-    options.TailSampling.Filter = static (context, _) =>
-        ValueTask.FromResult(context.RootSpan?.Name?.Contains("critical", StringComparison.OrdinalIgnoreCase) is true);
+    options.Filters.Add(new OpenTelemetryTailSamplingFilter
+    {
+        MaxTraceDuration = TimeSpan.FromSeconds(30),
+        MaxBufferedSpansPerTrace = 5000,
+        MaxBufferedSpans = 100_000,
+        OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace,
+        Filter = static (context, _) =>
+            ValueTask.FromResult(context.RootSpan?.Name?.Contains("critical", StringComparison.OrdinalIgnoreCase) is true),
+    });
 });
 ```
 

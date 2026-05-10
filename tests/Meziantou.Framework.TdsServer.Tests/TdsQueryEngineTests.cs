@@ -3090,14 +3090,14 @@ public sealed class TdsQueryEngineTests
 
     private static async Task<T> ExecuteWithTransientSqlRetry<T>(Func<Task<T>> action)
     {
-        const int maxAttempts = 3;
+        const int MaxAttempts = 3;
         for (var attempt = 1; ; attempt++)
         {
             try
             {
                 return await action();
             }
-            catch (SqlException ex) when (attempt < maxAttempts && IsTransientSqlOpenFailure(ex))
+            catch (SqlException ex) when (attempt < MaxAttempts && IsTransientSqlOpenFailure(ex))
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(200 * attempt));
             }

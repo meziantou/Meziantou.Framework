@@ -5,6 +5,16 @@ using Xunit;
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.ColorWithAliases), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.Permission), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.PermissionWithCombination), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.NonConsecutiveEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.NonZeroEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.ByteBasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.SByteBasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.Int16BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.UInt16BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.Int32BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.UInt32BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.Int64BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.UInt64BasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 
 namespace Meziantou.Framework.FastEnumGenerator.GeneratorTests;
 
@@ -48,9 +58,9 @@ public sealed class FastEnumGeneratedBehaviorTests
     {
         Assert.True(Color.IsDefined(Color.Blue));
         Assert.False(Color.IsDefined((Color)42));
-        Assert.Equal(["Blue", "Red", "Green"], Color.GetNames(useMetadata: false));
-        Assert.Equal(["Blue metadata", "Red metadata", "Green"], Color.GetNames(useMetadata: true));
-        Assert.Equal([Color.Blue, Color.Red, Color.Green], Color.GetValues());
+        Assert.Equal(["Blue", "Red", "Green"], Color.GetNames(useMetadata: false).ToArray());
+        Assert.Equal(["Blue metadata", "Red metadata", "Green"], Color.GetNames(useMetadata: true).ToArray());
+        Assert.Equal([Color.Blue, Color.Red, Color.Green], Color.GetValues().ToArray());
     }
 
     [Fact]
@@ -75,9 +85,9 @@ public sealed class FastEnumGeneratedBehaviorTests
         Assert.Equal(ColorWithAliases.Blue, parsedFromSpanWithMetadata);
         Assert.True(ColorWithAliases.IsDefined(ColorWithAliases.Azure));
         Assert.False(ColorWithAliases.IsDefined((ColorWithAliases)42));
-        Assert.Equal(["Blue", "Azure", "Red"], ColorWithAliases.GetNames(useMetadata: false));
-        Assert.Equal(["Blue", "Azure", "Red"], ColorWithAliases.GetNames(useMetadata: true));
-        Assert.Equal([ColorWithAliases.Blue, ColorWithAliases.Azure, ColorWithAliases.Red], ColorWithAliases.GetValues());
+        Assert.Equal(["Blue", "Azure", "Red"], ColorWithAliases.GetNames(useMetadata: false).ToArray());
+        Assert.Equal(["Blue", "Azure", "Red"], ColorWithAliases.GetNames(useMetadata: true).ToArray());
+        Assert.Equal([ColorWithAliases.Blue, ColorWithAliases.Azure, ColorWithAliases.Red], ColorWithAliases.GetValues().ToArray());
     }
 
     [Fact]
@@ -104,8 +114,73 @@ public sealed class FastEnumGeneratedBehaviorTests
         Assert.Equal(PermissionWithCombination.A | PermissionWithCombination.C, parsedFromSpanWithMetadata);
         Assert.True(PermissionWithCombination.IsDefined(PermissionWithCombination.AandB));
         Assert.False(PermissionWithCombination.IsDefined(PermissionWithCombination.A | PermissionWithCombination.C));
-        Assert.Equal(["None", "A", "B", "AandB", "C"], PermissionWithCombination.GetNames(useMetadata: false));
-        Assert.Equal(["None", "A", "B", "AandB", "C"], PermissionWithCombination.GetNames(useMetadata: true));
-        Assert.Equal([PermissionWithCombination.None, PermissionWithCombination.A, PermissionWithCombination.B, PermissionWithCombination.AandB, PermissionWithCombination.C], PermissionWithCombination.GetValues());
+        Assert.Equal(["None", "A", "B", "AandB", "C"], PermissionWithCombination.GetNames(useMetadata: false).ToArray());
+        Assert.Equal(["None", "A", "B", "AandB", "C"], PermissionWithCombination.GetNames(useMetadata: true).ToArray());
+        Assert.Equal([PermissionWithCombination.None, PermissionWithCombination.A, PermissionWithCombination.B, PermissionWithCombination.AandB, PermissionWithCombination.C], PermissionWithCombination.GetValues().ToArray());
+    }
+
+    [Fact]
+    public void ReadOnlySpanApis_ReturnStableData()
+    {
+        ReadOnlySpan<string> names = Color.GetNames(useMetadata: false);
+        ReadOnlySpan<Color> values = Color.GetValues();
+        Assert.Equal("Blue", names[0]);
+        Assert.Equal(Color.Blue, values[0]);
+        Assert.Equal(["Blue", "Red", "Green"], names.ToArray());
+    }
+
+    [Fact]
+    public void NonConsecutiveAndNonZeroEnums_Work()
+    {
+        Assert.Equal("Two", NonConsecutiveEnum.Two.GetName());
+        Assert.Equal("5", ((NonConsecutiveEnum)5).ToStringFast());
+        Assert.True(NonConsecutiveEnum.IsDefined(NonConsecutiveEnum.Zero));
+        Assert.False(NonConsecutiveEnum.IsDefined((NonConsecutiveEnum)1));
+        Assert.Equal(["Zero", "Two", "Nine"], NonConsecutiveEnum.GetNames(useMetadata: false).ToArray());
+        Assert.Equal([NonConsecutiveEnum.Zero, NonConsecutiveEnum.Two, NonConsecutiveEnum.Nine], NonConsecutiveEnum.GetValues().ToArray());
+
+        Assert.Equal("Ten", NonZeroEnum.Ten.GetName());
+        Assert.Equal("42", ((NonZeroEnum)42).ToStringFast());
+        Assert.True(NonZeroEnum.IsDefined(NonZeroEnum.Ten));
+        Assert.False(NonZeroEnum.IsDefined((NonZeroEnum)0));
+        Assert.True(NonZeroEnum.TryParse("Ten", ignoreCase: false, out var nonZeroParsed));
+        Assert.Equal(NonZeroEnum.Ten, nonZeroParsed);
+    }
+
+    [Fact]
+    public void UInt64DenseEnum_DoesNotOverflowDenseIndexLookup()
+    {
+        Assert.Equal("One", UInt64BasedEnum.One.GetName());
+        Assert.Equal(UInt64BasedEnum.One, UInt64BasedEnum.Parse("One", ignoreCase: false));
+        Assert.Equal("4294967297", ((UInt64BasedEnum)4_294_967_297UL).GetName());
+        Assert.False(UInt64BasedEnum.IsDefined((UInt64BasedEnum)4_294_967_297UL));
+    }
+
+    [Fact]
+    public void AllUnderlyingTypes_AreSupported()
+    {
+        Assert.True(ByteBasedEnum.Two.HasFlag(ByteBasedEnum.Two));
+        Assert.Equal(ByteBasedEnum.One, ByteBasedEnum.Parse("One", ignoreCase: false));
+
+        Assert.True(SByteBasedEnum.Two.HasFlag(SByteBasedEnum.Two));
+        Assert.Equal(SByteBasedEnum.One, SByteBasedEnum.Parse("One", ignoreCase: false));
+
+        Assert.True(Int16BasedEnum.Two.HasFlag(Int16BasedEnum.Two));
+        Assert.Equal(Int16BasedEnum.One, Int16BasedEnum.Parse("One", ignoreCase: false));
+
+        Assert.True(UInt16BasedEnum.Two.HasFlag(UInt16BasedEnum.Two));
+        Assert.Equal(UInt16BasedEnum.One, UInt16BasedEnum.Parse("One", ignoreCase: false));
+
+        Assert.True(Int32BasedEnum.Two.HasFlag(Int32BasedEnum.Two));
+        Assert.Equal(Int32BasedEnum.One, Int32BasedEnum.Parse("One", ignoreCase: false));
+
+        Assert.True(UInt32BasedEnum.Two.HasFlag(UInt32BasedEnum.Two));
+        Assert.Equal(UInt32BasedEnum.One, UInt32BasedEnum.Parse("One", ignoreCase: false));
+
+        Assert.True(Int64BasedEnum.Two.HasFlag(Int64BasedEnum.Two));
+        Assert.Equal(Int64BasedEnum.One, Int64BasedEnum.Parse("One", ignoreCase: false));
+
+        Assert.True(UInt64BasedEnum.Two.HasFlag(UInt64BasedEnum.Two));
+        Assert.Equal(UInt64BasedEnum.One, UInt64BasedEnum.Parse("One", ignoreCase: false));
     }
 }

@@ -103,9 +103,11 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             var isFlags = flagsAttributeSymbol is not null &&
                           enumType.GetAttributes().Any(attribute => SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, flagsAttributeSymbol));
             var isZeroBasedConsecutive = !isFlags && IsZeroBasedConsecutive(members);
-            var underlyingType = enumType.EnumUnderlyingType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "global::System.Int32";
+            var enumUnderlyingType = enumType.EnumUnderlyingType;
+            var underlyingType = enumUnderlyingType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "global::System.Int32";
+            var isUnderlyingTypeSigned = enumUnderlyingType is not null && IsSignedIntegralType(enumUnderlyingType.SpecialType);
 
-            return new EnumToProcess(enumType, members, isPublic, extensionNamespace, isFlags, isZeroBasedConsecutive, underlyingType);
+            return new EnumToProcess(enumType, members, isPublic, extensionNamespace, isFlags, isZeroBasedConsecutive, underlyingType, isUnderlyingTypeSigned);
         }
 
         return null;
@@ -180,6 +182,15 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         foreach (var attribute in field.GetAttributes())
         {
+            if (!string.Equals(attribute.AttributeClass?.ToDisplayString(), "System.ComponentModel.DisplayNameAttribute", StringComparison.Ordinal))
+                continue;
+
+            if (attribute.ConstructorArguments is [{ Value: string value }] && !string.IsNullOrEmpty(value))
+                return value;
+        }
+
+        foreach (var attribute in field.GetAttributes())
+        {
             if (!string.Equals(attribute.AttributeClass?.ToDisplayString(), "System.Runtime.Serialization.EnumMemberAttribute", StringComparison.Ordinal))
                 continue;
 
@@ -191,6 +202,11 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         }
 
         return null;
+    }
+
+    private static bool IsSignedIntegralType(SpecialType specialType)
+    {
+        return specialType is SpecialType.System_SByte or SpecialType.System_Int16 or SpecialType.System_Int32 or SpecialType.System_Int64;
     }
 
     private static ulong ConvertToUInt64(object value)
@@ -308,9 +324,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         sb.Append("    ").Append(methodVisibility).Append(" static bool HasFlag(this ").Append(enumTypeName).Append(" instance, ").Append(enumTypeName).AppendLine(" flag)");
         sb.AppendLine("    {");
-        sb.Append("        var valueAsUInt64 = ToUInt64_").Append(enumIndex).AppendLine("(instance);");
-        sb.Append("        var flagAsUInt64 = ToUInt64_").Append(enumIndex).AppendLine("(flag);");
-        sb.AppendLine("        return (valueAsUInt64 & flagAsUInt64) == flagAsUInt64;");
+        sb.AppendLine("        return (instance & flag) == flag;");
         sb.AppendLine("    }");
         sb.AppendLine();
 
@@ -324,10 +338,9 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine("    {");
         if (denseMembers.Count > 0)
         {
-            sb.Append("        var index = ToUInt64_").Append(enumIndex).AppendLine("(value);");
-            sb.Append("        if (index < (ulong)s_definedNames_").Append(enumIndex).AppendLine(".Length)");
+            sb.Append("        if (TryGetDenseIndex_").Append(enumIndex).AppendLine("(value, out var index))");
             sb.AppendLine("        {");
-            sb.Append("            return useMetadata ? s_definedMetadataNames_").Append(enumIndex).Append("[unchecked((int)index)] : s_definedNames_").Append(enumIndex).AppendLine("[unchecked((int)index)];");
+            sb.Append("            return useMetadata ? s_definedMetadataNames_").Append(enumIndex).Append("[index] : s_definedNames_").Append(enumIndex).AppendLine("[index];");
             sb.AppendLine("        }");
             sb.AppendLine();
             sb.AppendLine("        return value.ToString();");
@@ -363,8 +376,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine("    {");
         if (denseMembers.Count > 0)
         {
-            sb.Append("        var index = ToUInt64_").Append(enumIndex).AppendLine("(value);");
-            sb.Append("        return index < (ulong)s_definedNames_").Append(enumIndex).AppendLine(".Length;");
+            sb.Append("        return TryGetDenseIndex_").Append(enumIndex).AppendLine("(value, out _);");
         }
         else
         {
@@ -381,6 +393,31 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         sb.AppendLine("    }");
         sb.AppendLine();
+
+        if (denseMembers.Count > 0)
+        {
+            sb.Append("    private static bool TryGetDenseIndex_").Append(enumIndex).Append('(').Append(enumTypeName).AppendLine(" value, out int index)");
+            sb.AppendLine("    {");
+            sb.Append("        var numericValue = unchecked((").Append(enumeration.UnderlyingTypeName).AppendLine(")value);");
+            if (enumeration.IsUnderlyingTypeSigned)
+            {
+                sb.Append("        if (numericValue < 0 || numericValue >= unchecked((").Append(enumeration.UnderlyingTypeName).Append(")s_definedNames_").Append(enumIndex).AppendLine(".Length))");
+            }
+            else
+            {
+                sb.Append("        if (numericValue >= unchecked((").Append(enumeration.UnderlyingTypeName).Append(")s_definedNames_").Append(enumIndex).AppendLine(".Length))");
+            }
+
+            sb.AppendLine("        {");
+            sb.AppendLine("            index = default;");
+            sb.AppendLine("            return false;");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            sb.AppendLine("        index = unchecked((int)numericValue);");
+            sb.AppendLine("        return true;");
+            sb.AppendLine("    }");
+            sb.AppendLine();
+        }
 
         sb.Append("    private static ulong ToUInt64_").Append(enumIndex).Append('(').Append(enumTypeName).AppendLine(" value)");
         sb.AppendLine("    {");
@@ -679,16 +716,15 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine("        }");
         sb.AppendLine();
 
-        sb.Append("        ").Append(methodVisibility).AppendLine(" static string[] GetNames(bool useMetadata)");
+        sb.Append("        ").Append(methodVisibility).AppendLine(" static global::System.ReadOnlySpan<string> GetNames(bool useMetadata)");
         sb.AppendLine("        {");
-        sb.Append("            var names = useMetadata ? s_metadataNames_").Append(enumIndex).Append(" : s_names_").Append(enumIndex).AppendLine(";");
-        sb.AppendLine("            return (string[])names.Clone();");
+        sb.Append("            return useMetadata ? s_metadataNames_").Append(enumIndex).Append(" : s_names_").Append(enumIndex).AppendLine(";");
         sb.AppendLine("        }");
         sb.AppendLine();
 
-        sb.Append("        ").Append(methodVisibility).Append(" static ").Append(enumTypeName).AppendLine("[] GetValues()");
+        sb.Append("        ").Append(methodVisibility).Append(" static global::System.ReadOnlySpan<").Append(enumTypeName).AppendLine("> GetValues()");
         sb.AppendLine("        {");
-        sb.Append("            return (").Append(enumTypeName).Append("[])s_values_").Append(enumIndex).AppendLine(".Clone();");
+        sb.Append("            return s_values_").Append(enumIndex).AppendLine(";");
         sb.AppendLine("        }");
         sb.AppendLine("    }");
         sb.AppendLine();
@@ -777,7 +813,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         return IsVisibleOutsideOfAssembly(symbol.ContainingType);
     }
 
-    private sealed record EnumToProcess(INamedTypeSymbol EnumSymbol, ImmutableArray<EnumMemberToProcess> Members, bool IsPublic, string? Namespace, bool IsFlags, bool IsZeroBasedConsecutive, string UnderlyingTypeName)
+    private sealed record EnumToProcess(INamedTypeSymbol EnumSymbol, ImmutableArray<EnumMemberToProcess> Members, bool IsPublic, string? Namespace, bool IsFlags, bool IsZeroBasedConsecutive, string UnderlyingTypeName, bool IsUnderlyingTypeSigned)
     {
         public string FullCsharpName { get; } = EnumSymbol.ToString()!;
         public string? FullNamespace { get; } = Namespace ?? GetNamespace(EnumSymbol);

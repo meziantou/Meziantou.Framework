@@ -39,9 +39,21 @@ public sealed class FastEnumSourceGeneratorTests
     {
         var sourceCode = """
             using System.ComponentModel.DataAnnotations;
+            using System.ComponentModel;
             using System.Runtime.Serialization;
 
             [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Sample.Color), ExtensionMethodNamespace = "Sample.Generated")]
+
+            namespace System.ComponentModel
+            {
+                [global::System.AttributeUsage(global::System.AttributeTargets.Field)]
+                public sealed class DisplayNameAttribute : global::System.Attribute
+                {
+                    public DisplayNameAttribute(string displayName) { DisplayName = displayName; }
+                    public string DisplayName { get; }
+                }
+            }
+
             namespace Sample
             {
                 [System.Flags]
@@ -51,6 +63,8 @@ public sealed class FastEnumSourceGeneratorTests
                     Blue = 1,
                     [EnumMember(Value = "Red metadata")]
                     Red = 2,
+                    [DisplayName("Green metadata")]
+                    Green = 4,
                 }
             }
             """;
@@ -62,6 +76,8 @@ public sealed class FastEnumSourceGeneratorTests
         Assert.Contains("GetName(this global::Sample.Color instance)", generatedCode, StringComparison.Ordinal);
         Assert.Contains("\"Blue metadata\"", generatedCode, StringComparison.Ordinal);
         Assert.Contains("\"Red metadata\"", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("\"Green metadata\"", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("return (instance & flag) == flag;", generatedCode, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -82,7 +98,8 @@ public sealed class FastEnumSourceGeneratorTests
         var generatedCode = await GenerateCode(sourceCode, LanguageVersion.Preview);
         Assert.Contains("extension(global::Sample.Color)", generatedCode, StringComparison.Ordinal);
         Assert.Contains("static global::Sample.Color Parse(string value, bool ignoreCase)", generatedCode, StringComparison.Ordinal);
-        Assert.Contains("static global::Sample.Color[] GetValues()", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("static global::System.ReadOnlySpan<string> GetNames(bool useMetadata)", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("static global::System.ReadOnlySpan<global::Sample.Color> GetValues()", generatedCode, StringComparison.Ordinal);
     }
 
     [Fact]

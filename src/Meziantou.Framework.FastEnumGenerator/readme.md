@@ -25,10 +25,10 @@ The generated extension class contains:
 When the target project supports C# 14 extension members, the generator also adds:
 - `Parse` / `TryParse` overloads (`string` and `ReadOnlySpan<char>`)
 - `IsDefined`
-- `GetNames(bool useMetadata)`
-- `GetValues()`
+- `GetNames(bool useMetadata)` returning `ReadOnlySpan<string>`
+- `GetValues()` returning `ReadOnlySpan<TEnum>`
 
-`useMetadata` uses names from `DisplayAttribute` and `EnumMemberAttribute` when available.
+`useMetadata` uses names from `DisplayAttribute`, `DisplayNameAttribute`, and `EnumMemberAttribute` when available.
 
 # Additional resources
 

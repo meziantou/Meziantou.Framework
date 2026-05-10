@@ -13,10 +13,43 @@ public partial class UrlLogHighlighter : ILogHighlighter
         var matches = UrlRegex().Matches(text);
         foreach (Match match in matches)
         {
-            yield return new LogHighlighterResult(match.Index, match.Length, Priority: 0) { Link = match.Value };
+            if (!TryGetHttpUrl(match.Value, out var url))
+                continue;
+
+            yield return new LogHighlighterResult(match.Index, url.Length, Priority: 0) { Link = url };
         }
     }
 
-    [GeneratedRegex(@"(http|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 2000)]
+    private static bool TryGetHttpUrl(string value, out string url)
+    {
+        url = value;
+        while (url.Length > 0)
+        {
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && IsHttpScheme(uri.Scheme))
+            {
+                return true;
+            }
+
+            if (!ShouldTrimTrailingCharacter(url[^1]))
+                break;
+
+            url = url[..^1];
+        }
+
+        url = string.Empty;
+        return false;
+    }
+
+    private static bool IsHttpScheme(string scheme)
+    {
+        return scheme == Uri.UriSchemeHttp || scheme == Uri.UriSchemeHttps;
+    }
+
+    private static bool ShouldTrimTrailingCharacter(char c)
+    {
+        return c is '.' or ',' or ';' or ':' or ')' or ']' or '}' or '!';
+    }
+
+    [GeneratedRegex(@"https?://[^\s""'<>]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, matchTimeoutMilliseconds: 5000)]
     private static partial Regex UrlRegex();
 }

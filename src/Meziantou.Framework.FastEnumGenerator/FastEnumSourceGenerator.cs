@@ -288,6 +288,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         var flagMembers = enumeration.IsFlags
             ? uniqueMembers.Where(static item => item.UInt64Value != 0 && IsPowerOfTwo(item.UInt64Value)).OrderByDescending(static item => item.UInt64Value).ToList()
             : [];
+        var needsToUInt64Helper = enumeration.IsFlags && (supportsExtensionMembers || (hasDistinctMetadata && flagMembers.Count > 0));
+        var needsFromUInt64Helper = enumeration.IsFlags && supportsExtensionMembers;
         var className = "FastEnumExtensions_" + enumIndex.ToString(CultureInfo.InvariantCulture);
 
         if (!string.IsNullOrEmpty(enumeration.FullNamespace))
@@ -434,17 +436,23 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.AppendLine();
         }
 
-        sb.Append("    private static ulong ToUInt64_").Append(enumIndex).Append('(').Append(enumTypeName).AppendLine(" value)");
-        sb.AppendLine("    {");
-        sb.Append("        return unchecked((ulong)((").Append(enumeration.UnderlyingTypeName).AppendLine(")value));");
-        sb.AppendLine("    }");
-        sb.AppendLine();
+        if (needsToUInt64Helper)
+        {
+            sb.Append("    private static ulong ToUInt64_").Append(enumIndex).Append('(').Append(enumTypeName).AppendLine(" value)");
+            sb.AppendLine("    {");
+            sb.Append("        return unchecked((ulong)((").Append(enumeration.UnderlyingTypeName).AppendLine(")value));");
+            sb.AppendLine("    }");
+            sb.AppendLine();
+        }
 
-        sb.Append("    private static ").Append(enumTypeName).Append(" FromUInt64_").Append(enumIndex).AppendLine("(ulong value)");
-        sb.AppendLine("    {");
-        sb.Append("        return unchecked((").Append(enumTypeName).Append(")((").Append(enumeration.UnderlyingTypeName).AppendLine(")value));");
-        sb.AppendLine("    }");
-        sb.AppendLine();
+        if (needsFromUInt64Helper)
+        {
+            sb.Append("    private static ").Append(enumTypeName).Append(" FromUInt64_").Append(enumIndex).AppendLine("(ulong value)");
+            sb.AppendLine("    {");
+            sb.Append("        return unchecked((").Append(enumTypeName).Append(")((").Append(enumeration.UnderlyingTypeName).AppendLine(")value));");
+            sb.AppendLine("    }");
+            sb.AppendLine();
+        }
 
         sb.Append("    private static bool EqualsToken_").Append(enumIndex).AppendLine("(global::System.ReadOnlySpan<char> value, string token, bool ignoreCase)");
         sb.AppendLine("    {");

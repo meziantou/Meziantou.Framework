@@ -1,10 +1,11 @@
 namespace Meziantou.Framework.FastEnumGenerator.GeneratorTests;
 
 [Flags]
-public enum Permission
+public enum PermissionWithCombination
 {
     None = 0,
-    Read = 1,
-    Write = 2,
-    Execute = 4,
+    A = 1,
+    B = 2,
+    AandB = 3,
+    C = 4,
 }

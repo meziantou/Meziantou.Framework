@@ -34,8 +34,7 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeAttributeOperation(OperationAnalysisContext context, INamedTypeSymbol fastEnumAttribute)
     {
-        if (context.Operation is not IAttributeOperation attributeOperation)
-            return;
+        var attributeOperation = (IAttributeOperation)context.Operation;
 
         if (attributeOperation.Operation is not IObjectCreationOperation attribute)
             return;
@@ -53,10 +52,6 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
 
         var location = attribute.Syntax.GetLocation();
         var argument = attribute.Arguments[0].Value;
-        while (argument is IConversionOperation conversionOperation)
-        {
-            argument = conversionOperation.Operand;
-        }
 
         if (argument.ConstantValue is { HasValue: true, Value: null })
         {
@@ -64,7 +59,7 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (argument is not ITypeOfOperation typeOfOperation || typeOfOperation.TypeOperand.TypeKind == TypeKind.Enum)
+        if (argument is not ITypeOfOperation { TypeOperand.TypeKind: not TypeKind.Enum } typeOfOperation)
             return;
 
         context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, typeOfOperation.TypeOperand.ToDisplayString()));

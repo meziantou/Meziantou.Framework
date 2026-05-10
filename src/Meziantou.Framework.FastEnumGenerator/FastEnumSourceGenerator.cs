@@ -283,7 +283,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         var uniqueMembers = GetUniqueMembers(enumeration.Members);
         var parseTokens = GetParseTokens(enumeration.Members);
-        var hasMetadata = enumeration.Members.Any(static item => item.MetadataName is not null);
+        var hasDistinctMetadata = enumeration.Members.Any(static item => item.MetadataName is not null && !string.Equals(item.MetadataName, item.Name, StringComparison.Ordinal));
         var denseMembers = enumeration.IsZeroBasedConsecutive ? uniqueMembers.OrderBy(static item => item.UInt64Value).ToList() : [];
         var flagMembers = enumeration.IsFlags
             ? uniqueMembers.Where(static item => item.UInt64Value != 0 && IsPowerOfTwo(item.UInt64Value)).OrderByDescending(static item => item.UInt64Value).ToList()
@@ -302,10 +302,10 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         AppendMemberArrays(sb, enumeration, enumTypeName, enumIndex, parseTokens);
         if (denseMembers.Count > 0)
         {
-            AppendDenseArrays(sb, denseMembers, enumTypeName, enumIndex);
+            AppendDenseArrays(sb, denseMembers, enumTypeName, enumIndex, hasDistinctMetadata);
         }
 
-        if (hasMetadata && flagMembers.Count > 0)
+        if (hasDistinctMetadata && flagMembers.Count > 0)
         {
             AppendFlagsArrays(sb, flagMembers, enumIndex);
         }
@@ -340,7 +340,15 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         {
             sb.Append("        if (TryGetDenseIndex_").Append(enumIndex).AppendLine("(value, out var index))");
             sb.AppendLine("        {");
-            sb.Append("            return useMetadata ? s_definedMetadataNames_").Append(enumIndex).Append("[index] : s_definedNames_").Append(enumIndex).AppendLine("[index];");
+            if (hasDistinctMetadata)
+            {
+                sb.Append("            return useMetadata ? s_definedMetadataNames_").Append(enumIndex).Append("[index] : s_definedNames_").Append(enumIndex).AppendLine("[index];");
+            }
+            else
+            {
+                sb.Append("            return s_definedNames_").Append(enumIndex).AppendLine("[index];");
+            }
+
             sb.AppendLine("        }");
             sb.AppendLine();
             sb.AppendLine("        return value.ToString();");
@@ -352,12 +360,19 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             foreach (var member in uniqueMembers)
             {
                 sb.Append("            case ").Append(enumTypeName).Append('.').Append(member.Name).AppendLine(":");
-                sb.Append("                return useMetadata ? ").Append(ToLiteral(member.MetadataName ?? member.Name)).Append(" : nameof(").Append(enumTypeName).Append('.').Append(member.Name).AppendLine(");");
+                if (member.MetadataName is not null && !string.Equals(member.MetadataName, member.Name, StringComparison.Ordinal))
+                {
+                    sb.Append("                return useMetadata ? ").Append(ToLiteral(member.MetadataName)).Append(" : nameof(").Append(enumTypeName).Append('.').Append(member.Name).AppendLine(");");
+                }
+                else
+                {
+                    sb.Append("                return nameof(").Append(enumTypeName).Append('.').Append(member.Name).AppendLine(");");
+                }
             }
 
             sb.AppendLine("        }");
             sb.AppendLine();
-            if (hasMetadata && flagMembers.Count > 0)
+            if (hasDistinctMetadata && flagMembers.Count > 0)
             {
                 sb.AppendLine("        if (useMetadata)");
                 sb.AppendLine("        {");
@@ -438,7 +453,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine("    }");
         sb.AppendLine();
 
-        if (hasMetadata && flagMembers.Count > 0)
+        if (hasDistinctMetadata && flagMembers.Count > 0)
         {
             AppendFormatFlagsName(sb, enumTypeName, enumIndex);
         }
@@ -484,15 +499,19 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void AppendDenseArrays(StringBuilder sb, List<EnumMemberToProcess> denseMembers, string enumTypeName, int enumIndex)
+    private static void AppendDenseArrays(StringBuilder sb, List<EnumMemberToProcess> denseMembers, string enumTypeName, int enumIndex, bool hasDistinctMetadata)
     {
         sb.Append("    private static readonly string[] s_definedNames_").Append(enumIndex).Append(" = new string[] { ");
         AppendCommaSeparated(sb, denseMembers.Select(member => "nameof(" + enumTypeName + "." + member.Name + ")"));
         sb.AppendLine(" };");
 
-        sb.Append("    private static readonly string[] s_definedMetadataNames_").Append(enumIndex).Append(" = new string[] { ");
-        AppendCommaSeparated(sb, denseMembers.Select(member => ToLiteral(member.MetadataName ?? member.Name)));
-        sb.AppendLine(" };");
+        if (hasDistinctMetadata)
+        {
+            sb.Append("    private static readonly string[] s_definedMetadataNames_").Append(enumIndex).Append(" = new string[] { ");
+            AppendCommaSeparated(sb, denseMembers.Select(member => ToLiteral(member.MetadataName ?? member.Name)));
+            sb.AppendLine(" };");
+        }
+
         sb.AppendLine();
     }
 

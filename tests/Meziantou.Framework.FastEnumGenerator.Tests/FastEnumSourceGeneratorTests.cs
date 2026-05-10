@@ -29,9 +29,13 @@ public sealed class FastEnumSourceGeneratorTests
         var (runResult, _) = await GenerateFiles(sourceCode);
         Assert.Empty(runResult.Diagnostics);
         Assert.Equal(3, runResult.GeneratedTrees.Length);
-        Assert.Contains(runResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("FastEnumExtensions.g.cs", StringComparison.Ordinal));
+        var generatedTree = Assert.Single(runResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("FastEnumExtensions.g.cs", StringComparison.Ordinal));
         Assert.Contains(runResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Microsoft.CodeAnalysis.EmbeddedAttribute.g.cs", StringComparison.Ordinal));
         Assert.Contains(runResult.GeneratedTrees, static tree => tree.FilePath.EndsWith("Meziantou.Framework.Annotations.FastEnumAttribute.g.cs", StringComparison.Ordinal));
+
+        var generatedCode = (await generatedTree.GetRootAsync()).ToFullString();
+        Assert.DoesNotContain("return useMetadata ? s_definedMetadataNames_", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("return s_definedNames_", generatedCode, StringComparison.Ordinal);
     }
 
     [Fact]

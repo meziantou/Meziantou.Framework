@@ -204,7 +204,7 @@ jobs:
 
       - name: Cache Public API test compilation outputs
         if: steps.build-project.outputs.has-project == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY }}
           key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}

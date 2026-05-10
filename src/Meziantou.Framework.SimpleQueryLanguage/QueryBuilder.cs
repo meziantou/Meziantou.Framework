@@ -22,9 +22,23 @@ public sealed class QueryBuilder<T>
     private static readonly Predicate<T> AlwaysFalsePredicate = _ => false;
     private static readonly Predicate<T> AlwaysTruePredicate = _ => true;
 
+    private readonly TimeProvider _timeProvider;
     private readonly Dictionary<FilterKeyValue, Func<T, KeyValueOperator, string, bool>> _filters = [];
     private Func<T, string, bool>? _freeTextFilter;
     private UnhandledPropertyDelegate<T>? _unhandledPropertyFilter;
+
+    /// <summary>Initializes a new instance of <see cref="QueryBuilder{T}"/> using the system time provider.</summary>
+    public QueryBuilder()
+        : this(timeProvider: null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="QueryBuilder{T}"/> with a specific time provider for date-related range keywords.</summary>
+    /// <param name="timeProvider">The time provider to use, or <see langword="null"/> to use <see cref="TimeProvider.System"/>.</param>
+    public QueryBuilder(TimeProvider? timeProvider)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
 
     private void AddHandler(string key, string? value, Func<T, KeyValueOperator, string, bool> handler)
     {
@@ -147,19 +161,19 @@ public sealed class QueryBuilder<T>
     }
 
     // Ranges
-    private static bool ConvertRangePredicate<TValue>(T obj, KeyValueOperator op, string value, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue> tryParseValue)
+    private bool ConvertRangePredicate<TValue>(T obj, KeyValueOperator op, string value, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue> tryParseValue)
     {
         // field:1..10
         // field=1..10
         if (op == KeyValueOperator.EqualTo)
         {
-            var range = RangeSyntax.TryParse(value, tryParseValue);
+            var range = RangeSyntax.TryParse(value, tryParseValue, _timeProvider);
             if (range is not null)
                 return predicate(obj, range);
         }
         else if (op == KeyValueOperator.NotEqualTo)
         {
-            var range = RangeSyntax.TryParse(value, tryParseValue);
+            var range = RangeSyntax.TryParse(value, tryParseValue, _timeProvider);
             if (range is not null)
                 return !predicate(obj, range);
         }

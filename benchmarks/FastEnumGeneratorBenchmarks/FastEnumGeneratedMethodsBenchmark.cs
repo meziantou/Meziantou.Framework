@@ -25,7 +25,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_simpleenum() => SimpleEnum.Two.HasFlag(SimpleEnum.One);
 
     [Benchmark]
-    public bool HasFlag_fast_simpleenum() => FastEnumExtensions_4.HasFlag(SimpleEnum.Two, SimpleEnum.One);
+    public bool HasFlag_fast_simpleenum() => (SimpleEnum.Two & SimpleEnum.One) == SimpleEnum.One;
 
     [Benchmark]
     public bool Parse_string_default_simpleenum() => Enum.Parse<SimpleEnum>("Two", ignoreCase: true) == SimpleEnum.Two;
@@ -85,7 +85,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_flagsenum() => FlagsValue.HasFlag(FlagsEnum.Write);
 
     [Benchmark]
-    public bool HasFlag_fast_flagsenum() => FastEnumExtensions_0.HasFlag(FlagsValue, FlagsEnum.Write);
+    public bool HasFlag_fast_flagsenum() => (FlagsValue & FlagsEnum.Write) == FlagsEnum.Write;
 
     [Benchmark]
     public bool Parse_string_default_flagsenum() => Enum.Parse<FlagsEnum>("Read, Write", ignoreCase: true) == FlagsValue;
@@ -145,7 +145,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_smallenum() => SmallEnum.ThirtyOne.HasFlag(SmallEnum.Three);
 
     [Benchmark]
-    public bool HasFlag_fast_smallenum() => FastEnumExtensions_5.HasFlag(SmallEnum.ThirtyOne, SmallEnum.Three);
+    public bool HasFlag_fast_smallenum() => (SmallEnum.ThirtyOne & SmallEnum.Three) == SmallEnum.Three;
 
     [Benchmark]
     public bool Parse_string_default_smallenum() => Enum.Parse<SmallEnum>("ThirtyOne", ignoreCase: true) == SmallEnum.ThirtyOne;
@@ -205,7 +205,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_mediumenum() => MediumEnum.V23.HasFlag(MediumEnum.V03);
 
     [Benchmark]
-    public bool HasFlag_fast_mediumenum() => FastEnumExtensions_2.HasFlag(MediumEnum.V23, MediumEnum.V03);
+    public bool HasFlag_fast_mediumenum() => (MediumEnum.V23 & MediumEnum.V03) == MediumEnum.V03;
 
     [Benchmark]
     public bool Parse_string_default_mediumenum() => Enum.Parse<MediumEnum>("V23", ignoreCase: true) == MediumEnum.V23;
@@ -265,7 +265,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_largeenum() => LargeEnum.V080.HasFlag(LargeEnum.V016);
 
     [Benchmark]
-    public bool HasFlag_fast_largeenum() => FastEnumExtensions_1.HasFlag(LargeEnum.V080, LargeEnum.V016);
+    public bool HasFlag_fast_largeenum() => (LargeEnum.V080 & LargeEnum.V016) == LargeEnum.V016;
 
     [Benchmark]
     public bool Parse_string_default_largeenum() => Enum.Parse<LargeEnum>("V080", ignoreCase: true) == LargeEnum.V080;
@@ -325,7 +325,7 @@ public class FastEnumGeneratedMethodsBenchmark
     public bool HasFlag_default_metadataflagsenum() => MetadataFlagsValue.HasFlag(MetadataFlagsEnum.Write);
 
     [Benchmark]
-    public bool HasFlag_fast_metadataflagsenum() => FastEnumExtensions_3.HasFlag(MetadataFlagsValue, MetadataFlagsEnum.Write);
+    public bool HasFlag_fast_metadataflagsenum() => (MetadataFlagsValue & MetadataFlagsEnum.Write) == MetadataFlagsEnum.Write;
 
     [Benchmark]
     public bool Parse_string_default_metadataflagsenum() => Enum.Parse<MetadataFlagsEnum>("Read", ignoreCase: true) == MetadataFlagsEnum.Read;

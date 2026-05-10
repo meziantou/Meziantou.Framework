@@ -8,13 +8,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector;
 
 internal sealed class OpenTelemetryTraceTailSampler(IOptions<OpenTelemetryReceiverOptions> optionsAccessor)
 {
-#if NET9_0_OR_GREATER
     private readonly System.Threading.Lock _gate = new();
-#else
-#pragma warning disable MA0158 // System.Threading.Lock is not available on net8
-    private readonly object _gate = new();
-#pragma warning restore MA0158
-#endif
 
     private readonly Dictionary<string, BufferedTraceState> _traces = new(StringComparer.Ordinal);
     private readonly OpenTelemetryReceiverOptions _options = optionsAccessor.Value;

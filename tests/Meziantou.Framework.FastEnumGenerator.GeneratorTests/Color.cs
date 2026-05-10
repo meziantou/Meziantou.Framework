@@ -13,3 +13,10 @@ public enum Color
 
     Green,
 }
+
+public enum ColorWithAliases
+{
+    Blue = 0,
+    Azure = 0,
+    Red = 1,
+}

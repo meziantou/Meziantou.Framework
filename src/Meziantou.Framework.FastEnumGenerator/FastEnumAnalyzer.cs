@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.FastEnumGenerator;
 
@@ -21,45 +22,51 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
-        context.RegisterCompilationStartAction(InitializeCore);
-    }
-
-    private static void InitializeCore(CompilationStartAnalysisContext context)
-    {
-        var fastEnumAttribute = context.Compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.FastEnumAttribute");
-        if (fastEnumAttribute is null)
-            return;
-
-        context.RegisterCompilationEndAction(context => AnalyzeCompilation(context, fastEnumAttribute));
-    }
-
-    private static void AnalyzeCompilation(CompilationAnalysisContext context, INamedTypeSymbol fastEnumAttribute)
-    {
-        foreach (var attribute in context.Compilation.Assembly.GetAttributes())
+        context.RegisterCompilationStartAction(context =>
         {
-            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, fastEnumAttribute))
-                continue;
+            var fastEnumAttribute = context.Compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.FastEnumAttribute");
+            if (fastEnumAttribute is null)
+                return;
 
-            AnalyzeAttribute(context, attribute);
-        }
+            context.RegisterOperationAction(context => AnalyzeAttributeOperation(context, fastEnumAttribute), OperationKind.Attribute);
+        });
     }
 
-    private static void AnalyzeAttribute(CompilationAnalysisContext context, AttributeData attribute)
+    private static void AnalyzeAttributeOperation(OperationAnalysisContext context, INamedTypeSymbol fastEnumAttribute)
     {
-        if (attribute.ConstructorArguments.Length != 1)
+        if (context.Operation is not IAttributeOperation attributeOperation)
             return;
 
-        var location = attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? Location.None;
-        var enumType = attribute.ConstructorArguments[0].Value;
-        if (enumType is null)
+        if (attributeOperation.Operation is not IObjectCreationOperation attribute)
+            return;
+
+        if (!SymbolEqualityComparer.Default.Equals(attribute.Constructor?.ContainingType, fastEnumAttribute))
+            return;
+
+        AnalyzeAttribute(context, attribute);
+    }
+
+    private static void AnalyzeAttribute(OperationAnalysisContext context, IObjectCreationOperation attribute)
+    {
+        if (attribute.Arguments.Length != 1)
+            return;
+
+        var location = attribute.Syntax.GetLocation();
+        var argument = attribute.Arguments[0].Value;
+        while (argument is IConversionOperation conversionOperation)
+        {
+            argument = conversionOperation.Operand;
+        }
+
+        if (argument.ConstantValue is { HasValue: true, Value: null })
         {
             context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, "(null)"));
             return;
         }
 
-        if (enumType is not ITypeSymbol typeSymbol || typeSymbol.TypeKind == TypeKind.Enum)
+        if (argument is not ITypeOfOperation typeOfOperation || typeOfOperation.TypeOperand.TypeKind == TypeKind.Enum)
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, typeSymbol.ToDisplayString()));
+        context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, typeOfOperation.TypeOperand.ToDisplayString()));
     }
 }

@@ -71,6 +71,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
     {
         var compilation = ctx.SemanticModel.Compilation;
         var fastEnumAttributeSymbol = compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.FastEnumAttribute");
+        var flagsAttributeSymbol = compilation.GetTypeByMetadataName("System.FlagsAttribute");
         if (fastEnumAttributeSymbol is null)
             return null;
 
@@ -99,7 +100,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
             var isPublic = GetIsPublic(attr, enumType);
             var extensionNamespace = GetExtensionNamespace(attr);
-            var isFlags = enumType.GetAttributes().Any(static attribute => string.Equals(attribute.AttributeClass?.ToDisplayString(), "System.FlagsAttribute", StringComparison.Ordinal));
+            var isFlags = flagsAttributeSymbol is not null &&
+                          enumType.GetAttributes().Any(attribute => SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, flagsAttributeSymbol));
             var isZeroBasedConsecutive = !isFlags && IsZeroBasedConsecutive(members);
             var underlyingType = enumType.EnumUnderlyingType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "global::System.Int32";
 
@@ -121,8 +123,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         if (firstSyntaxTree.Options is not CSharpParseOptions parseOptions)
             return false;
 
-        var tree = CSharpSyntaxTree.ParseText("static class __Probe { extension(int value) { public static int Parse(string value, bool ignoreCase) => 0; } }", parseOptions);
-        return tree.GetDiagnostics().All(static diagnostic => diagnostic.Severity != DiagnosticSeverity.Error);
+        return parseOptions.LanguageVersion >= (LanguageVersion)1400;
     }
 
     private static ImmutableArray<EnumMemberToProcess> GetMembers(INamedTypeSymbol enumType)
@@ -395,27 +396,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         sb.Append("    private static bool EqualsToken_").Append(enumIndex).AppendLine("(global::System.ReadOnlySpan<char> value, string token, bool ignoreCase)");
         sb.AppendLine("    {");
-        sb.AppendLine("        if (value.Length != token.Length)");
-        sb.AppendLine("            return false;");
-        sb.AppendLine();
-        sb.AppendLine("        if (!ignoreCase)");
-        sb.AppendLine("        {");
-        sb.AppendLine("            for (var i = 0; i < token.Length; i++)");
-        sb.AppendLine("            {");
-        sb.AppendLine("                if (value[i] != token[i])");
-        sb.AppendLine("                    return false;");
-        sb.AppendLine("            }");
-        sb.AppendLine();
-        sb.AppendLine("            return true;");
-        sb.AppendLine("        }");
-        sb.AppendLine();
-        sb.AppendLine("        for (var i = 0; i < token.Length; i++)");
-        sb.AppendLine("        {");
-        sb.AppendLine("            if (char.ToUpperInvariant(value[i]) != char.ToUpperInvariant(token[i]))");
-        sb.AppendLine("                return false;");
-        sb.AppendLine("        }");
-        sb.AppendLine();
-        sb.AppendLine("        return true;");
+        sb.AppendLine("        var comparison = ignoreCase ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal;");
+        sb.AppendLine("        return global::System.MemoryExtensions.Equals(value, (global::System.ReadOnlySpan<char>)token, comparison);");
         sb.AppendLine("    }");
         sb.AppendLine();
 

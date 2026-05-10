@@ -1,7 +1,5 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Meziantou.Framework.FastEnumGenerator;
@@ -23,56 +21,45 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
-        context.RegisterSyntaxNodeAction(static context => AnalyzeAttribute(context), SyntaxKind.Attribute);
+        context.RegisterCompilationStartAction(InitializeCore);
     }
 
-    private static void AnalyzeAttribute(SyntaxNodeAnalysisContext context)
+    private static void InitializeCore(CompilationStartAnalysisContext context)
     {
-        if (context.Node is not AttributeSyntax attributeSyntax)
+        var fastEnumAttribute = context.Compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.FastEnumAttribute");
+        if (fastEnumAttribute is null)
             return;
 
-        if (!IsCandidate(attributeSyntax.Name))
-            return;
+        context.RegisterCompilationEndAction(context => AnalyzeCompilation(context, fastEnumAttribute));
+    }
 
-        var symbolInfo = context.SemanticModel.GetSymbolInfo(attributeSyntax, context.CancellationToken).Symbol as IMethodSymbol;
-        if (symbolInfo is not null &&
-            (symbolInfo.ContainingType.Name is not "FastEnumAttribute" ||
-             symbolInfo.ContainingType.ContainingNamespace.ToDisplayString() != "Meziantou.Framework.Annotations"))
+    private static void AnalyzeCompilation(CompilationAnalysisContext context, INamedTypeSymbol fastEnumAttribute)
+    {
+        foreach (var attribute in context.Compilation.Assembly.GetAttributes())
         {
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, fastEnumAttribute))
+                continue;
+
+            AnalyzeAttribute(context, attribute);
+        }
+    }
+
+    private static void AnalyzeAttribute(CompilationAnalysisContext context, AttributeData attribute)
+    {
+        if (attribute.ConstructorArguments.Length != 1)
+            return;
+
+        var location = attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? Location.None;
+        var enumType = attribute.ConstructorArguments[0].Value;
+        if (enumType is null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, "(null)"));
             return;
         }
 
-        var arguments = attributeSyntax.ArgumentList?.Arguments;
-        if (arguments is null || arguments.Value.Count != 1)
+        if (enumType is not ITypeSymbol typeSymbol || typeSymbol.TypeKind == TypeKind.Enum)
             return;
 
-        var argumentExpression = arguments.Value[0].Expression;
-        if (argumentExpression.IsKind(SyntaxKind.NullLiteralExpression))
-        {
-            context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, argumentExpression.GetLocation(), "(null)"));
-            return;
-        }
-
-        if (argumentExpression is not TypeOfExpressionSyntax typeOfExpression)
-            return;
-
-        var typeSymbol = context.SemanticModel.GetTypeInfo(typeOfExpression.Type, context.CancellationToken).Type;
-        if (typeSymbol is null || typeSymbol.TypeKind == TypeKind.Enum)
-            return;
-
-        context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, typeOfExpression.Type.GetLocation(), typeSymbol.ToDisplayString()));
-    }
-
-    private static bool IsCandidate(NameSyntax nameSyntax)
-    {
-        var name = nameSyntax switch
-        {
-            IdentifierNameSyntax identifierNameSyntax => identifierNameSyntax.Identifier.ValueText,
-            QualifiedNameSyntax qualifiedNameSyntax => qualifiedNameSyntax.Right.Identifier.ValueText,
-            AliasQualifiedNameSyntax aliasQualifiedNameSyntax => aliasQualifiedNameSyntax.Name.Identifier.ValueText,
-            _ => null,
-        };
-
-        return name is "FastEnum" or "FastEnumAttribute";
+        context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, typeSymbol.ToDisplayString()));
     }
 }

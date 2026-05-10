@@ -1,4 +1,3 @@
-using System.Buffers;
 using BenchmarkDotNet.Attributes;
 using FastEnumGeneratorBenchmarks.Generated;
 
@@ -7,238 +6,366 @@ namespace FastEnumGeneratorBenchmarks;
 [MemoryDiagnoser]
 public class FastEnumGeneratedMethodsBenchmark
 {
-    private Func<string> _toStringFast = () => "";
-    private Func<string> _toStringFastMetadata = () => "";
-    private Func<string> _getName = () => "";
-    private Func<bool> _hasFlag = () => false;
-    private Func<bool, bool> _parseString = _ => false;
-    private Func<bool, bool> _parseSpan = _ => false;
-    private Func<bool, bool> _tryParseString = _ => false;
-    private Func<bool, bool> _tryParseSpan = _ => false;
-    private Func<bool> _isDefined = () => false;
-    private Func<bool, int> _getNamesLength = _ => 0;
-    private Func<int> _getValuesLength = () => 0;
-    private SearchValues<string> _searchValues = SearchValues.Create([""], StringComparison.OrdinalIgnoreCase);
-    private SearchValues<string> _searchValuesMetadata = SearchValues.Create([""], StringComparison.OrdinalIgnoreCase);
-    private HashSet<string> _hashSet = new(StringComparer.OrdinalIgnoreCase);
-    private HashSet<string> _hashSetMetadata = new(StringComparer.OrdinalIgnoreCase);
-    private string _parseToken = "";
-    private string _parseMetadataToken = "";
-
-    [Params(
-        FastEnumCase.Simple,
-        FastEnumCase.Flags,
-        FastEnumCase.Small,
-        FastEnumCase.Medium,
-        FastEnumCase.Large,
-        FastEnumCase.Metadata)]
-    public FastEnumCase Case { get; set; }
-
-    [GlobalSetup]
-    public void Setup()
-    {
-        switch (Case)
-        {
-            case FastEnumCase.Simple:
-                ConfigureSimple();
-                break;
-            case FastEnumCase.Flags:
-                ConfigureFlags();
-                break;
-            case FastEnumCase.Small:
-                ConfigureSmall();
-                break;
-            case FastEnumCase.Medium:
-                ConfigureMedium();
-                break;
-            case FastEnumCase.Large:
-                ConfigureLarge();
-                break;
-            case FastEnumCase.Metadata:
-                ConfigureMetadataFlags();
-                break;
-        }
-    }
+    private const FlagsEnum FlagsValue = FlagsEnum.Read | FlagsEnum.Write;
+    private const MetadataFlagsEnum MetadataFlagsValue = MetadataFlagsEnum.Read | MetadataFlagsEnum.Write;
 
     [Benchmark]
-    public string ToStringFast() => _toStringFast();
+    public string ToString_default_simpleenum() => SimpleEnum.Two.ToString();
 
     [Benchmark]
-    public string ToStringFast_Metadata() => _toStringFastMetadata();
+    public string ToString_fast_simpleenum() => SimpleEnum.Two.ToStringFast();
 
     [Benchmark]
-    public string GetName() => _getName();
+    public string GetName_default_simpleenum() => Enum.GetName(SimpleEnum.Two)!;
 
     [Benchmark]
-    public bool HasFlag() => _hasFlag();
+    public string GetName_fast_simpleenum() => SimpleEnum.Two.GetName();
 
     [Benchmark]
-    public bool Parse_String() => _parseString(false);
+    public bool HasFlag_default_simpleenum() => SimpleEnum.Two.HasFlag(SimpleEnum.One);
 
     [Benchmark]
-    public bool Parse_Span() => _parseSpan(false);
+    public bool HasFlag_fast_simpleenum() => FastEnumExtensions_4.HasFlag(SimpleEnum.Two, SimpleEnum.One);
 
     [Benchmark]
-    public bool Parse_String_Metadata() => _parseString(true);
+    public bool Parse_string_default_simpleenum() => Enum.Parse<SimpleEnum>("Two", ignoreCase: true) == SimpleEnum.Two;
 
     [Benchmark]
-    public bool Parse_Span_Metadata() => _parseSpan(true);
+    public bool Parse_string_fast_simpleenum() => SimpleEnum.Parse("Two", ignoreCase: true, useMetadata: false) == SimpleEnum.Two;
 
     [Benchmark]
-    public bool TryParse_String() => _tryParseString(false);
+    public bool Parse_span_default_simpleenum() => Enum.Parse<SimpleEnum>("Two".AsSpan(), ignoreCase: true) == SimpleEnum.Two;
 
     [Benchmark]
-    public bool TryParse_Span() => _tryParseSpan(false);
+    public bool Parse_span_fast_simpleenum() => SimpleEnum.Parse("Two".AsSpan(), ignoreCase: true, useMetadata: false) == SimpleEnum.Two;
 
     [Benchmark]
-    public bool TryParse_String_Metadata() => _tryParseString(true);
+    public bool TryParse_string_default_simpleenum() => Enum.TryParse("Two", ignoreCase: true, out SimpleEnum result) && result == SimpleEnum.Two;
 
     [Benchmark]
-    public bool TryParse_Span_Metadata() => _tryParseSpan(true);
+    public bool TryParse_string_fast_simpleenum() => SimpleEnum.TryParse("Two", ignoreCase: true, useMetadata: false, out var result) && result == SimpleEnum.Two;
 
     [Benchmark]
-    public bool IsDefined() => _isDefined();
+    public bool TryParse_span_default_simpleenum() => Enum.TryParse("Two".AsSpan(), ignoreCase: true, out SimpleEnum result) && result == SimpleEnum.Two;
 
     [Benchmark]
-    public int GetNames() => _getNamesLength(false);
+    public bool TryParse_span_fast_simpleenum() => SimpleEnum.TryParse("Two".AsSpan(), ignoreCase: true, useMetadata: false, out var result) && result == SimpleEnum.Two;
 
     [Benchmark]
-    public int GetNames_Metadata() => _getNamesLength(true);
+    public bool IsDefined_default_simpleenum() => Enum.IsDefined(SimpleEnum.Two);
 
     [Benchmark]
-    public int GetValues() => _getValuesLength();
+    public bool IsDefined_fast_simpleenum() => SimpleEnum.IsDefined(SimpleEnum.Two);
 
     [Benchmark]
-    public bool SearchValues_Contains() => _searchValues.Contains(_parseToken);
+    public int GetNames_default_simpleenum() => Enum.GetNames<SimpleEnum>().Length;
 
     [Benchmark]
-    public bool SearchValues_Contains_Metadata() => _searchValuesMetadata.Contains(_parseMetadataToken);
+    public int GetNames_fast_simpleenum() => SimpleEnum.GetNames(useMetadata: false).Length;
 
     [Benchmark]
-    public bool HashSet_Contains() => _hashSet.Contains(_parseToken);
+    public int GetValues_default_simpleenum() => Enum.GetValues<SimpleEnum>().Length;
 
     [Benchmark]
-    public bool HashSet_Contains_Metadata() => _hashSetMetadata.Contains(_parseMetadataToken);
+    public int GetValues_fast_simpleenum() => SimpleEnum.GetValues().Length;
 
-    private void ConfigureSimple()
-    {
-        _toStringFast = () => SimpleEnum.Two.ToStringFast();
-        _toStringFastMetadata = () => SimpleEnum.Two.ToStringFast(useMetadata: true);
-        _getName = () => SimpleEnum.Two.GetName();
-        _hasFlag = () => SimpleEnum.Two.HasFlag(SimpleEnum.One);
-        _parseString = useMetadata => SimpleEnum.Parse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata) == SimpleEnum.Two;
-        _parseSpan = useMetadata => SimpleEnum.Parse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata) == SimpleEnum.Two;
-        _tryParseString = useMetadata => SimpleEnum.TryParse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata, out var result) && result == SimpleEnum.Two;
-        _tryParseSpan = useMetadata => SimpleEnum.TryParse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata, out var result) && result == SimpleEnum.Two;
-        _isDefined = () => SimpleEnum.IsDefined(SimpleEnum.Two);
-        _getNamesLength = useMetadata => SimpleEnum.GetNames(useMetadata).Length;
-        _getValuesLength = () => SimpleEnum.GetValues().Length;
-        ConfigureLookups(SimpleEnum.GetNames(useMetadata: false).ToArray(), SimpleEnum.GetNames(useMetadata: true).ToArray(), "Two", "Two");
-    }
+    [Benchmark]
+    public string ToString_default_flagsenum() => FlagsValue.ToString();
 
-    private void ConfigureFlags()
-    {
-        var value = FlagsEnum.Read | FlagsEnum.Write;
-        _toStringFast = () => value.ToStringFast();
-        _toStringFastMetadata = () => value.ToStringFast(useMetadata: true);
-        _getName = () => value.GetName();
-        _hasFlag = () => value.HasFlag(FlagsEnum.Write);
-        _parseString = useMetadata => FlagsEnum.Parse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata) == value;
-        _parseSpan = useMetadata => FlagsEnum.Parse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata) == value;
-        _tryParseString = useMetadata => FlagsEnum.TryParse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata, out var result) && result == value;
-        _tryParseSpan = useMetadata => FlagsEnum.TryParse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata, out var result) && result == value;
-        _isDefined = () => FlagsEnum.IsDefined(FlagsEnum.ReadWrite);
-        _getNamesLength = useMetadata => FlagsEnum.GetNames(useMetadata).Length;
-        _getValuesLength = () => FlagsEnum.GetValues().Length;
-        ConfigureLookups(FlagsEnum.GetNames(useMetadata: false).ToArray(), FlagsEnum.GetNames(useMetadata: true).ToArray(), "Read, Write", "Read, Write");
-    }
+    [Benchmark]
+    public string ToString_fast_flagsenum() => FlagsValue.ToStringFast();
 
-    private void ConfigureSmall()
-    {
-        _toStringFast = () => SmallEnum.ThirtyOne.ToStringFast();
-        _toStringFastMetadata = () => SmallEnum.ThirtyOne.ToStringFast(useMetadata: true);
-        _getName = () => SmallEnum.ThirtyOne.GetName();
-        _hasFlag = () => SmallEnum.ThirtyOne.HasFlag(SmallEnum.Three);
-        _parseString = useMetadata => SmallEnum.Parse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata) == SmallEnum.ThirtyOne;
-        _parseSpan = useMetadata => SmallEnum.Parse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata) == SmallEnum.ThirtyOne;
-        _tryParseString = useMetadata => SmallEnum.TryParse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata, out var result) && result == SmallEnum.ThirtyOne;
-        _tryParseSpan = useMetadata => SmallEnum.TryParse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata, out var result) && result == SmallEnum.ThirtyOne;
-        _isDefined = () => SmallEnum.IsDefined(SmallEnum.ThirtyOne);
-        _getNamesLength = useMetadata => SmallEnum.GetNames(useMetadata).Length;
-        _getValuesLength = () => SmallEnum.GetValues().Length;
-        ConfigureLookups(SmallEnum.GetNames(useMetadata: false).ToArray(), SmallEnum.GetNames(useMetadata: true).ToArray(), "ThirtyOne", "ThirtyOne");
-    }
+    [Benchmark]
+    public string GetName_default_flagsenum() => Enum.GetName(FlagsEnum.ReadWrite)!;
 
-    private void ConfigureMedium()
-    {
-        _toStringFast = () => MediumEnum.V23.ToStringFast();
-        _toStringFastMetadata = () => MediumEnum.V23.ToStringFast(useMetadata: true);
-        _getName = () => MediumEnum.V23.GetName();
-        _hasFlag = () => MediumEnum.V23.HasFlag(MediumEnum.V03);
-        _parseString = useMetadata => MediumEnum.Parse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata) == MediumEnum.V23;
-        _parseSpan = useMetadata => MediumEnum.Parse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata) == MediumEnum.V23;
-        _tryParseString = useMetadata => MediumEnum.TryParse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata, out var result) && result == MediumEnum.V23;
-        _tryParseSpan = useMetadata => MediumEnum.TryParse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata, out var result) && result == MediumEnum.V23;
-        _isDefined = () => MediumEnum.IsDefined(MediumEnum.V23);
-        _getNamesLength = useMetadata => MediumEnum.GetNames(useMetadata).Length;
-        _getValuesLength = () => MediumEnum.GetValues().Length;
-        ConfigureLookups(MediumEnum.GetNames(useMetadata: false).ToArray(), MediumEnum.GetNames(useMetadata: true).ToArray(), "V23", "V23");
-    }
+    [Benchmark]
+    public string GetName_fast_flagsenum() => FlagsEnum.ReadWrite.GetName();
 
-    private void ConfigureLarge()
-    {
-        _toStringFast = () => LargeEnum.V080.ToStringFast();
-        _toStringFastMetadata = () => LargeEnum.V080.ToStringFast(useMetadata: true);
-        _getName = () => LargeEnum.V080.GetName();
-        _hasFlag = () => LargeEnum.V080.HasFlag(LargeEnum.V016);
-        _parseString = useMetadata => LargeEnum.Parse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata) == LargeEnum.V080;
-        _parseSpan = useMetadata => LargeEnum.Parse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata) == LargeEnum.V080;
-        _tryParseString = useMetadata => LargeEnum.TryParse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata, out var result) && result == LargeEnum.V080;
-        _tryParseSpan = useMetadata => LargeEnum.TryParse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata, out var result) && result == LargeEnum.V080;
-        _isDefined = () => LargeEnum.IsDefined(LargeEnum.V080);
-        _getNamesLength = useMetadata => LargeEnum.GetNames(useMetadata).Length;
-        _getValuesLength = () => LargeEnum.GetValues().Length;
-        ConfigureLookups(LargeEnum.GetNames(useMetadata: false).ToArray(), LargeEnum.GetNames(useMetadata: true).ToArray(), "V080", "V080");
-    }
+    [Benchmark]
+    public bool HasFlag_default_flagsenum() => FlagsValue.HasFlag(FlagsEnum.Write);
 
-    private void ConfigureMetadataFlags()
-    {
-        var value = MetadataFlagsEnum.Read | MetadataFlagsEnum.Write;
-        _toStringFast = () => value.ToStringFast();
-        _toStringFastMetadata = () => value.ToStringFast(useMetadata: true);
-        _getName = () => value.GetName();
-        _hasFlag = () => value.HasFlag(MetadataFlagsEnum.Read);
-        _parseString = useMetadata => MetadataFlagsEnum.Parse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata) == value;
-        _parseSpan = useMetadata => MetadataFlagsEnum.Parse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata) == value;
-        _tryParseString = useMetadata => MetadataFlagsEnum.TryParse(useMetadata ? _parseMetadataToken : _parseToken, ignoreCase: true, useMetadata, out var result) && result == value;
-        _tryParseSpan = useMetadata => MetadataFlagsEnum.TryParse((useMetadata ? _parseMetadataToken : _parseToken).AsSpan(), ignoreCase: true, useMetadata, out var result) && result == value;
-        _isDefined = () => MetadataFlagsEnum.IsDefined(MetadataFlagsEnum.Read);
-        _getNamesLength = useMetadata => MetadataFlagsEnum.GetNames(useMetadata).Length;
-        _getValuesLength = () => MetadataFlagsEnum.GetValues().Length;
-        ConfigureLookups(
-            MetadataFlagsEnum.GetNames(useMetadata: false).ToArray(),
-            MetadataFlagsEnum.GetNames(useMetadata: true).ToArray(),
-            "Read, Write",
-            "Read metadata, Write metadata");
-    }
+    [Benchmark]
+    public bool HasFlag_fast_flagsenum() => FastEnumExtensions_0.HasFlag(FlagsValue, FlagsEnum.Write);
 
-    private void ConfigureLookups(string[] names, string[] metadataNames, string parseToken, string parseMetadataToken)
-    {
-        _parseToken = parseToken;
-        _parseMetadataToken = parseMetadataToken;
-        _searchValues = SearchValues.Create(names, StringComparison.OrdinalIgnoreCase);
-        _searchValuesMetadata = SearchValues.Create(metadataNames, StringComparison.OrdinalIgnoreCase);
-        _hashSet = names.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        _hashSetMetadata = metadataNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-    }
+    [Benchmark]
+    public bool Parse_string_default_flagsenum() => Enum.Parse<FlagsEnum>("Read, Write", ignoreCase: true) == FlagsValue;
 
-    public enum FastEnumCase
-    {
-        Simple,
-        Flags,
-        Small,
-        Medium,
-        Large,
-        Metadata,
-    }
+    [Benchmark]
+    public bool Parse_string_fast_flagsenum() => FlagsEnum.Parse("Read, Write", ignoreCase: true, useMetadata: false) == FlagsValue;
+
+    [Benchmark]
+    public bool Parse_span_default_flagsenum() => Enum.Parse<FlagsEnum>("Read, Write".AsSpan(), ignoreCase: true) == FlagsValue;
+
+    [Benchmark]
+    public bool Parse_span_fast_flagsenum() => FlagsEnum.Parse("Read, Write".AsSpan(), ignoreCase: true, useMetadata: false) == FlagsValue;
+
+    [Benchmark]
+    public bool TryParse_string_default_flagsenum() => Enum.TryParse("Read, Write", ignoreCase: true, out FlagsEnum result) && result == FlagsValue;
+
+    [Benchmark]
+    public bool TryParse_string_fast_flagsenum() => FlagsEnum.TryParse("Read, Write", ignoreCase: true, useMetadata: false, out var result) && result == FlagsValue;
+
+    [Benchmark]
+    public bool TryParse_span_default_flagsenum() => Enum.TryParse("Read, Write".AsSpan(), ignoreCase: true, out FlagsEnum result) && result == FlagsValue;
+
+    [Benchmark]
+    public bool TryParse_span_fast_flagsenum() => FlagsEnum.TryParse("Read, Write".AsSpan(), ignoreCase: true, useMetadata: false, out var result) && result == FlagsValue;
+
+    [Benchmark]
+    public bool IsDefined_default_flagsenum() => Enum.IsDefined(FlagsEnum.ReadWrite);
+
+    [Benchmark]
+    public bool IsDefined_fast_flagsenum() => FlagsEnum.IsDefined(FlagsEnum.ReadWrite);
+
+    [Benchmark]
+    public int GetNames_default_flagsenum() => Enum.GetNames<FlagsEnum>().Length;
+
+    [Benchmark]
+    public int GetNames_fast_flagsenum() => FlagsEnum.GetNames(useMetadata: false).Length;
+
+    [Benchmark]
+    public int GetValues_default_flagsenum() => Enum.GetValues<FlagsEnum>().Length;
+
+    [Benchmark]
+    public int GetValues_fast_flagsenum() => FlagsEnum.GetValues().Length;
+
+    [Benchmark]
+    public string ToString_default_smallenum() => SmallEnum.ThirtyOne.ToString();
+
+    [Benchmark]
+    public string ToString_fast_smallenum() => SmallEnum.ThirtyOne.ToStringFast();
+
+    [Benchmark]
+    public string GetName_default_smallenum() => Enum.GetName(SmallEnum.ThirtyOne)!;
+
+    [Benchmark]
+    public string GetName_fast_smallenum() => SmallEnum.ThirtyOne.GetName();
+
+    [Benchmark]
+    public bool HasFlag_default_smallenum() => SmallEnum.ThirtyOne.HasFlag(SmallEnum.Three);
+
+    [Benchmark]
+    public bool HasFlag_fast_smallenum() => FastEnumExtensions_5.HasFlag(SmallEnum.ThirtyOne, SmallEnum.Three);
+
+    [Benchmark]
+    public bool Parse_string_default_smallenum() => Enum.Parse<SmallEnum>("ThirtyOne", ignoreCase: true) == SmallEnum.ThirtyOne;
+
+    [Benchmark]
+    public bool Parse_string_fast_smallenum() => SmallEnum.Parse("ThirtyOne", ignoreCase: true, useMetadata: false) == SmallEnum.ThirtyOne;
+
+    [Benchmark]
+    public bool Parse_span_default_smallenum() => Enum.Parse<SmallEnum>("ThirtyOne".AsSpan(), ignoreCase: true) == SmallEnum.ThirtyOne;
+
+    [Benchmark]
+    public bool Parse_span_fast_smallenum() => SmallEnum.Parse("ThirtyOne".AsSpan(), ignoreCase: true, useMetadata: false) == SmallEnum.ThirtyOne;
+
+    [Benchmark]
+    public bool TryParse_string_default_smallenum() => Enum.TryParse("ThirtyOne", ignoreCase: true, out SmallEnum result) && result == SmallEnum.ThirtyOne;
+
+    [Benchmark]
+    public bool TryParse_string_fast_smallenum() => SmallEnum.TryParse("ThirtyOne", ignoreCase: true, useMetadata: false, out var result) && result == SmallEnum.ThirtyOne;
+
+    [Benchmark]
+    public bool TryParse_span_default_smallenum() => Enum.TryParse("ThirtyOne".AsSpan(), ignoreCase: true, out SmallEnum result) && result == SmallEnum.ThirtyOne;
+
+    [Benchmark]
+    public bool TryParse_span_fast_smallenum() => SmallEnum.TryParse("ThirtyOne".AsSpan(), ignoreCase: true, useMetadata: false, out var result) && result == SmallEnum.ThirtyOne;
+
+    [Benchmark]
+    public bool IsDefined_default_smallenum() => Enum.IsDefined(SmallEnum.ThirtyOne);
+
+    [Benchmark]
+    public bool IsDefined_fast_smallenum() => SmallEnum.IsDefined(SmallEnum.ThirtyOne);
+
+    [Benchmark]
+    public int GetNames_default_smallenum() => Enum.GetNames<SmallEnum>().Length;
+
+    [Benchmark]
+    public int GetNames_fast_smallenum() => SmallEnum.GetNames(useMetadata: false).Length;
+
+    [Benchmark]
+    public int GetValues_default_smallenum() => Enum.GetValues<SmallEnum>().Length;
+
+    [Benchmark]
+    public int GetValues_fast_smallenum() => SmallEnum.GetValues().Length;
+
+    [Benchmark]
+    public string ToString_default_mediumenum() => MediumEnum.V23.ToString();
+
+    [Benchmark]
+    public string ToString_fast_mediumenum() => MediumEnum.V23.ToStringFast();
+
+    [Benchmark]
+    public string GetName_default_mediumenum() => Enum.GetName(MediumEnum.V23)!;
+
+    [Benchmark]
+    public string GetName_fast_mediumenum() => MediumEnum.V23.GetName();
+
+    [Benchmark]
+    public bool HasFlag_default_mediumenum() => MediumEnum.V23.HasFlag(MediumEnum.V03);
+
+    [Benchmark]
+    public bool HasFlag_fast_mediumenum() => FastEnumExtensions_2.HasFlag(MediumEnum.V23, MediumEnum.V03);
+
+    [Benchmark]
+    public bool Parse_string_default_mediumenum() => Enum.Parse<MediumEnum>("V23", ignoreCase: true) == MediumEnum.V23;
+
+    [Benchmark]
+    public bool Parse_string_fast_mediumenum() => MediumEnum.Parse("V23", ignoreCase: true, useMetadata: false) == MediumEnum.V23;
+
+    [Benchmark]
+    public bool Parse_span_default_mediumenum() => Enum.Parse<MediumEnum>("V23".AsSpan(), ignoreCase: true) == MediumEnum.V23;
+
+    [Benchmark]
+    public bool Parse_span_fast_mediumenum() => MediumEnum.Parse("V23".AsSpan(), ignoreCase: true, useMetadata: false) == MediumEnum.V23;
+
+    [Benchmark]
+    public bool TryParse_string_default_mediumenum() => Enum.TryParse("V23", ignoreCase: true, out MediumEnum result) && result == MediumEnum.V23;
+
+    [Benchmark]
+    public bool TryParse_string_fast_mediumenum() => MediumEnum.TryParse("V23", ignoreCase: true, useMetadata: false, out var result) && result == MediumEnum.V23;
+
+    [Benchmark]
+    public bool TryParse_span_default_mediumenum() => Enum.TryParse("V23".AsSpan(), ignoreCase: true, out MediumEnum result) && result == MediumEnum.V23;
+
+    [Benchmark]
+    public bool TryParse_span_fast_mediumenum() => MediumEnum.TryParse("V23".AsSpan(), ignoreCase: true, useMetadata: false, out var result) && result == MediumEnum.V23;
+
+    [Benchmark]
+    public bool IsDefined_default_mediumenum() => Enum.IsDefined(MediumEnum.V23);
+
+    [Benchmark]
+    public bool IsDefined_fast_mediumenum() => MediumEnum.IsDefined(MediumEnum.V23);
+
+    [Benchmark]
+    public int GetNames_default_mediumenum() => Enum.GetNames<MediumEnum>().Length;
+
+    [Benchmark]
+    public int GetNames_fast_mediumenum() => MediumEnum.GetNames(useMetadata: false).Length;
+
+    [Benchmark]
+    public int GetValues_default_mediumenum() => Enum.GetValues<MediumEnum>().Length;
+
+    [Benchmark]
+    public int GetValues_fast_mediumenum() => MediumEnum.GetValues().Length;
+
+    [Benchmark]
+    public string ToString_default_largeenum() => LargeEnum.V080.ToString();
+
+    [Benchmark]
+    public string ToString_fast_largeenum() => LargeEnum.V080.ToStringFast();
+
+    [Benchmark]
+    public string GetName_default_largeenum() => Enum.GetName(LargeEnum.V080)!;
+
+    [Benchmark]
+    public string GetName_fast_largeenum() => LargeEnum.V080.GetName();
+
+    [Benchmark]
+    public bool HasFlag_default_largeenum() => LargeEnum.V080.HasFlag(LargeEnum.V016);
+
+    [Benchmark]
+    public bool HasFlag_fast_largeenum() => FastEnumExtensions_1.HasFlag(LargeEnum.V080, LargeEnum.V016);
+
+    [Benchmark]
+    public bool Parse_string_default_largeenum() => Enum.Parse<LargeEnum>("V080", ignoreCase: true) == LargeEnum.V080;
+
+    [Benchmark]
+    public bool Parse_string_fast_largeenum() => LargeEnum.Parse("V080", ignoreCase: true, useMetadata: false) == LargeEnum.V080;
+
+    [Benchmark]
+    public bool Parse_span_default_largeenum() => Enum.Parse<LargeEnum>("V080".AsSpan(), ignoreCase: true) == LargeEnum.V080;
+
+    [Benchmark]
+    public bool Parse_span_fast_largeenum() => LargeEnum.Parse("V080".AsSpan(), ignoreCase: true, useMetadata: false) == LargeEnum.V080;
+
+    [Benchmark]
+    public bool TryParse_string_default_largeenum() => Enum.TryParse("V080", ignoreCase: true, out LargeEnum result) && result == LargeEnum.V080;
+
+    [Benchmark]
+    public bool TryParse_string_fast_largeenum() => LargeEnum.TryParse("V080", ignoreCase: true, useMetadata: false, out var result) && result == LargeEnum.V080;
+
+    [Benchmark]
+    public bool TryParse_span_default_largeenum() => Enum.TryParse("V080".AsSpan(), ignoreCase: true, out LargeEnum result) && result == LargeEnum.V080;
+
+    [Benchmark]
+    public bool TryParse_span_fast_largeenum() => LargeEnum.TryParse("V080".AsSpan(), ignoreCase: true, useMetadata: false, out var result) && result == LargeEnum.V080;
+
+    [Benchmark]
+    public bool IsDefined_default_largeenum() => Enum.IsDefined(LargeEnum.V080);
+
+    [Benchmark]
+    public bool IsDefined_fast_largeenum() => LargeEnum.IsDefined(LargeEnum.V080);
+
+    [Benchmark]
+    public int GetNames_default_largeenum() => Enum.GetNames<LargeEnum>().Length;
+
+    [Benchmark]
+    public int GetNames_fast_largeenum() => LargeEnum.GetNames(useMetadata: false).Length;
+
+    [Benchmark]
+    public int GetValues_default_largeenum() => Enum.GetValues<LargeEnum>().Length;
+
+    [Benchmark]
+    public int GetValues_fast_largeenum() => LargeEnum.GetValues().Length;
+
+    [Benchmark]
+    public string ToString_default_metadataflagsenum() => MetadataFlagsValue.ToString();
+
+    [Benchmark]
+    public string ToString_fast_metadataflagsenum() => MetadataFlagsValue.ToStringFast();
+
+    [Benchmark]
+    public string GetName_default_metadataflagsenum() => Enum.GetName(MetadataFlagsEnum.Read)!;
+
+    [Benchmark]
+    public string GetName_fast_metadataflagsenum() => MetadataFlagsEnum.Read.GetName();
+
+    [Benchmark]
+    public bool HasFlag_default_metadataflagsenum() => MetadataFlagsValue.HasFlag(MetadataFlagsEnum.Write);
+
+    [Benchmark]
+    public bool HasFlag_fast_metadataflagsenum() => FastEnumExtensions_3.HasFlag(MetadataFlagsValue, MetadataFlagsEnum.Write);
+
+    [Benchmark]
+    public bool Parse_string_default_metadataflagsenum() => Enum.Parse<MetadataFlagsEnum>("Read", ignoreCase: true) == MetadataFlagsEnum.Read;
+
+    [Benchmark]
+    public bool Parse_string_fast_metadataflagsenum() => MetadataFlagsEnum.Parse("Read", ignoreCase: true, useMetadata: false) == MetadataFlagsEnum.Read;
+
+    [Benchmark]
+    public bool Parse_span_default_metadataflagsenum() => Enum.Parse<MetadataFlagsEnum>("Read".AsSpan(), ignoreCase: true) == MetadataFlagsEnum.Read;
+
+    [Benchmark]
+    public bool Parse_span_fast_metadataflagsenum() => MetadataFlagsEnum.Parse("Read".AsSpan(), ignoreCase: true, useMetadata: false) == MetadataFlagsEnum.Read;
+
+    [Benchmark]
+    public bool TryParse_string_default_metadataflagsenum() => Enum.TryParse("Read", ignoreCase: true, out MetadataFlagsEnum result) && result == MetadataFlagsEnum.Read;
+
+    [Benchmark]
+    public bool TryParse_string_fast_metadataflagsenum() => MetadataFlagsEnum.TryParse("Read", ignoreCase: true, useMetadata: false, out var result) && result == MetadataFlagsEnum.Read;
+
+    [Benchmark]
+    public bool TryParse_span_default_metadataflagsenum() => Enum.TryParse("Read".AsSpan(), ignoreCase: true, out MetadataFlagsEnum result) && result == MetadataFlagsEnum.Read;
+
+    [Benchmark]
+    public bool TryParse_span_fast_metadataflagsenum() => MetadataFlagsEnum.TryParse("Read".AsSpan(), ignoreCase: true, useMetadata: false, out var result) && result == MetadataFlagsEnum.Read;
+
+    [Benchmark]
+    public bool IsDefined_default_metadataflagsenum() => Enum.IsDefined(MetadataFlagsEnum.Read);
+
+    [Benchmark]
+    public bool IsDefined_fast_metadataflagsenum() => MetadataFlagsEnum.IsDefined(MetadataFlagsEnum.Read);
+
+    [Benchmark]
+    public int GetNames_default_metadataflagsenum() => Enum.GetNames<MetadataFlagsEnum>().Length;
+
+    [Benchmark]
+    public int GetNames_fast_metadataflagsenum() => MetadataFlagsEnum.GetNames(useMetadata: false).Length;
+
+    [Benchmark]
+    public int GetValues_default_metadataflagsenum() => Enum.GetValues<MetadataFlagsEnum>().Length;
+
+    [Benchmark]
+    public int GetValues_fast_metadataflagsenum() => MetadataFlagsEnum.GetValues().Length;
 }

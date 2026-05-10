@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.OpenTelemetryCollector;
 
-public sealed class OpenTelemetryTailSamplingFilter : OpenTelemetryFilter
+public sealed class OpenTelemetryTailSampling : OpenTelemetrySampler
 {
     public TimeSpan MaxTraceDuration { get; set; } = TimeSpan.FromMinutes(2);
 
@@ -10,5 +10,5 @@ public sealed class OpenTelemetryTailSamplingFilter : OpenTelemetryFilter
 
     public OpenTelemetryTailBufferOverflowPolicy OverflowPolicy { get; set; } = OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace;
 
-    public OpenTelemetryTraceTailFilter? Filter { get; set; }
+    public OpenTelemetryTraceTailSampling? ShouldSample { get; set; }
 }

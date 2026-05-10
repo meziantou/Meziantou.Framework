@@ -1,0 +1,3 @@
+namespace Meziantou.Framework.OpenTelemetryCollector;
+
+public delegate ValueTask<bool> OpenTelemetryTraceTailSampling(OpenTelemetryTailTraceContext context, CancellationToken cancellationToken);

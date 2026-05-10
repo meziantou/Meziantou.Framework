@@ -1,3 +1,0 @@
-namespace Meziantou.Framework.OpenTelemetryCollector;
-
-public delegate ValueTask<bool> OpenTelemetryTraceTailFilter(OpenTelemetryTailTraceContext context, CancellationToken cancellationToken);

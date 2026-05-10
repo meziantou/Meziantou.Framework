@@ -99,7 +99,7 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Filters.Add(new DenyLogsFilter());
+            options.Samplers.Add(new DenyLogsSampler());
         }));
 
         await SendLogsAsync(app.HttpClient, "ignored");
@@ -112,7 +112,7 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Filters.Add(new DenyTracesFilter());
+            options.Samplers.Add(new DenyTracesSampler());
         }));
 
         var payload = CreateTraceRequest("00000000000000000000000000000011", ("0000000000000011", null, "root"));
@@ -159,9 +159,9 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Filters.Add(new OpenTelemetryTailSamplingFilter
+            options.Samplers.Add(new OpenTelemetryTailSampling
             {
-                Filter = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name == "root-keep"),
+                ShouldSample = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name == "root-keep"),
             });
         }));
 
@@ -181,9 +181,9 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Filters.Add(new OpenTelemetryTailSamplingFilter
+            options.Samplers.Add(new OpenTelemetryTailSampling
             {
-                Filter = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name == "root-keep"),
+                ShouldSample = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name == "root-keep"),
             });
         }));
 
@@ -204,10 +204,10 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Filters.Add(new OpenTelemetryTailSamplingFilter
+            options.Samplers.Add(new OpenTelemetryTailSampling
             {
                 MaxTraceDuration = TimeSpan.FromMilliseconds(20),
-                Filter = static (context, _) => ValueTask.FromResult(context.TimedOut),
+                ShouldSample = static (context, _) => ValueTask.FromResult(context.TimedOut),
             });
         }));
 
@@ -226,12 +226,12 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Filters.Add(new OpenTelemetryTailSamplingFilter
+            options.Samplers.Add(new OpenTelemetryTailSampling
             {
                 MaxBufferedSpansPerTrace = 2,
                 MaxBufferedSpans = 10,
                 OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace,
-                Filter = static (_, _) => ValueTask.FromResult(true),
+                ShouldSample = static (_, _) => ValueTask.FromResult(true),
             });
         }));
 
@@ -249,12 +249,12 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Filters.Add(new OpenTelemetryTailSamplingFilter
+            options.Samplers.Add(new OpenTelemetryTailSampling
             {
                 MaxBufferedSpansPerTrace = 2,
                 MaxBufferedSpans = 10,
                 OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropNewestSpans,
-                Filter = static (_, _) => ValueTask.FromResult(true),
+                ShouldSample = static (_, _) => ValueTask.FromResult(true),
             });
         }));
 
@@ -276,13 +276,13 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Filters.Add(new OpenTelemetryTailSamplingFilter
+            options.Samplers.Add(new OpenTelemetryTailSampling
             {
                 MaxTraceDuration = TimeSpan.FromMilliseconds(20),
                 MaxBufferedSpansPerTrace = 2,
                 MaxBufferedSpans = 10,
                 OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropOldestSpans,
-                Filter = static (context, _) => ValueTask.FromResult(context.TimedOut),
+                ShouldSample = static (context, _) => ValueTask.FromResult(context.TimedOut),
             });
         }));
 
@@ -407,18 +407,18 @@ public sealed class OpenTelemetryReceiverTests
             .ToList();
     }
 
-    private sealed class DenyLogsFilter : OpenTelemetryFilter
+    private sealed class DenyLogsSampler : OpenTelemetrySampler
     {
-        public override ValueTask<bool> ShouldProcessLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
+        public override ValueTask<bool> ShouldSampleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             return ValueTask.FromResult(false);
         }
     }
 
-    private sealed class DenyTracesFilter : OpenTelemetryFilter
+    private sealed class DenyTracesSampler : OpenTelemetrySampler
     {
-        public override ValueTask<bool> ShouldProcessTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
+        public override ValueTask<bool> ShouldSampleTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             return ValueTask.FromResult(false);

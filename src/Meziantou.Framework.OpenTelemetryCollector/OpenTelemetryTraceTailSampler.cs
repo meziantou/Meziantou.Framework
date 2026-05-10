@@ -15,12 +15,12 @@ internal sealed class OpenTelemetryTraceTailSampler
     public async ValueTask HandleAsync(
         OpenTelemetryHandlerContext context,
         ExportTraceServiceRequest request,
-        OpenTelemetryTailSamplingFilter filter,
+        OpenTelemetryTailSampling tailSampling,
         Func<OpenTelemetryHandlerContext, ExportTraceServiceRequest, CancellationToken, ValueTask> acceptedTraceHandler,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(tailSampling);
         ArgumentNullException.ThrowIfNull(acceptedTraceHandler);
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -35,7 +35,7 @@ internal sealed class OpenTelemetryTraceTailSampler
         var evaluations = new List<BufferedTraceEvaluation>();
         lock (_gate)
         {
-            CollectTimedOutTraces(filter, now, evaluations);
+            CollectTimedOutTraces(tailSampling, now, evaluations);
 
             foreach (var (traceId, entries) in incomingByTrace)
             {
@@ -48,7 +48,7 @@ internal sealed class OpenTelemetryTraceTailSampler
                 state.LastContext = context;
 
                 AppendEntries(state, entries);
-                ApplyCapacityPolicy(filter, state);
+                ApplyCapacityPolicy(tailSampling, state);
 
                 if (state.SpanCount is 0)
                 {
@@ -69,9 +69,9 @@ internal sealed class OpenTelemetryTraceTailSampler
             cancellationToken.ThrowIfCancellationRequested();
 
             var accepted = true;
-            if (filter.Filter is not null)
+            if (tailSampling.ShouldSample is not null)
             {
-                accepted = await filter.Filter(evaluation.Context, cancellationToken);
+                accepted = await tailSampling.ShouldSample(evaluation.Context, cancellationToken);
             }
 
             if (!accepted)
@@ -84,12 +84,12 @@ internal sealed class OpenTelemetryTraceTailSampler
         }
     }
 
-    private void CollectTimedOutTraces(OpenTelemetryTailSamplingFilter filter, DateTimeOffset now, List<BufferedTraceEvaluation> evaluations)
+    private void CollectTimedOutTraces(OpenTelemetryTailSampling tailSampling, DateTimeOffset now, List<BufferedTraceEvaluation> evaluations)
     {
-        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(tailSampling);
         ArgumentNullException.ThrowIfNull(evaluations);
 
-        var maxTraceDuration = filter.MaxTraceDuration;
+        var maxTraceDuration = tailSampling.MaxTraceDuration;
         var traceIdsToEvaluate = new List<string>();
         foreach (var (traceId, state) in _traces)
         {
@@ -120,13 +120,13 @@ internal sealed class OpenTelemetryTraceTailSampler
         state.HasRootSpan = ContainsRootSpan(state.Entries);
     }
 
-    private void ApplyCapacityPolicy(OpenTelemetryTailSamplingFilter filter, BufferedTraceState state)
+    private void ApplyCapacityPolicy(OpenTelemetryTailSampling tailSampling, BufferedTraceState state)
     {
-        ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(tailSampling);
         ArgumentNullException.ThrowIfNull(state);
 
-        var maxBufferedSpansPerTrace = Math.Max(0, filter.MaxBufferedSpansPerTrace);
-        var maxBufferedSpans = Math.Max(0, filter.MaxBufferedSpans);
+        var maxBufferedSpansPerTrace = Math.Max(0, tailSampling.MaxBufferedSpansPerTrace);
+        var maxBufferedSpans = Math.Max(0, tailSampling.MaxBufferedSpans);
 
         var totalWithoutCurrentTrace = _bufferedSpanCount - state.SpanCount;
         var allowedByGlobalCapacity = Math.Max(0, maxBufferedSpans - totalWithoutCurrentTrace);
@@ -137,7 +137,7 @@ internal sealed class OpenTelemetryTraceTailSampler
         }
 
         var spansToRemove = state.SpanCount - allowedSpansInTrace;
-        switch (filter.OverflowPolicy)
+        switch (tailSampling.OverflowPolicy)
         {
             case OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace:
                 TrimFromStart(state, state.SpanCount);
@@ -149,7 +149,7 @@ internal sealed class OpenTelemetryTraceTailSampler
                 TrimFromEnd(state, spansToRemove);
                 break;
             default:
-                throw new InvalidOperationException($"Unknown overflow policy: {filter.OverflowPolicy}");
+                throw new InvalidOperationException($"Unknown overflow policy: {tailSampling.OverflowPolicy}");
         }
 
         state.HasRootSpan = ContainsRootSpan(state.Entries);

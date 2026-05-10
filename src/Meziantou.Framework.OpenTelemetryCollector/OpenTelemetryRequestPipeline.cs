@@ -7,11 +7,11 @@ namespace Meziantou.Framework.OpenTelemetryCollector;
 
 internal sealed class OpenTelemetryRequestPipeline
 {
-    private readonly OpenTelemetryFilter[] _filters;
+    private readonly OpenTelemetrySampler[] _samplers;
     private readonly OpenTelemetryHandler[] _receivers;
     private readonly OpenTelemetryTraceTailSampler _tailSampler;
-    private readonly OpenTelemetryTailSamplingFilter? _tailSamplingFilter;
-    private readonly OpenTelemetryFilter[] _traceFiltersWithoutTailSampling;
+    private readonly OpenTelemetryTailSampling? _tailSampling;
+    private readonly OpenTelemetrySampler[] _traceSamplersWithoutTailSampling;
 
     public OpenTelemetryRequestPipeline(
         IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations,
@@ -22,18 +22,18 @@ internal sealed class OpenTelemetryRequestPipeline
         _tailSampler = tailSampler;
 
         var options = optionsAccessor.Value;
-        _filters = [.. options.Filters];
-        _tailSamplingFilter = GetTailSamplingFilter(_filters);
-        _traceFiltersWithoutTailSampling = [.. _filters.Where(static filter => filter is not OpenTelemetryTailSamplingFilter)];
+        _samplers = [.. options.Samplers];
+        _tailSampling = GetTailSampling(_samplers);
+        _traceSamplersWithoutTailSampling = [.. _samplers.Where(static sampler => sampler is not OpenTelemetryTailSampling)];
     }
 
     public async ValueTask HandleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        foreach (var filter in _filters)
+        foreach (var sampler in _samplers)
         {
-            if (!await filter.ShouldProcessLogsAsync(context, request, cancellationToken))
+            if (!await sampler.ShouldSampleLogsAsync(context, request, cancellationToken))
             {
                 return;
             }
@@ -49,9 +49,9 @@ internal sealed class OpenTelemetryRequestPipeline
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        foreach (var filter in _filters)
+        foreach (var sampler in _samplers)
         {
-            if (!await filter.ShouldProcessMetricsAsync(context, request, cancellationToken))
+            if (!await sampler.ShouldSampleMetricsAsync(context, request, cancellationToken))
             {
                 return;
             }
@@ -67,21 +67,21 @@ internal sealed class OpenTelemetryRequestPipeline
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        foreach (var filter in _traceFiltersWithoutTailSampling)
+        foreach (var sampler in _traceSamplersWithoutTailSampling)
         {
-            if (!await filter.ShouldProcessTracesAsync(context, request, cancellationToken))
+            if (!await sampler.ShouldSampleTracesAsync(context, request, cancellationToken))
             {
                 return;
             }
         }
 
-        if (_tailSamplingFilter is null)
+        if (_tailSampling is null)
         {
             await DispatchTracesAsync(context, request, cancellationToken);
             return;
         }
 
-        await _tailSampler.HandleAsync(context, request, _tailSamplingFilter, DispatchTracesAsync, cancellationToken);
+        await _tailSampler.HandleAsync(context, request, _tailSampling, DispatchTracesAsync, cancellationToken);
     }
 
     private async ValueTask DispatchTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
@@ -105,24 +105,24 @@ internal sealed class OpenTelemetryRequestPipeline
         return receivers;
     }
 
-    private static OpenTelemetryTailSamplingFilter? GetTailSamplingFilter(OpenTelemetryFilter[] filters)
+    private static OpenTelemetryTailSampling? GetTailSampling(OpenTelemetrySampler[] samplers)
     {
-        ArgumentNullException.ThrowIfNull(filters);
+        ArgumentNullException.ThrowIfNull(samplers);
 
-        OpenTelemetryTailSamplingFilter? result = null;
-        foreach (var filter in filters)
+        OpenTelemetryTailSampling? result = null;
+        foreach (var sampler in samplers)
         {
-            if (filter is not OpenTelemetryTailSamplingFilter tailSamplingFilter)
+            if (sampler is not OpenTelemetryTailSampling tailSampling)
             {
                 continue;
             }
 
             if (result is not null)
             {
-                throw new InvalidOperationException($"Only one {nameof(OpenTelemetryTailSamplingFilter)} can be added to {nameof(OpenTelemetryReceiverOptions)}.{nameof(OpenTelemetryReceiverOptions.Filters)}.");
+                throw new InvalidOperationException($"Only one {nameof(OpenTelemetryTailSampling)} can be added to {nameof(OpenTelemetryReceiverOptions)}.{nameof(OpenTelemetryReceiverOptions.Samplers)}.");
             }
 
-            result = tailSamplingFilter;
+            result = tailSampling;
         }
 
         return result;

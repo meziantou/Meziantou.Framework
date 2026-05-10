@@ -7,5 +7,5 @@ public sealed class OpenTelemetryReceiverOptions
     public string? HttpMetricsEndpoint { get; set; } = "/v1/metrics";
     public bool EnableGrpcEndpoints { get; set; } = true;
 
-    public IList<OpenTelemetryFilter> Filters { get; } = [];
+    public IList<OpenTelemetrySampler> Samplers { get; } = [];
 }

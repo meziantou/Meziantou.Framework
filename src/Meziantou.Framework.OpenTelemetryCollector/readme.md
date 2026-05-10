@@ -19,32 +19,32 @@ app.MapOpenTelemetryReceiverEndpoints();
 app.Run();
 ```
 
-### Request filtering
+### Request sampling
 
-Use request filters to drop logs, traces, or metrics before they are dispatched to handlers:
+Use request samplers to drop logs, traces, or metrics before they are dispatched to handlers:
 
 ```csharp
-public sealed class KeepOnlyNonEmptyRequestsFilter : OpenTelemetryFilter
+public sealed class KeepOnlyNonEmptyRequestsSampler : OpenTelemetrySampler
 {
-    public override ValueTask<bool> ShouldProcessLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
+    public override ValueTask<bool> ShouldSampleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
         => ValueTask.FromResult(request.ResourceLogs.Count > 0);
 
-    public override ValueTask<bool> ShouldProcessTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
+    public override ValueTask<bool> ShouldSampleTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
         => ValueTask.FromResult(request.ResourceSpans.Count > 0);
 
-    public override ValueTask<bool> ShouldProcessMetricsAsync(OpenTelemetryHandlerContext context, ExportMetricsServiceRequest request, CancellationToken cancellationToken)
+    public override ValueTask<bool> ShouldSampleMetricsAsync(OpenTelemetryHandlerContext context, ExportMetricsServiceRequest request, CancellationToken cancellationToken)
         => ValueTask.FromResult(request.ResourceMetrics.Count > 0);
 }
 
 builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
 {
-    options.Filters.Add(new KeepOnlyNonEmptyRequestsFilter());
+    options.Samplers.Add(new KeepOnlyNonEmptyRequestsSampler());
 });
 ```
 
 ### Trace tail filtering
 
-Use tail filtering for traces when child spans can arrive before the root span. The collector buffers spans per trace id and evaluates the filter when:
+Use tail sampling for traces when child spans can arrive before the root span. The collector buffers spans per trace id and evaluates the sampler when:
 
 - the root span is observed
 - or `MaxTraceDuration` is reached
@@ -52,13 +52,13 @@ Use tail filtering for traces when child spans can arrive before the root span. 
 ```csharp
 builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
 {
-    options.Filters.Add(new OpenTelemetryTailSamplingFilter
+    options.Samplers.Add(new OpenTelemetryTailSampling
     {
         MaxTraceDuration = TimeSpan.FromSeconds(30),
         MaxBufferedSpansPerTrace = 5000,
         MaxBufferedSpans = 100_000,
         OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace,
-        Filter = static (context, _) =>
+        ShouldSample = static (context, _) =>
             ValueTask.FromResult(context.RootSpan?.Name?.Contains("critical", StringComparison.OrdinalIgnoreCase) is true),
     });
 });

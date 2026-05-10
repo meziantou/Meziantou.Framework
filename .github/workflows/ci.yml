@@ -193,6 +193,10 @@ jobs:
           test-projects-only: "true"
           shard: ${{ matrix.shard }}
           total-shards: 2
+          shard-separate: |
+            tests/Meziantou.Framework.InlineSnapshotTesting.Tests
+            tests/Meziantou.Framework.PublicApiGenerator.Tests
+            tests/Meziantou.Framework.SnapshotTesting.Tests/
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj

@@ -1,11 +1,11 @@
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
 public class DefaultConverterTests_Int32To
 {
-    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void TryConvert_Int32ToCultureInfo_LcidAsInt()
     {
         var converter = new DefaultConverter();

@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.v3.extensibility.core" Version="3.2.2" />
+    <ProjectReference Include="../../src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
   </ItemGroup>
 
 </Project>

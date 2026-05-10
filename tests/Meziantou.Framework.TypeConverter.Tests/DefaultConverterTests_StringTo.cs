@@ -1,4 +1,4 @@
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -115,7 +115,7 @@ public class DefaultConverterTests_StringTo
         Assert.Equal("es", value.Name);
     }
 
-    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void TryConvert_StringToCultureInfo_LcidAsString()
     {
         var converter = new DefaultConverter();
@@ -134,7 +134,7 @@ public class DefaultConverterTests_StringTo
         }
     }
 
-    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void TryConvert_StringToCultureInfo_InvalidCulture()
     {
         var converter = new DefaultConverter();

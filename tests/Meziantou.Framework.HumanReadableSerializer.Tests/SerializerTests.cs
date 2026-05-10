@@ -21,7 +21,7 @@ using System.Reflection;
 using System.Xml;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
 using NodaTime;
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
 public sealed partial class SerializerTests : SerializerTestsBase
@@ -49,7 +49,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void CultureInfo_Invariant()
         => AssertSerialization(CultureInfo.InvariantCulture, "Invariant Language (Invariant Country)");
 
-    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void CultureInfo_EnUs()
         => AssertSerialization(CultureInfo.GetCultureInfo("en-US"), "en-US");
 

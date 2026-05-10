@@ -1,7 +1,7 @@
 #pragma warning disable MEZ_NETCORE3_1
 using System.ComponentModel;
 using System.Diagnostics;
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tests;
 
@@ -142,7 +142,7 @@ public class ProcessExtensionsTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetProcesses()
     {
         var processes = ProcessExtensions.GetProcesses().ToArray();
@@ -152,7 +152,7 @@ public class ProcessExtensionsTests
         Assert.Equal(processes.Distinct().OrderBy(p => p.ProcessId), processes.OrderBy(p => p.ProcessId)); // items must be unique
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetDescendantProcesses()
     {
         using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
@@ -176,7 +176,7 @@ public class ProcessExtensionsTests
         }
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows | FactOperatingSystem.Linux)]
+    [Fact, RunIf(TestOperatingSystems.Windows | TestOperatingSystems.Linux)]
     public void GetParentProcessId()
     {
         var current = Process.GetCurrentProcess();
@@ -186,7 +186,7 @@ public class ProcessExtensionsTests
         Assert.NotEqual(current.Id, parent);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetParent()
     {
         var current = Process.GetCurrentProcess();

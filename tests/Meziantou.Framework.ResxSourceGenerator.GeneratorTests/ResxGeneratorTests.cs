@@ -2,14 +2,14 @@
 #pragma warning disable CA1304
 #pragma warning disable MA0011
 using System.Globalization;
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.ResxSourceGenerator.GeneratorTests;
 
 public class ResxGeneratorTests
 {
-    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void FormatString()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
@@ -19,7 +19,7 @@ public class ResxGeneratorTests
         Assert.Equal("Bonjour le monde!", Resource1.FormatHello("le monde"));
     }
 
-    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void StringValue()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");

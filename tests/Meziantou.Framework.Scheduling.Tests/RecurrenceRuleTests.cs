@@ -1,4 +1,4 @@
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests;
@@ -523,7 +523,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void Secondly_GetHumanText_en_us()
     {
         TestGetHumanText("FREQ=SECONDLY", "en-US", "every second");
@@ -532,7 +532,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void Secondly_GetHumanText_fr_fr()
     {
         TestGetHumanText("FREQ=SECONDLY", "fr-FR", "toutes les secondes");
@@ -541,7 +541,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void Minutely_GetHumanText_en_us()
     {
         TestGetHumanText("FREQ=MINUTELY", "en-US", "every minute");
@@ -550,7 +550,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void Minutely_GetHumanText_fr_fr()
     {
         TestGetHumanText("FREQ=MINUTELY", "fr-FR", "toutes les minutes");
@@ -559,7 +559,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void Hourly_GetHumanText_en_us()
     {
         TestGetHumanText("FREQ=HOURLY", "en-US", "every hour");
@@ -569,7 +569,7 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    [RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void Hourly_GetHumanText_fr_fr()
     {
         TestGetHumanText("FREQ=HOURLY", "fr-FR", "toutes les heures");

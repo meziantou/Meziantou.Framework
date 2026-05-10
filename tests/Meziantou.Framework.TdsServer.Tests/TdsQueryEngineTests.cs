@@ -8,12 +8,12 @@ using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
 using Meziantou.Framework.Tds.QueryEngine;
 using Microsoft.Data.SqlClient;
-using TestUtilities;
+using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Tds.Tests;
 
-[RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+[RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
 public sealed class TdsQueryEngineTests
 {
     [Fact]

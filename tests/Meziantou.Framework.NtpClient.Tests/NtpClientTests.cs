@@ -1,6 +1,6 @@
 using System.Net;
 using Meziantou.Framework.Ntp;
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Ntp.Tests;
 
@@ -77,7 +77,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     // https://github.com/actions/runner-images/issues/11939
-    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
+    [Fact, SkipIf(TestOperatingSystems.MacOS, ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public async Task Query_V4_ReturnsValidResponse()
     {
         var response = await QueryWithFallbackAsync(NtpVersion.V4);
@@ -89,7 +89,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     // https://github.com/actions/runner-images/issues/11939
-    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
+    [Fact, SkipIf(TestOperatingSystems.MacOS, ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public async Task Query_V3_ReturnsValidResponse()
     {
         var response = await QueryWithFallbackAsync(NtpVersion.V3);
@@ -100,7 +100,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     // https://github.com/actions/runner-images/issues/11939
-    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
+    [Fact, SkipIf(TestOperatingSystems.MacOS, ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public async Task Query_ClockOffset_IsReasonable()
     {
         var response = await QueryWithFallbackAsync();
@@ -110,7 +110,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     // https://github.com/actions/runner-images/issues/11939
-    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
+    [Fact, SkipIf(TestOperatingSystems.MacOS, ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public async Task Query_RoundTripDelay_IsPositive()
     {
         var response = await QueryWithFallbackAsync();
@@ -121,7 +121,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     // https://github.com/actions/runner-images/issues/11939
-    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
+    [Fact, SkipIf(TestOperatingSystems.MacOS, ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public async Task Query_LeapIndicator_IsValid()
     {
         var response = await QueryWithFallbackAsync();
@@ -130,7 +130,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     // https://github.com/actions/runner-images/issues/11939
-    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
+    [Fact, SkipIf(TestOperatingSystems.MacOS, ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public async Task Query_ReferenceTimestamp_IsRecent()
     {
         var response = await QueryWithFallbackAsync();
@@ -141,7 +141,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     // https://github.com/actions/runner-images/issues/11939
-    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
+    [Fact, SkipIf(TestOperatingSystems.MacOS, ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public async Task Query_TimeGoogle_ReturnsValidResponse()
     {
         await LogDnsResolutionAsync(["time.google.com"]);
@@ -152,7 +152,7 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     // https://github.com/actions/runner-images/issues/11939
-    [Fact, SkipOnGitHubActions(FactOperatingSystem.OSX)]
+    [Fact, SkipIf(TestOperatingSystems.MacOS, ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
     public async Task Query_PoolNtpOrg_ReturnsValidResponse()
     {
         await LogDnsResolutionAsync(["pool.ntp.org"]);

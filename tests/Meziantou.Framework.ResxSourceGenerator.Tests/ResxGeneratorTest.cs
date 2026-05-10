@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+using Meziantou.Xunit;
 using TestUtilities;
 
 namespace Meziantou.Framework.ResxSourceGenerator.Tests;

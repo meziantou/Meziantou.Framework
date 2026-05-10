@@ -63,7 +63,7 @@ public sealed class ComplianceTests
                     matched = true;
                     break;
                 }
-                catch (Xunit.Sdk.XunitException)
+                catch (global::Xunit.Sdk.XunitException)
                 {
                     // Try next valid result
                 }

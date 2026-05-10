@@ -1,4 +1,4 @@
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.CommandLineTests;
 
@@ -35,7 +35,7 @@ public class CommandLineBuilderTests(ArgumentPrinterClassFixture argumentPrinter
         Assert.Equal([expected], actualArguments);
     }
 
-    [Theory, RunIf(FactOperatingSystem.Windows)]
+    [Theory, RunIf(TestOperatingSystems.Windows)]
     [MemberData(nameof(GetArguments))]
     public async Task WindowsCmdArgument_Test(string value, string expected)
     {

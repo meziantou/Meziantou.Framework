@@ -1,17 +1,17 @@
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tests;
 
 public class ExecutableFinderTests
 {
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetFullExecutablePathTests_Windows()
     {
         var result = ExecutableFinder.GetFullExecutablePath("calc");
         Assert.Equal(@"C:\Windows\System32\calc.exe", result, ignoreCase: true);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Windows)]
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetFullExecutablePathTests_Windows_CurrentFolder()
     {
         var fileNameWithoutExtension = $"meziantou.{Guid.NewGuid():N}";
@@ -21,7 +21,7 @@ public class ExecutableFinderTests
         Assert.Equal(path, result, ignoreCase: true);
     }
 
-    [Fact, RunIf(FactOperatingSystem.Linux | FactOperatingSystem.OSX)]
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
     public void GetFullExecutablePathTests_Linux()
     {
         var result = ExecutableFinder.GetFullExecutablePath("ls");

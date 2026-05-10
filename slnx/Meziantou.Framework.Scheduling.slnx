@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Scheduling/Meziantou.Framework.Scheduling.csproj" />
+    <Project Path="../src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Scheduling.Tests/Meziantou.Framework.Scheduling.Tests.csproj" />

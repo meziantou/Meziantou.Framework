@@ -8,6 +8,7 @@ using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Meziantou.Xunit;
 using TestUtilities;
 
 namespace Meziantou.Framework.StronglyTypedId.Tests;

@@ -1,11 +1,11 @@
-using TestUtilities;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Win32.Lsa.Tests;
 
 [Collection("LsaPrivateDataTests")]
 public sealed class LsaPrivateDataTests
 {
-    [Fact, RunIfWindowsAdministrator]
+    [Fact, RunIf(WindowsGroups.Administrator)]
     public void LsaPrivateData_SetGetRemove()
     {
         // The project is multi-targeted, so multiple process can run in parallel
@@ -31,7 +31,7 @@ public sealed class LsaPrivateDataTests
         }
     }
 
-    [Fact, RunIfWindowsAdministrator]
+    [Fact, RunIf(WindowsGroups.Administrator)]
     public void LsaPrivateData_GetUnsetValue()
     {
         // Get

@@ -2,7 +2,6 @@ using System.Text.Json;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
 
-[Collection("Tool")] // Ensure tests run sequentially
 public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHelper)
 {
     private sealed record RunResult(int ExitCode, string StdOutput, string StdError, ValidationResult? ValidationResults, NuGetPackageValidationResult? ValidationResult);

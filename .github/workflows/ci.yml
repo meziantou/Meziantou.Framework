@@ -245,6 +245,10 @@ jobs:
             !**/*.coverage
             **/*.binlog
             ${{ env.TestResultsDirectory }}/**/*
+            tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/obj/**/GeneratedFiles/**/*
+            tests/Meziantou.Framework.FastEnumGenerator.GeneratorTests/obj/**/GeneratedFiles/**/*
+            tests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests/obj/**/GeneratedFiles/**/*
+            tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/obj/**/GeneratedFiles/**/*
 
       - uses: actions/upload-artifact@v7
         if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'

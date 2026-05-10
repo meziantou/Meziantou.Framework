@@ -95,6 +95,34 @@ public sealed class OpenTelemetryReceiverTests
     }
 
     [Fact]
+    public async Task Http_LogsFilter_DropsPayload()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
+        {
+            options.LogsFilter = static (_, _, _) => ValueTask.FromResult(false);
+        }));
+
+        await SendLogsAsync(app.HttpClient, "ignored");
+
+        Assert.Empty(app.Receiver.Logs);
+    }
+
+    [Fact]
+    public async Task Grpc_TracesFilter_DropsPayload()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
+        {
+            options.TracesFilter = static (_, _, _) => ValueTask.FromResult(false);
+        }));
+
+        var payload = CreateTraceRequest("00000000000000000000000000000011", ("0000000000000011", null, "root"));
+        var client = new TraceService.TraceServiceClient(app.GrpcChannel);
+        _ = await client.ExportAsync(payload, cancellationToken: XunitCancellationToken).ResponseAsync;
+
+        Assert.Empty(app.Receiver.Traces);
+    }
+
+    [Fact]
     public async Task Grpc_TraceEndpoint_StoresTypedRequest()
     {
         await using var app = await TestApplication.CreateAsync();
@@ -124,6 +152,143 @@ public sealed class OpenTelemetryReceiverTests
         var item = Assert.IsType<OpenTelemetryMetricsItem>(Assert.Single(app.Receiver.Metrics));
         Assert.Equal(OpenTelemetryItemType.Metrics, item.ItemType);
         _ = Assert.Single(item.Request.ResourceMetrics);
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_RootArrivesLast()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
+        {
+            options.TailSampling.Enabled = true;
+            options.TailSampling.Filter = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name == "root-keep");
+        }));
+
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest("00000000000000000000000000000021", ("0000000000000022", "0000000000000021", "child")));
+        Assert.Empty(app.Receiver.Traces);
+
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest("00000000000000000000000000000021", ("0000000000000021", null, "root-keep")));
+
+        var spans = GetTraceSpans(app.Receiver);
+        Assert.Equal(2, spans.Count);
+        Assert.Contains(spans, span => span.Name == "root-keep");
+        Assert.Contains(spans, span => span.Name == "child");
+    }
+
+    [Fact]
+    public async Task Grpc_TailFilter_RootArrivesLast()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
+        {
+            options.TailSampling.Enabled = true;
+            options.TailSampling.Filter = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name == "root-keep");
+        }));
+
+        var client = new TraceService.TraceServiceClient(app.GrpcChannel);
+        _ = await client.ExportAsync(CreateTraceRequest("00000000000000000000000000000031", ("0000000000000032", "0000000000000031", "child")), cancellationToken: XunitCancellationToken).ResponseAsync;
+        Assert.Empty(app.Receiver.Traces);
+
+        _ = await client.ExportAsync(CreateTraceRequest("00000000000000000000000000000031", ("0000000000000031", null, "root-keep")), cancellationToken: XunitCancellationToken).ResponseAsync;
+
+        var spans = GetTraceSpans(app.Receiver);
+        Assert.Equal(2, spans.Count);
+        Assert.Contains(spans, span => span.Name == "root-keep");
+        Assert.Contains(spans, span => span.Name == "child");
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_TimeoutCompletesTrace()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
+        {
+            options.TailSampling.Enabled = true;
+            options.TailSampling.MaxTraceDuration = TimeSpan.FromMilliseconds(20);
+            options.TailSampling.Filter = static (context, _) => ValueTask.FromResult(context.TimedOut);
+        }));
+
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest("00000000000000000000000000000041", ("0000000000000042", "0000000000000041", "child-timeout")));
+        await Task.Delay(50, XunitCancellationToken);
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest("00000000000000000000000000000042", ("0000000000000043", null, "other-root")));
+
+        var spans = GetTraceSpans(app.Receiver);
+        var timedOutSpans = spans.Where(span => Convert.ToHexString(span.TraceId.ToByteArray()) == "00000000000000000000000000000041").ToList();
+        Assert.Single(timedOutSpans);
+        Assert.Equal("child-timeout", timedOutSpans[0].Name);
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_DropWholeTrace_WhenPerTraceLimitIsExceeded()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
+        {
+            options.TailSampling.Enabled = true;
+            options.TailSampling.MaxBufferedSpansPerTrace = 2;
+            options.TailSampling.MaxBufferedSpans = 10;
+            options.TailSampling.OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace;
+            options.TailSampling.Filter = static (_, _) => ValueTask.FromResult(true);
+        }));
+
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest(
+            "00000000000000000000000000000051",
+            ("0000000000000051", null, "root"),
+            ("0000000000000052", "0000000000000051", "child-1"),
+            ("0000000000000053", "0000000000000051", "child-2")));
+
+        Assert.Empty(app.Receiver.Traces);
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_DropNewestSpans_WhenPerTraceLimitIsExceeded()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
+        {
+            options.TailSampling.Enabled = true;
+            options.TailSampling.MaxBufferedSpansPerTrace = 2;
+            options.TailSampling.MaxBufferedSpans = 10;
+            options.TailSampling.OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropNewestSpans;
+            options.TailSampling.Filter = static (_, _) => ValueTask.FromResult(true);
+        }));
+
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest(
+            "00000000000000000000000000000061",
+            ("0000000000000061", null, "root"),
+            ("0000000000000062", "0000000000000061", "child-1"),
+            ("0000000000000063", "0000000000000061", "child-2")));
+
+        var spans = GetTraceSpans(app.Receiver);
+        Assert.Equal(2, spans.Count);
+        Assert.Contains(spans, span => span.Name == "root");
+        Assert.Contains(spans, span => span.Name == "child-1");
+        Assert.DoesNotContain(spans, span => span.Name == "child-2");
+    }
+
+    [Fact]
+    public async Task Http_TailFilter_DropOldestSpans_WhenPerTraceLimitIsExceeded()
+    {
+        await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
+        {
+            options.TailSampling.Enabled = true;
+            options.TailSampling.MaxTraceDuration = TimeSpan.FromMilliseconds(20);
+            options.TailSampling.MaxBufferedSpansPerTrace = 2;
+            options.TailSampling.MaxBufferedSpans = 10;
+            options.TailSampling.OverflowPolicy = OpenTelemetryTailBufferOverflowPolicy.DropOldestSpans;
+            options.TailSampling.Filter = static (context, _) => ValueTask.FromResult(context.TimedOut);
+        }));
+
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest(
+            "00000000000000000000000000000071",
+            ("0000000000000071", null, "root"),
+            ("0000000000000072", "0000000000000071", "child-1"),
+            ("0000000000000073", "0000000000000071", "child-2")));
+
+        await Task.Delay(50, XunitCancellationToken);
+        await SendTracesAsync(app.HttpClient, CreateTraceRequest("00000000000000000000000000000072", ("0000000000000074", null, "other-root")));
+
+        var spans = GetTraceSpans(app.Receiver);
+        var names = spans.Select(span => span.Name).ToList();
+        Assert.Equal(2, names.Count);
+        Assert.DoesNotContain("root", names);
+        Assert.Contains("child-1", names);
+        Assert.Contains("child-2", names);
     }
 
     [Fact]
@@ -187,6 +352,47 @@ public sealed class OpenTelemetryReceiverTests
 
         using var response = await httpClient.PostAsync(endpoint, content, XunitCancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    private static async Task SendTracesAsync(HttpClient httpClient, ExportTraceServiceRequest payload, string endpoint = "/v1/traces")
+    {
+        using var content = new ByteArrayContent(payload.ToByteArray());
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
+
+        using var response = await httpClient.PostAsync(endpoint, content, XunitCancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private static ExportTraceServiceRequest CreateTraceRequest(string traceId, params (string SpanId, string? ParentSpanId, string Name)[] spans)
+    {
+        var payload = new ExportTraceServiceRequest();
+        var resourceSpans = new global::OpenTelemetry.Proto.Trace.V1.ResourceSpans();
+        var scopeSpans = new global::OpenTelemetry.Proto.Trace.V1.ScopeSpans();
+        resourceSpans.ScopeSpans.Add(scopeSpans);
+        payload.ResourceSpans.Add(resourceSpans);
+
+        foreach (var span in spans)
+        {
+            scopeSpans.Spans.Add(new global::OpenTelemetry.Proto.Trace.V1.Span
+            {
+                TraceId = ByteString.CopyFrom(Convert.FromHexString(traceId)),
+                SpanId = ByteString.CopyFrom(Convert.FromHexString(span.SpanId)),
+                ParentSpanId = span.ParentSpanId is null ? ByteString.Empty : ByteString.CopyFrom(Convert.FromHexString(span.ParentSpanId)),
+                Name = span.Name,
+            });
+        }
+
+        return payload;
+    }
+
+    private static List<global::OpenTelemetry.Proto.Trace.V1.Span> GetTraceSpans(InMemoryOpenTelemetryHandler receiver)
+    {
+        return receiver.Traces
+            .Cast<OpenTelemetryTracesItem>()
+            .SelectMany(static item => item.Request.ResourceSpans)
+            .SelectMany(static resourceSpans => resourceSpans.ScopeSpans)
+            .SelectMany(static scopeSpans => scopeSpans.Spans)
+            .ToList();
     }
 
     private sealed class TestReceiver : OpenTelemetryHandler

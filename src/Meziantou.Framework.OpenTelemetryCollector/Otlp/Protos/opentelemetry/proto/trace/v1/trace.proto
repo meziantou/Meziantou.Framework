@@ -22,5 +22,6 @@ message ScopeSpans {
 message Span {
   bytes trace_id = 1;
   bytes span_id = 2;
+  bytes parent_span_id = 4;
   string name = 5;
 }

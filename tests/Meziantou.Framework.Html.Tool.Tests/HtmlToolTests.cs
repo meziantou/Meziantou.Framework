@@ -1,6 +1,5 @@
 namespace Meziantou.Framework.Html.Tool.Tests;
 
-[Collection("Tool")] // Ensure tests run sequentially
 public class HtmlToolTests(ITestOutputHelper testOutputHelper)
 {
     private static async Task ContentEquals(FullPath path, string expectedContent)

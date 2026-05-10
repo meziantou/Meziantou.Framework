@@ -2,13 +2,6 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Ranges;
 
 internal static class RangeSyntax
 {
-    internal static DateTime UtcNow { get; set; }
-
-    private static DateTime GetUtcNow()
-    {
-        return UtcNow == default ? DateTime.UtcNow : UtcNow;
-    }
-
     public static RangeSyntax<T>? Parse<T>(string? text, ScalarParser<T> scalarParser)
     {
         if (text is null)
@@ -31,20 +24,23 @@ internal static class RangeSyntax
         return null;
     }
 
-    public static RangeSyntax<T>? TryParse<T>(string text, ScalarParser<T> tryParse)
+    public static RangeSyntax<T>? TryParse<T>(string text, ScalarParser<T> tryParse, TimeProvider timeProvider)
     {
-        if (TryExpandRangeVariables<T>(text, out var result))
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        if (TryExpandRangeVariables<T>(text, timeProvider, out var result))
             return result;
 
         return Parse(text, tryParse);
     }
 
-    private static bool TryExpandRangeVariables<T>(string text, [MaybeNullWhen(false)] out RangeSyntax<T> value)
+    private static bool TryExpandRangeVariables<T>(string text, TimeProvider timeProvider, [MaybeNullWhen(false)] out RangeSyntax<T> value)
     {
         var span = text.AsSpan().Trim();
+        var utcNow = timeProvider.GetUtcNow();
         if (span.Equals("today", StringComparison.OrdinalIgnoreCase))
         {
-            var now = GetUtcNow();
+            var now = utcNow.UtcDateTime;
             var start = new DateTime(now.Year, now.Month, now.Day);
             var end = start.AddDays(1);
             value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
@@ -53,7 +49,7 @@ internal static class RangeSyntax
         }
         else if (span.Equals("yesterday", StringComparison.OrdinalIgnoreCase))
         {
-            var now = GetUtcNow();
+            var now = utcNow.UtcDateTime;
             var end = new DateTime(now.Year, now.Month, now.Day);
             var start = end.AddDays(-1);
             value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
@@ -61,7 +57,7 @@ internal static class RangeSyntax
         }
         else if (span.Trim().Equals("this week", StringComparison.OrdinalIgnoreCase))
         {
-            var now = new DateTimeOffset(GetUtcNow());
+            var now = utcNow;
             var start = StartOfWeek(now);
             var end = start.AddDays(7);
             value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
@@ -69,7 +65,7 @@ internal static class RangeSyntax
         }
         else if (span.Trim().Equals("this month", StringComparison.OrdinalIgnoreCase))
         {
-            var now = GetUtcNow();
+            var now = utcNow.UtcDateTime;
             var start = new DateTime(now.Year, now.Month, 1);
             var end = start.AddMonths(1);
             value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
@@ -77,7 +73,7 @@ internal static class RangeSyntax
         }
         else if (span.Trim().Equals("last month", StringComparison.OrdinalIgnoreCase))
         {
-            var now = GetUtcNow();
+            var now = utcNow.UtcDateTime;
             var end = new DateTime(now.Year, now.Month, 1);
             var start = end.AddMonths(-1);
             value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
@@ -85,7 +81,7 @@ internal static class RangeSyntax
         }
         else if (span.Trim().Equals("this year", StringComparison.OrdinalIgnoreCase))
         {
-            var now = GetUtcNow();
+            var now = utcNow.UtcDateTime;
             var start = new DateTime(now.Year, 1, 1);
             var end = new DateTime(now.Year + 1, 1, 1);
             value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);
@@ -93,7 +89,7 @@ internal static class RangeSyntax
         }
         else if (span.Trim().Equals("last year", StringComparison.OrdinalIgnoreCase))
         {
-            var now = GetUtcNow();
+            var now = utcNow.UtcDateTime;
             var end = new DateTime(now.Year, 1, 1);
             var start = new DateTime(now.Year - 1, 1, 1);
             value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);

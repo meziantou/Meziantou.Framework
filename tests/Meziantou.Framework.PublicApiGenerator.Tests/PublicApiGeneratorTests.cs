@@ -11,7 +11,6 @@ using Xunit.Sdk;
 
 namespace Meziantou.Framework.PublicApiGenerator.Tests;
 
-//[Collection("Tool")] // Ensure tests run sequentially
 public sealed class PublicApiGeneratorTests
 {
     private const string CompilationCacheVersion = "v1";

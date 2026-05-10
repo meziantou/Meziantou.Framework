@@ -168,6 +168,7 @@ jobs:
     env:
       RUNS_ON: ${{ matrix.runs-on }}
       TestResultsDirectory: ${{ github.workspace}}/TestResults
+      MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY: ${{ github.workspace}}/.cache/public-api-generator-tests
       EnableCodeCoverage: ${{ case(github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage, 'true', 'false') }}
     steps:
       - id: compute-artifact-name
@@ -193,9 +194,22 @@ jobs:
           test-projects-only: "true"
           shard: ${{ matrix.shard }}
           total-shards: 2
+          shard-separate: |
+            tests/Meziantou.Framework.InlineSnapshotTesting.Tests
+            tests/Meziantou.Framework.PublicApiGenerator.Tests
+            tests/Meziantou.Framework.SnapshotTesting.Tests/
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
+
+      - name: Cache Public API test compilation outputs
+        if: steps.build-project.outputs.has-project == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY }}
+          key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}
+          restore-keys: |
+            public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-
 
       - name: List environment variables
         if: steps.build-project.outputs.has-project == 'true'

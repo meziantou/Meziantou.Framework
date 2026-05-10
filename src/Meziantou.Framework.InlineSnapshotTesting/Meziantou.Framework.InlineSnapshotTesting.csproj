@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);MEZIANTOU_INLINE_SNAPSHOT_TESTING</DefineConstants>
     <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 
-    <Version>5.0.0</Version>
+    <Version>5.0.1</Version>
     <NoWarn>$(NoWarn);NU5100</NoWarn>
   </PropertyGroup>
 

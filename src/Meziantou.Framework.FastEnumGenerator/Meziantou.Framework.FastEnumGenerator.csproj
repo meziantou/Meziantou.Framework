@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
     <Version>2.0.6</Version>
-    <Description>Generate a faster ToString method for enumerations</Description>
+    <Description>Generate optimized enum helper methods</Description>
 
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="Meziantou.Framework.FastEnumToStringGenerator.targets" Pack="true" PackagePath="build/" />
+    <None Include="Meziantou.Framework.FastEnumGenerator.targets" Pack="true" PackagePath="build/" />
     <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_netstandard2.0/$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 

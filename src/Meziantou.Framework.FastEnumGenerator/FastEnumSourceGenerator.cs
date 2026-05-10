@@ -51,24 +51,6 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
                         public global::System.Type EnumType { get; }
                     }
 
-                    [global::Microsoft.CodeAnalysis.Embedded]
-                    [global::System.Runtime.CompilerServices.CompilerGenerated]
-                    [global::System.CodeDom.Compiler.GeneratedCode("Meziantou.Framework.FastEnumGenerator", "1.0.0.0")]
-                    [global::System.Diagnostics.Conditional("FastEnumToString_Attributes")]
-                    [global::System.AttributeUsage(global::System.AttributeTargets.Assembly, AllowMultiple = true)]
-                    internal sealed class FastEnumToStringAttribute : global::System.Attribute
-                    {
-                        public FastEnumToStringAttribute(global::System.Type enumType)
-                        {
-                            EnumType = enumType;
-                        }
-
-                        public bool IsPublic { get; set; } = true;
-
-                        public string? ExtensionMethodNamespace { get; set; }
-
-                        public global::System.Type EnumType { get; }
-                    }
                 }
                 """, encoding: Encoding.UTF8));
         });
@@ -89,8 +71,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
     {
         var compilation = ctx.SemanticModel.Compilation;
         var fastEnumAttributeSymbol = compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.FastEnumAttribute");
-        var legacyFastEnumAttributeSymbol = compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.FastEnumToStringAttribute");
-        if (fastEnumAttributeSymbol is null && legacyFastEnumAttributeSymbol is null)
+        if (fastEnumAttributeSymbol is null)
             return null;
 
         var attributeSyntax = (AttributeSyntax)ctx.Node;
@@ -100,8 +81,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
                 continue;
 
             var isFastEnumAttribute = SymbolEqualityComparer.Default.Equals(attr.AttributeClass, fastEnumAttributeSymbol);
-            var isLegacyFastEnumAttribute = SymbolEqualityComparer.Default.Equals(attr.AttributeClass, legacyFastEnumAttributeSymbol);
-            if (!isFastEnumAttribute && !isLegacyFastEnumAttribute)
+            if (!isFastEnumAttribute)
                 continue;
 
             if (attr.ConstructorArguments.Length != 1)
@@ -134,7 +114,13 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         if (compilation is not CSharpCompilation csharpCompilation)
             return false;
 
-        var parseOptions = csharpCompilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions ?? CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
+        var firstSyntaxTree = csharpCompilation.SyntaxTrees.FirstOrDefault();
+        if (firstSyntaxTree is null)
+            return false;
+
+        if (firstSyntaxTree.Options is not CSharpParseOptions parseOptions)
+            return false;
+
         var tree = CSharpSyntaxTree.ParseText("static class __Probe { extension(int value) { public static int Parse(string value, bool ignoreCase) => 0; } }", parseOptions);
         return tree.GetDiagnostics().All(static diagnostic => diagnostic.Severity != DiagnosticSeverity.Error);
     }

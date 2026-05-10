@@ -65,21 +65,6 @@ public sealed class FastEnumSourceGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateLegacyAttributeCompatibility()
-    {
-        var sourceCode = """
-            [assembly: Meziantou.Framework.Annotations.FastEnumToStringAttribute(typeof(Sample.Color))]
-            namespace Sample
-            {
-                public enum Color { Blue }
-            }
-            """;
-
-        var generatedCode = await GenerateCode(sourceCode);
-        Assert.Contains("ToStringFast(this global::Sample.Color value)", generatedCode, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task GenerateCSharp14ExtensionMembers()
     {
         var sourceCode = """

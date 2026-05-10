@@ -36,7 +36,7 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
 
         var symbolInfo = context.SemanticModel.GetSymbolInfo(attributeSyntax, context.CancellationToken).Symbol as IMethodSymbol;
         if (symbolInfo is not null &&
-            (symbolInfo.ContainingType.Name is not "FastEnumAttribute" and not "FastEnumToStringAttribute" ||
+            (symbolInfo.ContainingType.Name is not "FastEnumAttribute" ||
              symbolInfo.ContainingType.ContainingNamespace.ToDisplayString() != "Meziantou.Framework.Annotations"))
         {
             return;
@@ -73,6 +73,6 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
             _ => null,
         };
 
-        return name is "FastEnum" or "FastEnumAttribute" or "FastEnumToString" or "FastEnumToStringAttribute";
+        return name is "FastEnum" or "FastEnumAttribute";
     }
 }

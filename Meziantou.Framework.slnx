@@ -222,6 +222,7 @@
   </Folder>
   <Folder Name="/tests/SourceGenerators/">
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.FastEnumGenerator.GeneratorTests/Meziantou.Framework.FastEnumGenerator.GeneratorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />
   </Folder>

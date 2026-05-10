@@ -7,4 +7,7 @@
     <Project Path="../tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
     <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
+  <Folder Name="/tests/SourceGenerators/">
+    <Project Path="../tests/Meziantou.Framework.FastEnumGenerator.GeneratorTests/Meziantou.Framework.FastEnumGenerator.GeneratorTests.csproj" />
+  </Folder>
 </Solution>

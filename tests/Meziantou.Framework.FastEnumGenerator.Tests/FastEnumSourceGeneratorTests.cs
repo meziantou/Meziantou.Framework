@@ -35,9 +35,11 @@ public sealed class FastEnumSourceGeneratorTests
 
         var generatedCode = (await generatedTree.GetRootAsync()).ToFullString();
         Assert.DoesNotContain("return useMetadata ? s_definedMetadataNames_", generatedCode, StringComparison.Ordinal);
-        Assert.Contains("return s_definedNames_", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("return s_names_", generatedCode, StringComparison.Ordinal);
         Assert.DoesNotContain("private static ulong ToUInt64_", generatedCode, StringComparison.Ordinal);
         Assert.DoesNotContain("private static global::Sample.Color FromUInt64_", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("s_parseTokenIsMetadata_", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("s_definedNames_", generatedCode, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -84,6 +86,8 @@ public sealed class FastEnumSourceGeneratorTests
         Assert.Contains("\"Red metadata\"", generatedCode, StringComparison.Ordinal);
         Assert.Contains("\"Green metadata\"", generatedCode, StringComparison.Ordinal);
         Assert.Contains("return (instance & flag) == flag;", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("s_parseMetadataTokens_", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("s_parseTokenIsMetadata_", generatedCode, StringComparison.Ordinal);
     }
 
     [Fact]

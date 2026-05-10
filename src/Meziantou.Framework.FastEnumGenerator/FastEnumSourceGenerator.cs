@@ -282,9 +282,13 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         var enumTypeName = "global::" + enumeration.FullCsharpName;
 
         var uniqueMembers = GetUniqueMembers(enumeration.Members);
-        var parseTokens = GetParseTokens(enumeration.Members);
         var hasDistinctMetadata = enumeration.Members.Any(static item => item.MetadataName is not null && !string.Equals(item.MetadataName, item.Name, StringComparison.Ordinal));
+        var parseTokens = GetParseTokens(enumeration.Members, useMetadata: false);
+        var metadataParseTokens = hasDistinctMetadata ? GetParseTokens(enumeration.Members, useMetadata: true) : null;
         var denseMembers = enumeration.IsZeroBasedConsecutive ? uniqueMembers.OrderBy(static item => item.UInt64Value).ToList() : [];
+        var canUseMainArraysForDenseLookup = denseMembers.Count > 0 && IsDenseMembersAlignedWithDeclaration(enumeration.Members);
+        var denseNamesArrayName = canUseMainArraysForDenseLookup ? "s_names_" + enumIndex.ToString(CultureInfo.InvariantCulture) : "s_definedNames_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+        var denseMetadataNamesArrayName = canUseMainArraysForDenseLookup ? "s_metadataNames_" + enumIndex.ToString(CultureInfo.InvariantCulture) : "s_definedMetadataNames_" + enumIndex.ToString(CultureInfo.InvariantCulture);
         var flagMembers = enumeration.IsFlags
             ? uniqueMembers.Where(static item => item.UInt64Value != 0 && IsPowerOfTwo(item.UInt64Value)).OrderByDescending(static item => item.UInt64Value).ToList()
             : [];
@@ -301,10 +305,10 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.Append(typeVisibility).Append(" static class ").Append(className).AppendLine();
         sb.AppendLine("{");
 
-        AppendMemberArrays(sb, enumeration, enumTypeName, enumIndex, parseTokens);
+        AppendMemberArrays(sb, enumeration, enumTypeName, enumIndex, parseTokens, metadataParseTokens);
         if (denseMembers.Count > 0)
         {
-            AppendDenseArrays(sb, denseMembers, enumTypeName, enumIndex, hasDistinctMetadata);
+            AppendDenseArrays(sb, denseMembers, enumTypeName, enumIndex, hasDistinctMetadata, canUseMainArraysForDenseLookup);
         }
 
         if (hasDistinctMetadata && flagMembers.Count > 0)
@@ -344,11 +348,11 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.AppendLine("        {");
             if (hasDistinctMetadata)
             {
-                sb.Append("            return useMetadata ? s_definedMetadataNames_").Append(enumIndex).Append("[index] : s_definedNames_").Append(enumIndex).AppendLine("[index];");
+                sb.Append("            return useMetadata ? ").Append(denseMetadataNamesArrayName).Append("[index] : ").Append(denseNamesArrayName).AppendLine("[index];");
             }
             else
             {
-                sb.Append("            return s_definedNames_").Append(enumIndex).AppendLine("[index];");
+                sb.Append("            return ").Append(denseNamesArrayName).AppendLine("[index];");
             }
 
             sb.AppendLine("        }");
@@ -418,11 +422,11 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.Append("        var numericValue = unchecked((").Append(enumeration.UnderlyingTypeName).AppendLine(")value);");
             if (enumeration.IsUnderlyingTypeSigned)
             {
-                sb.Append("        if (numericValue < 0 || numericValue >= unchecked((").Append(enumeration.UnderlyingTypeName).Append(")s_definedNames_").Append(enumIndex).AppendLine(".Length))");
+                sb.Append("        if (numericValue < 0 || numericValue >= unchecked((").Append(enumeration.UnderlyingTypeName).Append(')').Append(denseNamesArrayName).AppendLine(".Length))");
             }
             else
             {
-                sb.Append("        if (numericValue >= unchecked((").Append(enumeration.UnderlyingTypeName).Append(")s_definedNames_").Append(enumIndex).AppendLine(".Length))");
+                sb.Append("        if (numericValue >= unchecked((").Append(enumeration.UnderlyingTypeName).Append(')').Append(denseNamesArrayName).AppendLine(".Length))");
             }
 
             sb.AppendLine("        {");
@@ -468,7 +472,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         if (supportsExtensionMembers)
         {
-            AppendTryParseHelpers(sb, enumTypeName, enumeration, enumIndex);
+            AppendTryParseHelpers(sb, enumTypeName, enumeration, enumIndex, hasDistinctMetadata);
             AppendExtensionMembers(sb, enumTypeName, methodVisibility, enumeration, enumIndex);
         }
 
@@ -479,7 +483,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         }
     }
 
-    private static void AppendMemberArrays(StringBuilder sb, EnumToProcess enumeration, string enumTypeName, int enumIndex, List<ParseTokenToProcess> parseTokens)
+    private static void AppendMemberArrays(StringBuilder sb, EnumToProcess enumeration, string enumTypeName, int enumIndex, ParseTokensToProcess parseTokens, ParseTokensToProcess? metadataParseTokens)
     {
         sb.Append("    private static readonly string[] s_names_").Append(enumIndex).Append(" = new string[] { ");
         AppendCommaSeparated(sb, enumeration.Members.Select(static member => ToLiteral(member.Name)));
@@ -494,21 +498,40 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine(" };");
 
         sb.Append("    private static readonly string[] s_parseTokens_").Append(enumIndex).Append(" = new string[] { ");
-        AppendCommaSeparated(sb, parseTokens.Select(static token => ToLiteral(token.Token)));
+        AppendCommaSeparated(sb, parseTokens.Tokens.Select(static token => ToLiteral(token.Token)));
+        sb.AppendLine(" };");
+
+        sb.Append("    private static readonly int[] s_parseValueIndices_").Append(enumIndex).Append(" = new int[] { ");
+        AppendCommaSeparated(sb, parseTokens.Tokens.Select(static token => token.ValueIndex.ToString(CultureInfo.InvariantCulture)));
         sb.AppendLine(" };");
 
         sb.Append("    private static readonly ").Append(enumTypeName).Append("[] s_parseValues_").Append(enumIndex).Append(" = new ").Append(enumTypeName).Append("[] { ");
-        AppendCommaSeparated(sb, parseTokens.Select(token => enumTypeName + "." + token.MemberName));
-        sb.AppendLine(" };");
-
-        sb.Append("    private static readonly bool[] s_parseTokenIsMetadata_").Append(enumIndex).Append(" = new bool[] { ");
-        AppendCommaSeparated(sb, parseTokens.Select(static token => token.IsMetadata ? "true" : "false"));
+        AppendCommaSeparated(sb, parseTokens.UniqueMemberNames.Select(memberName => enumTypeName + "." + memberName));
         sb.AppendLine(" };");
         sb.AppendLine();
+
+        if (metadataParseTokens is not null)
+        {
+            sb.Append("    private static readonly string[] s_parseMetadataTokens_").Append(enumIndex).Append(" = new string[] { ");
+            AppendCommaSeparated(sb, metadataParseTokens.Tokens.Select(static token => ToLiteral(token.Token)));
+            sb.AppendLine(" };");
+
+            sb.Append("    private static readonly int[] s_parseMetadataValueIndices_").Append(enumIndex).Append(" = new int[] { ");
+            AppendCommaSeparated(sb, metadataParseTokens.Tokens.Select(static token => token.ValueIndex.ToString(CultureInfo.InvariantCulture)));
+            sb.AppendLine(" };");
+
+            sb.Append("    private static readonly ").Append(enumTypeName).Append("[] s_parseMetadataValues_").Append(enumIndex).Append(" = new ").Append(enumTypeName).Append("[] { ");
+            AppendCommaSeparated(sb, metadataParseTokens.UniqueMemberNames.Select(memberName => enumTypeName + "." + memberName));
+            sb.AppendLine(" };");
+            sb.AppendLine();
+        }
     }
 
-    private static void AppendDenseArrays(StringBuilder sb, List<EnumMemberToProcess> denseMembers, string enumTypeName, int enumIndex, bool hasDistinctMetadata)
+    private static void AppendDenseArrays(StringBuilder sb, List<EnumMemberToProcess> denseMembers, string enumTypeName, int enumIndex, bool hasDistinctMetadata, bool canUseMainArraysForDenseLookup)
     {
+        if (canUseMainArraysForDenseLookup)
+            return;
+
         sb.Append("    private static readonly string[] s_definedNames_").Append(enumIndex).Append(" = new string[] { ");
         AppendCommaSeparated(sb, denseMembers.Select(member => "nameof(" + enumTypeName + "." + member.Name + ")"));
         sb.AppendLine(" };");
@@ -535,18 +558,34 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void AppendTryParseHelpers(StringBuilder sb, string enumTypeName, EnumToProcess enumeration, int enumIndex)
+    private static void AppendTryParseHelpers(StringBuilder sb, string enumTypeName, EnumToProcess enumeration, int enumIndex, bool hasDistinctMetadata)
     {
         sb.Append("    private static bool TryParseSingle_").Append(enumIndex).Append("(global::System.ReadOnlySpan<char> value, bool ignoreCase, bool useMetadata, out ").Append(enumTypeName).AppendLine(" result)");
         sb.AppendLine("    {");
+        if (hasDistinctMetadata)
+        {
+            sb.AppendLine("        if (useMetadata)");
+            sb.AppendLine("        {");
+            sb.Append("            for (var i = 0; i < s_parseMetadataTokens_").Append(enumIndex).AppendLine(".Length; i++)");
+            sb.AppendLine("            {");
+            sb.Append("                if (EqualsToken_").Append(enumIndex).Append("(value, s_parseMetadataTokens_").Append(enumIndex).AppendLine("[i], ignoreCase))");
+            sb.AppendLine("                {");
+            sb.Append("                    result = s_parseMetadataValues_").Append(enumIndex).Append("[s_parseMetadataValueIndices_").Append(enumIndex).AppendLine("[i]];");
+            sb.AppendLine("                    return true;");
+            sb.AppendLine("                }");
+            sb.AppendLine("            }");
+            sb.AppendLine();
+            sb.AppendLine("            result = default;");
+            sb.AppendLine("            return false;");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+        }
+
         sb.Append("        for (var i = 0; i < s_parseTokens_").Append(enumIndex).AppendLine(".Length; i++)");
         sb.AppendLine("        {");
-        sb.Append("            if (!useMetadata && s_parseTokenIsMetadata_").Append(enumIndex).AppendLine("[i])");
-        sb.AppendLine("                continue;");
-        sb.AppendLine();
         sb.Append("            if (EqualsToken_").Append(enumIndex).Append("(value, s_parseTokens_").Append(enumIndex).AppendLine("[i], ignoreCase))");
         sb.AppendLine("            {");
-        sb.Append("                result = s_parseValues_").Append(enumIndex).AppendLine("[i];");
+        sb.Append("                result = s_parseValues_").Append(enumIndex).Append("[s_parseValueIndices_").Append(enumIndex).AppendLine("[i]];");
         sb.AppendLine("                return true;");
         sb.AppendLine("            }");
         sb.AppendLine("        }");
@@ -772,33 +811,48 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         return result;
     }
 
-    private static List<ParseTokenToProcess> GetParseTokens(ImmutableArray<EnumMemberToProcess> members)
+    private static ParseTokensToProcess GetParseTokens(ImmutableArray<EnumMemberToProcess> members, bool useMetadata)
     {
-        var result = new List<ParseTokenToProcess>(members.Length * 2);
-        var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var tokens = new List<ParseTokenToProcess>(members.Length);
+        var tokenValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var uniqueMemberNames = new List<string>();
+        var valueIndices = new Dictionary<ulong, int>();
         foreach (var member in members)
         {
-            Add(member.Name, member.Name, isMetadata: false);
-            if (!string.IsNullOrEmpty(member.MetadataName))
+            var token = useMetadata ? member.MetadataName : member.Name;
+            if (string.IsNullOrEmpty(token))
+                continue;
+
+            if (!tokenValues.Add(token))
+                continue;
+
+            if (!valueIndices.TryGetValue(member.UInt64Value, out var valueIndex))
             {
-                Add(member.MetadataName, member.Name, isMetadata: true);
+                valueIndex = uniqueMemberNames.Count;
+                valueIndices.Add(member.UInt64Value, valueIndex);
+                uniqueMemberNames.Add(member.Name);
             }
+
+            tokens.Add(new ParseTokenToProcess(token, valueIndex));
         }
 
-        return result;
-
-        void Add(string token, string memberName, bool isMetadata)
-        {
-            if (!values.Add(token))
-                return;
-
-            result.Add(new ParseTokenToProcess(token, memberName, isMetadata));
-        }
+        return new ParseTokensToProcess(tokens, uniqueMemberNames);
     }
 
     private static bool IsPowerOfTwo(ulong value)
     {
         return value != 0 && (value & (value - 1)) == 0;
+    }
+
+    private static bool IsDenseMembersAlignedWithDeclaration(ImmutableArray<EnumMemberToProcess> members)
+    {
+        for (var i = 0; i < members.Length; i++)
+        {
+            if (members[i].UInt64Value != unchecked((ulong)i))
+                return false;
+        }
+
+        return true;
     }
 
     private static string ToLiteral(string value)
@@ -861,5 +915,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
     private sealed record EnumMemberToProcess(string Name, object Value, ulong UInt64Value, string? MetadataName);
 
-    private sealed record ParseTokenToProcess(string Token, string MemberName, bool IsMetadata);
+    private sealed record ParseTokensToProcess(List<ParseTokenToProcess> Tokens, List<string> UniqueMemberNames);
+
+    private sealed record ParseTokenToProcess(string Token, int ValueIndex);
 }

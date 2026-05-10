@@ -240,7 +240,7 @@ public sealed class ExpressionQueryBuilder<T>
         var parser = tryParseValue ?? ValueConverter.TryParseValue;
 
         // Try to parse as range
-        var range = RangeSyntax.TryParse(value, parser);
+        var range = RangeSyntax.TryParse(value, parser, TimeProvider.System);
         if (range is BinaryRangeSyntax<TValue> binary)
         {
             var lowerExpression = CreateComparisonExpressionCore(

@@ -1,11 +1,10 @@
 using System.Numerics;
 using Meziantou.Framework.SimpleQueryLanguage.Ranges;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 
-// Prevent parallelization because of RangeSyntax.UtcNow
-[Collection("QueryBuilderTests")]
 public sealed class QueryBuilderTests
 {
     [Fact]
@@ -204,11 +203,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_Today()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2022, 1, 1, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:today");
 
-        RangeSyntax.UtcNow = new DateTime(2022, 1, 1, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -218,11 +215,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_Yesterday()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2022, 1, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:Yesterday");
 
-        RangeSyntax.UtcNow = new DateTime(2022, 1, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -232,11 +227,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_ThisWeek()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2022, 1, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"this week\"");
 
-        RangeSyntax.UtcNow = new DateTime(2022, 1, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 27, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 2, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 26, 23, 59, 59, TimeSpan.Zero) }));
@@ -246,11 +239,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_ThisMonth()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2022, 1, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"this month\"");
 
-        RangeSyntax.UtcNow = new DateTime(2022, 1, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -260,11 +251,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_ThisMonth_LeapYear()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2020, 2, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"this month\"");
 
-        RangeSyntax.UtcNow = new DateTime(2020, 2, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 29, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -274,11 +263,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_ThisMonth_NonLeapYear()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2022, 2, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"this month\"");
 
-        RangeSyntax.UtcNow = new DateTime(2022, 2, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 28, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -288,11 +275,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_LastMonth()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2022, 2, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"last month\"");
 
-        RangeSyntax.UtcNow = new DateTime(2022, 2, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -302,11 +287,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_LastMonth_LeapYear()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2020, 3, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"last month\"");
 
-        RangeSyntax.UtcNow = new DateTime(2020, 3, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 29, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -316,11 +299,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_LastMonth_NonLeapYear()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2022, 3, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"last month\"");
 
-        RangeSyntax.UtcNow = new DateTime(2022, 3, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 28, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -330,11 +311,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_ThisYear()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2022, 2, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"This Year\"");
 
-        RangeSyntax.UtcNow = new DateTime(2022, 2, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -344,11 +323,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateTime_LastYear()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        var queryBuilder = CreateDateTimeOffsetRangeQueryBuilder(new DateTimeOffset(2023, 2, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"last Year\"");
 
-        RangeSyntax.UtcNow = new DateTime(2023, 2, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
         Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
         Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
@@ -358,11 +335,9 @@ public sealed class QueryBuilderTests
     [Fact]
     public void FieldEquals_DateOnly_LastYear()
     {
-        var queryBuilder = new QueryBuilder<Sample>();
-        queryBuilder.AddRangeHandler<DateOnly>("date", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+        var queryBuilder = CreateDateOnlyRangeQueryBuilder(new DateTimeOffset(2023, 2, 2, 10, 0, 0, TimeSpan.Zero));
         var query = queryBuilder.Build("date:\"last Year\"");
 
-        RangeSyntax.UtcNow = new DateTime(2023, 2, 2, 10, 0, 0);
         Assert.True(query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2022, 1, 1, 0, 0, 0)) }));
         Assert.True(query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2022, 12, 31, 23, 59, 59)) }));
         Assert.False(query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2021, 12, 31, 23, 59, 59)) }));
@@ -838,6 +813,26 @@ public sealed class QueryBuilderTests
         Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }));
         Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }));
         Assert.False(query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }));
+    }
+
+    private static QueryBuilder<Sample> CreateDateTimeOffsetRangeQueryBuilder(DateTimeOffset utcNow)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(utcNow);
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        return queryBuilder;
+    }
+
+    private static QueryBuilder<Sample> CreateDateOnlyRangeQueryBuilder(DateTimeOffset utcNow)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(utcNow);
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateOnly>("date", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+        return queryBuilder;
     }
 
     private sealed class Sample

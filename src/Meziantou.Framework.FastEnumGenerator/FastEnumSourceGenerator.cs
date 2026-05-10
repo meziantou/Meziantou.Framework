@@ -750,7 +750,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             Add(member.Name, member.Name, isMetadata: false);
             if (!string.IsNullOrEmpty(member.MetadataName))
             {
-                Add(member.MetadataName!, member.Name, isMetadata: true);
+                Add(member.MetadataName, member.Name, isMetadata: true);
             }
         }
 

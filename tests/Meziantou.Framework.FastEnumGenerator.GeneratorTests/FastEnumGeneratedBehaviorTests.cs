@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.Serialization;
 using Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated;
 using Xunit;
 
@@ -7,26 +5,6 @@ using Xunit;
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.Permission), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 
 namespace Meziantou.Framework.FastEnumGenerator.GeneratorTests;
-
-public enum Color
-{
-    [Display(Name = "Blue metadata")]
-    Blue,
-
-    [EnumMember(Value = "Red metadata")]
-    Red,
-
-    Green,
-}
-
-[Flags]
-public enum Permission
-{
-    None = 0,
-    Read = 1,
-    Write = 2,
-    Execute = 4,
-}
 
 public sealed class FastEnumGeneratedBehaviorTests
 {

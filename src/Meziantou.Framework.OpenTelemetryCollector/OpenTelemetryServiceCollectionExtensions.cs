@@ -37,7 +37,7 @@ public static class OpenTelemetryServiceCollectionExtensions
             services.Configure(configure);
         }
 
-        services.TryAddSingleton<OpenTelemetryTraceTailSampler>();
+        services.TryAddSingleton<OpenTelemetryTraceTailSamplerHandler>();
         services.TryAddSingleton<OpenTelemetryRequestPipeline>();
     }
 }

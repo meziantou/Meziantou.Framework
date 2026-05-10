@@ -52,7 +52,7 @@ Use tail sampling for traces when child spans can arrive before the root span. T
 ```csharp
 builder.Services.AddOpenTelemetryReceiver<MyReceiver>(options =>
 {
-    options.Samplers.Add(new OpenTelemetryTailSampling
+    options.Samplers.Add(new OpenTelemetryTailSampler
     {
         MaxTraceDuration = TimeSpan.FromSeconds(30),
         MaxBufferedSpansPerTrace = 5000,

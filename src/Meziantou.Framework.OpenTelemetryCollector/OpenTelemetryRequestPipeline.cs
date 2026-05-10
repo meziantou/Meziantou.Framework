@@ -9,22 +9,22 @@ internal sealed class OpenTelemetryRequestPipeline
 {
     private readonly OpenTelemetrySampler[] _samplers;
     private readonly OpenTelemetryHandler[] _receivers;
-    private readonly OpenTelemetryTraceTailSampler _tailSampler;
-    private readonly OpenTelemetryTailSampling? _tailSampling;
-    private readonly OpenTelemetrySampler[] _traceSamplersWithoutTailSampling;
+    private readonly OpenTelemetryTraceTailSamplerHandler _tailSamplerHandler;
+    private readonly OpenTelemetryTailSampler? _tailSampler;
+    private readonly OpenTelemetrySampler[] _traceSamplersWithoutTailSampler;
 
     public OpenTelemetryRequestPipeline(
         IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations,
         IOptions<OpenTelemetryReceiverOptions> optionsAccessor,
-        OpenTelemetryTraceTailSampler tailSampler)
+        OpenTelemetryTraceTailSamplerHandler tailSamplerHandler)
     {
         _receivers = GetReceivers(receiverRegistrations);
-        _tailSampler = tailSampler;
+        _tailSamplerHandler = tailSamplerHandler;
 
         var options = optionsAccessor.Value;
         _samplers = [.. options.Samplers];
-        _tailSampling = GetTailSampling(_samplers);
-        _traceSamplersWithoutTailSampling = [.. _samplers.Where(static sampler => sampler is not OpenTelemetryTailSampling)];
+        _tailSampler = GetTailSampler(_samplers);
+        _traceSamplersWithoutTailSampler = [.. _samplers.Where(static sampler => sampler is not OpenTelemetryTailSampler)];
     }
 
     public async ValueTask HandleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
@@ -67,7 +67,7 @@ internal sealed class OpenTelemetryRequestPipeline
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        foreach (var sampler in _traceSamplersWithoutTailSampling)
+        foreach (var sampler in _traceSamplersWithoutTailSampler)
         {
             if (!await sampler.ShouldSampleTracesAsync(context, request, cancellationToken))
             {
@@ -75,13 +75,13 @@ internal sealed class OpenTelemetryRequestPipeline
             }
         }
 
-        if (_tailSampling is null)
+        if (_tailSampler is null)
         {
             await DispatchTracesAsync(context, request, cancellationToken);
             return;
         }
 
-        await _tailSampler.HandleAsync(context, request, _tailSampling, DispatchTracesAsync, cancellationToken);
+        await _tailSamplerHandler.HandleAsync(context, request, _tailSampler, DispatchTracesAsync, cancellationToken);
     }
 
     private async ValueTask DispatchTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
@@ -105,21 +105,21 @@ internal sealed class OpenTelemetryRequestPipeline
         return receivers;
     }
 
-    private static OpenTelemetryTailSampling? GetTailSampling(OpenTelemetrySampler[] samplers)
+    private static OpenTelemetryTailSampler? GetTailSampler(OpenTelemetrySampler[] samplers)
     {
         ArgumentNullException.ThrowIfNull(samplers);
 
-        OpenTelemetryTailSampling? result = null;
+        OpenTelemetryTailSampler? result = null;
         foreach (var sampler in samplers)
         {
-            if (sampler is not OpenTelemetryTailSampling tailSampling)
+            if (sampler is not OpenTelemetryTailSampler tailSampling)
             {
                 continue;
             }
 
             if (result is not null)
             {
-                throw new InvalidOperationException($"Only one {nameof(OpenTelemetryTailSampling)} can be added to {nameof(OpenTelemetryReceiverOptions)}.{nameof(OpenTelemetryReceiverOptions.Samplers)}.");
+                throw new InvalidOperationException($"Only one {nameof(OpenTelemetryTailSampler)} can be added to {nameof(OpenTelemetryReceiverOptions)}.{nameof(OpenTelemetryReceiverOptions.Samplers)}.");
             }
 
             result = tailSampling;

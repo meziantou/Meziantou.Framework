@@ -159,7 +159,7 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Samplers.Add(new OpenTelemetryTailSampling
+            options.Samplers.Add(new OpenTelemetryTailSampler
             {
                 ShouldSample = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name == "root-keep"),
             });
@@ -181,7 +181,7 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Samplers.Add(new OpenTelemetryTailSampling
+            options.Samplers.Add(new OpenTelemetryTailSampler
             {
                 ShouldSample = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name == "root-keep"),
             });
@@ -204,7 +204,7 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Samplers.Add(new OpenTelemetryTailSampling
+            options.Samplers.Add(new OpenTelemetryTailSampler
             {
                 MaxTraceDuration = TimeSpan.FromMilliseconds(20),
                 ShouldSample = static (context, _) => ValueTask.FromResult(context.TimedOut),
@@ -226,7 +226,7 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Samplers.Add(new OpenTelemetryTailSampling
+            options.Samplers.Add(new OpenTelemetryTailSampler
             {
                 MaxBufferedSpansPerTrace = 2,
                 MaxBufferedSpans = 10,
@@ -249,7 +249,7 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Samplers.Add(new OpenTelemetryTailSampling
+            options.Samplers.Add(new OpenTelemetryTailSampler
             {
                 MaxBufferedSpansPerTrace = 2,
                 MaxBufferedSpans = 10,
@@ -276,7 +276,7 @@ public sealed class OpenTelemetryReceiverTests
     {
         await using var app = await TestApplication.CreateAsync(configureServices: services => services.Configure<OpenTelemetryReceiverOptions>(static options =>
         {
-            options.Samplers.Add(new OpenTelemetryTailSampling
+            options.Samplers.Add(new OpenTelemetryTailSampler
             {
                 MaxTraceDuration = TimeSpan.FromMilliseconds(20),
                 MaxBufferedSpansPerTrace = 2,

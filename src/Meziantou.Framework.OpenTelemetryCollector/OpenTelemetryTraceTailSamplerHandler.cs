@@ -5,7 +5,7 @@ using OpenTelemetry.Proto.Trace.V1;
 
 namespace Meziantou.Framework.OpenTelemetryCollector;
 
-internal sealed class OpenTelemetryTraceTailSampler
+internal sealed class OpenTelemetryTraceTailSamplerHandler
 {
     private readonly System.Threading.Lock _gate = new();
 
@@ -15,7 +15,7 @@ internal sealed class OpenTelemetryTraceTailSampler
     public async ValueTask HandleAsync(
         OpenTelemetryHandlerContext context,
         ExportTraceServiceRequest request,
-        OpenTelemetryTailSampling tailSampling,
+        OpenTelemetryTailSampler tailSampling,
         Func<OpenTelemetryHandlerContext, ExportTraceServiceRequest, CancellationToken, ValueTask> acceptedTraceHandler,
         CancellationToken cancellationToken)
     {
@@ -84,7 +84,7 @@ internal sealed class OpenTelemetryTraceTailSampler
         }
     }
 
-    private void CollectTimedOutTraces(OpenTelemetryTailSampling tailSampling, DateTimeOffset now, List<BufferedTraceEvaluation> evaluations)
+    private void CollectTimedOutTraces(OpenTelemetryTailSampler tailSampling, DateTimeOffset now, List<BufferedTraceEvaluation> evaluations)
     {
         ArgumentNullException.ThrowIfNull(tailSampling);
         ArgumentNullException.ThrowIfNull(evaluations);
@@ -120,7 +120,7 @@ internal sealed class OpenTelemetryTraceTailSampler
         state.HasRootSpan = ContainsRootSpan(state.Entries);
     }
 
-    private void ApplyCapacityPolicy(OpenTelemetryTailSampling tailSampling, BufferedTraceState state)
+    private void ApplyCapacityPolicy(OpenTelemetryTailSampler tailSampling, BufferedTraceState state)
     {
         ArgumentNullException.ThrowIfNull(tailSampling);
         ArgumentNullException.ThrowIfNull(state);

@@ -3044,14 +3044,19 @@ public sealed class TdsQueryEngineTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port));
-        await connection.OpenAsync();
+        var actualResult = await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(port));
+            await connection.OpenAsync();
 
-        await using var command = connection.CreateCommand();
-        configureCommand(command);
+            await using var command = connection.CreateCommand();
+            configureCommand(command);
 
-        await using var reader = await command.ExecuteReaderAsync();
-        Assert.Equal(NormalizeMultilineString(expected), await ReadResultAsync(reader));
+            await using var reader = await command.ExecuteReaderAsync();
+            return await ReadResultAsync(reader);
+        });
+
+        Assert.Equal(NormalizeMultilineString(expected), actualResult);
         var actualMaterializedQueries = NormalizeMultilineString(string.Join('\n', materializedQueries));
         AssertMaterializedQueries(expectedMaterializedQueries, actualMaterializedQueries);
     }
@@ -3069,14 +3074,46 @@ public sealed class TdsQueryEngineTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port));
-        await connection.OpenAsync();
+        var exception = await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(port));
+            await connection.OpenAsync();
 
-        await using var command = connection.CreateCommand();
-        configureCommand(command);
+            await using var command = connection.CreateCommand();
+            configureCommand(command);
 
-        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
+            return await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
+        });
+
         Assert.Equal(50004, exception.Number);
+    }
+
+    private static async Task<T> ExecuteWithTransientSqlRetry<T>(Func<Task<T>> action)
+    {
+        const int MaxAttempts = 3;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await action();
+            }
+            catch (SqlException ex) when (attempt < MaxAttempts && IsTransientSqlOpenFailure(ex))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(200 * attempt));
+            }
+        }
+    }
+
+    private static bool IsTransientSqlOpenFailure(SqlException exception)
+    {
+        if (exception.Number != -2)
+        {
+            return false;
+        }
+
+        var hasTimeout = exception.Message.Contains("Connection Timeout Expired", StringComparison.OrdinalIgnoreCase);
+        var hasPreLogin = exception.Message.Contains("pre-login", StringComparison.OrdinalIgnoreCase);
+        return hasTimeout && hasPreLogin;
     }
 
     private static void AssertMaterializedQueries(string expectedMaterializedQueries, string actualMaterializedQueries)

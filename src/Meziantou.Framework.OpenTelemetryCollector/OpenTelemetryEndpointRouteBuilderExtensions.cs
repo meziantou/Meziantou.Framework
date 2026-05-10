@@ -1,10 +1,10 @@
 using Google.Protobuf;
-using Meziantou.AspNetCore.OpenTelemetryCollector;
 using Meziantou.Framework.OpenTelemetryCollector.Abstractions.Grpc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using OpenTelemetry.Proto.Collector.Logs.V1;
 using OpenTelemetry.Proto.Collector.Metrics.V1;
@@ -21,24 +21,24 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        var options = endpoints.ServiceProvider.GetRequiredService<OpenTelemetryOptions>();
+        var options = endpoints.ServiceProvider.GetRequiredService<IOptions<OpenTelemetryReceiverOptions>>().Value;
 
         if (options.HttpLogsEndpoint is not null)
         {
-            endpoints.MapPost(options.HttpLogsEndpoint, (HttpRequest request, IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations, CancellationToken cancellationToken) =>
-                HandleLogsHttpRequestAsync(request, receiverRegistrations, cancellationToken));
+            endpoints.MapPost(options.HttpLogsEndpoint, (HttpRequest request, OpenTelemetryRequestPipeline pipeline, CancellationToken cancellationToken) =>
+                HandleLogsHttpRequestAsync(request, pipeline, cancellationToken));
         }
 
         if (options.HttpTracesEndpoint is not null)
         {
-            endpoints.MapPost(options.HttpTracesEndpoint, (HttpRequest request, IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations, CancellationToken cancellationToken) =>
-                HandleTracesHttpRequestAsync(request, receiverRegistrations, cancellationToken));
+            endpoints.MapPost(options.HttpTracesEndpoint, (HttpRequest request, OpenTelemetryRequestPipeline pipeline, CancellationToken cancellationToken) =>
+                HandleTracesHttpRequestAsync(request, pipeline, cancellationToken));
         }
 
         if (options.HttpMetricsEndpoint is not null)
         {
-            endpoints.MapPost(options.HttpMetricsEndpoint, (HttpRequest request, IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations, CancellationToken cancellationToken) =>
-                HandleMetricsHttpRequestAsync(request, receiverRegistrations, cancellationToken));
+            endpoints.MapPost(options.HttpMetricsEndpoint, (HttpRequest request, OpenTelemetryRequestPipeline pipeline, CancellationToken cancellationToken) =>
+                HandleMetricsHttpRequestAsync(request, pipeline, cancellationToken));
         }
 
         if (options.EnableGrpcEndpoints)
@@ -51,44 +51,40 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
         return endpoints;
     }
 
-    private static Task<IResult> HandleLogsHttpRequestAsync(HttpRequest request, IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations, CancellationToken cancellationToken)
+    private static Task<IResult> HandleLogsHttpRequestAsync(HttpRequest request, OpenTelemetryRequestPipeline pipeline, CancellationToken cancellationToken)
     {
         return HandleHttpRequestAsync(
             request,
-            receiverRegistrations,
             ExportLogsServiceRequest.Parser,
-            static (context, payload, ct) => context.Receiver.HandleLogsAsync(context.Context, payload, ct),
+            (context, payload, ct) => pipeline.HandleLogsAsync(context, payload, ct),
             static () => new ExportLogsServiceResponse(),
             cancellationToken);
     }
 
-    private static Task<IResult> HandleTracesHttpRequestAsync(HttpRequest request, IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations, CancellationToken cancellationToken)
+    private static Task<IResult> HandleTracesHttpRequestAsync(HttpRequest request, OpenTelemetryRequestPipeline pipeline, CancellationToken cancellationToken)
     {
         return HandleHttpRequestAsync(
             request,
-            receiverRegistrations,
             ExportTraceServiceRequest.Parser,
-            static (context, payload, ct) => context.Receiver.HandleTracesAsync(context.Context, payload, ct),
+            (context, payload, ct) => pipeline.HandleTracesAsync(context, payload, ct),
             static () => new ExportTraceServiceResponse(),
             cancellationToken);
     }
 
-    private static Task<IResult> HandleMetricsHttpRequestAsync(HttpRequest request, IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations, CancellationToken cancellationToken)
+    private static Task<IResult> HandleMetricsHttpRequestAsync(HttpRequest request, OpenTelemetryRequestPipeline pipeline, CancellationToken cancellationToken)
     {
         return HandleHttpRequestAsync(
             request,
-            receiverRegistrations,
             ExportMetricsServiceRequest.Parser,
-            static (context, payload, ct) => context.Receiver.HandleMetricsAsync(context.Context, payload, ct),
+            (context, payload, ct) => pipeline.HandleMetricsAsync(context, payload, ct),
             static () => new ExportMetricsServiceResponse(),
             cancellationToken);
     }
 
     private static async Task<IResult> HandleHttpRequestAsync<TRequest, TResponse>(
         HttpRequest request,
-        IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations,
         MessageParser<TRequest> parser,
-        Func<HandlerContext, TRequest, CancellationToken, ValueTask> handler,
+        Func<OpenTelemetryHandlerContext, TRequest, CancellationToken, ValueTask> handler,
         Func<TResponse> responseFactory,
         CancellationToken cancellationToken)
         where TRequest : class, IMessage<TRequest>
@@ -110,25 +106,9 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
 
         var method = $"{request.Method} {request.Path}";
         var context = OpenTelemetryHandlerContext.CreateHttp(method);
-        foreach (var receiver in GetReceivers(receiverRegistrations))
-        {
-            await handler(new HandlerContext(receiver, context), payload, cancellationToken);
-        }
+        await handler(context, payload, cancellationToken);
 
         return TypedResults.Ok(responseFactory());
-    }
-
-    private static OpenTelemetryHandler[] GetReceivers(IEnumerable<OpenTelemetryHandlerRegistration> receiverRegistrations)
-    {
-        ArgumentNullException.ThrowIfNull(receiverRegistrations);
-
-        var receivers = receiverRegistrations.Select(static item => item.Handler).ToArray();
-        if (receivers.Length is 0)
-        {
-            throw new InvalidOperationException($"No OpenTelemetry receivers are registered. Use {nameof(OpenTelemetryServiceCollectionExtensions)}.{nameof(OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver)}(...).");
-        }
-
-        return receivers;
     }
 
     private static bool IsSupportedContentType(string? contentType)
@@ -155,6 +135,4 @@ public static class OpenTelemetryEndpointRouteBuilderExtensions
         await request.Body.CopyToAsync(stream, cancellationToken);
         return parser.ParseFrom(stream.ToArray());
     }
-
-    private readonly record struct HandlerContext(OpenTelemetryHandler Receiver, OpenTelemetryHandlerContext Context);
 }

@@ -5,6 +5,7 @@ using Xunit;
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.ColorWithAliases), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.Permission), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.PermissionWithCombination), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
+[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.PermissionWithDisplayMetadata), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.NonConsecutiveEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.NonZeroEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
 [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.GeneratorTests.ByteBasedEnum), ExtensionMethodNamespace = "Meziantou.Framework.FastEnumGenerator.GeneratorTests.Generated")]
@@ -117,6 +118,21 @@ public sealed class FastEnumGeneratedBehaviorTests
         Assert.Equal(["None", "A", "B", "AandB", "C"], PermissionWithCombination.GetNames(useMetadata: false).ToArray());
         Assert.Equal(["None", "A", "B", "AandB", "C"], PermissionWithCombination.GetNames(useMetadata: true).ToArray());
         Assert.Equal([PermissionWithCombination.None, PermissionWithCombination.A, PermissionWithCombination.B, PermissionWithCombination.AandB, PermissionWithCombination.C], PermissionWithCombination.GetValues().ToArray());
+    }
+
+    [Fact]
+    public void Flags_WithDisplayMetadata_AreUsedForFormattingAndParsing()
+    {
+        var combined = PermissionWithDisplayMetadata.Read | PermissionWithDisplayMetadata.Write;
+        Assert.Equal("Read, Write", combined.ToStringFast(useMetadata: false));
+        Assert.Equal("Write metadata, Read metadata", combined.ToStringFast(useMetadata: true));
+        Assert.Equal("Read metadata", PermissionWithDisplayMetadata.Read.ToStringFast(useMetadata: true));
+
+        Assert.True(PermissionWithDisplayMetadata.TryParse("Read, Write", ignoreCase: false, useMetadata: false, out var parsedNonMetadata));
+        Assert.Equal(combined, parsedNonMetadata);
+
+        Assert.True(PermissionWithDisplayMetadata.TryParse("read metadata, write metadata", ignoreCase: true, useMetadata: true, out var parsedMetadata));
+        Assert.Equal(combined, parsedMetadata);
     }
 
     [Fact]

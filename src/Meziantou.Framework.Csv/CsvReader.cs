@@ -21,7 +21,12 @@ public class CsvReader
     public const char DefaultQuoteCharacter = '"';
 
     private CsvColumn[]? _columns;
-    private readonly char[] _readBuffer = new char[1];
+    private readonly char[] _readBuffer = new char[4096];
+    private int _readBufferOffset;
+    private int _readBufferLength;
+    private bool _hasBufferedChar;
+    private char _bufferedChar;
+    private bool _endOfStreamReached;
 
     /// <summary>Gets or sets the character used to separate values in a row. Default is a comma (,).</summary>
     public char Separator { get; set; } = DefaultSeparatorCharacter;
@@ -49,6 +54,15 @@ public class CsvReader
     {
         get
         {
+            if (_hasBufferedChar)
+                return false;
+
+            if (_readBufferOffset < _readBufferLength)
+                return false;
+
+            if (_endOfStreamReached)
+                return true;
+
             if (BaseReader is StreamReader streamReader)
                 return streamReader.EndOfStream;
 
@@ -64,14 +78,48 @@ public class CsvReader
         BaseReader = textReader ?? throw new ArgumentNullException(nameof(textReader));
     }
 
-    private async Task<char?> ReadCharAsync()
+    private async ValueTask<char?> ReadCharAsync()
     {
-        var buffer = _readBuffer;
-        var readCount = await BaseReader.ReadAsync(buffer, 0, 1).ConfigureAwait(false);
-        if (readCount <= 0)
+        if (_hasBufferedChar)
+        {
+            _hasBufferedChar = false;
+            return _bufferedChar;
+        }
+
+        return await ReadCharCoreAsync().ConfigureAwait(false);
+    }
+
+    private async ValueTask<char?> PeekCharAsync()
+    {
+        if (_hasBufferedChar)
+            return _bufferedChar;
+
+        var nextChar = await ReadCharCoreAsync().ConfigureAwait(false);
+        if (!nextChar.HasValue)
             return null;
 
-        return buffer[0];
+        _bufferedChar = nextChar.Value;
+        _hasBufferedChar = true;
+        return nextChar;
+    }
+
+    private async ValueTask<char?> ReadCharCoreAsync()
+    {
+        if (_endOfStreamReached)
+            return null;
+
+        if (_readBufferOffset >= _readBufferLength)
+        {
+            _readBufferLength = await BaseReader.ReadAsync(_readBuffer.AsMemory()).ConfigureAwait(false);
+            _readBufferOffset = 0;
+            if (_readBufferLength <= 0)
+            {
+                _endOfStreamReached = true;
+                return null;
+            }
+        }
+
+        return _readBuffer[_readBufferOffset++];
     }
 
     /// <summary>Reads the next row from the CSV data.</summary>
@@ -102,7 +150,7 @@ public class CsvReader
                 }
 
                 ColumnNumber++;
-                var next = BaseReader.Peek();
+                var next = await PeekCharAsync().ConfigureAwait(false);
                 if (inQuote)
                 {
                     if (c == '\n')
@@ -166,7 +214,7 @@ public class CsvReader
                 {
                     if (next == '\n')
                     {
-                        BaseReader.Read();
+                        await ReadCharAsync().ConfigureAwait(false);
                         ColumnNumber++;
                     }
 

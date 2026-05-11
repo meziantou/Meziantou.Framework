@@ -4,15 +4,8 @@ internal static class DiffAlgorithmHelpers
 {
     internal static void ApplySubDiff(DiffComputationResult subDiff, bool[] leftModified, int leftOffset, bool[] rightModified, int rightOffset)
     {
-        for (var i = 0; i < subDiff.LeftLength; i++)
-        {
-            leftModified[leftOffset + i] = subDiff.LeftModified[i];
-        }
-
-        for (var i = 0; i < subDiff.RightLength; i++)
-        {
-            rightModified[rightOffset + i] = subDiff.RightModified[i];
-        }
+        Array.Copy(subDiff.LeftModified, 0, leftModified, leftOffset, subDiff.LeftLength);
+        Array.Copy(subDiff.RightModified, 0, rightModified, rightOffset, subDiff.RightLength);
     }
 
     internal static int LowerBound(List<int> values, int value)

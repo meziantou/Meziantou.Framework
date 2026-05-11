@@ -114,15 +114,8 @@ internal static class PatienceDiff
         var result = new Dictionary<string, int>(comparer);
         for (var i = start; i < end; i++)
         {
-            var current = values[i];
-            if (result.TryGetValue(current, out _))
-            {
-                result[current] = Duplicate;
-            }
-            else
-            {
-                result[current] = i;
-            }
+            ref var position = ref CollectionsMarshal.GetValueRefOrAddDefault(result, values[i], out var exists);
+            position = exists ? Duplicate : i;
         }
 
         return result;

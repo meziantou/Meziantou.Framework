@@ -51,17 +51,14 @@ internal static class MyersDiff
 
         for (var i = 0; i < chunks.Length; i++)
         {
-            var s = chunks[i];
-            if (!h.TryGetValue(s, out var value))
+            ref var value = ref CollectionsMarshal.GetValueRefOrAddDefault(h, chunks[i], out var exists);
+            if (!exists)
             {
                 lastUsedCode++;
-                h[s] = lastUsedCode;
-                codes[i] = lastUsedCode;
+                value = lastUsedCode;
             }
-            else
-            {
-                codes[i] = value;
-            }
+
+            codes[i] = value;
         }
     }
 

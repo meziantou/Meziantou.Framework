@@ -88,12 +88,14 @@ internal static class HistogramDiff
         var bestScore = int.MaxValue;
         for (var leftIndex = leftStart; leftIndex < leftEnd; leftIndex++)
         {
-            if (!rightPositions.TryGetValue(left[leftIndex], out var positions))
+            var token = left[leftIndex];
+            if (!rightPositions.TryGetValue(token, out var positions))
                 continue;
 
-            foreach (var rightIndex in positions)
+            var score = leftFrequency[token] + rightFrequency[token];
+            for (var i = 0; i < positions.Count; i++)
             {
-                var score = leftFrequency[left[leftIndex]] + rightFrequency[left[leftIndex]];
+                var rightIndex = positions[i];
                 if (best is null || score < bestScore || (score == bestScore && IsBetterTieBreak(leftIndex, rightIndex, best.Value)))
                 {
                     best = new Anchor(leftIndex, rightIndex);
@@ -118,8 +120,8 @@ internal static class HistogramDiff
         var result = new Dictionary<string, int>(comparer);
         for (var i = start; i < end; i++)
         {
-            result.TryGetValue(values[i], out var count);
-            result[values[i]] = count + 1;
+            ref var count = ref CollectionsMarshal.GetValueRefOrAddDefault(result, values[i], out var exists);
+            count = exists ? count + 1 : 1;
         }
 
         return result;
@@ -130,11 +132,8 @@ internal static class HistogramDiff
         var result = new Dictionary<string, List<int>>(comparer);
         for (var i = start; i < end; i++)
         {
-            if (!result.TryGetValue(values[i], out var positions))
-            {
-                positions = new List<int>();
-                result.Add(values[i], positions);
-            }
+            ref var positions = ref CollectionsMarshal.GetValueRefOrAddDefault(result, values[i], out _);
+            positions ??= new List<int>();
 
             positions.Add(i);
         }

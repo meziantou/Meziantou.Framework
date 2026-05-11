@@ -5,6 +5,8 @@ namespace Meziantou.Extensions.Logging;
 /// <summary>A logger that writes to a file via the FileLoggerProvider.</summary>
 internal sealed class FileLogger(FileLoggerProvider provider, string categoryName) : ILogger
 {
+    private readonly string _shortCategoryName = GetShortCategoryName(categoryName);
+
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
@@ -24,13 +26,22 @@ internal sealed class FileLogger(FileLoggerProvider provider, string categoryNam
 
         var timestamp = provider.TimeProvider.GetUtcNow().ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture);
         var level = GetLogLevelString(logLevel);
-        var shortCategory = GetShortCategoryName(categoryName);
+        var logMessageBuilder = new StringBuilder(message.Length + _shortCategoryName.Length + 40);
+        logMessageBuilder.Append('[');
+        logMessageBuilder.Append(timestamp);
+        logMessageBuilder.Append("] [");
+        logMessageBuilder.Append(level);
+        logMessageBuilder.Append("] [");
+        logMessageBuilder.Append(_shortCategoryName);
+        logMessageBuilder.Append("] ");
+        logMessageBuilder.Append(message);
+        if (exception is not null)
+        {
+            logMessageBuilder.AppendLine();
+            logMessageBuilder.Append(exception);
+        }
 
-        var logMessage = exception is not null
-            ? $"[{timestamp}] [{level}] [{shortCategory}] {message}{Environment.NewLine}{exception}"
-            : $"[{timestamp}] [{level}] [{shortCategory}] {message}";
-
-        provider.WriteLog(logMessage);
+        provider.WriteLog(logMessageBuilder.ToString());
     }
 
     private static string GetLogLevelString(LogLevel logLevel) => logLevel switch

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Xml;
 using System.Xml.Schema;
+using Meziantou.Framework.Tds.Handler;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
@@ -23,19 +24,20 @@ public sealed class TdsQueryEngineOptions
     /// <summary>Gets the XML schema collections available to typed XML casts.</summary>
     public IDictionary<string, XmlSchemaSet> XmlSchemaCollections { get; } = new Dictionary<string, XmlSchemaSet>(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Adds an <see cref="IQueryable{T}"/> query root.</summary>
-    public TdsQueryEngineOptions AddQueryRoot<T>(string name, IQueryable<T> query)
+    /// <summary>Adds a query root factory resolved from the current query request context.</summary>
+    public TdsQueryEngineOptions AddQueryRoot<T>(string name, Func<TdsQueryContext, IQueryable<T>> queryFactory)
     {
-        QueryRoots.Add(new TdsQueryRoot(name, query));
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(queryFactory);
+
+        QueryRoots.Add(new TdsQueryRoot(name, context =>
+        {
+            ArgumentNullException.ThrowIfNull(context);
+
+            var query = queryFactory(context);
+            return query ?? throw new InvalidOperationException($"The query root '{name}' returned null.");
+        }));
         return this;
-    }
-
-    /// <summary>Adds an in-memory collection query root.</summary>
-    public TdsQueryEngineOptions AddQueryRoot<T>(string name, IEnumerable<T> collection)
-    {
-        ArgumentNullException.ThrowIfNull(collection);
-
-        return AddQueryRoot(name, collection.AsQueryable());
     }
 
     /// <summary>Adds or replaces a scalar SQL function mapping.</summary>

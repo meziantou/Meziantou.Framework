@@ -91,6 +91,10 @@ public sealed class FastEnumSourceGeneratorTests
         Assert.Contains("var separatorIndex = global::System.MemoryExtensions.IndexOf(remaining, ',');", generatedCode, StringComparison.Ordinal);
         Assert.Contains("token = global::System.MemoryExtensions.Trim(token);", generatedCode, StringComparison.Ordinal);
         Assert.DoesNotContain("TrimToken_", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("TryParseMetadataIgnoreCase_", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("if (IsNumericToken_", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("EqualsTokenOrdinalIgnoreCase_", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("EqualsToken_", generatedCode, StringComparison.Ordinal);
     }
 
     [Fact]

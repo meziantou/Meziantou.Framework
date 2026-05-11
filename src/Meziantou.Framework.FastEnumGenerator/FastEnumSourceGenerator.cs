@@ -458,10 +458,15 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.AppendLine();
         }
 
-        sb.Append("    private static bool EqualsToken_").Append(enumIndex).AppendLine("(global::System.ReadOnlySpan<char> value, string token, bool ignoreCase)");
+        sb.Append("    private static bool EqualsTokenOrdinal_").Append(enumIndex).AppendLine("(global::System.ReadOnlySpan<char> value, string token)");
         sb.AppendLine("    {");
-        sb.AppendLine("        var comparison = ignoreCase ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal;");
-        sb.AppendLine("        return global::System.MemoryExtensions.Equals(value, (global::System.ReadOnlySpan<char>)token, comparison);");
+        sb.AppendLine("        return global::System.MemoryExtensions.Equals(value, (global::System.ReadOnlySpan<char>)token, global::System.StringComparison.Ordinal);");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+
+        sb.Append("    private static bool EqualsTokenOrdinalIgnoreCase_").Append(enumIndex).AppendLine("(global::System.ReadOnlySpan<char> value, string token)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        return global::System.MemoryExtensions.Equals(value, (global::System.ReadOnlySpan<char>)token, global::System.StringComparison.OrdinalIgnoreCase);");
         sb.AppendLine("    }");
         sb.AppendLine();
 
@@ -560,32 +565,77 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
     private static void AppendTryParseHelpers(StringBuilder sb, string enumTypeName, EnumToProcess enumeration, int enumIndex, bool hasDistinctMetadata)
     {
-        sb.Append("    private static bool TryParseSingle_").Append(enumIndex).Append("(global::System.ReadOnlySpan<char> value, bool ignoreCase, bool useMetadata, out ").Append(enumTypeName).AppendLine(" result)");
-        sb.AppendLine("    {");
+        var tryParseSingleMethodName = "TryParseSingle_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+        var tryParseSingleIgnoreCaseMethodName = "TryParseSingleIgnoreCase_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+        AppendTryParseSingleHelperMethod(sb, enumTypeName, enumIndex, tryParseSingleMethodName, "s_parseTokens_" + enumIndex.ToString(CultureInfo.InvariantCulture), "s_parseValues_" + enumIndex.ToString(CultureInfo.InvariantCulture), "s_parseValueIndices_" + enumIndex.ToString(CultureInfo.InvariantCulture), ignoreCase: false);
+        AppendTryParseSingleHelperMethod(sb, enumTypeName, enumIndex, tryParseSingleIgnoreCaseMethodName, "s_parseTokens_" + enumIndex.ToString(CultureInfo.InvariantCulture), "s_parseValues_" + enumIndex.ToString(CultureInfo.InvariantCulture), "s_parseValueIndices_" + enumIndex.ToString(CultureInfo.InvariantCulture), ignoreCase: true);
+
+        string? tryParseSingleMetadataMethodName = null;
+        string? tryParseSingleMetadataIgnoreCaseMethodName = null;
         if (hasDistinctMetadata)
         {
-            sb.AppendLine("        if (useMetadata)");
-            sb.AppendLine("        {");
-            sb.Append("            for (var i = 0; i < s_parseMetadataTokens_").Append(enumIndex).AppendLine(".Length; i++)");
-            sb.AppendLine("            {");
-            sb.Append("                if (EqualsToken_").Append(enumIndex).Append("(value, s_parseMetadataTokens_").Append(enumIndex).AppendLine("[i], ignoreCase))");
-            sb.AppendLine("                {");
-            sb.Append("                    result = s_parseMetadataValues_").Append(enumIndex).Append("[s_parseMetadataValueIndices_").Append(enumIndex).AppendLine("[i]];");
-            sb.AppendLine("                    return true;");
-            sb.AppendLine("                }");
-            sb.AppendLine("            }");
-            sb.AppendLine();
-            sb.AppendLine("            result = default;");
-            sb.AppendLine("            return false;");
-            sb.AppendLine("        }");
-            sb.AppendLine();
+            tryParseSingleMetadataMethodName = "TryParseSingleMetadata_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+            tryParseSingleMetadataIgnoreCaseMethodName = "TryParseSingleMetadataIgnoreCase_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+            AppendTryParseSingleHelperMethod(sb, enumTypeName, enumIndex, tryParseSingleMetadataMethodName, "s_parseMetadataTokens_" + enumIndex.ToString(CultureInfo.InvariantCulture), "s_parseMetadataValues_" + enumIndex.ToString(CultureInfo.InvariantCulture), "s_parseMetadataValueIndices_" + enumIndex.ToString(CultureInfo.InvariantCulture), ignoreCase: false);
+            AppendTryParseSingleHelperMethod(sb, enumTypeName, enumIndex, tryParseSingleMetadataIgnoreCaseMethodName, "s_parseMetadataTokens_" + enumIndex.ToString(CultureInfo.InvariantCulture), "s_parseMetadataValues_" + enumIndex.ToString(CultureInfo.InvariantCulture), "s_parseMetadataValueIndices_" + enumIndex.ToString(CultureInfo.InvariantCulture), ignoreCase: true);
         }
 
-        sb.Append("        for (var i = 0; i < s_parseTokens_").Append(enumIndex).AppendLine(".Length; i++)");
+        string? tryParseFlagsMethodName = null;
+        string? tryParseFlagsIgnoreCaseMethodName = null;
+        string? tryParseFlagsMetadataMethodName = null;
+        string? tryParseFlagsMetadataIgnoreCaseMethodName = null;
+        if (enumeration.IsFlags)
+        {
+            tryParseFlagsMethodName = "TryParseFlags_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+            tryParseFlagsIgnoreCaseMethodName = "TryParseFlagsIgnoreCase_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+            AppendTryParseFlagsHelperMethod(sb, enumTypeName, enumIndex, tryParseFlagsMethodName, tryParseSingleMethodName);
+            AppendTryParseFlagsHelperMethod(sb, enumTypeName, enumIndex, tryParseFlagsIgnoreCaseMethodName, tryParseSingleIgnoreCaseMethodName);
+
+            if (hasDistinctMetadata && tryParseSingleMetadataMethodName is not null && tryParseSingleMetadataIgnoreCaseMethodName is not null)
+            {
+                tryParseFlagsMetadataMethodName = "TryParseFlagsMetadata_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+                tryParseFlagsMetadataIgnoreCaseMethodName = "TryParseFlagsMetadataIgnoreCase_" + enumIndex.ToString(CultureInfo.InvariantCulture);
+                AppendTryParseFlagsHelperMethod(sb, enumTypeName, enumIndex, tryParseFlagsMetadataMethodName, tryParseSingleMetadataMethodName);
+                AppendTryParseFlagsHelperMethod(sb, enumTypeName, enumIndex, tryParseFlagsMetadataIgnoreCaseMethodName, tryParseSingleMetadataIgnoreCaseMethodName);
+            }
+        }
+
+        AppendTryParseDispatchHelperMethod(sb, enumTypeName, "TryParse_" + enumIndex.ToString(CultureInfo.InvariantCulture), tryParseSingleMethodName, tryParseFlagsMethodName, ignoreCase: false);
+        AppendTryParseDispatchHelperMethod(sb, enumTypeName, "TryParseIgnoreCase_" + enumIndex.ToString(CultureInfo.InvariantCulture), tryParseSingleIgnoreCaseMethodName, tryParseFlagsIgnoreCaseMethodName, ignoreCase: true);
+        if (hasDistinctMetadata && tryParseSingleMetadataMethodName is not null && tryParseSingleMetadataIgnoreCaseMethodName is not null)
+        {
+            AppendTryParseDispatchHelperMethod(sb, enumTypeName, "TryParseMetadata_" + enumIndex.ToString(CultureInfo.InvariantCulture), tryParseSingleMetadataMethodName, tryParseFlagsMetadataMethodName, ignoreCase: false);
+            AppendTryParseDispatchHelperMethod(sb, enumTypeName, "TryParseMetadataIgnoreCase_" + enumIndex.ToString(CultureInfo.InvariantCulture), tryParseSingleMetadataIgnoreCaseMethodName, tryParseFlagsMetadataIgnoreCaseMethodName, ignoreCase: true);
+        }
+
+        sb.Append("    private static bool IsNumericToken_").Append(enumIndex).AppendLine("(global::System.ReadOnlySpan<char> value)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        if (value.IsEmpty)");
+        sb.AppendLine("            return false;");
+        sb.AppendLine();
+        sb.AppendLine("        var first = value[0];");
+        sb.AppendLine("        if (first is '+' or '-')");
         sb.AppendLine("        {");
-        sb.Append("            if (EqualsToken_").Append(enumIndex).Append("(value, s_parseTokens_").Append(enumIndex).AppendLine("[i], ignoreCase))");
+        sb.AppendLine("            if (value.Length == 1)");
+        sb.AppendLine("                return false;");
+        sb.AppendLine();
+        sb.AppendLine("            first = value[1];");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine("        return (uint)(first - '0') <= 9;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+    }
+
+    private static void AppendTryParseSingleHelperMethod(StringBuilder sb, string enumTypeName, int enumIndex, string methodName, string tokensArrayName, string valuesArrayName, string valueIndicesArrayName, bool ignoreCase)
+    {
+        sb.Append("    private static bool ").Append(methodName).Append("(global::System.ReadOnlySpan<char> value, out ").Append(enumTypeName).AppendLine(" result)");
+        sb.AppendLine("    {");
+        sb.Append("        for (var i = 0; i < ").Append(tokensArrayName).AppendLine(".Length; i++)");
+        sb.AppendLine("        {");
+        sb.Append("            if (").Append(ignoreCase ? "EqualsTokenOrdinalIgnoreCase_" : "EqualsTokenOrdinal_").Append(enumIndex).Append("(value, ").Append(tokensArrayName).AppendLine("[i]))");
         sb.AppendLine("            {");
-        sb.Append("                result = s_parseValues_").Append(enumIndex).Append("[s_parseValueIndices_").Append(enumIndex).AppendLine("[i]];");
+        sb.Append("                result = ").Append(valuesArrayName).Append('[').Append(valueIndicesArrayName).AppendLine("[i]];");
         sb.AppendLine("                return true;");
         sb.AppendLine("            }");
         sb.AppendLine("        }");
@@ -594,51 +644,81 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine("        return false;");
         sb.AppendLine("    }");
         sb.AppendLine();
+    }
 
-        if (enumeration.IsFlags)
+    private static void AppendTryParseFlagsHelperMethod(StringBuilder sb, string enumTypeName, int enumIndex, string methodName, string tryParseSingleMethodName)
+    {
+        sb.Append("    private static bool ").Append(methodName).Append("(global::System.ReadOnlySpan<char> value, out ").Append(enumTypeName).AppendLine(" result)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        var remaining = value;");
+        sb.AppendLine("        var hasToken = false;");
+        sb.AppendLine("        var parsedValue = 0UL;");
+        sb.AppendLine();
+        sb.AppendLine("        while (true)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            var separatorIndex = global::System.MemoryExtensions.IndexOf(remaining, ',');");
+        sb.AppendLine("            var token = separatorIndex >= 0 ? remaining[..separatorIndex] : remaining;");
+        sb.AppendLine("            token = global::System.MemoryExtensions.Trim(token);");
+        sb.AppendLine("            if (token.IsEmpty)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                result = default;");
+        sb.AppendLine("                return false;");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.Append("            if (!").Append(tryParseSingleMethodName).AppendLine("(token, out var tokenValue))");
+        sb.AppendLine("            {");
+        sb.AppendLine("                result = default;");
+        sb.AppendLine("                return false;");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.Append("            parsedValue |= ToUInt64_").Append(enumIndex).AppendLine("(tokenValue);");
+        sb.AppendLine("            hasToken = true;");
+        sb.AppendLine("            if (separatorIndex < 0)");
+        sb.AppendLine("                break;");
+        sb.AppendLine();
+        sb.AppendLine("            remaining = remaining[(separatorIndex + 1)..];");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine("        if (!hasToken)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            result = default;");
+        sb.AppendLine("            return false;");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.Append("        result = FromUInt64_").Append(enumIndex).AppendLine("(parsedValue);");
+        sb.AppendLine("        return true;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+    }
+
+    private static void AppendTryParseDispatchHelperMethod(StringBuilder sb, string enumTypeName, string methodName, string tryParseSingleMethodName, string? tryParseFlagsMethodName, bool ignoreCase)
+    {
+        sb.Append("    private static bool ").Append(methodName).Append("(global::System.ReadOnlySpan<char> value, out ").Append(enumTypeName).AppendLine(" result)");
+        sb.AppendLine("    {");
+        if (tryParseFlagsMethodName is not null)
         {
-            sb.Append("    private static bool TryParseFlags_").Append(enumIndex).Append("(global::System.ReadOnlySpan<char> value, bool ignoreCase, bool useMetadata, out ").Append(enumTypeName).AppendLine(" result)");
-            sb.AppendLine("    {");
-            sb.AppendLine("        var remaining = value;");
-            sb.AppendLine("        var hasToken = false;");
-            sb.AppendLine("        var parsedValue = 0UL;");
-            sb.AppendLine();
-            sb.AppendLine("        while (true)");
+            sb.AppendLine("        if (global::System.MemoryExtensions.IndexOf(value, ',') >= 0)");
             sb.AppendLine("        {");
-            sb.AppendLine("            var separatorIndex = global::System.MemoryExtensions.IndexOf(remaining, ',');");
-            sb.AppendLine("            var token = separatorIndex >= 0 ? remaining[..separatorIndex] : remaining;");
-            sb.AppendLine("            token = global::System.MemoryExtensions.Trim(token);");
-            sb.AppendLine("            if (token.IsEmpty)");
-            sb.AppendLine("            {");
-            sb.AppendLine("                result = default;");
-            sb.AppendLine("                return false;");
-            sb.AppendLine("            }");
-            sb.AppendLine();
-            sb.Append("            if (!TryParseSingle_").Append(enumIndex).AppendLine("(token, ignoreCase, useMetadata, out var tokenValue))");
-            sb.AppendLine("            {");
-            sb.AppendLine("                result = default;");
-            sb.AppendLine("                return false;");
-            sb.AppendLine("            }");
-            sb.AppendLine();
-            sb.Append("            parsedValue |= ToUInt64_").Append(enumIndex).AppendLine("(tokenValue);");
-            sb.AppendLine("            hasToken = true;");
-            sb.AppendLine("            if (separatorIndex < 0)");
-            sb.AppendLine("                break;");
-            sb.AppendLine();
-            sb.AppendLine("            remaining = remaining[(separatorIndex + 1)..];");
+            sb.Append("            if (").Append(tryParseFlagsMethodName).AppendLine("(value, out result))");
+            sb.AppendLine("                return true;");
             sb.AppendLine("        }");
-            sb.AppendLine();
-            sb.AppendLine("        if (!hasToken)");
+            sb.AppendLine("        else");
             sb.AppendLine("        {");
-            sb.AppendLine("            result = default;");
-            sb.AppendLine("            return false;");
+            sb.Append("            if (").Append(tryParseSingleMethodName).AppendLine("(value, out result))");
+            sb.AppendLine("                return true;");
             sb.AppendLine("        }");
-            sb.AppendLine();
-            sb.Append("        result = FromUInt64_").Append(enumIndex).AppendLine("(parsedValue);");
-            sb.AppendLine("        return true;");
-            sb.AppendLine("    }");
             sb.AppendLine();
         }
+        else
+        {
+            sb.Append("        if (").Append(tryParseSingleMethodName).AppendLine("(value, out result))");
+            sb.AppendLine("            return true;");
+            sb.AppendLine();
+        }
+
+        sb.Append("        return global::System.Enum.TryParse<").Append(enumTypeName).Append(">(value, ").Append(ignoreCase ? "true" : "false").AppendLine(", out result);");
+        sb.AppendLine("    }");
+        sb.AppendLine();
     }
 
     private static void AppendFormatFlagsName(StringBuilder sb, string enumTypeName, int enumIndex)
@@ -672,6 +752,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
     private static void AppendExtensionMembers(StringBuilder sb, string enumTypeName, string methodVisibility, EnumToProcess enumeration, int enumIndex)
     {
+        var hasDistinctMetadata = enumeration.Members.Any(static item => item.MetadataName is not null && !string.Equals(item.MetadataName, item.Name, StringComparison.Ordinal));
+
         sb.Append("    extension(").Append(enumTypeName).AppendLine(")");
         sb.AppendLine("    {");
         sb.Append("        ").Append(methodVisibility).Append(" static ").Append(enumTypeName).AppendLine(" Parse(string value, bool ignoreCase)");
@@ -733,28 +815,29 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         sb.Append("        ").Append(methodVisibility).Append(" static bool TryParse(global::System.ReadOnlySpan<char> value, bool ignoreCase, bool useMetadata, out ").Append(enumTypeName).AppendLine(" result)");
         sb.AppendLine("        {");
-        if (enumeration.IsFlags)
+        if (hasDistinctMetadata)
         {
-            sb.AppendLine("            if (global::System.MemoryExtensions.IndexOf(value, ',') >= 0)");
+            sb.AppendLine("            if (useMetadata)");
             sb.AppendLine("            {");
-            sb.Append("                if (TryParseFlags_").Append(enumIndex).AppendLine("(value, ignoreCase, useMetadata, out result))");
-            sb.AppendLine("                    return true;");
-            sb.AppendLine("            }");
-            sb.AppendLine("            else");
-            sb.AppendLine("            {");
-            sb.Append("                if (TryParseSingle_").Append(enumIndex).AppendLine("(value, ignoreCase, useMetadata, out result))");
-            sb.AppendLine("                    return true;");
+            sb.Append("                return ignoreCase ? TryParseMetadataIgnoreCase_").Append(enumIndex).Append("(value, out result) : TryParseMetadata_").Append(enumIndex).AppendLine("(value, out result);");
             sb.AppendLine("            }");
             sb.AppendLine();
         }
         else
         {
-            sb.Append("            if (TryParseSingle_").Append(enumIndex).AppendLine("(value, ignoreCase, useMetadata, out result))");
-            sb.AppendLine("                return true;");
+            sb.AppendLine("            if (useMetadata)");
+            sb.AppendLine("            {");
+            sb.Append("                return ignoreCase ? TryParseIgnoreCase_").Append(enumIndex).Append("(value, out result) : TryParse_").Append(enumIndex).AppendLine("(value, out result);");
+            sb.AppendLine("            }");
             sb.AppendLine();
         }
 
-        sb.Append("            return global::System.Enum.TryParse<").Append(enumTypeName).AppendLine(">(value, ignoreCase, out result);");
+        sb.Append("            if (IsNumericToken_").Append(enumIndex).AppendLine("(value))");
+        sb.AppendLine("            {");
+        sb.Append("                return global::System.Enum.TryParse<").Append(enumTypeName).AppendLine(">(value, ignoreCase, out result);");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.Append("            return ignoreCase ? TryParseIgnoreCase_").Append(enumIndex).Append("(value, out result) : TryParse_").Append(enumIndex).AppendLine("(value, out result);");
         sb.AppendLine("        }");
         sb.AppendLine();
 

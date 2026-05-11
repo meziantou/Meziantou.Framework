@@ -416,7 +416,7 @@ jobs:
           FEEDZ_APIKEY: ${{ secrets.FEEDZ_APIKEY }}
 
   final_status_check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     if: always()
     needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, create_nuget, validate_nuget, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
     steps:

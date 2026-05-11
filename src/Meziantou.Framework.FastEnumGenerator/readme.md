@@ -16,19 +16,45 @@ namespace Sample
 }
 ````
 
-The generated extension class contains:
-- `ToStringFast(this TEnum value)`
-- `ToStringFast(this TEnum value, bool useMetadata)`
-- `HasFlag(this TEnum value, TEnum flag)`
-- `GetName(this TEnum value)`
+## Generated methods
 
-When the target project supports C# 14 extension members, the generator also adds:
-- `Parse` / `TryParse` overloads (`string` and `ReadOnlySpan<char>`)
-- `IsDefined`
-- `GetNames(bool useMetadata)` returning `ReadOnlySpan<string>`
-- `GetValues()` returning `ReadOnlySpan<TEnum>`
+For each configured enum, the generator emits these instance extension methods:
 
-`useMetadata` uses names from `DisplayAttribute`, `DisplayNameAttribute`, and `EnumMemberAttribute` when available.
+- `string ToStringFast(this TEnum value)`
+- `string ToStringFast(this TEnum value, bool useMetadata)`
+- `bool HasFlag(this TEnum instance, TEnum flag)`
+- `string GetName(this TEnum instance)`
+
+Method behavior:
+
+- `ToStringFast` returns the declared enum name without using reflection.
+- `ToStringFast(..., useMetadata: true)` uses metadata names when available.
+- `GetName` is the non-metadata version of `ToStringFast`.
+- `HasFlag` uses typed bitwise operations (`(instance & flag) == flag`).
+
+When the target project supports C# 14 extension members, the generator also emits static members on `extension(TEnum)`:
+
+- `TEnum Parse(string value, bool ignoreCase)`
+- `TEnum Parse(ReadOnlySpan<char> value, bool ignoreCase)`
+- `TEnum Parse(string value, bool ignoreCase, bool useMetadata)`
+- `TEnum Parse(ReadOnlySpan<char> value, bool ignoreCase, bool useMetadata)`
+- `bool TryParse(string value, bool ignoreCase, out TEnum result)`
+- `bool TryParse(ReadOnlySpan<char> value, bool ignoreCase, out TEnum result)`
+- `bool TryParse(string value, bool ignoreCase, bool useMetadata, out TEnum result)`
+- `bool TryParse(ReadOnlySpan<char> value, bool ignoreCase, bool useMetadata, out TEnum result)`
+- `bool IsDefined(TEnum value)`
+- `ReadOnlySpan<string> GetNames(bool useMetadata)`
+- `ReadOnlySpan<TEnum> GetValues()`
+
+### Metadata names
+
+`useMetadata` uses names from:
+
+- `DisplayAttribute.Name`
+- `DisplayNameAttribute.DisplayName`
+- `EnumMemberAttribute.Value`
+
+When metadata is not available for a member, the declared enum name is used.
 
 # Additional resources
 

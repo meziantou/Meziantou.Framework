@@ -1,0 +1,51 @@
+name: retry-ci
+on:
+  workflow_run:
+    workflows:
+      - publish
+    types:
+      - completed
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  retry:
+    runs-on: ubuntu-slim
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.run_attempt == 1 }}
+    permissions:
+      actions: write
+      checks: read
+    steps:
+      - name: Retry failed jobs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.event.repository.full_name }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          $run = gh run view "$env:WORKFLOW_RUN_ID" --repo "$env:REPOSITORY" --json jobs | ConvertFrom-Json -AsHashtable
+          $failedJobs = @(
+            $run.jobs
+            | Where-Object { $_.conclusion -notin @('success', 'skipped') }
+          )
+          $retriableFailedJobs = @(
+            $failedJobs
+            | Where-Object { $_.name -ne 'final_status_check' }
+          )
+
+          if ($retriableFailedJobs.Count -eq 0) {
+            Write-Host "No failed jobs to retry."
+            exit 0
+          }
+
+          if ($env:WORKFLOW_HEAD_BRANCH -ne 'main' -and $retriableFailedJobs.Count -ge 3) {
+            $failedJobNames = $retriableFailedJobs.name | Sort-Object
+            Write-Host "Skipping retry because $($retriableFailedJobs.Count) jobs failed: $($failedJobNames -join ', ')"
+            exit 0
+          }
+
+          $failedJobNames = $retriableFailedJobs.name | Sort-Object
+          Write-Host "Retrying failed jobs: $($failedJobNames -join ', ')"
+          gh run rerun "$env:WORKFLOW_RUN_ID" --repo "$env:REPOSITORY" --failed

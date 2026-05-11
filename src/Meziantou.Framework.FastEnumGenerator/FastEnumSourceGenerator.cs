@@ -733,12 +733,23 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
 
         sb.Append("        ").Append(methodVisibility).Append(" static bool TryParse(global::System.ReadOnlySpan<char> value, bool ignoreCase, bool useMetadata, out ").Append(enumTypeName).AppendLine(" result)");
         sb.AppendLine("        {");
-        sb.Append("            if (TryParseSingle_").Append(enumIndex).AppendLine("(value, ignoreCase, useMetadata, out result))");
-        sb.AppendLine("                return true;");
-        sb.AppendLine();
         if (enumeration.IsFlags)
         {
-            sb.Append("            if (TryParseFlags_").Append(enumIndex).AppendLine("(value, ignoreCase, useMetadata, out result))");
+            sb.AppendLine("            if (global::System.MemoryExtensions.IndexOf(value, ',') >= 0)");
+            sb.AppendLine("            {");
+            sb.Append("                if (TryParseFlags_").Append(enumIndex).AppendLine("(value, ignoreCase, useMetadata, out result))");
+            sb.AppendLine("                    return true;");
+            sb.AppendLine("            }");
+            sb.AppendLine("            else");
+            sb.AppendLine("            {");
+            sb.Append("                if (TryParseSingle_").Append(enumIndex).AppendLine("(value, ignoreCase, useMetadata, out result))");
+            sb.AppendLine("                    return true;");
+            sb.AppendLine("            }");
+            sb.AppendLine();
+        }
+        else
+        {
+            sb.Append("            if (TryParseSingle_").Append(enumIndex).AppendLine("(value, ignoreCase, useMetadata, out result))");
             sb.AppendLine("                return true;");
             sb.AppendLine();
         }

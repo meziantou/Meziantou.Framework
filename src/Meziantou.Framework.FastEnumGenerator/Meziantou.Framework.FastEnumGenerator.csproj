@@ -14,10 +14,14 @@
   <ItemGroup>
     <None Include="Meziantou.Framework.FastEnumGenerator.targets" Pack="true" PackagePath="build/" />
     <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_netstandard2.0/$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)/../../Meziantou.Framework.FastEnumGenerator.CodeFixes/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.FastEnumGenerator.CodeFixes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

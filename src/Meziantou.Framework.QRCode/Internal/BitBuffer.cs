@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Internal;
 
 internal sealed class BitBuffer
 {
-    private byte[] _bytes = [];
+    private byte[]? _bytes;
     private int _bitCount;
 
     public int BitCount => _bitCount;
@@ -16,6 +16,7 @@ internal sealed class BitBuffer
             return;
 
         EnsureCapacity(_bitCount + bitCount);
+        var bytes = _bytes;
 
         var remainingBits = bitCount;
         if ((_bitCount & 7) == 0)
@@ -23,7 +24,7 @@ internal sealed class BitBuffer
             while (remainingBits >= 8)
             {
                 remainingBits -= 8;
-                _bytes[_bitCount >> 3] = (byte)(value >> remainingBits);
+                bytes[_bitCount >> 3] = (byte)(value >> remainingBits);
                 _bitCount += 8;
             }
         }
@@ -36,20 +37,27 @@ internal sealed class BitBuffer
 
             if (((value >> remainingBits) & 1) == 1)
             {
-                _bytes[byteIndex] |= (byte)(1u << bitIndex);
+                bytes[byteIndex] |= (byte)(1u << bitIndex);
             }
 
             _bitCount++;
         }
     }
 
+    [MemberNotNull(nameof(_bytes))]
     private void EnsureCapacity(int bitCount)
     {
         var requiredByteCount = (bitCount + 7) >> 3;
+        if (_bytes is null)
+        {
+            _bytes = new byte[Math.Max(requiredByteCount, 8)];
+            return;
+        }
+
         if (requiredByteCount <= _bytes.Length)
             return;
 
-        var newLength = _bytes.Length == 0 ? 8 : _bytes.Length;
+        var newLength = _bytes.Length;
         while (newLength < requiredByteCount)
         {
             newLength *= 2;
@@ -61,7 +69,7 @@ internal sealed class BitBuffer
     public byte[] ToByteArray()
     {
         var byteCount = (_bitCount + 7) >> 3;
-        if (byteCount == 0)
+        if (byteCount == 0 || _bytes is null)
             return [];
 
         return _bytes[..byteCount].ToArray();

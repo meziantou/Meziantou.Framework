@@ -12,7 +12,7 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 /// {
 ///     FilePatterns = [Glob.Parse("**/*.custom", GlobOptions.IgnoreCase)],
 ///     DependencyType = DependencyType.DockerImage,
-///     RegexPattern = @"image:\s*(?<name>[a-z/]+)(:(?<version>[0-9.]+))?"
+///     Regex = new Regex(@"image:\s*(?<name>[a-z/]+)(:(?<version>[0-9.]+))?", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10))
 /// };
 /// var options = new ScannerOptions { Scanners = [scanner] };
 /// var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", options, cancellationToken);
@@ -36,8 +36,8 @@ public sealed class RegexScanner : DependencyScanner
         }
     }
 
-    /// <summary>Gets or sets the regular expression pattern to match dependencies. The pattern must include named groups 'name' and optionally 'version'.</summary>
-    public string? RegexPattern { get; set; }
+    /// <summary>Gets or sets the regular expression used to match dependencies. The expression must include named groups 'name' and optionally 'version'.</summary>
+    public Regex? Regex { get; set; }
 
     /// <summary>Gets or sets the type of dependency to report when a match is found.</summary>
     public DependencyType DependencyType
@@ -57,7 +57,8 @@ public sealed class RegexScanner : DependencyScanner
 
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
-        if (RegexPattern is null)
+        var regex = Regex;
+        if (regex is null)
             return;
 
         _frozen = true;
@@ -65,7 +66,7 @@ public sealed class RegexScanner : DependencyScanner
         using var sr = new StreamReader(context.Content);
         var text = await sr.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
 
-        foreach (Match match in Regex.Matches(text, RegexPattern, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
+        foreach (Match match in regex.Matches(text))
         {
             Debug.Assert(match.Success);
 

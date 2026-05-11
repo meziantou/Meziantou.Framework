@@ -1,5 +1,6 @@
 #pragma warning disable MA0101
 using System.Collections.Immutable;
+using System.Text.RegularExpressions;
 using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
@@ -756,7 +757,7 @@ jobs:
         {
             FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
             DependencyType = DependencyType.DockerImage,
-            RegexPattern = "image: (?<name>[a-z]+):(?<version>[0-9]+)",
+            Regex = new Regex("image: (?<name>[a-z]+):(?<version>[0-9]+)", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)),
         }]);
         AssertContainDependency(result,
             (DependencyType.DockerImage, "node", "10", 2, 15));
@@ -786,7 +787,7 @@ jobs:
         {
             FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
             DependencyType = DependencyType.DockerImage,
-            RegexPattern = "image: (?<name>[a-z]+)(:(?<version>[0-9]+))?",
+            Regex = new Regex("image: (?<name>[a-z]+)(:(?<version>[0-9]+))?", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)),
         }]);
         AssertContainDependency(result,
             (DependencyType.DockerImage, "node", null, 0, 0));

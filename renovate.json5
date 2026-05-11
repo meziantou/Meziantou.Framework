@@ -8,7 +8,7 @@
       "matchPackageNames": [ "Microsoft.CodeAnalysis", "Microsoft.CodeAnalysis.CSharp" ],
       "matchFileNames": [
         "src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj",
-        "src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj",
+        "src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj",
         "src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj",
         "src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj",
         "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj"

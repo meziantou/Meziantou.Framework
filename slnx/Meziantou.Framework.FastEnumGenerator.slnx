@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
+    <Project Path="../src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
+    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
+  </Folder>
+  <Folder Name="/tests/SourceGenerators/">
+    <Project Path="../tests/Meziantou.Framework.FastEnumGenerator.GeneratorTests/Meziantou.Framework.FastEnumGenerator.GeneratorTests.csproj" />
+  </Folder>
+</Solution>

@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/DependencyScanningBenchmarks/DependencyScanningBenchmarks.csproj" />
+    <Project Path="benchmarks/FastEnumGeneratorBenchmarks/FastEnumGeneratorBenchmarks.csproj" />
     <Project Path="benchmarks/GlobbingBenchmarks/GlobbingBenchmarks.csproj" />
   </Folder>
   <Folder Name="/samples/">
@@ -46,7 +47,7 @@
     <Project Path="src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
     <Project Path="src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
     <Project Path="src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
-    <Project Path="src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj" />
+    <Project Path="src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder/Meziantou.Framework.FixedStringBuilder.csproj" />
     <Project Path="src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
@@ -150,7 +151,7 @@
     <Project Path="tests/Meziantou.Framework.DnsFilter.Tests/Meziantou.Framework.DnsFilter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.FastEnumToStringGenerator.Tests/Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Tests/Meziantou.Framework.FixedStringBuilder.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
@@ -222,6 +223,7 @@
   </Folder>
   <Folder Name="/tests/SourceGenerators/">
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.FastEnumGenerator.GeneratorTests/Meziantou.Framework.FastEnumGenerator.GeneratorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />
   </Folder>

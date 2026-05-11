@@ -93,6 +93,31 @@ app.MapTdsQueryEngine(queryEngineOptions);
 
 Query roots are resolved per request and receive the full query `context`, so you can prefilter data for the authenticated user (or use other request metadata) before SQL translation happens.
 
+You can also deny access to a specific stored procedure or query root:
+
+```csharp
+queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+{
+    var userId = context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    if (resourceKind == TdsQueryEngineResourceKind.StoredProcedure &&
+        string.Equals(resourceName, "AdminOnlyProc", StringComparison.OrdinalIgnoreCase))
+    {
+        return userId == "1";
+    }
+
+    if (resourceKind == TdsQueryEngineResourceKind.QueryRoot &&
+        string.Equals(resourceName, "admin_customers", StringComparison.OrdinalIgnoreCase))
+    {
+        return userId == "1";
+    }
+
+    return true;
+};
+```
+
+When authorization is denied, the built-in query engine returns a permission-denied error (SQL-style error `229`, class `14`). Unknown roots or stored procedures remain distinct errors.
+
 By default, the query engine materializes translated queries by enumerating the `IQueryable`. You can replace `MaterializeAsync` to use an async provider-specific materializer such as Entity Framework Core's `ToListAsync`.
 
 The initial SQL text support is intentionally small: one `SELECT` statement with optional non-recursive CTEs (`WITH ... AS (...)`) including CTE column lists, `FROM` (including derived tables), `INNER JOIN` (including derived tables), and `.NET 10+` `LEFT JOIN` / `RIGHT JOIN` (including derived tables), `CROSS APPLY` for `xml.nodes(...)`, `WHERE` comparisons combined with `AND`/`OR`/`NOT`, `IS NULL`/`IS NOT NULL`, `IN`/`NOT IN` (value lists and simple subqueries, including correlated references), `EXISTS`/`NOT EXISTS` (simple subqueries, including correlated references), SQL parameters, `TOP`, `DISTINCT`, `SELECT *` for single-table queries, selected columns with aliases, `ORDER BY` (including `OFFSET/FETCH`), `UNION`/`UNION ALL`, multi-column `GROUP BY`, `HAVING`, grouped aggregates (`COUNT(*)`, `SUM`, `MIN`, `MAX`, `AVG`), scalar arithmetic operators (`+`, `-`, `*`, `/`, `%`), string concatenation (`+`, `||`, `CONCAT`), and scalar functions (`UPPER`, `LOWER`, `LEN`, `LTRIM`, `RTRIM`, `TRIM`, `LEFT`, `RIGHT`, `SUBSTRING`, `REPLACE`, `TRANSLATE`, `STUFF`, `STRING_ESCAPE`, `FORMAT`, `ISNULL`, `COALESCE`, `NULLIF`, `IIF`, `CHOOSE`, `CAST`, `CONVERT`, `TRY_CAST`, `TRY_CONVERT`, `GETDATE`, `SYSDATETIME`, `DATEADD`, `DATEDIFF`, `EOMONTH`, `YEAR`, `MONTH`, `DAY`, `ABS`, `ROUND`, `CEILING`, `FLOOR`, `POWER`, `SQRT`, `EXP`, `LOG`, `SIN`, `COS`, `TAN`, `ASIN`, `ACOS`, `ATAN`, `ATN2`, `COT`, `ISJSON`, `JSON_VALUE`, `JSON_PATH_EXISTS`, `JSON_QUERY`) with SQL-style `lax`/`strict` path mode support for JSON path arguments, plus XML methods (`.query()`, `.value()`, `.exist()`, `.nodes()`) and typed/untyped XML casts.

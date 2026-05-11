@@ -32,15 +32,3 @@ public sealed class TdsQueryRoot
         return _queryFactory(context);
     }
 }
-
-internal static class TdsQueryContextExtensions
-{
-    internal static IQueryable ResolveQuery(this TdsQueryContext context, TdsQueryRoot queryRoot)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(queryRoot);
-
-        var query = queryRoot.GetQuery(context);
-        return query ?? throw new InvalidOperationException($"The query root '{queryRoot.Name}' returned null.");
-    }
-}

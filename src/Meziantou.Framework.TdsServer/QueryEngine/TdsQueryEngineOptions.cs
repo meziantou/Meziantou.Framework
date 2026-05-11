@@ -9,6 +9,14 @@ namespace Meziantou.Framework.Tds.QueryEngine;
 /// <summary>Configures the built-in TDS query engine.</summary>
 public sealed class TdsQueryEngineOptions
 {
+    private static readonly TdsQueryEngineAuthorizationHandler DefaultIsAuthorized = static (context, resourceKind, resourceName) =>
+    {
+        _ = context;
+        _ = resourceKind;
+        _ = resourceName;
+        return true;
+    };
+
     /// <summary>Gets the stored procedures available to RPC requests.</summary>
     public IDictionary<string, Delegate> StoredProcedures { get; } = new Dictionary<string, Delegate>(StringComparer.OrdinalIgnoreCase);
 
@@ -20,6 +28,12 @@ public sealed class TdsQueryEngineOptions
 
     /// <summary>Gets the scalar SQL function mappings used by the query translator.</summary>
     public IDictionary<string, TdsQueryScalarFunction> ScalarFunctions { get; } = SqlFunctions.CreateDefaultScalarFunctions();
+
+    /// <summary>Gets or sets the authorization callback used for stored procedures and query roots.</summary>
+    public TdsQueryEngineAuthorizationHandler IsAuthorized { get; set; } = DefaultIsAuthorized;
+
+    /// <summary>Gets or sets the factory used to build permission-denied errors.</summary>
+    public Func<TdsQueryContext, TdsQueryEngineResourceKind, string, TdsQueryError> NotAuthorizedErrorFactory { get; set; } = DefaultNotAuthorizedErrorFactory;
 
     /// <summary>Gets the XML schema collections available to typed XML casts.</summary>
     public IDictionary<string, XmlSchemaSet> XmlSchemaCollections { get; } = new Dictionary<string, XmlSchemaSet>(StringComparer.OrdinalIgnoreCase);
@@ -95,5 +109,26 @@ public sealed class TdsQueryEngineOptions
     private static void ValidationCallback(object? sender, ValidationEventArgs args)
     {
         throw new TdsQueryEngineException($"Invalid XML schema collection definition: {args.Message}");
+    }
+
+    private static TdsQueryError DefaultNotAuthorizedErrorFactory(TdsQueryContext context, TdsQueryEngineResourceKind resourceKind, string resourceName)
+    {
+        _ = context;
+        ArgumentException.ThrowIfNullOrWhiteSpace(resourceName);
+
+        var permission = resourceKind switch
+        {
+            TdsQueryEngineResourceKind.StoredProcedure => "EXECUTE",
+            TdsQueryEngineResourceKind.QueryRoot => "SELECT",
+            _ => throw new InvalidOperationException($"Unsupported resource kind '{resourceKind}'."),
+        };
+
+        return new TdsQueryError
+        {
+            Number = 229,
+            State = 5,
+            Class = 14,
+            Message = $"The {permission} permission was denied on the object '{resourceName}'.",
+        };
     }
 }

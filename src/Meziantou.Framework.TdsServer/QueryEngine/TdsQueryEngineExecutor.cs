@@ -26,11 +26,14 @@ internal sealed class TdsQueryEngineExecutor
 
             QueryContext = queryContext;
             QueryRoots = queryRoots;
+            ResolvedQueryRoots = new Dictionary<string, IQueryable>(StringComparer.OrdinalIgnoreCase);
         }
 
         public TdsQueryContext QueryContext { get; }
 
         public IReadOnlyDictionary<string, TdsQueryRoot> QueryRoots { get; }
+
+        public IDictionary<string, IQueryable> ResolvedQueryRoots { get; }
     }
 
     private readonly TdsQueryEngineOptions _options;
@@ -58,6 +61,12 @@ internal sealed class TdsQueryEngineExecutor
             var parameters = GetSqlParameters(context);
             return await ExecuteTextQueryAsync(commandText, parameters, queryExecutionContext, cancellationToken).ConfigureAwait(false);
         }
+        catch (TdsQueryAuthorizationException ex)
+        {
+            var error = _options.NotAuthorizedErrorFactory(context, ex.ResourceKind, ex.ResourceName)
+                ?? throw new InvalidOperationException("The not-authorized error factory returned null.");
+            return TdsQueryResult.FromError(error);
+        }
         catch (TdsQueryEngineException ex)
         {
             return TdsQueryResult.FromError(new TdsQueryError
@@ -80,7 +89,7 @@ internal sealed class TdsQueryEngineExecutor
                 continue;
             }
 
-            result.Add(queryRoot.Name, new TdsQueryRoot(queryRoot.Name, queryContext.ResolveQuery(queryRoot)));
+            result.Add(queryRoot.Name, queryRoot);
         }
 
         return new QueryExecutionContext(queryContext, result);
@@ -98,8 +107,20 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException($"Unknown stored procedure '{context.ProcedureName}'.");
         }
 
+        EnsureAuthorized(context, TdsQueryEngineResourceKind.StoredProcedure, context.ProcedureName);
         var value = await InvokeStoredProcedureAsync(storedProcedure, context.Parameters, cancellationToken).ConfigureAwait(false);
         return TdsQueryResultBuilder.FromValue(value);
+    }
+
+    private void EnsureAuthorized(TdsQueryContext context, TdsQueryEngineResourceKind resourceKind, string resourceName)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentException.ThrowIfNullOrWhiteSpace(resourceName);
+
+        if (!_options.IsAuthorized(context, resourceKind, resourceName))
+        {
+            throw new TdsQueryAuthorizationException(resourceKind, resourceName);
+        }
     }
 
     private static async ValueTask<object?> InvokeStoredProcedureAsync(Delegate storedProcedure, IReadOnlyList<TdsQueryParameter> parameters, CancellationToken cancellationToken)
@@ -420,15 +441,25 @@ internal sealed class TdsQueryEngineExecutor
     private QuerySource BuildTableSource(SqlTableRefExpression tableExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         var tableName = tableExpression.ObjectIdentifier.ObjectName.Value;
-        var root = cteRoots.TryGetValue(tableName, out var cteRoot)
-            ? cteRoot
-            : queryExecutionContext.QueryRoots.TryGetValue(tableName, out var queryRoot) ? queryRoot : null;
-        if (root is null)
+        if (cteRoots.TryGetValue(tableName, out var cteRoot))
+        {
+            var cteQuery = queryExecutionContext.QueryContext.ResolveQuery(cteRoot);
+            var cteAlias = tableExpression.Alias?.Value ?? tableName;
+            return new QuerySource(
+                cteQuery,
+                cteQuery.ElementType,
+                new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [cteAlias] = new AliasBinding(cteQuery.ElementType, expression => expression),
+                });
+        }
+
+        if (!queryExecutionContext.QueryRoots.TryGetValue(tableName, out var queryRoot))
         {
             throw new TdsQueryEngineException($"Unknown query root '{tableName}'.");
         }
 
-        var query = queryExecutionContext.QueryContext.ResolveQuery(root);
+        var query = ResolveConfiguredQueryRoot(queryExecutionContext, tableName, queryRoot);
         var alias = tableExpression.Alias?.Value ?? tableName;
         return new QuerySource(
             query,
@@ -437,6 +468,19 @@ internal sealed class TdsQueryEngineExecutor
             {
                 [alias] = new AliasBinding(query.ElementType, expression => expression),
             });
+    }
+
+    private IQueryable ResolveConfiguredQueryRoot(QueryExecutionContext queryExecutionContext, string queryRootName, TdsQueryRoot queryRoot)
+    {
+        if (queryExecutionContext.ResolvedQueryRoots.TryGetValue(queryRootName, out var query))
+        {
+            return query;
+        }
+
+        EnsureAuthorized(queryExecutionContext.QueryContext, TdsQueryEngineResourceKind.QueryRoot, queryRootName);
+        query = queryExecutionContext.QueryContext.ResolveQuery(queryRoot);
+        queryExecutionContext.ResolvedQueryRoots.Add(queryRootName, query);
+        return query;
     }
 
     private QuerySource BuildDerivedTableSource(SqlDerivedTableExpression tableExpression, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)

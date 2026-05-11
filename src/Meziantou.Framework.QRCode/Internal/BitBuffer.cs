@@ -3,9 +3,8 @@ namespace Meziantou.Framework.Internal;
 internal sealed class BitBuffer
 {
     private byte[]? _bytes;
-    private int _bitCount;
 
-    public int BitCount => _bitCount;
+    public int BitCount { get; private set; }
 
     public void Append(int value, int bitCount)
     {
@@ -15,32 +14,32 @@ internal sealed class BitBuffer
         if (bitCount == 0)
             return;
 
-        EnsureCapacity(_bitCount + bitCount);
+        EnsureCapacity(BitCount + bitCount);
         var bytes = _bytes;
 
         var remainingBits = bitCount;
-        if ((_bitCount & 7) == 0)
+        if ((BitCount & 7) is 0)
         {
             while (remainingBits >= 8)
             {
                 remainingBits -= 8;
-                bytes[_bitCount >> 3] = (byte)(value >> remainingBits);
-                _bitCount += 8;
+                bytes[BitCount >> 3] = (byte)(value >> remainingBits);
+                BitCount += 8;
             }
         }
 
         while (remainingBits > 0)
         {
             remainingBits--;
-            var byteIndex = _bitCount >> 3;
-            var bitIndex = 7 - (_bitCount & 7);
+            var byteIndex = BitCount >> 3;
+            var bitIndex = 7 - (BitCount & 7);
 
             if (((value >> remainingBits) & 1) == 1)
             {
                 bytes[byteIndex] |= (byte)(1u << bitIndex);
             }
 
-            _bitCount++;
+            BitCount++;
         }
     }
 
@@ -68,10 +67,10 @@ internal sealed class BitBuffer
 
     public byte[] ToByteArray()
     {
-        var byteCount = (_bitCount + 7) >> 3;
-        if (byteCount == 0 || _bytes is null)
+        var byteCount = (BitCount + 7) >> 3;
+        if (byteCount is 0 || _bytes is null)
             return [];
 
-        return _bytes[..byteCount].ToArray();
+        return [.. _bytes[..byteCount]];
     }
 }

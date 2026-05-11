@@ -137,6 +137,7 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query is generated within the test and not user-controlled.")]
     public async Task SqlClient_TextQuery_LargePayload_UsesMultiplePackets()
     {
         const string Marker = "LargePayloadMarker";
@@ -176,7 +177,7 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(456, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
         Assert.Contains(Marker, capturedContext.CommandText, StringComparison.Ordinal);
-        Assert.True(capturedContext.CommandText.Length > 6000);
+        Assert.True((capturedContext.CommandText?.Length ?? 0) > 6000);
     }
 
     [Fact]

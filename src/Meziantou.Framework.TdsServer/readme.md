@@ -74,12 +74,49 @@ var customers = new[]
 }.AsQueryable();
 
 var queryEngineOptions = new TdsQueryEngineOptions();
-queryEngineOptions.AddQueryRoot("customers", customers);
+queryEngineOptions.AddQueryRoot(
+    "customers",
+    context =>
+    {
+        if (int.TryParse(context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return customers.Where(customer => customer.Id == userId);
+        }
+
+        return customers;
+    });
 queryEngineOptions.StoredProcedures.Add("GetCustomer", (int id) => customers.Where(customer => customer.Id == id));
 
 app.MapTdsAuthenticationHandler((context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()));
 app.MapTdsQueryEngine(queryEngineOptions);
 ```
+
+Query roots are resolved per request and receive the full query `context`, so you can prefilter data for the authenticated user (or use other request metadata) before SQL translation happens.
+
+You can also deny access to a specific stored procedure or query root:
+
+```csharp
+queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+{
+    var userId = context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    if (resourceKind == TdsQueryEngineResourceKind.StoredProcedure &&
+        string.Equals(resourceName, "AdminOnlyProc", StringComparison.OrdinalIgnoreCase))
+    {
+        return userId == "1";
+    }
+
+    if (resourceKind == TdsQueryEngineResourceKind.QueryRoot &&
+        string.Equals(resourceName, "admin_customers", StringComparison.OrdinalIgnoreCase))
+    {
+        return userId == "1";
+    }
+
+    return true;
+};
+```
+
+When authorization is denied, the built-in query engine returns a permission-denied error (SQL-style error `229`, class `14`). Unknown roots or stored procedures remain distinct errors.
 
 By default, the query engine materializes translated queries by enumerating the `IQueryable`. You can replace `MaterializeAsync` to use an async provider-specific materializer such as Entity Framework Core's `ToListAsync`.
 

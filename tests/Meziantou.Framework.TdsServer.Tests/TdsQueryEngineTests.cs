@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Net;
+using System.Security.Claims;
 using System.Text;
 using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
@@ -37,6 +38,40 @@ public sealed class TdsQueryEngineTests
             4 David
             """,
             expectedMaterializedQueries: "Customer[].Select(customer => new TdsProjection() {Id = customer.Id, Name = customer.Name})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_QueryRootFactory_CanFilterUsingUserContext()
+    {
+        var queryEngineOptions = new TdsQueryEngineOptions();
+        queryEngineOptions.AddQueryRoot(
+            "customers",
+            context =>
+            {
+                var userIdClaim = context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, NumberStyles.Integer, CultureInfo.InvariantCulture, out var userId))
+                {
+                    return Array.Empty<Customer>().AsQueryable();
+                }
+
+                return GetCustomers().Where(customer => customer.Id == userId).AsQueryable();
+            });
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, Name
+                    FROM customers
+                    """;
+            },
+            expected: """
+                Id Name
+                2 Bob
+                """,
+            expectedMaterializedQueries: null,
+            userContext: CreateUserContext("2"));
     }
 
     [Fact]
@@ -2926,6 +2961,67 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
+    public async Task SqlClient_QueryEngine_StoredProcedure_Unauthorized_ReturnsPermissionDenied()
+    {
+        var procedureName = "query_engine_proc_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.StoredProcedures.Add(procedureName, () => GetCustomers());
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+            resourceKind != TdsQueryEngineResourceKind.StoredProcedure ||
+            !string.Equals(resourceName, procedureName, StringComparison.OrdinalIgnoreCase);
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandText = procedureName;
+            },
+            expectedErrorNumber: 229,
+            expectedMessageContains: "EXECUTE permission was denied");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_QueryRoot_Unauthorized_ReturnsPermissionDenied()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
+            resourceKind != TdsQueryEngineResourceKind.QueryRoot ||
+            !string.Equals(resourceName, "customers", StringComparison.OrdinalIgnoreCase);
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM customers
+                    """;
+            },
+            expectedErrorNumber: 229,
+            expectedMessageContains: "SELECT permission was denied");
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
+    public async Task SqlClient_QueryEngine_UnknownStoredProcedure_RemainsNotFoundError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) => false;
+
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandText = "query_engine_missing_proc_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+            },
+            expectedErrorNumber: 50004,
+            expectedMessageContains: "Unknown stored procedure");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_InvalidQuery_ReturnsServerError()
     {
         var invalidQueryTask = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -2965,12 +3061,22 @@ public sealed class TdsQueryEngineTests
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();
-        options.AddQueryRoot("customers", GetCustomers());
-        options.AddQueryRoot("orders", GetOrders());
-        options.AddQueryRoot("nullable_customers", GetNullableCustomers());
-        options.AddQueryRoot("json_docs", GetJsonDocuments());
-        options.AddQueryRoot("xml_docs", GetXmlDocuments());
+        options.AddQueryRoot("customers", context => GetCustomers().AsQueryable());
+        options.AddQueryRoot("orders", context => GetOrders().AsQueryable());
+        options.AddQueryRoot("nullable_customers", context => GetNullableCustomers().AsQueryable());
+        options.AddQueryRoot("json_docs", context => GetJsonDocuments().AsQueryable());
+        options.AddQueryRoot("xml_docs", context => GetXmlDocuments().AsQueryable());
         return options;
+    }
+
+    private static ClaimsPrincipal CreateUserContext(string userId)
+    {
+        var identity = new ClaimsIdentity(
+        [
+            new Claim(ClaimTypes.NameIdentifier, userId),
+        ],
+        authenticationType: "password");
+        return new ClaimsPrincipal(identity);
     }
 
     private static Customer[] GetCustomers()
@@ -3023,7 +3129,7 @@ public sealed class TdsQueryEngineTests
         ];
     }
 
-    private static async Task ExecuteQuery(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand, string expected, string expectedMaterializedQueries)
+    private static async Task ExecuteQuery(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand, string expected, string? expectedMaterializedQueries, ClaimsPrincipal? userContext = null)
     {
         var materializedQueries = new List<string>();
         var materializeAsync = queryEngineOptions.MaterializeAsync;
@@ -3038,7 +3144,7 @@ public sealed class TdsQueryEngineTests
 
         using var server = new TdsServer(
             options,
-            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master", userContext)),
             TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
 
         await server.StartAsync();
@@ -3057,18 +3163,21 @@ public sealed class TdsQueryEngineTests
         });
 
         Assert.Equal(NormalizeMultilineString(expected), actualResult);
-        var actualMaterializedQueries = NormalizeMultilineString(string.Join('\n', materializedQueries));
-        AssertMaterializedQueries(expectedMaterializedQueries, actualMaterializedQueries);
+        if (expectedMaterializedQueries is not null)
+        {
+            var actualMaterializedQueries = NormalizeMultilineString(string.Join('\n', materializedQueries));
+            AssertMaterializedQueries(expectedMaterializedQueries, actualMaterializedQueries);
+        }
     }
 
-    private static async Task ExecuteQueryExpectingServerError(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand)
+    private static async Task ExecuteQueryExpectingServerError(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand, int expectedErrorNumber = 50004, string? expectedMessageContains = null, ClaimsPrincipal? userContext = null)
     {
         var options = new TdsServerOptions();
         options.AddTcpListener(0, IPAddress.Loopback);
 
         using var server = new TdsServer(
             options,
-            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master", userContext)),
             TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
 
         await server.StartAsync();
@@ -3085,7 +3194,11 @@ public sealed class TdsQueryEngineTests
             return await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
         });
 
-        Assert.Equal(50004, exception.Number);
+        Assert.Equal(expectedErrorNumber, exception.Number);
+        if (!string.IsNullOrEmpty(expectedMessageContains))
+        {
+            Assert.Contains(expectedMessageContains, exception.Message, StringComparison.Ordinal);
+        }
     }
 
     private static async Task<T> ExecuteWithTransientSqlRetry<T>(Func<Task<T>> action)

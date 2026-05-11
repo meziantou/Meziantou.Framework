@@ -10,8 +10,7 @@ internal sealed class BitBuffer
     public void Append(int value, int bitCount)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(bitCount);
-        if (bitCount > sizeof(int) * 8)
-            throw new ArgumentOutOfRangeException(nameof(bitCount));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(bitCount, sizeof(int) * 8);
 
         if (bitCount == 0)
             return;

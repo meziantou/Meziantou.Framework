@@ -14,7 +14,15 @@ namespace Meziantou.Framework.FastEnumGenerator;
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FastEnumCodeFixProvider))]
 public sealed class FastEnumCodeFixProvider : CodeFixProvider
 {
-    private static readonly ImmutableArray<string> SupportedDiagnosticIds = [FastEnumAnalyzer.UseFastEnumParse.Id, FastEnumAnalyzer.UseFastEnumTryParse.Id, FastEnumAnalyzer.UseFastEnumGetNames.Id, FastEnumAnalyzer.UseFastEnumGetValues.Id, FastEnumAnalyzer.UseFastEnumGetName.Id, FastEnumAnalyzer.UseFastEnumIsDefined.Id, FastEnumAnalyzer.UseFastEnumToStringFast.Id];
+    private const string UseFastEnumParseDiagnosticId = "MFEG0002";
+    private const string UseFastEnumTryParseDiagnosticId = "MFEG0003";
+    private const string UseFastEnumGetNamesDiagnosticId = "MFEG0004";
+    private const string UseFastEnumGetValuesDiagnosticId = "MFEG0005";
+    private const string UseFastEnumGetNameDiagnosticId = "MFEG0006";
+    private const string UseFastEnumIsDefinedDiagnosticId = "MFEG0007";
+    private const string UseFastEnumToStringFastDiagnosticId = "MFEG0008";
+
+    private static readonly ImmutableArray<string> SupportedDiagnosticIds = [UseFastEnumParseDiagnosticId, UseFastEnumTryParseDiagnosticId, UseFastEnumGetNamesDiagnosticId, UseFastEnumGetValuesDiagnosticId, UseFastEnumGetNameDiagnosticId, UseFastEnumIsDefinedDiagnosticId, UseFastEnumToStringFastDiagnosticId];
 
     public override ImmutableArray<string> FixableDiagnosticIds => SupportedDiagnosticIds;
 
@@ -44,13 +52,13 @@ public sealed class FastEnumCodeFixProvider : CodeFixProvider
 
             var title = diagnostic.Id switch
             {
-                "MFEG0002" => "Use FastEnum Parse",
-                "MFEG0003" => "Use FastEnum TryParse",
-                "MFEG0004" => "Use FastEnum GetNames",
-                "MFEG0005" => "Use FastEnum GetValues",
-                "MFEG0006" => "Use FastEnum GetName",
-                "MFEG0007" => "Use FastEnum IsDefined",
-                "MFEG0008" => "Use FastEnum ToStringFast",
+                UseFastEnumParseDiagnosticId => "Use FastEnum Parse",
+                UseFastEnumTryParseDiagnosticId => "Use FastEnum TryParse",
+                UseFastEnumGetNamesDiagnosticId => "Use FastEnum GetNames",
+                UseFastEnumGetValuesDiagnosticId => "Use FastEnum GetValues",
+                UseFastEnumGetNameDiagnosticId => "Use FastEnum GetName",
+                UseFastEnumIsDefinedDiagnosticId => "Use FastEnum IsDefined",
+                UseFastEnumToStringFastDiagnosticId => "Use FastEnum ToStringFast",
                 _ => "Use FastEnum API",
             };
 

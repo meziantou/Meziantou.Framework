@@ -47,6 +47,7 @@
     <Project Path="src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
     <Project Path="src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
     <Project Path="src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
+    <Project Path="src/Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder/Meziantou.Framework.FixedStringBuilder.csproj" />

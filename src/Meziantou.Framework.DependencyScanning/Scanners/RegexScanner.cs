@@ -25,6 +25,10 @@ public sealed class RegexScanner : DependencyScanner
     private const string VersionGroupName = "version";
 
     private bool _frozen;
+    private string? _regexPattern;
+    private Regex? _regex;
+    private int _nameGroupNumber = -1;
+    private int _versionGroupNumber = -1;
 
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes
     {
@@ -37,7 +41,20 @@ public sealed class RegexScanner : DependencyScanner
     }
 
     /// <summary>Gets or sets the regular expression pattern to match dependencies. The pattern must include named groups 'name' and optionally 'version'.</summary>
-    public string? RegexPattern { get; set; }
+    public string? RegexPattern
+    {
+        get => _regexPattern;
+        set
+        {
+            if (_frozen)
+                throw new InvalidOperationException("The scanner is already used and cannot be modified.");
+
+            _regexPattern = value;
+            _regex = null;
+            _nameGroupNumber = -1;
+            _versionGroupNumber = -1;
+        }
+    }
 
     /// <summary>Gets or sets the type of dependency to report when a match is found.</summary>
     public DependencyType DependencyType
@@ -57,35 +74,49 @@ public sealed class RegexScanner : DependencyScanner
 
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
-        if (RegexPattern is null)
+        var regexPattern = RegexPattern;
+        if (regexPattern is null)
             return;
 
         _frozen = true;
+        var regex = _regex;
+        if (regex is null)
+        {
+            regex = new Regex(regexPattern, RegexOptions.Compiled | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10));
+            _regex = regex;
+            _nameGroupNumber = regex.GroupNumberFromName(NameGroupName);
+            if (_nameGroupNumber <= 0)
+                throw new InvalidOperationException($"The regular expression must define the '{NameGroupName}' named group.");
+
+            _versionGroupNumber = regex.GroupNumberFromName(VersionGroupName);
+        }
 
         using var sr = new StreamReader(context.Content);
         var text = await sr.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
 
-        foreach (Match match in Regex.Matches(text, RegexPattern, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
+        foreach (Match match in regex.Matches(text))
         {
             Debug.Assert(match.Success);
 
-            var nameGroup = match.Groups[NameGroupName];
+            var nameGroup = match.Groups[_nameGroupNumber];
             var name = nameGroup.Value;
             if (!string.IsNullOrEmpty(name))
             {
-                var versionGroup = match.Groups[VersionGroupName];
-                if (versionGroup.Success)
+                if (_versionGroupNumber >= 0)
                 {
-                    var version = versionGroup.Value;
-                    var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
-                    var versionLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, versionGroup.Index, versionGroup.Length);
-                    context.ReportDependency(this, name, version, DependencyType, nameLocation, versionLocation);
+                    var versionGroup = match.Groups[_versionGroupNumber];
+                    if (versionGroup.Success)
+                    {
+                        var version = versionGroup.Value;
+                        var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
+                        var versionLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, versionGroup.Index, versionGroup.Length);
+                        context.ReportDependency(this, name, version, DependencyType, nameLocation, versionLocation);
+                        continue;
+                    }
                 }
-                else
-                {
-                    var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
-                    context.ReportDependency(this, name, version: null, DependencyType, nameLocation, versionLocation: null);
-                }
+
+                var location = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
+                context.ReportDependency(this, name, version: null, DependencyType, location, versionLocation: null);
             }
         }
     }

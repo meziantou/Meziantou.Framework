@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
@@ -94,53 +95,68 @@ internal ref struct DnsWireReader
         var jumped = false;
         var originalPosition = -1;
         var pointerCount = 0;
+        var charBuffer = ArrayPool<char>.Shared.Rent(63);
 
-        while (position < message.Length)
+        try
         {
-            var length = message[position];
-
-            if (length is 0)
+            while (position < message.Length)
             {
-                position++;
-                break;
-            }
+                var length = message[position];
 
-            // Check for compression pointer (top 2 bits set)
-            if ((length & 0xC0) is 0xC0)
-            {
-                if (++pointerCount > maxPointers)
-                    throw new DnsProtocolException("Too many compression pointers in domain name (possible loop).");
-
-                if (position + 1 >= message.Length)
-                    throw new DnsProtocolException("Unexpected end of DNS message while reading compression pointer.");
-
-                var pointer = ((length & 0x3F) << 8) | message[position + 1];
-
-                if (!jumped)
+                if (length is 0)
                 {
-                    originalPosition = position + 2;
+                    position++;
+                    break;
                 }
 
-                position = pointer;
-                jumped = true;
-                continue;
+                // Check for compression pointer (top 2 bits set)
+                if ((length & 0xC0) is 0xC0)
+                {
+                    if (++pointerCount > maxPointers)
+                        throw new DnsProtocolException("Too many compression pointers in domain name (possible loop).");
+
+                    if (position + 1 >= message.Length)
+                        throw new DnsProtocolException("Unexpected end of DNS message while reading compression pointer.");
+
+                    var pointer = ((length & 0x3F) << 8) | message[position + 1];
+
+                    if (!jumped)
+                    {
+                        originalPosition = position + 2;
+                    }
+
+                    position = pointer;
+                    jumped = true;
+                    continue;
+                }
+
+                if ((length & 0xC0) != 0)
+                    throw new DnsProtocolException($"Invalid label type: 0x{length:X2}.");
+
+                position++;
+
+                if (position + length > message.Length)
+                    throw new DnsProtocolException("Domain name label extends beyond message boundary.");
+
+                if (sb.Length > 0)
+                {
+                    sb.Append('.');
+                }
+
+                if (length > charBuffer.Length)
+                {
+                    ArrayPool<char>.Shared.Return(charBuffer);
+                    charBuffer = ArrayPool<char>.Shared.Rent(length);
+                }
+
+                var charCount = Encoding.ASCII.GetChars(message.Slice(position, length), charBuffer);
+                sb.Append(charBuffer.AsSpan(0, charCount));
+                position += length;
             }
-
-            if ((length & 0xC0) != 0)
-                throw new DnsProtocolException($"Invalid label type: 0x{length:X2}.");
-
-            position++;
-
-            if (position + length > message.Length)
-                throw new DnsProtocolException("Domain name label extends beyond message boundary.");
-
-            if (sb.Length > 0)
-            {
-                sb.Append('.');
-            }
-
-            sb.Append(Encoding.ASCII.GetString(message.Slice(position, length)));
-            position += length;
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(charBuffer);
         }
 
         if (jumped)

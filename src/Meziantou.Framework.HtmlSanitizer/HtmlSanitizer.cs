@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Collections.Frozen;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 
@@ -46,38 +47,41 @@ public sealed class HtmlSanitizer
 
     private const string DefaulValidAttrs = DefaulUriAttrs + "," + DefaulSrcsetAttrs + "," + DefaultHtmlAttrs;
 
+    private static readonly FrozenSet<string> DefaultValidElementsSet = SplitToFrozenSet(DefaulValidElements);
+    private static readonly FrozenSet<string> DefaultValidAttributesSet = SplitToFrozenSet(DefaulValidAttrs);
+    private static readonly FrozenSet<string> DefaultBlockedElementsSet = SplitToFrozenSet(DefaulBlockedElements);
+    private static readonly FrozenSet<string> DefaultUriAttributesSet = SplitToFrozenSet(DefaulUriAttrs);
+    private static readonly FrozenSet<string> DefaultSrcsetAttributesSet = SplitToFrozenSet(DefaulSrcsetAttrs);
+
     /// <summary>Gets the set of HTML elements that are allowed in sanitized output. Elements not in this set will be removed unless they are in the BlockedElements set.</summary>
-    public ISet<string> ValidElements { get; } = SplitToHashSet(DefaulValidElements);
+    public ISet<string> ValidElements { get; } = CreateMutableSet(DefaultValidElementsSet);
 
     /// <summary>Gets the set of HTML attributes that are allowed in sanitized output. Attributes not in this set will be removed from elements.</summary>
-    public ISet<string> ValidAttributes { get; } = SplitToHashSet(DefaulValidAttrs);
+    public ISet<string> ValidAttributes { get; } = CreateMutableSet(DefaultValidAttributesSet);
 
     /// <summary>Gets the set of HTML elements that will be completely removed from the output, including their content. By default includes script and style elements.</summary>
-    public ISet<string> BlockedElements { get; } = SplitToHashSet(DefaulBlockedElements);
+    public ISet<string> BlockedElements { get; } = CreateMutableSet(DefaultBlockedElementsSet);
 
     /// <summary>Gets the set of attribute names that contain URLs and should be validated for safety. Unsafe URLs will be replaced with empty strings.</summary>
-    public ISet<string> UriAttributes { get; } = SplitToHashSet(DefaulUriAttrs);
+    public ISet<string> UriAttributes { get; } = CreateMutableSet(DefaultUriAttributesSet);
 
     /// <summary>Gets the set of attribute names that contain srcset values (responsive image sources) and should be validated for safety.</summary>
-    public ISet<string> SrcsetAttributes { get; } = SplitToHashSet(DefaulSrcsetAttrs);
+    public ISet<string> SrcsetAttributes { get; } = CreateMutableSet(DefaultSrcsetAttributesSet);
 
-    private static HashSet<string> SplitToHashSet(string text)
+    private static HashSet<string> CreateMutableSet(IEnumerable<string> values)
     {
-        var hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (!string.IsNullOrEmpty(text))
-        {
-            var items = text.Split(',');
-            foreach (var item in items)
-            {
-                var trim = item.Trim();
-                if (string.IsNullOrEmpty(trim))
-                    continue;
+        return new HashSet<string>(values, StringComparer.OrdinalIgnoreCase);
+    }
 
-                hashSet.Add(trim);
-            }
+    private static FrozenSet<string> SplitToFrozenSet(string text)
+    {
+        var values = text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (values.Length == 0)
+        {
+            return Array.Empty<string>().ToFrozenSet(StringComparer.OrdinalIgnoreCase);
         }
 
-        return hashSet;
+        return values.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
     }
 
     private bool IsValidNode(string tagName)

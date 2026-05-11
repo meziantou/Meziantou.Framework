@@ -1,16 +1,19 @@
+using System.Buffers;
 using Meziantou.Framework;
 
 namespace Meziantou.Framework.Globbing.Internals;
 
 internal sealed class CharacterSetSegment : Segment
 {
-    private readonly StringComparison _stringComparison;
+    private readonly SearchValues<char> _searchValues;
+    private readonly bool _ignoreCase;
 
     public CharacterSetSegment(string set, bool ignoreCase)
     {
         Set = set;
         IgnoreCase = ignoreCase;
-        _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        _ignoreCase = ignoreCase;
+        _searchValues = SearchValues.Create(ignoreCase ? set.ToUpperInvariant() : set);
     }
 
     public bool IgnoreCase { get; }
@@ -19,9 +22,12 @@ internal sealed class CharacterSetSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
-        bool result;
-        var c = pathReader.CurrentText[0];
-        result = Set.Contains(c, _stringComparison);
+        if (pathReader.CurrentText.IsEmpty || pathReader.IsEndOfCurrentSegment)
+            return false;
+
+        Span<char> currentCharacter = stackalloc char[1];
+        currentCharacter[0] = _ignoreCase ? char.ToUpperInvariant(pathReader.CurrentText[0]) : pathReader.CurrentText[0];
+        var result = currentCharacter.ContainsAny(_searchValues);
         if (result)
         {
             pathReader.ConsumeInSegment(1);

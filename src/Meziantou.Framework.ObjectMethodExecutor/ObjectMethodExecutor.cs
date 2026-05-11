@@ -47,6 +47,7 @@ public sealed class ObjectMethodExecutor
             typeof(Action<object, Action>), // onCompletedMethod
             typeof(Action<object, Action>), // unsafeOnCompletedMethod
         ])!;
+    private static readonly ConditionalWeakTable<MethodInfo, ObjectMethodExecutor> MethodExecutorCache = new();
 
     private ObjectMethodExecutor(MethodInfo methodInfo, TypeInfo targetTypeInfo, object?[]? parameterDefaultValues)
     {
@@ -98,6 +99,16 @@ public sealed class ObjectMethodExecutor
         ArgumentNullException.ThrowIfNull(methodInfo);
 
         return Create(methodInfo, parameterDefaultValues: null);
+    }
+
+    /// <summary>Gets a cached executor for the specified method, creating it if it does not already exist.</summary>
+    /// <param name="methodInfo">The method to be invoked.</param>
+    /// <returns>A cached <see cref="ObjectMethodExecutor"/> instance.</returns>
+    public static ObjectMethodExecutor GetOrCreate(MethodInfo methodInfo)
+    {
+        ArgumentNullException.ThrowIfNull(methodInfo);
+
+        return MethodExecutorCache.GetValue(methodInfo, static key => Create(key, parameterDefaultValues: null));
     }
 
     /// <summary>Creates an executor for the specified method with parameter default values.</summary>

@@ -1,9 +1,13 @@
+using System.Buffers;
+
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 public partial class QuerySyntax
 {
     private static class Lexer
     {
+        private static readonly SearchValues<char> TextTokenTerminators = SearchValues.Create(":=<>() \t\r\n");
+
         public static IEnumerable<QueryToken> Tokenize(string text)
         {
             var position = 0;
@@ -135,33 +139,30 @@ public partial class QuerySyntax
         private static QueryToken ReadText(ref int position, string text)
         {
             var start = position;
-
-            while (position < text.Length)
-            {
-                var c = text[position];
-                if (c is ':' or '=' or '<' or '>' or '(' or ')' || char.IsWhiteSpace(c))
-                    break;
-
-                position++;
-            }
+            var remaining = text.AsSpan(position);
+            var separatorPosition = remaining.IndexOfAny(TextTokenTerminators);
+            position = separatorPosition < 0 ? text.Length : position + separatorPosition;
 
             var length = position - start;
             var span = new TextSpan(start, length);
 
-            var tokenText = text.Substring(start, length);
+            var tokenText = text.AsSpan(start, length);
             var kind = GetKeywordOrText(tokenText);
-            return new QueryToken(kind, text, span, tokenText);
+            return new QueryToken(kind, text, span, tokenText.ToString());
         }
 
-        private static QuerySyntaxKind GetKeywordOrText(string text)
+        private static QuerySyntaxKind GetKeywordOrText(ReadOnlySpan<char> text)
         {
-            return text.ToLowerInvariant() switch
-            {
-                "not" => QuerySyntaxKind.NotKeyword,
-                "or" => QuerySyntaxKind.OrKeyword,
-                "and" => QuerySyntaxKind.AndKeyword,
-                _ => QuerySyntaxKind.TextToken,
-            };
+            if (text.Equals("not", StringComparison.OrdinalIgnoreCase))
+                return QuerySyntaxKind.NotKeyword;
+
+            if (text.Equals("or", StringComparison.OrdinalIgnoreCase))
+                return QuerySyntaxKind.OrKeyword;
+
+            if (text.Equals("and", StringComparison.OrdinalIgnoreCase))
+                return QuerySyntaxKind.AndKeyword;
+
+            return QuerySyntaxKind.TextToken;
         }
     }
 }

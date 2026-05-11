@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 
 namespace Meziantou.Framework.Tds.Protocol;
@@ -9,54 +10,83 @@ internal static class TdsPacketReader
         ArgumentNullException.ThrowIfNull(stream);
 
         TdsPacketType? messageType = null;
-        using var payload = new MemoryStream();
+        byte[]? payload = null;
+        var payloadLength = 0;
+        var header = ArrayPool<byte>.Shared.Rent(8);
 
-        while (true)
+        try
         {
-            var header = new byte[8];
-            if (!await TryReadExactlyAsync(stream, header, cancellationToken).ConfigureAwait(false))
+            while (true)
             {
-                if (payload.Length == 0)
+                if (!await TryReadExactlyAsync(stream, header.AsMemory(0, 8), cancellationToken).ConfigureAwait(false))
                 {
-                    return null;
+                    if (payloadLength == 0)
+                    {
+                        return null;
+                    }
+
+                    throw new InvalidDataException("Unexpected end of stream while reading TDS packet header.");
                 }
 
-                throw new InvalidDataException("Unexpected end of stream while reading TDS packet header.");
+                var packetType = (TdsPacketType)header[0];
+                var status = (TdsPacketStatus)header[1];
+                var packetLength = BinaryPrimitives.ReadUInt16BigEndian(header.AsSpan(2, 2));
+                if (packetLength < 8)
+                {
+                    throw new InvalidDataException("Invalid TDS packet length.");
+                }
+
+                messageType ??= packetType;
+                if (messageType != packetType)
+                {
+                    throw new InvalidDataException("TDS message packets must share the same packet type.");
+                }
+
+                var currentPayloadLength = packetLength - 8;
+                if (currentPayloadLength > 0)
+                {
+                    EnsurePayloadCapacity(ref payload, payloadLength + currentPayloadLength, payloadLength);
+                    await stream.ReadExactlyAsync(payload.AsMemory(payloadLength, currentPayloadLength), cancellationToken).ConfigureAwait(false);
+                    payloadLength += currentPayloadLength;
+                }
+
+                if ((status & TdsPacketStatus.EndOfMessage) == TdsPacketStatus.EndOfMessage)
+                {
+                    break;
+                }
             }
 
-            var packetType = (TdsPacketType)header[0];
-            var status = (TdsPacketStatus)header[1];
-            var packetLength = BinaryPrimitives.ReadUInt16BigEndian(header.AsSpan(2, 2));
-            if (packetLength < 8)
+            return new TdsPacket
             {
-                throw new InvalidDataException("Invalid TDS packet length.");
-            }
-
-            messageType ??= packetType;
-            if (messageType != packetType)
+                Type = messageType ?? TdsPacketType.TabularResult,
+                Payload = payloadLength == 0 ? [] : payload![..payloadLength].ToArray(),
+            };
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(header);
+            if (payload is not null)
             {
-                throw new InvalidDataException("TDS message packets must share the same packet type.");
-            }
-
-            var currentPayloadLength = packetLength - 8;
-            if (currentPayloadLength > 0)
-            {
-                var buffer = new byte[currentPayloadLength];
-                await stream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-                payload.Write(buffer, 0, buffer.Length);
-            }
-
-            if ((status & TdsPacketStatus.EndOfMessage) == TdsPacketStatus.EndOfMessage)
-            {
-                break;
+                ArrayPool<byte>.Shared.Return(payload);
             }
         }
+    }
 
-        return new TdsPacket
+    private static void EnsurePayloadCapacity(ref byte[]? payload, int requiredLength, int existingLength)
+    {
+        if (payload is null)
         {
-            Type = messageType ?? TdsPacketType.TabularResult,
-            Payload = payload.ToArray(),
-        };
+            payload = ArrayPool<byte>.Shared.Rent(requiredLength);
+            return;
+        }
+
+        if (payload.Length >= requiredLength)
+            return;
+
+        var newPayload = ArrayPool<byte>.Shared.Rent(requiredLength);
+        payload.AsSpan(0, existingLength).CopyTo(newPayload);
+        ArrayPool<byte>.Shared.Return(payload);
+        payload = newPayload;
     }
 
     private static async ValueTask<bool> TryReadExactlyAsync(Stream stream, Memory<byte> destination, CancellationToken cancellationToken)

@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Ntp;
@@ -49,9 +50,9 @@ internal struct NtpPacket
             Stratum = buffer[1],
             PollInterval = (sbyte)buffer[2],
             Precision = (sbyte)buffer[3],
-            RootDelay = (uint)(buffer[4] << 24 | buffer[5] << 16 | buffer[6] << 8 | buffer[7]),
-            RootDispersion = (uint)(buffer[8] << 24 | buffer[9] << 16 | buffer[10] << 8 | buffer[11]),
-            ReferenceIdentifier = (uint)(buffer[12] << 24 | buffer[13] << 16 | buffer[14] << 8 | buffer[15]),
+            RootDelay = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(4, 4)),
+            RootDispersion = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(8, 4)),
+            ReferenceIdentifier = BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(12, 4)),
             ReferenceTimestamp = NtpTimestamp.Decode(buffer[16..]),
             OriginateTimestamp = NtpTimestamp.Decode(buffer[24..]),
             ReceiveTimestamp = NtpTimestamp.Decode(buffer[32..]),
@@ -70,18 +71,9 @@ internal struct NtpPacket
         buffer[1] = Stratum;
         buffer[2] = (byte)PollInterval;
         buffer[3] = (byte)Precision;
-        buffer[4] = (byte)(RootDelay >> 24);
-        buffer[5] = (byte)(RootDelay >> 16);
-        buffer[6] = (byte)(RootDelay >> 8);
-        buffer[7] = (byte)RootDelay;
-        buffer[8] = (byte)(RootDispersion >> 24);
-        buffer[9] = (byte)(RootDispersion >> 16);
-        buffer[10] = (byte)(RootDispersion >> 8);
-        buffer[11] = (byte)RootDispersion;
-        buffer[12] = (byte)(ReferenceIdentifier >> 24);
-        buffer[13] = (byte)(ReferenceIdentifier >> 16);
-        buffer[14] = (byte)(ReferenceIdentifier >> 8);
-        buffer[15] = (byte)ReferenceIdentifier;
+        BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(4, 4), RootDelay);
+        BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(8, 4), RootDispersion);
+        BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(12, 4), ReferenceIdentifier);
         NtpTimestamp.Encode(ReferenceTimestamp, buffer[16..]);
         NtpTimestamp.Encode(OriginateTimestamp, buffer[24..]);
         NtpTimestamp.Encode(ReceiveTimestamp, buffer[32..]);

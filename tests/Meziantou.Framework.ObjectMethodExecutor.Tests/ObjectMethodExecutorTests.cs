@@ -6,6 +6,16 @@ namespace Meziantou.Framework.Tests;
 public sealed class ObjectMethodExecutorTests
 {
     [Fact]
+    public void GetOrCreate_ReturnsSameExecutorForTheSameMethod()
+    {
+        var method = typeof(Test).GetMethod(nameof(Test.SyncInt32))!;
+        var first = ObjectMethodExecutor.GetOrCreate(method);
+        var second = ObjectMethodExecutor.GetOrCreate(method);
+
+        Assert.Same(first, second);
+    }
+
+    [Fact]
     public void StaticSyncVoidTest()
     {
         var validator = new Validator();

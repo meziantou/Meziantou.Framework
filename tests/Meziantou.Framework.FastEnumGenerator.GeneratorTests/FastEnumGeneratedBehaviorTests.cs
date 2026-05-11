@@ -21,6 +21,108 @@ namespace Meziantou.Framework.FastEnumGenerator.GeneratorTests;
 
 public sealed class FastEnumGeneratedBehaviorTests
 {
+    [Theory]
+    [InlineData(Color.Blue)]
+    [InlineData(Color.Red)]
+    [InlineData((Color)42)]
+    public void ToStringFast_WithoutMetadata_MatchesEnumToString_Color(Color value)
+    {
+        Assert.Equal(value.ToString(), value.ToStringFast());
+    }
+
+    [Theory]
+    [InlineData(Permission.None)]
+    [InlineData(Permission.Read)]
+    [InlineData((Permission)3)]
+    [InlineData((Permission)8)]
+    public void ToStringFast_WithoutMetadata_MatchesEnumToString_Permission(Permission value)
+    {
+        Assert.Equal(value.ToString(), value.ToStringFast());
+    }
+
+    [Theory]
+    [InlineData("Blue", false)]
+    [InlineData("blue", true)]
+    [InlineData("  Green  ", false)]
+    [InlineData("1", false)]
+    [InlineData("Missing", false)]
+    public void Parse_WithoutMetadata_MatchesEnumParse_Color(string value, bool ignoreCase)
+    {
+        AssertParseMatchesBuiltIn<Color>(
+            value,
+            ignoreCase,
+            Color.Parse,
+            Color.Parse);
+    }
+
+    [Theory]
+    [InlineData("Read", false)]
+    [InlineData("read, write", true)]
+    [InlineData("Read, Write", false)]
+    [InlineData("3", false)]
+    [InlineData("Missing", false)]
+    public void Parse_WithoutMetadata_MatchesEnumParse_Permission(string value, bool ignoreCase)
+    {
+        AssertParseMatchesBuiltIn<Permission>(
+            value,
+            ignoreCase,
+            Permission.Parse,
+            Permission.Parse);
+    }
+
+    [Theory]
+    [InlineData("Blue", false)]
+    [InlineData("blue", true)]
+    [InlineData("  Green  ", false)]
+    [InlineData("1", false)]
+    [InlineData("Missing", false)]
+    public void TryParse_WithoutMetadata_MatchesEnumTryParse_Color(string value, bool ignoreCase)
+    {
+        AssertTryParseMatchesBuiltIn<Color>(
+            value,
+            ignoreCase,
+            Color.TryParse,
+            Color.TryParse);
+    }
+
+    [Theory]
+    [InlineData("Read", false)]
+    [InlineData("read, write", true)]
+    [InlineData("Read, Write", false)]
+    [InlineData("3", false)]
+    [InlineData("Missing", false)]
+    public void TryParse_WithoutMetadata_MatchesEnumTryParse_Permission(string value, bool ignoreCase)
+    {
+        AssertTryParseMatchesBuiltIn<Permission>(
+            value,
+            ignoreCase,
+            Permission.TryParse,
+            Permission.TryParse);
+    }
+
+    [Theory]
+    [InlineData((Permission)3, Permission.Read)]
+    [InlineData((Permission)3, Permission.Execute)]
+    [InlineData(Permission.Read, Permission.None)]
+    [InlineData(Permission.None, Permission.Read)]
+    public void HasFlag_MatchesEnumHasFlag_Permission(Permission value, Permission flag)
+    {
+        Assert.Equal(((Enum)(object)value).HasFlag((Enum)(object)flag), value.HasFlag(flag));
+    }
+
+    [Fact]
+    public void IsDefinedGetNamesGetValues_WithoutMetadata_MatchEnumApis()
+    {
+        Assert.Equal(Enum.IsDefined(typeof(Color), Color.Blue), Color.IsDefined(Color.Blue));
+        Assert.Equal(Enum.IsDefined(typeof(Color), (Color)42), Color.IsDefined((Color)42));
+        Assert.Equal(Enum.IsDefined(typeof(PermissionWithCombination), PermissionWithCombination.AandB), PermissionWithCombination.IsDefined(PermissionWithCombination.AandB));
+        Assert.Equal(Enum.IsDefined(typeof(PermissionWithCombination), PermissionWithCombination.A | PermissionWithCombination.C), PermissionWithCombination.IsDefined(PermissionWithCombination.A | PermissionWithCombination.C));
+        Assert.Equal(Enum.GetNames<Color>(), Color.GetNames(useMetadata: false).ToArray());
+        Assert.Equal(Enum.GetValues<Color>(), Color.GetValues().ToArray());
+        Assert.Equal(Enum.GetNames<PermissionWithCombination>(), PermissionWithCombination.GetNames(useMetadata: false).ToArray());
+        Assert.Equal(Enum.GetValues<PermissionWithCombination>(), PermissionWithCombination.GetValues().ToArray());
+    }
+
     [Fact]
     public void ToStringFast_UsesMetadataWhenRequested()
     {
@@ -198,5 +300,63 @@ public sealed class FastEnumGeneratedBehaviorTests
 
         Assert.True(UInt64BasedEnum.Two.HasFlag(UInt64BasedEnum.Two));
         Assert.Equal(UInt64BasedEnum.One, UInt64BasedEnum.Parse("One", ignoreCase: false));
+    }
+
+    private delegate bool StringTryParseDelegate<TEnum>(string value, bool ignoreCase, out TEnum result)
+        where TEnum : struct, Enum;
+
+    private delegate TEnum SpanParseDelegate<TEnum>(ReadOnlySpan<char> value, bool ignoreCase)
+        where TEnum : struct, Enum;
+
+    private delegate bool SpanTryParseDelegate<TEnum>(ReadOnlySpan<char> value, bool ignoreCase, out TEnum result)
+        where TEnum : struct, Enum;
+
+    private static void AssertParseMatchesBuiltIn<TEnum>(string value, bool ignoreCase, Func<string, bool, TEnum> fastParseString, SpanParseDelegate<TEnum> fastParseSpan)
+        where TEnum : struct, Enum
+    {
+        AssertParseResult(
+            ExecuteParse(() => Enum.Parse<TEnum>(value, ignoreCase)),
+            ExecuteParse(() => fastParseString(value, ignoreCase)));
+        AssertParseResult(
+            ExecuteParse(() => Enum.Parse<TEnum>(value.AsSpan(), ignoreCase)),
+            ExecuteParse(() => fastParseSpan(value.AsSpan(), ignoreCase)));
+    }
+
+    private static void AssertTryParseMatchesBuiltIn<TEnum>(string value, bool ignoreCase, StringTryParseDelegate<TEnum> fastTryParseString, SpanTryParseDelegate<TEnum> fastTryParseSpan)
+        where TEnum : struct, Enum
+    {
+        var expectedStringSucceeded = Enum.TryParse(value, ignoreCase, out TEnum expectedStringResult);
+        var actualStringSucceeded = fastTryParseString(value, ignoreCase, out var actualStringResult);
+        Assert.Equal(expectedStringSucceeded, actualStringSucceeded);
+        Assert.Equal(expectedStringResult, actualStringResult);
+
+        var expectedSpanSucceeded = Enum.TryParse(value.AsSpan(), ignoreCase, out TEnum expectedSpanResult);
+        var actualSpanSucceeded = fastTryParseSpan(value.AsSpan(), ignoreCase, out var actualSpanResult);
+        Assert.Equal(expectedSpanSucceeded, actualSpanSucceeded);
+        Assert.Equal(expectedSpanResult, actualSpanResult);
+    }
+
+    private static (Exception? Exception, TEnum Value) ExecuteParse<TEnum>(Func<TEnum> parse)
+        where TEnum : struct, Enum
+    {
+        try
+        {
+            return (null, parse());
+        }
+        catch (Exception exception)
+        {
+            return (exception, default);
+        }
+    }
+
+    private static void AssertParseResult<TEnum>((Exception? Exception, TEnum Value) expected, (Exception? Exception, TEnum Value) actual)
+        where TEnum : struct, Enum
+    {
+        Assert.Equal(expected.Exception?.GetType(), actual.Exception?.GetType());
+
+        if (expected.Exception is null)
+        {
+            Assert.Equal(expected.Value, actual.Value);
+        }
     }
 }

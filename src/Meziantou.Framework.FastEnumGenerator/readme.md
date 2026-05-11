@@ -46,6 +46,19 @@ When the target project supports C# 14 extension members, the generator also emi
 - `ReadOnlySpan<string> GetNames(bool useMetadata)`
 - `ReadOnlySpan<TEnum> GetValues()`
 
+## Analyzer rules
+
+The package also ships analyzers and code fixes for enums configured with `FastEnumAttribute`.
+
+- `MFEG0001`: invalid `FastEnumAttribute` enum type
+- `MFEG0002`: use `TEnum.Parse(...)` instead of `Enum.Parse(...)`
+- `MFEG0003`: use `TEnum.TryParse(...)` instead of `Enum.TryParse(...)`
+- `MFEG0004`: use `TEnum.GetNames(useMetadata: false)` instead of `Enum.GetNames(...)`
+- `MFEG0005`: use `TEnum.GetValues()` instead of `Enum.GetValues(...)`
+- `MFEG0006`: use `value.GetName()` instead of `Enum.GetName(...)`
+- `MFEG0007`: use `TEnum.IsDefined(...)` instead of `Enum.IsDefined(...)`
+- `MFEG0008`: use `value.ToStringFast()` instead of `value.ToString()`
+
 ### Metadata names
 
 `useMetadata` uses names from:

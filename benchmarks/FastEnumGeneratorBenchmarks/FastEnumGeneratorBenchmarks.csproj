@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(LatestTargetFramework)</TargetFramework>
+    <NoWarn>$(NoWarn);MFEG0002;MFEG0003;MFEG0004;MFEG0005;MFEG0006;MFEG0007;MFEG0008</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

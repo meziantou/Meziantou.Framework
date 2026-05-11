@@ -16,7 +16,63 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(InvalidEnumType);
+    internal static readonly DiagnosticDescriptor UseFastEnumParse = new(
+        id: "MFEG0002",
+        title: "Use FastEnum Parse",
+        messageFormat: "Use '{0}.Parse(...)' instead of 'Enum.Parse(...)'",
+        category: "FastEnumGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    internal static readonly DiagnosticDescriptor UseFastEnumTryParse = new(
+        id: "MFEG0003",
+        title: "Use FastEnum TryParse",
+        messageFormat: "Use '{0}.TryParse(...)' instead of 'Enum.TryParse(...)'",
+        category: "FastEnumGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    internal static readonly DiagnosticDescriptor UseFastEnumGetNames = new(
+        id: "MFEG0004",
+        title: "Use FastEnum GetNames",
+        messageFormat: "Use '{0}.GetNames(useMetadata: false)' instead of 'Enum.GetNames(...)'",
+        category: "FastEnumGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    internal static readonly DiagnosticDescriptor UseFastEnumGetValues = new(
+        id: "MFEG0005",
+        title: "Use FastEnum GetValues",
+        messageFormat: "Use '{0}.GetValues()' instead of 'Enum.GetValues(...)'",
+        category: "FastEnumGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    internal static readonly DiagnosticDescriptor UseFastEnumGetName = new(
+        id: "MFEG0006",
+        title: "Use FastEnum GetName",
+        messageFormat: "Use '{0}.GetName()' instead of 'Enum.GetName(...)'",
+        category: "FastEnumGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    internal static readonly DiagnosticDescriptor UseFastEnumIsDefined = new(
+        id: "MFEG0007",
+        title: "Use FastEnum IsDefined",
+        messageFormat: "Use '{0}.IsDefined(...)' instead of 'Enum.IsDefined(...)'",
+        category: "FastEnumGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    internal static readonly DiagnosticDescriptor UseFastEnumToStringFast = new(
+        id: "MFEG0008",
+        title: "Use FastEnum ToStringFast",
+        messageFormat: "Use 'ToStringFast()' instead of '{0}.ToString()'",
+        category: "FastEnumGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [InvalidEnumType, UseFastEnumParse, UseFastEnumTryParse, UseFastEnumGetNames, UseFastEnumGetValues, UseFastEnumGetName, UseFastEnumIsDefined, UseFastEnumToStringFast];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -24,11 +80,18 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
         context.EnableConcurrentExecution();
         context.RegisterCompilationStartAction(context =>
         {
-            var fastEnumAttribute = context.Compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.FastEnumAttribute");
+            var fastEnumAttribute = context.Compilation.GetTypeByMetadataName(FastEnumAnalyzerCommon.FastEnumAttributeMetadataName);
             if (fastEnumAttribute is null)
                 return;
 
             context.RegisterOperationAction(context => AnalyzeAttributeOperation(context, fastEnumAttribute), OperationKind.Attribute);
+
+            var enumType = context.Compilation.GetSpecialType(SpecialType.System_Enum);
+            var fastEnumTypes = FastEnumAnalyzerCommon.GetFastEnumTypes(context.Compilation, fastEnumAttribute);
+            if (fastEnumTypes.Count == 0)
+                return;
+
+            context.RegisterOperationAction(context => AnalyzeInvocationOperation(context, enumType, fastEnumTypes), OperationKind.Invocation);
         });
     }
 
@@ -63,5 +126,30 @@ public sealed class FastEnumAnalyzer : DiagnosticAnalyzer
             return;
 
         context.ReportDiagnostic(Diagnostic.Create(InvalidEnumType, location, typeOfOperation.TypeOperand.ToDisplayString()));
+    }
+
+    private static void AnalyzeInvocationOperation(OperationAnalysisContext context, INamedTypeSymbol enumType, ImmutableHashSet<INamedTypeSymbol> fastEnumTypes)
+    {
+        var invocationOperation = (IInvocationOperation)context.Operation;
+        if (!FastEnumAnalyzerCommon.TryGetFastEnumInvocationMatch(invocationOperation, enumType, fastEnumTypes, out var match))
+            return;
+
+        var diagnostic = Diagnostic.Create(GetDiagnosticDescriptor(match.MethodKind), invocationOperation.Syntax.GetLocation(), match.EnumType.ToDisplayString());
+        context.ReportDiagnostic(diagnostic);
+    }
+
+    private static DiagnosticDescriptor GetDiagnosticDescriptor(FastEnumMethodKind methodKind)
+    {
+        return methodKind switch
+        {
+            FastEnumMethodKind.Parse => UseFastEnumParse,
+            FastEnumMethodKind.TryParse => UseFastEnumTryParse,
+            FastEnumMethodKind.GetNames => UseFastEnumGetNames,
+            FastEnumMethodKind.GetValues => UseFastEnumGetValues,
+            FastEnumMethodKind.GetName => UseFastEnumGetName,
+            FastEnumMethodKind.IsDefined => UseFastEnumIsDefined,
+            FastEnumMethodKind.ToString => UseFastEnumToStringFast,
+            _ => InvalidEnumType,
+        };
     }
 }

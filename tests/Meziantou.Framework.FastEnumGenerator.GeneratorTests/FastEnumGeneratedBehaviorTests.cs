@@ -107,7 +107,7 @@ public sealed class FastEnumGeneratedBehaviorTests
     [InlineData(Permission.None, Permission.Read)]
     public void HasFlag_MatchesEnumHasFlag_Permission(Permission value, Permission flag)
     {
-        Assert.Equal(((Enum)(object)value).HasFlag((Enum)(object)flag), value.HasFlag(flag));
+        Assert.Equal((value & flag) == flag, value.HasFlag(flag));
     }
 
     [Fact]

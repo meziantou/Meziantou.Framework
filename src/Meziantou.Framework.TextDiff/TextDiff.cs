@@ -2,6 +2,9 @@ namespace Meziantou.Framework;
 
 public static class TextDiff
 {
+    private static readonly IEqualityComparer<string> OrdinalWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparer.Ordinal);
+    private static readonly IEqualityComparer<string> OrdinalIgnoreCaseWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparer.OrdinalIgnoreCase);
+
     public static TextDiffResult ComputeDiff(string oldText, string newText, TextDiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(oldText);
@@ -24,46 +27,51 @@ public static class TextDiff
 
     private static IEqualityComparer<string> BuildComparer(TextDiffOptions options)
     {
-        var inner = options.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-
         if (!options.IgnoreWhitespace)
-            return inner;
+            return options.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
-        return new WhitespaceTrimmingComparer(inner);
+        return options.IgnoreCase ? OrdinalIgnoreCaseWhitespaceComparer : OrdinalWhitespaceComparer;
     }
 
     private static TextDiffResult BuildResult(string[] oldChunks, string[] newChunks, DiffComputationResult diff)
     {
-        var entries = new List<TextDiffEntry>();
+        var leftModified = diff.LeftModified;
+        var rightModified = diff.RightModified;
+        var leftLength = leftModified.Length;
+        var rightLength = rightModified.Length;
+        var entries = new List<TextDiffEntry>(leftLength + rightLength);
         var hasDifferences = false;
 
         var lineLeft = 0;
         var lineRight = 0;
 
-        while (lineLeft < diff.LeftLength || lineRight < diff.RightLength)
+        while (lineLeft < leftLength || lineRight < rightLength)
         {
-            if (lineLeft < diff.LeftLength && !diff.LeftModified[lineLeft]
-                && lineRight < diff.RightLength && !diff.RightModified[lineRight])
+            while (lineLeft < leftLength
+                && lineRight < rightLength
+                && !leftModified[lineLeft]
+                && !rightModified[lineRight])
             {
                 entries.Add(new TextDiffEntry(TextDiffOperation.Equal, oldChunks[lineLeft]));
                 lineLeft++;
                 lineRight++;
             }
-            else
-            {
-                while (lineLeft < diff.LeftLength && (lineRight >= diff.RightLength || diff.LeftModified[lineLeft]))
-                {
-                    entries.Add(new TextDiffEntry(TextDiffOperation.Delete, oldChunks[lineLeft]));
-                    lineLeft++;
-                    hasDifferences = true;
-                }
 
-                while (lineRight < diff.RightLength && (lineLeft >= diff.LeftLength || diff.RightModified[lineRight]))
-                {
-                    entries.Add(new TextDiffEntry(TextDiffOperation.Insert, newChunks[lineRight]));
-                    lineRight++;
-                    hasDifferences = true;
-                }
+            if (lineLeft >= leftLength && lineRight >= rightLength)
+                break;
+
+            hasDifferences = true;
+
+            while (lineLeft < leftLength && (lineRight >= rightLength || leftModified[lineLeft]))
+            {
+                entries.Add(new TextDiffEntry(TextDiffOperation.Delete, oldChunks[lineLeft]));
+                lineLeft++;
+            }
+
+            while (lineRight < rightLength && (lineLeft >= leftLength || rightModified[lineRight]))
+            {
+                entries.Add(new TextDiffEntry(TextDiffOperation.Insert, newChunks[lineRight]));
+                lineRight++;
             }
         }
 
@@ -98,31 +106,14 @@ public static class TextDiff
             if (y is null)
                 return false;
 
-            return Trim(x.AsSpan()).Equals(Trim(y.AsSpan()), _comparison);
+            return x.AsSpan().Trim().Equals(y.AsSpan().Trim(), _comparison);
         }
 
         public int GetHashCode(string obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            var trimmed = Trim(obj.AsSpan());
+            var trimmed = obj.AsSpan().Trim();
             return string.GetHashCode(trimmed, _comparison);
-        }
-
-        private static ReadOnlySpan<char> Trim(ReadOnlySpan<char> value)
-        {
-            var start = 0;
-            while (start < value.Length && char.IsWhiteSpace(value[start]))
-            {
-                start++;
-            }
-
-            var end = value.Length - 1;
-            while (end >= start && char.IsWhiteSpace(value[end]))
-            {
-                end--;
-            }
-
-            return value[start..(end + 1)];
         }
     }
 }

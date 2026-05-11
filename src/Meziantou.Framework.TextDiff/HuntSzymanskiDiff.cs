@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework;
 
 internal static class HuntSzymanskiDiff
@@ -28,11 +30,8 @@ internal static class HuntSzymanskiDiff
         var positionsByToken = new Dictionary<string, List<int>>(comparer);
         for (var i = 0; i < right.Length; i++)
         {
-            if (!positionsByToken.TryGetValue(right[i], out var positions))
-            {
-                positions = new List<int>();
-                positionsByToken.Add(right[i], positions);
-            }
+            ref var positions = ref CollectionsMarshal.GetValueRefOrAddDefault(positionsByToken, right[i], out _);
+            positions ??= new List<int>();
 
             positions.Add(i);
         }

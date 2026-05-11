@@ -49,7 +49,7 @@ public sealed class TdsQueryEngineTests
             context =>
             {
                 var userIdClaim = context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (!int.TryParse(userIdClaim, out var userId))
+                if (!int.TryParse(userIdClaim, NumberStyles.Integer, CultureInfo.InvariantCulture, out var userId))
                 {
                     return Array.Empty<Customer>().AsQueryable();
                 }

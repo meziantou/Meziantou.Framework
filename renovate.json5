@@ -5,7 +5,7 @@
   ],
   "packageRules": [
     {
-      "matchPackageNames": [ "Microsoft.CodeAnalysis", "Microsoft.CodeAnalysis.CSharp" ],
+      "matchPackageNames": [ "Microsoft.CodeAnalysis", "Microsoft.CodeAnalysis.CSharp", "Microsoft.CodeAnalysis.CSharp.Workspaces" ],
       "matchFileNames": [
         "src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj",
         "src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj",

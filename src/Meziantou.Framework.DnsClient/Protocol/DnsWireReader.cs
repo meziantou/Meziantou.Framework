@@ -94,10 +94,12 @@ internal ref struct DnsWireReader
         var jumped = false;
         var originalPosition = -1;
         var pointerCount = 0;
+        Span<char> labelBuffer = stackalloc char[63];
 
         while (position < message.Length)
         {
             var length = message[position];
+            var labelType = length & 0xC0;
 
             if (length is 0)
             {
@@ -106,7 +108,7 @@ internal ref struct DnsWireReader
             }
 
             // Check for compression pointer (top 2 bits set)
-            if ((length & 0xC0) is 0xC0)
+            if (labelType is 0xC0)
             {
                 if (++pointerCount > maxPointers)
                     throw new DnsProtocolException("Too many compression pointers in domain name (possible loop).");
@@ -126,7 +128,7 @@ internal ref struct DnsWireReader
                 continue;
             }
 
-            if ((length & 0xC0) != 0)
+            if (labelType != 0)
                 throw new DnsProtocolException($"Invalid label type: 0x{length:X2}.");
 
             position++;
@@ -139,7 +141,8 @@ internal ref struct DnsWireReader
                 sb.Append('.');
             }
 
-            sb.Append(Encoding.ASCII.GetString(message.Slice(position, length)));
+            var charCount = Encoding.ASCII.GetChars(message.Slice(position, length), labelBuffer);
+            sb.Append(labelBuffer[..charCount]);
             position += length;
         }
 

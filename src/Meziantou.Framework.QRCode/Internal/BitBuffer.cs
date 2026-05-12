@@ -2,34 +2,75 @@ namespace Meziantou.Framework.Internal;
 
 internal sealed class BitBuffer
 {
-    private readonly List<byte> _bytes = [];
-    private int _bitCount;
+    private byte[]? _bytes;
 
-    public int BitCount => _bitCount;
+    public int BitCount { get; private set; }
 
     public void Append(int value, int bitCount)
     {
-        for (var i = bitCount - 1; i >= 0; i--)
+        ArgumentOutOfRangeException.ThrowIfNegative(bitCount);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(bitCount, sizeof(int) * 8);
+
+        if (bitCount == 0)
+            return;
+
+        EnsureCapacity(BitCount + bitCount);
+        var bytes = _bytes;
+
+        var remainingBits = bitCount;
+        if ((BitCount & 7) is 0)
         {
-            var byteIndex = _bitCount >> 3;
-            var bitIndex = 7 - (_bitCount & 7);
-
-            if (byteIndex >= _bytes.Count)
+            while (remainingBits >= 8)
             {
-                _bytes.Add(0);
+                remainingBits -= 8;
+                bytes[BitCount >> 3] = (byte)(value >> remainingBits);
+                BitCount += 8;
             }
-
-            if (((value >> i) & 1) == 1)
-            {
-                _bytes[byteIndex] |= (byte)(1 << bitIndex);
-            }
-
-            _bitCount++;
         }
+
+        while (remainingBits > 0)
+        {
+            remainingBits--;
+            var byteIndex = BitCount >> 3;
+            var bitIndex = 7 - (BitCount & 7);
+
+            if (((value >> remainingBits) & 1) == 1)
+            {
+                bytes[byteIndex] |= (byte)(1u << bitIndex);
+            }
+
+            BitCount++;
+        }
+    }
+
+    [MemberNotNull(nameof(_bytes))]
+    private void EnsureCapacity(int bitCount)
+    {
+        var requiredByteCount = (bitCount + 7) >> 3;
+        if (_bytes is null)
+        {
+            _bytes = new byte[Math.Max(requiredByteCount, 8)];
+            return;
+        }
+
+        if (requiredByteCount <= _bytes.Length)
+            return;
+
+        var newLength = _bytes.Length;
+        while (newLength < requiredByteCount)
+        {
+            newLength *= 2;
+        }
+
+        Array.Resize(ref _bytes, newLength);
     }
 
     public byte[] ToByteArray()
     {
-        return [.. _bytes];
+        var byteCount = (BitCount + 7) >> 3;
+        if (byteCount is 0 || _bytes is null)
+            return [];
+
+        return [.. _bytes[..byteCount]];
     }
 }

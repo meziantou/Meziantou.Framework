@@ -4,21 +4,20 @@ namespace Meziantou.Framework.Globbing.Internals;
 
 internal sealed class CharacterSetInverseSegment : Segment
 {
-    private readonly StringComparison _stringComparison;
+    private readonly CharacterSetMatcher _matcher;
 
     public CharacterSetInverseSegment(string set, bool ignoreCase)
     {
         Set = set;
-        _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        _matcher = CharacterSetMatcher.Create(set, ignoreCase);
     }
 
     public string Set { get; }
 
     public override bool IsMatch(ref PathReader pathReader)
     {
-        bool result;
         var c = pathReader.CurrentText[0];
-        result = !Set.Contains(c, _stringComparison);
+        var result = !_matcher.IsMatch(c);
         if (result)
         {
             pathReader.ConsumeInSegment(1);

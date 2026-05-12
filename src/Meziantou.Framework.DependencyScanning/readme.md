@@ -164,7 +164,7 @@ var options = new ScannerOptions
         {
             FilePatterns = [Glob.Parse("**/*.custom", GlobOptions.IgnoreCase)],
             DependencyType = DependencyType.DockerImage,
-            RegexPattern = @"image:\s*(?<name>[a-z/]+)(:(?<version>[0-9.]+))?"
+            Regex = new Regex(@"image:\s*(?<name>[a-z/]+)(:(?<version>[0-9.]+))?", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10))
         }
     ]
 };

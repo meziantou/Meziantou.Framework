@@ -20,65 +20,48 @@ public sealed class HtmlSanitizer
 
     // Safe Void Elements - HTML5
     // http://dev.w3.org/html5/spec/Overview.html#void-elements
-    private const string VoidElements = "area,br,col,hr,img,wbr";
+    private static readonly string[] VoidElements = ["area", "br", "col", "hr", "img", "wbr"];
 
     // Elements that you can, intentionally, leave open (and which close themselves)
     // http://dev.w3.org/html5/spec/Overview.html#optional-tags
-    private const string OptionalEndTagBlockElements = "colgroup,dd,dt,li,p,tbody,td,tfoot,th,thead,tr";
-    private const string OptionalEndTagInlineElements = "rp,rt";
-    private const string OptionalEndTagElements = OptionalEndTagInlineElements + "," + OptionalEndTagBlockElements;
+    private static readonly string[] OptionalEndTagBlockElements = ["colgroup", "dd", "dt", "li", "p", "tbody", "td", "tfoot", "th", "thead", "tr"];
+    private static readonly string[] OptionalEndTagInlineElements = ["rp", "rt"];
+    private static readonly string[] OptionalEndTagElements = [.. OptionalEndTagInlineElements, .. OptionalEndTagBlockElements];
 
     // Safe Block Elements - HTML5
-    private const string BlockElements = OptionalEndTagBlockElements + ",address,article,aside,blockquote,caption,center,del,dir,div,dl,figure,figcaption,footer,h1,h2,h3,h4,h5,h6,header,hgroup,hr,ins,map,menu,nav,ol,pre,section,table,ul";
+    private static readonly string[] BlockElements = [.. OptionalEndTagBlockElements, "address", "article", "aside", "blockquote", "caption", "center", "del", "dir", "div", "dl", "figure", "figcaption", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "ins", "map", "menu", "nav", "ol", "pre", "section", "table", "ul"];
 
     // Inline Elements - HTML5
-    private const string InlineElements = OptionalEndTagInlineElements + ",a,abbr,acronym,b,bdi,bdo,big,br,cite,code,del,dfn,em,font,i,img,ins,kbd,label,map,mark,q,ruby,rp,rt,s,samp,small,span,strike,strong,sub,sup,time,tt,u,var";
+    private static readonly string[] InlineElements = [.. OptionalEndTagInlineElements, "a", "abbr", "acronym", "b", "bdi", "bdo", "big", "br", "cite", "code", "del", "dfn", "em", "font", "i", "img", "ins", "kbd", "label", "map", "mark", "q", "ruby", "rp", "rt", "s", "samp", "small", "span", "strike", "strong", "sub", "sup", "time", "tt", "u", "var"];
 
     // Blocked Elements (will be stripped)
-    private const string DefaulBlockedElements = "script,style";
+    private static readonly string[] DefaulBlockedElements = ["script", "style"];
 
-    private const string DefaulValidElements = VoidElements + "," + BlockElements + "," + InlineElements + "," + OptionalEndTagElements;
+    private static readonly string[] DefaulValidElements = [.. VoidElements, .. BlockElements, .. InlineElements, .. OptionalEndTagElements];
 
     //Attributes that have href and hence need to be sanitized
-    private const string DefaulUriAttrs = "background,cite,href,longdesc,src,xlink:href";
-    private const string DefaulSrcsetAttrs = "srcset";
-    private const string DefaultHtmlAttrs = "abbr,align,alt,axis,bgcolor,border,cellpadding,cellspacing,class,clear,color,cols,colspan,compact,coords,dir,face,headers,height,hreflang,hspace,ismap,lang,language,nohref,nowrap,rel,rev,rows,rowspan,rules,scope,scrolling,shape,size,span,start,summary,tabindex,target,title,type,valign,value,vspace,width";
+    private static readonly string[] DefaulUriAttrs = ["background", "cite", "href", "longdesc", "src", "xlink:href"];
+    private static readonly string[] DefaulSrcsetAttrs = ["srcset"];
+    private static readonly string[] DefaultHtmlAttrs = ["abbr", "align", "alt", "axis", "bgcolor", "border", "cellpadding", "cellspacing", "class", "clear", "color", "cols", "colspan", "compact", "coords", "dir", "face", "headers", "height", "hreflang", "hspace", "ismap", "lang", "language", "nohref", "nowrap", "rel", "rev", "rows", "rowspan", "rules", "scope", "scrolling", "shape", "size", "span", "start", "summary", "tabindex", "target", "title", "type", "valign", "value", "vspace", "width"];
 
-    private const string DefaulValidAttrs = DefaulUriAttrs + "," + DefaulSrcsetAttrs + "," + DefaultHtmlAttrs;
+    private static readonly string[] DefaulValidAttrs = [.. DefaulUriAttrs, .. DefaulSrcsetAttrs, .. DefaultHtmlAttrs];
 
     /// <summary>Gets the set of HTML elements that are allowed in sanitized output. Elements not in this set will be removed unless they are in the BlockedElements set.</summary>
-    public ISet<string> ValidElements { get; } = SplitToHashSet(DefaulValidElements);
+    public ISet<string> ValidElements { get; } = ToHashSet(DefaulValidElements);
 
     /// <summary>Gets the set of HTML attributes that are allowed in sanitized output. Attributes not in this set will be removed from elements.</summary>
-    public ISet<string> ValidAttributes { get; } = SplitToHashSet(DefaulValidAttrs);
+    public ISet<string> ValidAttributes { get; } = ToHashSet(DefaulValidAttrs);
 
     /// <summary>Gets the set of HTML elements that will be completely removed from the output, including their content. By default includes script and style elements.</summary>
-    public ISet<string> BlockedElements { get; } = SplitToHashSet(DefaulBlockedElements);
+    public ISet<string> BlockedElements { get; } = ToHashSet(DefaulBlockedElements);
 
     /// <summary>Gets the set of attribute names that contain URLs and should be validated for safety. Unsafe URLs will be replaced with empty strings.</summary>
-    public ISet<string> UriAttributes { get; } = SplitToHashSet(DefaulUriAttrs);
+    public ISet<string> UriAttributes { get; } = ToHashSet(DefaulUriAttrs);
 
     /// <summary>Gets the set of attribute names that contain srcset values (responsive image sources) and should be validated for safety.</summary>
-    public ISet<string> SrcsetAttributes { get; } = SplitToHashSet(DefaulSrcsetAttrs);
+    public ISet<string> SrcsetAttributes { get; } = ToHashSet(DefaulSrcsetAttrs);
 
-    private static HashSet<string> SplitToHashSet(string text)
-    {
-        var hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (!string.IsNullOrEmpty(text))
-        {
-            var items = text.Split(',');
-            foreach (var item in items)
-            {
-                var trim = item.Trim();
-                if (string.IsNullOrEmpty(trim))
-                    continue;
-
-                hashSet.Add(trim);
-            }
-        }
-
-        return hashSet;
-    }
+    private static HashSet<string> ToHashSet(string[] values) => new(values, StringComparer.OrdinalIgnoreCase);
 
     private bool IsValidNode(string tagName)
     {

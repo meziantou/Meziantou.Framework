@@ -137,6 +137,50 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query is generated within the test and not user-controlled.")]
+    public async Task SqlClient_TextQuery_LargePayload_UsesMultiplePackets()
+    {
+        const string Marker = "LargePayloadMarker";
+        var longComment = new string('a', 7000);
+        var query = $"SELECT 1 /* {Marker}{longComment} */";
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.CommandText?.Contains(Marker, StringComparison.Ordinal) == true)
+                {
+                    queryContextTask.TrySetResult(context);
+                    return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 456));
+                }
+
+                return ValueTask.FromResult(new TdsQueryResult());
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port) + ";Packet Size=512");
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = query;
+
+        var result = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(456, Convert.ToInt32(result, CultureInfo.InvariantCulture));
+        Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
+        Assert.Contains(Marker, capturedContext.CommandText, StringComparison.Ordinal);
+        Assert.True((capturedContext.CommandText?.Length ?? 0) > 6000);
+    }
+
+    [Fact]
     public async Task SqlClient_TextQuery_UserContext_FromAuthentication_IsAvailableInQueryContext()
     {
         const string Marker = "TextQueryUserContextMarker";

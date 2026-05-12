@@ -54,7 +54,7 @@ public static partial class UrlSanitizer
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeUrl(string url)
     {
-        return SafeUrlRegex().IsMatch(url) || DataUrlPattern().IsMatch(url);
+        return IsSafeUrl(url.AsSpan());
     }
 
     /// <summary>Determines whether a srcset value (used for responsive images) is safe by validating all URLs in the comma-separated list.</summary>
@@ -63,16 +63,30 @@ public static partial class UrlSanitizer
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeSrcset(string url)
     {
-        return url.Split(',').All(value => IsSafeUrl(GetUrlPart(value)));
-
-        static string GetUrlPart(string value)
+        var remaining = url.AsSpan();
+        while (true)
         {
-            value = value.Trim(Whitespaces);
-            var separator = value.IndexOfAny(Whitespaces);
-            if (separator < 0)
-                return value;
+            var separatorIndex = remaining.IndexOf(',');
+            var segment = separatorIndex < 0 ? remaining : remaining[..separatorIndex];
+            segment = segment.Trim(Whitespaces);
 
-            return value[..separator];
+            if (!segment.IsEmpty)
+            {
+                var valueSeparator = segment.IndexOfAny(Whitespaces);
+                var value = valueSeparator < 0 ? segment : segment[..valueSeparator];
+                if (!IsSafeUrl(value))
+                    return false;
+            }
+
+            if (separatorIndex < 0)
+                return true;
+
+            remaining = remaining[(separatorIndex + 1)..];
         }
+    }
+
+    private static bool IsSafeUrl(ReadOnlySpan<char> url)
+    {
+        return SafeUrlRegex().IsMatch(url) || DataUrlPattern().IsMatch(url);
     }
 }

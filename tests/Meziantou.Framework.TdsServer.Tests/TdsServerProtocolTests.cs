@@ -2,6 +2,7 @@ using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -483,7 +484,9 @@ public sealed class TdsServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await WaitForServerReadyAsync(port, TimeSpan.FromSeconds(30));
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
@@ -862,9 +865,39 @@ public sealed class TdsServerProtocolTests
         return Convert.ToInt32(value, CultureInfo.InvariantCulture);
     }
 
-    private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true)
+    private static async Task WaitForServerReadyAsync(int port, TimeSpan timeout)
     {
-        return $"Server={IPAddress.Loopback},{port};User ID={userName};Password={password};Database=master;Encrypt={encrypt};TrustServerCertificate={(trustServerCertificate ? "True" : "False")};Pooling=False;Connect Timeout=5";
+        var deadline = DateTime.UtcNow + timeout;
+        Exception? lastException = null;
+
+        while (DateTime.UtcNow < deadline)
+        {
+            using var client = new TcpClient();
+
+            try
+            {
+                using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
+                return;
+            }
+            catch (OperationCanceledException ex)
+            {
+                lastException = ex;
+            }
+            catch (SocketException ex)
+            {
+                lastException = ex;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+        }
+
+        throw new TimeoutException($"The test server on {IPAddress.Loopback}:{port} was not ready within {timeout}.", lastException);
+    }
+
+    private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)
+    {
+        return $"Server={IPAddress.Loopback},{port};User ID={userName};Password={password};Database=master;Encrypt={encrypt};TrustServerCertificate={(trustServerCertificate ? "True" : "False")};Pooling=False;Connect Timeout={connectTimeout}";
     }
 
     private static TlsCertificateFiles CreateTlsCertificateFiles()

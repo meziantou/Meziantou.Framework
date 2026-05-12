@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Meziantou.Framework;
 
@@ -34,19 +36,23 @@ public static class CodeOwnersParser
     [StructLayout(LayoutKind.Auto)]
     private struct CodeOwnersParserContext
     {
+        private static readonly SearchValues<char> PatternSeparatorSearchValues = SearchValues.Create(" \t\r\n\\");
+        private static readonly SearchValues<char> MemberSeparatorSearchValues = SearchValues.Create(" \t\r\n");
+
         private readonly List<CodeOwnersEntry> _entries = [];
-        private readonly StringLexer _lexer;
+        private readonly string _content;
         private CodeOwnersSection? _currentSection;
         private int _index;
+        private int _patternIndex;
 
         public CodeOwnersParserContext(string content)
         {
-            _lexer = new StringLexer(content);
+            _content = content;
         }
 
         public List<CodeOwnersEntry> Parse()
         {
-            while (!_lexer.EndOfFile)
+            while (!EndOfFile)
             {
                 ParseLine();
             }
@@ -56,15 +62,15 @@ public static class CodeOwnersParser
 
         private void ParseLine()
         {
-            if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+            if (TryConsumeEndOfLineOrEndOfFile())
                 return;
 
-            var c = _lexer.Peek();
+            var c = Peek();
 
             // Comment
             if (c == '#')
             {
-                _lexer.ConsumeUntil('\n');
+                ConsumeUntil('\n');
                 return;
             }
 
@@ -81,47 +87,47 @@ public static class CodeOwnersParser
                 return;
 
             // Parse members (username or email)
-            ParseMembers(pattern, _index);
-            _index++;
+            ParseMembers(pattern, _patternIndex);
+            _patternIndex++;
         }
 
-        private readonly bool TryParseSection(out CodeOwnersSection section)
+        private bool TryParseSection(out CodeOwnersSection section)
         {
-            if (!_lexer.EndOfFile)
+            if (!EndOfFile)
             {
-                if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                if (TryConsumeEndOfLineOrEndOfFile())
                 {
                     section = default;
                     return false;
                 }
 
                 var isOptional = false;
-                var c = _lexer.Peek();
+                var c = Peek();
                 if (c == '^')
                 {
                     isOptional = true;
-                    _lexer.Consume();
+                    Consume();
                 }
 
-                c = _lexer.Peek();
+                c = Peek();
                 if (c == '[')
                 {
                     var name = ParseSectionName();
 
                     var requiredReviewerCount = 1;
-                    if (_lexer.Peek() == '[')
+                    if (Peek() == '[')
                     {
                         requiredReviewerCount = ParseSectionRequiredReviewerCount();
                     }
 
                     var defaultOwners = new List<string>();
-                    if (_lexer.Peek() == ' ')
+                    if (Peek() == ' ')
                     {
                         defaultOwners = ParseSectionDefaultOwners();
                     }
                     else
                     {
-                        _lexer.ConsumeUntilEndOfLineOrEndOfFile();
+                        ConsumeUntilEndOfLineOrEndOfFile();
                     }
 
                     section = new CodeOwnersSection(name, isOptional ? 0 : requiredReviewerCount, defaultOwners);
@@ -133,17 +139,38 @@ public static class CodeOwnersParser
             return false;
         }
 
-        private readonly string? ParsePattern()
+        private string? ParsePattern()
         {
+            var remaining = _content.AsSpan(_index);
+            var separatorIndex = remaining.IndexOfAny(PatternSeparatorSearchValues);
+            if (separatorIndex < 0)
+            {
+                _index = _content.Length;
+                return remaining.ToString();
+            }
+
+            var separator = remaining[separatorIndex];
+            if (separator is not '\\')
+            {
+                var pattern = remaining[..separatorIndex].ToString();
+                _index += separatorIndex;
+                if (separator is ' ' or '\t')
+                {
+                    _index++;
+                }
+
+                return pattern;
+            }
+
             Span<char> initialBuffer = stackalloc char[128];
             using var sb = new ValueStringBuilder(initialBuffer);
-            while (!_lexer.EndOfFile)
+            while (!EndOfFile)
             {
-                var c = _lexer.Peek();
+                var c = Peek();
                 if (c is null or '\r' or '\n')
                     return sb.ToString();
 
-                c = _lexer.Consume();
+                c = Consume();
                 if (c is null)
                     return sb.ToString();
 
@@ -151,7 +178,7 @@ public static class CodeOwnersParser
                 {
                     // The next character is escaped
                     case '\\':
-                        c = _lexer.Consume();
+                        c = Consume();
                         if (c is null) // end of file
                             return sb.ToString();
 
@@ -171,57 +198,51 @@ public static class CodeOwnersParser
             return sb.ToString();
         }
 
-        private readonly void ParseMembers(string pattern, int patternIndex)
+        private void ParseMembers(string pattern, int patternIndex)
         {
             var foundMember = false;
 
-            while (!_lexer.EndOfFile)
+            while (!EndOfFile)
             {
-                _lexer.ConsumeSpaces();
-                if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                ConsumeSpaces();
+                if (TryConsumeEndOfLineOrEndOfFile())
                     break;
 
-                using var sb = new ValueStringBuilder(initialCapacity: 128);
-
-                var c = _lexer.Consume();
+                var c = Consume();
 
                 // Inline comment
                 if (c == '#')
                 {
-                    _lexer.ConsumeUntil('\n');
+                    ConsumeUntil('\n');
                     break;
                 }
 
                 var isMember = c == '@';
-                if (!isMember)
+                var memberStart = isMember ? _index : _index - 1;
+
+                var remaining = _content.AsSpan(_index);
+                var separatorIndex = remaining.IndexOfAny(MemberSeparatorSearchValues);
+                if (separatorIndex < 0)
                 {
-                    if (c is not null)
-                    {
-                        sb.Append(c.GetValueOrDefault());
-                    }
+                    AddEntry(isMember, _content.AsSpan(memberStart).ToString(), pattern, patternIndex);
+                    _index = _content.Length;
+                    return;
                 }
 
-                while (!_lexer.EndOfFile)
+                var memberLength = _index + separatorIndex - memberStart;
+                var member = _content.AsSpan(memberStart, memberLength).ToString();
+                var separator = remaining[separatorIndex];
+                _index += separatorIndex;
+                if (separator is '\r' or '\n')
                 {
-                    if (_lexer.TryConsumeEndOfLineOrEndOfFile())
-                    {
-                        AddEntry(isMember, sb.ToString(), pattern, patternIndex);
-                        return;
-                    }
-
-                    c = _lexer.Consume();
-                    if (c is ' ' or '\t')
-                    {
-                        AddEntry(isMember, sb.ToString(), pattern, patternIndex);
-                        foundMember = true;
-                        break;
-                    }
-
-                    if (c is not null)
-                    {
-                        sb.Append(c.GetValueOrDefault());
-                    }
+                    AddEntry(isMember, member, pattern, patternIndex);
+                    _ = TryConsumeEndOfLineOrEndOfFile();
+                    return;
                 }
+
+                _index++;
+                AddEntry(isMember, member, pattern, patternIndex);
+                foundMember = true;
             }
 
             if (!foundMember)
@@ -241,7 +262,7 @@ public static class CodeOwnersParser
             }
         }
 
-        private readonly void AddEntry(bool isMember, string? name, string pattern, int patternIndex)
+        private void AddEntry(bool isMember, string? name, string pattern, int patternIndex)
         {
             if (name is null)
             {
@@ -257,195 +278,187 @@ public static class CodeOwnersParser
             }
         }
 
-        private readonly string ParseSectionName()
+        private string ParseSectionName()
         {
-            _lexer.Consume();
-            Span<char> initialBuffer = stackalloc char[32];
-            var sb = new ValueStringBuilder(initialBuffer);
-            try
+            _ = Consume();
+            var remaining = _content.AsSpan(_index);
+            var separatorIndex = remaining.IndexOf(']');
+            if (separatorIndex < 0)
             {
-                _lexer.ConsumeUntil(']', ref sb);
-                return sb.AsSpan().ToString();
+                _index = _content.Length;
+                return remaining.ToString();
             }
-            finally
-            {
-                sb.Dispose();
-            }
+
+            var sectionName = remaining[..separatorIndex].ToString();
+            _index += separatorIndex + 1;
+            return sectionName;
         }
 
-        private readonly int ParseSectionRequiredReviewerCount()
+        private int ParseSectionRequiredReviewerCount()
         {
-            Span<char> initialBuffer = stackalloc char[16];
-            var sb = new ValueStringBuilder(initialBuffer);
-            try
+            if (Peek() == '[')
             {
-                var c = _lexer.Peek();
-                if (c == '[')
+                _ = Consume();
+            }
+            else
+            {
+                // If no count is specified in section headers, only one reviewer is required by default.
+                return 1;
+            }
+
+            var remaining = _content.AsSpan(_index);
+            var separatorIndex = remaining.IndexOf(']');
+            ReadOnlySpan<char> requiredReviewerCountText;
+            if (separatorIndex < 0)
+            {
+                requiredReviewerCountText = remaining;
+                _index = _content.Length;
+            }
+            else
+            {
+                requiredReviewerCountText = remaining[..separatorIndex];
+                _index += separatorIndex + 1;
+            }
+
+            var isParseValid = int.TryParse(requiredReviewerCountText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount);
+            return isParseValid ? requiredReviewerCount : 1;
+        }
+
+        private List<string> ParseSectionDefaultOwners()
+        {
+            var start = _index;
+            ConsumeUntil('\n');
+            var length = _index - start;
+            if (_index > start && _content[_index - 1] == '\n')
+            {
+                length--;
+            }
+
+            var remaining = _content.AsSpan(start, length).Trim();
+            var defaultOwners = new List<string>();
+            while (!remaining.IsEmpty)
+            {
+                var tokenStart = remaining.IndexOfAnyExcept(' ', '\t');
+                if (tokenStart < 0)
+                    break;
+
+                remaining = remaining[tokenStart..];
+                var tokenEnd = remaining.IndexOfAny(' ', '\t');
+                ReadOnlySpan<char> token;
+                if (tokenEnd < 0)
                 {
-                    _lexer.Consume();
-                    _lexer.ConsumeUntil(']', ref sb);
+                    token = remaining;
+                    remaining = default;
                 }
                 else
                 {
-                    // If no count is specified in section headers, only one reviewer is required by default.
-                    return 1;
+                    token = remaining[..tokenEnd];
+                    remaining = remaining[tokenEnd..];
                 }
 
-                var requiredReviewerCountString = sb.AsSpan().ToString();
-                var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount);
-                return isParseValid ? requiredReviewerCount : 1;
-            }
-            finally
-            {
-                sb.Dispose();
-            }
-        }
+                // GitLab stops parsing default owners when encountering an unexpected token
+                // but keeps the default owners already parsed as valid.
+                if (token[0] is '[' or '#')
+                    break;
 
-        private readonly List<string> ParseSectionDefaultOwners()
-        {
-            Span<char> initialBuffer = stackalloc char[128];
-            var sb = new ValueStringBuilder(initialBuffer);
-            string defaultOwnersString;
-            try
-            {
-                _lexer.ConsumeUntil('\n', ref sb);
-                defaultOwnersString = sb.AsSpan().ToString().Trim();
-            }
-            finally
-            {
-                sb.Dispose();
-            }
-
-            var defaultOwners = new List<string>();
-            if (!string.IsNullOrEmpty(defaultOwnersString))
-            {
-                var splits = defaultOwnersString
-                    .Replace('\t', ' ')
-                    .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-                foreach (var split in splits)
-                {
-                    // GitLab stops parsing default owners when encountering an unexpected token
-                    // but keeps the default owners already parsed as valid.
-                    if (split.StartsWith('[') || split.StartsWith('#'))
-                        break;
-
-                    defaultOwners.Add(split);
-                }
+                defaultOwners.Add(token.ToString());
             }
 
             return defaultOwners;
         }
-    }
 
-    private sealed class StringLexer
-    {
-        private int _currentIndex = -1;
-        private readonly string _content;
+        private bool EndOfFile => _index >= _content.Length;
 
-        public StringLexer(string content)
+        private char? Peek()
         {
-            _content = content;
+            if (_index >= _content.Length)
+                return null;
+
+            return _content[_index];
         }
 
-        public bool EndOfFile => _currentIndex >= _content.Length;
-
-        public bool TryConsumeEndOfLineOrEndOfFile()
+        private char? Consume()
         {
-            var c = Peek();
-            if (c is null)
+            if (_index >= _content.Length)
             {
-                Consume();
+                return null;
+            }
+
+            return _content[_index++];
+        }
+
+        private bool TryConsumeEndOfLineOrEndOfFile()
+        {
+            if (_index >= _content.Length)
+            {
                 return true;
             }
 
+            var c = _content[_index];
             if (c == '\r')
             {
-                Consume();
-                if (Peek() == '\n')
-                    Consume();
+                _index++;
+                if (_index < _content.Length && _content[_index] == '\n')
+                {
+                    _index++;
+                }
 
                 return true;
             }
 
             if (c == '\n')
             {
-                Consume();
+                _index++;
                 return true;
             }
 
             return false;
         }
 
-        public char? Consume()
+        private void ConsumeUntil(char character)
         {
-            if (_currentIndex + 1 >= _content.Length)
+            if (EndOfFile)
+                return;
+
+            var index = _content.AsSpan(_index).IndexOf(character);
+            if (index < 0)
             {
-                _currentIndex++; // Ensure EOF is set correctly
-                return null;
+                _index = _content.Length;
+                return;
             }
 
-            _currentIndex++;
-            return _content[_currentIndex];
+            _index += index + 1;
         }
 
-        public char? Peek()
+        private void ConsumeUntilEndOfLineOrEndOfFile()
         {
-            if (_currentIndex + 1 >= _content.Length)
-                return null;
+            if (EndOfFile)
+                return;
 
-            return _content[_currentIndex + 1];
-        }
-
-        public void ConsumeUntil(char character)
-        {
-            while (_currentIndex + 1 < _content.Length)
+            var endOfLineIndex = _content.AsSpan(_index).IndexOfAny('\r', '\n');
+            if (endOfLineIndex < 0)
             {
-                var next = _content[_currentIndex + 1];
-                if (next == character)
-                {
-                    _currentIndex++;
-                    return;
-                }
-
-                _currentIndex++;
+                _index = _content.Length;
+                return;
             }
+
+            _index += endOfLineIndex;
+            _ = TryConsumeEndOfLineOrEndOfFile();
         }
 
-        public void ConsumeUntil(char character, ref ValueStringBuilder sb)
+        private void ConsumeSpaces()
         {
-            while (_currentIndex + 1 < _content.Length)
+            if (EndOfFile)
+                return;
+
+            var nextNonWhitespaceIndex = _content.AsSpan(_index).IndexOfAnyExcept(' ', '\t');
+            if (nextNonWhitespaceIndex < 0)
             {
-                var next = _content[_currentIndex + 1];
-                if (next == character)
-                {
-                    _currentIndex++;
-                    return;
-                }
-
-                sb.Append(next);
-                _currentIndex++;
+                _index = _content.Length;
+                return;
             }
-        }
 
-        public void ConsumeUntilEndOfLineOrEndOfFile()
-        {
-            while (!TryConsumeEndOfLineOrEndOfFile())
-            {
-                Consume();
-            }
-        }
-
-        public void ConsumeSpaces()
-        {
-            while (_currentIndex + 1 < _content.Length)
-            {
-                var next = _content[_currentIndex + 1];
-                if (next is not ' ' and not '\t')
-                    return;
-
-                _currentIndex++;
-            }
+            _index += nextNonWhitespaceIndex;
         }
     }
 }

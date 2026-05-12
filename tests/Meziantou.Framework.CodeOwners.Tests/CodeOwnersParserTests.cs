@@ -23,6 +23,18 @@ public sealed class CodeOwnersParserTests
     }
 
     [Fact]
+    public void ParseSingleLineCodeOwnersWithEscapedPatternCharacters()
+    {
+        var actual = CodeOwnersParser.Parse("foo\\ bar\\@baz @user1").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "foo bar@baz", "user1", section: null),
+        };
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public void ParseSingleLineCodeOwnersWithSection()
     {
         var actual = CodeOwnersParser.Parse("[Test]\n* @user1 @user2").ToArray();

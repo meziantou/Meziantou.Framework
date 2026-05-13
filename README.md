@@ -102,7 +102,7 @@
 | Meziantou.Framework.Win32.RecentDocuments | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.RecentDocuments.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.RecentDocuments/) | [readme](src/Meziantou.Framework.Win32.RecentDocuments/readme.md) |
 | Meziantou.Framework.Win32.RestartManager | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.RestartManager.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.RestartManager/) | [readme](src/Meziantou.Framework.Win32.RestartManager/readme.md) |
 | Meziantou.Framework.WPF | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.WPF.svg)](https://www.nuget.org/packages/Meziantou.Framework.WPF/) | |
-| Meziantou.Xunit | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Xunit.svg)](https://www.nuget.org/packages/Meziantou.Xunit/) | |
+| Meziantou.Xunit | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Xunit.svg)](https://www.nuget.org/packages/Meziantou.Xunit/) | [readme](src/Meziantou.Xunit/readme.md) |
 
 # How to contribute
 

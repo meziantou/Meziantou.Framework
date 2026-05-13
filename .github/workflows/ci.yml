@@ -159,11 +159,10 @@ jobs:
     timeout-minutes: 120
     strategy:
       matrix:
-        # x64, arm64
         runs-on: [ windows-2025-vs2026, ubuntu-24.04, ubuntu-24.04-arm, macos-26 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
-        shard: [1, 2]
+        shard: [1, 2, 3]
       fail-fast: false
     env:
       RUNS_ON: ${{ matrix.runs-on }}
@@ -193,7 +192,7 @@ jobs:
           run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
           test-projects-only: "true"
           shard: ${{ matrix.shard }}
-          total-shards: 2
+          total-shards: 3
           shard-separate: |
             tests/Meziantou.Framework.InlineSnapshotTesting.Tests
             tests/Meziantou.Framework.PublicApiGenerator.Tests

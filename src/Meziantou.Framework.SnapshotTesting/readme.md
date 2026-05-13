@@ -41,6 +41,17 @@ Notes:
 - If a single assertion serializes multiple files, an index suffix (`_0`, `_1`, ...) is appended.
 - If names are too long (or already end with `.verified` / `.actual`), a stable hash is added.
 
+## Approving snapshots
+
+To approve generated `*.actual.*` files, you can use the dedicated tool package:
+
+```bash
+dotnet tool install --global Meziantou.Framework.SnapshotTesting.Tool
+Meziantou.Framework.SnapshotTesting.Tool approve
+```
+
+Use `--interactive` to approve or reject snapshots one by one.
+
 ## Snapshot types
 
 `SnapshotType` controls extension and optional metadata (`MimeType`, `DisplayName`). This can also affect the serializer.

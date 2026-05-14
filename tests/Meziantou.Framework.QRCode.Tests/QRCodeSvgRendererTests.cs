@@ -142,4 +142,5 @@ public class QRCodeSvgRendererTests
 
         Assert.Throws<ArgumentNullException>(() => qr.ToSvg(new QRCodeSvgOptions { LightColor = null! }));
     }
+
 }

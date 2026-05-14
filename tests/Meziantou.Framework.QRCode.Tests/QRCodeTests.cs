@@ -512,4 +512,3 @@ public class QRCodeTests
         return version;
     }
 }
-

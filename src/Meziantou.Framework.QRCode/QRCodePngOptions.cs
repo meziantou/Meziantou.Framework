@@ -11,6 +11,9 @@ public sealed class QRCodePngOptions
     /// <summary>Gets or sets the number of quiet zone modules around the QR code. Default is 4.</summary>
     public int QuietZoneModules { get; set; } = 4;
 
-    /// <summary>Gets or sets a value indicating whether dark and light modules are inverted.</summary>
-    public bool InvertColors { get; set; }
+    /// <summary>Gets or sets the color for dark modules. Default is <see cref="Color.Black"/>.</summary>
+    public Color DarkColor { get; set; } = Color.Black;
+
+    /// <summary>Gets or sets the color for light modules. Default is <see cref="Color.White"/>.</summary>
+    public Color LightColor { get; set; } = Color.White;
 }

@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Security;
 using System.Text;
 
 namespace Meziantou.Framework;
@@ -20,8 +19,6 @@ public static class QRCodeSvgRenderer
     {
         ArgumentNullException.ThrowIfNull(qrCode);
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.DarkColor);
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.LightColor);
 
         var moduleSize = options.ModuleSize;
         if (moduleSize <= 0)
@@ -52,12 +49,12 @@ public static class QRCodeSvgRenderer
         sb.Append("\" height=\"");
         sb.Append(totalHeightStr);
         sb.Append("\" fill=\"");
-        sb.Append(SecurityElement.Escape(options.LightColor));
+        sb.Append(options.LightColor.ToCssString());
         sb.Append("\"/>");
 
         // Dark modules as a single path
         sb.Append("<path fill=\"");
-        sb.Append(SecurityElement.Escape(options.DarkColor));
+        sb.Append(options.DarkColor.ToCssString());
         sb.Append("\" d=\"");
 
         for (var row = 0; row < qrCode.Height; row++)

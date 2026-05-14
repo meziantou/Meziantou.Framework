@@ -48,7 +48,7 @@ public class QRCodePngRendererTests
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
         var png = qr.ToPng();
 
-        var (width, height, _) = ParsePng(png);
+        var (width, height, _, _) = ParsePng(png);
         Assert.Equal(290, width);
         Assert.Equal(290, height);
     }
@@ -69,7 +69,7 @@ public class QRCodePngRendererTests
         var qr = QRCode.CreateMicroQR("123", ErrorCorrectionLevel.L);
         var png = qr.ToPng(new QRCodePngOptions { ModuleSize = 2, QuietZoneModules = 1 });
 
-        var (width, height, _) = ParsePng(png);
+        var (width, height, _, _) = ParsePng(png);
         Assert.Equal((11 + 2) * 2, width);
         Assert.Equal((11 + 2) * 2, height);
     }
@@ -80,7 +80,7 @@ public class QRCodePngRendererTests
         var qr = QRCode.CreateRMQR("AB", ErrorCorrectionLevel.M);
         var png = qr.ToPng(new QRCodePngOptions { ModuleSize = 3, QuietZoneModules = 0 });
 
-        var (width, height, _) = ParsePng(png);
+        var (width, height, _, _) = ParsePng(png);
         Assert.Equal(27 * 3, width);
         Assert.Equal(11 * 3, height);
     }
@@ -100,22 +100,32 @@ public class QRCodePngRendererTests
     }
 
     [Fact]
-    public void ToPng_InvertedColors_InvertsPixelValues()
+    public void ToPng_CustomColors_UsesConfiguredRgb()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
         var options = new QRCodePngOptions { ModuleSize = 1, QuietZoneModules = 0 };
         var normal = ParsePng(qr.ToPng(options));
-        var inverted = ParsePng(qr.ToPng(new QRCodePngOptions { ModuleSize = 1, QuietZoneModules = 0, InvertColors = true }));
+        var custom = ParsePng(qr.ToPng(new QRCodePngOptions
+        {
+            ModuleSize = 1,
+            QuietZoneModules = 0,
+            DarkColor = Color.FromArgb(0x7f, 0x11, 0x22, 0x33),
+            LightColor = Color.FromArgb(0x40, 0xaa, 0xbb, 0xcc),
+        }));
 
         var width = normal.Width;
         var pixelIndex = 1;
         var expectedNormalPixel = qr[0, 0] ? (byte)0 : (byte)255;
-        var expectedInvertedPixel = qr[0, 0] ? (byte)255 : (byte)0;
+        var expectedCustomPixel = qr[0, 0] ? new byte[] { 0x11, 0x22, 0x33, 0x7f } : [0xaa, 0xbb, 0xcc, 0x40];
 
-        Assert.Equal(width, inverted.Width);
-        Assert.Equal(normal.Height, inverted.Height);
+        Assert.Equal(width, custom.Width);
+        Assert.Equal(normal.Height, custom.Height);
+        Assert.Equal((byte)6, custom.ColorType);
         Assert.Equal(expectedNormalPixel, normal.ImageData[pixelIndex]);
-        Assert.Equal(expectedInvertedPixel, inverted.ImageData[pixelIndex]);
+        Assert.Equal(expectedCustomPixel[0], custom.ImageData[pixelIndex]);
+        Assert.Equal(expectedCustomPixel[1], custom.ImageData[pixelIndex + 1]);
+        Assert.Equal(expectedCustomPixel[2], custom.ImageData[pixelIndex + 2]);
+        Assert.Equal(expectedCustomPixel[3], custom.ImageData[pixelIndex + 3]);
     }
 
     [Theory]
@@ -152,11 +162,12 @@ public class QRCodePngRendererTests
         Assert.Throws<ArgumentNullException>(() => qr.ToPng(options: null!));
     }
 
-    private static (int Width, int Height, byte[] ImageData) ParsePng(byte[] data)
+    private static (int Width, int Height, byte ColorType, byte[] ImageData) ParsePng(byte[] data)
     {
         var offset = 8;
         var width = 0;
         var height = 0;
+        byte colorType = 0;
         using var idatData = new MemoryStream();
 
         while (offset < data.Length)
@@ -169,6 +180,7 @@ public class QRCodePngRendererTests
             {
                 width = BinaryPrimitives.ReadInt32BigEndian(chunkData[..4]);
                 height = BinaryPrimitives.ReadInt32BigEndian(chunkData[4..8]);
+                colorType = chunkData[9];
             }
             else if (chunkType.SequenceEqual("IDAT"u8))
             {
@@ -187,6 +199,6 @@ public class QRCodePngRendererTests
         using var imageData = new MemoryStream();
         zlib.CopyTo(imageData);
 
-        return (width, height, imageData.ToArray());
+        return (width, height, colorType, imageData.ToArray());
     }
 }

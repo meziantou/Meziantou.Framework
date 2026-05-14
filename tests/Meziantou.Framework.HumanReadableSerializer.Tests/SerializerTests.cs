@@ -2196,6 +2196,40 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void IgnoreMember_Expression_InheritedProperty_TargetDerivedType()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.PropertyOrder = StringComparer.Ordinal;
+        options.IgnoreMember<PersonWithBase>(x => x.FirstName);
+
+        AssertSerialization(new Validation
+        {
+            Subject = new PersonWithBase("John", "Doe"),
+            Options = options,
+            Expected = """
+                LastName: Doe
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreMember_Expression_InheritedProperty_TargetBaseType()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.PropertyOrder = StringComparer.Ordinal;
+        options.IgnoreMember<BasePersonWithFirstName>(x => x.FirstName);
+
+        AssertSerialization(new Validation
+        {
+            Subject = new PersonWithBase("John", "Doe"),
+            Options = options,
+            Expected = """
+                LastName: Doe
+                """,
+        });
+    }
+
+    [Fact]
     public void IgnoreMember()
     {
         var options = new HumanReadableSerializerOptions();
@@ -2264,6 +2298,16 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         public int A => throw new NotSupportedException();
         public int B => 1;
+    }
+
+    private abstract class BasePersonWithFirstName(string firstName)
+    {
+        public string FirstName => firstName;
+    }
+
+    private sealed class PersonWithBase(string firstName, string lastName) : BasePersonWithFirstName(firstName)
+    {
+        public string LastName => lastName;
     }
 
     private readonly struct StructWithDefaultConstructor

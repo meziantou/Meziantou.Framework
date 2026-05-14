@@ -876,6 +876,7 @@ public sealed class SnapshotEndToEndTests
                     {
                         AutoDetectContinuousEnvironment = false,
                         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+                        SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName,
                     };
 
                     settings.Serializers.Add(new FixedCountSerializer({{count}}));
@@ -1085,6 +1086,7 @@ public sealed class SnapshotEndToEndTests
                     {
                         AutoDetectContinuousEnvironment = false,
                         SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+                        SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName,
                     };
                 }
 
@@ -1094,6 +1096,7 @@ public sealed class SnapshotEndToEndTests
                     {
                         AutoDetectContinuousEnvironment = false,
                         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+                        SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName,
                     };
                 }
             }

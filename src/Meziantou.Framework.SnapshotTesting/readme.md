@@ -32,12 +32,12 @@ Snapshots are stored in a `__snapshots__` directory next to the test source file
 
 Example:
 
-- `__snapshots__/SampleTests_ValidateUser.verified.txt`
-- `__snapshots__/SampleTests_ValidateUser.actual.txt`
+- `__snapshots__/ValidateUser.verified.txt`
+- `__snapshots__/ValidateUser.actual.txt`
 
 Notes:
 
-- Snapshot names include the containing class name and test name to avoid collisions across test classes.
+- By default, snapshot names use the test name for backward compatibility.
 - `.actual` files are always written when a snapshot does not match.
 - If a single assertion serializes multiple files, an index suffix (`_0`, `_1`, ...) is appended.
 - If names are too long (or already end with `.verified` / `.actual`), a stable hash is added.
@@ -45,7 +45,7 @@ Notes:
 You can choose how snapshot names are generated using `SnapshotSettings.SnapshotNamingStrategy`:
 
 - `SnapshotNamingStrategies.TestName`
-- `SnapshotNamingStrategies.ClassName_TestName` (default)
+- `SnapshotNamingStrategies.ClassName_TestName`
 - `SnapshotNamingStrategies.FullName`
 
 ## Approving snapshots

@@ -102,7 +102,7 @@ public sealed record SnapshotSettings
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         AssertionExceptionCreator = AssertionExceptionBuilder.Default;
         MaxSnapshotFileNameLength = 128;
-        SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName;
+        SnapshotNamingStrategy = SnapshotNamingStrategies.TestName;
         SnapshotPathStrategy = DefaultSnapshotPath;
         MergeTools = DefaultMergeTools;
     }

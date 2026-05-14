@@ -182,7 +182,7 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void SnapshotPathStrategy_DefaultsToTestNameStrategy()
+    public void SnapshotPathStrategy_DefaultsToClassNameTestNameStrategy()
     {
         var settings = new SnapshotSettings();
         var context = new SnapshotPathContext(
@@ -198,7 +198,7 @@ public sealed class SnapshotTests
             SnapshotCount: 1);
 
         var path = settings.SnapshotPathStrategy(context);
-        Assert.Equal("Case_alpha.verified.png", path.Name);
+        Assert.Equal("UnitTestClass1_Case_alpha.verified.png", path.Name);
     }
 
     [Fact]

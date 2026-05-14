@@ -217,7 +217,7 @@ public sealed record HumanReadableSerializerOptions
         ArgumentNullException.ThrowIfNull(attribute);
 
         VerifyMutable();
-        _memberAttributes.Add((m => m == member, attribute));
+        _memberAttributes.Add((m => m.Module == member.Module && m.MetadataToken == member.MetadataToken, attribute));
     }
 
     /// <summary>Adds an attribute to the specified field.</summary>

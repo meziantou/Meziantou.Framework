@@ -1,6 +1,6 @@
 # Meziantou.Framework.QRCode
 
-QR code generation library with SVG, PNG, and console renderers. Implements the QR code specification from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes.
+QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, and supports Code 39 / Code 128 linear barcodes.
 
 ## Supported QR Code Types
 
@@ -9,6 +9,13 @@ QR code generation library with SVG, PNG, and console renderers. Implements the 
 | Standard QR | `QRCode.Create(...)` | 21x21 to 177x177 | ISO/IEC 18004, versions 1-40 |
 | Micro QR | `QRCode.CreateMicroQR(...)` | 11x11 to 17x17 | ISO/IEC 18004, versions M1-M4 |
 | rMQR | `QRCode.CreateRMQR(...)` | Rectangular (width > height) | ISO/IEC 23941 |
+
+## Supported Barcode Types
+
+| Type | Method | Description |
+|------|--------|-------------|
+| Code 39 | `Barcode.CreateCode39(...)` | Supports standard Code 39 alphabet, optional Mod 43 checksum |
+| Code 128 | `Barcode.CreateCode128(...)` | Supports Code Set B and automatic switching to Code Set C for numeric runs |
 
 ## Usage
 
@@ -30,6 +37,16 @@ Console.WriteLine($"{microQr.Type} {microQr.Width}x{microQr.Height}");
 Console.WriteLine($"{rmqr.Type} {rmqr.Width}x{rmqr.Height}");
 ```
 
+### Generate barcodes (Code 39, Code 128)
+
+```csharp
+var code39 = Barcode.CreateCode39("ABC-123", includeChecksum: true);
+var code128 = Barcode.CreateCode128("SKU-123456");
+
+Console.WriteLine($"{code39.Type} {code39.Width}x{code39.Height}");
+Console.WriteLine($"{code128.Type} {code128.Width}x{code128.Height}");
+```
+
 ### Render as SVG
 
 ```csharp
@@ -41,8 +58,15 @@ var customSvg = standardQr.ToSvg(new QRCodeSvgOptions
 {
     ModuleSize = 10,
     QuietZoneModules = 4,
-    DarkColor = "#000000",
-    LightColor = "#ffffff",
+    DarkColor = Color.FromRgb(0x00, 0x00, 0x00),
+    LightColor = Color.FromRgb(0xff, 0xff, 0xff),
+});
+
+var barcodeSvg = code128.ToSvg(new BarcodeSvgOptions
+{
+    ModuleWidth = 2,
+    ModuleHeight = 80,
+    QuietZoneModules = 10,
 });
 ```
 
@@ -57,7 +81,18 @@ microQr.WriteToPng(stream, new QRCodePngOptions
 {
     ModuleSize = 4,
     QuietZoneModules = 2,
+    DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
+    LightColor = Color.FromRgb(0xf9, 0xfa, 0xfb),
 });
+
+var barcodePng = code39.ToPng(new BarcodePngOptions
+{
+    ModuleWidth = 2,
+    ModuleHeight = 80,
+    DarkColor = Color.FromRgb(0x0f, 0x76, 0x6e),
+    LightColor = Color.FromRgb(0xec, 0xfe, 0xff),
+});
+File.WriteAllBytes("barcode.png", barcodePng);
 ```
 
 ### Render to console

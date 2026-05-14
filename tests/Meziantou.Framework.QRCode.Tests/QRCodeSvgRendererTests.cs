@@ -71,8 +71,8 @@ public class QRCodeSvgRendererTests
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
         var svg = qr.ToSvg(new QRCodeSvgOptions
         {
-            DarkColor = "#ff0000",
-            LightColor = "#00ff00",
+            DarkColor = Color.FromRgb(0xff, 0x00, 0x00),
+            LightColor = Color.FromRgb(0x00, 0xff, 0x00),
             QuietZoneModules = 4,
             ModuleSize = 1,
         });
@@ -126,21 +126,4 @@ public class QRCodeSvgRendererTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToSvg(new QRCodeSvgOptions { QuietZoneModules = -1 }));
     }
-
-    [Fact]
-    public void ToSvg_NullDarkColor_ThrowsArgumentNullException()
-    {
-        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
-
-        Assert.Throws<ArgumentNullException>(() => qr.ToSvg(new QRCodeSvgOptions { DarkColor = null! }));
-    }
-
-    [Fact]
-    public void ToSvg_NullLightColor_ThrowsArgumentNullException()
-    {
-        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
-
-        Assert.Throws<ArgumentNullException>(() => qr.ToSvg(new QRCodeSvgOptions { LightColor = null! }));
-    }
-
 }

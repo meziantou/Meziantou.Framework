@@ -76,7 +76,7 @@ public static class BarcodePngRenderer
 
     private static byte[] CreateImageData(Barcode barcode, int width, int height, BarcodePngOptions options)
     {
-        var stride = width + 1;
+        var stride = (width * 4) + 1;
         var dataLength = (long)stride * height;
         if (dataLength > int.MaxValue)
         {
@@ -97,8 +97,12 @@ public static class BarcodePngRenderer
                     && sourceCol < barcode.Width
                     && barcode[sourceRow, sourceCol];
 
-                var value = (isDark ^ options.InvertColors) ? (byte)0 : (byte)255;
-                result[rowOffset + 1 + col] = value;
+                var color = isDark ? options.DarkColor : options.LightColor;
+                var pixelOffset = rowOffset + 1 + (col * 4);
+                result[pixelOffset] = color.Red;
+                result[pixelOffset + 1] = color.Green;
+                result[pixelOffset + 2] = color.Blue;
+                result[pixelOffset + 3] = color.Alpha;
             }
         }
 
@@ -124,7 +128,7 @@ public static class BarcodePngRenderer
         BinaryPrimitives.WriteUInt32BigEndian(ihdrData, (uint)width);
         BinaryPrimitives.WriteUInt32BigEndian(ihdrData[4..], (uint)height);
         ihdrData[8] = 8;
-        ihdrData[9] = 0;
+        ihdrData[9] = 6;
         ihdrData[10] = 0;
         ihdrData[11] = 0;
         ihdrData[12] = 0;

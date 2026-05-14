@@ -14,6 +14,9 @@ public sealed class BarcodePngOptions
     /// <summary>Gets or sets the number of quiet zone modules on the left and right sides of the barcode. Default is 10.</summary>
     public int QuietZoneModules { get; set; } = 10;
 
-    /// <summary>Gets or sets a value indicating whether dark and light modules are inverted.</summary>
-    public bool InvertColors { get; set; }
+    /// <summary>Gets or sets the color for dark modules. Default is <see cref="Color.Black"/>.</summary>
+    public Color DarkColor { get; set; } = Color.Black;
+
+    /// <summary>Gets or sets the color for light modules. Default is <see cref="Color.White"/>.</summary>
+    public Color LightColor { get; set; } = Color.White;
 }

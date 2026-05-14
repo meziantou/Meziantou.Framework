@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Security;
 using System.Text;
 
 namespace Meziantou.Framework;
@@ -20,8 +19,6 @@ public static class BarcodeSvgRenderer
     {
         ArgumentNullException.ThrowIfNull(barcode);
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.DarkColor);
-        ArgumentException.ThrowIfNullOrWhiteSpace(options.LightColor);
         ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleWidth, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleHeight, 1);
         ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules);
@@ -47,11 +44,11 @@ public static class BarcodeSvgRenderer
         sb.Append("\" height=\"");
         sb.Append(totalHeightStr);
         sb.Append("\" fill=\"");
-        sb.Append(SecurityElement.Escape(options.LightColor));
+        sb.Append(options.LightColor.ToCssString());
         sb.Append("\"/>");
 
         sb.Append("<path fill=\"");
-        sb.Append(SecurityElement.Escape(options.DarkColor));
+        sb.Append(options.DarkColor.ToCssString());
         sb.Append("\" d=\"");
 
         for (var row = 0; row < barcode.Height; row++)

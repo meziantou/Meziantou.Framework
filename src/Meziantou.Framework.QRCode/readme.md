@@ -58,8 +58,8 @@ var customSvg = standardQr.ToSvg(new QRCodeSvgOptions
 {
     ModuleSize = 10,
     QuietZoneModules = 4,
-    DarkColor = "#000000",
-    LightColor = "#ffffff",
+    DarkColor = Color.FromRgb(0x00, 0x00, 0x00),
+    LightColor = Color.FromRgb(0xff, 0xff, 0xff),
 });
 
 var barcodeSvg = code128.ToSvg(new BarcodeSvgOptions
@@ -81,9 +81,17 @@ microQr.WriteToPng(stream, new QRCodePngOptions
 {
     ModuleSize = 4,
     QuietZoneModules = 2,
+    DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
+    LightColor = Color.FromRgb(0xf9, 0xfa, 0xfb),
 });
 
-var barcodePng = code39.ToPng();
+var barcodePng = code39.ToPng(new BarcodePngOptions
+{
+    ModuleWidth = 2,
+    ModuleHeight = 80,
+    DarkColor = Color.FromRgb(0x0f, 0x76, 0x6e),
+    LightColor = Color.FromRgb(0xec, 0xfe, 0xff),
+});
 File.WriteAllBytes("barcode.png", barcodePng);
 ```
 

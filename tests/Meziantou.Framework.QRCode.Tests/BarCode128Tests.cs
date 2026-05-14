@@ -69,8 +69,8 @@ public class BarCode128Tests
         var barcode = Barcode.CreateCode128(NumericData);
         var svg = barcode.ToSvg(new BarcodeSvgOptions
         {
-            DarkColor = "#ff0000",
-            LightColor = "#00ff00",
+            DarkColor = Color.FromRgb(0xff, 0x00, 0x00),
+            LightColor = Color.FromRgb(0x00, 0xff, 0x00),
             ModuleWidth = 1,
             ModuleHeight = 3,
             QuietZoneModules = 1,
@@ -171,7 +171,7 @@ public class BarCode128Tests
     }
 
     [Fact]
-    public void ToPng_Code128_InvertedColors_Snapshot()
+    public void ToPng_Code128_CustomColors_Snapshot()
     {
         var barcode = Barcode.CreateCode128(NumericData);
         var png = barcode.ToPng(new BarcodePngOptions
@@ -179,7 +179,8 @@ public class BarCode128Tests
             ModuleWidth = 1,
             ModuleHeight = 1,
             QuietZoneModules = 0,
-            InvertColors = true,
+            DarkColor = Color.FromRgb(0xff, 0x00, 0x00),
+            LightColor = Color.FromRgb(0x00, 0xff, 0x00),
         });
 
         Snapshot.Validate(png, SnapshotType.Png);

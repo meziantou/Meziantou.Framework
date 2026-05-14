@@ -14,9 +14,9 @@ public sealed class BarcodeSvgOptions
     /// <summary>Gets or sets the number of quiet zone modules on the left and right sides of the barcode. Default is 10.</summary>
     public int QuietZoneModules { get; set; } = 10;
 
-    /// <summary>Gets or sets the color for dark modules. Default is "#000000".</summary>
-    public string DarkColor { get; set; } = "#000000";
+    /// <summary>Gets or sets the color for dark modules. Default is <see cref="Color.Black"/>.</summary>
+    public Color DarkColor { get; set; } = Color.Black;
 
-    /// <summary>Gets or sets the color for light modules. Default is "#ffffff".</summary>
-    public string LightColor { get; set; } = "#ffffff";
+    /// <summary>Gets or sets the color for light modules. Default is <see cref="Color.White"/>.</summary>
+    public Color LightColor { get; set; } = Color.White;
 }

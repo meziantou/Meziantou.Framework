@@ -1120,6 +1120,26 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task InterfaceMethod_NullableParameter()
+    {
+        await Validate("""
+            using System.Globalization;
+
+            public interface ILocalizationProvider
+            {
+                string GetString(string name, CultureInfo? culture);
+            }
+            """, """
+            #nullable enable
+
+            public interface ILocalizationProvider
+            {
+                string GetString(string name, System.Globalization.CultureInfo? culture);
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Interface_VisibilityModifiers()
     {
         await Validate("""

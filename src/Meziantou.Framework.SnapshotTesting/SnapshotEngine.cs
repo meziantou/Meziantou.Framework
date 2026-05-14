@@ -198,8 +198,8 @@ internal static class SnapshotEngine
             var extension = string.IsNullOrEmpty(type.Type) ? snapshotData.Extension : type.Type;
             var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
                 callerContext.SourceFilePath,
+                callerContext.ContainingTypeName,
                 callerContext.MethodName,
-                callerContext.MemberName,
                 callerContext.LineNumber,
                 type,
                 index,

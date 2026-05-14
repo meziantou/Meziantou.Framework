@@ -2,8 +2,8 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 public sealed record SnapshotPathContext(
     FullPath SourceFilePath,
+    string? ClassName,
     string MethodName,
-    string? MemberName,
     int LineNumber,
     SnapshotType Type,
     int Index,
@@ -11,4 +11,3 @@ public sealed record SnapshotPathContext(
     SnapshotTestContext? TestContext,
     SnapshotSettings Settings,
     int SnapshotCount = 1);
-

@@ -97,8 +97,8 @@ public sealed class SnapshotTests
         var settings = new SnapshotSettings();
         var context = new SnapshotPathContext(
             SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: null,
             MethodName: "MethodName",
-            MemberName: "MemberName",
             LineNumber: 42,
             Type: SnapshotType.Default,
             Index: 2,
@@ -119,8 +119,8 @@ public sealed class SnapshotTests
         var settings = new SnapshotSettings();
         var context = new SnapshotPathContext(
             SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: null,
             MethodName: "MethodName",
-            MemberName: "MemberName",
             LineNumber: 42,
             Type: SnapshotType.Default,
             Index: 0,
@@ -136,13 +136,148 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public void SnapshotPathStrategy_PrefixesClassName_WhenAvailable()
+    {
+        var settings = new SnapshotSettings
+        {
+            SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName,
+        };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: "UnitTestClass1",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "png",
+            TestContext: new SnapshotTestContext(TestName: "MethodName"),
+            Settings: settings,
+            SnapshotCount: 1);
+
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Equal("UnitTestClass1_MethodName.verified.png", path.Name);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_DoesNotDuplicateClassName_WhenNameIsClassQualified()
+    {
+        var settings = new SnapshotSettings
+        {
+            SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName,
+        };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: "UnitTestClass1",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "png",
+            TestContext: new SnapshotTestContext(TestName: "MyNamespace.UnitTestClass1.MethodName"),
+            Settings: settings,
+            SnapshotCount: 1);
+
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Equal("MyNamespace.UnitTestClass1.MethodName.verified.png", path.Name);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_DefaultsToClassNameTestNameStrategy()
+    {
+        var settings = new SnapshotSettings();
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: "UnitTestClass1",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "png",
+            TestContext: new SnapshotTestContext(TestName: "Case_alpha"),
+            Settings: settings,
+            SnapshotCount: 1);
+
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Equal("UnitTestClass1_Case_alpha.verified.png", path.Name);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_UsesTestNameStrategy()
+    {
+        var settings = new SnapshotSettings
+        {
+            SnapshotNamingStrategy = SnapshotNamingStrategies.TestName,
+        };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: "UnitTestClass1",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "png",
+            TestContext: new SnapshotTestContext(TestName: "Case_alpha"),
+            Settings: settings,
+            SnapshotCount: 1);
+
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Equal("Case_alpha.verified.png", path.Name);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_UsesFullNameStrategy()
+    {
+        var settings = new SnapshotSettings
+        {
+            SnapshotNamingStrategy = SnapshotNamingStrategies.FullName,
+        };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: "UnitTestClass1",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "png",
+            TestContext: null,
+            Settings: settings,
+            SnapshotCount: 1);
+
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Equal("UnitTestClass1.MethodName.verified.png", path.Name);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_FullNameStrategy_DoesNotDuplicateClassName_WhenNameIsClassQualified()
+    {
+        var settings = new SnapshotSettings
+        {
+            SnapshotNamingStrategy = SnapshotNamingStrategies.FullName,
+        };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: "UnitTestClass1",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "png",
+            TestContext: new SnapshotTestContext(TestName: "MyNamespace.UnitTestClass1.MethodName"),
+            Settings: settings,
+            SnapshotCount: 1);
+
+        var path = settings.SnapshotPathStrategy(context);
+        Assert.Equal("MyNamespace.UnitTestClass1.MethodName.verified.png", path.Name);
+    }
+
+    [Fact]
     public void SnapshotPathStrategy_UsesHashAndIndexPatternForLongName()
     {
         var settings = new SnapshotSettings();
         var context = new SnapshotPathContext(
             SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: null,
             MethodName: new string('a', 120),
-            MemberName: "MemberName",
             LineNumber: 42,
             Type: SnapshotType.Default,
             Index: 2,
@@ -164,8 +299,8 @@ public sealed class SnapshotTests
         var settings = new SnapshotSettings();
         var context = new SnapshotPathContext(
             SourceFilePath: FullPath.FromPath("C:\\temp\\snapshot-tests.cs"),
+            ClassName: null,
             MethodName: "MethodName",
-            MemberName: "MemberName",
             LineNumber: 42,
             Type: SnapshotType.Default,
             Index: 2,

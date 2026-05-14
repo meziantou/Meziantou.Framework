@@ -26,7 +26,7 @@ internal static class Code93Encoder
         AppendCharacter(modules, AsteriskEncoding);
         foreach (var character in encodedData)
         {
-            var indexInAlphabet = Alphabet.IndexOf(character);
+            var indexInAlphabet = Alphabet.IndexOf(character, StringComparison.Ordinal);
             if (indexInAlphabet < 0)
             {
                 throw new ArgumentException($"The character '{character}' is not supported by Code 93.", nameof(data));
@@ -54,7 +54,7 @@ internal static class Code93Encoder
         var total = 0;
         for (var i = data.Length - 1; i >= 0; i--)
         {
-            var indexInAlphabet = Alphabet.IndexOf(data[i]);
+            var indexInAlphabet = Alphabet.IndexOf(data[i], StringComparison.Ordinal);
             total += indexInAlphabet * weight;
             if (++weight > maxWeight)
             {

@@ -35,7 +35,7 @@ internal static class CodabarEncoder
 
         foreach (var character in data)
         {
-            if (PayloadCharacters.IndexOf(character) < 0)
+            if (PayloadCharacters.IndexOf(character, StringComparison.Ordinal) < 0)
             {
                 throw new ArgumentException($"The character '{character}' is not supported by Codabar.", nameof(data));
             }

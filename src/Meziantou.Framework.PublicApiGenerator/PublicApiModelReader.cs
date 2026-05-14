@@ -123,7 +123,7 @@ internal static class PublicApiModelReader
             var returnType = ApplyNullableReferenceType(
                 invokeSignature.Signature.ReturnType,
                 GetNullableMetadataInfo(metadataReader, typeDefinitionHandle, GetParameterCustomAttributes(metadataReader, invokeMethod, sequenceNumber: 0), invokeMethodHandle));
-            var parameters = BuildParameterDeclarations(metadataReader, typeDefinitionHandle, invokeMethodHandle, invokeMethod, invokeSignature.Signature.ParameterTypes, isExtensionMethod: false);
+            var parameters = BuildParameterDeclarations(metadataReader, typeDefinitionHandle, invokeMethodHandle, invokeMethod, invokeSignature.Signature.ParameterTypes, invokeSignature.Signature.ReturnType, isExtensionMethod: false);
             var unsafeModifier = RequiresUnsafeContext(invokeSignature.Signature.ReturnType, invokeSignature.Signature.ParameterTypes) ? " unsafe" : string.Empty;
 
             var delegateBuilder = new StringBuilder();
@@ -624,13 +624,13 @@ internal static class PublicApiModelReader
                                 HasAttribute(metadataReader, method.GetCustomAttributes(), "System.Runtime.CompilerServices.ExtensionAttribute");
         var returnNullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, GetParameterCustomAttributes(metadataReader, method, sequenceNumber: 0), methodHandle);
         var returnType = ApplyNullableReferenceType(signature.Signature.ReturnType, returnNullableInfo);
-        var parameters = BuildParameterDeclarations(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, isExtensionMethod);
+        var parameters = BuildParameterDeclarations(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType, isExtensionMethod);
         var methodBody = BuildMethodBody(metadataReader, method, signature);
         var methodName = isExplicitInterfaceImplementation ? BuildExplicitInterfaceMethodName(name) : name;
         var modifiersPrefix = modifiers.Count > 0 ? string.Join(' ', modifiers) + " " : string.Empty;
         var unsafeModifier = RequiresUnsafeContext(signature.Signature.ReturnType, signature.Signature.ParameterTypes) ? "unsafe " : string.Empty;
         var requiresNullableDisableDirective = RequiresNullableDirectives(signature.Signature.ReturnType, returnNullableInfo) ||
-                                               RequiresNullableDisableDirectiveForParameters(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes);
+                                               RequiresNullableDisableDirectiveForParameters(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType);
         var methodSuffix = FormatConstraintsInline(constraints) + methodBody;
         string declaration;
         if (TryGetOperatorKeyword(name) is { } operatorKeyword && CanEmitOperator(declaringType))
@@ -658,8 +658,8 @@ internal static class PublicApiModelReader
         var accessibility = GetAccessibility(method.Attributes);
         var modifiersPrefix = string.IsNullOrEmpty(accessibility) ? string.Empty : accessibility + " ";
         var unsafeModifier = RequiresUnsafeContext(signature.Signature.ReturnType, signature.Signature.ParameterTypes) ? "unsafe " : string.Empty;
-        var parameters = BuildParameterDeclarations(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, isExtensionMethod: false);
-        var requiresNullableDisableDirective = RequiresNullableDisableDirectiveForParameters(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes);
+        var parameters = BuildParameterDeclarations(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType, isExtensionMethod: false);
+        var requiresNullableDisableDirective = RequiresNullableDisableDirectiveForParameters(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType);
         var initializer = BuildConstructorInitializer(metadataReader, declaringType);
         if (signature.Signature.ParameterTypes.Length == 0 && string.IsNullOrEmpty(initializer))
             return null;
@@ -676,12 +676,19 @@ internal static class PublicApiModelReader
         MethodDefinitionHandle methodHandle,
         MethodDefinition method,
         ImmutableArray<DecodedType> parameterTypes,
+        DecodedType returnType,
         bool isExtensionMethod)
     {
         var parametersBySequence = method.GetParameters()
             .ToDictionary(
                 parameterHandle => metadataReader.GetParameter(parameterHandle).SequenceNumber,
                 parameterHandle => parameterHandle);
+        var methodNullableInfo = GetNullableMetadataInfo(
+            metadataReader,
+            declaringTypeHandle,
+            method.GetCustomAttributes(),
+            methodHandle,
+            includeDeclaringTypeContext: false);
 
         var result = new ParameterDeclarationMetadata[parameterTypes.Length];
         for (var i = 0; i < parameterTypes.Length; i++)
@@ -720,12 +727,15 @@ internal static class PublicApiModelReader
                 parameterAttributes = null;
             }
 
-            var parameterNullableInfo = GetNullableMetadataInfo(
+            var parameterNullableInfo = GetParameterNullableMetadataInfo(
                 metadataReader,
                 declaringTypeHandle,
-                parameterAttributes,
                 methodHandle,
-                includeDeclaringTypeContext: false);
+                parameterAttributes,
+                methodNullableInfo,
+                parameterTypes,
+                returnType,
+                i);
             var parameterAttributeText = parameterAttributes is null
                 ? string.Empty
                 : BuildInlineAttributes(BuildAttributes(metadataReader, parameterAttributes.Value));
@@ -757,12 +767,19 @@ internal static class PublicApiModelReader
         TypeDefinitionHandle declaringTypeHandle,
         MethodDefinitionHandle methodHandle,
         MethodDefinition method,
-        ImmutableArray<DecodedType> parameterTypes)
+        ImmutableArray<DecodedType> parameterTypes,
+        DecodedType returnType)
     {
         var parametersBySequence = method.GetParameters()
             .ToDictionary(
                 parameterHandle => metadataReader.GetParameter(parameterHandle).SequenceNumber,
                 parameterHandle => metadataReader.GetParameter(parameterHandle));
+        var methodNullableInfo = GetNullableMetadataInfo(
+            metadataReader,
+            declaringTypeHandle,
+            method.GetCustomAttributes(),
+            methodHandle,
+            includeDeclaringTypeContext: false);
 
         for (var i = 0; i < parameterTypes.Length; i++)
         {
@@ -771,17 +788,100 @@ internal static class PublicApiModelReader
                 ? parameter.GetCustomAttributes()
                 : default(CustomAttributeHandleCollection?);
 
-            var nullableInfo = GetNullableMetadataInfo(
+            var nullableInfo = GetParameterNullableMetadataInfo(
                 metadataReader,
                 declaringTypeHandle,
-                parameterAttributes,
                 methodHandle,
-                includeDeclaringTypeContext: true);
+                parameterAttributes,
+                methodNullableInfo,
+                parameterTypes,
+                returnType,
+                i);
             if (RequiresNullableDirectives(parameterTypes[i], nullableInfo))
                 return true;
         }
 
         return false;
+    }
+
+    private static NullableMetadataInfo GetParameterNullableMetadataInfo(
+        MetadataReader metadataReader,
+        TypeDefinitionHandle declaringTypeHandle,
+        MethodDefinitionHandle methodHandle,
+        CustomAttributeHandleCollection? parameterAttributes,
+        NullableMetadataInfo methodNullableInfo,
+        ImmutableArray<DecodedType> parameterTypes,
+        DecodedType returnType,
+        int parameterIndex)
+    {
+        var parameterNullableInfo = GetNullableMetadataInfo(
+            metadataReader,
+            declaringTypeHandle,
+            parameterAttributes,
+            methodHandle,
+            includeDeclaringTypeContext: true);
+        if (!parameterNullableInfo.Flags.IsDefaultOrEmpty)
+            return parameterNullableInfo;
+
+        var methodParameterFlags = GetMethodParameterNullableFlags(methodNullableInfo.Flags, returnType, parameterTypes, parameterIndex);
+        if (methodParameterFlags.IsDefaultOrEmpty)
+            return parameterNullableInfo;
+
+        var contextFlag = parameterNullableInfo.ContextFlag != 0 ? parameterNullableInfo.ContextFlag : methodNullableInfo.ContextFlag;
+        return new NullableMetadataInfo(methodParameterFlags, contextFlag);
+    }
+
+    private static ImmutableArray<byte> GetMethodParameterNullableFlags(ImmutableArray<byte> methodFlags, DecodedType returnType, ImmutableArray<DecodedType> parameterTypes, int parameterIndex)
+    {
+        if (methodFlags.IsDefaultOrEmpty)
+            return default;
+
+        var withReturnOffset = SliceMethodParameterNullableFlags(methodFlags, returnType, parameterTypes, parameterIndex, includeReturnType: true);
+        if (!withReturnOffset.IsDefaultOrEmpty)
+            return withReturnOffset;
+
+        return SliceMethodParameterNullableFlags(methodFlags, returnType, parameterTypes, parameterIndex, includeReturnType: false);
+    }
+
+    private static ImmutableArray<byte> SliceMethodParameterNullableFlags(
+        ImmutableArray<byte> methodFlags,
+        DecodedType returnType,
+        ImmutableArray<DecodedType> parameterTypes,
+        int parameterIndex,
+        bool includeReturnType)
+    {
+        var offset = includeReturnType ? GetNullableAnnotationSlotCount(returnType) : 0;
+        for (var i = 0; i < parameterIndex; i++)
+        {
+            offset += GetNullableAnnotationSlotCount(parameterTypes[i]);
+        }
+
+        if (offset >= methodFlags.Length)
+            return default;
+
+        var parameterSlotCount = GetNullableAnnotationSlotCount(parameterTypes[parameterIndex]);
+        if (parameterSlotCount == 0)
+            return default;
+
+        var sliceLength = Math.Min(parameterSlotCount, methodFlags.Length - offset);
+        var builder = ImmutableArray.CreateBuilder<byte>(sliceLength);
+        for (var i = 0; i < sliceLength; i++)
+        {
+            builder.Add(methodFlags[offset + i]);
+        }
+
+        return builder.MoveToImmutable();
+    }
+
+    private static int GetNullableAnnotationSlotCount(DecodedType type)
+    {
+        return type.Kind switch
+        {
+            DecodedTypeKind.ByReference or DecodedTypeKind.Pointer => type.ElementType is null ? 0 : GetNullableAnnotationSlotCount(type.ElementType),
+            DecodedTypeKind.Array => 1 + (type.ElementType is null ? 0 : GetNullableAnnotationSlotCount(type.ElementType)),
+            DecodedTypeKind.GenericInstantiation => 1 + type.TypeArguments.Sum(GetNullableAnnotationSlotCount),
+            _ => 1,
+        };
     }
 
     private static string BuildDeclarationWithParameters(

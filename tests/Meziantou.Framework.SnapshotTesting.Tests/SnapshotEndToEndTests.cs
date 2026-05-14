@@ -35,13 +35,13 @@ public sealed class SnapshotEndToEndTests
             expectFailure: true,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "expected"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "expected"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.actual.txt", "sample"),
-            ("__snapshots__/SampleTest.verified.txt", "expected"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.actual.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "expected"),
         ]);
     }
 
@@ -62,7 +62,7 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
         ]);
     }
 
@@ -82,12 +82,12 @@ public sealed class SnapshotEndToEndTests
             """,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "sample"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
         ]);
     }
 
@@ -99,14 +99,14 @@ public sealed class SnapshotEndToEndTests
             expectFailure: true,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "value_0"u8.ToArray()),
-                new SnapshotFile("__snapshots__/SampleTest_1.verified.txt", "value_1"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "value_1"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "value_0"),
-            ("__snapshots__/SampleTest_1.verified.txt", "value_1"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "value_1"),
         ]);
     }
 
@@ -118,13 +118,13 @@ public sealed class SnapshotEndToEndTests
             expectFailure: true,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleTest_0.verified.txt", "value_0"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.txt", "value_0"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest_0.verified.txt", "value_0"),
-            ("__snapshots__/SampleTest_1.actual.txt", "value_1"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_1.actual.txt", "value_1"),
         ]);
     }
 
@@ -135,14 +135,14 @@ public sealed class SnapshotEndToEndTests
             CreateFixedCountSerializerSource(count: 2),
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleTest_0.verified.txt", "value_0"u8.ToArray()),
-                new SnapshotFile("__snapshots__/SampleTest_1.verified.txt", "value_1"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.txt", "value_0"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "value_1"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest_0.verified.txt", "value_0"),
-            ("__snapshots__/SampleTest_1.verified.txt", "value_1"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "value_1"),
         ]);
     }
 
@@ -170,16 +170,16 @@ public sealed class SnapshotEndToEndTests
             """,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleFact.verified.txt", "fact-value"u8.ToArray()),
-                new SnapshotFile("__snapshots__/SampleTheory_alpha.verified.txt", "alpha"u8.ToArray()),
-                new SnapshotFile("__snapshots__/SampleTheory_beta.verified.txt", "beta"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleFact.verified.txt", "fact-value"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTheory_alpha.verified.txt", "alpha"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTheory_beta.verified.txt", "beta"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleFact.verified.txt", "fact-value"),
-            ("__snapshots__/SampleTheory_alpha.verified.txt", "alpha"),
-            ("__snapshots__/SampleTheory_beta.verified.txt", "beta"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleFact.verified.txt", "fact-value"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_alpha.verified.txt", "alpha"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_beta.verified.txt", "beta"),
         ]);
     }
 
@@ -208,17 +208,17 @@ public sealed class SnapshotEndToEndTests
             expectFailure: true,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleFact.verified.txt", "fact-value"u8.ToArray()),
-                new SnapshotFile("__snapshots__/SampleTheory_alpha.verified.txt", "alpha"u8.ToArray()),
-                new SnapshotFile("__snapshots__/SampleTheory_beta.verified.txt", "incorrect"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleFact.verified.txt", "fact-value"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTheory_alpha.verified.txt", "alpha"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTheory_beta.verified.txt", "incorrect"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleFact.verified.txt", "fact-value"),
-            ("__snapshots__/SampleTheory_alpha.verified.txt", "alpha"),
-            ("__snapshots__/SampleTheory_beta.actual.txt", "beta"),
-            ("__snapshots__/SampleTheory_beta.verified.txt", "incorrect"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleFact.verified.txt", "fact-value"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_alpha.verified.txt", "alpha"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_beta.actual.txt", "beta"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_beta.verified.txt", "incorrect"),
         ]);
     }
 
@@ -248,7 +248,7 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleFact.verified.txt", "fact-value"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleFact.verified.txt", "fact-value"),
         ]);
     }
 
@@ -280,8 +280,8 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/Case_alpha.verified.txt", "alpha"),
-            ("__snapshots__/Case_beta.verified.txt", "beta"),
+            ("__snapshots__/GeneratedSnapshotTests_Case_alpha.verified.txt", "alpha"),
+            ("__snapshots__/GeneratedSnapshotTests_Case_beta.verified.txt", "beta"),
         ]);
     }
 
@@ -304,8 +304,8 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTheory_alpha.verified.txt", "alpha"),
-            ("__snapshots__/SampleTheory_beta.verified.txt", "beta"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_alpha.verified.txt", "alpha"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_beta.verified.txt", "beta"),
         ]);
     }
 
@@ -329,8 +329,8 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTheory_alpha.verified.txt", "alpha"),
-            ("__snapshots__/SampleTheory_beta.verified.txt", "beta"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_alpha.verified.txt", "alpha"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_beta.verified.txt", "beta"),
         ]);
     }
 
@@ -354,8 +354,8 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTheory_alpha.verified.txt", "alpha"),
-            ("__snapshots__/SampleTheory_beta.verified.txt", "beta"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_alpha.verified.txt", "alpha"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_beta.verified.txt", "beta"),
         ]);
     }
 
@@ -379,8 +379,8 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/Case_alpha.verified.txt", "alpha"),
-            ("__snapshots__/Case_beta.verified.txt", "beta"),
+            ("__snapshots__/GeneratedSnapshotTests_Case_alpha.verified.txt", "alpha"),
+            ("__snapshots__/GeneratedSnapshotTests_Case_beta.verified.txt", "beta"),
         ]);
     }
 
@@ -401,7 +401,7 @@ public sealed class SnapshotEndToEndTests
             """);
 
         var snapshotFile = Assert.Single(snapshotFiles);
-        Assert.StartsWith("__snapshots__/SampleTest", snapshotFile.RelativePath, StringComparison.Ordinal);
+        Assert.StartsWith("__snapshots__/GeneratedSnapshotTests_SampleTest", snapshotFile.RelativePath, StringComparison.Ordinal);
         Assert.Matches(new Regex("^__snapshots__/[A-Za-z0-9._-]+_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), snapshotFile.RelativePath);
         Assert.Equal("sample", snapshotFile.ContentAsString);
     }
@@ -431,7 +431,7 @@ public sealed class SnapshotEndToEndTests
             """);
 
         var snapshotFile = Assert.Single(snapshotFiles);
-        Assert.Matches(new Regex("^__snapshots__/snapshot\\.verified_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), snapshotFile.RelativePath);
+        Assert.Matches(new Regex("^__snapshots__/GeneratedSnapshotTests_snapshot\\.verified_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), snapshotFile.RelativePath);
         Assert.Equal("sample", snapshotFile.ContentAsString);
     }
 
@@ -452,7 +452,7 @@ public sealed class SnapshotEndToEndTests
             """);
 
         var snapshotFile = Assert.Single(snapshotFiles);
-        Assert.Equal("__snapshots__/SampleTest.verified.png", snapshotFile.RelativePath);
+        Assert.Equal("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.png", snapshotFile.RelativePath);
         Assert.Equal([0x42, 0x00, 0x43], snapshotFile.Content);
     }
 
@@ -473,7 +473,7 @@ public sealed class SnapshotEndToEndTests
             """);
 
         var snapshotFile = Assert.Single(snapshotFiles);
-        Assert.Equal("__snapshots__/SampleTest.verified.png", snapshotFile.RelativePath);
+        Assert.Equal("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.png", snapshotFile.RelativePath);
         Assert.Equal([0x42, 0x00, 0x43], snapshotFile.Content);
     }
 
@@ -494,7 +494,7 @@ public sealed class SnapshotEndToEndTests
             """);
 
         var snapshotFile = Assert.Single(snapshotFiles);
-        Assert.Equal("__snapshots__/SampleTest.verified.png", snapshotFile.RelativePath);
+        Assert.Equal("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.png", snapshotFile.RelativePath);
         Assert.Equal([0x01, 0x02, 0x03, 0x04], snapshotFile.Content);
     }
 
@@ -510,7 +510,24 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Theory]
+    [InlineData(SnapshotTestFramework.Xunit)]
+    [InlineData(SnapshotTestFramework.XunitV3)]
+    [InlineData(SnapshotTestFramework.MSTest)]
+    [InlineData(SnapshotTestFramework.NUnit)]
+    [InlineData(SnapshotTestFramework.TUnit)]
+    public async Task Validate_EndToEnd_UsesClassName_WhenTwoClassesShareMethodName(SnapshotTestFramework testFramework)
+    {
+        var snapshotFiles = await AssertSnapshot(GetDuplicateMethodAcrossClassesSource(testFramework), testFramework: testFramework);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/FirstSnapshotTests_SampleTest.verified.txt", "first"),
+            ("__snapshots__/SecondSnapshotTests_SampleTest.verified.txt", "second"),
         ]);
     }
 
@@ -530,7 +547,7 @@ public sealed class SnapshotEndToEndTests
             """,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "sample"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"u8.ToArray()),
             ],
             directoryBuildPropsContent:
             """
@@ -543,7 +560,7 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
         ]);
     }
 
@@ -572,7 +589,7 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
         ]);
     }
 
@@ -592,7 +609,7 @@ public sealed class SnapshotEndToEndTests
             """,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/SampleTest.verified.txt", "sample"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"u8.ToArray()),
             ],
             directoryBuildPropsContent:
             """
@@ -606,7 +623,7 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
         ]);
     }
 
@@ -636,7 +653,7 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
         ]);
     }
 
@@ -660,7 +677,7 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
         ]);
     }
 
@@ -688,7 +705,7 @@ public sealed class SnapshotEndToEndTests
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/SampleTest.verified.txt", "sample"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
         ]);
     }
 
@@ -741,6 +758,102 @@ public sealed class SnapshotEndToEndTests
                     public async Task SampleTest()
                     {
                         Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                        await Task.CompletedTask;
+                    }
+                }
+                """,
+            _ => throw new ArgumentOutOfRangeException(nameof(framework), framework, null),
+        };
+    }
+
+    private static string GetDuplicateMethodAcrossClassesSource(SnapshotTestFramework framework)
+    {
+        return framework switch
+        {
+            SnapshotTestFramework.Xunit or SnapshotTestFramework.XunitV3 =>
+                """
+                public sealed class FirstSnapshotTests
+                {
+                    [Fact]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("first", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+
+                public sealed class SecondSnapshotTests
+                {
+                    [Fact]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("second", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+                """,
+            SnapshotTestFramework.MSTest =>
+                """
+                [TestClass]
+                public sealed class FirstSnapshotTests
+                {
+                    [TestMethod]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("first", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+
+                [TestClass]
+                public sealed class SecondSnapshotTests
+                {
+                    [TestMethod]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("second", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+                """,
+            SnapshotTestFramework.NUnit =>
+                """
+                [TestFixture]
+                public sealed class FirstSnapshotTests
+                {
+                    [Test]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("first", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+
+                [TestFixture]
+                public sealed class SecondSnapshotTests
+                {
+                    [Test]
+                    public void SampleTest()
+                    {
+                        Snapshot.Validate("second", SnapshotTestUtilities.CreateSuccessSettings());
+                    }
+                }
+                """,
+            SnapshotTestFramework.TUnit =>
+                """
+                using System.Threading.Tasks;
+
+                public sealed class FirstSnapshotTests
+                {
+                    [Test]
+                    public async Task SampleTest()
+                    {
+                        Snapshot.Validate("first", SnapshotTestUtilities.CreateSuccessSettings());
+                        await Task.CompletedTask;
+                    }
+                }
+
+                public sealed class SecondSnapshotTests
+                {
+                    [Test]
+                    public async Task SampleTest()
+                    {
+                        Snapshot.Validate("second", SnapshotTestUtilities.CreateSuccessSettings());
                         await Task.CompletedTask;
                     }
                 }

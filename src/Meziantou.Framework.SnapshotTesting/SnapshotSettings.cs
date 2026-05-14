@@ -64,6 +64,16 @@ public sealed record SnapshotSettings
         }
     }
 
+    public SnapshotNamingStrategy SnapshotNamingStrategy
+    {
+        get;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            field = value;
+        }
+    }
+
     public SnapshotSerializerCollection Serializers { get; }
 
     /// <summary>
@@ -92,6 +102,7 @@ public sealed record SnapshotSettings
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         AssertionExceptionCreator = AssertionExceptionBuilder.Default;
         MaxSnapshotFileNameLength = 128;
+        SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName;
         SnapshotPathStrategy = DefaultSnapshotPath;
         MergeTools = DefaultMergeTools;
     }
@@ -106,6 +117,7 @@ public sealed record SnapshotSettings
         SnapshotUpdateStrategy = options.SnapshotUpdateStrategy;
         AssertionExceptionCreator = options.AssertionExceptionCreator;
         MaxSnapshotFileNameLength = options.MaxSnapshotFileNameLength;
+        SnapshotNamingStrategy = options.SnapshotNamingStrategy;
         SnapshotPathStrategy = options.SnapshotPathStrategy;
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
     }
@@ -137,8 +149,8 @@ public sealed record SnapshotSettings
             }
         }
 
-        var startPart = context.TestContext?.TestName ?? context.MethodName ?? context.MemberName ?? "";
-        startPart = SanitizeFragment(startPart);
+        var rawStartPart = context.Settings.SnapshotNamingStrategy(context);
+        var startPart = SanitizeFragment(rawStartPart ?? "");
         if (startPart.Length == 0)
         {
             startPart = "snapshot";
@@ -154,7 +166,7 @@ public sealed record SnapshotSettings
         var suffix = suffixWithoutHash;
         if (shouldAddHashSuffix)
         {
-            var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.MemberName}|{context.LineNumber}|{context.Type.Type}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
+            var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.ClassName}|{context.LineNumber}|{context.Type.Type}|{rawStartPart}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
             var hash = ToHexSha256(hashInput, length: 8);
             suffix = hasMultipleSnapshots ? "_" + hash + "_" + indexPart + ".verified." + extension : "_" + hash + ".verified." + extension;
         }

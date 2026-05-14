@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
-internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string MethodName, string? MemberName, int LineNumber)
+internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string MethodName, string? ContainingTypeName, string? MemberName, int LineNumber)
 {
     private static readonly Regex LambdaContainingMethodNameRegex = new(@"^<(?<name>[^>]+)>b__[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeout: Timeout.InfiniteTimeSpan);
 
@@ -22,6 +22,7 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
         var stackTrace = new StackTrace(fNeedFileInfo: true);
         var stackAnalysisStartIndex = GetStackAnalysisStartIndex(stackTrace);
         string? discoveredMethodName = null;
+        string? discoveredContainingTypeName = null;
 
         for (var i = stackAnalysisStartIndex; i < stackTrace.FrameCount; i++)
         {
@@ -35,10 +36,12 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
             if (HasTestAttribute(method))
             {
                 discoveredMethodName = NormalizeMethodName(method.Name);
+                discoveredContainingTypeName = NormalizeTypeName(method.DeclaringType);
                 break;
             }
 
             discoveredMethodName ??= NormalizeMethodName(method.Name);
+            discoveredContainingTypeName ??= NormalizeTypeName(method.DeclaringType);
         }
 
         var sourceFilePath = filePath;
@@ -60,7 +63,7 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
             throw new SnapshotException("Cannot find the file to update from the call stack. The PDB may be missing.");
 
         discoveredMethodName ??= memberName ?? "Snapshot";
-        return new SnapshotCallerContext(ResolveSourceFilePath(sourceFilePath), discoveredMethodName, memberName, lineNumber);
+        return new SnapshotCallerContext(ResolveSourceFilePath(sourceFilePath), discoveredMethodName, discoveredContainingTypeName, memberName, lineNumber);
     }
 
     private static int GetStackAnalysisStartIndex(StackTrace stackTrace)
@@ -141,5 +144,30 @@ internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string Met
 
         containingMethodName = match.Groups["name"].Value;
         return !string.IsNullOrEmpty(containingMethodName);
+    }
+
+    private static string? NormalizeTypeName(Type? type)
+    {
+        while (type is not null)
+        {
+            var typeName = type.Name;
+            if (!string.IsNullOrWhiteSpace(typeName) && !IsCompilerGeneratedTypeName(typeName))
+            {
+                var genericSeparatorIndex = typeName.IndexOf('`', StringComparison.Ordinal);
+                if (genericSeparatorIndex < 0)
+                    return typeName;
+
+                return typeName[..genericSeparatorIndex];
+            }
+
+            type = type.DeclaringType;
+        }
+
+        return null;
+    }
+
+    private static bool IsCompilerGeneratedTypeName(string typeName)
+    {
+        return typeName.StartsWith("<", StringComparison.Ordinal);
     }
 }

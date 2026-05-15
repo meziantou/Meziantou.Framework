@@ -66,4 +66,105 @@ public sealed class Barcode
 
         return Code128Encoder.Encode(data);
     }
+
+    /// <summary>
+    /// Creates a Code 93 barcode from the specified data.
+    /// </summary>
+    /// <param name="data">The data to encode.</param>
+    /// <returns>A new <see cref="Barcode"/> instance.</returns>
+    public static Barcode CreateCode93(string data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (data.Length == 0)
+        {
+            throw new ArgumentException("The data cannot be empty.", nameof(data));
+        }
+
+        return Code93Encoder.Encode(data);
+    }
+
+    /// <summary>
+    /// Creates an EAN-8 barcode from the specified data.
+    /// </summary>
+    /// <param name="data">The data to encode (7 digits without checksum, or 8 digits with checksum).</param>
+    /// <param name="extension">Optional UPC/EAN 2-digit or 5-digit supplemental extension.</param>
+    /// <returns>A new <see cref="Barcode"/> instance.</returns>
+    public static Barcode CreateEan8(string data, string? extension = null)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (data.Length == 0)
+        {
+            throw new ArgumentException("The data cannot be empty.", nameof(data));
+        }
+
+        return EanUpcEncoder.EncodeEan8(data, extension);
+    }
+
+    /// <summary>
+    /// Creates an EAN-13 barcode from the specified data.
+    /// </summary>
+    /// <param name="data">The data to encode (12 digits without checksum, or 13 digits with checksum).</param>
+    /// <param name="extension">Optional UPC/EAN 2-digit or 5-digit supplemental extension.</param>
+    /// <returns>A new <see cref="Barcode"/> instance.</returns>
+    public static Barcode CreateEan13(string data, string? extension = null)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (data.Length == 0)
+        {
+            throw new ArgumentException("The data cannot be empty.", nameof(data));
+        }
+
+        return EanUpcEncoder.EncodeEan13(data, extension);
+    }
+
+    /// <summary>
+    /// Creates a UPC-A barcode from the specified data.
+    /// </summary>
+    /// <param name="data">The data to encode (11 digits without checksum, or 12 digits with checksum).</param>
+    /// <param name="extension">Optional UPC/EAN 2-digit or 5-digit supplemental extension.</param>
+    /// <returns>A new <see cref="Barcode"/> instance.</returns>
+    public static Barcode CreateUpcA(string data, string? extension = null)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (data.Length == 0)
+        {
+            throw new ArgumentException("The data cannot be empty.", nameof(data));
+        }
+
+        return EanUpcEncoder.EncodeUpcA(data, extension);
+    }
+
+    /// <summary>
+    /// Creates a Codabar barcode from the specified data.
+    /// </summary>
+    /// <param name="data">The data to encode.</param>
+    /// <param name="startCharacter">The start character (<c>A</c>, <c>B</c>, <c>C</c>, or <c>D</c>).</param>
+    /// <param name="stopCharacter">The stop character (<c>A</c>, <c>B</c>, <c>C</c>, or <c>D</c>).</param>
+    /// <returns>A new <see cref="Barcode"/> instance.</returns>
+    public static Barcode CreateCodabar(string data, char startCharacter = 'A', char stopCharacter = 'B')
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (data.Length == 0)
+        {
+            throw new ArgumentException("The data cannot be empty.", nameof(data));
+        }
+
+        return CodabarEncoder.Encode(data, startCharacter, stopCharacter);
+    }
+
+    /// <summary>
+    /// Creates an Interleaved 2 of 5 (ITF) barcode from the specified data.
+    /// </summary>
+    /// <param name="data">The data to encode (digits only, even number of digits).</param>
+    /// <returns>A new <see cref="Barcode"/> instance.</returns>
+    public static Barcode CreateItf(string data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (data.Length == 0)
+        {
+            throw new ArgumentException("The data cannot be empty.", nameof(data));
+        }
+
+        return ItfEncoder.Encode(data);
+    }
 }

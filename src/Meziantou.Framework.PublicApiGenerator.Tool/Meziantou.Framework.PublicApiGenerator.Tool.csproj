@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="../Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
   </ItemGroup>
 

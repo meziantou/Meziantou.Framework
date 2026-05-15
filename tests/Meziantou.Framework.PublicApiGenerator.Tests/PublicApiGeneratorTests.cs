@@ -625,6 +625,74 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Tool_SingleFile_AllowsCustomOutputFileName()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            public class Sample
+            {
+                public void A()
+                {
+                }
+            }
+            """);
+
+        var outputFilePath = temporaryDirectory / "output" / "CustomPublicApi.cs";
+        var exitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(0, exitCode);
+        InlineSnapshot.Validate(File.ReadAllText(outputFilePath).TrimEnd('\r', '\n'), """
+            #nullable enable
+
+            public class Sample
+            {
+                public void A() { }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Tool_SingleFile_WithoutExtension_UsesOutputDirectory()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            public class Sample
+            {
+                public void A()
+                {
+                }
+            }
+            """);
+
+        var outputDirectory = temporaryDirectory / "output";
+        var exitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output", outputDirectory.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(0, exitCode);
+        InlineSnapshot.Validate(File.ReadAllText(outputDirectory / "PublicApi.g.cs").TrimEnd('\r', '\n'), """
+            #nullable enable
+
+            public class Sample
+            {
+                public void A() { }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Methods_InstanceAndStatic()
     {
         await Validate("""

@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using Meziantou.Framework;
 using Meziantou.Framework.PublicApiGenerator;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Meziantou.Framework.PublicApiGenerator.Tests")]
@@ -24,7 +25,7 @@ internal static class Program
         };
         var outputOption = new Option<string>("--output")
         {
-            Description = "Output directory",
+            Description = "Output path (directory, or file path when --file-layout is SingleFile)",
             Required = true,
         };
         var fileLayoutOption = new Option<PublicApiFileLayout>("--file-layout")
@@ -59,7 +60,7 @@ internal static class Program
             };
 
             var inputs = ParseInputs(inputValues);
-            PublicApi.GenerateToDirectory(inputs, output, options);
+            GenerateFiles(inputs, output, options);
 
             return 0;
         });
@@ -67,6 +68,46 @@ internal static class Program
         var invocationConfiguration = new InvocationConfiguration();
         configure?.Invoke(invocationConfiguration);
         return rootCommand.Parse(args).InvokeAsync(invocationConfiguration);
+    }
+
+    private static void GenerateFiles(IReadOnlyList<AssemblySource> inputs, string output, PublicApiOptions options)
+    {
+        if (options.FileLayout is not PublicApiFileLayout.SingleFile)
+        {
+            PublicApi.GenerateToDirectory(inputs, output, options);
+            return;
+        }
+
+        var outputPath = FullPath.FromPath(output);
+        if (ShouldUseOutputAsFilePath(outputPath))
+        {
+            var files = PublicApi.Generate(inputs, options);
+            if (files.Count != 1)
+            {
+                throw new InvalidOperationException($"Expected a single generated file when using {nameof(PublicApiFileLayout.SingleFile)} layout.");
+            }
+
+            outputPath.CreateParentDirectory();
+            File.WriteAllText(outputPath, files[0].Content);
+            return;
+        }
+
+        PublicApi.GenerateToDirectory(inputs, outputPath, options);
+    }
+
+    private static bool ShouldUseOutputAsFilePath(FullPath outputPath)
+    {
+        if (Directory.Exists(outputPath))
+        {
+            return false;
+        }
+
+        if (File.Exists(outputPath))
+        {
+            return true;
+        }
+
+        return !string.IsNullOrEmpty(outputPath.Extension);
     }
 
     private static List<AssemblySource> ParseInputs(string[] inputValues)

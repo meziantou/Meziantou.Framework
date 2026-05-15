@@ -295,3 +295,4 @@ src/Meziantou.AspNetCore.Components/wwwroot/**/*.js
 
 artifacts/
 **/__snapshots__/*.actual.*
+*.lscache

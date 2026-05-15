@@ -682,7 +682,7 @@ public sealed class PublicApiGeneratorTests
             configure: null);
 
         Assert.Equal(0, exitCode);
-        InlineSnapshot.Validate(File.ReadAllText(outputDirectory / "PublicApi.g.cs").TrimEnd('\r', '\n'), """
+        InlineSnapshot.Validate(File.ReadAllText(outputDirectory / "Source.cs").TrimEnd('\r', '\n'), """
             #nullable enable
 
             public class Sample

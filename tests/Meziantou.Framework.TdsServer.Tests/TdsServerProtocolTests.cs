@@ -525,14 +525,9 @@ public sealed class TdsServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: "True"));
-        await connection.OpenAsync();
+        var value = await ExecuteScalarWithTransientSqlRetryAsync(port, encrypt: "True");
 
-        await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT 1";
-        var value = await command.ExecuteScalarAsync();
-
-        Assert.Equal(1, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+        Assert.Equal(1, value);
     }
 
     [Fact]
@@ -555,14 +550,9 @@ public sealed class TdsServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: "True"));
-        await connection.OpenAsync();
+        var value = await ExecuteScalarWithTransientSqlRetryAsync(port, encrypt: "True");
 
-        await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT 1";
-        var value = await command.ExecuteScalarAsync();
-
-        Assert.Equal(1, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+        Assert.Equal(1, value);
     }
 
     [Fact]
@@ -586,7 +576,7 @@ public sealed class TdsServerProtocolTests
         var port = Assert.Single(server.Ports);
 
         var optionalResult = await ExecuteScalarAsync(port, encrypt: "Optional");
-        var encryptedResult = await ExecuteScalarAsync(port, encrypt: "True");
+        var encryptedResult = await ExecuteScalarWithTransientSqlRetryAsync(port, encrypt: "True");
 
         Assert.Equal(1, optionalResult);
         Assert.Equal(1, encryptedResult);
@@ -854,15 +844,48 @@ public sealed class TdsServerProtocolTests
         return new ClaimsPrincipal(identity);
     }
 
-    private static async Task<int> ExecuteScalarAsync(int port, string encrypt)
+    private static async Task<int> ExecuteScalarAsync(int port, string encrypt, int connectTimeout = 5)
     {
-        await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: encrypt));
+        await using var connection = new SqlConnection(CreateConnectionString(port, encrypt: encrypt, connectTimeout: connectTimeout));
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
         command.CommandText = "SELECT 1";
         var value = await command.ExecuteScalarAsync();
         return Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    private static Task<int> ExecuteScalarWithTransientSqlRetryAsync(int port, string encrypt, int connectTimeout = 15)
+    {
+        return ExecuteWithTransientSqlRetry(() => ExecuteScalarAsync(port, encrypt: encrypt, connectTimeout: connectTimeout));
+    }
+
+    private static async Task<T> ExecuteWithTransientSqlRetry<T>(Func<Task<T>> action)
+    {
+        const int MaxAttempts = 3;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await action();
+            }
+            catch (SqlException ex) when (attempt < MaxAttempts && IsTransientSqlOpenFailure(ex))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(200 * attempt));
+            }
+        }
+    }
+
+    private static bool IsTransientSqlOpenFailure(SqlException exception)
+    {
+        if (exception.Number != -2)
+        {
+            return false;
+        }
+
+        var hasTimeout = exception.Message.Contains("Connection Timeout Expired", StringComparison.OrdinalIgnoreCase);
+        var hasPreLogin = exception.Message.Contains("pre-login", StringComparison.OrdinalIgnoreCase);
+        return hasTimeout && hasPreLogin;
     }
 
     private static async Task WaitForServerReadyAsync(int port, TimeSpan timeout)

@@ -148,7 +148,7 @@ internal static class Program
         PublicApi.GenerateToDirectory(inputs, outputDirectory, options);
     }
 
-    private static void ThrowIfValidationFailed(IReadOnlyList<string> errors)
+    private static void ThrowIfValidationFailed(List<string> errors)
     {
         if (errors.Count == 0)
         {
@@ -158,7 +158,7 @@ internal static class Program
         throw new InvalidOperationException("Public API validation failed:\n" + string.Join('\n', errors.Select(error => " - " + error)));
     }
 
-    private static IReadOnlyList<string> ValidateSingleFile(PublicApiFile expectedFile, FullPath outputFilePath)
+    private static List<string> ValidateSingleFile(PublicApiFile expectedFile, FullPath outputFilePath)
     {
         var errors = new List<string>();
         if (!File.Exists(outputFilePath))
@@ -176,7 +176,7 @@ internal static class Program
         return errors;
     }
 
-    private static IReadOnlyList<string> ValidateDirectory(IReadOnlyList<PublicApiFile> expectedFiles, FullPath outputDirectoryPath)
+    private static List<string> ValidateDirectory(IReadOnlyList<PublicApiFile> expectedFiles, FullPath outputDirectoryPath)
     {
         var errors = new List<string>();
         var comparer = GetRelativePathComparer();

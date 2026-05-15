@@ -21,6 +21,7 @@
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" />

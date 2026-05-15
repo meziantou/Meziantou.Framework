@@ -641,7 +641,7 @@ public sealed class PublicApiGeneratorTests
         var exitCode = await Program.MainImpl(
             [
                 "--input", assemblyPath.ToString(),
-                "--output", outputFilePath.ToString(),
+                "--output-file", outputFilePath.ToString(),
                 "--file-layout", nameof(PublicApiFileLayout.SingleFile),
                 "--omit-auto-generated-comment",
             ],
@@ -659,7 +659,7 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
-    public async Task Tool_SingleFile_WithoutExtension_UsesOutputDirectory()
+    public async Task Tool_SingleFile_AllowsOutputDirectory()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
@@ -690,6 +690,55 @@ public sealed class PublicApiGeneratorTests
                 public void A() { }
             }
             """);
+    }
+
+    [Fact]
+    public async Task Tool_SingleFile_OutputAndOutputFile_AreMutuallyExclusive()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            public class Sample
+            {
+            }
+            """);
+
+        var outputDirectory = temporaryDirectory / "output";
+        var outputFilePath = outputDirectory / "CustomPublicApi.cs";
+        var exitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output", outputDirectory.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(1, exitCode);
+    }
+
+    [Fact]
+    public async Task Tool_NonSingleFile_DoesNotAllowOutputFile()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            namespace Demo;
+            public class Sample
+            {
+            }
+            """);
+
+        var outputFilePath = temporaryDirectory / "output" / "CustomPublicApi.cs";
+        var exitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.OneFilePerNamespace),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(1, exitCode);
     }
 
     [Fact]

@@ -128,15 +128,15 @@ public sealed class PublicApiGeneratorMsBuildTests
 
     private static async Task<string> BuildPackageAsync(TemporaryDirectory temporaryDirectory)
     {
-        const string packageVersion = "999.0.0-local";
-        const string configuration = "Debug";
+        const string PackageVersion = "999.0.0-local";
+        const string Configuration = "Debug";
         var repositoryRoot = GetRepositoryRoot();
         var packageProjectPath = repositoryRoot / "src" / "Meziantou.Framework.PublicApiGenerator.MSBuild" / "Meziantou.Framework.PublicApiGenerator.MSBuild.csproj";
         var packagesDirectory = temporaryDirectory.CreateDirectory("packages");
 
-        await RunDotNetCommand(repositoryRoot, ["build", packageProjectPath, "--configuration", configuration, "--disable-build-servers", "-nologo", "/p:Version=" + packageVersion], expectedExitCode: 0);
-        await RunDotNetCommand(repositoryRoot, ["pack", packageProjectPath, "--configuration", configuration, "--no-build", "--disable-build-servers", "-nologo", "--output", packagesDirectory, "/p:Version=" + packageVersion], expectedExitCode: 0);
-        return packageVersion;
+        await RunDotNetCommand(repositoryRoot, ["build", packageProjectPath, "--configuration", Configuration, "--disable-build-servers", "-nologo", "/p:Version=" + PackageVersion], expectedExitCode: 0);
+        await RunDotNetCommand(repositoryRoot, ["pack", packageProjectPath, "--configuration", Configuration, "--no-build", "--disable-build-servers", "-nologo", "--output", packagesDirectory, "/p:Version=" + PackageVersion], expectedExitCode: 0);
+        return PackageVersion;
     }
 
     private static void CreateGlobalJson(FullPath projectDirectory)

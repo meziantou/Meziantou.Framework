@@ -84,7 +84,7 @@ public sealed class PublicApiGeneratorMsBuildPackageFixture : IAsyncLifetime
         throw new InvalidOperationException($"Cannot find git repository root. CallerFilePath='{filePath}', CurrentDirectory='{FullPath.CurrentDirectory()}'");
     }
 
-    private static void AddPathFromEnvironmentVariable(ICollection<FullPath> candidates, string variableName)
+    private static void AddPathFromEnvironmentVariable(List<FullPath> candidates, string variableName)
     {
         var path = Environment.GetEnvironmentVariable(variableName);
         if (!string.IsNullOrWhiteSpace(path))

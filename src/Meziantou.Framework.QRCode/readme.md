@@ -78,6 +78,8 @@ var customSvg = standardQr.ToSvg(new QRCodeSvgOptions
     QuietZoneModules = 4,
     DarkColor = Color.FromRgb(0x00, 0x00, 0x00),
     LightColor = Color.FromRgb(0xff, 0xff, 0xff),
+    LogoImageHref = "https://example.com/logo.svg", // Also supports data URIs
+    LogoSizePercent = 20,
 });
 
 var barcodeSvg = code128.ToSvg(new BarcodeSvgOptions
@@ -87,6 +89,8 @@ var barcodeSvg = code128.ToSvg(new BarcodeSvgOptions
     QuietZoneModules = 10,
 });
 ```
+
+Logo images are currently supported in the SVG renderer only.
 
 ### Render as PNG
 

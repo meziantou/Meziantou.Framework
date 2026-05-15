@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using Meziantou.Framework.InlineSnapshotTesting;
 using Meziantou.Framework.SnapshotTesting;
 using Xunit;
 
@@ -6,6 +7,8 @@ namespace Meziantou.Framework.Tests;
 
 public class QRCodeSvgRendererTests
 {
+    private const string GreenPngDataUri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mNg+M8AAAICAQBF9FLUAAAAAElFTkSuQmCC";
+
     [Fact]
     public void ToSvg_DefaultOptions()
     {
@@ -96,6 +99,61 @@ public class QRCodeSvgRendererTests
         var svg = qr.ToSvg(new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 });
 
         Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_WithLogo_Snapshot()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var options = new QRCodeSvgOptions
+        {
+            ModuleSize = 10,
+            QuietZoneModules = 4,
+            LogoImageHref = GreenPngDataUri,
+            LogoSizePercent = 20,
+        };
+        var svg = qr.ToSvg(options);
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_WithLogo_Snapshot_High()
+    {
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.H);
+        var options = new QRCodeSvgOptions
+        {
+            ModuleSize = 10,
+            QuietZoneModules = 4,
+            LogoImageHref = GreenPngDataUri,
+            LogoSizePercent = 20,
+        };
+        var svg = qr.ToSvg(options);
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(101)]
+    public void ToSvg_InvalidLogoSizePercent_ThrowsArgumentOutOfRangeException(int logoSizePercent)
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToSvg(new QRCodeSvgOptions { LogoImageHref = GreenPngDataUri, LogoSizePercent = logoSizePercent }));
+        var expected = logoSizePercent switch
+        {
+            0 => """
+                LogoSizePercent must be between 1 and 100. (Parameter 'options.LogoSizePercent')
+                Actual value was 0.
+                """,
+            101 => """
+                LogoSizePercent must be between 1 and 100. (Parameter 'options.LogoSizePercent')
+                Actual value was 101.
+                """,
+            _ => throw new InvalidOperationException("Unsupported test value"),
+        };
+
+        InlineSnapshot.Validate(exception.Message, expected);
     }
 
     [Fact]

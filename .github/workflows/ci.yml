@@ -232,7 +232,7 @@ jobs:
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ matrix.additionalArguments }}
+        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ case(matrix.runs-on == 'windows-11-arm', '--blame-hang-timeout 30m', '') }} ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v7
         if: always() && steps.build-project.outputs.has-project == 'true'

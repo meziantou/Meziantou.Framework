@@ -286,7 +286,7 @@ public sealed class PublicApiGeneratorTests
         });
 
         var file = Assert.Single(files);
-        Assert.Equal("PublicApi.g.cs", file.RelativePath);
+        Assert.Equal("Source.cs", file.RelativePath);
         Assert.Contains("public class GlobalType", file.Content, StringComparison.Ordinal);
         Assert.Contains("namespace Demo", file.Content, StringComparison.Ordinal);
         Assert.Contains("public class Other", file.Content, StringComparison.Ordinal);
@@ -611,7 +611,7 @@ public sealed class PublicApiGeneratorTests
             configure: null);
 
         Assert.Equal(0, exitCode);
-        InlineSnapshot.Validate(File.ReadAllText(outputDirectory / "PublicApi.g.cs").TrimEnd('\r', '\n'), """
+        InlineSnapshot.Validate(File.ReadAllText(outputDirectory / "Source.cs").TrimEnd('\r', '\n'), """
             #nullable enable
 
             public class Sample

@@ -63,6 +63,7 @@ internal static class PublicApiModelReader
             throw new InvalidOperationException($"The file '{assemblyPath}' does not contain .NET metadata.");
 
         var metadataReader = peReader.GetMetadataReader();
+        var assemblyName = metadataReader.IsAssembly ? metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name) : string.Empty;
         var types = new List<PublicApiTypeModel>();
         foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
         {
@@ -81,16 +82,18 @@ internal static class PublicApiModelReader
         }
 
         return new PublicApiModel(
+            assemblyName,
             [.. types.OrderBy(type => type.Namespace, StringComparer.Ordinal)
-                     .ThenBy(type => type.QualifiedName, StringComparer.Ordinal)]);
+                      .ThenBy(type => type.QualifiedName, StringComparer.Ordinal)]);
     }
 
     public static PublicApiModel ReadFromReflection(Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(assembly);
 
+        var assemblyName = assembly.GetName().Name ?? string.Empty;
         var types = assembly.GetExportedTypes().Where(type => type.DeclaringType is null);
-        return PublicApiModelBuilder.Build(types);
+        return PublicApiModelBuilder.Build(assemblyName, types);
     }
 
     private static PublicApiTypeModel BuildTypeModel(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)

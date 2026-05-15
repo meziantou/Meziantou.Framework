@@ -61,11 +61,35 @@ public sealed class PublicApiGeneratorMsBuildPackageFixture : IAsyncLifetime
 
     private static FullPath GetRepositoryRoot([CallerFilePath] string? filePath = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        var sourceFilePath = FullPath.FromPath(filePath);
-        if (sourceFilePath.TryFindGitRepositoryRoot(out var repositoryRoot))
-            return repositoryRoot;
+        var candidates = new List<FullPath>();
+        if (!string.IsNullOrWhiteSpace(filePath))
+        {
+            var sourceFilePath = FullPath.FromPath(filePath);
+            if (File.Exists(sourceFilePath))
+            {
+                candidates.Add(sourceFilePath);
+            }
+        }
 
-        throw new InvalidOperationException("Cannot find git repository root.");
+        candidates.Add(FullPath.CurrentDirectory());
+        AddPathFromEnvironmentVariable(candidates, "GITHUB_WORKSPACE");
+        AddPathFromEnvironmentVariable(candidates, "BUILD_SOURCESDIRECTORY");
+
+        foreach (var candidate in candidates)
+        {
+            if (candidate.TryFindGitRepositoryRoot(out var repositoryRoot))
+                return repositoryRoot;
+        }
+
+        throw new InvalidOperationException($"Cannot find git repository root. CallerFilePath='{filePath}', CurrentDirectory='{FullPath.CurrentDirectory()}'");
+    }
+
+    private static void AddPathFromEnvironmentVariable(ICollection<FullPath> candidates, string variableName)
+    {
+        var path = Environment.GetEnvironmentVariable(variableName);
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            candidates.Add(FullPath.FromPath(path));
+        }
     }
 }

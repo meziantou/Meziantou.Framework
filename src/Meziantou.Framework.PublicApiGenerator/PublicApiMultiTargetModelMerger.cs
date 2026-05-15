@@ -7,7 +7,7 @@ internal static class PublicApiMultiTargetModelMerger
 {
     private const string Indentation = "    ";
 
-    public static PublicApiModel Merge(IReadOnlyDictionary<string, PublicApiModel> modelsBySymbol)
+    public static PublicApiModel Merge(IReadOnlyDictionary<string, PublicApiModel> modelsBySymbol, string assemblyName)
     {
         ArgumentNullException.ThrowIfNull(modelsBySymbol);
 
@@ -43,7 +43,7 @@ internal static class PublicApiMultiTargetModelMerger
             mergedTypes.Add(MergeType(typeGroup.Value, orderedSymbols));
         }
 
-        return new PublicApiModel([.. mergedTypes]);
+        return new PublicApiModel(assemblyName, [.. mergedTypes]);
     }
 
     private static PublicApiTypeModel MergeType(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols)

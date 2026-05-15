@@ -33,8 +33,8 @@ public static class PublicApi
             return Generate(ReadModel(assemblySources[0]), options);
         }
 
-        var modelsBySymbol = BuildModelsBySymbol(assemblySources);
-        var mergedModel = PublicApiMultiTargetModelMerger.Merge(modelsBySymbol);
+        var modelsBySymbol = BuildModelsBySymbol(assemblySources, out var firstAssemblyName);
+        var mergedModel = PublicApiMultiTargetModelMerger.Merge(modelsBySymbol, firstAssemblyName);
         return Generate(mergedModel, options);
     }
 
@@ -92,9 +92,11 @@ public static class PublicApi
         return PublicApiEmitter.Generate(model, options);
     }
 
-    private static Dictionary<string, PublicApiModel> BuildModelsBySymbol(IReadOnlyList<AssemblySource> assemblySources)
+    private static Dictionary<string, PublicApiModel> BuildModelsBySymbol(IReadOnlyList<AssemblySource> assemblySources, out string firstAssemblyName)
     {
+        firstAssemblyName = string.Empty;
         var modelsBySymbol = new Dictionary<string, PublicApiModel>(StringComparer.Ordinal);
+        var isFirstAssemblySource = true;
         foreach (var assemblySource in assemblySources)
         {
             if (assemblySource is null)
@@ -102,7 +104,14 @@ public static class PublicApi
 
             var targetFramework = ResolveTargetFramework(assemblySource);
             var symbol = PublicApiTargetFramework.ToPreprocessorSymbol(targetFramework);
-            if (!modelsBySymbol.TryAdd(symbol, ReadModel(assemblySource)))
+            var model = ReadModel(assemblySource);
+            if (isFirstAssemblySource)
+            {
+                firstAssemblyName = model.AssemblyName;
+                isFirstAssemblySource = false;
+            }
+
+            if (!modelsBySymbol.TryAdd(symbol, model))
             {
                 throw new ArgumentException($"Multiple assembly sources resolve to the same preprocessor symbol '{symbol}'.", nameof(assemblySources));
             }

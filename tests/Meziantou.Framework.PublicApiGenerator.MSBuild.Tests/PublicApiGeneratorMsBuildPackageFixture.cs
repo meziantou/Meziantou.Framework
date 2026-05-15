@@ -19,13 +19,14 @@ public sealed class PublicApiGeneratorMsBuildPackageFixture : IAsyncLifetime
     {
         _temporaryDirectory = TemporaryDirectory.Create();
         PackagesDirectory = _temporaryDirectory.CreateDirectory("packages");
+        var artifactsPath = _temporaryDirectory.CreateDirectory("artifacts");
 
         var repositoryRoot = GetRepositoryRoot();
         DotnetSdkVersion = ReadDotnetSdkVersion(repositoryRoot / "global.json");
         var packageProjectPath = repositoryRoot / "src" / "Meziantou.Framework.PublicApiGenerator.MSBuild" / "Meziantou.Framework.PublicApiGenerator.MSBuild.csproj";
 
-        await RunDotNetCommand(repositoryRoot, ["build", packageProjectPath, "--configuration", ConfigurationValue, "--disable-build-servers", "-nologo", "/p:Version=" + PackageVersionValue], expectedExitCode: 0);
-        await RunDotNetCommand(repositoryRoot, ["pack", packageProjectPath, "--configuration", ConfigurationValue, "--no-build", "--disable-build-servers", "-nologo", "--output", PackagesDirectory, "/p:Version=" + PackageVersionValue], expectedExitCode: 0);
+        await RunDotNetCommand(repositoryRoot, ["build", packageProjectPath, "--configuration", ConfigurationValue, "--disable-build-servers", "-nologo", "/p:ArtifactsPath=" + artifactsPath, "/p:Version=" + PackageVersionValue], expectedExitCode: 0);
+        await RunDotNetCommand(repositoryRoot, ["pack", packageProjectPath, "--configuration", ConfigurationValue, "--no-build", "--disable-build-servers", "-nologo", "--output", PackagesDirectory, "/p:ArtifactsPath=" + artifactsPath, "/p:Version=" + PackageVersionValue], expectedExitCode: 0);
     }
 
     public async ValueTask DisposeAsync()

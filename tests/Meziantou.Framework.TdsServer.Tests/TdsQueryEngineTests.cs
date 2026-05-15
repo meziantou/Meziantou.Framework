@@ -2897,20 +2897,26 @@ public sealed class TdsQueryEngineTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port));
-        await connection.OpenAsync();
+        var payload = await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(port));
+            await connection.OpenAsync();
 
-        await using var selectCommand = connection.CreateCommand();
-        selectCommand.CommandText = """
-            SELECT CAST(Payload AS XML(dbo.BasicXml)) AS PayloadXml
-            FROM xml_docs
-            WHERE Id = 1
-            """;
-        await using var reader = await selectCommand.ExecuteReaderAsync();
+            await using var selectCommand = connection.CreateCommand();
+            selectCommand.CommandText = """
+                SELECT CAST(Payload AS XML(dbo.BasicXml)) AS PayloadXml
+                FROM xml_docs
+                WHERE Id = 1
+                """;
+            await using var reader = await selectCommand.ExecuteReaderAsync();
 
-        Assert.True(await reader.ReadAsync());
-        Assert.Equal("<root><item id=\"1\">Alpha</item><item id=\"2\">Beta</item></root>", reader.GetString(0));
-        Assert.False(await reader.ReadAsync());
+            Assert.True(await reader.ReadAsync());
+            var value = reader.GetString(0);
+            Assert.False(await reader.ReadAsync());
+            return value;
+        });
+
+        Assert.Equal("<root><item id=\"1\">Alpha</item><item id=\"2\">Beta</item></root>", payload);
     }
 
     [Fact]
@@ -3043,17 +3049,21 @@ public sealed class TdsQueryEngineTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port));
-        await connection.OpenAsync();
+        var exception = await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(port));
+            await connection.OpenAsync();
 
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
-            SELECT Id
-            FROM customers
-            WHERE Id =
-            """;
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                SELECT Id
+                FROM customers
+                WHERE Id =
+                """;
 
-        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
+            return await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
+        });
+
         Assert.Equal(50004, exception.Number);
         Assert.True(await invalidQueryTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }

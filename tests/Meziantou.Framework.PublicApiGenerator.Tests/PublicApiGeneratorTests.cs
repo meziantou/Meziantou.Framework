@@ -625,6 +625,123 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Tool_SingleFile_AllowsCustomOutputFileName()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            public class Sample
+            {
+                public void A()
+                {
+                }
+            }
+            """);
+
+        var outputFilePath = temporaryDirectory / "output" / "CustomPublicApi.cs";
+        var exitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(0, exitCode);
+        InlineSnapshot.Validate(File.ReadAllText(outputFilePath).TrimEnd('\r', '\n'), """
+            #nullable enable
+
+            public class Sample
+            {
+                public void A() { }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Tool_SingleFile_AllowsOutputDirectory()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            public class Sample
+            {
+                public void A()
+                {
+                }
+            }
+            """);
+
+        var outputDirectory = temporaryDirectory / "output";
+        var exitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output", outputDirectory.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(0, exitCode);
+        InlineSnapshot.Validate(File.ReadAllText(outputDirectory / "PublicApi.g.cs").TrimEnd('\r', '\n'), """
+            #nullable enable
+
+            public class Sample
+            {
+                public void A() { }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Tool_SingleFile_OutputAndOutputFile_AreMutuallyExclusive()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            public class Sample
+            {
+            }
+            """);
+
+        var outputDirectory = temporaryDirectory / "output";
+        var outputFilePath = outputDirectory / "CustomPublicApi.cs";
+        var exitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output", outputDirectory.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(1, exitCode);
+    }
+
+    [Fact]
+    public async Task Tool_NonSingleFile_DoesNotAllowOutputFile()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            namespace Demo;
+            public class Sample
+            {
+            }
+            """);
+
+        var outputFilePath = temporaryDirectory / "output" / "CustomPublicApi.cs";
+        var exitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.OneFilePerNamespace),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(1, exitCode);
+    }
+
+    [Fact]
     public async Task Methods_InstanceAndStatic()
     {
         await Validate("""

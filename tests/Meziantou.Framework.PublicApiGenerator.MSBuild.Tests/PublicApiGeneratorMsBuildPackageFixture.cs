@@ -13,7 +13,7 @@ public sealed class PublicApiGeneratorMsBuildPackageFixture : IAsyncLifetime
 
     public string DotnetSdkVersion { get; private set; } = string.Empty;
     public FullPath PackagesDirectory { get; private set; }
-    public string PackageVersion => PackageVersionValue;
+    public string PackageVersion { get; } = PackageVersionValue;
 
     public async ValueTask InitializeAsync()
     {

@@ -28,7 +28,7 @@ namespace Meziantou.AspNetCore.ServiceDefaults
     {
         public bool Enabled { get => throw null; set { } }
         public System.Action<Microsoft.AspNetCore.OpenApi.OpenApiOptions>? ConfigureOpenApi { get => throw null; set { } }
-        [System.Diagnostics.CodeAnalysis.StringSyntax]
+        [System.Diagnostics.CodeAnalysis.StringSyntax("Route")]
         public string RoutePattern { get => throw null; set { } }
     }
 

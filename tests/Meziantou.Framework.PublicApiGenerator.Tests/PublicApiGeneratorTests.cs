@@ -1771,6 +1771,39 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Property_WithJsonConverterAttribute()
+    {
+        await Validate("""
+            public class SampleJsonConverter : System.Text.Json.Serialization.JsonConverter<string>
+            {
+                public override string Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) => throw null;
+                public override void Write(System.Text.Json.Utf8JsonWriter writer, string value, System.Text.Json.JsonSerializerOptions options) { }
+            }
+
+            public class Sample
+            {
+                [System.Text.Json.Serialization.JsonConverterAttribute(typeof(SampleJsonConverter))]
+                public string Property { get; set; }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                [System.Text.Json.Serialization.JsonConverter(typeof(SampleJsonConverter))]
+                public string Property { get => throw null; set { } }
+            }
+
+
+            public class SampleJsonConverter : System.Text.Json.Serialization.JsonConverter<string>
+            {
+                public override string Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) => throw null;
+                public override void Write(System.Text.Json.Utf8JsonWriter writer, string value, System.Text.Json.JsonSerializerOptions options) { }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Nullable_DisabledAndRestored()
     {
         await Validate("""

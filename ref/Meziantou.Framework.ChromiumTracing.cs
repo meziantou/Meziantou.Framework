@@ -46,10 +46,10 @@ namespace Meziantou.Framework.ChromiumTracing
         [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
         [System.Text.Json.Serialization.JsonPropertyName("dur")]
-        [System.Text.Json.Serialization.JsonConverter]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.ChromiumTracing.TimeSpanToTimestampJsonConverter))]
         public System.TimeSpan Duration { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("tdur")]
-        [System.Text.Json.Serialization.JsonConverter]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.ChromiumTracing.NullableTimeSpanToTimestampJsonConverter))]
         public System.TimeSpan? ThreadDuration { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("estack")]
         public System.Collections.Generic.IEnumerable<string>? EndStackTrace { get => throw null; set { } }
@@ -104,10 +104,10 @@ namespace Meziantou.Framework.ChromiumTracing
         [System.Text.Json.Serialization.JsonPropertyName("cat")]
         public string? Category { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("ts")]
-        [System.Text.Json.Serialization.JsonConverter]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.ChromiumTracing.DateTimeOffsetToTimestampJsonConverter))]
         public System.DateTimeOffset Timestamp { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("tts")]
-        [System.Text.Json.Serialization.JsonConverter]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.ChromiumTracing.NullableDateTimeOffsetToTimestampJsonConverter))]
         public System.DateTimeOffset? ThreadTimestamp { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("pid")]
         public int? ProcessId { get => throw null; set { } }
@@ -132,8 +132,8 @@ namespace Meziantou.Framework.ChromiumTracing
         [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
         [System.Text.Json.Serialization.JsonPropertyName("bp")]
-        [System.Text.Json.Serialization.JsonIgnore]
-        [System.Text.Json.Serialization.JsonConverter]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = (System.Text.Json.Serialization.JsonIgnoreCondition)2)]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.ChromiumTracing.BindingPointJsonConverter))]
         public Meziantou.Framework.ChromiumTracing.BindingPoint BindingPoint { get => throw null; set { } }
     }
 
@@ -152,7 +152,7 @@ namespace Meziantou.Framework.ChromiumTracing
         [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
         [System.Text.Json.Serialization.JsonPropertyName("s")]
-        [System.Text.Json.Serialization.JsonConverter]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEventScopeJsonConverter))]
         public Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEventScope? Scope { get => throw null; set { } }
     }
 
@@ -243,7 +243,7 @@ namespace Meziantou.Framework.ChromiumTracing
         public static Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter CreateGzip(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel = 1) => throw null;
         public static Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter CreateGzip(System.IO.Stream stream, System.Text.Json.Serialization.JsonSerializerContext? serializerContext, System.IO.Compression.CompressionLevel compressionLevel = 1) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "The json options are guarantee to contains the TypeResolver for events")]
         public System.Threading.Tasks.Task WriteEventAsync(Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent tracingEvent, System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 }

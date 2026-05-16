@@ -51,10 +51,10 @@ namespace Meziantou.Framework
 
     public static class ResultExtensions
     {
-        public static Microsoft.AspNetCore.Http.IResult RawJson(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax] string content, System.Text.Encoding? encoding) => throw null;
-        public static Microsoft.AspNetCore.Http.IResult RawJson(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax] string content, System.Text.Encoding? encoding = null, int? statusCode = null) => throw null;
-        public static Microsoft.AspNetCore.Http.IResult RawXml(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax] string content, System.Text.Encoding? encoding) => throw null;
-        public static Microsoft.AspNetCore.Http.IResult RawXml(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax] string content, System.Text.Encoding? encoding = null, int? statusCode = null) => throw null;
+        public static Microsoft.AspNetCore.Http.IResult RawJson(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string content, System.Text.Encoding? encoding) => throw null;
+        public static Microsoft.AspNetCore.Http.IResult RawJson(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax("Json")] string content, System.Text.Encoding? encoding = null, int? statusCode = null) => throw null;
+        public static Microsoft.AspNetCore.Http.IResult RawXml(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax("Xml")] string content, System.Text.Encoding? encoding) => throw null;
+        public static Microsoft.AspNetCore.Http.IResult RawXml(this Microsoft.AspNetCore.Http.IResultExtensions _, [System.Diagnostics.CodeAnalysis.StringSyntax("Xml")] string content, System.Text.Encoding? encoding = null, int? statusCode = null) => throw null;
         public static Microsoft.AspNetCore.Http.IResult ForwardToUpstream(this Microsoft.AspNetCore.Http.IResultExtensions _) => throw null;
         public static Microsoft.AspNetCore.Http.IResult ForwardToUpstream(this Microsoft.AspNetCore.Http.IResultExtensions _, System.Net.Http.HttpClient httpClient) => throw null;
     }

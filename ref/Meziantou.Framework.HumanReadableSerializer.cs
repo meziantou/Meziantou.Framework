@@ -20,7 +20,7 @@ namespace Meziantou.Framework.HumanReadable
         protected abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
 
-    [System.AttributeUsage]
+    [System.AttributeUsage((System.AttributeTargets)1412, AllowMultiple = false)]
     public sealed class HumanReadableConverterAttribute : Meziantou.Framework.HumanReadable.HumanReadableAttribute
     {
         public System.Type ConverterType { get => throw null; }
@@ -35,14 +35,14 @@ namespace Meziantou.Framework.HumanReadable
         public sealed override void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
     }
 
-    [System.AttributeUsage]
+    [System.AttributeUsage((System.AttributeTargets)384, AllowMultiple = false)]
     public sealed class HumanReadableDefaultValueAttribute : Meziantou.Framework.HumanReadable.HumanReadableAttribute
     {
         public object? DefaultValue { get => throw null; }
         public HumanReadableDefaultValueAttribute(object? defaultValue) { }
     }
 
-    [System.AttributeUsage]
+    [System.AttributeUsage((System.AttributeTargets)384, AllowMultiple = true)]
     public sealed class HumanReadableIgnoreAttribute : Meziantou.Framework.HumanReadable.HumanReadableAttribute
     {
         public Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition Condition { get => throw null; set { } }
@@ -66,19 +66,19 @@ namespace Meziantou.Framework.HumanReadable
         public System.Exception? Exception { get => throw null; }
     }
 
-    [System.AttributeUsage]
+    [System.AttributeUsage((System.AttributeTargets)384, AllowMultiple = false)]
     public sealed class HumanReadableIncludeAttribute : Meziantou.Framework.HumanReadable.HumanReadableAttribute
     {
     }
 
-    [System.AttributeUsage]
+    [System.AttributeUsage((System.AttributeTargets)384, AllowMultiple = false)]
     public sealed class HumanReadablePropertyNameAttribute : Meziantou.Framework.HumanReadable.HumanReadableAttribute
     {
         public string Name { get => throw null; }
         public HumanReadablePropertyNameAttribute(string name) { }
     }
 
-    [System.AttributeUsage]
+    [System.AttributeUsage((System.AttributeTargets)384, AllowMultiple = false)]
     public sealed class HumanReadablePropertyOrderAttribute : Meziantou.Framework.HumanReadable.HumanReadableAttribute
     {
         public int Order { get => throw null; }

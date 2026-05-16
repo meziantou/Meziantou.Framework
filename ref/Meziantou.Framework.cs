@@ -84,23 +84,23 @@ namespace Meziantou.Framework
 
     public static class DataBinder
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static object? Eval(object? container, string expression) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static string Eval(object container, string expression, string format) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static object? GetPropertyValue(object container, string propertyName) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static string GetPropertyValue(object container, string propertyName, string format) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static object? GetIndexedPropertyValue(object container, string expression) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("TypeDescriptor use reflection")]
         public static string? GetIndexedPropertyValue(object container, string propertyName, string format) => throw null;
     }
 
     public static class DateTimeExtensions
     {
-        [System.Obsolete("Use System.Globalization.ISOWeek", true)]
+        [System.Obsolete("Use System.Globalization.ISOWeek", DiagnosticId = "MEZ_NETCORE3_1")]
         public static System.DateTime FirstDateOfWeekIso8601(int year, int weekOfYear, System.DayOfWeek weekStart = 1) => throw null;
         public static System.DateTime StartOfWeek(this System.DateTime dt) => throw null;
         public static System.DateTime StartOfWeek(this System.DateTime dt, System.DayOfWeek startOfWeek) => throw null;
@@ -196,9 +196,9 @@ namespace Meziantou.Framework
         public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer) => throw null;
         public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) => throw null;
         public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IEqualityComparer<TSource>? comparer) => throw null;
-        [System.Obsolete("Use Order()", true)]
+        [System.Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
         public static System.Collections.Generic.IEnumerable<T> Sort<T>(this System.Collections.Generic.IEnumerable<T> list) => throw null;
-        [System.Obsolete("Use Order()", true)]
+        [System.Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
         public static System.Collections.Generic.IEnumerable<T> Sort<T>(this System.Collections.Generic.IEnumerable<T> list, System.Collections.Generic.IComparer<T>? comparer) => throw null;
         public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value) => throw null;
         public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value, System.Collections.Generic.IEqualityComparer<T>? comparer) => throw null;
@@ -274,21 +274,21 @@ namespace Meziantou.Framework
     public static class HexaConverter
     {
         #if NET10_0 || NET9_0
-        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", true)]
+        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
         public static string ToHexaString(this byte[] bytes) => throw null;
-        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", true)]
+        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
         public static string ToHexaString(this byte[] bytes, Meziantou.Framework.HexaOptions options) => throw null;
-        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", true)]
+        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
         public static string ToHexaString(this System.ReadOnlySpan<byte> bytes) => throw null;
-        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", true)]
+        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
         public static string ToHexaString(this System.ReadOnlySpan<byte> bytes, Meziantou.Framework.HexaOptions options) => throw null;
-        [System.Obsolete("Use System.Convert.FromHexString", true)]
+        [System.Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
         public static byte[] ParseHexaString(string str) => throw null;
-        [System.Obsolete("Use System.Convert.FromHexString", true)]
+        [System.Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
         public static bool TryParseHexaString(string? str, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? result) => throw null;
-        [System.Obsolete("Use System.Convert.FromHexString", true)]
+        [System.Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
         public static bool TryParseHexaString(System.ReadOnlySpan<char> str, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? result) => throw null;
-        [System.Obsolete("Use System.Convert.FromHexString", true)]
+        [System.Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
         public static bool TryParseHexaString(string? str, System.Span<byte> bytes, out int writtenBytes) => throw null;
         #elif NET8_0
         public static string ToHexaString(this byte[] bytes) => throw null;
@@ -395,7 +395,7 @@ namespace Meziantou.Framework
 
     public abstract class ObjectGraphVisitor
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("ObjectGraphVisitor uses reflection")]
         public void Visit(object? obj) { }
         protected virtual void VisitProperty(object parentInstance, System.Reflection.PropertyInfo property, object? propertyValue) { }
         protected virtual void VisitValue(object value) { }
@@ -403,7 +403,7 @@ namespace Meziantou.Framework
 
     public readonly struct Optional<T> : System.IEquatable<Meziantou.Framework.Optional<T>>
     {
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "Value")]
         public bool HasValue { get => throw null; }
         public T Value { get => throw null; }
         public Optional(T value) { }
@@ -431,21 +431,21 @@ namespace Meziantou.Framework
 
     public static class ProcessExtensions
     {
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetDescendantProcesses(this System.Diagnostics.Process process) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetChildProcesses(this System.Diagnostics.Process process) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IEnumerable<int> GetAncestorProcessIds(this System.Diagnostics.Process process) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IEnumerable<System.Diagnostics.Process> GetAncestorProcesses(this System.Diagnostics.Process process) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         public static int? GetParentProcessId(this System.Diagnostics.Process process) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
         public static System.Diagnostics.Process? GetParentProcess(this System.Diagnostics.Process process) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessEntry> GetProcesses() => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
@@ -511,7 +511,7 @@ namespace Meziantou.Framework
         public static ushort NextUInt16(this System.Random random, ushort min = 0, ushort max = 65535) => throw null;
         public static uint NextUInt32(this System.Random random, uint min = 0, uint max = 4294967295) => throw null;
         public static ulong NextUInt64(this System.Random random, ulong min = 0, ulong max = 18446744073709551615) => throw null;
-        public static System.Decimal NextDecimal(this System.Random random, [System.Runtime.CompilerServices.DecimalConstant] System.Decimal min, [System.Runtime.CompilerServices.DecimalConstant] System.Decimal max) => throw null;
+        public static System.Decimal NextDecimal(this System.Random random, [System.Runtime.CompilerServices.DecimalConstant(0, 128, 4294967295, 4294967295, 4294967295)] System.Decimal min, [System.Runtime.CompilerServices.DecimalConstant(0, 0, 4294967295, 4294967295, 4294967295)] System.Decimal max) => throw null;
         public static string NextString(this System.Random random, int length, string chars) => throw null;
         public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
     }
@@ -539,11 +539,11 @@ namespace Meziantou.Framework
 
     public sealed class ReflectionDynamicObject : System.Dynamic.DynamicObject
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
         public ReflectionDynamicObject(object obj) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
         public ReflectionDynamicObject(System.Type type) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection")]
         public Meziantou.Framework.ReflectionDynamicObject CreateInstance(params object[] parameters) => throw null;
         public override bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object? result) => throw null;
         public override bool TrySetMember(System.Dynamic.SetMemberBinder binder, object? value) => throw null;
@@ -560,7 +560,7 @@ namespace Meziantou.Framework
         public static bool IsNullableOfT(this System.Type type) => throw null;
         public static bool IsFlagsEnum<T>() => throw null;
         public static bool IsFlagsEnum(this System.Type type) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Use reflection to find static methods")]
         public static System.Reflection.MethodInfo? GetImplicitConversion(object? value, System.Type targetType) => throw null;
         public static System.ValueTuple? GetMethodLocation(this System.Reflection.MethodInfo methodInfo) => throw null;
         public static System.Threading.Tasks.Task<System.ValueTuple?> GetMethodLocationAsync(this System.Reflection.MethodInfo methodInfo) => throw null;
@@ -626,7 +626,7 @@ namespace Meziantou.Framework
 
     public struct SafeHandleValue : System.IDisposable
     {
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "_safeHandle")]
         public bool HasValue { get => throw null; }
         public nint Value { get => throw null; }
         public SafeHandleValue(System.Runtime.InteropServices.SafeHandle safeHandle) { }
@@ -820,7 +820,7 @@ namespace Meziantou.Framework
 }
 namespace Meziantou.Framework.Collections
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     public sealed class AppendOnlyCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
@@ -969,7 +969,7 @@ namespace Meziantou.Framework.Collections
 }
 namespace Meziantou.Framework.DataAnnotations
 {
-    [System.AttributeUsage]
+    [System.AttributeUsage((System.AttributeTargets)128)]
     public sealed class AbsoluteUriAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         public AbsoluteUriAttribute(string errorMessage) { }
@@ -977,8 +977,8 @@ namespace Meziantou.Framework.DataAnnotations
         protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) => throw null;
     }
 
-    [System.AttributeUsage]
-    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+    [System.AttributeUsage((System.AttributeTargets)128)]
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
     public sealed class ValidateCollectionItemsAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) => throw null;
@@ -988,7 +988,7 @@ namespace Meziantou.Framework.DataAnnotations
 namespace Meziantou.Framework.IO
 {
     #if NET10_0 || NET9_0
-    [System.Obsolete("Use TextWriter.CreateBroadcasting", true)]
+    [System.Obsolete("Use TextWriter.CreateBroadcasting", DiagnosticId = "MEZ_NET9")]
     #endif
     public sealed class TeeTextWriter : System.IO.TextWriter
     {

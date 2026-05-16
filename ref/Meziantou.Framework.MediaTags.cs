@@ -100,8 +100,8 @@ namespace Meziantou.Framework.MediaTags
 
     public readonly struct MediaTagResult<T>
     {
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "Value")]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "Error")]
         public bool IsSuccess { get => throw null; }
         public T Value { get => throw null; }
         public Meziantou.Framework.MediaTags.MediaTagError? Error { get => throw null; }

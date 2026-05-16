@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public sealed class AmsiContext : System.IDisposable
     {
         public static Meziantou.Framework.Win32.AmsiContext Create(string applicationName) => throw null;
@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Win32
         public void Dispose() { }
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public sealed class AmsiSession : System.IDisposable
     {
         public bool IsMalware(string payload, string contentName) => throw null;

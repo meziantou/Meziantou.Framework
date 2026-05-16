@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework
 {
-    [System.ComponentModel.TypeConverter]
+    [System.ComponentModel.TypeConverter(typeof(Meziantou.Framework.SensitiveDataTypeConverter))]
     public sealed class SensitiveData<T> : System.IDisposable where T : struct
     {
         public int GetLength() => throw null;

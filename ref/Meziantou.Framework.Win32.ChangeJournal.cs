@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public sealed class ChangeJournal : System.IDisposable
     {
         public Meziantou.Framework.Win32.JournalData Data { get => throw null; }
@@ -101,9 +101,9 @@ namespace Meziantou.Framework.Win32
     {
         public FileIdentifier(System.UInt128 value) { }
         public FileIdentifier(ulong value) { }
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.FileIdentifier FromFile(string path) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.FileIdentifier FromFile(Microsoft.Win32.SafeHandles.SafeFileHandle handle) => throw null;
         public bool Equals(Meziantou.Framework.Win32.FileIdentifier other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;

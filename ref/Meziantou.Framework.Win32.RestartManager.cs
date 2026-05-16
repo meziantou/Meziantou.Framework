@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public sealed class RestartManager : System.IDisposable
     {
         public string SessionKey { get => throw null; }

@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{FullPath}")]
     public sealed class TemporaryDirectory : System.IAsyncDisposable, System.IDisposable
     {
         public Meziantou.Framework.FullPath FullPath { get => throw null; }
@@ -20,11 +20,11 @@ namespace Meziantou.Framework
         public static implicit operator Meziantou.Framework.FullPath(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
         public static implicit operator string(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
         public static implicit operator System.IO.DirectoryInfo(Meziantou.Framework.TemporaryDirectory temporaryDirectory) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
         public void OpenInExplorer() { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{FullPath}")]
     public sealed class TemporaryFile : System.IAsyncDisposable, System.IDisposable
     {
         public Meziantou.Framework.FullPath FullPath { get => throw null; }

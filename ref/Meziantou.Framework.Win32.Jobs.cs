@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Win32
         public uint BaseIoSize { get => throw null; set { } }
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public sealed class JobObject : System.IDisposable
     {
         public JobObject(string? name) { }
@@ -44,7 +44,7 @@ namespace Meziantou.Framework.Win32
         public void SetCpuRate(int minRate, int maxRate) { }
         public void SetNetRateLimits(ulong maxBandwidth) { }
         public void SetSecurityLimits(Meziantou.Framework.Win32.JobObjectSecurityLimit securityLimit) { }
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.10240")]
         public void SetIoLimits(Meziantou.Framework.Win32.JobIoRateLimits limits) { }
         public Meziantou.Framework.Win32.JobObjectBasicAccountingInformation GetBasicAccountingInformation() => throw null;
         public Meziantou.Framework.Win32.JobObjectBasicAndIoAccountingInformation GetBasicAndIoAccountingInformation() => throw null;

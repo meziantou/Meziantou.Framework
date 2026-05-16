@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework
 {
-    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
     public sealed class ObjectMethodExecutor
     {
         public bool IsMethodAsync { get => throw null; }

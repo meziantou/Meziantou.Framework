@@ -135,7 +135,7 @@ namespace Meziantou.Framework.Html
         All = 31
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("'{Value}'")]
     public sealed class HtmlComment : Meziantou.Framework.Html.HtmlNode
     {
         public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
@@ -159,7 +159,7 @@ namespace Meziantou.Framework.Html
         #nullable restore
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{Name}")]
     public sealed class HtmlDocument : Meziantou.Framework.Html.HtmlNode
     {
         public System.Text.Encoding StreamEncoding { get => throw null; }
@@ -317,7 +317,7 @@ namespace Meziantou.Framework.Html
         #nullable restore
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{Name}")]
     public sealed class HtmlElement : Meziantou.Framework.Html.HtmlNode
     {
         public bool IsDocumentType { get => throw null; }
@@ -785,7 +785,7 @@ namespace Meziantou.Framework.Html
         #nullable restore
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{Line}x{Column}x{Offset} {ParserState} '{RawValue}'")]
     public sealed class HtmlReaderState
     {
         public Meziantou.Framework.Html.HtmlReader Reader { get => throw null; }
@@ -803,12 +803,12 @@ namespace Meziantou.Framework.Html
         #nullable restore
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("'{Value}'")]
     public sealed class HtmlText : Meziantou.Framework.Html.HtmlNode
     {
-        [System.ComponentModel.Browsable]
+        [System.ComponentModel.Browsable(false)]
         public Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
-        [System.ComponentModel.Browsable]
+        [System.ComponentModel.Browsable(false)]
         public Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
         public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public bool IsWhitespace { get => throw null; }

@@ -32,7 +32,7 @@ namespace Meziantou.Extensions.Logging.Xunit.v3
         public bool IncludeScopes { get => throw null; set { } }
         public bool IncludeCategory { get => throw null; set { } }
         public bool IncludeLogLevel { get => throw null; set { } }
-        [System.Diagnostics.CodeAnalysis.StringSyntax]
+        [System.Diagnostics.CodeAnalysis.StringSyntax("DateTimeFormat")]
         public string? TimestampFormat { get => throw null; set { } }
         public bool UseUtcTimestamp { get => throw null; set { } }
     }

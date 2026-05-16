@@ -3,8 +3,8 @@
 
 namespace Meziantou.Framework.Unix.ControlGroups
 {
-    [System.Runtime.Versioning.SupportedOSPlatform]
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+    [System.Runtime.Versioning.SupportedOSPlatform("linux")]
     public sealed class CGroup2
     {
         public string Name { get => throw null; }

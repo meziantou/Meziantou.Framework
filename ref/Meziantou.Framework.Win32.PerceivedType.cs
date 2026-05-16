@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Win32
         public Meziantou.Framework.Win32.PerceivedTypeSource PerceivedTypeSource { get => throw null; }
         public static void AddDefaultPerceivedTypes() { }
         public static Meziantou.Framework.Win32.Perceived AddPerceived(string extension, Meziantou.Framework.Win32.PerceivedType type) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
         public static Meziantou.Framework.Win32.Perceived GetPerceivedType(string fileName) => throw null;
         public override string ToString() => throw null;
     }

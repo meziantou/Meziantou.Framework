@@ -2137,59 +2137,127 @@ internal static class PublicApiModelReader
 
     private static string BuildAttributeArguments(MetadataReader metadataReader, CustomAttribute attribute, string attributeTypeFullName)
     {
-        if (string.Equals(attributeTypeFullName, "System.CLSCompliantAttribute", StringComparison.Ordinal))
+        if (!TryDecodeAttributeArguments(metadataReader, attribute, out var fixedArguments, out var namedArguments))
+            return string.Empty;
+
+        if (fixedArguments.Length == 0 && namedArguments.Length == 0)
+            return string.Empty;
+
+        var values = new List<string>(fixedArguments.Length + namedArguments.Length);
+        foreach (var fixedArgument in fixedArguments)
         {
-            if (TryReadBooleanAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var boolValue))
+            values.Add(FormatAttributeArgument(metadataReader, fixedArgument));
+        }
+
+        foreach (var namedArgument in namedArguments)
+        {
+            values.Add(FormatNamedAttributeArgument(metadataReader, namedArgument));
+        }
+
+        return "(" + string.Join(", ", values) + ")";
+    }
+
+    private static bool TryDecodeAttributeArguments(
+        MetadataReader metadataReader,
+        CustomAttribute attribute,
+        out ImmutableArray<CustomAttributeTypedArgument<DecodedType>> fixedArguments,
+        out ImmutableArray<CustomAttributeNamedArgument<DecodedType>> namedArguments)
+    {
+        try
+        {
+            var decoded = attribute.DecodeValue(new MetadataCustomAttributeTypeProvider(metadataReader));
+            fixedArguments = decoded.FixedArguments;
+            namedArguments = decoded.NamedArguments;
+            return true;
+        }
+        catch (BadImageFormatException)
+        {
+            fixedArguments = [];
+            namedArguments = [];
+            return false;
+        }
+    }
+
+    private static string FormatNamedAttributeArgument(MetadataReader metadataReader, CustomAttributeNamedArgument<DecodedType> namedArgument)
+    {
+        return namedArgument.Name + " = " + FormatAttributeArgument(metadataReader, new CustomAttributeTypedArgument<DecodedType>(namedArgument.Type, namedArgument.Value));
+    }
+
+    private static string FormatAttributeArgument(MetadataReader metadataReader, CustomAttributeTypedArgument<DecodedType> argument)
+    {
+        if (argument.Value is null)
+            return "null";
+
+        if (argument.Value is CustomAttributeTypedArgument<DecodedType> boxedValue)
+            return FormatAttributeArgument(metadataReader, boxedValue);
+
+        if (argument.Value is ImmutableArray<CustomAttributeTypedArgument<DecodedType>> arrayValues)
+        {
+            var elementType = argument.Type.ElementType ?? new DecodedType("object", IsReferenceType: true, IsTypeParameter: false);
+            var typeName = FormatDecodedTypeWithoutNullable(elementType);
+            return "new " + typeName + "[] { " + string.Join(", ", arrayValues.Select(value => FormatAttributeArgument(metadataReader, value))) + " }";
+        }
+
+        if (argument.Value is DecodedType typeValue)
+        {
+            return "typeof(" + FormatDecodedTypeWithoutNullable(typeValue) + ")";
+        }
+
+        if (IsEnumType(metadataReader, argument.Type))
+        {
+            var enumTypeName = FormatDecodedTypeWithoutNullable(argument.Type);
+            return "(" + enumTypeName + ")" + FormatConstant(argument.Value);
+        }
+
+        return FormatConstant(argument.Value);
+    }
+
+    private static bool IsEnumType(MetadataReader metadataReader, DecodedType type)
+    {
+        if (IsPrimitiveTypeName(type.Name))
+            return false;
+
+        if (string.Equals(type.Name, "string", StringComparison.Ordinal) ||
+            string.Equals(type.Name, "object", StringComparison.Ordinal) ||
+            string.Equals(type.Name, "System.Type", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (TryResolveTypeDefinitionHandle(metadataReader, type.Name, out var typeDefinitionHandle))
+        {
+            var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+            var baseTypeName = GetTypeFullName(metadataReader, typeDefinition.BaseType);
+            return string.Equals(baseTypeName, "System.Enum", StringComparison.Ordinal);
+        }
+
+        return true;
+    }
+
+    private static bool IsPrimitiveTypeName(string typeName)
+    {
+        return typeName is "bool" or "char" or "sbyte" or "byte" or "short" or "ushort" or "int" or "uint" or "long" or "ulong" or "float" or "double" or "nint" or "nuint";
+    }
+
+    private static bool TryResolveTypeDefinitionHandle(MetadataReader metadataReader, string fullTypeName, out TypeDefinitionHandle typeDefinitionHandle)
+    {
+        var separator = fullTypeName.LastIndexOf('.');
+        var namespaceName = separator < 0 ? string.Empty : fullTypeName[..separator];
+        var typeName = separator < 0 ? fullTypeName : fullTypeName[(separator + 1)..];
+        foreach (var candidateHandle in metadataReader.TypeDefinitions)
+        {
+            var candidate = metadataReader.GetTypeDefinition(candidateHandle);
+            var candidateNamespace = candidate.Namespace.IsNil ? string.Empty : metadataReader.GetString(candidate.Namespace);
+            if (string.Equals(candidateNamespace, namespaceName, StringComparison.Ordinal) &&
+                string.Equals(RemoveGenericArity(metadataReader.GetString(candidate.Name)), typeName, StringComparison.Ordinal))
             {
-                return "(" + (boolValue ? "true" : "false") + ")";
+                typeDefinitionHandle = candidateHandle;
+                return true;
             }
         }
 
-        if (string.Equals(attributeTypeFullName, "System.ObsoleteAttribute", StringComparison.Ordinal))
-        {
-            if (TryReadObsoleteAttributeArguments(metadataReader.GetBlobBytes(attribute.Value), out var message, out var isError))
-            {
-                return isError is null
-                    ? "(" + FormatConstant(message) + ")"
-                    : "(" + FormatConstant(message) + ", " + (isError.Value ? "true" : "false") + ")";
-            }
-        }
-
-        if (string.Equals(attributeTypeFullName, "System.Runtime.Versioning.UnsupportedOSPlatformAttribute", StringComparison.Ordinal))
-        {
-            if (TryReadStringAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var platformName))
-            {
-                return "(" + FormatConstant(platformName) + ")";
-            }
-        }
-
-        if (string.Equals(attributeTypeFullName, "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute", StringComparison.Ordinal) ||
-            string.Equals(attributeTypeFullName, "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute", StringComparison.Ordinal) ||
-            string.Equals(attributeTypeFullName, "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute", StringComparison.Ordinal))
-        {
-            if (TryReadBooleanAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var boolValue))
-            {
-                return "(" + (boolValue ? "true" : "false") + ")";
-            }
-        }
-
-        if (string.Equals(attributeTypeFullName, "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute", StringComparison.Ordinal))
-        {
-            if (TryReadStringAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var parameterName))
-            {
-                return "(" + FormatConstant(parameterName) + ")";
-            }
-        }
-
-        if (string.Equals(attributeTypeFullName, "System.Text.Json.Serialization.JsonPropertyNameAttribute", StringComparison.Ordinal))
-        {
-            if (TryReadStringAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var propertyName))
-            {
-                return "(" + FormatConstant(propertyName) + ")";
-            }
-        }
-
-        return string.Empty;
+        typeDefinitionHandle = default;
+        return false;
     }
 
     private static bool TryReadBooleanAttributeArgument(byte[] value, out bool result)
@@ -2376,6 +2444,182 @@ internal static class PublicApiModelReader
             return index >= 0 && !TypeParameterNames.IsDefault && index < TypeParameterNames.Length
                 ? TypeParameterNames[index]
                 : "T" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
+
+    private sealed class MetadataCustomAttributeTypeProvider : ICustomAttributeTypeProvider<DecodedType>
+    {
+        private const byte ElementTypeValueType = 0x11;
+        private readonly Dictionary<string, PrimitiveTypeCode> enumUnderlyingTypesByName;
+
+        public MetadataCustomAttributeTypeProvider(MetadataReader metadataReader)
+        {
+            enumUnderlyingTypesByName = BuildEnumUnderlyingTypeMap(metadataReader);
+        }
+
+        public DecodedType GetPrimitiveType(PrimitiveTypeCode typeCode)
+        {
+            return typeCode switch
+            {
+                PrimitiveTypeCode.Void => new("void", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Boolean => new("bool", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Char => new("char", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.SByte => new("sbyte", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Byte => new("byte", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Int16 => new("short", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.UInt16 => new("ushort", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Int32 => new("int", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.UInt32 => new("uint", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Int64 => new("long", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.UInt64 => new("ulong", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Single => new("float", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Double => new("double", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.String => new("string", IsReferenceType: true, IsTypeParameter: false),
+                PrimitiveTypeCode.IntPtr => new("nint", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.UIntPtr => new("nuint", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Object => new("object", IsReferenceType: true, IsTypeParameter: false),
+                _ => new("object", IsReferenceType: true, IsTypeParameter: false),
+            };
+        }
+
+        public bool IsSystemType(DecodedType type)
+        {
+            return string.Equals(type.Name, "System.Type", StringComparison.Ordinal);
+        }
+
+        public DecodedType GetSystemType()
+        {
+            return new("System.Type", IsReferenceType: true, IsTypeParameter: false);
+        }
+
+        public DecodedType GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+        {
+            var type = reader.GetTypeDefinition(handle);
+            var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
+            var name = RemoveGenericArity(reader.GetString(type.Name));
+            return new(
+                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                IsReferenceType: rawTypeKind != ElementTypeValueType,
+                IsTypeParameter: false);
+        }
+
+        public DecodedType GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+        {
+            var type = reader.GetTypeReference(handle);
+            var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
+            var name = RemoveGenericArity(reader.GetString(type.Name));
+            return new(
+                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                IsReferenceType: rawTypeKind != ElementTypeValueType,
+                IsTypeParameter: false);
+        }
+
+        public DecodedType GetSZArrayType(DecodedType elementType)
+        {
+            return new(elementType.Name, IsReferenceType: true, IsTypeParameter: false, Kind: DecodedTypeKind.Array, ElementType: elementType);
+        }
+
+        public DecodedType GetTypeFromSerializedName(string name)
+        {
+            var typeName = name;
+            var assemblySeparator = typeName.IndexOf(',', StringComparison.Ordinal);
+            if (assemblySeparator >= 0)
+            {
+                typeName = typeName[..assemblySeparator];
+            }
+
+            return new(typeName.Replace('+', '.'), IsReferenceType: true, IsTypeParameter: false);
+        }
+
+        public PrimitiveTypeCode GetUnderlyingEnumType(DecodedType type)
+        {
+            return enumUnderlyingTypesByName.TryGetValue(type.Name, out var typeCode)
+                ? typeCode
+                : PrimitiveTypeCode.Int32;
+        }
+
+        private static Dictionary<string, PrimitiveTypeCode> BuildEnumUnderlyingTypeMap(MetadataReader metadataReader)
+        {
+            var result = new Dictionary<string, PrimitiveTypeCode>(StringComparer.Ordinal);
+            foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
+            {
+                var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+                if (!string.Equals(GetTypeFullName(metadataReader, typeDefinition.BaseType), "System.Enum", StringComparison.Ordinal))
+                    continue;
+
+                if (!TryGetEnumUnderlyingType(metadataReader, typeDefinition, out var typeCode))
+                    continue;
+
+                var namespaceName = typeDefinition.Namespace.IsNil ? string.Empty : metadataReader.GetString(typeDefinition.Namespace);
+                var typeName = RemoveGenericArity(metadataReader.GetString(typeDefinition.Name));
+                var fullName = string.IsNullOrEmpty(namespaceName) ? typeName : namespaceName + "." + typeName;
+                result[fullName] = typeCode;
+            }
+
+            return result;
+        }
+
+        private static bool TryGetEnumUnderlyingType(MetadataReader metadataReader, TypeDefinition typeDefinition, out PrimitiveTypeCode typeCode)
+        {
+            foreach (var fieldHandle in typeDefinition.GetFields())
+            {
+                var field = metadataReader.GetFieldDefinition(fieldHandle);
+                var fieldName = metadataReader.GetString(field.Name);
+                if (!string.Equals(fieldName, "value__", StringComparison.Ordinal))
+                    continue;
+
+                var signature = metadataReader.GetBlobBytes(field.Signature);
+                if (signature.Length < 2 || signature[0] != 0x06)
+                    break;
+
+                if (TryMapElementTypeToPrimitiveTypeCode(signature[1], out typeCode))
+                    return true;
+
+                break;
+            }
+
+            typeCode = PrimitiveTypeCode.Int32;
+            return false;
+        }
+
+        private static bool TryMapElementTypeToPrimitiveTypeCode(byte elementType, out PrimitiveTypeCode typeCode)
+        {
+            switch (elementType)
+            {
+                case 0x02:
+                    typeCode = PrimitiveTypeCode.Boolean;
+                    return true;
+                case 0x03:
+                    typeCode = PrimitiveTypeCode.Char;
+                    return true;
+                case 0x04:
+                    typeCode = PrimitiveTypeCode.SByte;
+                    return true;
+                case 0x05:
+                    typeCode = PrimitiveTypeCode.Byte;
+                    return true;
+                case 0x06:
+                    typeCode = PrimitiveTypeCode.Int16;
+                    return true;
+                case 0x07:
+                    typeCode = PrimitiveTypeCode.UInt16;
+                    return true;
+                case 0x08:
+                    typeCode = PrimitiveTypeCode.Int32;
+                    return true;
+                case 0x09:
+                    typeCode = PrimitiveTypeCode.UInt32;
+                    return true;
+                case 0x0A:
+                    typeCode = PrimitiveTypeCode.Int64;
+                    return true;
+                case 0x0B:
+                    typeCode = PrimitiveTypeCode.UInt64;
+                    return true;
+                default:
+                    typeCode = PrimitiveTypeCode.Int32;
+                    return false;
+            }
         }
     }
 

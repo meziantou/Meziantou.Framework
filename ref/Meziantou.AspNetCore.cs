@@ -79,7 +79,7 @@ namespace Meziantou.AspNetCore.Diagnostics
     public static class MiddlewarePipelineDebuggingWebApplicationExtensions
     {
         public static Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot GetMiddlewarePipelineDebugSnapshot(this Microsoft.AspNetCore.Builder.WebApplication app) => throw null;
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("This method maps a delegate endpoint, which may use reflection and is not trim-safe.")]
         public static Microsoft.AspNetCore.Builder.RouteHandlerBuilder? MapMiddlewarePipelineDebugEndpoint(this Microsoft.AspNetCore.Builder.WebApplication app, string pattern = "/_debug/pipeline", bool developmentOnly = true) => throw null;
     }
 }

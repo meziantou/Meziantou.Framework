@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    [System.Runtime.InteropServices.ComVisible]
+    [System.Runtime.InteropServices.ComVisible(true)]
     public enum DialogResult
     {
         None = 0,
@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Win32
         No = 7
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public sealed class OpenFolderDialog
     {
         public string? Title { get => throw null; set { } }

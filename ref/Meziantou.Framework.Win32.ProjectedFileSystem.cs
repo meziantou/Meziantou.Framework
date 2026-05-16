@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public sealed class FileNameComparer : System.Collections.Generic.IComparer<string>
     {
         public static System.Collections.Generic.IComparer<string> Instance { get => throw null; }
@@ -69,7 +69,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         PRJ_UPDATE_MAX_VAL = 64
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public abstract class ProjectedFileSystemBase : System.IDisposable
     {
         public string RootFolder { get => throw null; }

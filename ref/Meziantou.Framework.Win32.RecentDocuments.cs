@@ -5,9 +5,9 @@ namespace Meziantou.Framework.Win32
 {
     public static class RecentDocuments
     {
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
         public static void AddToRecentDocuments(string path) { }
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
         public static void ClearRecentDocuments() { }
     }
 }

@@ -56,7 +56,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting
         public static void Validate(object? subject, Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? settings, string? expected, [System.Runtime.CompilerServices.CallerFilePath] string? filePath = null, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1) { }
     }
 
-    [System.AttributeUsage]
+    [System.AttributeUsage((System.AttributeTargets)64)]
     public sealed class InlineSnapshotAssertionAttribute : System.Attribute
     {
         public string ParameterName { get => throw null; }
@@ -128,9 +128,9 @@ namespace Meziantou.Framework.InlineSnapshotTesting
         public static void ScrubLinesContaining(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, params string[] searchText) { }
         public static void ScrubLinesContaining(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, System.StringComparison stringComparison, params string[] searchText) { }
         public static void ScrubLinesMatching(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, System.Text.RegularExpressions.Regex regex) { }
-        public static void ScrubLinesMatching(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax] string pattern) { }
-        public static void ScrubLinesMatching(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
-        public static void ScrubLinesMatching(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { }
+        public static void ScrubLinesMatching(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern) { }
+        public static void ScrubLinesMatching(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
+        public static void ScrubLinesMatching(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { }
         public static void ScrubLinesWithReplace(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings, System.Func<string, string?> replaceLine) { }
         public static void ScrubMachineName(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings) { }
         public static void ScrubUserName(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings) { }

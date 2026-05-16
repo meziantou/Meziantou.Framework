@@ -50,7 +50,7 @@ namespace Meziantou.Framework.Collections.Concurrent
 }
 namespace Meziantou.Framework.Threading
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("Signaled: {_signaled}")]
     public sealed class AsyncAutoResetEvent
     {
         public AsyncAutoResetEvent(bool initialState) { }
@@ -60,7 +60,7 @@ namespace Meziantou.Framework.Threading
         public void Set() { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("Signaled: {_signaled}")]
     public sealed class AsyncLock
     {
         public AsyncLock(bool allowInliningAwaiters) { }

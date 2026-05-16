@@ -20,7 +20,7 @@ namespace Meziantou.Framework.Win32
         LogonFailure = 1
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public static class CredentialManager
     {
         public static Meziantou.Framework.Win32.Credential? ReadCredential(string applicationName) => throw null;
@@ -38,11 +38,11 @@ namespace Meziantou.Framework.Win32
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.Credential> EnumerateCrendentials(string? filter) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.Credential> EnumerateCredentials(string? filter) => throw null;
         public static Meziantou.Framework.Win32.CredentialResult PromptForCredentialsConsole(string target, string? userName = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = 0) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner, string? messageText, string? captionText, string? userName, Meziantou.Framework.Win32.CredentialSaveOption saveCredential) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner, string? messageText, string? captionText, string? userName, string? password, Meziantou.Framework.Win32.CredentialSaveOption saveCredential) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.Win32.CredentialResult? PromptForCredentials(nint owner = 0, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, Meziantou.Framework.Win32.CredentialSaveOption saveCredential = 0, Meziantou.Framework.Win32.CredentialErrorCode error = 0) => throw null;
     }
 

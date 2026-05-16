@@ -3,11 +3,11 @@
 
 namespace Meziantou.Framework
 {
-    [System.Text.Json.Serialization.JsonConverter]
+    [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.FullPathJsonConverter))]
     public readonly struct FullPath : System.IComparable<Meziantou.Framework.FullPath>, System.IEquatable<Meziantou.Framework.FullPath>
     {
         public static Meziantou.Framework.FullPath Empty { get => throw null; }
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "_value")]
         public bool IsEmpty { get => throw null; }
         public string Value { get => throw null; }
         public string RawValue { get => throw null; }
@@ -41,7 +41,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.FullPath CreateTempFile(string? prefix, string? suffix = ".tmp") => throw null;
         public static Meziantou.Framework.FullPath CreateTempFile(Meziantou.Framework.FullPath? folder, string? prefix, string? suffix = ".tmp") => throw null;
         public static Meziantou.Framework.FullPath GetFolderPath(SpecialFolder folder) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
         public static Meziantou.Framework.FullPath GetKnownFolderPath(Meziantou.Framework.KnownFolder knownFolder) => throw null;
         public static Meziantou.Framework.FullPath CurrentDirectory() => throw null;
         public static Meziantou.Framework.FullPath FromPath(string path) => throw null;
@@ -65,9 +65,9 @@ namespace Meziantou.Framework
         public bool TryFindFirstAncestor(System.Func<Meziantou.Framework.FullPath, bool> predicate, out Meziantou.Framework.FullPath result) => throw null;
         public bool TryGetSymbolicLinkTarget([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
         public bool TryGetSymbolicLinkTarget(Meziantou.Framework.SymbolicLinkResolutionMode resolutionMode, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
         public void OpenInExplorer() { }
-        [System.Runtime.Versioning.SupportedOSPlatform]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public string ToWindowsExtendedPath() => throw null;
     }
 

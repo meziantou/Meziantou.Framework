@@ -78,7 +78,7 @@ namespace Meziantou.Framework.SnapshotTesting
     {
         public static System.Threading.AsyncLocal<Meziantou.Framework.SnapshotTesting.SnapshotTestContext?> TestContext { get => throw null; }
         public static void RegisterSourceRootMapping(string mappedPath, string realPath) { }
-        [System.Runtime.CompilerServices.OverloadResolutionPriority]
+        [System.Runtime.CompilerServices.OverloadResolutionPriority(-1)]
         public static void Validate(object? value, [System.Runtime.CompilerServices.CallerFilePath] string? filePath = null, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1, [System.Runtime.CompilerServices.CallerMemberName] string? memberName = null) { }
         public static void Validate(object? value, Meziantou.Framework.SnapshotTesting.SnapshotSettings? settings, [System.Runtime.CompilerServices.CallerFilePath] string? filePath = null, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1, [System.Runtime.CompilerServices.CallerMemberName] string? memberName = null) { }
         public static void Validate(object? value, Meziantou.Framework.SnapshotTesting.SnapshotType? type, [System.Runtime.CompilerServices.CallerFilePath] string? filePath = null, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1, [System.Runtime.CompilerServices.CallerMemberName] string? memberName = null) { }

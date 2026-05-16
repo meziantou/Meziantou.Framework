@@ -88,7 +88,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
 }
 namespace OpenTelemetry.Proto.Collector.Logs.V1
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportLogsPartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>, System.IEquatable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>
     {
         public const int RejectedLogRecordsFieldNumber = 1;
@@ -127,7 +127,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportLogsServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>, System.IEquatable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>
     {
         public const int ResourceLogsFieldNumber = 1;
@@ -164,7 +164,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportLogsServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>, System.IEquatable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>
     {
         public const int PartialSuccessFieldNumber = 1;
@@ -266,7 +266,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
 }
 namespace OpenTelemetry.Proto.Collector.Metrics.V1
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportMetricsPartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>, System.IEquatable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>
     {
         public const int RejectedDataPointsFieldNumber = 1;
@@ -305,7 +305,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportMetricsServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>, System.IEquatable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>
     {
         public const int ResourceMetricsFieldNumber = 1;
@@ -342,7 +342,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportMetricsServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>, System.IEquatable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>
     {
         public const int PartialSuccessFieldNumber = 1;
@@ -444,7 +444,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
 }
 namespace OpenTelemetry.Proto.Collector.Trace.V1
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportTracePartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>, System.IEquatable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>
     {
         public const int RejectedSpansFieldNumber = 1;
@@ -483,7 +483,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportTraceServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>, System.IEquatable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>
     {
         public const int ResourceSpansFieldNumber = 1;
@@ -520,7 +520,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ExportTraceServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>, System.IEquatable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>
     {
         public const int PartialSuccessFieldNumber = 1;
@@ -622,7 +622,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
 }
 namespace OpenTelemetry.Proto.Common.V1
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class AnyValue : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Common.V1.AnyValue>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Common.V1.AnyValue>, System.IEquatable<OpenTelemetry.Proto.Common.V1.AnyValue>
     {
         public const int StringValueFieldNumber = 1;
@@ -693,7 +693,7 @@ namespace OpenTelemetry.Proto.Common.V1
         public static Google.Protobuf.Reflection.FileDescriptor Descriptor { get => throw null; }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class InstrumentationScope : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Common.V1.InstrumentationScope>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Common.V1.InstrumentationScope>, System.IEquatable<OpenTelemetry.Proto.Common.V1.InstrumentationScope>
     {
         public const int NameFieldNumber = 1;
@@ -734,7 +734,7 @@ namespace OpenTelemetry.Proto.Common.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class KeyValue : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Common.V1.KeyValue>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Common.V1.KeyValue>, System.IEquatable<OpenTelemetry.Proto.Common.V1.KeyValue>
     {
         public const int KeyFieldNumber = 1;
@@ -775,7 +775,7 @@ namespace OpenTelemetry.Proto.Common.V1
 }
 namespace OpenTelemetry.Proto.Logs.V1
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class LogRecord : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Logs.V1.LogRecord>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Logs.V1.LogRecord>, System.IEquatable<OpenTelemetry.Proto.Logs.V1.LogRecord>
     {
         public const int TimeUnixNanoFieldNumber = 1;
@@ -821,7 +821,7 @@ namespace OpenTelemetry.Proto.Logs.V1
         public static Google.Protobuf.Reflection.FileDescriptor Descriptor { get => throw null; }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ResourceLogs : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Logs.V1.ResourceLogs>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Logs.V1.ResourceLogs>, System.IEquatable<OpenTelemetry.Proto.Logs.V1.ResourceLogs>
     {
         public const int ResourceFieldNumber = 1;
@@ -862,7 +862,7 @@ namespace OpenTelemetry.Proto.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ScopeLogs : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Logs.V1.ScopeLogs>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Logs.V1.ScopeLogs>, System.IEquatable<OpenTelemetry.Proto.Logs.V1.ScopeLogs>
     {
         public const int ScopeFieldNumber = 1;
@@ -905,7 +905,7 @@ namespace OpenTelemetry.Proto.Logs.V1
 }
 namespace OpenTelemetry.Proto.Metrics.V1
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class Metric : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Metrics.V1.Metric>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Metrics.V1.Metric>, System.IEquatable<OpenTelemetry.Proto.Metrics.V1.Metric>
     {
         public const int NameFieldNumber = 1;
@@ -951,7 +951,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
         public static Google.Protobuf.Reflection.FileDescriptor Descriptor { get => throw null; }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ResourceMetrics : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>, System.IEquatable<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>
     {
         public const int ResourceFieldNumber = 1;
@@ -992,7 +992,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ScopeMetrics : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>, System.IEquatable<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>
     {
         public const int ScopeFieldNumber = 1;
@@ -1035,7 +1035,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
 }
 namespace OpenTelemetry.Proto.Resource.V1
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class Resource : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Resource.V1.Resource>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Resource.V1.Resource>, System.IEquatable<OpenTelemetry.Proto.Resource.V1.Resource>
     {
         public const int AttributesFieldNumber = 1;
@@ -1079,7 +1079,7 @@ namespace OpenTelemetry.Proto.Resource.V1
 }
 namespace OpenTelemetry.Proto.Trace.V1
 {
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ResourceSpans : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Trace.V1.ResourceSpans>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Trace.V1.ResourceSpans>, System.IEquatable<OpenTelemetry.Proto.Trace.V1.ResourceSpans>
     {
         public const int ResourceFieldNumber = 1;
@@ -1120,7 +1120,7 @@ namespace OpenTelemetry.Proto.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class ScopeSpans : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Trace.V1.ScopeSpans>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Trace.V1.ScopeSpans>, System.IEquatable<OpenTelemetry.Proto.Trace.V1.ScopeSpans>
     {
         public const int ScopeFieldNumber = 1;
@@ -1161,7 +1161,7 @@ namespace OpenTelemetry.Proto.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalMergeFrom(ref Google.Protobuf.ParseContext input) { }
     }
 
-    [System.Diagnostics.DebuggerDisplay]
+    [System.Diagnostics.DebuggerDisplay("{ToString(),nq}")]
     public sealed class Span : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Trace.V1.Span>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Trace.V1.Span>, System.IEquatable<OpenTelemetry.Proto.Trace.V1.Span>
     {
         public const int TraceIdFieldNumber = 1;

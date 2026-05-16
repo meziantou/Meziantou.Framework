@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Globbing
         public override string ToString() => throw null;
     }
 
-    [System.Runtime.CompilerServices.CollectionBuilder]
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Globbing.GlobCollection), "Create")]
     public sealed class GlobCollection : Meziantou.Framework.Globbing.IGlobEvaluatable, System.Collections.Generic.IEnumerable<Meziantou.Framework.Globbing.IGlobEvaluatable>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Globbing.IGlobEvaluatable>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Globbing.IGlobEvaluatable>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }

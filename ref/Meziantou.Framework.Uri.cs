@@ -22,14 +22,14 @@ namespace Meziantou.Framework
     {
         public static string AddQueryString(string uri, string name, string? value) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IDictionary<string, string?> queryString) => throw null;
-        public static string AddQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames] System.Collections.Generic.IEnumerable<System.ValueTuple<string, string?>>? queryString) => throw null;
-        public static string AddQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames] System.Collections.Generic.IEnumerable<System.ValueTuple<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
+        public static string AddQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames(new string[] { "Name", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string, string?>>? queryString) => throw null;
+        public static string AddQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames(new string[] { "Name", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
         public static string SetQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string SetQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
-        public static string AddOrReplaceQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames] System.Collections.Generic.IEnumerable<System.ValueTuple<string, string?>> queryString) => throw null;
-        public static string AddOrReplaceQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames] System.Collections.Generic.IEnumerable<System.ValueTuple<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames(new string[] { "Name", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string, string?>> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, [System.Runtime.CompilerServices.TupleElementNames(new string[] { "Name", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string AddOrReplaceQueryString(string uri, string name, string? value) => throw null;
         public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;

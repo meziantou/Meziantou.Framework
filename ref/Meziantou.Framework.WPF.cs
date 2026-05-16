@@ -36,10 +36,10 @@ namespace Meziantou.Framework.WPF
         }
     }
 
-    [System.Windows.Markup.MarkupExtensionReturnType]
+    [System.Windows.Markup.MarkupExtensionReturnType(typeof(System.Collections.Generic.IEnumerable`1[[System.Enum))]
     public sealed class EnumValuesExtension : System.Windows.Markup.MarkupExtension
     {
-        [System.Windows.Markup.ConstructorArgument]
+        [System.Windows.Markup.ConstructorArgument("enumType")]
         public System.Type? EnumType { get => throw null; set { } }
         public EnumValuesExtension(System.Type enumType) { }
         public override object ProvideValue(System.IServiceProvider serviceProvider) => throw null;
@@ -60,10 +60,10 @@ namespace Meziantou.Framework.WPF
         public override string ToString() => throw null;
     }
 
-    [System.Windows.Markup.MarkupExtensionReturnType]
+    [System.Windows.Markup.MarkupExtensionReturnType(typeof(System.Collections.Generic.IEnumerable`1[Meziantou.Framework.WPF.LocalizedEnumValue]))]
     public sealed class LocalizedEnumValuesExtension : System.Windows.Markup.MarkupExtension
     {
-        [System.Windows.Markup.ConstructorArgument]
+        [System.Windows.Markup.ConstructorArgument("enumType")]
         public System.Type? EnumType { get => throw null; set { } }
         public LocalizedEnumValuesExtension(System.Type enumType) { }
         public override object ProvideValue(System.IServiceProvider serviceProvider) => throw null;

@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public sealed class AccessToken : System.IDisposable
     {
         public bool IsRestricted() => throw null;
@@ -102,7 +102,7 @@ namespace Meziantou.Framework.Win32
         public const string SE_UNSOLICITED_INPUT_NAME = "SeUnsolicitedInputPrivilege";
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public sealed class SecurityIdentifier : System.IEquatable<Meziantou.Framework.Win32.SecurityIdentifier>
     {
         public string? Domain { get => throw null; }

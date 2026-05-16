@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    [System.Runtime.Versioning.SupportedOSPlatform]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public static class LsaPrivateData
     {
         public static void RemoveValue(string key) { }

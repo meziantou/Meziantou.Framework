@@ -14,7 +14,7 @@ const string BlocksUrl = "https://www.unicode.org/Public/UCD/latest/ucd/Blocks.t
 const string EmojiDataUrl = "https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt";
 
 var outputUpdated = false;
-if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Exists(path / ".git"), out var root))
+if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
     throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
 
 var outputPath = root / "src" / "Meziantou.Framework.Unicode";
@@ -413,6 +413,8 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
         //
         // Specification: https://www.unicode.org/reports/tr44/
         // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
+
+        #nullable enable
 
         namespace Meziantou.Framework;
         internal static partial class UnicodeCharacterInfos
@@ -1270,6 +1272,8 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     //
     // Specification: https://www.unicode.org/reports/tr44/#Blocks.txt
     // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
+
+    #nullable enable
 
     namespace Meziantou.Framework;
 

@@ -1,9 +1,6 @@
-#nullable disable
 #pragma warning disable CA1304
 #pragma warning disable MA0011
-using System.Globalization;
 using Meziantou.Xunit;
-using Xunit;
 
 namespace Meziantou.Framework.ResxSourceGenerator.GeneratorTests;
 
@@ -45,6 +42,6 @@ public class ResxGeneratorTests
     [Fact]
     public void BinaryFile()
     {
-        Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], Resource1.Image1[..8]);
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], Resource1.Image1![..8]);
     }
 }

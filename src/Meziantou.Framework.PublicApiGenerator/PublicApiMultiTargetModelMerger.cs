@@ -21,7 +21,7 @@ internal static class PublicApiMultiTargetModelMerger
             return modelsBySymbol.Values.Single();
         }
 
-        var orderedSymbols = modelsBySymbol.Keys.OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        var orderedSymbols = SortSymbols(modelsBySymbol.Keys);
         var typesByQualifiedName = new Dictionary<string, Dictionary<string, PublicApiTypeModel>>(StringComparer.Ordinal);
         foreach (var symbol in orderedSymbols)
         {
@@ -103,11 +103,24 @@ internal static class PublicApiMultiTargetModelMerger
             parsedTypes[symbol] = parsedType;
         }
 
+        var parsedPrefixes = new Dictionary<string, ParsedTypePrefix>(StringComparer.Ordinal);
+        foreach (var symbol in orderedSymbols)
+        {
+            if (!TryParseTypePrefix(parsedTypes[symbol].Prefix, out var parsedPrefix))
+            {
+                return false;
+            }
+
+            parsedPrefixes[symbol] = parsedPrefix;
+        }
+
         var firstParsedType = parsedTypes[orderedSymbols[0]];
+        var firstParsedPrefix = parsedPrefixes[orderedSymbols[0]];
         foreach (var symbol in orderedSymbols)
         {
             var parsedType = parsedTypes[symbol];
-            if (!string.Equals(firstParsedType.Prefix, parsedType.Prefix, StringComparison.Ordinal) ||
+            var parsedPrefix = parsedPrefixes[symbol];
+            if (!string.Equals(firstParsedPrefix.Declaration, parsedPrefix.Declaration, StringComparison.Ordinal) ||
                 !string.Equals(firstParsedType.Suffix, parsedType.Suffix, StringComparison.Ordinal))
             {
                 return false;
@@ -120,7 +133,13 @@ internal static class PublicApiMultiTargetModelMerger
             StringComparer.Ordinal);
 
         var sb = new StringBuilder();
-        sb.Append(firstParsedType.Prefix);
+        var typeAttributesBySymbol = orderedSymbols.ToDictionary(
+            symbol => symbol,
+            symbol => parsedPrefixes[symbol].Attributes,
+            StringComparer.Ordinal);
+
+        AppendConditionalSegment(sb, typeAttributesBySymbol, orderedSymbols, indentationLevel: 0);
+        sb.Append(firstParsedPrefix.Declaration);
         var commonAnchors = FindCommonAnchors(membersBySymbol, orderedSymbols);
         var previousIndexesBySymbol = orderedSymbols.ToDictionary(symbol => symbol, _ => -1, StringComparer.Ordinal);
         foreach (var commonAnchor in commonAnchors)
@@ -134,7 +153,7 @@ internal static class PublicApiMultiTargetModelMerger
                 segmentBySymbol[symbol] = Slice(members, startIndex, endIndex);
             }
 
-            AppendConditionalSegment(sb, segmentBySymbol, orderedSymbols);
+            AppendConditionalSegment(sb, segmentBySymbol, orderedSymbols, indentationLevel: 1);
             AppendIndentedBlock(sb, commonAnchor.Member, 1);
             foreach (var symbol in orderedSymbols)
             {
@@ -150,16 +169,20 @@ internal static class PublicApiMultiTargetModelMerger
             trailingSegmentBySymbol[symbol] = Slice(members, startIndex, members.Length);
         }
 
-        AppendConditionalSegment(sb, trailingSegmentBySymbol, orderedSymbols);
+        AppendConditionalSegment(sb, trailingSegmentBySymbol, orderedSymbols, indentationLevel: 1);
         sb.Append(firstParsedType.Suffix);
         mergedSource = sb.ToString();
         return true;
     }
 
-    private static void AppendConditionalSegment(StringBuilder sb, IReadOnlyDictionary<string, ImmutableArray<string>> segmentBySymbol, string[] orderedSymbols)
+    private static void AppendConditionalSegment(StringBuilder sb, IReadOnlyDictionary<string, ImmutableArray<string>> segmentBySymbol, string[] orderedSymbols, int indentationLevel)
     {
         var groups = GroupSegmentBySymbols(segmentBySymbol, orderedSymbols);
-        var nonEmptyGroups = groups.Where(group => group.Members.Length > 0).ToArray();
+        var nonEmptyGroups = groups
+            .Where(group => group.Members.Length > 0)
+            .OrderBy(group => BuildCondition(group.Symbols), StringComparer.Ordinal)
+            .ThenBy(group => string.Join('\u001f', group.Members), StringComparer.Ordinal)
+            .ToArray();
         if (nonEmptyGroups.Length == 0)
         {
             return;
@@ -167,26 +190,26 @@ internal static class PublicApiMultiTargetModelMerger
 
         if (nonEmptyGroups.Length == 1 && nonEmptyGroups[0].Symbols.Count == orderedSymbols.Length)
         {
-            AppendMembers(sb, nonEmptyGroups[0].Members);
+            AppendMembers(sb, nonEmptyGroups[0].Members, indentationLevel);
             return;
         }
 
         if (nonEmptyGroups.Length == 1)
         {
-            AppendConditionalDirective(sb, "#if", nonEmptyGroups[0].Symbols);
-            AppendMembers(sb, nonEmptyGroups[0].Members);
-            AppendIndentedDirective(sb, "#endif");
+            AppendConditionalDirective(sb, "#if", nonEmptyGroups[0].Symbols, indentationLevel);
+            AppendMembers(sb, nonEmptyGroups[0].Members, indentationLevel);
+            AppendIndentedDirective(sb, "#endif", indentationLevel);
             return;
         }
 
         for (var index = 0; index < nonEmptyGroups.Length; index++)
         {
             var directive = index == 0 ? "#if" : "#elif";
-            AppendConditionalDirective(sb, directive, nonEmptyGroups[index].Symbols);
-            AppendMembers(sb, nonEmptyGroups[index].Members);
+            AppendConditionalDirective(sb, directive, nonEmptyGroups[index].Symbols, indentationLevel);
+            AppendMembers(sb, nonEmptyGroups[index].Members, indentationLevel);
         }
 
-        AppendIndentedDirective(sb, "#endif");
+        AppendIndentedDirective(sb, "#endif", indentationLevel);
     }
 
     private static List<SegmentGroup> GroupSegmentBySymbols(IReadOnlyDictionary<string, ImmutableArray<string>> segmentBySymbol, string[] orderedSymbols)
@@ -213,29 +236,45 @@ internal static class PublicApiMultiTargetModelMerger
         return groups;
     }
 
-    private static void AppendMembers(StringBuilder sb, ImmutableArray<string> members)
+    private static void AppendMembers(StringBuilder sb, ImmutableArray<string> members, int indentationLevel)
     {
         foreach (var member in members)
         {
-            AppendIndentedBlock(sb, member, 1);
+            AppendIndentedBlock(sb, member, indentationLevel);
         }
     }
 
-    private static void AppendConditionalDirective(StringBuilder sb, string directive, IReadOnlyList<string> symbols)
+    private static void AppendConditionalDirective(StringBuilder sb, string directive, IReadOnlyList<string> symbols, int indentationLevel)
     {
-        var condition = string.Join(" || ", symbols);
-        AppendIndentedDirective(sb, directive + " " + condition);
+        AppendIndentedDirective(sb, directive + " " + BuildCondition(symbols), indentationLevel);
     }
 
-    private static void AppendIndentedDirective(StringBuilder sb, string directive)
+    private static void AppendIndentedDirective(StringBuilder sb, string directive, int indentationLevel)
     {
-        sb.Append(Indentation);
+        if (indentationLevel > 0)
+        {
+            sb.Append(' ', indentationLevel * Indentation.Length);
+        }
+
         sb.AppendLine(directive);
+    }
+
+    private static string BuildCondition(IReadOnlyList<string> symbols)
+    {
+        return string.Join(" || ", SortSymbols(symbols));
+    }
+
+    private static string[] SortSymbols(IEnumerable<string> symbols)
+    {
+        return symbols.OrderBy(symbol => symbol, StringComparer.Ordinal).ToArray();
     }
 
     private static string BuildConditionalTypeSource(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols)
     {
-        var sourceGroups = GroupSources(typesBySymbol, orderedSymbols);
+        var sourceGroups = GroupSources(typesBySymbol, orderedSymbols)
+            .OrderBy(group => BuildCondition(group.Symbols), StringComparer.Ordinal)
+            .ThenBy(group => group.Source, StringComparer.Ordinal)
+            .ToList();
         if (sourceGroups.Count == 1 && sourceGroups[0].Symbols.Count == orderedSymbols.Length)
         {
             return sourceGroups[0].Source;
@@ -245,7 +284,7 @@ internal static class PublicApiMultiTargetModelMerger
         for (var index = 0; index < sourceGroups.Count; index++)
         {
             var directive = index == 0 ? "#if" : "#elif";
-            var condition = string.Join(" || ", sourceGroups[index].Symbols);
+            var condition = BuildCondition(sourceGroups[index].Symbols);
             sb.Append(directive);
             sb.Append(' ');
             sb.AppendLine(condition);
@@ -368,6 +407,63 @@ internal static class PublicApiMultiTargetModelMerger
         }
 
         parsedType = new ParsedTypeSource(prefix, [.. members], suffix);
+        return true;
+    }
+
+    private static bool TryParseTypePrefix(string prefix, out ParsedTypePrefix parsedPrefix)
+    {
+        parsedPrefix = null!;
+
+        var lines = new List<string>();
+        using (var reader = new StringReader(prefix))
+        {
+            string? line;
+            while ((line = reader.ReadLine()) is not null)
+            {
+                lines.Add(line);
+            }
+        }
+
+        if (lines.Count == 0)
+        {
+            return false;
+        }
+
+        var declarationStartIndex = -1;
+        for (var index = 0; index < lines.Count; index++)
+        {
+            var trimmed = lines[index].TrimStart();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            if (trimmed.StartsWith("[", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            declarationStartIndex = index;
+            break;
+        }
+
+        if (declarationStartIndex < 0)
+        {
+            return false;
+        }
+
+        var attributes = lines
+            .Take(declarationStartIndex)
+            .Where(static line => !string.IsNullOrWhiteSpace(line))
+            .ToImmutableArray();
+
+        var declaration = string.Join(Environment.NewLine, lines.Skip(declarationStartIndex));
+        if (!declaration.EndsWith(Environment.NewLine, StringComparison.Ordinal))
+        {
+            declaration += Environment.NewLine;
+        }
+
+        parsedPrefix = new ParsedTypePrefix(attributes, declaration);
         return true;
     }
 
@@ -633,6 +729,8 @@ internal static class PublicApiMultiTargetModelMerger
     }
 
     private sealed record ParsedTypeSource(string Prefix, ImmutableArray<string> Members, string Suffix);
+
+    private sealed record ParsedTypePrefix(ImmutableArray<string> Attributes, string Declaration);
 
     private sealed record MemberAnchor(string Member, IReadOnlyDictionary<string, int> IndexesBySymbol);
 

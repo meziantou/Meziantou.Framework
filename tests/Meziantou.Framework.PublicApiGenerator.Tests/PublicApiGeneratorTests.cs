@@ -742,6 +742,85 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Tool_VerifyNoChangeSingleFile_SucceedsWhenFileIsUpToDate()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            public class Sample
+            {
+                public void A()
+                {
+                }
+            }
+            """);
+
+        var outputFilePath = temporaryDirectory / "output" / "PublicApi.g.cs";
+        var generateExitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(0, generateExitCode);
+
+        var verifyNoChangeExitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+                "--verify-no-change",
+            ],
+            configure: null);
+
+        Assert.Equal(0, verifyNoChangeExitCode);
+    }
+
+    [Fact]
+    public async Task Tool_VerifyNoChangeSingleFile_FailsWhenFileIsOutOfDate()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
+            public class Sample
+            {
+                public void A()
+                {
+                }
+            }
+            """);
+
+        var outputFilePath = temporaryDirectory / "output" / "PublicApi.g.cs";
+        var generateExitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+            ],
+            configure: null);
+
+        Assert.Equal(0, generateExitCode);
+
+        File.WriteAllText(outputFilePath, "// stale");
+
+        var verifyNoChangeExitCode = await Program.MainImpl(
+            [
+                "--input", assemblyPath.ToString(),
+                "--output-file", outputFilePath.ToString(),
+                "--file-layout", nameof(PublicApiFileLayout.SingleFile),
+                "--omit-auto-generated-comment",
+                "--verify-no-change",
+            ],
+            configure: null);
+
+        Assert.Equal(1, verifyNoChangeExitCode);
+        Assert.Equal("// stale", File.ReadAllText(outputFilePath));
+    }
+
+    [Fact]
     public async Task Methods_InstanceAndStatic()
     {
         await Validate("""

@@ -264,13 +264,13 @@ sealed class HtmlNodeNavigator : XPathNavigator
 
     private static HtmlAttribute? MoveToNextNamespaceLocal(HtmlAttribute att)
     {
-        att = att.NextSibling;
-        while (att is not null)
+        var next = att.NextSibling;
+        while (next is not null)
         {
-            if (att.IsNamespace)
-                return att;
+            if (next.IsNamespace)
+                return next;
 
-            att = att.NextSibling;
+            next = next.NextSibling;
         }
 
         return null;
@@ -375,7 +375,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         if (att is null)
             return false;
 
-        HtmlNode node = att.NextSibling;
+        var node = att.NextSibling;
         Trace("next att:" + node);
         if (node is null)
             return false;

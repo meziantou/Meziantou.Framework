@@ -100,7 +100,7 @@ partial class HtmlNode : IXPathNavigable
         }
         else
         {
-            yield return new HtmlXPathResult(OwnerDocument, eval);
+            yield return new HtmlXPathResult(OwnerDocument ?? throw new InvalidOperationException("Current node has no owner document."), eval);
         }
     }
 

@@ -1,4 +1,3 @@
-#nullable disable
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Xml;
@@ -13,7 +12,7 @@ internal
 #endif
 sealed class HtmlText : HtmlNode
 {
-    private string _value;
+    private string _value = string.Empty;
     private bool _cData;
 
     internal HtmlText(HtmlDocument ownerDocument)
@@ -55,7 +54,7 @@ sealed class HtmlText : HtmlNode
 
     public override string InnerText
     {
-        get => Value;
+        get => Value ?? string.Empty;
         set
         {
             if (!string.Equals(value, Value, StringComparison.Ordinal))
@@ -68,7 +67,7 @@ sealed class HtmlText : HtmlNode
 
     public override string InnerHtml
     {
-        get => Value;
+        get => Value ?? string.Empty;
 
         set
         {
@@ -80,14 +79,15 @@ sealed class HtmlText : HtmlNode
         }
     }
 
-    public override string Value
+    public override string? Value
     {
         get => _value;
         set
         {
-            if (!string.Equals(value, _value, StringComparison.Ordinal))
+            var newValue = value ?? string.Empty;
+            if (!string.Equals(newValue, _value, StringComparison.Ordinal))
             {
-                _value = value;
+                _value = newValue;
                 OnPropertyChanged();
             }
         }

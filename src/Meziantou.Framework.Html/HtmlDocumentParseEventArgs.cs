@@ -1,4 +1,3 @@
-#nullable disable
 using System.ComponentModel;
 
 namespace Meziantou.Framework.Html;
@@ -16,8 +15,8 @@ sealed class HtmlDocumentParseEventArgs : CancelEventArgs
     }
 
     public HtmlReader Reader { get; }
-    public Encoding DetectedEncoding { get; set; }
-    public HtmlNode CurrentNode { get; set; }
-    public HtmlAttribute CurrentAttribute { get; set; }
+    public Encoding? DetectedEncoding { get; set; }
+    public HtmlNode? CurrentNode { get; set; }
+    public HtmlAttribute? CurrentAttribute { get; set; }
     public bool Continue { get; set; }
 }

@@ -1,4 +1,3 @@
-#nullable disable
 using System.Collections;
 using System.Collections.Specialized;
 
@@ -14,7 +13,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
     private readonly List<HtmlNode> _list = [];
     private readonly HtmlNode _parent;
 
-    public event NotifyCollectionChangedEventHandler CollectionChanged;
+    public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
     internal HtmlNodeList(HtmlNode parent)
     {
@@ -27,7 +26,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
         CollectionChanged?.Invoke(this, e);
     }
 
-    public HtmlNode this[string name]
+    public HtmlNode? this[string name]
     {
         get
         {
@@ -38,7 +37,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public HtmlNode this[string localName, string namespaceURI]
+    public HtmlNode? this[string localName, string namespaceURI]
     {
         get
         {
@@ -207,8 +206,10 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
     void ICollection<HtmlNode>.Clear() => RemoveAll();
 
-    int IList.Add(object value)
+    int IList.Add(object? value)
     {
+        ArgumentNullException.ThrowIfNull(value);
+
         var count = Count;
         Add((HtmlNode)value);
         return count;
@@ -216,17 +217,28 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
     void IList.Clear() => RemoveAll();
 
-    bool IList.Contains(object value) => Contains((HtmlNode)value);
+    bool IList.Contains(object? value) => value is HtmlNode node && Contains(node);
 
-    int IList.IndexOf(object value) => IndexOf((HtmlNode)value);
+    int IList.IndexOf(object? value) => value is HtmlNode node ? IndexOf(node) : -1;
 
-    void IList.Insert(int index, object value) => Insert(index, (HtmlNode)value);
+    void IList.Insert(int index, object? value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        Insert(index, (HtmlNode)value);
+    }
 
     bool IList.IsFixedSize => false;
 
     bool IList.IsReadOnly => false;
 
-    void IList.Remove(object value) => Remove((HtmlNode)value);
+    void IList.Remove(object? value)
+    {
+        if (value is HtmlNode node)
+        {
+            Remove(node);
+        }
+    }
 
     void IList.RemoveAt(int index) => RemoveAt(index);
 
@@ -238,9 +250,14 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
     object ICollection.SyncRoot => ((ICollection)_list).SyncRoot;
 
-    object IList.this[int index]
+    object? IList.this[int index]
     {
         get => this[index];
-        set => this[index] = (HtmlNode)value;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            this[index] = (HtmlNode)value;
+        }
     }
 }

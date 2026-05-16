@@ -1,4 +1,3 @@
-#nullable disable
 using System.Xml;
 
 namespace Meziantou.Framework.Html;
@@ -11,15 +10,15 @@ internal
 #endif
 sealed class HtmlXPathResult : HtmlNode
 {
-    internal HtmlXPathResult(HtmlDocument ownerDocument, object result)
+    internal HtmlXPathResult(HtmlDocument ownerDocument, object? result)
         : base("", "#result", "", ownerDocument)
     {
         Result = result;
     }
 
-    public object Result { get; private set; }
+    public object? Result { get; private set; }
 
-    public override string Value
+    public override string? Value
     {
         get
         {
@@ -35,7 +34,9 @@ sealed class HtmlXPathResult : HtmlNode
 
     public override void WriteTo(TextWriter writer)
     {
-        if (writer is not null && Result is not null)
+        ArgumentNullException.ThrowIfNull(writer);
+
+        if (Result is not null)
         {
             writer.Write(Result);
         }
@@ -43,7 +44,9 @@ sealed class HtmlXPathResult : HtmlNode
 
     public override void WriteContentTo(TextWriter writer)
     {
-        if (writer is not null && Result is not null)
+        ArgumentNullException.ThrowIfNull(writer);
+
+        if (Result is not null)
         {
             writer.Write(Result);
         }
@@ -51,7 +54,9 @@ sealed class HtmlXPathResult : HtmlNode
 
     public override void WriteTo(XmlWriter writer)
     {
-        if (writer is not null && Result is not null)
+        ArgumentNullException.ThrowIfNull(writer);
+
+        if (Result is not null)
         {
             writer.WriteValue(Result);
         }
@@ -59,7 +64,9 @@ sealed class HtmlXPathResult : HtmlNode
 
     public override void WriteContentTo(XmlWriter writer)
     {
-        if (writer is not null && Result is not null)
+        ArgumentNullException.ThrowIfNull(writer);
+
+        if (Result is not null)
         {
             writer.WriteValue(Result);
         }

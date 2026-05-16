@@ -1,4 +1,3 @@
-#nullable disable
 using System.Xml;
 
 namespace Meziantou.Framework.Html;
@@ -23,10 +22,10 @@ sealed class HtmlXmlWriter : XmlWriter
         _writeState = WriteState.Start;
     }
 
-    public HtmlDocument OwnerDocument => Parent.OwnerDocument;
+    public HtmlDocument OwnerDocument => Parent.OwnerDocument!;
 
     public HtmlNode Parent { get; }
-    public HtmlNode Current { get; private set; }
+    public HtmlNode? Current { get; private set; }
 
     public override WriteState WriteState => _writeState;
 
@@ -34,9 +33,9 @@ sealed class HtmlXmlWriter : XmlWriter
     {
     }
 
-    public override string LookupPrefix(string ns)
+    public override string? LookupPrefix(string ns)
     {
-        return Parent.OwnerDocument.GetPrefixOfNamespace(ns);
+        return OwnerDocument.GetPrefixOfNamespace(ns);
     }
 
     public override void WriteBase64(byte[] buffer, int index, int count)
@@ -44,7 +43,7 @@ sealed class HtmlXmlWriter : XmlWriter
         throw new NotSupportedException();
     }
 
-    public override void WriteCData(string text)
+    public override void WriteCData(string? text)
     {
         if (text is null)
             return;
@@ -55,9 +54,9 @@ sealed class HtmlXmlWriter : XmlWriter
             return;
         }
 
-        var node = Parent.OwnerDocument.CreateText();
+        var node = OwnerDocument.CreateText();
         node.Value = text;
-        Current.AppendChild(node);
+        GetCurrentNode().AppendChild(node);
     }
 
     public override void WriteCharEntity(char ch)
@@ -70,17 +69,17 @@ sealed class HtmlXmlWriter : XmlWriter
         WriteRaw(buffer, index, count);
     }
 
-    public override void WriteComment(string text)
+    public override void WriteComment(string? text)
     {
         if (text is null)
             return;
 
-        var node = Parent.OwnerDocument.CreateComment();
+        var node = OwnerDocument.CreateComment();
         node.Value = text;
-        Current.AppendChild(node);
+        GetCurrentNode().AppendChild(node);
     }
 
-    public override void WriteDocType(string name, string pubid, string sysid, string subset)
+    public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
     {
         var text = "<!DOCTYPE " + name;
         if (pubid is not null)
@@ -104,9 +103,14 @@ sealed class HtmlXmlWriter : XmlWriter
     private HtmlElement GetCurrentElement()
     {
         if (Current is not HtmlElement element)
-            throw new InvalidOperationException($"Current node is not an element but is of '{Current.GetType().FullName}' type.");
+            throw new InvalidOperationException($"Current node is not an element but is of '{Current?.GetType().FullName ?? "<null>"}' type.");
 
         return element;
+    }
+
+    private HtmlNode GetCurrentNode()
+    {
+        return Current ?? throw new InvalidOperationException("Current node is null.");
     }
 
     public override void WriteEndElement()
@@ -125,12 +129,12 @@ sealed class HtmlXmlWriter : XmlWriter
         WriteEndElement();
     }
 
-    public override void WriteProcessingInstruction(string name, string text)
+    public override void WriteProcessingInstruction(string name, string? text)
     {
         WriteCData("<?" + name + " " + text + "?>");
     }
 
-    public override void WriteRaw(string data)
+    public override void WriteRaw(string? data)
     {
         WriteCData(data);
     }
@@ -140,19 +144,19 @@ sealed class HtmlXmlWriter : XmlWriter
         throw new NotSupportedException();
     }
 
-    public override void WriteStartAttribute(string prefix, string localName, string ns)
+    public override void WriteStartAttribute(string? prefix, string localName, string? ns)
     {
         var current = GetCurrentElement();
-        Current = current.Attributes.Add(prefix, localName, ns);
+        Current = current.Attributes.Add(prefix ?? string.Empty, localName, ns ?? string.Empty);
         _writeState = WriteState.Attribute;
     }
 
     public override void WriteEndAttribute()
     {
         if (Current is not HtmlAttribute att)
-            throw new InvalidOperationException("Current node is not an attribute but is of '" + Current.GetType().FullName + "' type.");
+            throw new InvalidOperationException("Current node is not an attribute but is of '" + (Current?.GetType().FullName ?? "<null>") + "' type.");
 
-        Current = att.ParentNode;
+        Current = att.ParentNode ?? throw new InvalidOperationException("Attribute has no parent node.");
         _writeState = WriteState.Element;
     }
 
@@ -171,15 +175,15 @@ sealed class HtmlXmlWriter : XmlWriter
         throw new NotSupportedException();
     }
 
-    public override void WriteStartElement(string prefix, string localName, string ns)
+    public override void WriteStartElement(string? prefix, string localName, string? ns)
     {
-        var element = OwnerDocument.CreateElement(prefix, localName, ns);
-        Current.AppendChild(element);
+        var element = OwnerDocument.CreateElement(prefix ?? string.Empty, localName, ns);
+        GetCurrentNode().AppendChild(element);
         Current = element;
         _writeState = WriteState.Element;
     }
 
-    public override void WriteString(string text)
+    public override void WriteString(string? text)
     {
         WriteCData(text);
     }
@@ -195,7 +199,7 @@ sealed class HtmlXmlWriter : XmlWriter
         WriteCData("&#x" + c.ToString("X", NumberFormatInfo.InvariantInfo) + ";");
     }
 
-    public override void WriteWhitespace(string ws)
+    public override void WriteWhitespace(string? ws)
     {
         WriteCData(ws);
     }

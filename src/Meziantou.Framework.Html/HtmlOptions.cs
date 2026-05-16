@@ -1,4 +1,3 @@
-#nullable disable
 
 namespace Meziantou.Framework.Html;
 
@@ -157,7 +156,7 @@ sealed class HtmlOptions
         _writeOptions[name] = options;
     }
 
-    internal bool ParseScriptType(string type)
+    internal bool ParseScriptType(string? type)
     {
         if (type is null)
             return false;

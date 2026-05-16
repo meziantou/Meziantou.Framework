@@ -1,4 +1,3 @@
-#nullable disable
 using System.Diagnostics;
 using System.Xml;
 
@@ -151,7 +150,7 @@ sealed class HtmlElement : HtmlNode
 
     public override HtmlNodeType NodeType => _nodeType;
 
-    internal HtmlElement GetParentToClose(int indent, string name)
+    internal HtmlElement? GetParentToClose(int indent, string name)
     {
         // NOTE: this avoids possible stack overflow errors for "super malformed" documents
         if (indent > 100)

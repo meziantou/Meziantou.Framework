@@ -1,4 +1,3 @@
-#nullable disable
 using System.Collections;
 using System.Collections.Specialized;
 
@@ -13,7 +12,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 {
     private readonly List<HtmlAttribute> _attributes = [];
 
-    public event NotifyCollectionChangedEventHandler CollectionChanged;
+    public event NotifyCollectionChangedEventHandler? CollectionChanged;
 
     internal HtmlAttributeList(HtmlNode parent)
     {
@@ -35,7 +34,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public HtmlAttribute Add(string prefix, string localName, string namespaceURI, string value)
+    public HtmlAttribute Add(string prefix, string localName, string namespaceURI, string? value)
     {
         ArgumentNullException.ThrowIfNull(prefix);
 
@@ -102,7 +101,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public string GetNamespacePrefixIfDefined(string namespaceURI)
+    public string? GetNamespacePrefixIfDefined(string namespaceURI)
     {
         ArgumentNullException.ThrowIfNull(namespaceURI);
 
@@ -259,6 +258,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         return true;
     }
 
+    [MaybeNull]
     public HtmlAttribute this[string name]
     {
         get
@@ -287,6 +287,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
+    [MaybeNull]
     public HtmlAttribute this[string localName, string namespaceURI]
     {
         get
@@ -342,8 +343,10 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     void ICollection<HtmlAttribute>.Clear() => RemoveAll();
 
-    int IList.Add(object value)
+    int IList.Add(object? value)
     {
+        ArgumentNullException.ThrowIfNull(value);
+
         var count = Count;
         Add((HtmlAttribute)value);
         return count;
@@ -351,23 +354,34 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     void IList.Clear() => RemoveAll();
 
-    bool IList.Contains(object value) => Contains((HtmlAttribute)value);
+    bool IList.Contains(object? value) => value is HtmlAttribute attribute && Contains(attribute);
 
-    int IList.IndexOf(object value) => IndexOf((HtmlAttribute)value);
+    int IList.IndexOf(object? value) => value is HtmlAttribute attribute ? IndexOf(attribute) : -1;
 
-    void IList.Insert(int index, object value) => Insert(index, (HtmlAttribute)value);
+    void IList.Insert(int index, object? value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        Insert(index, (HtmlAttribute)value);
+    }
 
     bool IList.IsFixedSize => false;
 
     bool IList.IsReadOnly => false;
 
-    void IList.Remove(object value) => Remove((HtmlAttribute)value);
+    void IList.Remove(object? value)
+    {
+        if (value is HtmlAttribute attribute)
+        {
+            Remove(attribute);
+        }
+    }
 
     void IList.RemoveAt(int index) => RemoveAt(index);
 
     void IList<HtmlAttribute>.RemoveAt(int index) => RemoveAt(index);
 
-    object IList.this[int index]
+    object? IList.this[int index]
     {
         get => this[index];
         set

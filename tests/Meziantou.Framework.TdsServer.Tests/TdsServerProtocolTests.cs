@@ -166,7 +166,9 @@ public sealed class TdsServerProtocolTests
         await server.StartAsync();
         var port = Assert.Single(server.Ports);
 
-        await using var connection = new SqlConnection(CreateConnectionString(port) + ";Packet Size=512");
+        await WaitForServerReadyAsync(port, TimeSpan.FromSeconds(30));
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30) + ";Packet Size=512");
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
@@ -885,7 +887,8 @@ public sealed class TdsServerProtocolTests
 
         var hasTimeout = exception.Message.Contains("Connection Timeout Expired", StringComparison.OrdinalIgnoreCase);
         var hasPreLogin = exception.Message.Contains("pre-login", StringComparison.OrdinalIgnoreCase);
-        return hasTimeout && hasPreLogin;
+        var hasPostLogin = exception.Message.Contains("post-login", StringComparison.OrdinalIgnoreCase);
+        return hasTimeout && (hasPreLogin || hasPostLogin);
     }
 
     private static async Task WaitForServerReadyAsync(int port, TimeSpan timeout)

@@ -12,6 +12,8 @@ internal static class PublicApiModelReader
 {
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
+    private static readonly object EnumMetadataCacheLock = new();
+    private static readonly Dictionary<string, EnumMetadata?> EnumMetadataCache = new(StringComparer.Ordinal);
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
     {
@@ -2205,11 +2207,238 @@ internal static class PublicApiModelReader
 
         if (IsEnumType(metadataReader, argument.Type))
         {
-            var enumTypeName = FormatDecodedTypeWithoutNullable(argument.Type);
-            return "(" + enumTypeName + ")" + FormatConstant(argument.Value);
+            return FormatEnumAttributeArgument(metadataReader, argument.Type, argument.Value);
         }
 
         return FormatConstant(argument.Value);
+    }
+
+    private static string FormatEnumAttributeArgument(MetadataReader metadataReader, DecodedType enumType, object enumValue)
+    {
+        var enumTypeName = FormatDecodedTypeWithoutNullable(enumType);
+        if (TryFormatEnumAttributeArgumentUsingMetadata(metadataReader, enumType, enumTypeName, enumValue, out var result))
+            return result;
+
+        return "(" + enumTypeName + ")" + FormatConstant(enumValue);
+    }
+
+    private static bool TryFormatEnumAttributeArgumentUsingMetadata(MetadataReader metadataReader, DecodedType enumType, string formattedTypeName, object enumValue, out string result)
+    {
+        result = string.Empty;
+        if (!TryGetEnumValueBits(enumValue, out var enumValueBits))
+            return false;
+
+        if (!TryGetEnumMetadata(metadataReader, enumType.Name, out var enumMetadata))
+            return false;
+
+        if (enumMetadata.MemberNamesByValue.TryGetValue(enumValueBits, out var memberName))
+        {
+            result = formattedTypeName + "." + memberName;
+            return true;
+        }
+
+        if (!enumMetadata.IsFlags)
+        {
+            return false;
+        }
+
+        var remainingValue = enumValueBits;
+        var formattedMemberNames = new List<string>();
+        foreach (var member in enumMetadata.MembersDescending)
+        {
+            if (member.Value == 0)
+                continue;
+
+            if ((remainingValue & member.Value) != member.Value)
+                continue;
+
+            formattedMemberNames.Add(formattedTypeName + "." + member.Name);
+            remainingValue &= ~member.Value;
+        }
+
+        if (remainingValue != 0 || formattedMemberNames.Count == 0)
+        {
+            return false;
+        }
+
+        result = string.Join(" | ", formattedMemberNames);
+        return true;
+    }
+
+    private static bool TryGetEnumValueBits(object value, out ulong bits)
+    {
+        if (value is null)
+        {
+            bits = 0;
+            return false;
+        }
+
+        bits = value switch
+        {
+            sbyte sbyteValue => unchecked((ulong)sbyteValue),
+            byte byteValue => byteValue,
+            short shortValue => unchecked((ulong)shortValue),
+            ushort ushortValue => ushortValue,
+            int intValue => unchecked((ulong)intValue),
+            uint uintValue => uintValue,
+            long longValue => unchecked((ulong)longValue),
+            ulong ulongValue => ulongValue,
+            _ => 0,
+        };
+
+        if (value is sbyte or byte or short or ushort or int or uint or long or ulong)
+            return true;
+
+        try
+        {
+            bits = Convert.ToUInt64(value, System.Globalization.CultureInfo.InvariantCulture);
+            return true;
+        }
+        catch (InvalidCastException)
+        {
+            return false;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryGetEnumMetadata(MetadataReader metadataReader, string enumTypeName, out EnumMetadata enumMetadata)
+    {
+        if (TryResolveTypeDefinitionHandle(metadataReader, enumTypeName, out var typeDefinitionHandle) &&
+            TryBuildEnumMetadata(metadataReader, typeDefinitionHandle, out enumMetadata))
+        {
+            return true;
+        }
+
+        return TryGetEnumMetadataFromLoadedAssemblies(enumTypeName, out enumMetadata);
+    }
+
+    private static bool TryBuildEnumMetadata(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, out EnumMetadata enumMetadata)
+    {
+        var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+        if (!string.Equals(GetTypeFullName(metadataReader, typeDefinition.BaseType), "System.Enum", StringComparison.Ordinal))
+        {
+            enumMetadata = null!;
+            return false;
+        }
+
+        var memberNamesByValue = new Dictionary<ulong, string>();
+        var members = new List<EnumMember>();
+        foreach (var fieldHandle in typeDefinition.GetFields())
+        {
+            var field = metadataReader.GetFieldDefinition(fieldHandle);
+            if (!field.Attributes.HasFlag(FieldAttributes.Static))
+                continue;
+
+            var constantHandle = field.GetDefaultValue();
+            if (constantHandle.IsNil)
+                continue;
+
+            var constantValue = DecodeConstantValue(metadataReader, metadataReader.GetConstant(constantHandle));
+            if (!TryGetEnumValueBits(constantValue!, out var memberValue))
+                continue;
+
+            var memberName = metadataReader.GetString(field.Name);
+            if (memberNamesByValue.TryAdd(memberValue, memberName))
+            {
+                members.Add(new EnumMember(memberValue, memberName));
+            }
+        }
+
+        if (members.Count == 0)
+        {
+            enumMetadata = null!;
+            return false;
+        }
+
+        var isFlags = HasAttribute(metadataReader, typeDefinition.GetCustomAttributes(), "System.FlagsAttribute");
+        enumMetadata = new EnumMetadata(
+            IsFlags: isFlags,
+            MemberNamesByValue: memberNamesByValue,
+            MembersDescending: [.. members.OrderByDescending(static member => member.Value).ThenBy(static member => member.Name, StringComparer.Ordinal)]);
+        return true;
+    }
+
+    private static bool TryGetEnumMetadataFromLoadedAssemblies(string enumTypeName, out EnumMetadata enumMetadata)
+    {
+        lock (EnumMetadataCacheLock)
+        {
+            if (EnumMetadataCache.TryGetValue(enumTypeName, out var cachedMetadata))
+            {
+                enumMetadata = cachedMetadata!;
+                return cachedMetadata is not null;
+            }
+        }
+
+        EnumMetadata? discoveredMetadata = null;
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            string? assemblyLocation;
+            try
+            {
+                assemblyLocation = assembly.Location;
+            }
+            catch (NotSupportedException)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(assemblyLocation) || !File.Exists(assemblyLocation))
+                continue;
+
+            if (TryGetEnumMetadataFromAssembly(assemblyLocation, enumTypeName, out var assemblyEnumMetadata))
+            {
+                discoveredMetadata = assemblyEnumMetadata;
+                break;
+            }
+        }
+
+        lock (EnumMetadataCacheLock)
+        {
+            EnumMetadataCache[enumTypeName] = discoveredMetadata;
+        }
+
+        enumMetadata = discoveredMetadata!;
+        return discoveredMetadata is not null;
+    }
+
+    private static bool TryGetEnumMetadataFromAssembly(string assemblyPath, string enumTypeName, out EnumMetadata enumMetadata)
+    {
+        try
+        {
+            using var stream = File.OpenRead(assemblyPath);
+            using var peReader = new PEReader(stream);
+            if (!peReader.HasMetadata)
+            {
+                enumMetadata = null!;
+                return false;
+            }
+
+            var metadataReader = peReader.GetMetadataReader();
+            if (TryResolveTypeDefinitionHandle(metadataReader, enumTypeName, out var typeDefinitionHandle) &&
+                TryBuildEnumMetadata(metadataReader, typeDefinitionHandle, out enumMetadata))
+            {
+                return true;
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+        catch (BadImageFormatException)
+        {
+        }
+
+        enumMetadata = null!;
+        return false;
     }
 
     private static bool IsEnumType(MetadataReader metadataReader, DecodedType type)
@@ -2430,6 +2659,13 @@ internal static class PublicApiModelReader
         return name[..index];
     }
 
+    private sealed record EnumMetadata(
+        bool IsFlags,
+        IReadOnlyDictionary<ulong, string> MemberNamesByValue,
+        ImmutableArray<EnumMember> MembersDescending);
+
+    private readonly record struct EnumMember(ulong Value, string Name);
+
     private readonly record struct SignatureGenericContext(ImmutableArray<string> TypeParameterNames, ImmutableArray<string> MethodParameterNames)
     {
         public string GetMethodParameterName(int index)
@@ -2521,14 +2757,8 @@ internal static class PublicApiModelReader
 
         public DecodedType GetTypeFromSerializedName(string name)
         {
-            var typeName = name;
-            var assemblySeparator = typeName.IndexOf(',', StringComparison.Ordinal);
-            if (assemblySeparator >= 0)
-            {
-                typeName = typeName[..assemblySeparator];
-            }
-
-            return new(typeName.Replace('+', '.'), IsReferenceType: true, IsTypeParameter: false);
+            var typeName = NormalizeSerializedTypeName(name);
+            return new(typeName, IsReferenceType: true, IsTypeParameter: false);
         }
 
         public PrimitiveTypeCode GetUnderlyingEnumType(DecodedType type)
@@ -2619,6 +2849,127 @@ internal static class PublicApiModelReader
                 default:
                     typeCode = PrimitiveTypeCode.Int32;
                     return false;
+            }
+        }
+
+        private static string NormalizeSerializedTypeName(string typeName)
+        {
+            var trimmedTypeName = typeName.Trim();
+            if (trimmedTypeName.Length == 0)
+                return trimmedTypeName;
+
+            if (trimmedTypeName[0] == '[' && trimmedTypeName[^1] == ']')
+            {
+                trimmedTypeName = trimmedTypeName[1..^1].Trim();
+            }
+
+            var assemblySeparator = FindTopLevelSeparator(trimmedTypeName, ',');
+            if (assemblySeparator >= 0)
+            {
+                trimmedTypeName = trimmedTypeName[..assemblySeparator].Trim();
+            }
+
+            var backtickIndex = trimmedTypeName.IndexOf('`');
+            if (backtickIndex < 0)
+            {
+                return trimmedTypeName.Replace('+', '.');
+            }
+
+            var genericArgumentsStart = trimmedTypeName.IndexOf('[', backtickIndex);
+            if (genericArgumentsStart < 0)
+            {
+                return trimmedTypeName[..backtickIndex].Replace('+', '.');
+            }
+
+            var genericArgumentsEnd = FindMatchingBracket(trimmedTypeName, genericArgumentsStart);
+            if (genericArgumentsEnd < 0)
+            {
+                return trimmedTypeName.Replace('+', '.');
+            }
+
+            var genericArgumentsContent = trimmedTypeName[(genericArgumentsStart + 1)..genericArgumentsEnd];
+            var genericArguments = SplitTopLevel(genericArgumentsContent, ',')
+                .Select(NormalizeSerializedTypeName)
+                .ToArray();
+
+            var baseTypeName = trimmedTypeName[..backtickIndex].Replace('+', '.');
+            var suffix = trimmedTypeName[(genericArgumentsEnd + 1)..];
+            return baseTypeName + "<" + string.Join(", ", genericArguments) + ">" + suffix;
+        }
+
+        private static int FindTopLevelSeparator(string text, char separator)
+        {
+            var depth = 0;
+            for (var index = 0; index < text.Length; index++)
+            {
+                switch (text[index])
+                {
+                    case '[':
+                        depth++;
+                        break;
+                    case ']':
+                        depth--;
+                        break;
+                    default:
+                        if (depth == 0 && text[index] == separator)
+                            return index;
+                        break;
+                }
+            }
+
+            return -1;
+        }
+
+        private static int FindMatchingBracket(string text, int openingBracketIndex)
+        {
+            var depth = 0;
+            for (var index = openingBracketIndex; index < text.Length; index++)
+            {
+                if (text[index] == '[')
+                {
+                    depth++;
+                }
+                else if (text[index] == ']')
+                {
+                    depth--;
+                    if (depth == 0)
+                        return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private static IEnumerable<string> SplitTopLevel(string text, char separator)
+        {
+            var depth = 0;
+            var startIndex = 0;
+            for (var index = 0; index < text.Length; index++)
+            {
+                if (text[index] == '[')
+                {
+                    depth++;
+                }
+                else if (text[index] == ']')
+                {
+                    depth--;
+                }
+                else if (text[index] == separator && depth == 0)
+                {
+                    var value = text[startIndex..index].Trim();
+                    if (value.Length > 0)
+                    {
+                        yield return value;
+                    }
+
+                    startIndex = index + 1;
+                }
+            }
+
+            var lastValue = text[startIndex..].Trim();
+            if (lastValue.Length > 0)
+            {
+                yield return lastValue;
             }
         }
     }

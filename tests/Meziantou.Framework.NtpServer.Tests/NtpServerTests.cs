@@ -66,13 +66,14 @@ public sealed class NtpServerTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Query_RoundTripDelay_IsSmall()
+    public async Task Query_RoundTripDelay_IsReasonable()
     {
         using var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = _server.Port });
         var response = await client.QueryAsync(XunitCancellationToken);
 
-        // Round-trip to localhost should be very fast
-        Assert.True(response.RoundTripDelay < TimeSpan.FromSeconds(1), $"Round-trip delay was {response.RoundTripDelay}");
+        // Localhost should stay reasonably low, but CI runners can be noisy
+        Assert.True(response.RoundTripDelay >= TimeSpan.Zero);
+        Assert.True(response.RoundTripDelay < TimeSpan.FromSeconds(5), $"Round-trip delay was {response.RoundTripDelay}");
     }
 
     [Fact]

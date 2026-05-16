@@ -36,7 +36,7 @@ namespace Meziantou.Framework.WPF
         }
     }
 
-    [System.Windows.Markup.MarkupExtensionReturnType(typeof(System.Collections.Generic.IEnumerable`1[[System.Enum))]
+    [System.Windows.Markup.MarkupExtensionReturnType(typeof(System.Collections.Generic.IEnumerable<System.Enum>))]
     public sealed class EnumValuesExtension : System.Windows.Markup.MarkupExtension
     {
         [System.Windows.Markup.ConstructorArgument("enumType")]
@@ -60,7 +60,7 @@ namespace Meziantou.Framework.WPF
         public override string ToString() => throw null;
     }
 
-    [System.Windows.Markup.MarkupExtensionReturnType(typeof(System.Collections.Generic.IEnumerable`1[Meziantou.Framework.WPF.LocalizedEnumValue]))]
+    [System.Windows.Markup.MarkupExtensionReturnType(typeof(System.Collections.Generic.IEnumerable<Meziantou.Framework.WPF.LocalizedEnumValue>))]
     public sealed class LocalizedEnumValuesExtension : System.Windows.Markup.MarkupExtension
     {
         [System.Windows.Markup.ConstructorArgument("enumType")]

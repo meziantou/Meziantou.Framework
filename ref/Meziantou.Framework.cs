@@ -969,7 +969,7 @@ namespace Meziantou.Framework.Collections
 }
 namespace Meziantou.Framework.DataAnnotations
 {
-    [System.AttributeUsage((System.AttributeTargets)128)]
+    [System.AttributeUsage(System.AttributeTargets.Property)]
     public sealed class AbsoluteUriAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         public AbsoluteUriAttribute(string errorMessage) { }
@@ -977,7 +977,7 @@ namespace Meziantou.Framework.DataAnnotations
         protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) => throw null;
     }
 
-    [System.AttributeUsage((System.AttributeTargets)128)]
+    [System.AttributeUsage(System.AttributeTargets.Property)]
     [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
     public sealed class ValidateCollectionItemsAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {

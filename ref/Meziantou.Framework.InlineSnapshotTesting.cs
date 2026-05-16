@@ -56,7 +56,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting
         public static void Validate(object? subject, Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings? settings, string? expected, [System.Runtime.CompilerServices.CallerFilePath] string? filePath = null, [System.Runtime.CompilerServices.CallerLineNumber] int lineNumber = -1) { }
     }
 
-    [System.AttributeUsage((System.AttributeTargets)64)]
+    [System.AttributeUsage(System.AttributeTargets.Method)]
     public sealed class InlineSnapshotAssertionAttribute : System.Attribute
     {
         public string ParameterName { get => throw null; }

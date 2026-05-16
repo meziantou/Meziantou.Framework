@@ -142,7 +142,7 @@ namespace Meziantou.AspNetCore.Components
         public static void UpdateUrlUsingParameters(this Microsoft.AspNetCore.Components.NavigationManager navigationManager, Microsoft.AspNetCore.Components.IComponent component, bool replaceHistory = false) { }
     }
 
-    [System.AttributeUsage((System.AttributeTargets)128, AllowMultiple = false, Inherited = true)]
+    [System.AttributeUsage(System.AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     [System.Obsolete("Use SupplyParameterFromQueryAttribute instead")]
     public sealed class QueryStringParameterAttribute : System.Attribute
     {

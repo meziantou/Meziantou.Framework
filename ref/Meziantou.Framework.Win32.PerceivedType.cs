@@ -6,12 +6,12 @@ namespace Meziantou.Framework.Win32
     public sealed class Perceived
     {
         public string Extension { get => throw null; }
-        public global::Meziantou.Framework.Win32.PerceivedType PerceivedType { get => throw null; }
-        public global::Meziantou.Framework.Win32.PerceivedTypeSource PerceivedTypeSource { get => throw null; }
+        public Meziantou.Framework.Win32.PerceivedType PerceivedType { get => throw null; }
+        public Meziantou.Framework.Win32.PerceivedTypeSource PerceivedTypeSource { get => throw null; }
         public static void AddDefaultPerceivedTypes() { }
-        public static global::Meziantou.Framework.Win32.Perceived AddPerceived(string extension, global::Meziantou.Framework.Win32.PerceivedType type) => throw null;
+        public static Meziantou.Framework.Win32.Perceived AddPerceived(string extension, Meziantou.Framework.Win32.PerceivedType type) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform]
-        public static global::Meziantou.Framework.Win32.Perceived GetPerceivedType(string fileName) => throw null;
+        public static Meziantou.Framework.Win32.Perceived GetPerceivedType(string fileName) => throw null;
         public override string ToString() => throw null;
     }
 

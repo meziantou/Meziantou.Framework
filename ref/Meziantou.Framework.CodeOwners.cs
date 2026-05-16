@@ -3,20 +3,20 @@
 
 namespace Meziantou.Framework.CodeOwners
 {
-    public readonly struct CodeOwnersEntry : System.IEquatable<global::Meziantou.Framework.CodeOwners.CodeOwnersEntry>
+    public readonly struct CodeOwnersEntry : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersEntry>
     {
         public int PatternIndex { get => throw null; }
         public string Pattern { get => throw null; }
-        public global::Meziantou.Framework.CodeOwners.CodeOwnersEntryType EntryType { get => throw null; }
+        public Meziantou.Framework.CodeOwners.CodeOwnersEntryType EntryType { get => throw null; }
         public string? Member { get => throw null; }
-        public global::Meziantou.Framework.CodeOwners.CodeOwnersSection? Section { get => throw null; }
+        public Meziantou.Framework.CodeOwners.CodeOwnersSection? Section { get => throw null; }
         public bool IsOptional { get => throw null; }
         public override string ToString() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.CodeOwners.CodeOwnersEntry other) => throw null;
+        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersEntry other) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.CodeOwners.CodeOwnersEntry left, global::Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.CodeOwners.CodeOwnersEntry left, global::Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersEntry left, Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersEntry left, Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
     }
 
     public enum CodeOwnersEntryType
@@ -28,10 +28,10 @@ namespace Meziantou.Framework.CodeOwners
 
     public static class CodeOwnersParser
     {
-        public static System.Collections.Generic.IEnumerable<global::Meziantou.Framework.CodeOwners.CodeOwnersEntry> Parse(string content) => throw null;
+        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeOwners.CodeOwnersEntry> Parse(string content) => throw null;
     }
 
-    public readonly struct CodeOwnersSection : System.IEquatable<global::Meziantou.Framework.CodeOwners.CodeOwnersSection>
+    public readonly struct CodeOwnersSection : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersSection>
     {
         public string Name { get => throw null; }
         public int RequiredReviewerCount { get => throw null; }
@@ -41,9 +41,9 @@ namespace Meziantou.Framework.CodeOwners
         public bool HasDefaultOwners { get => throw null; }
         public override string ToString() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.CodeOwners.CodeOwnersSection other) => throw null;
+        public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersSection other) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.CodeOwners.CodeOwnersSection left, global::Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.CodeOwners.CodeOwnersSection left, global::Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;
+        public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersSection left, Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;
+        public static bool operator !=(Meziantou.Framework.CodeOwners.CodeOwnersSection left, Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;
     }
 }

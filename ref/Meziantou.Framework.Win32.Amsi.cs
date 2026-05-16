@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Win32
     [System.Runtime.Versioning.SupportedOSPlatform]
     public sealed class AmsiContext : System.IDisposable
     {
-        public static global::Meziantou.Framework.Win32.AmsiContext Create(string applicationName) => throw null;
-        public global::Meziantou.Framework.Win32.AmsiSession CreateSession() => throw null;
+        public static Meziantou.Framework.Win32.AmsiContext Create(string applicationName) => throw null;
+        public Meziantou.Framework.Win32.AmsiSession CreateSession() => throw null;
         public bool IsMalware(string payload, string contentName) => throw null;
         public bool IsMalware(byte[] payload, string contentName) => throw null;
         public void Dispose() { }

@@ -7,10 +7,10 @@ namespace Meziantou.Framework
     public sealed class ObjectMethodExecutor
     {
         public bool IsMethodAsync { get => throw null; }
-        public static global::Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo) => throw null;
-        public static global::Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo, object[]? parameterDefaultValues) => throw null;
+        public static Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo) => throw null;
+        public static Meziantou.Framework.ObjectMethodExecutor Create(System.Reflection.MethodInfo methodInfo, object[]? parameterDefaultValues) => throw null;
         public object? Execute(object? target, object?[]? parameters) => throw null;
-        public global::Meziantou.Framework.ObjectMethodExecutorAwaitable ExecuteAsync(object? target, object?[]? parameters) => throw null;
+        public Meziantou.Framework.ObjectMethodExecutorAwaitable ExecuteAsync(object? target, object?[]? parameters) => throw null;
     }
 
     public readonly struct ObjectMethodExecutorAwaitable

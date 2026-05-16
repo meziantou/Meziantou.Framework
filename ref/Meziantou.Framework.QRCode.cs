@@ -5,18 +5,18 @@ namespace Meziantou.Framework
 {
     public sealed class Barcode
     {
-        public global::Meziantou.Framework.BarcodeType Type { get => throw null; }
+        public Meziantou.Framework.BarcodeType Type { get => throw null; }
         public int Width { get => throw null; }
         public int Height { get => throw null; }
         public bool this[int row, int column] { get => throw null; }
-        public static global::Meziantou.Framework.Barcode CreateCode39(string data, bool includeChecksum = false) => throw null;
-        public static global::Meziantou.Framework.Barcode CreateCode128(string data) => throw null;
-        public static global::Meziantou.Framework.Barcode CreateCode93(string data) => throw null;
-        public static global::Meziantou.Framework.Barcode CreateEan8(string data, string? extension = null) => throw null;
-        public static global::Meziantou.Framework.Barcode CreateEan13(string data, string? extension = null) => throw null;
-        public static global::Meziantou.Framework.Barcode CreateUpcA(string data, string? extension = null) => throw null;
-        public static global::Meziantou.Framework.Barcode CreateCodabar(string data, char startCharacter = 'A', char stopCharacter = 'B') => throw null;
-        public static global::Meziantou.Framework.Barcode CreateItf(string data) => throw null;
+        public static Meziantou.Framework.Barcode CreateCode39(string data, bool includeChecksum = false) => throw null;
+        public static Meziantou.Framework.Barcode CreateCode128(string data) => throw null;
+        public static Meziantou.Framework.Barcode CreateCode93(string data) => throw null;
+        public static Meziantou.Framework.Barcode CreateEan8(string data, string? extension = null) => throw null;
+        public static Meziantou.Framework.Barcode CreateEan13(string data, string? extension = null) => throw null;
+        public static Meziantou.Framework.Barcode CreateUpcA(string data, string? extension = null) => throw null;
+        public static Meziantou.Framework.Barcode CreateCodabar(string data, char startCharacter = 'A', char stopCharacter = 'B') => throw null;
+        public static Meziantou.Framework.Barcode CreateItf(string data) => throw null;
     }
 
     public sealed class BarcodePngOptions
@@ -24,16 +24,16 @@ namespace Meziantou.Framework
         public int ModuleWidth { get => throw null; set { } }
         public int ModuleHeight { get => throw null; set { } }
         public int QuietZoneModules { get => throw null; set { } }
-        public global::Meziantou.Framework.Color DarkColor { get => throw null; set { } }
-        public global::Meziantou.Framework.Color LightColor { get => throw null; set { } }
+        public Meziantou.Framework.Color DarkColor { get => throw null; set { } }
+        public Meziantou.Framework.Color LightColor { get => throw null; set { } }
     }
 
     public static class BarcodePngRenderer
     {
-        public static byte[] ToPng(this global::Meziantou.Framework.Barcode barcode) => throw null;
-        public static byte[] ToPng(this global::Meziantou.Framework.Barcode barcode, global::Meziantou.Framework.BarcodePngOptions options) => throw null;
-        public static void WriteToPng(this global::Meziantou.Framework.Barcode barcode, System.IO.Stream stream) { }
-        public static void WriteToPng(this global::Meziantou.Framework.Barcode barcode, System.IO.Stream stream, global::Meziantou.Framework.BarcodePngOptions options) { }
+        public static byte[] ToPng(this Meziantou.Framework.Barcode barcode) => throw null;
+        public static byte[] ToPng(this Meziantou.Framework.Barcode barcode, Meziantou.Framework.BarcodePngOptions options) => throw null;
+        public static void WriteToPng(this Meziantou.Framework.Barcode barcode, System.IO.Stream stream) { }
+        public static void WriteToPng(this Meziantou.Framework.Barcode barcode, System.IO.Stream stream, Meziantou.Framework.BarcodePngOptions options) { }
     }
 
     public sealed class BarcodeSvgOptions
@@ -41,14 +41,14 @@ namespace Meziantou.Framework
         public int ModuleWidth { get => throw null; set { } }
         public int ModuleHeight { get => throw null; set { } }
         public int QuietZoneModules { get => throw null; set { } }
-        public global::Meziantou.Framework.Color DarkColor { get => throw null; set { } }
-        public global::Meziantou.Framework.Color LightColor { get => throw null; set { } }
+        public Meziantou.Framework.Color DarkColor { get => throw null; set { } }
+        public Meziantou.Framework.Color LightColor { get => throw null; set { } }
     }
 
     public static class BarcodeSvgRenderer
     {
-        public static string ToSvg(this global::Meziantou.Framework.Barcode barcode) => throw null;
-        public static string ToSvg(this global::Meziantou.Framework.Barcode barcode, global::Meziantou.Framework.BarcodeSvgOptions options) => throw null;
+        public static string ToSvg(this Meziantou.Framework.Barcode barcode) => throw null;
+        public static string ToSvg(this Meziantou.Framework.Barcode barcode, Meziantou.Framework.BarcodeSvgOptions options) => throw null;
     }
 
     public enum BarcodeType
@@ -63,31 +63,31 @@ namespace Meziantou.Framework
         Itf = 7
     }
 
-    public readonly struct Color : System.IEquatable<global::Meziantou.Framework.Color>
+    public readonly struct Color : System.IEquatable<Meziantou.Framework.Color>
     {
-        public static global::Meziantou.Framework.Color Transparent { get => throw null; }
-        public static global::Meziantou.Framework.Color Black { get => throw null; }
-        public static global::Meziantou.Framework.Color White { get => throw null; }
+        public static Meziantou.Framework.Color Transparent { get => throw null; }
+        public static Meziantou.Framework.Color Black { get => throw null; }
+        public static Meziantou.Framework.Color White { get => throw null; }
         public byte Alpha { get => throw null; }
         public byte Red { get => throw null; }
         public byte Green { get => throw null; }
         public byte Blue { get => throw null; }
-        public static global::Meziantou.Framework.Color FromRgb(byte red, byte green, byte blue) => throw null;
-        public static global::Meziantou.Framework.Color FromRgb(int red, int green, int blue) => throw null;
-        public static global::Meziantou.Framework.Color FromArgb(byte alpha, byte red, byte green, byte blue) => throw null;
-        public static global::Meziantou.Framework.Color FromArgb(int alpha, int red, int green, int blue) => throw null;
-        public static global::Meziantou.Framework.Color FromArgb(uint argb) => throw null;
+        public static Meziantou.Framework.Color FromRgb(byte red, byte green, byte blue) => throw null;
+        public static Meziantou.Framework.Color FromRgb(int red, int green, int blue) => throw null;
+        public static Meziantou.Framework.Color FromArgb(byte alpha, byte red, byte green, byte blue) => throw null;
+        public static Meziantou.Framework.Color FromArgb(int alpha, int red, int green, int blue) => throw null;
+        public static Meziantou.Framework.Color FromArgb(uint argb) => throw null;
         public uint ToArgb() => throw null;
-        public global::Meziantou.Framework.Color WithAlpha(byte alpha) => throw null;
+        public Meziantou.Framework.Color WithAlpha(byte alpha) => throw null;
         public string ToCssString() => throw null;
-        public static global::Meziantou.Framework.Color Parse(string value) => throw null;
-        public static bool TryParse(string? value, out global::Meziantou.Framework.Color color) => throw null;
-        public bool Equals(global::Meziantou.Framework.Color other) => throw null;
+        public static Meziantou.Framework.Color Parse(string value) => throw null;
+        public static bool TryParse(string? value, out Meziantou.Framework.Color color) => throw null;
+        public bool Equals(Meziantou.Framework.Color other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.Color left, global::Meziantou.Framework.Color right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.Color left, global::Meziantou.Framework.Color right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Color left, Meziantou.Framework.Color right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Color left, Meziantou.Framework.Color right) => throw null;
     }
 
     public enum ErrorCorrectionLevel
@@ -113,16 +113,16 @@ namespace Meziantou.Framework
 
     public sealed class QRCode
     {
-        public global::Meziantou.Framework.QRCodeType Type { get => throw null; }
+        public Meziantou.Framework.QRCodeType Type { get => throw null; }
         public int Version { get => throw null; }
         public int Width { get => throw null; }
         public int Height { get => throw null; }
         public int Size { get => throw null; }
         public bool this[int row, int column] { get => throw null; }
-        public static global::Meziantou.Framework.QRCode Create(string data, global::Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
-        public static global::Meziantou.Framework.QRCode Create(System.ReadOnlySpan<byte> data, global::Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
-        public static global::Meziantou.Framework.QRCode CreateMicroQR(string data, global::Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 0) => throw null;
-        public static global::Meziantou.Framework.QRCode CreateRMQR(string data, global::Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
+        public static Meziantou.Framework.QRCode Create(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
+        public static Meziantou.Framework.QRCode Create(System.ReadOnlySpan<byte> data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
+        public static Meziantou.Framework.QRCode CreateMicroQR(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 0) => throw null;
+        public static Meziantou.Framework.QRCode CreateRMQR(string data, Meziantou.Framework.ErrorCorrectionLevel errorCorrectionLevel = 1) => throw null;
     }
 
     public sealed class QRCodeConsoleOptions
@@ -135,17 +135,17 @@ namespace Meziantou.Framework
 
     public static class QRCodeConsoleRenderer
     {
-        public static void WriteToConsole(this global::Meziantou.Framework.QRCode qrCode) { }
-        public static void WriteToConsole(this global::Meziantou.Framework.QRCode qrCode, global::Meziantou.Framework.QRCodeConsoleOptions options) { }
-        public static void WriteTo(this global::Meziantou.Framework.QRCode qrCode, System.IO.TextWriter writer) { }
-        public static void WriteTo(this global::Meziantou.Framework.QRCode qrCode, System.IO.TextWriter writer, global::Meziantou.Framework.QRCodeConsoleOptions options) { }
-        public static string ToConsoleString(this global::Meziantou.Framework.QRCode qrCode) => throw null;
-        public static string ToConsoleString(this global::Meziantou.Framework.QRCode qrCode, global::Meziantou.Framework.QRCodeConsoleOptions options) => throw null;
+        public static void WriteToConsole(this Meziantou.Framework.QRCode qrCode) { }
+        public static void WriteToConsole(this Meziantou.Framework.QRCode qrCode, Meziantou.Framework.QRCodeConsoleOptions options) { }
+        public static void WriteTo(this Meziantou.Framework.QRCode qrCode, System.IO.TextWriter writer) { }
+        public static void WriteTo(this Meziantou.Framework.QRCode qrCode, System.IO.TextWriter writer, Meziantou.Framework.QRCodeConsoleOptions options) { }
+        public static string ToConsoleString(this Meziantou.Framework.QRCode qrCode) => throw null;
+        public static string ToConsoleString(this Meziantou.Framework.QRCode qrCode, Meziantou.Framework.QRCodeConsoleOptions options) => throw null;
     }
 
     public static class QRCodePayload
     {
-        public static string Wifi(string ssid, string? password = null, global::Meziantou.Framework.WifiAuthentication authentication = 2, bool hidden = false) => throw null;
+        public static string Wifi(string ssid, string? password = null, Meziantou.Framework.WifiAuthentication authentication = 2, bool hidden = false) => throw null;
         public static string VCard(string lastName, string? firstName = null, string? phone = null, string? email = null, string? organization = null, string? title = null, string? url = null, string? address = null) => throw null;
         public static string Email(string address, string? subject = null, string? body = null) => throw null;
         public static string Phone(string number) => throw null;
@@ -153,7 +153,7 @@ namespace Meziantou.Framework
         public static string Geolocation(double latitude, double longitude) => throw null;
         public static string CalendarEvent(string summary, System.DateTime start, System.DateTime end, string? location = null, string? description = null) => throw null;
         public static string MeCard(string lastName, string? firstName = null, string? phone = null, string? email = null, string? organization = null, string? url = null, string? address = null, string? note = null) => throw null;
-        public static string OneTimePassword(global::Meziantou.Framework.OneTimePasswordType type, string secret, string accountName, string? issuer = null, global::Meziantou.Framework.OneTimePasswordAlgorithm algorithm = 0, int digits = 6, int period = 30, long? counter = null) => throw null;
+        public static string OneTimePassword(Meziantou.Framework.OneTimePasswordType type, string secret, string accountName, string? issuer = null, Meziantou.Framework.OneTimePasswordAlgorithm algorithm = 0, int digits = 6, int period = 30, long? counter = null) => throw null;
         public static string Bitcoin(string address, System.Decimal? amount = null, string? label = null, string? message = null) => throw null;
         public static string SepaPayment(string beneficiaryName, string iban, System.Decimal amount, string? bic = null, string? remittanceReference = null, string? remittanceText = null, string? information = null) => throw null;
     }
@@ -162,32 +162,32 @@ namespace Meziantou.Framework
     {
         public int ModuleSize { get => throw null; set { } }
         public int QuietZoneModules { get => throw null; set { } }
-        public global::Meziantou.Framework.Color DarkColor { get => throw null; set { } }
-        public global::Meziantou.Framework.Color LightColor { get => throw null; set { } }
+        public Meziantou.Framework.Color DarkColor { get => throw null; set { } }
+        public Meziantou.Framework.Color LightColor { get => throw null; set { } }
     }
 
     public static class QRCodePngRenderer
     {
-        public static byte[] ToPng(this global::Meziantou.Framework.QRCode qrCode) => throw null;
-        public static byte[] ToPng(this global::Meziantou.Framework.QRCode qrCode, global::Meziantou.Framework.QRCodePngOptions options) => throw null;
-        public static void WriteToPng(this global::Meziantou.Framework.QRCode qrCode, System.IO.Stream stream) { }
-        public static void WriteToPng(this global::Meziantou.Framework.QRCode qrCode, System.IO.Stream stream, global::Meziantou.Framework.QRCodePngOptions options) { }
+        public static byte[] ToPng(this Meziantou.Framework.QRCode qrCode) => throw null;
+        public static byte[] ToPng(this Meziantou.Framework.QRCode qrCode, Meziantou.Framework.QRCodePngOptions options) => throw null;
+        public static void WriteToPng(this Meziantou.Framework.QRCode qrCode, System.IO.Stream stream) { }
+        public static void WriteToPng(this Meziantou.Framework.QRCode qrCode, System.IO.Stream stream, Meziantou.Framework.QRCodePngOptions options) { }
     }
 
     public sealed class QRCodeSvgOptions
     {
         public int ModuleSize { get => throw null; set { } }
         public int QuietZoneModules { get => throw null; set { } }
-        public global::Meziantou.Framework.Color DarkColor { get => throw null; set { } }
-        public global::Meziantou.Framework.Color LightColor { get => throw null; set { } }
+        public Meziantou.Framework.Color DarkColor { get => throw null; set { } }
+        public Meziantou.Framework.Color LightColor { get => throw null; set { } }
         public string? LogoImageHref { get => throw null; set { } }
         public int LogoSizePercent { get => throw null; set { } }
     }
 
     public static class QRCodeSvgRenderer
     {
-        public static string ToSvg(this global::Meziantou.Framework.QRCode qrCode) => throw null;
-        public static string ToSvg(this global::Meziantou.Framework.QRCode qrCode, global::Meziantou.Framework.QRCodeSvgOptions options) => throw null;
+        public static string ToSvg(this Meziantou.Framework.QRCode qrCode) => throw null;
+        public static string ToSvg(this Meziantou.Framework.QRCode qrCode, Meziantou.Framework.QRCodeSvgOptions options) => throw null;
     }
 
     public enum QRCodeType

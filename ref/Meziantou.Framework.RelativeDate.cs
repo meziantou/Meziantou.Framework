@@ -10,29 +10,29 @@ namespace Meziantou.Framework
 
     public static class LocalizationProvider
     {
-        public static global::Meziantou.Framework.ILocalizationProvider Current { get => throw null; set { } }
+        public static Meziantou.Framework.ILocalizationProvider Current { get => throw null; set { } }
     }
 
-    public readonly struct RelativeDate : System.IComparable, System.IComparable<global::Meziantou.Framework.RelativeDate>, System.IEquatable<global::Meziantou.Framework.RelativeDate>, System.IFormattable
+    public readonly struct RelativeDate : System.IComparable, System.IComparable<Meziantou.Framework.RelativeDate>, System.IEquatable<Meziantou.Framework.RelativeDate>, System.IFormattable
     {
         public RelativeDate(System.DateTime dateTime, System.TimeProvider? timeProvider) { }
         public RelativeDate(System.DateTime dateTime) { }
-        public static global::Meziantou.Framework.RelativeDate Get(System.DateTime dateTime) => throw null;
-        public static global::Meziantou.Framework.RelativeDate Get(System.DateTimeOffset dateTime) => throw null;
-        public static global::Meziantou.Framework.RelativeDate Get(System.DateTime dateTime, System.TimeProvider? timeProvider) => throw null;
-        public static global::Meziantou.Framework.RelativeDate Get(System.DateTimeOffset dateTime, System.TimeProvider? timeProvider) => throw null;
+        public static Meziantou.Framework.RelativeDate Get(System.DateTime dateTime) => throw null;
+        public static Meziantou.Framework.RelativeDate Get(System.DateTimeOffset dateTime) => throw null;
+        public static Meziantou.Framework.RelativeDate Get(System.DateTime dateTime, System.TimeProvider? timeProvider) => throw null;
+        public static Meziantou.Framework.RelativeDate Get(System.DateTimeOffset dateTime, System.TimeProvider? timeProvider) => throw null;
         public override string ToString() => throw null;
         public string ToString(string? format, System.IFormatProvider? formatProvider) => throw null;
         int System.IComparable.CompareTo(object? obj) => throw null;
-        public int CompareTo(global::Meziantou.Framework.RelativeDate other) => throw null;
+        public int CompareTo(Meziantou.Framework.RelativeDate other) => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.RelativeDate other) => throw null;
+        public bool Equals(Meziantou.Framework.RelativeDate other) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.RelativeDate date1, global::Meziantou.Framework.RelativeDate date2) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.RelativeDate date1, global::Meziantou.Framework.RelativeDate date2) => throw null;
-        public static bool operator <(global::Meziantou.Framework.RelativeDate left, global::Meziantou.Framework.RelativeDate right) => throw null;
-        public static bool operator <=(global::Meziantou.Framework.RelativeDate left, global::Meziantou.Framework.RelativeDate right) => throw null;
-        public static bool operator >(global::Meziantou.Framework.RelativeDate left, global::Meziantou.Framework.RelativeDate right) => throw null;
-        public static bool operator >=(global::Meziantou.Framework.RelativeDate left, global::Meziantou.Framework.RelativeDate right) => throw null;
+        public static bool operator ==(Meziantou.Framework.RelativeDate date1, Meziantou.Framework.RelativeDate date2) => throw null;
+        public static bool operator !=(Meziantou.Framework.RelativeDate date1, Meziantou.Framework.RelativeDate date2) => throw null;
+        public static bool operator <(Meziantou.Framework.RelativeDate left, Meziantou.Framework.RelativeDate right) => throw null;
+        public static bool operator <=(Meziantou.Framework.RelativeDate left, Meziantou.Framework.RelativeDate right) => throw null;
+        public static bool operator >(Meziantou.Framework.RelativeDate left, Meziantou.Framework.RelativeDate right) => throw null;
+        public static bool operator >=(Meziantou.Framework.RelativeDate left, Meziantou.Framework.RelativeDate right) => throw null;
     }
 }

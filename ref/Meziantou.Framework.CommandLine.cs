@@ -13,7 +13,7 @@ namespace Meziantou.Framework
 
     public sealed class CommandLineParser
     {
-        public static global::Meziantou.Framework.CommandLineParser Current { get => throw null; }
+        public static Meziantou.Framework.CommandLineParser Current { get => throw null; }
         public bool HelpRequested { get => throw null; }
         public void Parse(string[] args) { }
         public bool HasArgument(string name) => throw null;

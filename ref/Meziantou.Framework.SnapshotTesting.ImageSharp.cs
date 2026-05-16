@@ -10,6 +10,6 @@ namespace Meziantou.Framework.SnapshotTesting.ImageSharp
 
     public static class SnapsthotSettingsImageSharpExtensions
     {
-        public static void AddImageSharp(this global::Meziantou.Framework.SnapshotTesting.SnapshotSettings snapshotSettings, global::Meziantou.Framework.SnapshotTesting.ImageSharp.ImageComparisonSettings? settings = null) { }
+        public static void AddImageSharp(this Meziantou.Framework.SnapshotTesting.SnapshotSettings snapshotSettings, Meziantou.Framework.SnapshotTesting.ImageSharp.ImageComparisonSettings? settings = null) { }
     }
 }

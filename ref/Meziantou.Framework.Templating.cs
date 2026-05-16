@@ -3,10 +3,10 @@
 
 namespace Meziantou.Framework.Templating
 {
-    public class CodeBlock : global::Meziantou.Framework.Templating.ParsedBlock
+    public class CodeBlock : Meziantou.Framework.Templating.ParsedBlock
     {
         protected string EvalPrefixString { get => throw null; set { } }
-        public CodeBlock(global::Meziantou.Framework.Templating.Template template, string text, int index) : base(default(global::Meziantou.Framework.Templating.Template), default(string), default(int)) { }
+        public CodeBlock(Meziantou.Framework.Templating.Template template, string text, int index) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
         public override string BuildCode() => throw null;
     }
 
@@ -54,9 +54,9 @@ namespace Meziantou.Framework.Templating
 
     public class Output
     {
-        public global::Meziantou.Framework.Templating.Template Template { get => throw null; }
+        public Meziantou.Framework.Templating.Template Template { get => throw null; }
         public System.IO.TextWriter Writer { get => throw null; }
-        public Output(global::Meziantou.Framework.Templating.Template template, System.IO.TextWriter writer) { }
+        public Output(Meziantou.Framework.Templating.Template template, System.IO.TextWriter writer) { }
         public virtual void Write(object? value) { }
         public virtual void Write(string? value) { }
         public virtual void Write(string format, params object?[] args) { }
@@ -64,14 +64,14 @@ namespace Meziantou.Framework.Templating
 
     public class ParsedBlock
     {
-        public global::Meziantou.Framework.Templating.Template Template { get => throw null; }
+        public Meziantou.Framework.Templating.Template Template { get => throw null; }
         public string Text { get => throw null; }
         public int Index { get => throw null; }
         public int StartLine { get => throw null; }
         public int EndLine { get => throw null; }
         public int StartColumn { get => throw null; }
         public int EndColumn { get => throw null; }
-        public ParsedBlock(global::Meziantou.Framework.Templating.Template template, string text, int index) { }
+        public ParsedBlock(Meziantou.Framework.Templating.Template template, string text, int index) { }
         public virtual string BuildCode() => throw null;
         protected static string? EscapeVerbatimString(string? s) => throw null;
     }
@@ -83,10 +83,10 @@ namespace Meziantou.Framework.Templating
         public string? BaseClassFullTypeName { get => throw null; set { } }
         public string StartCodeBlockDelimiter { get => throw null; set { } }
         public string EndCodeBlockDelimiter { get => throw null; set { } }
-        public System.Collections.Generic.IList<global::Meziantou.Framework.Templating.ParsedBlock>? Blocks { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Templating.ParsedBlock>? Blocks { get => throw null; }
         public bool IsBuilt { get => throw null; }
         public string? SourceCode { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Templating.TemplateArgument> Arguments { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Templating.TemplateArgument> Arguments { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Usings { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> ReferencePaths { get => throw null; }
         public bool Debug { get => throw null; set { } }
@@ -103,8 +103,8 @@ namespace Meziantou.Framework.Templating
         public void Load(string text) { }
         public void Load(System.IO.TextReader reader) { }
         public void Build(System.Threading.CancellationToken cancellationToken) { }
-        protected virtual global::Meziantou.Framework.Templating.ParsedBlock CreateParsedBlock(string text, int index) => throw null;
-        protected virtual global::Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
+        protected virtual Meziantou.Framework.Templating.ParsedBlock CreateParsedBlock(string text, int index) => throw null;
+        protected virtual Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
         protected virtual Microsoft.CodeAnalysis.SyntaxTree CreateSyntaxTree(string source, System.Threading.CancellationToken cancellationToken) => throw null;
         protected virtual Microsoft.CodeAnalysis.MetadataReference[] CreateReferences() => throw null;
         protected virtual Microsoft.CodeAnalysis.CSharp.CSharpCompilation CreateCompilation(Microsoft.CodeAnalysis.SyntaxTree syntaxTree) => throw null;

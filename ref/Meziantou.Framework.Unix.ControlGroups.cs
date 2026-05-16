@@ -8,8 +8,8 @@ namespace Meziantou.Framework.Unix.ControlGroups
     public sealed class CGroup2
     {
         public string Name { get => throw null; }
-        public global::Meziantou.Framework.Unix.ControlGroups.CGroup2? Parent { get => throw null; }
-        public static global::Meziantou.Framework.Unix.ControlGroups.CGroup2 Root { get => throw null; }
+        public Meziantou.Framework.Unix.ControlGroups.CGroup2? Parent { get => throw null; }
+        public static Meziantou.Framework.Unix.ControlGroups.CGroup2 Root { get => throw null; }
         public void SetCpusetCpus(params System.ReadOnlySpan<int> cpus) { }
         public void SetCpusetCpusRaw(string cpuList) { }
         public int[]? GetCpusetCpus() => throw null;
@@ -20,8 +20,8 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public int[]? GetCpusetMemsEffective() => throw null;
         public void SetCpusetPartition(string partitionType) { }
         public string? GetCpusetPartition() => throw null;
-        public global::Meziantou.Framework.Unix.ControlGroups.CGroup2? GetChild(string name) => throw null;
-        public global::Meziantou.Framework.Unix.ControlGroups.CGroup2 CreateOrGetChild(string name) => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroup2? GetChild(string name) => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CGroup2 CreateOrGetChild(string name) => throw null;
         public void Delete() { }
         public bool Exists() => throw null;
         public void AssociateProcess(System.Diagnostics.Process process) { }
@@ -54,8 +54,8 @@ namespace Meziantou.Framework.Unix.ControlGroups
         public void Unfreeze() { }
         public bool IsFrozen() => throw null;
         public void Kill() { }
-        public global::Meziantou.Framework.Unix.ControlGroups.CpuStat? GetCpuStat() => throw null;
-        public global::Meziantou.Framework.Unix.ControlGroups.MemoryStat? GetMemoryStat() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.CpuStat? GetCpuStat() => throw null;
+        public Meziantou.Framework.Unix.ControlGroups.MemoryStat? GetMemoryStat() => throw null;
         public override string ToString() => throw null;
         public void SetHugeTlbMax(string pageSize, long? bytes) { }
         public long? GetHugeTlbMax(string pageSize) => throw null;

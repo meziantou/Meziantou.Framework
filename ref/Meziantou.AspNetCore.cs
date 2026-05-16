@@ -11,7 +11,7 @@ namespace Meziantou.AspNetCore
 }
 namespace Meziantou.AspNetCore.Diagnostics
 {
-    public sealed class MiddlewarePipelineDebugEndpoint : System.IEquatable<global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint>
+    public sealed class MiddlewarePipelineDebugEndpoint : System.IEquatable<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint>
     {
         [System.Text.Json.Serialization.JsonIgnore]
         public Microsoft.AspNetCore.Http.Endpoint Endpoint { get => throw null; init { } }
@@ -21,54 +21,54 @@ namespace Meziantou.AspNetCore.Diagnostics
         public int? Order { get => throw null; init { } }
         public required System.Collections.Generic.IReadOnlyList<string> HttpMethods { get => throw null; init { } }
         public override string ToString() => throw null;
-        public static bool operator !=(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? left, global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? right) => throw null;
-        public static bool operator ==(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? left, global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? right) => throw null;
+        public static bool operator !=(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? left, Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? right) => throw null;
+        public static bool operator ==(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? left, Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? other) => throw null;
+        public bool Equals(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint? other) => throw null;
     }
 
     public sealed class MiddlewarePipelineDebugInfoProvider
     {
         public MiddlewarePipelineDebugInfoProvider(System.IServiceProvider serviceProvider) { }
-        public global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot GetSnapshot() => throw null;
+        public Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot GetSnapshot() => throw null;
     }
 
-    public sealed class MiddlewarePipelineDebugMiddleware : System.IEquatable<global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware>
+    public sealed class MiddlewarePipelineDebugMiddleware : System.IEquatable<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware>
     {
         public required string Name { get => throw null; init { } }
         public required string DelegateType { get => throw null; init { } }
         public required string DelegateMethod { get => throw null; init { } }
-        public required System.Collections.Generic.IReadOnlyList<global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline> Branches { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline> Branches { get => throw null; init { } }
         public override string ToString() => throw null;
-        public static bool operator !=(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? left, global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? right) => throw null;
-        public static bool operator ==(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? left, global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? right) => throw null;
+        public static bool operator !=(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? left, Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? right) => throw null;
+        public static bool operator ==(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? left, Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? other) => throw null;
+        public bool Equals(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware? other) => throw null;
     }
 
-    public sealed class MiddlewarePipelineDebugPipeline : System.IEquatable<global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline>
+    public sealed class MiddlewarePipelineDebugPipeline : System.IEquatable<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline>
     {
-        public required System.Collections.Generic.IReadOnlyList<global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware> Middlewares { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware> Middlewares { get => throw null; init { } }
         public override string ToString() => throw null;
-        public static bool operator !=(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? left, global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? right) => throw null;
-        public static bool operator ==(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? left, global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? right) => throw null;
+        public static bool operator !=(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? left, Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? right) => throw null;
+        public static bool operator ==(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? left, Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? other) => throw null;
+        public bool Equals(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline? other) => throw null;
     }
 
-    public sealed class MiddlewarePipelineDebugSnapshot : System.IEquatable<global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot>
+    public sealed class MiddlewarePipelineDebugSnapshot : System.IEquatable<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot>
     {
-        public required global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline Pipeline { get => throw null; init { } }
-        public required System.Collections.Generic.IReadOnlyList<global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint> Endpoints { get => throw null; init { } }
+        public required Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugPipeline Pipeline { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint> Endpoints { get => throw null; init { } }
         public override string ToString() => throw null;
-        public static bool operator !=(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? left, global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? right) => throw null;
-        public static bool operator ==(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? left, global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? right) => throw null;
+        public static bool operator !=(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? left, Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? right) => throw null;
+        public static bool operator ==(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? left, Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? other) => throw null;
+        public bool Equals(Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot? other) => throw null;
     }
 
     public static class MiddlewarePipelineDebuggingServiceCollectionExtensions
@@ -78,7 +78,7 @@ namespace Meziantou.AspNetCore.Diagnostics
 
     public static class MiddlewarePipelineDebuggingWebApplicationExtensions
     {
-        public static global::Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot GetMiddlewarePipelineDebugSnapshot(this Microsoft.AspNetCore.Builder.WebApplication app) => throw null;
+        public static Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot GetMiddlewarePipelineDebugSnapshot(this Microsoft.AspNetCore.Builder.WebApplication app) => throw null;
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
         public static Microsoft.AspNetCore.Builder.RouteHandlerBuilder? MapMiddlewarePipelineDebugEndpoint(this Microsoft.AspNetCore.Builder.WebApplication app, string pattern = "/_debug/pipeline", bool developmentOnly = true) => throw null;
     }

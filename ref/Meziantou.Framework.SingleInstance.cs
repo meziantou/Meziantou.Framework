@@ -7,7 +7,7 @@ namespace Meziantou.Framework
     {
         public bool StartServer { get => throw null; set { } }
         public System.TimeSpan ClientConnectionTimeout { get => throw null; set { } }
-        public event System.EventHandler<global::Meziantou.Framework.SingleInstanceEventArgs>? NewInstance;
+        public event System.EventHandler<Meziantou.Framework.SingleInstanceEventArgs>? NewInstance;
         public SingleInstance(System.Guid applicationId) { }
         public bool StartApplication() => throw null;
         public bool NotifyFirstInstance(string[] args) => throw null;

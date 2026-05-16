@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Html
 {
-    public sealed class HtmlAttribute : global::Meziantou.Framework.Html.HtmlNode
+    public sealed class HtmlAttribute : Meziantou.Framework.Html.HtmlNode
     {
         public string NamespaceURI { get => throw null; set { } }
         public bool IsNamespace { get => throw null; }
@@ -11,11 +11,11 @@ namespace Meziantou.Framework.Html
         public bool IsValueDefined { get => throw null; set { } }
         public char QuoteChar { get => throw null; set { } }
         public char NameQuoteChar { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlElement OwnerElement { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement OwnerElement { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public int ParentIndex { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlAttribute NextSibling { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlAttribute PreviousSibling { get => throw null; }
+        public Meziantou.Framework.Html.HtmlAttribute NextSibling { get => throw null; }
+        public Meziantou.Framework.Html.HtmlAttribute PreviousSibling { get => throw null; }
         public string Value { get => throw null; set { } }
         #nullable disable
         public override void WriteTo(System.IO.TextWriter writer) { }
@@ -30,48 +30,48 @@ namespace Meziantou.Framework.Html
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
         #nullable restore
         #nullable disable
-        public override void CopyTo(global::Meziantou.Framework.Html.HtmlNode target, global::Meziantou.Framework.Html.HtmlCloneOptions options) { }
+        public override void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
         #nullable restore
     }
 
-    public sealed class HtmlAttributeList : System.Collections.Generic.ICollection<global::Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IList<global::Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IReadOnlyCollection<global::Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Html.HtmlAttribute>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Specialized.INotifyCollectionChanged
+    public sealed class HtmlAttributeList : System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IList<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Specialized.INotifyCollectionChanged
     {
-        public global::Meziantou.Framework.Html.HtmlNode Parent { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlAttribute this[string name] { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlAttribute this[string localName, string namespaceURI] { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlAttribute this[int index] { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlNode Parent { get => throw null; }
+        public Meziantou.Framework.Html.HtmlAttribute this[string name] { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlAttribute this[string localName, string namespaceURI] { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlAttribute this[int index] { get => throw null; set { } }
         public int Count { get => throw null; }
         public event System.Collections.Specialized.NotifyCollectionChangedEventHandler CollectionChanged;
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI) => throw null;
+        public Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI) => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI, string value) => throw null;
+        public Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI, string value) => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlAttribute Add(string name, string value) => throw null;
+        public Meziantou.Framework.Html.HtmlAttribute Add(string name, string value) => throw null;
         #nullable restore
         #nullable disable
-        public void Add(global::Meziantou.Framework.Html.HtmlAttribute item) { }
+        public void Add(Meziantou.Framework.Html.HtmlAttribute item) { }
         #nullable restore
         #nullable disable
-        public void Add(global::Meziantou.Framework.Html.HtmlAttribute attribute, bool replace) { }
+        public void Add(Meziantou.Framework.Html.HtmlAttribute attribute, bool replace) { }
         #nullable restore
         #nullable disable
         public string GetNamespacePrefixIfDefined(string namespaceURI) => throw null;
         #nullable restore
         public void RemoveAll() { }
         #nullable disable
-        public void Insert(int index, global::Meziantou.Framework.Html.HtmlAttribute item) { }
+        public void Insert(int index, Meziantou.Framework.Html.HtmlAttribute item) { }
         #nullable restore
         #nullable disable
-        public bool Contains(global::Meziantou.Framework.Html.HtmlAttribute item) => throw null;
+        public bool Contains(Meziantou.Framework.Html.HtmlAttribute item) => throw null;
         #nullable restore
         #nullable disable
-        public void CopyTo(global::Meziantou.Framework.Html.HtmlAttribute[] array, int arrayIndex) { }
+        public void CopyTo(Meziantou.Framework.Html.HtmlAttribute[] array, int arrayIndex) { }
         #nullable restore
         #nullable disable
-        public int IndexOf(global::Meziantou.Framework.Html.HtmlAttribute item) => throw null;
+        public int IndexOf(Meziantou.Framework.Html.HtmlAttribute item) => throw null;
         #nullable restore
         #nullable disable
         public int IndexOf(string name) => throw null;
@@ -81,7 +81,7 @@ namespace Meziantou.Framework.Html
         #nullable restore
         public bool RemoveAt(int index) => throw null;
         #nullable disable
-        public void RemoveRange(System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlAttribute> attributes) { }
+        public void RemoveRange(System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlAttribute> attributes) { }
         #nullable restore
         #nullable disable
         public bool RemoveByPrefix(string prefix, string localName) => throw null;
@@ -93,10 +93,10 @@ namespace Meziantou.Framework.Html
         public bool Remove(string name) => throw null;
         #nullable restore
         #nullable disable
-        public bool Remove(global::Meziantou.Framework.Html.HtmlAttribute item) => throw null;
+        public bool Remove(Meziantou.Framework.Html.HtmlAttribute item) => throw null;
         #nullable restore
         #nullable disable
-        public System.Collections.Generic.IEnumerator<global::Meziantou.Framework.Html.HtmlAttribute> GetEnumerator() => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Html.HtmlAttribute> GetEnumerator() => throw null;
         #nullable restore
         #nullable disable
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
@@ -136,9 +136,9 @@ namespace Meziantou.Framework.Html
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class HtmlComment : global::Meziantou.Framework.Html.HtmlNode
+    public sealed class HtmlComment : Meziantou.Framework.Html.HtmlNode
     {
-        public global::Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public string Name { get => throw null; set { } }
         public string InnerText { get => throw null; set { } }
         public string Value { get => throw null; set { } }
@@ -155,34 +155,34 @@ namespace Meziantou.Framework.Html
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
         #nullable restore
         #nullable disable
-        public override void CopyTo(global::Meziantou.Framework.Html.HtmlNode target, global::Meziantou.Framework.Html.HtmlCloneOptions options) { }
+        public override void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
         #nullable restore
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class HtmlDocument : global::Meziantou.Framework.Html.HtmlNode
+    public sealed class HtmlDocument : Meziantou.Framework.Html.HtmlNode
     {
         public System.Text.Encoding StreamEncoding { get => throw null; }
         public System.Text.Encoding DetectedEncoding { get => throw null; }
         public System.Uri BaseAddress { get => throw null; set { } }
         public bool ReaderWasRestarted { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlElement DocumentType { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlElement HtmlElement { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlElement BodyElement { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlElement HeadElement { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement DocumentType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement HtmlElement { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement BodyElement { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement HeadElement { get => throw null; }
         public string FilePath { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlOptions Options { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlOptions Options { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DeclaredNamespaces { get => throw null; }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DeclaredPrefixes { get => throw null; }
         public string InnerHtml { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public string Name { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlElement BaseElement { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlElement BaseElement { get => throw null; set { } }
         public bool IsXhtml { get => throw null; set { } }
         public bool IsValidXmlDocument { get => throw null; }
-        public event System.EventHandler<global::Meziantou.Framework.Html.HtmlDocumentParseEventArgs> Parsing;
-        public event System.EventHandler<global::Meziantou.Framework.Html.HtmlDocumentParseEventArgs> Parsed;
-        public HtmlDocument() : base(default(string), default(string), default(string), default(global::Meziantou.Framework.Html.HtmlDocument)) { }
+        public event System.EventHandler<Meziantou.Framework.Html.HtmlDocumentParseEventArgs> Parsing;
+        public event System.EventHandler<Meziantou.Framework.Html.HtmlDocumentParseEventArgs> Parsed;
+        public HtmlDocument() : base(default(string), default(string), default(string), default(Meziantou.Framework.Html.HtmlDocument)) { }
         #nullable disable
         public void LoadHtml(string html) { }
         #nullable restore
@@ -232,25 +232,25 @@ namespace Meziantou.Framework.Html
         protected override void GetNamespaceAttributes(System.Collections.Generic.IDictionary<string, string> namespaces) { }
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI) => throw null;
+        public Meziantou.Framework.Html.HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI) => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlText CreateText() => throw null;
+        public Meziantou.Framework.Html.HtmlText CreateText() => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlText CreateText(string value) => throw null;
+        public Meziantou.Framework.Html.HtmlText CreateText(string value) => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlElement CreateElement(string name) => throw null;
+        public Meziantou.Framework.Html.HtmlElement CreateElement(string name) => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlElement CreateElement(string prefix, string localName, string namespaceURI) => throw null;
+        public Meziantou.Framework.Html.HtmlElement CreateElement(string prefix, string localName, string namespaceURI) => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlDocument CreateDocument() => throw null;
+        public Meziantou.Framework.Html.HtmlDocument CreateDocument() => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlComment CreateComment() => throw null;
+        public Meziantou.Framework.Html.HtmlComment CreateComment() => throw null;
         #nullable restore
         #nullable disable
         public void Save(System.IO.TextWriter writer) { }
@@ -286,10 +286,10 @@ namespace Meziantou.Framework.Html
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlNode ImportNode(global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public Meziantou.Framework.Html.HtmlNode ImportNode(Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlNode ImportNode(global::Meziantou.Framework.Html.HtmlNode node, global::Meziantou.Framework.Html.HtmlCloneOptions cloneOptions) => throw null;
+        public Meziantou.Framework.Html.HtmlNode ImportNode(Meziantou.Framework.Html.HtmlNode node, Meziantou.Framework.Html.HtmlCloneOptions cloneOptions) => throw null;
         #nullable restore
         #nullable disable
         protected override void AddNamespacesInScope(System.Xml.XmlNamespaceScope scope, System.Collections.Generic.IDictionary<string, string> dictionary) { }
@@ -307,18 +307,18 @@ namespace Meziantou.Framework.Html
 
     public sealed class HtmlDocumentParseEventArgs : System.ComponentModel.CancelEventArgs
     {
-        public global::Meziantou.Framework.Html.HtmlReader Reader { get => throw null; }
+        public Meziantou.Framework.Html.HtmlReader Reader { get => throw null; }
         public System.Text.Encoding DetectedEncoding { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlNode CurrentNode { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlAttribute CurrentAttribute { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlNode CurrentNode { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlAttribute CurrentAttribute { get => throw null; set { } }
         public bool Continue { get => throw null; set { } }
         #nullable disable
-        public HtmlDocumentParseEventArgs(global::Meziantou.Framework.Html.HtmlReader reader) { }
+        public HtmlDocumentParseEventArgs(Meziantou.Framework.Html.HtmlReader reader) { }
         #nullable restore
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class HtmlElement : global::Meziantou.Framework.Html.HtmlNode
+    public sealed class HtmlElement : Meziantou.Framework.Html.HtmlNode
     {
         public bool IsDocumentType { get => throw null; }
         public char CloseChar { get => throw null; set { } }
@@ -326,7 +326,7 @@ namespace Meziantou.Framework.Html
         public string InnerHtml { get => throw null; set { } }
         public bool IsClosed { get => throw null; set { } }
         public bool IsEmpty { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public bool NoChild { get => throw null; set { } }
         public bool AlwaysClose { get => throw null; set { } }
         public bool DontCloseIfEmpty { get => throw null; set { } }
@@ -343,7 +343,7 @@ namespace Meziantou.Framework.Html
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
         #nullable restore
         #nullable disable
-        public override void CopyTo(global::Meziantou.Framework.Html.HtmlNode target, global::Meziantou.Framework.Html.HtmlCloneOptions options) { }
+        public override void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
         #nullable restore
     }
 
@@ -367,15 +367,15 @@ namespace Meziantou.Framework.Html
 
     public sealed class HtmlError
     {
-        public global::Meziantou.Framework.Html.HtmlNode Node { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlErrorType ErrorType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode Node { get => throw null; }
+        public Meziantou.Framework.Html.HtmlErrorType ErrorType { get => throw null; }
         public int Offset { get => throw null; }
         public int Line { get => throw null; }
         public int Column { get => throw null; }
         #nullable disable
-        public HtmlError(global::Meziantou.Framework.Html.HtmlReaderState state, global::Meziantou.Framework.Html.HtmlErrorType errorType) { }
+        public HtmlError(Meziantou.Framework.Html.HtmlReaderState state, Meziantou.Framework.Html.HtmlErrorType errorType) { }
         #nullable restore
-        public HtmlError(int line, int column, int offset, global::Meziantou.Framework.Html.HtmlErrorType errorType) { }
+        public HtmlError(int line, int column, int offset, Meziantou.Framework.Html.HtmlErrorType errorType) { }
         #nullable disable
         public override string ToString() => throw null;
         #nullable restore
@@ -415,34 +415,34 @@ namespace Meziantou.Framework.Html
     public static class HtmlMicroDataExtensions
     {
         #nullable disable
-        public static string GetItemScopePath(this global::Meziantou.Framework.Html.HtmlNode node, string separator) => throw null;
+        public static string GetItemScopePath(this Meziantou.Framework.Html.HtmlNode node, string separator) => throw null;
         #nullable restore
         #nullable disable
-        public static string GetItemScopePath(this global::Meziantou.Framework.Html.HtmlNode node, string separator, System.Func<string, string> typeParser) => throw null;
+        public static string GetItemScopePath(this Meziantou.Framework.Html.HtmlNode node, string separator, System.Func<string, string> typeParser) => throw null;
         #nullable restore
         #nullable disable
-        public static string GetItemScopeType(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static string GetItemScopeType(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
         #nullable disable
-        public static global::Meziantou.Framework.Html.HtmlNode GetItemScope(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static Meziantou.Framework.Html.HtmlNode GetItemScope(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
         #nullable disable
-        public static bool IsItemScope(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static bool IsItemScope(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
         #nullable disable
-        public static string GetItemType(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static string GetItemType(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
         #nullable disable
-        public static string GetItemProp(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static string GetItemProp(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
         #nullable disable
-        public static string GetItemRef(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static string GetItemRef(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
         #nullable disable
-        public static string GetItemId(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static string GetItemId(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
         #nullable disable
-        public static string GetItemValue(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static string GetItemValue(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
     }
 
@@ -457,55 +457,55 @@ namespace Meziantou.Framework.Html
         public static System.Xml.XmlNamespaceManager NamespaceManager { get => throw null; }
         protected string DeclaredNamespaceURI { get => throw null; }
         public int ParentIndex { get => throw null; }
-        public System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> NextSiblings { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode? NextSibling { get => throw null; }
-        public System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> PreviousSiblings { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode? PreviousSibling { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> NextSiblings { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? NextSibling { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> PreviousSiblings { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? PreviousSibling { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
+        public Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
         public bool RaisePropertyChanged { get => throw null; set { } }
         public int StreamOrder { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlNodeType NodeType { get; }
+        public Meziantou.Framework.Html.HtmlNodeType NodeType { get; }
         public int Depth { get => throw null; }
         public string Prefix { get => throw null; set { } }
         public string LocalName { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlDocument? OwnerDocument { get => throw null; }
+        public Meziantou.Framework.Html.HtmlDocument? OwnerDocument { get => throw null; }
         public string NamespaceURI { get => throw null; set { } }
         public object? Tag { get => throw null; set { } }
         public string? Value { get => throw null; set { } }
         public string Name { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlNode? ParentNode { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlElement? ParentElement { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? ParentNode { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement? ParentElement { get => throw null; }
         public string? Id { get => throw null; }
-        public System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlError> Errors { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlError> Errors { get => throw null; }
         public string OuterHtml { get => throw null; }
         public string InnerText { get => throw null; set { } }
         public string InnerHtml { get => throw null; set { } }
         public string OuterXml { get => throw null; }
         public string InnerXml { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlNode? FirstChild { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode? LastChild { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? FirstChild { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? LastChild { get => throw null; }
         public bool HasAttributes { get => throw null; }
         public bool HasChildNodes { get => throw null; }
         public System.Uri? BaseAddress { get => throw null; }
         public string? XPathExpression { get => throw null; }
         public System.Xml.IXmlNamespaceResolver ParentNamespaceResolver { get => throw null; }
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
-        protected HtmlNode(string prefix, string localName, string namespaceURI, global::Meziantou.Framework.Html.HtmlDocument ownerDocument) { }
+        protected HtmlNode(string prefix, string localName, string namespaceURI, Meziantou.Framework.Html.HtmlDocument ownerDocument) { }
         public override string ToString() => throw null;
         protected internal virtual void ClearCaches() { }
         protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null) { }
         protected virtual void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e) { }
         protected virtual void ParseName(string name, out string prefix, out string localName) => throw null;
         public virtual void ResetStreamOrder(int newOrder) { }
-        protected internal virtual void AddError(global::Meziantou.Framework.Html.HtmlError error) { }
+        protected internal virtual void AddError(Meziantou.Framework.Html.HtmlError error) { }
         protected internal virtual void ClearErrors() { }
-        public global::Meziantou.Framework.Html.HtmlAttribute SetAttribute(string localName, string namespaceURI, string value) => throw null;
-        public global::Meziantou.Framework.Html.HtmlAttribute SetAttribute(string prefix, string localName, string namespaceURI, string value) => throw null;
+        public Meziantou.Framework.Html.HtmlAttribute SetAttribute(string localName, string namespaceURI, string value) => throw null;
+        public Meziantou.Framework.Html.HtmlAttribute SetAttribute(string prefix, string localName, string namespaceURI, string value) => throw null;
         public bool RemoveAttribute(string name) => throw null;
         public bool RemoveAttribute(string localName, string namespaceURI) => throw null;
         public bool RemoveAttributeByPrefix(string prefix, string localName) => throw null;
-        public global::Meziantou.Framework.Html.HtmlAttribute SetAttribute(string name, string value) => throw null;
+        public Meziantou.Framework.Html.HtmlAttribute SetAttribute(string name, string value) => throw null;
         public bool HasAttribute(string localName, string namespaceURI) => throw null;
         public bool HasNonNullNorWhitespaceAttribute(string name) => throw null;
         public bool HasAttribute(string name) => throw null;
@@ -515,100 +515,100 @@ namespace Meziantou.Framework.Html
         public string? GetNullifiedAttributeValue(string name) => throw null;
         public string? GetNullifiedAttributeValue(string localName, string namespaceURI) => throw null;
         public string GetAttributeValue(string localName, string namespaceURI, string defaultValue) => throw null;
-        public virtual void AppendChild(global::Meziantou.Framework.Html.HtmlNode newChild) { }
-        public virtual void InsertAfter(global::Meziantou.Framework.Html.HtmlNode newChild, global::Meziantou.Framework.Html.HtmlNode refChild) { }
-        public bool IsAncestor(global::Meziantou.Framework.Html.HtmlNode node) => throw null;
-        public virtual void InsertBefore(global::Meziantou.Framework.Html.HtmlNode newChild, global::Meziantou.Framework.Html.HtmlNode refChild) { }
-        public virtual void PrependChild(global::Meziantou.Framework.Html.HtmlNode newChild) { }
+        public virtual void AppendChild(Meziantou.Framework.Html.HtmlNode newChild) { }
+        public virtual void InsertAfter(Meziantou.Framework.Html.HtmlNode newChild, Meziantou.Framework.Html.HtmlNode refChild) { }
+        public bool IsAncestor(Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public virtual void InsertBefore(Meziantou.Framework.Html.HtmlNode newChild, Meziantou.Framework.Html.HtmlNode refChild) { }
+        public virtual void PrependChild(Meziantou.Framework.Html.HtmlNode newChild) { }
         public bool Remove() => throw null;
         public virtual bool Remove(bool keepChildren) => throw null;
         public virtual void RemoveAll() { }
-        public bool RemoveChild(global::Meziantou.Framework.Html.HtmlNode oldChild) => throw null;
-        public virtual bool RemoveChild(global::Meziantou.Framework.Html.HtmlNode oldChild, bool keepGrandChildren) => throw null;
-        public virtual void ReplaceChild(global::Meziantou.Framework.Html.HtmlNode newChild, global::Meziantou.Framework.Html.HtmlNode oldChild) { }
+        public bool RemoveChild(Meziantou.Framework.Html.HtmlNode oldChild) => throw null;
+        public virtual bool RemoveChild(Meziantou.Framework.Html.HtmlNode oldChild, bool keepGrandChildren) => throw null;
+        public virtual void ReplaceChild(Meziantou.Framework.Html.HtmlNode newChild, Meziantou.Framework.Html.HtmlNode oldChild) { }
         public virtual string GetNamespaceOfPrefix(string prefix) => throw null;
         public virtual string GetPrefixOfNamespace(string namespaceURI) => throw null;
-        public virtual global::Meziantou.Framework.Html.HtmlNode? GetParent(System.Func<global::Meziantou.Framework.Html.HtmlNode, bool> func) => throw null;
+        public virtual Meziantou.Framework.Html.HtmlNode? GetParent(System.Func<Meziantou.Framework.Html.HtmlNode, bool> func) => throw null;
         public System.Collections.Generic.IReadOnlyDictionary<string, string> GetAllNamespaces() => throw null;
         protected virtual void GetNamespaceAttributes(System.Collections.Generic.IDictionary<string, string> namespaces) { }
         public abstract void WriteTo(System.IO.TextWriter writer);
         public abstract void WriteContentTo(System.IO.TextWriter writer);
         public abstract void WriteTo(System.Xml.XmlWriter writer);
         public abstract void WriteContentTo(System.Xml.XmlWriter writer);
-        public global::Meziantou.Framework.Html.HtmlNode Clone() => throw null;
-        public global::Meziantou.Framework.Html.HtmlNode Clone(global::Meziantou.Framework.Html.HtmlCloneOptions options) => throw null;
-        public virtual void CopyTo(global::Meziantou.Framework.Html.HtmlNode target, global::Meziantou.Framework.Html.HtmlCloneOptions options) { }
-        public virtual global::Meziantou.Framework.Html.HtmlNode CreateNew() => throw null;
+        public Meziantou.Framework.Html.HtmlNode Clone() => throw null;
+        public Meziantou.Framework.Html.HtmlNode Clone(Meziantou.Framework.Html.HtmlCloneOptions options) => throw null;
+        public virtual void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
+        public virtual Meziantou.Framework.Html.HtmlNode CreateNew() => throw null;
         protected virtual void AddNamespacesInScope(System.Xml.XmlNamespaceScope scope, System.Collections.Generic.IDictionary<string, string> dictionary) { }
         public virtual System.Collections.Generic.IDictionary<string, string> GetNamespacesInScope(System.Xml.XmlNamespaceScope scope) => throw null;
         string System.Xml.IXmlNamespaceResolver.LookupNamespace(string prefix) => throw null;
         string System.Xml.IXmlNamespaceResolver.LookupPrefix(string namespaceName) => throw null;
         public System.Xml.XmlNode ImportAsXml(System.Xml.XmlDocument owner) => throw null;
         public virtual System.Xml.XmlNode ImportAsXml(System.Xml.XmlDocument owner, bool deep) => throw null;
-        public global::Meziantou.Framework.Html.HtmlNode? SelectSingleNode(string xpath) => throw null;
-        public global::Meziantou.Framework.Html.HtmlNode? SelectSingleNode(string xpath, System.Xml.XmlNamespaceManager? nsmgr) => throw null;
-        public global::Meziantou.Framework.Html.HtmlNode? SelectSingleNode(string xpath, global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
-        public global::Meziantou.Framework.Html.HtmlNode? SelectSingleNode(string xpath, System.Xml.XmlNamespaceManager? nsmgr, global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
-        public System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> SelectNodes(string xpath) => throw null;
-        public System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> SelectNodes(string xpath, System.Xml.XmlNamespaceManager? nsmgr) => throw null;
-        public System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> SelectNodes(string xpath, global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
-        public virtual System.Xml.XPath.IXPathNavigable CreateNavigable(global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
+        public Meziantou.Framework.Html.HtmlNode? SelectSingleNode(string xpath) => throw null;
+        public Meziantou.Framework.Html.HtmlNode? SelectSingleNode(string xpath, System.Xml.XmlNamespaceManager? nsmgr) => throw null;
+        public Meziantou.Framework.Html.HtmlNode? SelectSingleNode(string xpath, Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
+        public Meziantou.Framework.Html.HtmlNode? SelectSingleNode(string xpath, System.Xml.XmlNamespaceManager? nsmgr, Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> SelectNodes(string xpath) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> SelectNodes(string xpath, System.Xml.XmlNamespaceManager? nsmgr) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> SelectNodes(string xpath, Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
+        public virtual System.Xml.XPath.IXPathNavigable CreateNavigable(Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
         public System.Xml.XPath.XPathNavigator CreateNavigator() => throw null;
-        public virtual System.Xml.XPath.XPathNavigator CreateNavigator(global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
-        public virtual System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> SelectNodes(string xpath, System.Xml.XmlNamespaceManager? namespaceManager, global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
-        protected virtual System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> DoSelectNodes(string xpath, System.Xml.XmlNamespaceManager? nsmgr, global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
+        public virtual System.Xml.XPath.XPathNavigator CreateNavigator(Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
+        public virtual System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> SelectNodes(string xpath, System.Xml.XmlNamespaceManager? namespaceManager, Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
+        protected virtual System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> DoSelectNodes(string xpath, System.Xml.XmlNamespaceManager? nsmgr, Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) => throw null;
     }
 
-    public sealed class HtmlNodeDepthComparer : System.Collections.Generic.IComparer<global::Meziantou.Framework.Html.HtmlNode>
+    public sealed class HtmlNodeDepthComparer : System.Collections.Generic.IComparer<Meziantou.Framework.Html.HtmlNode>
     {
-        public global::Meziantou.Framework.Html.ListSortDirection Direction { get => throw null; set { } }
+        public Meziantou.Framework.Html.ListSortDirection Direction { get => throw null; set { } }
         #nullable disable
-        public int Compare(global::Meziantou.Framework.Html.HtmlNode x, global::Meziantou.Framework.Html.HtmlNode y) => throw null;
+        public int Compare(Meziantou.Framework.Html.HtmlNode x, Meziantou.Framework.Html.HtmlNode y) => throw null;
         #nullable restore
     }
 
     public static class HtmlNodeExtensions
     {
         #nullable disable
-        public static System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> Descendants(this global::Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> Descendants(this Meziantou.Framework.Html.HtmlNode node) => throw null;
         #nullable restore
     }
 
-    public sealed class HtmlNodeList : System.Collections.Generic.ICollection<global::Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IList<global::Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IReadOnlyCollection<global::Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Html.HtmlNode>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Specialized.INotifyCollectionChanged
+    public sealed class HtmlNodeList : System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IList<Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Html.HtmlNode>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Specialized.INotifyCollectionChanged
     {
-        public global::Meziantou.Framework.Html.HtmlNode this[string name] { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode this[string localName, string namespaceURI] { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode this[int index] { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlNode this[string name] { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode this[string localName, string namespaceURI] { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode this[int index] { get => throw null; set { } }
         public int Count { get => throw null; }
         public event System.Collections.Specialized.NotifyCollectionChangedEventHandler CollectionChanged;
         #nullable disable
-        public void Replace(global::Meziantou.Framework.Html.HtmlNode newChild, global::Meziantou.Framework.Html.HtmlNode oldChild) { }
+        public void Replace(Meziantou.Framework.Html.HtmlNode newChild, Meziantou.Framework.Html.HtmlNode oldChild) { }
         #nullable restore
         public void RemoveAll() { }
         #nullable disable
-        public void Insert(int index, global::Meziantou.Framework.Html.HtmlNode item) { }
+        public void Insert(int index, Meziantou.Framework.Html.HtmlNode item) { }
         #nullable restore
         #nullable disable
-        public void AddRange(System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Html.HtmlNode> nodes) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> nodes) { }
         #nullable restore
         #nullable disable
-        public void Add(global::Meziantou.Framework.Html.HtmlNode item) { }
+        public void Add(Meziantou.Framework.Html.HtmlNode item) { }
         #nullable restore
         public bool RemoveAt(int index) => throw null;
         #nullable disable
-        public bool Remove(global::Meziantou.Framework.Html.HtmlNode item) => throw null;
+        public bool Remove(Meziantou.Framework.Html.HtmlNode item) => throw null;
         #nullable restore
         #nullable disable
-        public int IndexOf(global::Meziantou.Framework.Html.HtmlNode item) => throw null;
+        public int IndexOf(Meziantou.Framework.Html.HtmlNode item) => throw null;
         #nullable restore
         #nullable disable
-        public bool Contains(global::Meziantou.Framework.Html.HtmlNode item) => throw null;
+        public bool Contains(Meziantou.Framework.Html.HtmlNode item) => throw null;
         #nullable restore
         #nullable disable
-        public void CopyTo(global::Meziantou.Framework.Html.HtmlNode[] array, int arrayIndex) { }
+        public void CopyTo(Meziantou.Framework.Html.HtmlNode[] array, int arrayIndex) { }
         #nullable restore
         #nullable disable
-        public System.Collections.Generic.IEnumerator<global::Meziantou.Framework.Html.HtmlNode> GetEnumerator() => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Html.HtmlNode> GetEnumerator() => throw null;
         #nullable restore
         #nullable disable
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
@@ -638,10 +638,10 @@ namespace Meziantou.Framework.Html
     public sealed class HtmlNodeNavigator : System.Xml.XPath.XPathNavigator
     {
         public object UnderlyingObject { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode CurrentNode { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions Options { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlDocument? Document { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode BaseNode { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode CurrentNode { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlNodeNavigatorOptions Options { get => throw null; }
+        public Meziantou.Framework.Html.HtmlDocument? Document { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode BaseNode { get => throw null; }
         public string BaseURI { get => throw null; }
         public string OuterXml { get => throw null; set { } }
         public bool IsEmptyElement { get => throw null; }
@@ -652,7 +652,7 @@ namespace Meziantou.Framework.Html
         public System.Xml.XPath.XPathNodeType NodeType { get => throw null; }
         public string Prefix { get => throw null; }
         public string Value { get => throw null; }
-        public HtmlNodeNavigator(global::Meziantou.Framework.Html.HtmlDocument? document, global::Meziantou.Framework.Html.HtmlNode currentNode, global::Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) { }
+        public HtmlNodeNavigator(Meziantou.Framework.Html.HtmlDocument? document, Meziantou.Framework.Html.HtmlNode currentNode, Meziantou.Framework.Html.HtmlNodeNavigatorOptions options) { }
         public override System.Xml.XPath.XPathNavigator Clone() => throw null;
         public override bool IsSamePosition(System.Xml.XPath.XPathNavigator other) => throw null;
         public override bool MoveTo(System.Xml.XPath.XPathNavigator other) => throw null;
@@ -710,16 +710,16 @@ namespace Meziantou.Framework.Html
         public bool ReaderRestartsOnEncodingDetected { get => throw null; set { } }
         public bool ReaderThrowsOnUnknownDetectedEncoding { get => throw null; set { } }
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlElementWriteOptions GetElementWriteOptions(string name) => throw null;
+        public Meziantou.Framework.Html.HtmlElementWriteOptions GetElementWriteOptions(string name) => throw null;
         #nullable restore
         #nullable disable
-        public void SetElementWriteOptions(string name, global::Meziantou.Framework.Html.HtmlElementWriteOptions options) { }
+        public void SetElementWriteOptions(string name, Meziantou.Framework.Html.HtmlElementWriteOptions options) { }
         #nullable restore
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlElementReadOptions GetElementReadOptions(string name) => throw null;
+        public Meziantou.Framework.Html.HtmlElementReadOptions GetElementReadOptions(string name) => throw null;
         #nullable restore
         #nullable disable
-        public void SetElementReadOptions(string name, global::Meziantou.Framework.Html.HtmlElementReadOptions options) { }
+        public void SetElementReadOptions(string name, Meziantou.Framework.Html.HtmlElementReadOptions options) { }
         #nullable restore
     }
 
@@ -745,25 +745,25 @@ namespace Meziantou.Framework.Html
     public sealed class HtmlReader
     {
         public System.IO.TextReader TextReader { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlOptions Options { get => throw null; }
-        public System.Collections.Generic.ICollection<global::Meziantou.Framework.Html.HtmlError> Errors { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlReaderState State { get => throw null; }
+        public Meziantou.Framework.Html.HtmlOptions Options { get => throw null; }
+        public System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlError> Errors { get => throw null; }
+        public Meziantou.Framework.Html.HtmlReaderState State { get => throw null; }
         public int FirstEncodingErrorOffset { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlParserState ParserState { get => throw null; }
+        public Meziantou.Framework.Html.HtmlParserState ParserState { get => throw null; }
         public System.Text.StringBuilder Value { get => throw null; }
         public bool IsRestartable { get => throw null; }
-        public event System.EventHandler<global::Meziantou.Framework.Html.HtmlReaderParseEventArgs> Parsing;
+        public event System.EventHandler<Meziantou.Framework.Html.HtmlReaderParseEventArgs> Parsing;
         #nullable disable
         public HtmlReader(System.IO.TextReader reader) { }
         #nullable restore
         #nullable disable
-        public HtmlReader(System.IO.TextReader reader, global::Meziantou.Framework.Html.HtmlOptions options) { }
+        public HtmlReader(System.IO.TextReader reader, Meziantou.Framework.Html.HtmlOptions options) { }
         #nullable restore
         public bool Restart() => throw null;
         public static bool IsAnyQuote(int character) => throw null;
         public static bool IsWhiteSpace(int character) => throw null;
         #nullable disable
-        public global::Meziantou.Framework.Html.HtmlReaderState CreateState(global::Meziantou.Framework.Html.HtmlParserState rawParserState, string rawValue) => throw null;
+        public Meziantou.Framework.Html.HtmlReaderState CreateState(Meziantou.Framework.Html.HtmlParserState rawParserState, string rawValue) => throw null;
         #nullable restore
         public bool Read() => throw null;
     }
@@ -777,7 +777,7 @@ namespace Meziantou.Framework.Html
         public char PreviousCharacter { get => throw null; set { } }
         public char CurrentCharacter { get => throw null; set { } }
         public char PeekCharacter { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlParserState State { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlParserState State { get => throw null; set { } }
         public System.Text.StringBuilder Value { get => throw null; }
         public System.Text.StringBuilder RawValue { get => throw null; }
         #nullable disable
@@ -788,29 +788,29 @@ namespace Meziantou.Framework.Html
     [System.Diagnostics.DebuggerDisplay]
     public sealed class HtmlReaderState
     {
-        public global::Meziantou.Framework.Html.HtmlReader Reader { get => throw null; }
+        public Meziantou.Framework.Html.HtmlReader Reader { get => throw null; }
         public char QuoteChar { get => throw null; }
         public int Offset { get => throw null; }
         public int Line { get => throw null; }
         public int Column { get => throw null; }
         public string RawValue { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlParserState RawParserState { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlFragmentType FragmentType { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlParserState ParserState { get => throw null; }
+        public Meziantou.Framework.Html.HtmlParserState RawParserState { get => throw null; }
+        public Meziantou.Framework.Html.HtmlFragmentType FragmentType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlParserState ParserState { get => throw null; }
         public string Value { get => throw null; }
         #nullable disable
-        public HtmlReaderState(global::Meziantou.Framework.Html.HtmlReader reader, global::Meziantou.Framework.Html.HtmlParserState rawParserState, string rawValue) { }
+        public HtmlReaderState(Meziantou.Framework.Html.HtmlReader reader, Meziantou.Framework.Html.HtmlParserState rawParserState, string rawValue) { }
         #nullable restore
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class HtmlText : global::Meziantou.Framework.Html.HtmlNode
+    public sealed class HtmlText : Meziantou.Framework.Html.HtmlNode
     {
         [System.ComponentModel.Browsable]
-        public global::Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
+        public Meziantou.Framework.Html.HtmlAttributeList Attributes { get => throw null; }
         [System.ComponentModel.Browsable]
-        public global::Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNodeList ChildNodes { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public bool IsWhitespace { get => throw null; }
         public bool IsCData { get => throw null; set { } }
         public string Name { get => throw null; set { } }
@@ -830,15 +830,15 @@ namespace Meziantou.Framework.Html
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
         #nullable restore
         #nullable disable
-        public override void CopyTo(global::Meziantou.Framework.Html.HtmlNode target, global::Meziantou.Framework.Html.HtmlCloneOptions options) { }
+        public override void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
         #nullable restore
     }
 
-    public sealed class HtmlXPathResult : global::Meziantou.Framework.Html.HtmlNode
+    public sealed class HtmlXPathResult : Meziantou.Framework.Html.HtmlNode
     {
         public object Result { get => throw null; }
         public string Value { get => throw null; set { } }
-        public global::Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         #nullable disable
         public override void WriteTo(System.IO.TextWriter writer) { }
         #nullable restore
@@ -855,12 +855,12 @@ namespace Meziantou.Framework.Html
 
     public sealed class HtmlXmlWriter : System.Xml.XmlWriter
     {
-        public global::Meziantou.Framework.Html.HtmlDocument OwnerDocument { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode Parent { get => throw null; }
-        public global::Meziantou.Framework.Html.HtmlNode Current { get => throw null; }
+        public Meziantou.Framework.Html.HtmlDocument OwnerDocument { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode Parent { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode Current { get => throw null; }
         public System.Xml.WriteState WriteState { get => throw null; }
         #nullable disable
-        public HtmlXmlWriter(global::Meziantou.Framework.Html.HtmlNode parent) { }
+        public HtmlXmlWriter(Meziantou.Framework.Html.HtmlNode parent) { }
         #nullable restore
         public override void Flush() { }
         #nullable disable

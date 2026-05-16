@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
     {
         public string? Name { get => throw null; }
         public bool IsCollectible { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<global::Meziantou.Framework.Diagnostics.ContextSnapshot.AssemblySnapshot> Assemblies { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.AssemblySnapshot> Assemblies { get => throw null; }
     }
 
     public sealed class AssemblySnapshot
@@ -18,8 +18,8 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public System.Version? Version { get => throw null; }
         public System.Reflection.AssemblyNameFlags Flags { get => throw null; }
         public System.Collections.Immutable.ImmutableArray? PublicKeyToken { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CultureInfo { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<global::Meziantou.Framework.Diagnostics.ContextSnapshot.ModuleSnapshot> Modules { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CultureInfo { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.ModuleSnapshot> Modules { get => throw null; }
     }
 
     public sealed class ConsoleSnapshot
@@ -27,8 +27,8 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public bool IsOutputRedirected { get => throw null; }
         public bool IsErrorRedirected { get => throw null; }
         public bool IsInputRedirected { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot OutEncoding { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot InputEncoding { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot OutEncoding { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.EncodingSnapshot InputEncoding { get => throw null; }
         public int BufferHeight { get => throw null; }
         public int BufferWidth { get => throw null; }
         public int LargestWindowHeight { get => throw null; }
@@ -44,32 +44,32 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
 
     public sealed class ContextSnapshotBuilder
     {
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddValue(string key, object? value) => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddValue(string key, object? value) => throw null;
         public System.Collections.Generic.IReadOnlyDictionary<string, object?> BuildSnapshot() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDefault() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCurrentProcess() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCpu() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddProcessorCount() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddSecurityProviders() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddPowerManagement() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddHypervisor() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddLocalTimeZone() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddOperatingSystem() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDotnetRuntime() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddUser() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCurrentDirectory() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddNewLine() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddMachineName() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddGarbageCollector() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDrives() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddSpecialFolderPaths() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddConsole() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAssemblyLoadContexts() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddThreadPool() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCulture() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddRuntimeFeatures() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCommonAppContext() => throw null;
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAppContextData() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDefault() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCurrentProcess() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCpu() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddProcessorCount() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddSecurityProviders() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddPowerManagement() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddHypervisor() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddLocalTimeZone() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddOperatingSystem() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDotnetRuntime() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddUser() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCurrentDirectory() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddNewLine() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddMachineName() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddGarbageCollector() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddDrives() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddSpecialFolderPaths() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddConsole() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAssemblyLoadContexts() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddThreadPool() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCulture() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddRuntimeFeatures() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddCommonAppContext() => throw null;
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder AddAppContextData() => throw null;
         public void AddEnvironmentVariables(System.EnvironmentVariableTarget target = 0) { }
     }
 
@@ -82,7 +82,7 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public double? NominalFrequency { get => throw null; }
         public double? MinFrequency { get => throw null; }
         public double? MaxFrequency { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.HardwareIntrinsicsSnapshot? HardwareIntrinsics { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.HardwareIntrinsicsSnapshot? HardwareIntrinsics { get => throw null; }
     }
 
     public sealed class CultureInfoSnapshot
@@ -95,13 +95,13 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
     {
         public bool GlobalizationInvariant { get => throw null; }
         public bool? UsePredefinedCulturesOnly { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CurrentCulture { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CurrentUICulture { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? DefaultThreadCurrentCulture { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? DefaultThreadCurrentUICulture { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CurrentCulture { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? CurrentUICulture { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? DefaultThreadCurrentCulture { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.CultureInfoSnapshot? DefaultThreadCurrentUICulture { get => throw null; }
     }
 
-    public sealed class CurrentProcessSnapshot : global::Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessSnapshot
+    public sealed class CurrentProcessSnapshot : Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessSnapshot
     {
         public string CommandLine { get => throw null; }
         public string? ProcessPath { get => throw null; }
@@ -237,8 +237,8 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
         public int Id { get => throw null; }
         public string ProcessName { get => throw null; }
         public System.DateTime StartTime { get => throw null; }
-        public global::Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessModuleSnapshot? MainModule { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<global::Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessModuleSnapshot> Modules { get => throw null; }
+        public Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessModuleSnapshot? MainModule { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.ProcessModuleSnapshot> Modules { get => throw null; }
         public System.TimeSpan UserProcessorTime { get => throw null; }
         public System.TimeSpan TotalProcessorTime { get => throw null; }
         public System.TimeSpan PrivilegedProcessorTime { get => throw null; }
@@ -267,9 +267,9 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot
     public sealed class SecurityProvidersSnapshot
     {
         public string? HealthStatus { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<global::Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> Antivirus { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<global::Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> Firewall { get => throw null; }
-        public System.Collections.Immutable.ImmutableArray<global::Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> AntiSpyware { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> Antivirus { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> Firewall { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Diagnostics.ContextSnapshot.SecurityProviderSnapshot> AntiSpyware { get => throw null; }
     }
 
     public sealed class SpecialFolderSnapshot

@@ -105,7 +105,7 @@ namespace Meziantou.Framework.Threading
 
     public static class MixedConsumerProducer
     {
-        public static System.Threading.Tasks.Task Process<T>(System.Collections.Generic.IEnumerable<T> initialItems, System.Threading.Tasks.ParallelOptions options, System.Func<global::Meziantou.Framework.Threading.MixedConsumerProducerContext<T>, T, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> action) => throw null;
+        public static System.Threading.Tasks.Task Process<T>(System.Collections.Generic.IEnumerable<T> initialItems, System.Threading.Tasks.ParallelOptions options, System.Func<Meziantou.Framework.Threading.MixedConsumerProducerContext<T>, T, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> action) => throw null;
     }
 
     public sealed class MixedConsumerProducerContext<T>
@@ -131,7 +131,7 @@ namespace Meziantou.Framework.Threading
     {
         public System.Threading.CancellationToken Token { get => throw null; }
         public bool IsCancellationRequested { get => throw null; }
-        public ResettableCancellationTokenSource(global::Meziantou.Framework.Threading.ResettableCancellationTokenSourceOptions options) { }
+        public ResettableCancellationTokenSource(Meziantou.Framework.Threading.ResettableCancellationTokenSourceOptions options) { }
         public ResettableCancellationTokenSource(bool cancelOnResetAndDispose) { }
         public void Cancel() { }
         public void CancelAfter(System.TimeSpan delay) { }

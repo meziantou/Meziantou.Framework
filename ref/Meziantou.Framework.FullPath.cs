@@ -4,88 +4,88 @@
 namespace Meziantou.Framework
 {
     [System.Text.Json.Serialization.JsonConverter]
-    public readonly struct FullPath : System.IComparable<global::Meziantou.Framework.FullPath>, System.IEquatable<global::Meziantou.Framework.FullPath>
+    public readonly struct FullPath : System.IComparable<Meziantou.Framework.FullPath>, System.IEquatable<Meziantou.Framework.FullPath>
     {
-        public static global::Meziantou.Framework.FullPath Empty { get => throw null; }
+        public static Meziantou.Framework.FullPath Empty { get => throw null; }
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
         public bool IsEmpty { get => throw null; }
         public string Value { get => throw null; }
         public string RawValue { get => throw null; }
-        public global::Meziantou.Framework.FullPath Parent { get => throw null; }
+        public Meziantou.Framework.FullPath Parent { get => throw null; }
         public string Name { get => throw null; }
         public string NameWithoutExtension { get => throw null; }
         public string Extension { get => throw null; }
-        public static implicit operator string(global::Meziantou.Framework.FullPath fullPath) => throw null;
-        public static bool operator ==(global::Meziantou.Framework.FullPath path1, global::Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.FullPath path1, global::Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator <(global::Meziantou.Framework.FullPath path1, global::Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator >(global::Meziantou.Framework.FullPath path1, global::Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator <=(global::Meziantou.Framework.FullPath path1, global::Meziantou.Framework.FullPath path2) => throw null;
-        public static bool operator >=(global::Meziantou.Framework.FullPath path1, global::Meziantou.Framework.FullPath path2) => throw null;
-        public static global::Meziantou.Framework.FullPath operator /(global::Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
-        public int CompareTo(global::Meziantou.Framework.FullPath other) => throw null;
-        public int CompareTo(global::Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
+        public static implicit operator string(Meziantou.Framework.FullPath fullPath) => throw null;
+        public static bool operator ==(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator !=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator <(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator >(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator <=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static bool operator >=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
+        public static Meziantou.Framework.FullPath operator /(Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
+        public int CompareTo(Meziantou.Framework.FullPath other) => throw null;
+        public int CompareTo(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.FullPath other) => throw null;
-        public bool Equals(global::Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
+        public bool Equals(Meziantou.Framework.FullPath other) => throw null;
+        public bool Equals(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
         public override int GetHashCode() => throw null;
         public int GetHashCode(bool ignoreCase) => throw null;
         public override string ToString() => throw null;
-        public string MakePathRelativeTo(global::Meziantou.Framework.FullPath rootPath) => throw null;
-        public bool IsChildOf(global::Meziantou.Framework.FullPath rootPath) => throw null;
+        public string MakePathRelativeTo(Meziantou.Framework.FullPath rootPath) => throw null;
+        public bool IsChildOf(Meziantou.Framework.FullPath rootPath) => throw null;
         public void CreateParentDirectory() { }
-        public global::Meziantou.Framework.FullPath ChangeExtension(string? extension) => throw null;
-        public static global::Meziantou.Framework.FullPath GetTempPath() => throw null;
-        public static global::Meziantou.Framework.FullPath GetTempFileName() => throw null;
-        public static global::Meziantou.Framework.FullPath CreateTempFile() => throw null;
-        public static global::Meziantou.Framework.FullPath CreateTempFile(string? prefix, string? suffix = ".tmp") => throw null;
-        public static global::Meziantou.Framework.FullPath CreateTempFile(global::Meziantou.Framework.FullPath? folder, string? prefix, string? suffix = ".tmp") => throw null;
-        public static global::Meziantou.Framework.FullPath GetFolderPath(SpecialFolder folder) => throw null;
+        public Meziantou.Framework.FullPath ChangeExtension(string? extension) => throw null;
+        public static Meziantou.Framework.FullPath GetTempPath() => throw null;
+        public static Meziantou.Framework.FullPath GetTempFileName() => throw null;
+        public static Meziantou.Framework.FullPath CreateTempFile() => throw null;
+        public static Meziantou.Framework.FullPath CreateTempFile(string? prefix, string? suffix = ".tmp") => throw null;
+        public static Meziantou.Framework.FullPath CreateTempFile(Meziantou.Framework.FullPath? folder, string? prefix, string? suffix = ".tmp") => throw null;
+        public static Meziantou.Framework.FullPath GetFolderPath(SpecialFolder folder) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform]
-        public static global::Meziantou.Framework.FullPath GetKnownFolderPath(global::Meziantou.Framework.KnownFolder knownFolder) => throw null;
-        public static global::Meziantou.Framework.FullPath CurrentDirectory() => throw null;
-        public static global::Meziantou.Framework.FullPath FromPath(string path) => throw null;
-        public static global::Meziantou.Framework.FullPath Combine(string rootPath, string relativePath) => throw null;
-        public static global::Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2) => throw null;
-        public static global::Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2, string path3) => throw null;
-        public static global::Meziantou.Framework.FullPath Combine(params string[] paths) => throw null;
-        public static global::Meziantou.Framework.FullPath Combine(global::Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
-        public static global::Meziantou.Framework.FullPath Combine(global::Meziantou.Framework.FullPath rootPath, string path1, string path2) => throw null;
-        public static global::Meziantou.Framework.FullPath Combine(global::Meziantou.Framework.FullPath rootPath, params string[] paths) => throw null;
+        public static Meziantou.Framework.FullPath GetKnownFolderPath(Meziantou.Framework.KnownFolder knownFolder) => throw null;
+        public static Meziantou.Framework.FullPath CurrentDirectory() => throw null;
+        public static Meziantou.Framework.FullPath FromPath(string path) => throw null;
+        public static Meziantou.Framework.FullPath Combine(string rootPath, string relativePath) => throw null;
+        public static Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2) => throw null;
+        public static Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2, string path3) => throw null;
+        public static Meziantou.Framework.FullPath Combine(params string[] paths) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string path1, string path2) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, params string[] paths) => throw null;
         #if NET10_0 || NET9_0
-        public static global::Meziantou.Framework.FullPath Combine(global::Meziantou.Framework.FullPath rootPath, params System.ReadOnlySpan<string> paths) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, params System.ReadOnlySpan<string> paths) => throw null;
         #endif
-        public static global::Meziantou.Framework.FullPath Combine(global::Meziantou.Framework.FullPath rootPath, string path1, string path2, string path3) => throw null;
-        public static global::Meziantou.Framework.FullPath FromFileSystemInfo(System.IO.FileSystemInfo? fsi) => throw null;
+        public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string path1, string path2, string path3) => throw null;
+        public static Meziantou.Framework.FullPath FromFileSystemInfo(System.IO.FileSystemInfo? fsi) => throw null;
         public bool IsSymbolicLink() => throw null;
-        public bool TryGetCanonicalPath([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.FullPath? result) => throw null;
-        public bool TryFindFirstAncestorOrSelf(System.Func<global::Meziantou.Framework.FullPath, bool> predicate, out global::Meziantou.Framework.FullPath result) => throw null;
-        public bool TryFindGitRepositoryRoot(out global::Meziantou.Framework.FullPath result) => throw null;
-        public global::Meziantou.Framework.FullPath FindRequiredGitRepositoryRoot() => throw null;
-        public bool TryFindFirstAncestor(System.Func<global::Meziantou.Framework.FullPath, bool> predicate, out global::Meziantou.Framework.FullPath result) => throw null;
-        public bool TryGetSymbolicLinkTarget([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.FullPath? result) => throw null;
-        public bool TryGetSymbolicLinkTarget(global::Meziantou.Framework.SymbolicLinkResolutionMode resolutionMode, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.FullPath? result) => throw null;
+        public bool TryGetCanonicalPath([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
+        public bool TryFindFirstAncestorOrSelf(System.Func<Meziantou.Framework.FullPath, bool> predicate, out Meziantou.Framework.FullPath result) => throw null;
+        public bool TryFindGitRepositoryRoot(out Meziantou.Framework.FullPath result) => throw null;
+        public Meziantou.Framework.FullPath FindRequiredGitRepositoryRoot() => throw null;
+        public bool TryFindFirstAncestor(System.Func<Meziantou.Framework.FullPath, bool> predicate, out Meziantou.Framework.FullPath result) => throw null;
+        public bool TryGetSymbolicLinkTarget([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
+        public bool TryGetSymbolicLinkTarget(Meziantou.Framework.SymbolicLinkResolutionMode resolutionMode, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform]
         public void OpenInExplorer() { }
         [System.Runtime.Versioning.SupportedOSPlatform]
         public string ToWindowsExtendedPath() => throw null;
     }
 
-    public sealed class FullPathComparer : System.Collections.Generic.IComparer<global::Meziantou.Framework.FullPath>, System.Collections.Generic.IEqualityComparer<global::Meziantou.Framework.FullPath>
+    public sealed class FullPathComparer : System.Collections.Generic.IComparer<Meziantou.Framework.FullPath>, System.Collections.Generic.IEqualityComparer<Meziantou.Framework.FullPath>
     {
-        public static global::Meziantou.Framework.FullPathComparer Default { get => throw null; }
-        public static global::Meziantou.Framework.FullPathComparer CaseSensitive { get => throw null; }
-        public static global::Meziantou.Framework.FullPathComparer CaseInsensitive { get => throw null; }
+        public static Meziantou.Framework.FullPathComparer Default { get => throw null; }
+        public static Meziantou.Framework.FullPathComparer CaseSensitive { get => throw null; }
+        public static Meziantou.Framework.FullPathComparer CaseInsensitive { get => throw null; }
         public bool IsCaseSensitive { get => throw null; }
-        public int Compare(global::Meziantou.Framework.FullPath x, global::Meziantou.Framework.FullPath y) => throw null;
-        public bool Equals(global::Meziantou.Framework.FullPath x, global::Meziantou.Framework.FullPath y) => throw null;
-        public int GetHashCode(global::Meziantou.Framework.FullPath obj) => throw null;
+        public int Compare(Meziantou.Framework.FullPath x, Meziantou.Framework.FullPath y) => throw null;
+        public bool Equals(Meziantou.Framework.FullPath x, Meziantou.Framework.FullPath y) => throw null;
+        public int GetHashCode(Meziantou.Framework.FullPath obj) => throw null;
     }
 
-    public sealed class FullPathJsonConverter : System.Text.Json.Serialization.JsonConverter<global::Meziantou.Framework.FullPath>
+    public sealed class FullPathJsonConverter : System.Text.Json.Serialization.JsonConverter<Meziantou.Framework.FullPath>
     {
-        public override global::Meziantou.Framework.FullPath Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) => throw null;
-        public override void Write(System.Text.Json.Utf8JsonWriter writer, global::Meziantou.Framework.FullPath value, System.Text.Json.JsonSerializerOptions options) { }
+        public override Meziantou.Framework.FullPath Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) => throw null;
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, Meziantou.Framework.FullPath value, System.Text.Json.JsonSerializerOptions options) { }
     }
 
     public sealed class KnownFolder
@@ -94,130 +94,130 @@ namespace Meziantou.Framework
         public string FolderType { get => throw null; }
         public System.Guid FolderId { get => throw null; }
         public string DefaultPath { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AccountPictures { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AddNewPrograms { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AdminTools { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AppDataDesktop { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AppDataDocuments { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AppDataFavorites { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AppDataProgramData { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ApplicationShortcuts { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AppsFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder AppUpdates { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder CameraRoll { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder CDBurning { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ChangeRemovePrograms { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder CommonAdminTools { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder CommonOEMLinks { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder CommonPrograms { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder CommonStartMenu { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder CommonStartup { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder CommonTemplates { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ComputerFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ConflictFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ConnectionsFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Contacts { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ControlPanelFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Cookies { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Desktop { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder DeviceMetadataStore { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Documents { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder DocumentsLibrary { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Downloads { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Favorites { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Fonts { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Games { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder GameTasks { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder History { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder HomeGroup { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder HomeGroupCurrentUser { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ImplicitAppShortcuts { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder InternetCache { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder InternetFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Libraries { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Links { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder LocalAppData { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder LocalAppDataLow { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder LocalizedResourcesDir { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Music { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder MusicLibrary { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder NetHood { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder NetworkFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Objects3D { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder OriginalImages { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PhotoAlbums { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PicturesLibrary { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Pictures { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Playlists { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PrintersFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PrintHood { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Profile { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ProgramData { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ProgramFiles { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ProgramFilesX64 { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ProgramFilesX86 { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ProgramFilesCommon { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ProgramFilesCommonX64 { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ProgramFilesCommonX86 { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Programs { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Public { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicDesktop { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicDocuments { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicDownloads { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicGameTasks { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicLibraries { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicMusic { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicPictures { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicRingtones { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicUserTiles { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder PublicVideos { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder QuickLaunch { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Recent { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder RecordedTVLibrary { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder RecycleBinFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder ResourceDir { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Ringtones { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder RoamingAppData { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder RoamedTileImages { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder RoamingTiles { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SampleMusic { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SamplePictures { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SamplePlaylists { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SampleVideos { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SavedGames { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SavedPictures { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SavedPicturesLibrary { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SavedSearches { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Screenshots { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SEARCH_CSC { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SearchHistory { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SearchHome { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SEARCH_MAPI { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SearchTemplates { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SendTo { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SidebarDefaultParts { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SidebarParts { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SkyDrive { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SkyDriveCameraRoll { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SkyDriveDocuments { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SkyDrivePictures { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder StartMenu { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Startup { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SyncManagerFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SyncResultsFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SyncSetupFolder { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder System { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder SystemX86 { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Templates { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder UserPinned { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder UserProfiles { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder UserProgramFiles { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder UserProgramFilesCommon { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder UsersFiles { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder UsersLibraries { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Videos { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder VideosLibrary { get => throw null; }
-        public static global::Meziantou.Framework.KnownFolder Windows { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AccountPictures { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AddNewPrograms { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AdminTools { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AppDataDesktop { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AppDataDocuments { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AppDataFavorites { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AppDataProgramData { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ApplicationShortcuts { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AppsFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder AppUpdates { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CameraRoll { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CDBurning { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ChangeRemovePrograms { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CommonAdminTools { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CommonOEMLinks { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CommonPrograms { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CommonStartMenu { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CommonStartup { get => throw null; }
+        public static Meziantou.Framework.KnownFolder CommonTemplates { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ComputerFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ConflictFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ConnectionsFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Contacts { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ControlPanelFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Cookies { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Desktop { get => throw null; }
+        public static Meziantou.Framework.KnownFolder DeviceMetadataStore { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Documents { get => throw null; }
+        public static Meziantou.Framework.KnownFolder DocumentsLibrary { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Downloads { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Favorites { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Fonts { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Games { get => throw null; }
+        public static Meziantou.Framework.KnownFolder GameTasks { get => throw null; }
+        public static Meziantou.Framework.KnownFolder History { get => throw null; }
+        public static Meziantou.Framework.KnownFolder HomeGroup { get => throw null; }
+        public static Meziantou.Framework.KnownFolder HomeGroupCurrentUser { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ImplicitAppShortcuts { get => throw null; }
+        public static Meziantou.Framework.KnownFolder InternetCache { get => throw null; }
+        public static Meziantou.Framework.KnownFolder InternetFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Libraries { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Links { get => throw null; }
+        public static Meziantou.Framework.KnownFolder LocalAppData { get => throw null; }
+        public static Meziantou.Framework.KnownFolder LocalAppDataLow { get => throw null; }
+        public static Meziantou.Framework.KnownFolder LocalizedResourcesDir { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Music { get => throw null; }
+        public static Meziantou.Framework.KnownFolder MusicLibrary { get => throw null; }
+        public static Meziantou.Framework.KnownFolder NetHood { get => throw null; }
+        public static Meziantou.Framework.KnownFolder NetworkFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Objects3D { get => throw null; }
+        public static Meziantou.Framework.KnownFolder OriginalImages { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PhotoAlbums { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PicturesLibrary { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Pictures { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Playlists { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PrintersFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PrintHood { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Profile { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramData { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramFiles { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramFilesX64 { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramFilesX86 { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramFilesCommon { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramFilesCommonX64 { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ProgramFilesCommonX86 { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Programs { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Public { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicDesktop { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicDocuments { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicDownloads { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicGameTasks { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicLibraries { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicMusic { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicPictures { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicRingtones { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicUserTiles { get => throw null; }
+        public static Meziantou.Framework.KnownFolder PublicVideos { get => throw null; }
+        public static Meziantou.Framework.KnownFolder QuickLaunch { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Recent { get => throw null; }
+        public static Meziantou.Framework.KnownFolder RecordedTVLibrary { get => throw null; }
+        public static Meziantou.Framework.KnownFolder RecycleBinFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder ResourceDir { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Ringtones { get => throw null; }
+        public static Meziantou.Framework.KnownFolder RoamingAppData { get => throw null; }
+        public static Meziantou.Framework.KnownFolder RoamedTileImages { get => throw null; }
+        public static Meziantou.Framework.KnownFolder RoamingTiles { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SampleMusic { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SamplePictures { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SamplePlaylists { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SampleVideos { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SavedGames { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SavedPictures { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SavedPicturesLibrary { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SavedSearches { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Screenshots { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SEARCH_CSC { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SearchHistory { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SearchHome { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SEARCH_MAPI { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SearchTemplates { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SendTo { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SidebarDefaultParts { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SidebarParts { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SkyDrive { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SkyDriveCameraRoll { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SkyDriveDocuments { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SkyDrivePictures { get => throw null; }
+        public static Meziantou.Framework.KnownFolder StartMenu { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Startup { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SyncManagerFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SyncResultsFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SyncSetupFolder { get => throw null; }
+        public static Meziantou.Framework.KnownFolder System { get => throw null; }
+        public static Meziantou.Framework.KnownFolder SystemX86 { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Templates { get => throw null; }
+        public static Meziantou.Framework.KnownFolder UserPinned { get => throw null; }
+        public static Meziantou.Framework.KnownFolder UserProfiles { get => throw null; }
+        public static Meziantou.Framework.KnownFolder UserProgramFiles { get => throw null; }
+        public static Meziantou.Framework.KnownFolder UserProgramFilesCommon { get => throw null; }
+        public static Meziantou.Framework.KnownFolder UsersFiles { get => throw null; }
+        public static Meziantou.Framework.KnownFolder UsersLibraries { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Videos { get => throw null; }
+        public static Meziantou.Framework.KnownFolder VideosLibrary { get => throw null; }
+        public static Meziantou.Framework.KnownFolder Windows { get => throw null; }
         public override string ToString() => throw null;
     }
 

@@ -31,21 +31,21 @@ namespace Meziantou.Framework
     public static class HtmlToMarkdown
     {
         public static string Convert(string html) => throw null;
-        public static string Convert(string html, global::Meziantou.Framework.HtmlToMarkdownOptions options) => throw null;
+        public static string Convert(string html, Meziantou.Framework.HtmlToMarkdownOptions options) => throw null;
     }
 
     public sealed class HtmlToMarkdownOptions
     {
-        public global::Meziantou.Framework.EmphasisMarker EmphasisMarker { get => throw null; set { } }
-        public global::Meziantou.Framework.HeadingStyle HeadingStyle { get => throw null; set { } }
-        public global::Meziantou.Framework.CodeBlockStyle CodeBlockStyle { get => throw null; set { } }
+        public Meziantou.Framework.EmphasisMarker EmphasisMarker { get => throw null; set { } }
+        public Meziantou.Framework.HeadingStyle HeadingStyle { get => throw null; set { } }
+        public Meziantou.Framework.CodeBlockStyle CodeBlockStyle { get => throw null; set { } }
         public char CodeBlockFenceCharacter { get => throw null; set { } }
         public char UnorderedListMarker { get => throw null; set { } }
         public string ThematicBreak { get => throw null; set { } }
-        public global::Meziantou.Framework.LineBreakStyle LineBreakStyle { get => throw null; set { } }
+        public Meziantou.Framework.LineBreakStyle LineBreakStyle { get => throw null; set { } }
         public bool UseSimplePunctuation { get => throw null; set { } }
-        public global::Meziantou.Framework.EmojiShortcodeMode EmojiShortcodeMode { get => throw null; set { } }
-        public global::Meziantou.Framework.UnknownElementHandling UnknownElementHandling { get => throw null; set { } }
+        public Meziantou.Framework.EmojiShortcodeMode EmojiShortcodeMode { get => throw null; set { } }
+        public Meziantou.Framework.UnknownElementHandling UnknownElementHandling { get => throw null; set { } }
     }
 
     public enum LineBreakStyle

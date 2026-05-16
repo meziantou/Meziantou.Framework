@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Win32
         public string? InitialDirectory { get => throw null; set { } }
         public string? SelectedPath { get => throw null; set { } }
         public bool ChangeCurrentDirectory { get => throw null; set { } }
-        public global::Meziantou.Framework.Win32.DialogResult ShowDialog() => throw null;
-        public global::Meziantou.Framework.Win32.DialogResult ShowDialog(nint owner) => throw null;
+        public Meziantou.Framework.Win32.DialogResult ShowDialog() => throw null;
+        public Meziantou.Framework.Win32.DialogResult ShowDialog(nint owner) => throw null;
     }
 }

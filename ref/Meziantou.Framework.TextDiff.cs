@@ -5,15 +5,15 @@ namespace Meziantou.Framework
 {
     public class TextChunker
     {
-        public static global::Meziantou.Framework.TextChunker Lines { get => throw null; }
-        public static global::Meziantou.Framework.TextChunker Words { get => throw null; }
-        public static global::Meziantou.Framework.TextChunker Characters { get => throw null; }
+        public static Meziantou.Framework.TextChunker Lines { get => throw null; }
+        public static Meziantou.Framework.TextChunker Words { get => throw null; }
+        public static Meziantou.Framework.TextChunker Characters { get => throw null; }
         public virtual System.Collections.Generic.IEnumerable<string> Chunk(System.ReadOnlySpan<char> value) => throw null;
     }
 
     public static class TextDiff
     {
-        public static global::Meziantou.Framework.TextDiffResult ComputeDiff(string oldText, string newText, global::Meziantou.Framework.TextDiffOptions? options = null) => throw null;
+        public static Meziantou.Framework.TextDiffResult ComputeDiff(string oldText, string newText, Meziantou.Framework.TextDiffOptions? options = null) => throw null;
     }
 
     public enum TextDiffAlgorithm
@@ -24,16 +24,16 @@ namespace Meziantou.Framework
         HuntSzymanski = 3
     }
 
-    public readonly struct TextDiffEntry : System.IEquatable<global::Meziantou.Framework.TextDiffEntry>
+    public readonly struct TextDiffEntry : System.IEquatable<Meziantou.Framework.TextDiffEntry>
     {
-        public global::Meziantou.Framework.TextDiffOperation Operation { get => throw null; }
+        public Meziantou.Framework.TextDiffOperation Operation { get => throw null; }
         public string Text { get => throw null; }
-        public TextDiffEntry(global::Meziantou.Framework.TextDiffOperation operation, string text) { }
-        public bool Equals(global::Meziantou.Framework.TextDiffEntry other) => throw null;
+        public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string text) { }
+        public bool Equals(Meziantou.Framework.TextDiffEntry other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.TextDiffEntry left, global::Meziantou.Framework.TextDiffEntry right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.TextDiffEntry left, global::Meziantou.Framework.TextDiffEntry right) => throw null;
+        public static bool operator ==(Meziantou.Framework.TextDiffEntry left, Meziantou.Framework.TextDiffEntry right) => throw null;
+        public static bool operator !=(Meziantou.Framework.TextDiffEntry left, Meziantou.Framework.TextDiffEntry right) => throw null;
         public override string ToString() => throw null;
     }
 
@@ -46,8 +46,8 @@ namespace Meziantou.Framework
 
     public sealed class TextDiffOptions
     {
-        public global::Meziantou.Framework.TextDiffAlgorithm Algorithm { get => throw null; set { } }
-        public global::Meziantou.Framework.TextChunker Chunker { get => throw null; set { } }
+        public Meziantou.Framework.TextDiffAlgorithm Algorithm { get => throw null; set { } }
+        public Meziantou.Framework.TextChunker Chunker { get => throw null; set { } }
         public bool IgnoreCase { get => throw null; set { } }
         public bool IgnoreWhitespace { get => throw null; set { } }
         public bool IgnoreEndOfLine { get => throw null; set { } }
@@ -55,7 +55,7 @@ namespace Meziantou.Framework
 
     public sealed class TextDiffResult
     {
-        public System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.TextDiffEntry> Entries { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextDiffEntry> Entries { get => throw null; }
         public bool HasDifferences { get => throw null; }
         public override string ToString() => throw null;
     }

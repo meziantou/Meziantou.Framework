@@ -34,10 +34,10 @@ namespace Meziantou.Framework
         [System.Runtime.CompilerServices.InterpolatedStringHandler]
         public ref struct AppendInterpolatedStringHandler
         {
-            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, global::Meziantou.Framework.ValueStringBuilder valueStringBuilder) { }
-            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, global::Meziantou.Framework.ValueStringBuilder valueStringBuilder, out bool shouldAppend) { }
-            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, global::Meziantou.Framework.ValueStringBuilder valueStringBuilder, System.IFormatProvider? provider) { }
-            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, global::Meziantou.Framework.ValueStringBuilder valueStringBuilder, System.IFormatProvider? provider, out bool shouldAppend) { }
+            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder) { }
+            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder, out bool shouldAppend) { }
+            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder, System.IFormatProvider? provider) { }
+            public AppendInterpolatedStringHandler(int literalLength, int formattedCount, Meziantou.Framework.ValueStringBuilder valueStringBuilder, System.IFormatProvider? provider, out bool shouldAppend) { }
             public void AppendLiteral(string value) { }
             public void AppendFormatted<T>(T value) { }
             public void AppendFormatted<T>(T value, string? format) { }

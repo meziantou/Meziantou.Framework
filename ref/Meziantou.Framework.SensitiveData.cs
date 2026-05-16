@@ -10,7 +10,7 @@ namespace Meziantou.Framework
         public int RevealInto(System.Span<T> destination) => throw null;
         public T[] RevealToArray() => throw null;
         public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction) { }
-        public global::Meziantou.Framework.SensitiveData<T> Clone() => throw null;
+        public Meziantou.Framework.SensitiveData<T> Clone() => throw null;
         public void Dispose() { }
     }
 }

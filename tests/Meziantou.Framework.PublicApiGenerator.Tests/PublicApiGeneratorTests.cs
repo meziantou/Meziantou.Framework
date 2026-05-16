@@ -116,6 +116,37 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Namespace_DoesNotOverQualifyWithGlobalQualifier()
+    {
+        await Validate("""
+            namespace Demo.Sample;
+
+            public sealed class B
+            {
+            }
+
+            public sealed class A
+            {
+                public Demo.Sample.B Parent => null;
+            }
+            """, """
+            #nullable enable
+
+            namespace Demo.Sample
+            {
+                public sealed class A
+                {
+                    public Demo.Sample.B Parent { get => throw null; }
+                }
+
+                public sealed class B
+                {
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task NestedTypes_Basic()
     {
         await Validate("""

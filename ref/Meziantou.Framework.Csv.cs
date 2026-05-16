@@ -24,18 +24,18 @@ namespace Meziantou.Framework.Csv
         public System.IO.TextReader BaseReader { get => throw null; }
         public bool EndOfStream { get => throw null; }
         public CsvReader(System.IO.TextReader textReader) { }
-        public System.Threading.Tasks.Task<global::Meziantou.Framework.Csv.CsvRow?> ReadRowAsync() => throw null;
-        protected virtual global::Meziantou.Framework.Csv.CsvColumn CreateColumn(string name, int index) => throw null;
-        protected virtual global::Meziantou.Framework.Csv.CsvRow CreateRow(System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Csv.CsvColumn>? columns, System.Collections.Generic.IReadOnlyList<string> values) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.Csv.CsvRow?> ReadRowAsync() => throw null;
+        protected virtual Meziantou.Framework.Csv.CsvColumn CreateColumn(string name, int index) => throw null;
+        protected virtual Meziantou.Framework.Csv.CsvRow CreateRow(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? columns, System.Collections.Generic.IReadOnlyList<string> values) => throw null;
     }
 
     public class CsvRow : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.Generic.IReadOnlyDictionary<string, string>, System.Collections.IEnumerable
     {
-        public System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Csv.CsvColumn>? Columns { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? Columns { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Values { get => throw null; }
         public string? this[int index] { get => throw null; }
         public string? this[string columnName] { get => throw null; }
-        public string? this[global::Meziantou.Framework.Csv.CsvColumn column] { get => throw null; }
+        public string? this[Meziantou.Framework.Csv.CsvColumn column] { get => throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 

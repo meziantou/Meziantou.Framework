@@ -5,12 +5,12 @@ namespace Meziantou.Framework.MediaTags
 {
     public static class MediaFile
     {
-        public static global::Meziantou.Framework.MediaTags.MediaTagResult<global::Meziantou.Framework.MediaTags.MediaTagInfo> ReadTags(string filePath) => throw null;
-        public static global::Meziantou.Framework.MediaTags.MediaTagResult<global::Meziantou.Framework.MediaTags.MediaTagInfo> ReadTags(System.IO.Stream stream, global::Meziantou.Framework.MediaTags.MediaFormat? format = null) => throw null;
-        public static global::Meziantou.Framework.MediaTags.MediaTagResult WriteTags(string filePath, global::Meziantou.Framework.MediaTags.MediaTagInfo tags) => throw null;
-        public static global::Meziantou.Framework.MediaTags.MediaTagResult WriteTags(System.IO.Stream inputStream, System.IO.Stream outputStream, global::Meziantou.Framework.MediaTags.MediaTagInfo tags, global::Meziantou.Framework.MediaTags.MediaFormat format) => throw null;
-        public static global::Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(string filePath) => throw null;
-        public static global::Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(System.IO.Stream stream) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult<Meziantou.Framework.MediaTags.MediaTagInfo> ReadTags(string filePath) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult<Meziantou.Framework.MediaTags.MediaTagInfo> ReadTags(System.IO.Stream stream, Meziantou.Framework.MediaTags.MediaFormat? format = null) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(string filePath, Meziantou.Framework.MediaTags.MediaTagInfo tags) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult WriteTags(System.IO.Stream inputStream, System.IO.Stream outputStream, Meziantou.Framework.MediaTags.MediaTagInfo tags, Meziantou.Framework.MediaTags.MediaFormat format) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(string filePath) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaFormat? DetectFormat(System.IO.Stream stream) => throw null;
     }
 
     public enum MediaFormat
@@ -26,7 +26,7 @@ namespace Meziantou.Framework.MediaTags
 
     public sealed class MediaPicture
     {
-        public global::Meziantou.Framework.MediaTags.MediaPictureType PictureType { get => throw null; set { } }
+        public Meziantou.Framework.MediaTags.MediaPictureType PictureType { get => throw null; set { } }
         public string? MimeType { get => throw null; set { } }
         public string? Description { get => throw null; set { } }
         public byte[] Data { get => throw null; set { } }
@@ -88,14 +88,14 @@ namespace Meziantou.Framework.MediaTags
         public int? Bpm { get => throw null; set { } }
         public System.TimeSpan? Duration { get => throw null; set { } }
         public bool? IsCompilation { get => throw null; set { } }
-        public System.Collections.Generic.IList<global::Meziantou.Framework.MediaTags.MediaPicture> Pictures { get => throw null; }
-        public global::Meziantou.Framework.MediaTags.ReplayGainInfo? ReplayGain { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.MediaTags.MediaPicture> Pictures { get => throw null; }
+        public Meziantou.Framework.MediaTags.ReplayGainInfo? ReplayGain { get => throw null; set { } }
         public string? MusicBrainzTrackId { get => throw null; set { } }
         public string? MusicBrainzArtistId { get => throw null; set { } }
         public string? MusicBrainzAlbumId { get => throw null; set { } }
         public string? MusicBrainzReleaseGroupId { get => throw null; set { } }
         public System.Collections.Generic.IDictionary<string, string> CustomFields { get => throw null; }
-        public global::Meziantou.Framework.MediaTags.MediaFormat? Format { get => throw null; set { } }
+        public Meziantou.Framework.MediaTags.MediaFormat? Format { get => throw null; set { } }
     }
 
     public readonly struct MediaTagResult<T>
@@ -104,22 +104,22 @@ namespace Meziantou.Framework.MediaTags
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
         public bool IsSuccess { get => throw null; }
         public T Value { get => throw null; }
-        public global::Meziantou.Framework.MediaTags.MediaTagError? Error { get => throw null; }
+        public Meziantou.Framework.MediaTags.MediaTagError? Error { get => throw null; }
         public string? ErrorMessage { get => throw null; }
-        public static global::Meziantou.Framework.MediaTags.MediaTagResult<T> Success(T value) => throw null;
-        public static global::Meziantou.Framework.MediaTags.MediaTagResult<T> Failure(global::Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult<T> Success(T value) => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult<T> Failure(Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
     }
 
-    public readonly struct ReplayGainInfo : System.IEquatable<global::Meziantou.Framework.MediaTags.ReplayGainInfo>
+    public readonly struct ReplayGainInfo : System.IEquatable<Meziantou.Framework.MediaTags.ReplayGainInfo>
     {
         public double? TrackGain { get => throw null; init { } }
         public double? TrackPeak { get => throw null; init { } }
         public double? AlbumGain { get => throw null; init { } }
         public double? AlbumPeak { get => throw null; init { } }
-        public bool Equals(global::Meziantou.Framework.MediaTags.ReplayGainInfo other) => throw null;
+        public bool Equals(Meziantou.Framework.MediaTags.ReplayGainInfo other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.MediaTags.ReplayGainInfo left, global::Meziantou.Framework.MediaTags.ReplayGainInfo right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.MediaTags.ReplayGainInfo left, global::Meziantou.Framework.MediaTags.ReplayGainInfo right) => throw null;
+        public static bool operator ==(Meziantou.Framework.MediaTags.ReplayGainInfo left, Meziantou.Framework.MediaTags.ReplayGainInfo right) => throw null;
+        public static bool operator !=(Meziantou.Framework.MediaTags.ReplayGainInfo left, Meziantou.Framework.MediaTags.ReplayGainInfo right) => throw null;
     }
 }

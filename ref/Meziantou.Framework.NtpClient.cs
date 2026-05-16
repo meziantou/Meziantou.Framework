@@ -6,15 +6,15 @@ namespace Meziantou.Framework.Ntp
     public sealed class NtpClient : System.IDisposable
     {
         public NtpClient(string server) { }
-        public NtpClient(string server, global::Meziantou.Framework.Ntp.NtpClientOptions? options) { }
-        public System.Threading.Tasks.Task<global::Meziantou.Framework.Ntp.NtpResponse> QueryAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public NtpClient(string server, Meziantou.Framework.Ntp.NtpClientOptions? options) { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpResponse> QueryAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public void Dispose() { }
     }
 
     public sealed class NtpClientOptions
     {
         public int Port { get => throw null; set { } }
-        public global::Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; set { } }
+        public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; set { } }
         public System.TimeSpan Timeout { get => throw null; set { } }
     }
 
@@ -28,8 +28,8 @@ namespace Meziantou.Framework.Ntp
 
     public sealed class NtpResponse
     {
-        public global::Meziantou.Framework.Ntp.NtpLeapIndicator LeapIndicator { get => throw null; }
-        public global::Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; }
+        public Meziantou.Framework.Ntp.NtpLeapIndicator LeapIndicator { get => throw null; }
+        public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; }
         public byte Stratum { get => throw null; }
         public sbyte PollInterval { get => throw null; }
         public sbyte Precision { get => throw null; }

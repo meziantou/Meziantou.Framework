@@ -3,21 +3,21 @@
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers
 {
-    public sealed class InlineImgTagHelper : global::Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
+    public sealed class InlineImgTagHelper : Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
     {
         public string? Src { get => throw null; set { } }
         public InlineImgTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache)) { }
         public override System.Threading.Tasks.Task ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput output) => throw null;
     }
 
-    public sealed class InlineScriptTagHelper : global::Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
+    public sealed class InlineScriptTagHelper : Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
     {
         public string? Src { get => throw null; set { } }
         public InlineScriptTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache)) { }
         public override System.Threading.Tasks.Task ProcessAsync(Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext context, Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput output) => throw null;
     }
 
-    public sealed class InlineStyleTagHelper : global::Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
+    public sealed class InlineStyleTagHelper : Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper
     {
         public string? Href { get => throw null; set { } }
         public InlineStyleTagHelper(Microsoft.AspNetCore.Hosting.IWebHostEnvironment webHostEnvironment, Microsoft.Extensions.Caching.Memory.IMemoryCache cache) : base(default(Microsoft.AspNetCore.Hosting.IWebHostEnvironment), default(Microsoft.Extensions.Caching.Memory.IMemoryCache)) { }

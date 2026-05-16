@@ -7,16 +7,16 @@ namespace Meziantou.Framework.Win32
     public sealed class RestartManager : System.IDisposable
     {
         public string SessionKey { get => throw null; }
-        public static global::Meziantou.Framework.Win32.RestartManager CreateSession() => throw null;
-        public static global::Meziantou.Framework.Win32.RestartManager JoinSession(string sessionKey) => throw null;
+        public static Meziantou.Framework.Win32.RestartManager CreateSession() => throw null;
+        public static Meziantou.Framework.Win32.RestartManager JoinSession(string sessionKey) => throw null;
         public void RegisterFile(string path) { }
         public void RegisterFiles(string[] paths) { }
         public bool IsResourcesLocked() => throw null;
         public System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingResources() => throw null;
-        public void Shutdown(global::Meziantou.Framework.Win32.RestartManagerShutdownType action) { }
-        public void Shutdown(global::Meziantou.Framework.Win32.RestartManagerShutdownType action, global::Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
+        public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action) { }
+        public void Shutdown(Meziantou.Framework.Win32.RestartManagerShutdownType action, Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
         public void Restart() { }
-        public void Restart(global::Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
+        public void Restart(Meziantou.Framework.Win32.RestartManagerWriteStatusCallback? statusCallback) { }
         public void Dispose() { }
         public static bool IsFileLocked(string path) => throw null;
         public static System.Collections.Generic.IReadOnlyList<System.Diagnostics.Process> GetProcessesLockingFile(string path) => throw null;

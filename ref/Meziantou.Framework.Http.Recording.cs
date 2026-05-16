@@ -3,23 +3,23 @@
 
 namespace Meziantou.Framework.Http.Recording
 {
-    public sealed class DefaultHttpRequestMatcher : global::Meziantou.Framework.Http.Recording.IHttpRequestMatcher
+    public sealed class DefaultHttpRequestMatcher : Meziantou.Framework.Http.Recording.IHttpRequestMatcher
     {
-        public static global::Meziantou.Framework.Http.Recording.DefaultHttpRequestMatcher Instance { get => throw null; }
-        public string ComputeFingerprint(global::Meziantou.Framework.Http.Recording.HttpRecordingEntry entry) => throw null;
+        public static Meziantou.Framework.Http.Recording.DefaultHttpRequestMatcher Instance { get => throw null; }
+        public string ComputeFingerprint(Meziantou.Framework.Http.Recording.HttpRecordingEntry entry) => throw null;
     }
 
-    public sealed class HarHttpRecordingStore : global::Meziantou.Framework.Http.Recording.IHttpRecordingStore
+    public sealed class HarHttpRecordingStore : Meziantou.Framework.Http.Recording.IHttpRecordingStore
     {
         public HarHttpRecordingStore(string filePath) { }
-        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Http.Recording.HttpRecordingEntry>> LoadAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        public System.Threading.Tasks.ValueTask SaveAsync(System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Http.Recording.HttpRecordingEntry> entries, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Http.Recording.HttpRecordingEntry>> LoadAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask SaveAsync(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Http.Recording.HttpRecordingEntry> entries, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
-    public sealed class HeaderRemovalSanitizer : global::Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer
+    public sealed class HeaderRemovalSanitizer : Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer
     {
         public HeaderRemovalSanitizer(params string[] headerNames) { }
-        public void Sanitize(global::Meziantou.Framework.Http.Recording.HttpRecordingEntry entry) { }
+        public void Sanitize(Meziantou.Framework.Http.Recording.HttpRecordingEntry entry) { }
     }
 
     public sealed class HttpRecordingEntry
@@ -44,8 +44,8 @@ namespace Meziantou.Framework.Http.Recording
 
     public sealed class HttpRecordingHandler : System.Net.Http.DelegatingHandler
     {
-        public HttpRecordingHandler(global::Meziantou.Framework.Http.Recording.IHttpRecordingStore store, global::Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
-        public HttpRecordingHandler(System.Net.Http.HttpMessageHandler innerHandler, global::Meziantou.Framework.Http.Recording.IHttpRecordingStore store, global::Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
+        public HttpRecordingHandler(Meziantou.Framework.Http.Recording.IHttpRecordingStore store, Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
+        public HttpRecordingHandler(System.Net.Http.HttpMessageHandler innerHandler, Meziantou.Framework.Http.Recording.IHttpRecordingStore store, Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
         public System.Threading.Tasks.Task InitializeAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
@@ -75,32 +75,32 @@ namespace Meziantou.Framework.Http.Recording
 
     public sealed class HttpRecordingOptions
     {
-        public global::Meziantou.Framework.Http.Recording.HttpRecordingMode Mode { get => throw null; set { } }
-        public global::Meziantou.Framework.Http.Recording.HttpRecordingMissBehavior MissBehavior { get => throw null; set { } }
-        public global::Meziantou.Framework.Http.Recording.IHttpRequestMatcher? RequestMatcher { get => throw null; set { } }
-        public global::Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer? Sanitizer { get => throw null; set { } }
+        public Meziantou.Framework.Http.Recording.HttpRecordingMode Mode { get => throw null; set { } }
+        public Meziantou.Framework.Http.Recording.HttpRecordingMissBehavior MissBehavior { get => throw null; set { } }
+        public Meziantou.Framework.Http.Recording.IHttpRequestMatcher? RequestMatcher { get => throw null; set { } }
+        public Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer? Sanitizer { get => throw null; set { } }
     }
 
     public interface IHttpRecordingSanitizer
     {
-        void Sanitize(global::Meziantou.Framework.Http.Recording.HttpRecordingEntry entry);
+        void Sanitize(Meziantou.Framework.Http.Recording.HttpRecordingEntry entry);
     }
 
     public interface IHttpRecordingStore
     {
-        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Http.Recording.HttpRecordingEntry>> LoadAsync(System.Threading.CancellationToken cancellationToken);
-        System.Threading.Tasks.ValueTask SaveAsync(System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Http.Recording.HttpRecordingEntry> entries, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Http.Recording.HttpRecordingEntry>> LoadAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask SaveAsync(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Http.Recording.HttpRecordingEntry> entries, System.Threading.CancellationToken cancellationToken);
     }
 
     public interface IHttpRequestMatcher
     {
-        string ComputeFingerprint(global::Meziantou.Framework.Http.Recording.HttpRecordingEntry entry);
+        string ComputeFingerprint(Meziantou.Framework.Http.Recording.HttpRecordingEntry entry);
     }
 
-    public sealed class JsonHttpRecordingStore : global::Meziantou.Framework.Http.Recording.IHttpRecordingStore
+    public sealed class JsonHttpRecordingStore : Meziantou.Framework.Http.Recording.IHttpRecordingStore
     {
         public JsonHttpRecordingStore(string filePath) { }
-        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Http.Recording.HttpRecordingEntry>> LoadAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        public System.Threading.Tasks.ValueTask SaveAsync(System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Http.Recording.HttpRecordingEntry> entries, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Http.Recording.HttpRecordingEntry>> LoadAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask SaveAsync(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Http.Recording.HttpRecordingEntry> entries, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 }

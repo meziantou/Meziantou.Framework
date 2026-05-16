@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Tds
     public sealed class TdsServer : System.IDisposable
     {
         public System.Collections.Generic.IReadOnlyList<int> Ports { get => throw null; }
-        public TdsServer(global::Meziantou.Framework.Tds.TdsServerOptions? options, global::Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticationHandler, global::Meziantou.Framework.Tds.Handler.TdsQueryDelegate queryHandler) { }
+        public TdsServer(Meziantou.Framework.Tds.TdsServerOptions? options, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticationHandler, Meziantou.Framework.Tds.Handler.TdsQueryDelegate queryHandler) { }
         public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public void Dispose() { }
     }
@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Tds
         public string? TlsPfxPassword { get => throw null; set { } }
         public string? TlsPemCertificatePath { get => throw null; set { } }
         public string? TlsPemPrivateKeyPath { get => throw null; set { } }
-        public global::Meziantou.Framework.Tds.TdsServerOptions AddTcpListener(int port = 1433, System.Net.IPAddress? bindAddress = null) => throw null;
+        public Meziantou.Framework.Tds.TdsServerOptions AddTcpListener(int port = 1433, System.Net.IPAddress? bindAddress = null) => throw null;
     }
 
     public sealed class TdsTcpListenerOptions
@@ -40,7 +40,7 @@ namespace Meziantou.Framework.Tds.Handler
         public string? ApplicationName { get => throw null; init { } }
     }
 
-    public delegate System.Threading.Tasks.ValueTask<global::Meziantou.Framework.Tds.Handler.TdsAuthenticationResult> TdsAuthenticationDelegate(global::Meziantou.Framework.Tds.Handler.TdsAuthenticationContext context, System.Threading.CancellationToken cancellationToken);
+    public delegate System.Threading.Tasks.ValueTask<Meziantou.Framework.Tds.Handler.TdsAuthenticationResult> TdsAuthenticationDelegate(Meziantou.Framework.Tds.Handler.TdsAuthenticationContext context, System.Threading.CancellationToken cancellationToken);
 
     public sealed class TdsAuthenticationResult
     {
@@ -51,16 +51,16 @@ namespace Meziantou.Framework.Tds.Handler
         public byte ErrorClass { get => throw null; }
         public string? Database { get => throw null; }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; }
-        public static global::Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Success(string? database = null, System.Security.Claims.ClaimsPrincipal? userContext = null) => throw null;
-        public static global::Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Fail(string message, uint errorNumber = 18456, byte errorState = 1, byte errorClass = 14) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Success(string? database = null, System.Security.Claims.ClaimsPrincipal? userContext = null) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsAuthenticationResult Fail(string message, uint errorNumber = 18456, byte errorState = 1, byte errorClass = 14) => throw null;
     }
 
     public sealed class TdsColumn
     {
         public string Name { get => throw null; }
-        public global::Meziantou.Framework.Tds.Handler.TdsColumnType ColumnType { get => throw null; }
+        public Meziantou.Framework.Tds.Handler.TdsColumnType ColumnType { get => throw null; }
         public bool IsNullable { get => throw null; }
-        public TdsColumn(string name, global::Meziantou.Framework.Tds.Handler.TdsColumnType columnType, bool isNullable = true) { }
+        public TdsColumn(string name, Meziantou.Framework.Tds.Handler.TdsColumnType columnType, bool isNullable = true) { }
     }
 
     public enum TdsColumnType
@@ -93,14 +93,14 @@ namespace Meziantou.Framework.Tds.Handler
     public sealed class TdsQueryContext
     {
         public required System.Net.EndPoint RemoteEndPoint { get => throw null; init { } }
-        public required global::Meziantou.Framework.Tds.Handler.TdsQueryRequestType RequestType { get => throw null; init { } }
+        public required Meziantou.Framework.Tds.Handler.TdsQueryRequestType RequestType { get => throw null; init { } }
         public string? CommandText { get => throw null; init { } }
         public string? ProcedureName { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Tds.Handler.TdsQueryParameter> Parameters { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Tds.Handler.TdsQueryParameter> Parameters { get => throw null; init { } }
         public System.Security.Claims.ClaimsPrincipal? UserContext { get => throw null; init { } }
     }
 
-    public delegate System.Threading.Tasks.ValueTask<global::Meziantou.Framework.Tds.Handler.TdsQueryResult> TdsQueryDelegate(global::Meziantou.Framework.Tds.Handler.TdsQueryContext context, System.Threading.CancellationToken cancellationToken);
+    public delegate System.Threading.Tasks.ValueTask<Meziantou.Framework.Tds.Handler.TdsQueryResult> TdsQueryDelegate(Meziantou.Framework.Tds.Handler.TdsQueryContext context, System.Threading.CancellationToken cancellationToken);
 
     public sealed class TdsQueryError
     {
@@ -114,7 +114,7 @@ namespace Meziantou.Framework.Tds.Handler
     {
         public required string Name { get => throw null; init { } }
         public required object Value { get => throw null; init { } }
-        public required global::Meziantou.Framework.Tds.Handler.TdsColumnType Type { get => throw null; init { } }
+        public required Meziantou.Framework.Tds.Handler.TdsColumnType Type { get => throw null; init { } }
         public bool IsNull { get => throw null; }
         public string? AsString() => throw null;
         public int? AsInt32() => throw null;
@@ -136,14 +136,14 @@ namespace Meziantou.Framework.Tds.Handler
     public sealed class TdsQueryResult
     {
         public System.Collections.ObjectModel.Collection<string> InfoMessages { get => throw null; }
-        public System.Collections.ObjectModel.Collection<global::Meziantou.Framework.Tds.Handler.TdsResultSet> ResultSets { get => throw null; }
-        public global::Meziantou.Framework.Tds.Handler.TdsQueryError? Error { get => throw null; set { } }
-        public static global::Meziantou.Framework.Tds.Handler.TdsQueryResult FromError(global::Meziantou.Framework.Tds.Handler.TdsQueryError error) => throw null;
+        public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.Handler.TdsResultSet> ResultSets { get => throw null; }
+        public Meziantou.Framework.Tds.Handler.TdsQueryError? Error { get => throw null; set { } }
+        public static Meziantou.Framework.Tds.Handler.TdsQueryResult FromError(Meziantou.Framework.Tds.Handler.TdsQueryError error) => throw null;
     }
 
     public sealed class TdsResultSet
     {
-        public System.Collections.ObjectModel.Collection<global::Meziantou.Framework.Tds.Handler.TdsColumn> Columns { get => throw null; }
+        public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.Handler.TdsColumn> Columns { get => throw null; }
         public System.Collections.ObjectModel.Collection<System.Collections.Generic.IReadOnlyList<object?>> Rows { get => throw null; }
     }
 }
@@ -151,39 +151,39 @@ namespace Meziantou.Framework.Tds.Hosting
 {
     public static class TdsEndpointRouteBuilderExtensions
     {
-        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsAuthenticationHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, global::Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate handler) => throw null;
-        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsQueryHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, global::Meziantou.Framework.Tds.Handler.TdsQueryDelegate handler) => throw null;
-        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsQueryEngine(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions options) => throw null;
-        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsHandlers(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, global::Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticate, global::Meziantou.Framework.Tds.Handler.TdsQueryDelegate query) => throw null;
+        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsAuthenticationHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate handler) => throw null;
+        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsQueryHandler(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsQueryDelegate handler) => throw null;
+        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsQueryEngine(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions options) => throw null;
+        public static Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapTdsHandlers(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, Meziantou.Framework.Tds.Handler.TdsAuthenticationDelegate authenticate, Meziantou.Framework.Tds.Handler.TdsQueryDelegate query) => throw null;
     }
 
     public static class TdsServerBuilderExtensions
     {
-        public static Microsoft.Extensions.Hosting.IHostApplicationBuilder AddTdsServer(this Microsoft.Extensions.Hosting.IHostApplicationBuilder builder, System.Action<global::Meziantou.Framework.Tds.TdsServerOptions> configure) => throw null;
+        public static Microsoft.Extensions.Hosting.IHostApplicationBuilder AddTdsServer(this Microsoft.Extensions.Hosting.IHostApplicationBuilder builder, System.Action<Meziantou.Framework.Tds.TdsServerOptions> configure) => throw null;
     }
 }
 namespace Meziantou.Framework.Tds.QueryEngine
 {
     public static class TdsQueryEngine
     {
-        public static global::Meziantou.Framework.Tds.Handler.TdsQueryDelegate CreateQueryHandler(global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions options) => throw null;
+        public static Meziantou.Framework.Tds.Handler.TdsQueryDelegate CreateQueryHandler(Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions options) => throw null;
     }
 
-    public delegate bool TdsQueryEngineAuthorizationHandler(global::Meziantou.Framework.Tds.Handler.TdsQueryContext context, global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind resourceKind, string resourceName);
+    public delegate bool TdsQueryEngineAuthorizationHandler(Meziantou.Framework.Tds.Handler.TdsQueryContext context, Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind resourceKind, string resourceName);
 
     public sealed class TdsQueryEngineOptions
     {
         public System.Collections.Generic.IDictionary<string, System.Delegate> StoredProcedures { get => throw null; }
-        public System.Collections.ObjectModel.Collection<global::Meziantou.Framework.Tds.QueryEngine.TdsQueryRoot> QueryRoots { get => throw null; }
-        public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryMaterializer MaterializeAsync { get => throw null; set { } }
-        public System.Collections.Generic.IDictionary<string, global::Meziantou.Framework.Tds.QueryEngine.TdsQueryScalarFunction> ScalarFunctions { get => throw null; }
-        public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineAuthorizationHandler IsAuthorized { get => throw null; set { } }
-        public System.Func<global::Meziantou.Framework.Tds.Handler.TdsQueryContext, global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind, string, global::Meziantou.Framework.Tds.Handler.TdsQueryError> NotAuthorizedErrorFactory { get => throw null; set { } }
+        public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.QueryEngine.TdsQueryRoot> QueryRoots { get => throw null; }
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryMaterializer MaterializeAsync { get => throw null; set { } }
+        public System.Collections.Generic.IDictionary<string, Meziantou.Framework.Tds.QueryEngine.TdsQueryScalarFunction> ScalarFunctions { get => throw null; }
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineAuthorizationHandler IsAuthorized { get => throw null; set { } }
+        public System.Func<Meziantou.Framework.Tds.Handler.TdsQueryContext, Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind, string, Meziantou.Framework.Tds.Handler.TdsQueryError> NotAuthorizedErrorFactory { get => throw null; set { } }
         public System.Collections.Generic.IDictionary<string, System.Xml.Schema.XmlSchemaSet> XmlSchemaCollections { get => throw null; }
-        public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddQueryRoot<T>(string name, System.Func<global::Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable<T>> queryFactory) => throw null;
-        public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddScalarFunction(string name, global::Meziantou.Framework.Tds.QueryEngine.TdsQueryScalarFunction function) => throw null;
-        public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddXmlSchemaCollection(string name, string schemaDefinition) => throw null;
-        public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddXmlSchemaCollection(string name, System.Xml.Schema.XmlSchemaSet schemaSet) => throw null;
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddQueryRoot<T>(string name, System.Func<Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable<T>> queryFactory) => throw null;
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddScalarFunction(string name, Meziantou.Framework.Tds.QueryEngine.TdsQueryScalarFunction function) => throw null;
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddXmlSchemaCollection(string name, string schemaDefinition) => throw null;
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddXmlSchemaCollection(string name, System.Xml.Schema.XmlSchemaSet schemaSet) => throw null;
     }
 
     public enum TdsQueryEngineResourceKind
@@ -197,7 +197,7 @@ namespace Meziantou.Framework.Tds.QueryEngine
     public sealed class TdsQueryRoot
     {
         public string Name { get => throw null; }
-        public TdsQueryRoot(string name, System.Func<global::Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable> queryFactory) { }
+        public TdsQueryRoot(string name, System.Func<Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable> queryFactory) { }
     }
 
     public delegate System.Linq.Expressions.Expression TdsQueryScalarFunction(System.Collections.Generic.IReadOnlyList<System.Linq.Expressions.Expression> arguments);

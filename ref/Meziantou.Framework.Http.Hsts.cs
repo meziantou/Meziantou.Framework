@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Http
     public sealed class HstsClientHandler : System.Net.Http.DelegatingHandler
     {
         public HstsClientHandler(System.Net.Http.HttpMessageHandler innerHandler) { }
-        public HstsClientHandler(System.Net.Http.HttpMessageHandler innerHandler, global::Meziantou.Framework.Http.HstsDomainPolicyCollection configuration) { }
+        public HstsClientHandler(System.Net.Http.HttpMessageHandler innerHandler, Meziantou.Framework.Http.HstsDomainPolicyCollection configuration) { }
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
@@ -18,16 +18,16 @@ namespace Meziantou.Framework.Http
         public override string ToString() => throw null;
     }
 
-    public sealed class HstsDomainPolicyCollection : System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Http.HstsDomainPolicy>, System.Collections.IEnumerable
+    public sealed class HstsDomainPolicyCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Http.HstsDomainPolicy>, System.Collections.IEnumerable
     {
-        public static global::Meziantou.Framework.Http.HstsDomainPolicyCollection Default { get => throw null; }
+        public static Meziantou.Framework.Http.HstsDomainPolicyCollection Default { get => throw null; }
         public HstsDomainPolicyCollection(bool includePreloadDomains = true) { }
         public HstsDomainPolicyCollection(System.TimeProvider? timeProvider, bool includePreloadDomains = true) { }
         public void Add(string host, System.TimeSpan maxAge, bool includeSubdomains) { }
         public void Add(string host, System.DateTimeOffset expiresAt, bool includeSubdomains) { }
         public bool MustUpgradeRequest(string host) => throw null;
         public bool MustUpgradeRequest(System.ReadOnlySpan<char> host) => throw null;
-        public System.Collections.Generic.IEnumerator<global::Meziantou.Framework.Http.HstsDomainPolicy> GetEnumerator() => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Http.HstsDomainPolicy> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 }

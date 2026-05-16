@@ -6,7 +6,7 @@ namespace Meziantou.Framework
     public readonly struct ValueStopwatch
     {
         public bool IsActive { get => throw null; }
-        public static global::Meziantou.Framework.ValueStopwatch StartNew() => throw null;
+        public static Meziantou.Framework.ValueStopwatch StartNew() => throw null;
         public static long GetTimestamp() => throw null;
         public static System.TimeSpan GetElapsedTime(long startTimestamp, long endTimestamp) => throw null;
         public System.TimeSpan GetElapsedTime() => throw null;

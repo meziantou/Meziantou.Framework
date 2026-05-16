@@ -14,14 +14,14 @@ namespace Meziantou.Framework.WPF
 
     public static class DelegateCommand
     {
-        public static global::Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute) => throw null;
-        public static global::Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object>? execute) => throw null;
-        public static global::Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute, System.Func<bool>? canExecute) => throw null;
-        public static global::Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object?>? execute, System.Func<object?, bool>? canExecute) => throw null;
-        public static global::Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<System.Threading.Tasks.Task>? execute) => throw null;
-        public static global::Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute) => throw null;
-        public static global::Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<System.Threading.Tasks.Task>? execute, System.Func<bool>? canExecute) => throw null;
-        public static global::Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute, System.Func<object, bool>? canExecute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object>? execute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action? execute, System.Func<bool>? canExecute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Action<object?>? execute, System.Func<object?, bool>? canExecute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<System.Threading.Tasks.Task>? execute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<System.Threading.Tasks.Task>? execute, System.Func<bool>? canExecute) => throw null;
+        public static Meziantou.Framework.WPF.IDelegateCommand Create(System.Func<object?, System.Threading.Tasks.Task>? execute, System.Func<object, bool>? canExecute) => throw null;
     }
 
     public static class DispatcherExtensions
@@ -81,7 +81,7 @@ namespace Meziantou.Framework.WPF.Collections
     public sealed class ConcurrentObservableCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public bool SupportRangeNotifications { get => throw null; set { } }
-        public global::Meziantou.Framework.WPF.Collections.IReadOnlyObservableCollection<T> AsObservable { get => throw null; }
+        public Meziantou.Framework.WPF.Collections.IReadOnlyObservableCollection<T> AsObservable { get => throw null; }
         public int Count { get => throw null; }
         public T this[int index] { get => throw null; set { } }
         public ConcurrentObservableCollection(System.Windows.Threading.Dispatcher dispatcher) { }

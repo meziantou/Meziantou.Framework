@@ -3,20 +3,20 @@
 
 namespace Meziantou.Framework.Json
 {
-    public sealed class JsonPath : System.IParsable<global::Meziantou.Framework.Json.JsonPath>, System.ISpanParsable<global::Meziantou.Framework.Json.JsonPath>
+    public sealed class JsonPath : System.IParsable<Meziantou.Framework.Json.JsonPath>, System.ISpanParsable<Meziantou.Framework.Json.JsonPath>
     {
-        public static global::Meziantou.Framework.Json.JsonPath Parse(string expression) => throw null;
-        public static global::Meziantou.Framework.Json.JsonPath Parse(System.ReadOnlySpan<char> expression) => throw null;
-        public static bool TryParse(string? expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.Json.JsonPath? result) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.Json.JsonPath? result) => throw null;
-        public global::Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.Nodes.JsonNode? root) => throw null;
-        public global::Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.Nodes.JsonNode? root, global::Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
-        public global::Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.JsonDocument? root) => throw null;
-        public global::Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.JsonDocument? root, global::Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPath Parse(string expression) => throw null;
+        public static Meziantou.Framework.Json.JsonPath Parse(System.ReadOnlySpan<char> expression) => throw null;
+        public static bool TryParse(string? expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Json.JsonPath? result) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Json.JsonPath? result) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.Nodes.JsonNode? root) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.JsonDocument? root) => throw null;
+        public Meziantou.Framework.Json.JsonPathResult Evaluate(System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.Nodes.JsonNode? root) => throw null;
-        public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.Nodes.JsonNode? root, global::Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.Nodes.JsonNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.JsonDocument? root) => throw null;
-        public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.JsonDocument? root, global::Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public System.Text.Json.Nodes.JsonNode? EvaluateValue(System.Text.Json.JsonDocument? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public override string ToString() => throw null;
     }
 
@@ -38,11 +38,11 @@ namespace Meziantou.Framework.Json
         public string Path { get => throw null; }
     }
 
-    public sealed class JsonPathResult : System.Collections.Generic.IEnumerable<global::Meziantou.Framework.Json.JsonPathMatch>, System.Collections.Generic.IReadOnlyCollection<global::Meziantou.Framework.Json.JsonPathMatch>, System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.Json.JsonPathMatch>, System.Collections.IEnumerable
+    public sealed class JsonPathResult : System.Collections.Generic.IEnumerable<Meziantou.Framework.Json.JsonPathMatch>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Json.JsonPathMatch>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Json.JsonPathMatch>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
-        public global::Meziantou.Framework.Json.JsonPathMatch this[int index] { get => throw null; }
-        public System.Collections.Generic.IEnumerator<global::Meziantou.Framework.Json.JsonPathMatch> GetEnumerator() => throw null;
+        public Meziantou.Framework.Json.JsonPathMatch this[int index] { get => throw null; }
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Json.JsonPathMatch> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public System.Text.Json.Nodes.JsonArray ToJsonArray() => throw null;
     }

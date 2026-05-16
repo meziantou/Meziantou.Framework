@@ -3,11 +3,11 @@
 
 namespace Meziantou.Framework.Http.Caching.Redis
 {
-    public sealed class RedisHttpCacheStore : global::Meziantou.Framework.Http.Caching.IHttpCacheStore
+    public sealed class RedisHttpCacheStore : Meziantou.Framework.Http.Caching.IHttpCacheStore
     {
         public RedisHttpCacheStore(StackExchange.Redis.IConnectionMultiplexer connectionMultiplexer, string keyPrefix = "Meziantou:HttpCache") { }
-        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<global::Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken) => throw null;
-        public System.Threading.Tasks.ValueTask SetEntryAsync(string primaryKey, global::Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry entry, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask SetEntryAsync(string primaryKey, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry entry, System.Threading.CancellationToken cancellationToken) => throw null;
         public System.Threading.Tasks.ValueTask RemoveEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken) => throw null;
         public System.Threading.Tasks.ValueTask PruneObsoleteEntriesAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.ValueTask PruneObsoleteEntriesAsync(System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken = null) => throw null;

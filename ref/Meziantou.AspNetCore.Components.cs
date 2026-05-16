@@ -35,7 +35,7 @@ namespace Meziantou.AspNetCore.Components
 
     public class DataGridColumn<TRowData> : Microsoft.AspNetCore.Components.ComponentBase
     {
-        public global::Meziantou.AspNetCore.Components.DataGrid<TRowData>? OwnerGrid { get => throw null; set { } }
+        public Meziantou.AspNetCore.Components.DataGrid<TRowData>? OwnerGrid { get => throw null; set { } }
         public string? Title { get => throw null; set { } }
         public System.Linq.Expressions.Expression<System.Func<TRowData, object>>? Expression { get => throw null; set { } }
         public string? Format { get => throw null; set { } }
@@ -51,7 +51,7 @@ namespace Meziantou.AspNetCore.Components
         public Microsoft.AspNetCore.Components.EventCallback<TModel> ModelChanged { get => throw null; set { } }
         public bool EnableFieldValidation { get => throw null; set { } }
         public string? EditorClass { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.RenderFragment<global::Meziantou.AspNetCore.Components.GenericFormField<TModel>>? FieldTemplate { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.RenderFragment<Meziantou.AspNetCore.Components.GenericFormField<TModel>>? FieldTemplate { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
         protected override void OnParametersSet() { }
     }
@@ -74,7 +74,7 @@ namespace Meziantou.AspNetCore.Components
 
     public class InfiniteScrolling<T> : Microsoft.AspNetCore.Components.ComponentBase, System.IAsyncDisposable
     {
-        public global::Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequestDelegate<T>? ItemsProvider { get => throw null; set { } }
+        public Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequestDelegate<T>? ItemsProvider { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment<T>? ItemTemplate { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? LoadingTemplate { get => throw null; set { } }
         public string LastItemIndicatorElement { get => throw null; set { } }
@@ -93,7 +93,7 @@ namespace Meziantou.AspNetCore.Components
         public InfiniteScrollingItemsProviderRequest(int startIndex, System.Threading.CancellationToken cancellationToken) { }
     }
 
-    public delegate System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> InfiniteScrollingItemsProviderRequestDelegate<T>(global::Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest context);
+    public delegate System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> InfiniteScrollingItemsProviderRequestDelegate<T>(Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest context);
 
     public class InputDateTime<TValue> : Microsoft.AspNetCore.Components.Forms.InputDate<TValue>
     {

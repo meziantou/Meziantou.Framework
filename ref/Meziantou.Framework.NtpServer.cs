@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Ntp
     public sealed class NtpServer : System.IDisposable
     {
         public int Port { get => throw null; }
-        public NtpServer(global::Meziantou.Framework.Ntp.NtpServerOptions? options = null) { }
+        public NtpServer(Meziantou.Framework.Ntp.NtpServerOptions? options = null) { }
         public System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public void Dispose() { }
     }

@@ -25,14 +25,14 @@ namespace Meziantou.Framework.Http.Caching
         public string? ETag { get => throw null; set { } }
         public System.DateTimeOffset? LastModified { get => throw null; set { } }
         public System.ReadOnlyMemory<byte> SerializedResponse { get => throw null; set { } }
-        public global::Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry Clone() => throw null;
-        public static bool HasSameSecondaryKey(global::Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry left, global::Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry right) => throw null;
+        public Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry Clone() => throw null;
+        public static bool HasSameSecondaryKey(Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry left, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry right) => throw null;
     }
 
     public sealed class HttpCachingDelegateHandler : System.Net.Http.DelegatingHandler
     {
-        public HttpCachingDelegateHandler(global::Meziantou.Framework.Http.Caching.IHttpCacheStore store, global::Meziantou.Framework.Http.Caching.HttpCachingOptions? options = null) { }
-        public HttpCachingDelegateHandler(System.Net.Http.HttpMessageHandler innerHandler, global::Meziantou.Framework.Http.Caching.IHttpCacheStore store, global::Meziantou.Framework.Http.Caching.HttpCachingOptions? options = null) { }
+        public HttpCachingDelegateHandler(Meziantou.Framework.Http.Caching.IHttpCacheStore store, Meziantou.Framework.Http.Caching.HttpCachingOptions? options = null) { }
+        public HttpCachingDelegateHandler(System.Net.Http.HttpMessageHandler innerHandler, Meziantou.Framework.Http.Caching.IHttpCacheStore store, Meziantou.Framework.Http.Caching.HttpCachingOptions? options = null) { }
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
@@ -45,8 +45,8 @@ namespace Meziantou.Framework.Http.Caching
 
     public interface IHttpCacheStore
     {
-        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<global::Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken);
-        System.Threading.Tasks.ValueTask SetEntryAsync(string primaryKey, global::Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry entry, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.ValueTask SetEntryAsync(string primaryKey, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry entry, System.Threading.CancellationToken cancellationToken);
         System.Threading.Tasks.ValueTask RemoveEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken);
         public System.Threading.Tasks.ValueTask PruneObsoleteEntriesAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
     }

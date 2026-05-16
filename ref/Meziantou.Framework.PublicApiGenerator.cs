@@ -10,31 +10,31 @@ namespace Meziantou.Framework.PublicApiGenerator
         public string? TargetFrameworkMoniker { get => throw null; set { } }
         public AssemblySource(System.Reflection.Assembly assembly, string? targetFrameworkMoniker = null) { }
         public AssemblySource(string path, string? targetFrameworkMoniker = null) { }
-        public static implicit operator global::Meziantou.Framework.PublicApiGenerator.AssemblySource(string path) => throw null;
-        public static implicit operator global::Meziantou.Framework.PublicApiGenerator.AssemblySource(System.Reflection.Assembly assembly) => throw null;
+        public static implicit operator Meziantou.Framework.PublicApiGenerator.AssemblySource(string path) => throw null;
+        public static implicit operator Meziantou.Framework.PublicApiGenerator.AssemblySource(System.Reflection.Assembly assembly) => throw null;
     }
 
     public static class PublicApi
     {
-        public static System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.PublicApiGenerator.PublicApiFile> Generate(string assemblyPath, global::Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) => throw null;
-        public static System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.PublicApiGenerator.PublicApiFile> Generate(System.Reflection.Assembly assembly, global::Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) => throw null;
-        public static System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.PublicApiGenerator.PublicApiFile> Generate(System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.PublicApiGenerator.AssemblySource> assemblySources, global::Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) => throw null;
-        public static void GenerateToDirectory(string assemblyPath, string outputDirectory, global::Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) { }
-        public static void GenerateToDirectory(System.Reflection.Assembly assembly, string outputDirectory, global::Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) { }
-        public static void GenerateToDirectory(System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.PublicApiGenerator.AssemblySource> assemblySources, string outputDirectory, global::Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) { }
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.PublicApiGenerator.PublicApiFile> Generate(string assemblyPath, Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.PublicApiGenerator.PublicApiFile> Generate(System.Reflection.Assembly assembly, Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.PublicApiGenerator.PublicApiFile> Generate(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.PublicApiGenerator.AssemblySource> assemblySources, Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) => throw null;
+        public static void GenerateToDirectory(string assemblyPath, string outputDirectory, Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) { }
+        public static void GenerateToDirectory(System.Reflection.Assembly assembly, string outputDirectory, Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) { }
+        public static void GenerateToDirectory(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.PublicApiGenerator.AssemblySource> assemblySources, string outputDirectory, Meziantou.Framework.PublicApiGenerator.PublicApiOptions? options = null) { }
     }
 
-    public sealed class PublicApiFile : System.IEquatable<global::Meziantou.Framework.PublicApiGenerator.PublicApiFile>
+    public sealed class PublicApiFile : System.IEquatable<Meziantou.Framework.PublicApiGenerator.PublicApiFile>
     {
         public string RelativePath { get => throw null; init { } }
         public string Content { get => throw null; init { } }
         public PublicApiFile(string RelativePath, string Content) { }
         public override string ToString() => throw null;
-        public static bool operator !=(global::Meziantou.Framework.PublicApiGenerator.PublicApiFile? left, global::Meziantou.Framework.PublicApiGenerator.PublicApiFile? right) => throw null;
-        public static bool operator ==(global::Meziantou.Framework.PublicApiGenerator.PublicApiFile? left, global::Meziantou.Framework.PublicApiGenerator.PublicApiFile? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.PublicApiGenerator.PublicApiFile? left, Meziantou.Framework.PublicApiGenerator.PublicApiFile? right) => throw null;
+        public static bool operator ==(Meziantou.Framework.PublicApiGenerator.PublicApiFile? left, Meziantou.Framework.PublicApiGenerator.PublicApiFile? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.PublicApiGenerator.PublicApiFile? other) => throw null;
+        public bool Equals(Meziantou.Framework.PublicApiGenerator.PublicApiFile? other) => throw null;
         public void Deconstruct(out string RelativePath, out string Content) => throw null;
     }
 
@@ -47,11 +47,11 @@ namespace Meziantou.Framework.PublicApiGenerator
 
     public sealed class PublicApiOptions
     {
-        public global::Meziantou.Framework.PublicApiGenerator.PublicApiFileLayout FileLayout { get => throw null; set { } }
+        public Meziantou.Framework.PublicApiGenerator.PublicApiFileLayout FileLayout { get => throw null; set { } }
         public bool IncludeAutoGeneratedComment { get => throw null; set { } }
     }
 
-    public sealed class PublicApiTypeModel : System.IEquatable<global::Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel>
+    public sealed class PublicApiTypeModel : System.IEquatable<Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel>
     {
         public string Namespace { get => throw null; init { } }
         public string Name { get => throw null; init { } }
@@ -59,11 +59,11 @@ namespace Meziantou.Framework.PublicApiGenerator
         public string Source { get => throw null; init { } }
         public PublicApiTypeModel(string Namespace, string Name, string QualifiedName, string Source) { }
         public override string ToString() => throw null;
-        public static bool operator !=(global::Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? left, global::Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? right) => throw null;
-        public static bool operator ==(global::Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? left, global::Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? left, Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? right) => throw null;
+        public static bool operator ==(Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? left, Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? other) => throw null;
+        public bool Equals(Meziantou.Framework.PublicApiGenerator.PublicApiTypeModel? other) => throw null;
         public void Deconstruct(out string Namespace, out string Name, out string QualifiedName, out string Source) => throw null;
     }
 }

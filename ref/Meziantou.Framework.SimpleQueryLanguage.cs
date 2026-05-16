@@ -13,12 +13,12 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     public sealed class ExpressionQueryBuilder<T>
     {
         public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, System.StringComparison comparisonType = 5) { }
-        public void AddHandler<TValue>(string key, System.Linq.Expressions.Expression<System.Func<T, TValue>> selector, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue = null) { }
-        public void AddHandler(string key, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
+        public void AddHandler<TValue>(string key, System.Linq.Expressions.Expression<System.Func<T, TValue>> selector, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue = null) { }
+        public void AddHandler(string key, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
         public void AddHandler(string key, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
-        public void SetFreeTextHandler(global::Meziantou.Framework.SimpleQueryLanguage.FreeTextExpressionHandler<T>? handler) { }
-        public void SetUnhandledPropertyHandler(global::Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyExpressionHandler<T>? handler) { }
-        public global::Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T> Build(string query) => throw null;
+        public void SetFreeTextHandler(Meziantou.Framework.SimpleQueryLanguage.FreeTextExpressionHandler<T>? handler) { }
+        public void SetUnhandledPropertyHandler(Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyExpressionHandler<T>? handler) { }
+        public Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T> Build(string query) => throw null;
     }
 
     public delegate System.Linq.Expressions.Expression<System.Func<T, bool>> FreeTextExpressionHandler<T>(string text);
@@ -42,63 +42,63 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     public sealed class QueryBuilder<T>
     {
         public QueryBuilder(System.TimeProvider? timeProvider) { }
-        public void AddHandler(string key, string? value, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, bool> predicate) { }
-        public void AddHandler(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, string, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
+        public void AddHandler(string key, string? value, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, bool> predicate) { }
+        public void AddHandler(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, string, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
         public void AddHandler(string key, string? value, System.Func<T, bool> predicate) { }
         public void AddHandler(string key, System.Func<T, string, bool> predicate) { }
         public void AddHandler<TValue>(string key, System.Func<T, TValue, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T, TValue, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
-        public void AddRangeHandler<TValue>(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
-        public void AddRangeHandler<TValue>(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, TValue, bool> predicate, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
+        public void AddRangeHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
+        public void AddRangeHandler<TValue>(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate) { }
         public void SetTextFilterHandler(System.Func<T, string, bool> predicate) { }
-        public void SetUnhandledPropertyHandler(global::Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyDelegate<T>? predicate) { }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Query<T> Build(string query) => throw null;
+        public void SetUnhandledPropertyHandler(Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyDelegate<T>? predicate) { }
+        public Meziantou.Framework.SimpleQueryLanguage.Query<T> Build(string query) => throw null;
     }
 
     public delegate bool ScalarParser<T>(string value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result);
 
-    public delegate bool UnhandledPropertyDelegate<T>(T obj, string propertyName, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
+    public delegate bool UnhandledPropertyDelegate<T>(T obj, string propertyName, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
 
-    public delegate System.Linq.Expressions.Expression<System.Func<T, bool>>? UnhandledPropertyExpressionHandler<T>(string propertyName, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
+    public delegate System.Linq.Expressions.Expression<System.Func<T, bool>>? UnhandledPropertyExpressionHandler<T>(string propertyName, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
 }
 namespace Meziantou.Framework.SimpleQueryLanguage.Binding
 {
-    public sealed class BoundAndQuery : global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
+    public sealed class BoundAndQuery : Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Left { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Right { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Left { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Right { get => throw null; }
     }
 
-    public sealed class BoundKeyValueQuery : global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
+    public sealed class BoundKeyValueQuery : Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
     {
         public bool IsNegated { get => throw null; }
         public string Key { get => throw null; }
         public string Value { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator Operator { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator Operator { get => throw null; }
     }
 
-    public sealed class BoundNegatedQuery : global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
+    public sealed class BoundNegatedQuery : Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Query { get => throw null; }
-        public BoundNegatedQuery(global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery query) { }
+        public Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Query { get => throw null; }
+        public BoundNegatedQuery(Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery query) { }
     }
 
-    public sealed class BoundOrQuery : global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
+    public sealed class BoundOrQuery : Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Left { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Right { get => throw null; }
-        public BoundOrQuery(global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery left, global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery right) { }
+        public Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Left { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery Right { get => throw null; }
+        public BoundOrQuery(Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery left, Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery right) { }
     }
 
     public abstract class BoundQuery
     {
-        public static System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery>> Create(global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax syntax) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery>> Create(Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax syntax) => throw null;
         public override string ToString() => throw null;
     }
 
-    public sealed class BoundTextQuery : global::Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
+    public sealed class BoundTextQuery : Meziantou.Framework.SimpleQueryLanguage.Binding.BoundQuery
     {
         public bool IsNegated { get => throw null; }
         public string Text { get => throw null; }
@@ -114,66 +114,66 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Ranges
 }
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
 {
-    public sealed class AndQuerySyntax : global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
+    public sealed class AndQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Left { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken? Operator { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Right { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Left { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken? Operator { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Right { get => throw null; }
         public bool IsImplicit { get => throw null; }
-        public override global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
-    public sealed class KeyValueQuerySyntax : global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
+    public sealed class KeyValueQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken KeyToken { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken ValueToken { get => throw null; }
-        public override global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken KeyToken { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken ValueToken { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
-    public sealed class NegatedQuerySyntax : global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
+    public sealed class NegatedQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Query { get => throw null; }
-        public override global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Query { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
-    public sealed class OrQuerySyntax : global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
+    public sealed class OrQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Left { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Right { get => throw null; }
-        public override global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Left { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OperatorToken { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Right { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
-    public sealed class ParenthesizedQuerySyntax : global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
+    public sealed class ParenthesizedQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OpenParenthesisToken { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Query { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken CloseParenthesisToken { get => throw null; }
-        public override global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken OpenParenthesisToken { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Query { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken CloseParenthesisToken { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
     public abstract class QueryNodeOrToken
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get; }
-        public abstract global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren();
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get; }
+        public abstract Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren();
     }
 
-    public abstract class QuerySyntax : global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken
+    public abstract class QuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken
     {
-        public static global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Parse(string text) => throw null;
+        public static Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Parse(string text) => throw null;
         public override string ToString() => throw null;
     }
 
@@ -204,24 +204,24 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
         ParenthesizedQuery = 22
     }
 
-    public sealed class QueryToken : global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken
+    public sealed class QueryToken : Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
         public string QueryText { get => throw null; }
         public string Text { get => throw null; }
         public string? Value { get => throw null; }
-        public override global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
         public override string ToString() => throw null;
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken AsText() => throw null;
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken AsText() => throw null;
     }
 
-    public sealed class TextQuerySyntax : global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
+    public sealed class TextQuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax
     {
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken TextToken { get => throw null; }
-        public override global::Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntaxKind Kind { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryToken TextToken { get => throw null; }
+        public override Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken[] GetChildren() => throw null;
     }
 
     public readonly struct TextSpan
@@ -230,7 +230,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
         public int End { get => throw null; }
         public int Length { get => throw null; }
         public TextSpan(int start, int length) { }
-        public static global::Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan FromBounds(int start, int end) => throw null;
+        public static Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan FromBounds(int start, int end) => throw null;
         public override string ToString() => throw null;
     }
 }

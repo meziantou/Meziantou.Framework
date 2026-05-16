@@ -129,13 +129,14 @@ internal static class PublicApiEmitter
         if (string.IsNullOrEmpty(namespaceName))
             return [];
 
-        var identifiers = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var segment in namespaceName.Split('.', StringSplitOptions.RemoveEmptyEntries))
-        {
-            identifiers.Add(segment);
-        }
+        var lastSeparatorIndex = namespaceName.LastIndexOf('.');
+        var lastSegment = lastSeparatorIndex < 0
+            ? namespaceName
+            : namespaceName[(lastSeparatorIndex + 1)..];
+        if (string.IsNullOrEmpty(lastSegment))
+            return [];
 
-        return identifiers;
+        return [lastSegment];
     }
 
     private static string QualifyConflictingNamespaceReferences(string source, HashSet<string> conflictingNamespaceIdentifiers)

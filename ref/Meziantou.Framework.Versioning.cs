@@ -3,7 +3,7 @@
 
 namespace Meziantou.Framework.Versioning
 {
-    public sealed class SemanticVersion : System.IComparable, System.IComparable<global::Meziantou.Framework.Versioning.SemanticVersion>, System.IEquatable<global::Meziantou.Framework.Versioning.SemanticVersion>, System.IFormattable, System.IParsable<global::Meziantou.Framework.Versioning.SemanticVersion>, System.ISpanParsable<global::Meziantou.Framework.Versioning.SemanticVersion>
+    public sealed class SemanticVersion : System.IComparable, System.IComparable<Meziantou.Framework.Versioning.SemanticVersion>, System.IEquatable<Meziantou.Framework.Versioning.SemanticVersion>, System.IFormattable, System.IParsable<Meziantou.Framework.Versioning.SemanticVersion>, System.ISpanParsable<Meziantou.Framework.Versioning.SemanticVersion>
     {
         public int Major { get => throw null; }
         public int Minor { get => throw null; }
@@ -20,55 +20,55 @@ namespace Meziantou.Framework.Versioning
         public override string ToString() => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.Versioning.SemanticVersion? other) => throw null;
+        public bool Equals(Meziantou.Framework.Versioning.SemanticVersion? other) => throw null;
         public int CompareTo(object? obj) => throw null;
-        public int CompareTo(global::Meziantou.Framework.Versioning.SemanticVersion? other) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersion Parse(string versionString) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersion Parse(System.ReadOnlySpan<char> versionString) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> versionString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.Versioning.SemanticVersion? version) => throw null;
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? versionString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.Versioning.SemanticVersion? version) => throw null;
-        public static bool operator ==(global::Meziantou.Framework.Versioning.SemanticVersion? left, global::Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.Versioning.SemanticVersion? left, global::Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
-        public static bool operator <(global::Meziantou.Framework.Versioning.SemanticVersion? left, global::Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
-        public static bool operator <=(global::Meziantou.Framework.Versioning.SemanticVersion? left, global::Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
-        public static bool operator >(global::Meziantou.Framework.Versioning.SemanticVersion? left, global::Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
-        public static bool operator >=(global::Meziantou.Framework.Versioning.SemanticVersion? left, global::Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
+        public int CompareTo(Meziantou.Framework.Versioning.SemanticVersion? other) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersion Parse(string versionString) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersion Parse(System.ReadOnlySpan<char> versionString) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> versionString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Versioning.SemanticVersion? version) => throw null;
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? versionString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Versioning.SemanticVersion? version) => throw null;
+        public static bool operator ==(Meziantou.Framework.Versioning.SemanticVersion? left, Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Versioning.SemanticVersion? left, Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
+        public static bool operator <(Meziantou.Framework.Versioning.SemanticVersion? left, Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
+        public static bool operator <=(Meziantou.Framework.Versioning.SemanticVersion? left, Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
+        public static bool operator >(Meziantou.Framework.Versioning.SemanticVersion? left, Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
+        public static bool operator >=(Meziantou.Framework.Versioning.SemanticVersion? left, Meziantou.Framework.Versioning.SemanticVersion? right) => throw null;
     }
 
     public static class SemanticVersionExtensions
     {
-        public static global::Meziantou.Framework.Versioning.SemanticVersion NextPatchVersion(this global::Meziantou.Framework.Versioning.SemanticVersion semanticVersion) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersion NextMinorVersion(this global::Meziantou.Framework.Versioning.SemanticVersion semanticVersion) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersion NextMajorVersion(this global::Meziantou.Framework.Versioning.SemanticVersion semanticVersion) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersion NextPatchVersion(this Meziantou.Framework.Versioning.SemanticVersion semanticVersion) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersion NextMinorVersion(this Meziantou.Framework.Versioning.SemanticVersion semanticVersion) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersion NextMajorVersion(this Meziantou.Framework.Versioning.SemanticVersion semanticVersion) => throw null;
     }
 
-    public sealed class SemanticVersionRange : System.IEquatable<global::Meziantou.Framework.Versioning.SemanticVersionRange>
+    public sealed class SemanticVersionRange : System.IEquatable<Meziantou.Framework.Versioning.SemanticVersionRange>
     {
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange All { get => throw null; }
-        public global::Meziantou.Framework.Versioning.SemanticVersion? MinVersion { get => throw null; }
-        public global::Meziantou.Framework.Versioning.SemanticVersion? MaxVersion { get => throw null; }
+        public static Meziantou.Framework.Versioning.SemanticVersionRange All { get => throw null; }
+        public Meziantou.Framework.Versioning.SemanticVersion? MinVersion { get => throw null; }
+        public Meziantou.Framework.Versioning.SemanticVersion? MaxVersion { get => throw null; }
         public bool IsMinInclusive { get => throw null; }
         public bool IsMaxInclusive { get => throw null; }
-        public SemanticVersionRange(global::Meziantou.Framework.Versioning.SemanticVersion? minVersion, global::Meziantou.Framework.Versioning.SemanticVersion? maxVersion, bool isMinInclusive, bool isMaxInclusive) { }
-        public bool Satisfies(global::Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange Exact(global::Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange GreaterThanOrEqual(global::Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange GreaterThan(global::Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange LessThanOrEqual(global::Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange LessThan(global::Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
+        public SemanticVersionRange(Meziantou.Framework.Versioning.SemanticVersion? minVersion, Meziantou.Framework.Versioning.SemanticVersion? maxVersion, bool isMinInclusive, bool isMaxInclusive) { }
+        public bool Satisfies(Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange Exact(Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange GreaterThanOrEqual(Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange GreaterThan(Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange LessThanOrEqual(Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange LessThan(Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
         public override string ToString() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.Versioning.SemanticVersionRange? other) => throw null;
+        public bool Equals(Meziantou.Framework.Versioning.SemanticVersionRange? other) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.Versioning.SemanticVersionRange? left, global::Meziantou.Framework.Versioning.SemanticVersionRange? right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.Versioning.SemanticVersionRange? left, global::Meziantou.Framework.Versioning.SemanticVersionRange? right) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange ParseNuGet(string value) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange ParseNuGet(System.ReadOnlySpan<char> value) => throw null;
-        public static bool TryParseNuGet(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.Versioning.SemanticVersionRange? result) => throw null;
-        public static bool TryParseNuGet(System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.Versioning.SemanticVersionRange? result) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange ParseNpm(string value) => throw null;
-        public static global::Meziantou.Framework.Versioning.SemanticVersionRange ParseNpm(System.ReadOnlySpan<char> value) => throw null;
-        public static bool TryParseNpm(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.Versioning.SemanticVersionRange? result) => throw null;
-        public static bool TryParseNpm(System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out global::Meziantou.Framework.Versioning.SemanticVersionRange? result) => throw null;
+        public static bool operator ==(Meziantou.Framework.Versioning.SemanticVersionRange? left, Meziantou.Framework.Versioning.SemanticVersionRange? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Versioning.SemanticVersionRange? left, Meziantou.Framework.Versioning.SemanticVersionRange? right) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange ParseNuGet(string value) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange ParseNuGet(System.ReadOnlySpan<char> value) => throw null;
+        public static bool TryParseNuGet(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Versioning.SemanticVersionRange? result) => throw null;
+        public static bool TryParseNuGet(System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Versioning.SemanticVersionRange? result) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange ParseNpm(string value) => throw null;
+        public static Meziantou.Framework.Versioning.SemanticVersionRange ParseNpm(System.ReadOnlySpan<char> value) => throw null;
+        public static bool TryParseNpm(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Versioning.SemanticVersionRange? result) => throw null;
+        public static bool TryParseNpm(System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Versioning.SemanticVersionRange? result) => throw null;
     }
 }

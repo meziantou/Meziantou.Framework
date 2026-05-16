@@ -35,9 +35,9 @@ namespace Meziantou.Framework
 
     public sealed class HttpMockServiceBuilder
     {
-        public global::Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock(global::Meziantou.Framework.HttpClientMock mock) => throw null;
-        public global::Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock(string name, global::Meziantou.Framework.HttpClientMock mock) => throw null;
-        public global::Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock<T>(global::Meziantou.Framework.HttpClientMock mock) => throw null;
+        public Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock(Meziantou.Framework.HttpClientMock mock) => throw null;
+        public Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock(string name, Meziantou.Framework.HttpClientMock mock) => throw null;
+        public Meziantou.Framework.HttpMockServiceBuilder AddHttpClientMock<T>(Meziantou.Framework.HttpClientMock mock) => throw null;
     }
 
     public sealed class RequestCounter
@@ -61,7 +61,7 @@ namespace Meziantou.Framework
 
     public static class ServicesCollectionExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddHttpClientMock(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<global::Meziantou.Framework.HttpMockServiceBuilder> builder) => throw null;
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddHttpClientMock(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<System.IServiceProvider, global::Meziantou.Framework.HttpMockServiceBuilder> builder) => throw null;
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddHttpClientMock(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Meziantou.Framework.HttpMockServiceBuilder> builder) => throw null;
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddHttpClientMock(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<System.IServiceProvider, Meziantou.Framework.HttpMockServiceBuilder> builder) => throw null;
     }
 }

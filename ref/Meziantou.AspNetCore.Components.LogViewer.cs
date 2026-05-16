@@ -5,7 +5,7 @@ namespace Meziantou.AspNetCore.Components
 {
     public interface ILogHighlighter
     {
-        System.Collections.Generic.IEnumerable<global::Meziantou.AspNetCore.Components.LogHighlighterResult> Process(string text);
+        System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.LogHighlighterResult> Process(string text);
     }
 
     public enum LogDetailsDisplayFormat
@@ -17,7 +17,7 @@ namespace Meziantou.AspNetCore.Components
     public class LogEntry
     {
         public System.DateTimeOffset Timestamp { get => throw null; set { } }
-        public global::Meziantou.AspNetCore.Components.LogLevel LogLevel { get => throw null; set { } }
+        public Meziantou.AspNetCore.Components.LogLevel LogLevel { get => throw null; set { } }
         public string? Message { get => throw null; set { } }
         public object? Data { get => throw null; set { } }
     }
@@ -25,12 +25,12 @@ namespace Meziantou.AspNetCore.Components
     public class LogEntryDetails : Microsoft.AspNetCore.Components.ComponentBase
     {
         public object? Data { get => throw null; set { } }
-        public global::Meziantou.AspNetCore.Components.LogDetailsDisplayFormat Format { get => throw null; set { } }
+        public Meziantou.AspNetCore.Components.LogDetailsDisplayFormat Format { get => throw null; set { } }
         public bool CanChangeDisplayFormat { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
     }
 
-    public class LogHighlighterResult : System.IEquatable<global::Meziantou.AspNetCore.Components.LogHighlighterResult>
+    public class LogHighlighterResult : System.IEquatable<Meziantou.AspNetCore.Components.LogHighlighterResult>
     {
         protected System.Type EqualityContract { get => throw null; }
         public int Index { get => throw null; init { } }
@@ -42,12 +42,12 @@ namespace Meziantou.AspNetCore.Components
         public LogHighlighterResult(int Index, int Length, int Priority) { }
         public override string ToString() => throw null;
         protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(global::Meziantou.AspNetCore.Components.LogHighlighterResult? left, global::Meziantou.AspNetCore.Components.LogHighlighterResult? right) => throw null;
-        public static bool operator ==(global::Meziantou.AspNetCore.Components.LogHighlighterResult? left, global::Meziantou.AspNetCore.Components.LogHighlighterResult? right) => throw null;
+        public static bool operator !=(Meziantou.AspNetCore.Components.LogHighlighterResult? left, Meziantou.AspNetCore.Components.LogHighlighterResult? right) => throw null;
+        public static bool operator ==(Meziantou.AspNetCore.Components.LogHighlighterResult? left, Meziantou.AspNetCore.Components.LogHighlighterResult? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public virtual bool Equals(global::Meziantou.AspNetCore.Components.LogHighlighterResult? other) => throw null;
-        protected LogHighlighterResult(global::Meziantou.AspNetCore.Components.LogHighlighterResult original) { }
+        public virtual bool Equals(Meziantou.AspNetCore.Components.LogHighlighterResult? other) => throw null;
+        protected LogHighlighterResult(Meziantou.AspNetCore.Components.LogHighlighterResult original) { }
         public void Deconstruct(out int Index, out int Length, out int Priority) => throw null;
     }
 
@@ -63,18 +63,18 @@ namespace Meziantou.AspNetCore.Components
 
     public class LogViewer : Microsoft.AspNetCore.Components.ComponentBase
     {
-        public System.Collections.Generic.IEnumerable<global::Meziantou.AspNetCore.Components.LogEntry>? Entries { get => throw null; set { } }
-        public global::Meziantou.AspNetCore.Components.TimestampDisplayFormat TimestampDisplayFormat { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.LogEntry>? Entries { get => throw null; set { } }
+        public Meziantou.AspNetCore.Components.TimestampDisplayFormat TimestampDisplayFormat { get => throw null; set { } }
         public string? TimeSpanStringFormat { get => throw null; set { } }
         public string? DateTimeStringFormat { get => throw null; set { } }
         public bool ShowLineNumbers { get => throw null; set { } }
-        public System.Collections.Generic.IEnumerable<global::Meziantou.AspNetCore.Components.ILogHighlighter> LogHighlighters { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.ILogHighlighter> LogHighlighters { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
     }
 
-    public sealed class QuoteLogHighlighter : global::Meziantou.AspNetCore.Components.ILogHighlighter
+    public sealed class QuoteLogHighlighter : Meziantou.AspNetCore.Components.ILogHighlighter
     {
-        public System.Collections.Generic.IEnumerable<global::Meziantou.AspNetCore.Components.LogHighlighterResult> Process(string text) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.LogHighlighterResult> Process(string text) => throw null;
     }
 
     public enum TimestampDisplayFormat
@@ -85,9 +85,9 @@ namespace Meziantou.AspNetCore.Components
         RelativeTimeStartingAtZero = 3
     }
 
-    public class UrlLogHighlighter : global::Meziantou.AspNetCore.Components.ILogHighlighter
+    public class UrlLogHighlighter : Meziantou.AspNetCore.Components.ILogHighlighter
     {
-        public System.Collections.Generic.IEnumerable<global::Meziantou.AspNetCore.Components.LogHighlighterResult> Process(string text) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.LogHighlighterResult> Process(string text) => throw null;
     }
 
     public class _Imports

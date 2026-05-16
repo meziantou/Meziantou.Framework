@@ -29,8 +29,8 @@ namespace Meziantou.Framework
 
     public static class CachedEnumerable
     {
-        public static global::Meziantou.Framework.ICachedEnumerable<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, bool threadSafe = true) => throw null;
-        public static global::Meziantou.Framework.ICachedAsyncEnumerable<T> Create<T>(System.Collections.Generic.IAsyncEnumerable<T> enumerable, bool threadSafe = true) => throw null;
+        public static Meziantou.Framework.ICachedEnumerable<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, bool threadSafe = true) => throw null;
+        public static Meziantou.Framework.ICachedAsyncEnumerable<T> Create<T>(System.Collections.Generic.IAsyncEnumerable<T> enumerable, bool threadSafe = true) => throw null;
     }
 
     public static class ConcurrentQueueExtensions
@@ -148,8 +148,8 @@ namespace Meziantou.Framework
         public static System.Guid UrlNamespace { get => throw null; }
         public static System.Guid OidNamespace { get => throw null; }
         public static System.Guid X500Namespace { get => throw null; }
-        public static System.Guid Create(System.Guid namespace, string name, global::Meziantou.Framework.DeterministicGuidVersion version) => throw null;
-        public static System.Guid Create(System.Guid namespace, System.ReadOnlySpan<byte> name, global::Meziantou.Framework.DeterministicGuidVersion version) => throw null;
+        public static System.Guid Create(System.Guid namespace, string name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
+        public static System.Guid Create(System.Guid namespace, System.ReadOnlySpan<byte> name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
     }
 
     public enum DeterministicGuidVersion
@@ -277,11 +277,11 @@ namespace Meziantou.Framework
         [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", true)]
         public static string ToHexaString(this byte[] bytes) => throw null;
         [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", true)]
-        public static string ToHexaString(this byte[] bytes, global::Meziantou.Framework.HexaOptions options) => throw null;
+        public static string ToHexaString(this byte[] bytes, Meziantou.Framework.HexaOptions options) => throw null;
         [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", true)]
         public static string ToHexaString(this System.ReadOnlySpan<byte> bytes) => throw null;
         [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", true)]
-        public static string ToHexaString(this System.ReadOnlySpan<byte> bytes, global::Meziantou.Framework.HexaOptions options) => throw null;
+        public static string ToHexaString(this System.ReadOnlySpan<byte> bytes, Meziantou.Framework.HexaOptions options) => throw null;
         [System.Obsolete("Use System.Convert.FromHexString", true)]
         public static byte[] ParseHexaString(string str) => throw null;
         [System.Obsolete("Use System.Convert.FromHexString", true)]
@@ -292,9 +292,9 @@ namespace Meziantou.Framework
         public static bool TryParseHexaString(string? str, System.Span<byte> bytes, out int writtenBytes) => throw null;
         #elif NET8_0
         public static string ToHexaString(this byte[] bytes) => throw null;
-        public static string ToHexaString(this byte[] bytes, global::Meziantou.Framework.HexaOptions options) => throw null;
+        public static string ToHexaString(this byte[] bytes, Meziantou.Framework.HexaOptions options) => throw null;
         public static string ToHexaString(this System.ReadOnlySpan<byte> bytes) => throw null;
-        public static string ToHexaString(this System.ReadOnlySpan<byte> bytes, global::Meziantou.Framework.HexaOptions options) => throw null;
+        public static string ToHexaString(this System.ReadOnlySpan<byte> bytes, Meziantou.Framework.HexaOptions options) => throw null;
         public static byte[] ParseHexaString(string str) => throw null;
         public static bool TryParseHexaString(string? str, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? result) => throw null;
         public static bool TryParseHexaString(System.ReadOnlySpan<char> str, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? result) => throw null;
@@ -401,7 +401,7 @@ namespace Meziantou.Framework
         protected virtual void VisitValue(object value) { }
     }
 
-    public readonly struct Optional<T> : System.IEquatable<global::Meziantou.Framework.Optional<T>>
+    public readonly struct Optional<T> : System.IEquatable<Meziantou.Framework.Optional<T>>
     {
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
         public bool HasValue { get => throw null; }
@@ -409,24 +409,24 @@ namespace Meziantou.Framework
         public Optional(T value) { }
         public override string? ToString() => throw null;
         public void Deconstruct(out bool hasValue, out T value) => throw null;
-        public bool Equals(global::Meziantou.Framework.Optional<T> other) => throw null;
+        public bool Equals(Meziantou.Framework.Optional<T> other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.Optional<T> left, global::Meziantou.Framework.Optional<T> right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.Optional<T> left, global::Meziantou.Framework.Optional<T> right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Optional<T> left, Meziantou.Framework.Optional<T> right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Optional<T> left, Meziantou.Framework.Optional<T> right) => throw null;
     }
 
-    public readonly struct ProcessEntry : System.IEquatable<global::Meziantou.Framework.ProcessEntry>
+    public readonly struct ProcessEntry : System.IEquatable<Meziantou.Framework.ProcessEntry>
     {
         public int ProcessId { get => throw null; }
         public int ParentProcessId { get => throw null; }
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.ProcessEntry other) => throw null;
+        public bool Equals(Meziantou.Framework.ProcessEntry other) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
         public System.Diagnostics.Process ToProcess() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.ProcessEntry left, global::Meziantou.Framework.ProcessEntry right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.ProcessEntry left, global::Meziantou.Framework.ProcessEntry right) => throw null;
+        public static bool operator ==(Meziantou.Framework.ProcessEntry left, Meziantou.Framework.ProcessEntry right) => throw null;
+        public static bool operator !=(Meziantou.Framework.ProcessEntry left, Meziantou.Framework.ProcessEntry right) => throw null;
     }
 
     public static class ProcessExtensions
@@ -446,27 +446,27 @@ namespace Meziantou.Framework
         [System.Runtime.Versioning.SupportedOSPlatform]
         public static System.Diagnostics.Process? GetParentProcess(this System.Diagnostics.Process process) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform]
-        public static System.Collections.Generic.IEnumerable<global::Meziantou.Framework.ProcessEntry> GetProcesses() => throw null;
-        public static System.Threading.Tasks.Task<global::Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<global::Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<global::Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<global::Meziantou.Framework.ProcessResult> RunAsTaskAsync(this System.Diagnostics.ProcessStartInfo psi, bool redirectOutput, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task<global::Meziantou.Framework.ProcessResult> RunAsTaskAsync(this System.Diagnostics.ProcessStartInfo psi, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessEntry> GetProcesses() => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(this System.Diagnostics.ProcessStartInfo psi, bool redirectOutput, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(this System.Diagnostics.ProcessStartInfo psi, System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 
     public sealed class ProcessOutput
     {
-        public global::Meziantou.Framework.ProcessOutputType Type { get => throw null; }
+        public Meziantou.Framework.ProcessOutputType Type { get => throw null; }
         public string Text { get => throw null; }
-        public void Deconstruct(out global::Meziantou.Framework.ProcessOutputType type, out string text) => throw null;
+        public void Deconstruct(out Meziantou.Framework.ProcessOutputType type, out string text) => throw null;
         public override string ToString() => throw null;
     }
 
-    public sealed class ProcessOutputCollection : System.Collections.Generic.IEnumerable<global::Meziantou.Framework.ProcessOutput>, System.Collections.Generic.IReadOnlyCollection<global::Meziantou.Framework.ProcessOutput>, System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.ProcessOutput>, System.Collections.IEnumerable
+    public sealed class ProcessOutputCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessOutput>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.ProcessOutput>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.ProcessOutput>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
-        public global::Meziantou.Framework.ProcessOutput this[int index] { get => throw null; }
-        public System.Collections.Generic.IEnumerator<global::Meziantou.Framework.ProcessOutput> GetEnumerator() => throw null;
+        public Meziantou.Framework.ProcessOutput this[int index] { get => throw null; }
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.ProcessOutput> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override string ToString() => throw null;
     }
@@ -480,7 +480,7 @@ namespace Meziantou.Framework
     public sealed class ProcessResult
     {
         public int ExitCode { get => throw null; }
-        public global::Meziantou.Framework.ProcessOutputCollection Output { get => throw null; }
+        public Meziantou.Framework.ProcessOutputCollection Output { get => throw null; }
     }
 
     public static class QueueExtensions
@@ -516,7 +516,7 @@ namespace Meziantou.Framework
         public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
     }
 
-    public readonly struct Range<T> : System.IEquatable<global::Meziantou.Framework.Range<T>> where T : System.IComparable<T>
+    public readonly struct Range<T> : System.IEquatable<Meziantou.Framework.Range<T>> where T : System.IComparable<T>
     {
         public T From { get => throw null; }
         public T To { get => throw null; }
@@ -525,16 +525,16 @@ namespace Meziantou.Framework
         public bool IsInRangeExclusive(T value) => throw null;
         public bool IsInRangeLowerInclusive(T value) => throw null;
         public bool IsInRangeUpperInclusive(T value) => throw null;
-        public bool IsInRangeInclusive(global::Meziantou.Framework.Range<T> range) => throw null;
-        public bool IsInRangeExclusive(global::Meziantou.Framework.Range<T> range) => throw null;
-        public bool IsInRangeLowerInclusive(global::Meziantou.Framework.Range<T> range) => throw null;
-        public bool IsInRangeUpperInclusive(global::Meziantou.Framework.Range<T> range) => throw null;
-        public bool Equals(global::Meziantou.Framework.Range<T> other) => throw null;
+        public bool IsInRangeInclusive(Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeExclusive(Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeLowerInclusive(Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeUpperInclusive(Meziantou.Framework.Range<T> range) => throw null;
+        public bool Equals(Meziantou.Framework.Range<T> other) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
         public override string? ToString() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.Range<T> left, global::Meziantou.Framework.Range<T> right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.Range<T> left, global::Meziantou.Framework.Range<T> right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Range<T> left, Meziantou.Framework.Range<T> right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Range<T> left, Meziantou.Framework.Range<T> right) => throw null;
     }
 
     public sealed class ReflectionDynamicObject : System.Dynamic.DynamicObject
@@ -544,7 +544,7 @@ namespace Meziantou.Framework
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
         public ReflectionDynamicObject(System.Type type) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode]
-        public global::Meziantou.Framework.ReflectionDynamicObject CreateInstance(params object[] parameters) => throw null;
+        public Meziantou.Framework.ReflectionDynamicObject CreateInstance(params object[] parameters) => throw null;
         public override bool TryGetMember(System.Dynamic.GetMemberBinder binder, out object? result) => throw null;
         public override bool TrySetMember(System.Dynamic.SetMemberBinder binder, object? value) => throw null;
         public override bool TryGetIndex(System.Dynamic.GetIndexBinder binder, object[] indexes, out object? result) => throw null;
@@ -578,7 +578,7 @@ namespace Meziantou.Framework
         public bool CanWrite { get => throw null; }
         public long Length { get => throw null; }
         public long Position { get => throw null; set { } }
-        public RestrictedStream(System.IO.Stream stream, global::Meziantou.Framework.RestrictedStreamOptions options) { }
+        public RestrictedStream(System.IO.Stream stream, Meziantou.Framework.RestrictedStreamOptions options) { }
         public override void Flush() { }
         public override int Read(byte[] buffer, int offset, int count) => throw null;
         public override long Seek(long offset, System.IO.SeekOrigin origin) => throw null;
@@ -603,7 +603,7 @@ namespace Meziantou.Framework
         public override void WriteByte(byte value) { }
     }
 
-    public sealed class RestrictedStreamOptions : System.IEquatable<global::Meziantou.Framework.RestrictedStreamOptions>
+    public sealed class RestrictedStreamOptions : System.IEquatable<Meziantou.Framework.RestrictedStreamOptions>
     {
         public bool AllowSynchronousCalls { get => throw null; set { } }
         public bool AllowAsynchronousCalls { get => throw null; set { } }
@@ -612,16 +612,16 @@ namespace Meziantou.Framework
         public bool AllowSeeking { get => throw null; set { } }
         public int MaxReadLength { get => throw null; set { } }
         public override string ToString() => throw null;
-        public static bool operator !=(global::Meziantou.Framework.RestrictedStreamOptions? left, global::Meziantou.Framework.RestrictedStreamOptions? right) => throw null;
-        public static bool operator ==(global::Meziantou.Framework.RestrictedStreamOptions? left, global::Meziantou.Framework.RestrictedStreamOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.RestrictedStreamOptions? left, Meziantou.Framework.RestrictedStreamOptions? right) => throw null;
+        public static bool operator ==(Meziantou.Framework.RestrictedStreamOptions? left, Meziantou.Framework.RestrictedStreamOptions? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public bool Equals(global::Meziantou.Framework.RestrictedStreamOptions? other) => throw null;
+        public bool Equals(Meziantou.Framework.RestrictedStreamOptions? other) => throw null;
     }
 
     public static class SafeHandleExtensions
     {
-        public static global::Meziantou.Framework.SafeHandleValue CreateHandleScope(this System.Runtime.InteropServices.SafeHandle safeHandle) => throw null;
+        public static Meziantou.Framework.SafeHandleValue CreateHandleScope(this System.Runtime.InteropServices.SafeHandle safeHandle) => throw null;
     }
 
     public struct SafeHandleValue : System.IDisposable
@@ -631,7 +631,7 @@ namespace Meziantou.Framework
         public nint Value { get => throw null; }
         public SafeHandleValue(System.Runtime.InteropServices.SafeHandle safeHandle) { }
         public void Dispose() { }
-        public static implicit operator nint(global::Meziantou.Framework.SafeHandleValue handle) => throw null;
+        public static implicit operator nint(Meziantou.Framework.SafeHandleValue handle) => throw null;
     }
 
     public static class ShortName
@@ -735,7 +735,7 @@ namespace Meziantou.Framework
         public static string RemovePrefix(this string str, string prefix) => throw null;
         public static string RemovePrefix(this string str, string prefix, System.StringComparison stringComparison) => throw null;
         public static LineSplitEnumerator SplitLines(this string str) => throw null;
-        public static LineSplitEnumerator SplitLines(this string str, global::Meziantou.Framework.LineBreakMode lineBreakMode) => throw null;
+        public static LineSplitEnumerator SplitLines(this string str, Meziantou.Framework.LineBreakMode lineBreakMode) => throw null;
         public ref struct LineSplitEntry
         {
             public System.ReadOnlySpan<char> Line { get => throw null; }
@@ -748,7 +748,7 @@ namespace Meziantou.Framework
         {
             public LineSplitEntry Current { get => throw null; }
             public LineSplitEnumerator(System.ReadOnlySpan<char> str) { }
-            public LineSplitEnumerator(System.ReadOnlySpan<char> str, global::Meziantou.Framework.LineBreakMode lineBreakMode) { }
+            public LineSplitEnumerator(System.ReadOnlySpan<char> str, Meziantou.Framework.LineBreakMode lineBreakMode) { }
             public LineSplitEnumerator GetEnumerator() => throw null;
             public bool MoveNext() => throw null;
         }
@@ -868,25 +868,25 @@ namespace Meziantou.Framework.Collections
 
     public static class ImmutableEquatableArray
     {
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.Collections.Immutable.ImmutableArray<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.Collections.Immutable.ImmutableArray<T> values) where T : System.IEquatable<T> => throw null;
     }
 
     public static class ImmutableEquatableDictionary
     {
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty<TKey, TValue>() where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<TValue> values, System.Func<TValue, TKey> keySelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> valueSelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.ValueTuple<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty<TKey, TValue>() where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<TValue> values, System.Func<TValue, TKey> keySelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> valueSelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.ValueTuple<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
     }
 
     public static class ImmutableEquatableSet
     {
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<T> ToImmutableEquatableSet<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> ToImmutableEquatableSet<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
+        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
     }
 
     public sealed class LimitList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable

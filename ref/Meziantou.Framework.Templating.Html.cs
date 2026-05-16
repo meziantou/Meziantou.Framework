@@ -3,9 +3,9 @@
 
 namespace Meziantou.Framework.Templating
 {
-    public class HtmlEmailCodeBlock : global::Meziantou.Framework.Templating.CodeBlock
+    public class HtmlEmailCodeBlock : Meziantou.Framework.Templating.CodeBlock
     {
-        public HtmlEmailCodeBlock(global::Meziantou.Framework.Templating.Template template, string text, int index) { }
+        public HtmlEmailCodeBlock(Meziantou.Framework.Templating.Template template, string text, int index) { }
         protected virtual string? HtmlDecode(string? html) => throw null;
         public override string BuildCode() => throw null;
     }
@@ -16,11 +16,11 @@ namespace Meziantou.Framework.Templating
         public System.Collections.Generic.IList<string>? ContentIdentifiers { get => throw null; set { } }
     }
 
-    public class HtmlEmailOutput : global::Meziantou.Framework.Templating.Output
+    public class HtmlEmailOutput : Meziantou.Framework.Templating.Output
     {
         public const string TitleSectionName = "title";
         public System.Collections.Generic.IList<string> ContentIdentifiers { get => throw null; }
-        public HtmlEmailOutput(global::Meziantou.Framework.Templating.Template template, System.IO.TextWriter writer) { }
+        public HtmlEmailOutput(Meziantou.Framework.Templating.Template template, System.IO.TextWriter writer) { }
         public override void Write(string format, params object?[] args) { }
         public virtual void WriteHtmlEncode(object? value) { }
         public virtual void WriteHtmlEncode(string? value) { }
@@ -38,15 +38,15 @@ namespace Meziantou.Framework.Templating
         protected virtual string? HtmlDecode(string html) => throw null;
     }
 
-    public class HtmlEmailTemplate : global::Meziantou.Framework.Templating.Template
+    public class HtmlEmailTemplate : Meziantou.Framework.Templating.Template
     {
-        protected override global::Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
+        protected override Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
         protected override object CreateOutput(System.IO.TextWriter writer) => throw null;
-        public virtual string Run(out global::Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IDictionary<string, object?> parameters) => throw null;
-        public virtual string Run(out global::Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;
-        public virtual string Run(out global::Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
-        public virtual void Run(System.IO.TextWriter writer, out global::Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) => throw null;
-        public virtual void Run(System.IO.TextWriter writer, out global::Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;
-        public virtual void Run(System.IO.TextWriter writer, out global::Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
+        public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IDictionary<string, object?> parameters) => throw null;
+        public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;
+        public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
+        public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IReadOnlyDictionary<string, object?> parameters) => throw null;
+        public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;
+        public virtual void Run(System.IO.TextWriter writer, out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata) => throw null;
     }
 }

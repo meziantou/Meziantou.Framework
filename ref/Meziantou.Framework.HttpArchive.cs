@@ -18,9 +18,9 @@ namespace Meziantou.Framework.HttpArchive
     public sealed class HarCache
     {
         [System.Text.Json.Serialization.JsonPropertyName("beforeRequest")]
-        public global::Meziantou.Framework.HttpArchive.HarCacheEntry? BeforeRequest { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarCacheEntry? BeforeRequest { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("afterRequest")]
-        public global::Meziantou.Framework.HttpArchive.HarCacheEntry? AfterRequest { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarCacheEntry? AfterRequest { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
@@ -98,12 +98,12 @@ namespace Meziantou.Framework.HttpArchive
     public sealed class HarDocument
     {
         [System.Text.Json.Serialization.JsonPropertyName("log")]
-        public global::Meziantou.Framework.HttpArchive.HarLog Log { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarLog Log { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
-        public static global::Meziantou.Framework.HttpArchive.HarDocument Parse(string json) => throw null;
-        public static global::Meziantou.Framework.HttpArchive.HarDocument Parse(System.IO.Stream stream) => throw null;
-        public static System.Threading.Tasks.Task<global::Meziantou.Framework.HttpArchive.HarDocument> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static Meziantou.Framework.HttpArchive.HarDocument Parse(string json) => throw null;
+        public static Meziantou.Framework.HttpArchive.HarDocument Parse(System.IO.Stream stream) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.HttpArchive.HarDocument> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public string ToJsonString(bool indented = false) => throw null;
         public void WriteTo(System.IO.Stream stream, bool indented = false) { }
         public System.Threading.Tasks.Task WriteToAsync(System.IO.Stream stream, bool indented = false, System.Threading.CancellationToken cancellationToken = null) => throw null;
@@ -118,13 +118,13 @@ namespace Meziantou.Framework.HttpArchive
         [System.Text.Json.Serialization.JsonPropertyName("time")]
         public double Time { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("request")]
-        public global::Meziantou.Framework.HttpArchive.HarRequest Request { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarRequest Request { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("response")]
-        public global::Meziantou.Framework.HttpArchive.HarResponse Response { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarResponse Response { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("cache")]
-        public global::Meziantou.Framework.HttpArchive.HarCache Cache { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarCache Cache { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("timings")]
-        public global::Meziantou.Framework.HttpArchive.HarTimings Timings { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarTimings Timings { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("serverIPAddress")]
         public string? ServerIPAddress { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("connection")]
@@ -137,10 +137,10 @@ namespace Meziantou.Framework.HttpArchive
 
     public static class HarEntryExtensions
     {
-        public static System.Net.Http.HttpRequestMessage ToHttpRequestMessage(this global::Meziantou.Framework.HttpArchive.HarEntry entry) => throw null;
-        public static System.Net.Http.HttpResponseMessage ToHttpResponseMessage(this global::Meziantou.Framework.HttpArchive.HarEntry entry) => throw null;
-        public static System.Net.Http.HttpRequestMessage ToHttpRequestMessage(this global::Meziantou.Framework.HttpArchive.HarRequest request) => throw null;
-        public static System.Net.Http.HttpResponseMessage ToHttpResponseMessage(this global::Meziantou.Framework.HttpArchive.HarResponse response) => throw null;
+        public static System.Net.Http.HttpRequestMessage ToHttpRequestMessage(this Meziantou.Framework.HttpArchive.HarEntry entry) => throw null;
+        public static System.Net.Http.HttpResponseMessage ToHttpResponseMessage(this Meziantou.Framework.HttpArchive.HarEntry entry) => throw null;
+        public static System.Net.Http.HttpRequestMessage ToHttpRequestMessage(this Meziantou.Framework.HttpArchive.HarRequest request) => throw null;
+        public static System.Net.Http.HttpResponseMessage ToHttpResponseMessage(this Meziantou.Framework.HttpArchive.HarResponse response) => throw null;
     }
 
     public sealed class HarHeader
@@ -160,13 +160,13 @@ namespace Meziantou.Framework.HttpArchive
         [System.Text.Json.Serialization.JsonPropertyName("version")]
         public string Version { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("creator")]
-        public global::Meziantou.Framework.HttpArchive.HarCreator Creator { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarCreator Creator { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("browser")]
-        public global::Meziantou.Framework.HttpArchive.HarBrowser? Browser { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarBrowser? Browser { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("pages")]
-        public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarPage>? Pages { get => throw null; set { } }
+        public System.Collections.Generic.List<Meziantou.Framework.HttpArchive.HarPage>? Pages { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("entries")]
-        public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarEntry> Entries { get => throw null; set { } }
+        public System.Collections.Generic.List<Meziantou.Framework.HttpArchive.HarEntry> Entries { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
@@ -182,7 +182,7 @@ namespace Meziantou.Framework.HttpArchive
         [System.Text.Json.Serialization.JsonPropertyName("title")]
         public string Title { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("pageTimings")]
-        public global::Meziantou.Framework.HttpArchive.HarPageTimings PageTimings { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarPageTimings PageTimings { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
@@ -206,7 +206,7 @@ namespace Meziantou.Framework.HttpArchive
         [System.Text.Json.Serialization.JsonPropertyName("mimeType")]
         public string MimeType { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("params")]
-        public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarPostDataParameter>? Params { get => throw null; set { } }
+        public System.Collections.Generic.List<Meziantou.Framework.HttpArchive.HarPostDataParameter>? Params { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("text")]
         public string? Text { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("comment")]
@@ -218,7 +218,7 @@ namespace Meziantou.Framework.HttpArchive
     public static class HarPostDataExtensions
     {
         public const string DefaultEncodingExtensionName = "x-meziantou-encoding";
-        public static bool TryGetRawData(this global::Meziantou.Framework.HttpArchive.HarPostData? postData, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? rawData, string encodingExtensionName = "x-meziantou-encoding") => throw null;
+        public static bool TryGetRawData(this Meziantou.Framework.HttpArchive.HarPostData? postData, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? rawData, string encodingExtensionName = "x-meziantou-encoding") => throw null;
     }
 
     public sealed class HarPostDataParameter
@@ -258,13 +258,13 @@ namespace Meziantou.Framework.HttpArchive
         [System.Text.Json.Serialization.JsonPropertyName("httpVersion")]
         public string HttpVersion { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("cookies")]
-        public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarCookie> Cookies { get => throw null; set { } }
+        public System.Collections.Generic.List<Meziantou.Framework.HttpArchive.HarCookie> Cookies { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("headers")]
-        public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarHeader> Headers { get => throw null; set { } }
+        public System.Collections.Generic.List<Meziantou.Framework.HttpArchive.HarHeader> Headers { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("queryString")]
-        public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarQueryParameter> QueryString { get => throw null; set { } }
+        public System.Collections.Generic.List<Meziantou.Framework.HttpArchive.HarQueryParameter> QueryString { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("postData")]
-        public global::Meziantou.Framework.HttpArchive.HarPostData? PostData { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarPostData? PostData { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("headersSize")]
         public long HeadersSize { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("bodySize")]
@@ -284,11 +284,11 @@ namespace Meziantou.Framework.HttpArchive
         [System.Text.Json.Serialization.JsonPropertyName("httpVersion")]
         public string HttpVersion { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("cookies")]
-        public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarCookie> Cookies { get => throw null; set { } }
+        public System.Collections.Generic.List<Meziantou.Framework.HttpArchive.HarCookie> Cookies { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("headers")]
-        public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarHeader> Headers { get => throw null; set { } }
+        public System.Collections.Generic.List<Meziantou.Framework.HttpArchive.HarHeader> Headers { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("content")]
-        public global::Meziantou.Framework.HttpArchive.HarContent Content { get => throw null; set { } }
+        public Meziantou.Framework.HttpArchive.HarContent Content { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("redirectURL")]
         public string RedirectUrl { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonPropertyName("headersSize")]

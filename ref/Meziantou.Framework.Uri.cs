@@ -34,8 +34,8 @@ namespace Meziantou.Framework
         public static string AddOrReplaceQueryString(string uri, string name, string? value) => throw null;
         public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
         public static string RemoveQueryString(string uri, string name) => throw null;
-        public static global::Meziantou.Framework.QueryStringParameterCollection ParseQuery(string? queryString) => throw null;
-        public static global::Meziantou.Framework.QueryStringParameterCollection? ParseNullableQuery(string? queryString) => throw null;
+        public static Meziantou.Framework.QueryStringParameterCollection ParseQuery(string? queryString) => throw null;
+        public static Meziantou.Framework.QueryStringParameterCollection? ParseNullableQuery(string? queryString) => throw null;
     }
 
     public sealed class UrlPattern
@@ -49,46 +49,46 @@ namespace Meziantou.Framework
         public string Search { get => throw null; }
         public string Hash { get => throw null; }
         public bool HasRegExpGroups { get => throw null; }
-        public static global::Meziantou.Framework.UrlPattern Create(string pattern) => throw null;
-        public static global::Meziantou.Framework.UrlPattern Create(string pattern, global::Meziantou.Framework.UrlPatternOptions? options) => throw null;
-        public static global::Meziantou.Framework.UrlPattern Create(string pattern, string? baseUrl) => throw null;
-        public static global::Meziantou.Framework.UrlPattern Create(string pattern, string? baseUrl, global::Meziantou.Framework.UrlPatternOptions? options) => throw null;
-        public static global::Meziantou.Framework.UrlPattern Create(global::Meziantou.Framework.UrlPatternInit init) => throw null;
-        public static global::Meziantou.Framework.UrlPattern Create(global::Meziantou.Framework.UrlPatternInit init, global::Meziantou.Framework.UrlPatternOptions? options) => throw null;
+        public static Meziantou.Framework.UrlPattern Create(string pattern) => throw null;
+        public static Meziantou.Framework.UrlPattern Create(string pattern, Meziantou.Framework.UrlPatternOptions? options) => throw null;
+        public static Meziantou.Framework.UrlPattern Create(string pattern, string? baseUrl) => throw null;
+        public static Meziantou.Framework.UrlPattern Create(string pattern, string? baseUrl, Meziantou.Framework.UrlPatternOptions? options) => throw null;
+        public static Meziantou.Framework.UrlPattern Create(Meziantou.Framework.UrlPatternInit init) => throw null;
+        public static Meziantou.Framework.UrlPattern Create(Meziantou.Framework.UrlPatternInit init, Meziantou.Framework.UrlPatternOptions? options) => throw null;
         public bool IsMatch(string url) => throw null;
         public bool IsMatch(string url, string? baseUrl) => throw null;
         public bool IsMatch(System.Uri url) => throw null;
-        public bool IsMatch(global::Meziantou.Framework.UrlPatternInit input) => throw null;
-        public global::Meziantou.Framework.UrlPatternResult? Match(string url) => throw null;
-        public global::Meziantou.Framework.UrlPatternResult? Match(string url, string? baseUrl) => throw null;
-        public global::Meziantou.Framework.UrlPatternResult? Match(System.Uri url) => throw null;
-        public global::Meziantou.Framework.UrlPatternResult? Match(global::Meziantou.Framework.UrlPatternInit input) => throw null;
+        public bool IsMatch(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(string url) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(string url, string? baseUrl) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(System.Uri url) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(Meziantou.Framework.UrlPatternInit input) => throw null;
     }
 
-    public sealed class UrlPatternCollection : System.Collections.Generic.IEnumerable<global::Meziantou.Framework.UrlPattern>, System.Collections.Generic.IReadOnlyCollection<global::Meziantou.Framework.UrlPattern>, System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.UrlPattern>, System.Collections.IEnumerable
+    public sealed class UrlPatternCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.UrlPattern>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.UrlPattern>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UrlPattern>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
-        public global::Meziantou.Framework.UrlPattern this[int index] { get => throw null; }
-        public UrlPatternCollection(System.Collections.Generic.IEnumerable<global::Meziantou.Framework.UrlPattern> patterns) { }
-        public void Add(global::Meziantou.Framework.UrlPattern pattern) { }
-        public global::Meziantou.Framework.UrlPattern Add(string pattern) => throw null;
-        public global::Meziantou.Framework.UrlPattern Add(string pattern, string? baseUrl) => throw null;
-        public global::Meziantou.Framework.UrlPattern Add(global::Meziantou.Framework.UrlPatternInit init) => throw null;
-        public bool Remove(global::Meziantou.Framework.UrlPattern pattern) => throw null;
+        public Meziantou.Framework.UrlPattern this[int index] { get => throw null; }
+        public UrlPatternCollection(System.Collections.Generic.IEnumerable<Meziantou.Framework.UrlPattern> patterns) { }
+        public void Add(Meziantou.Framework.UrlPattern pattern) { }
+        public Meziantou.Framework.UrlPattern Add(string pattern) => throw null;
+        public Meziantou.Framework.UrlPattern Add(string pattern, string? baseUrl) => throw null;
+        public Meziantou.Framework.UrlPattern Add(Meziantou.Framework.UrlPatternInit init) => throw null;
+        public bool Remove(Meziantou.Framework.UrlPattern pattern) => throw null;
         public void Clear() { }
-        public bool Contains(global::Meziantou.Framework.UrlPattern pattern) => throw null;
+        public bool Contains(Meziantou.Framework.UrlPattern pattern) => throw null;
         public bool IsMatch(string url) => throw null;
         public bool IsMatch(string url, string? baseUrl) => throw null;
         public bool IsMatch(System.Uri url) => throw null;
-        public bool IsMatch(global::Meziantou.Framework.UrlPatternInit input) => throw null;
-        public global::Meziantou.Framework.UrlPattern? FindPattern(string url) => throw null;
-        public global::Meziantou.Framework.UrlPattern? FindPattern(string url, string? baseUrl) => throw null;
-        public global::Meziantou.Framework.UrlPattern? FindPattern(System.Uri url) => throw null;
-        public global::Meziantou.Framework.UrlPatternResult? Match(string url) => throw null;
-        public global::Meziantou.Framework.UrlPatternResult? Match(string url, string? baseUrl) => throw null;
-        public global::Meziantou.Framework.UrlPatternResult? Match(System.Uri url) => throw null;
-        public global::Meziantou.Framework.UrlPatternResult? Match(global::Meziantou.Framework.UrlPatternInit input) => throw null;
-        public System.Collections.Generic.IEnumerator<global::Meziantou.Framework.UrlPattern> GetEnumerator() => throw null;
+        public bool IsMatch(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public Meziantou.Framework.UrlPattern? FindPattern(string url) => throw null;
+        public Meziantou.Framework.UrlPattern? FindPattern(string url, string? baseUrl) => throw null;
+        public Meziantou.Framework.UrlPattern? FindPattern(System.Uri url) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(string url) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(string url, string? baseUrl) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(System.Uri url) => throw null;
+        public Meziantou.Framework.UrlPatternResult? Match(Meziantou.Framework.UrlPatternInit input) => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.UrlPattern> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
@@ -120,7 +120,7 @@ namespace Meziantou.Framework
     public sealed class UrlPatternInput
     {
         public string? Url { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternInit? Init { get => throw null; }
+        public Meziantou.Framework.UrlPatternInit? Init { get => throw null; }
     }
 
     public sealed class UrlPatternOptions
@@ -130,14 +130,14 @@ namespace Meziantou.Framework
 
     public sealed class UrlPatternResult
     {
-        public System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.UrlPatternInput> Inputs { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternComponentResult Protocol { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternComponentResult Username { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternComponentResult Password { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternComponentResult Hostname { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternComponentResult Port { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternComponentResult Pathname { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternComponentResult Search { get => throw null; }
-        public global::Meziantou.Framework.UrlPatternComponentResult Hash { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UrlPatternInput> Inputs { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Protocol { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Username { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Password { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Hostname { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Port { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Pathname { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Search { get => throw null; }
+        public Meziantou.Framework.UrlPatternComponentResult Hash { get => throw null; }
     }
 }

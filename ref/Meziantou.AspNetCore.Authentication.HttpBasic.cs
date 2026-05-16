@@ -11,18 +11,18 @@ namespace Meziantou.AspNetCore.Authentication.HttpBasic
     public static class HttpBasicAuthenticationExtensions
     {
         public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasic(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder) => throw null;
-        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasic(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, System.Action<global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) => throw null;
-        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasic(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, System.Action<global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) => throw null;
-        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasic(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, string? displayName, System.Action<global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) => throw null;
+        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasic(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) => throw null;
+        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasic(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) => throw null;
+        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasic(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, string? displayName, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) => throw null;
     }
 
     public static class HttpBasicAuthenticationIdentityExtensions
     {
         public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder) where TUser : class => throw null;
-        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, System.Action<global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) where TUser : class => throw null;
-        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, System.Action<global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
-        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, System.Action<global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
-        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, string? displayName, System.Action<global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
+        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions) where TUser : class => throw null;
+        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
+        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
+        public static Microsoft.AspNetCore.Authentication.AuthenticationBuilder AddHttpBasicIdentity<TUser>(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder builder, string authenticationScheme, string? displayName, System.Action<Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure) where TUser : class => throw null;
     }
 
     public sealed class HttpBasicAuthenticationOptions : Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions
@@ -30,8 +30,8 @@ namespace Meziantou.AspNetCore.Authentication.HttpBasic
         public const int DefaultMaxCredentialLength = 4096;
         public string? Realm { get => throw null; set { } }
         public int MaxCredentialLength { get => throw null; set { } }
-        public global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicCredentialValidator ValidateCredentials { get => throw null; set { } }
-        public global::Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicPrincipalFactory CreatePrincipal { get => throw null; set { } }
+        public Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicCredentialValidator ValidateCredentials { get => throw null; set { } }
+        public Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicPrincipalFactory CreatePrincipal { get => throw null; set { } }
     }
 
     public delegate System.Threading.Tasks.ValueTask<bool> HttpBasicCredentialValidator(Microsoft.AspNetCore.Http.HttpContext httpContext, string username, string password);

@@ -10,15 +10,15 @@ namespace Meziantou.Framework.OpenTelemetryCollector
 
     public abstract class OpenTelemetryHandler
     {
-        public abstract System.Threading.Tasks.ValueTask HandleLogsAsync(global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, System.Threading.CancellationToken cancellationToken);
-        public abstract System.Threading.Tasks.ValueTask HandleTracesAsync(global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, System.Threading.CancellationToken cancellationToken);
-        public abstract System.Threading.Tasks.ValueTask HandleMetricsAsync(global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.ValueTask HandleLogsAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.ValueTask HandleTracesAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.ValueTask HandleMetricsAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, System.Threading.CancellationToken cancellationToken);
     }
 
     public readonly struct OpenTelemetryHandlerContext
     {
         public string Method { get => throw null; }
-        public global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTransport Transport { get => throw null; }
+        public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTransport Transport { get => throw null; }
     }
 
     public enum OpenTelemetryItemType
@@ -34,20 +34,20 @@ namespace Meziantou.Framework.OpenTelemetryCollector
         public string? HttpTracesEndpoint { get => throw null; set { } }
         public string? HttpMetricsEndpoint { get => throw null; set { } }
         public bool EnableGrpcEndpoints { get => throw null; set { } }
-        public System.Collections.Generic.IList<global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler> Samplers { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler> Samplers { get => throw null; }
     }
 
     public abstract class OpenTelemetrySampler
     {
-        public virtual System.Threading.Tasks.ValueTask<bool> ShouldSampleLogsAsync(global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
-        public virtual System.Threading.Tasks.ValueTask<bool> ShouldSampleTracesAsync(global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
-        public virtual System.Threading.Tasks.ValueTask<bool> ShouldSampleMetricsAsync(global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<bool> ShouldSampleLogsAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<bool> ShouldSampleTracesAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<bool> ShouldSampleMetricsAsync(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext context, OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
     }
 
     public static class OpenTelemetryServiceCollectionExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddOpenTelemetryReceiver<TReceiver>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions>? configure = null) where TReceiver : global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler => throw null;
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddOpenTelemetryReceiver(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<System.IServiceProvider, global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler> implementationFactory, System.Action<global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions>? configure = null) => throw null;
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddOpenTelemetryReceiver<TReceiver>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions>? configure = null) where TReceiver : Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler => throw null;
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddOpenTelemetryReceiver(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<System.IServiceProvider, Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler> implementationFactory, System.Action<Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions>? configure = null) => throw null;
     }
 
     public enum OpenTelemetryTailBufferOverflowPolicy
@@ -57,18 +57,18 @@ namespace Meziantou.Framework.OpenTelemetryCollector
         DropNewestSpans = 2
     }
 
-    public sealed class OpenTelemetryTailSampler : global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler
+    public sealed class OpenTelemetryTailSampler : Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler
     {
         public System.TimeSpan MaxTraceDuration { get => throw null; set { } }
         public int MaxBufferedSpansPerTrace { get => throw null; set { } }
         public int MaxBufferedSpans { get => throw null; set { } }
-        public global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailBufferOverflowPolicy OverflowPolicy { get => throw null; set { } }
-        public global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTraceTailSampling? ShouldSample { get => throw null; set { } }
+        public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailBufferOverflowPolicy OverflowPolicy { get => throw null; set { } }
+        public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTraceTailSampling? ShouldSample { get => throw null; set { } }
     }
 
     public sealed class OpenTelemetryTailTraceContext
     {
-        public global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext HandlerContext { get => throw null; }
+        public Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext HandlerContext { get => throw null; }
         public string TraceId { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<OpenTelemetry.Proto.Trace.V1.Span> Spans { get => throw null; }
         public OpenTelemetry.Proto.Trace.V1.Span? RootSpan { get => throw null; }
@@ -78,7 +78,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
         public System.DateTimeOffset EvaluationTime { get => throw null; }
     }
 
-    public delegate System.Threading.Tasks.ValueTask<bool> OpenTelemetryTraceTailSampling(global::Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext context, System.Threading.CancellationToken cancellationToken);
+    public delegate System.Threading.Tasks.ValueTask<bool> OpenTelemetryTraceTailSampling(Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext context, System.Threading.CancellationToken cancellationToken);
 
     public enum OpenTelemetryTransport
     {
@@ -89,25 +89,25 @@ namespace Meziantou.Framework.OpenTelemetryCollector
 namespace OpenTelemetry.Proto.Collector.Logs.V1
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportLogsPartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>
+    public sealed class ExportLogsPartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>, System.IEquatable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess>
     {
         public const int RejectedLogRecordsFieldNumber = 1;
         public const int ErrorMessageFieldNumber = 2;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public long RejectedLogRecords { get => throw null; set { } }
         public string ErrorMessage { get => throw null; set { } }
         #nullable disable
-        public ExportLogsPartialSuccess(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess other) { }
+        public ExportLogsPartialSuccess(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -119,7 +119,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -128,23 +128,23 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportLogsServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>
+    public sealed class ExportLogsServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>, System.IEquatable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest>
     {
         public const int ResourceLogsFieldNumber = 1;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Logs.V1.ResourceLogs> ResourceLogs { get => throw null; }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Logs.V1.ResourceLogs> ResourceLogs { get => throw null; }
         #nullable disable
-        public ExportLogsServiceRequest(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest other) { }
+        public ExportLogsServiceRequest(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -156,7 +156,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -165,23 +165,23 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportLogsServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>
+    public sealed class ExportLogsServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>, System.IEquatable<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse>
     {
         public const int PartialSuccessFieldNumber = 1;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess PartialSuccess { get => throw null; set { } }
+        public OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsPartialSuccess PartialSuccess { get => throw null; set { } }
         #nullable disable
-        public ExportLogsServiceResponse(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse other) { }
+        public ExportLogsServiceResponse(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -193,7 +193,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -213,7 +213,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
         public abstract class LogsServiceBase
         {
             #nullable disable
-            public virtual System.Threading.Tasks.Task<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> Export(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
+            public virtual System.Threading.Tasks.Task<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> Export(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
             #nullable restore
         }
         public class LogsServiceClient : Grpc.Core.ClientBase<LogsServiceClient>
@@ -227,9 +227,9 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
             #nullable disable
             protected LogsServiceClient(ClientBaseConfiguration configuration) { }
             #nullable restore
-            public virtual global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse Export(
+            public virtual OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse Export(
             #nullable disable
-                global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request,
+                OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request,
             #nullable restore
             #nullable disable
                 Grpc.Core.Metadata headers = null,
@@ -238,11 +238,11 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
                 System.Threading.CancellationToken cancellationToken = null
                 ) => throw null;
             #nullable disable
-            public virtual global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse Export(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
+            public virtual OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse Export(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
-            public virtual Grpc.Core.AsyncUnaryCall<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> ExportAsync(
+            public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> ExportAsync(
             #nullable disable
-                global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request,
+                OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request,
             #nullable restore
             #nullable disable
                 Grpc.Core.Metadata headers = null,
@@ -251,7 +251,7 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
                 System.Threading.CancellationToken cancellationToken = null
                 ) => throw null;
             #nullable disable
-            public virtual Grpc.Core.AsyncUnaryCall<global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> ExportAsync(global::OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
+            public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceResponse> ExportAsync(OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
             #nullable disable
             protected override LogsServiceClient NewInstance(ClientBaseConfiguration configuration) => throw null;
@@ -267,25 +267,25 @@ namespace OpenTelemetry.Proto.Collector.Logs.V1
 namespace OpenTelemetry.Proto.Collector.Metrics.V1
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportMetricsPartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>
+    public sealed class ExportMetricsPartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>, System.IEquatable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess>
     {
         public const int RejectedDataPointsFieldNumber = 1;
         public const int ErrorMessageFieldNumber = 2;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public long RejectedDataPoints { get => throw null; set { } }
         public string ErrorMessage { get => throw null; set { } }
         #nullable disable
-        public ExportMetricsPartialSuccess(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess other) { }
+        public ExportMetricsPartialSuccess(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -297,7 +297,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -306,23 +306,23 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportMetricsServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>
+    public sealed class ExportMetricsServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>, System.IEquatable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest>
     {
         public const int ResourceMetricsFieldNumber = 1;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics> ResourceMetrics { get => throw null; }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics> ResourceMetrics { get => throw null; }
         #nullable disable
-        public ExportMetricsServiceRequest(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest other) { }
+        public ExportMetricsServiceRequest(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -334,7 +334,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -343,23 +343,23 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportMetricsServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>
+    public sealed class ExportMetricsServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>, System.IEquatable<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse>
     {
         public const int PartialSuccessFieldNumber = 1;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess PartialSuccess { get => throw null; set { } }
+        public OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsPartialSuccess PartialSuccess { get => throw null; set { } }
         #nullable disable
-        public ExportMetricsServiceResponse(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse other) { }
+        public ExportMetricsServiceResponse(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -371,7 +371,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -391,7 +391,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
         public abstract class MetricsServiceBase
         {
             #nullable disable
-            public virtual System.Threading.Tasks.Task<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> Export(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
+            public virtual System.Threading.Tasks.Task<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> Export(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
             #nullable restore
         }
         public class MetricsServiceClient : Grpc.Core.ClientBase<MetricsServiceClient>
@@ -405,9 +405,9 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
             #nullable disable
             protected MetricsServiceClient(ClientBaseConfiguration configuration) { }
             #nullable restore
-            public virtual global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse Export(
+            public virtual OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse Export(
             #nullable disable
-                global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request,
+                OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request,
             #nullable restore
             #nullable disable
                 Grpc.Core.Metadata headers = null,
@@ -416,11 +416,11 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
                 System.Threading.CancellationToken cancellationToken = null
                 ) => throw null;
             #nullable disable
-            public virtual global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse Export(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
+            public virtual OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse Export(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
-            public virtual Grpc.Core.AsyncUnaryCall<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> ExportAsync(
+            public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> ExportAsync(
             #nullable disable
-                global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request,
+                OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request,
             #nullable restore
             #nullable disable
                 Grpc.Core.Metadata headers = null,
@@ -429,7 +429,7 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
                 System.Threading.CancellationToken cancellationToken = null
                 ) => throw null;
             #nullable disable
-            public virtual Grpc.Core.AsyncUnaryCall<global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> ExportAsync(global::OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
+            public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceResponse> ExportAsync(OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
             #nullable disable
             protected override MetricsServiceClient NewInstance(ClientBaseConfiguration configuration) => throw null;
@@ -445,25 +445,25 @@ namespace OpenTelemetry.Proto.Collector.Metrics.V1
 namespace OpenTelemetry.Proto.Collector.Trace.V1
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportTracePartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>
+    public sealed class ExportTracePartialSuccess : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>, System.IEquatable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess>
     {
         public const int RejectedSpansFieldNumber = 1;
         public const int ErrorMessageFieldNumber = 2;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public long RejectedSpans { get => throw null; set { } }
         public string ErrorMessage { get => throw null; set { } }
         #nullable disable
-        public ExportTracePartialSuccess(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess other) { }
+        public ExportTracePartialSuccess(OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -475,7 +475,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -484,23 +484,23 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportTraceServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>
+    public sealed class ExportTraceServiceRequest : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>, System.IEquatable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest>
     {
         public const int ResourceSpansFieldNumber = 1;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Trace.V1.ResourceSpans> ResourceSpans { get => throw null; }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Trace.V1.ResourceSpans> ResourceSpans { get => throw null; }
         #nullable disable
-        public ExportTraceServiceRequest(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest other) { }
+        public ExportTraceServiceRequest(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -512,7 +512,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -521,23 +521,23 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ExportTraceServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>, System.IEquatable<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>
+    public sealed class ExportTraceServiceResponse : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>, System.IEquatable<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse>
     {
         public const int PartialSuccessFieldNumber = 1;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess PartialSuccess { get => throw null; set { } }
+        public OpenTelemetry.Proto.Collector.Trace.V1.ExportTracePartialSuccess PartialSuccess { get => throw null; set { } }
         #nullable disable
-        public ExportTraceServiceResponse(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse other) { }
+        public ExportTraceServiceResponse(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse Clone() => throw null;
+        public OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -549,7 +549,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -569,7 +569,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
         public abstract class TraceServiceBase
         {
             #nullable disable
-            public virtual System.Threading.Tasks.Task<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> Export(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
+            public virtual System.Threading.Tasks.Task<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> Export(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.ServerCallContext context) => throw null;
             #nullable restore
         }
         public class TraceServiceClient : Grpc.Core.ClientBase<TraceServiceClient>
@@ -583,9 +583,9 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
             #nullable disable
             protected TraceServiceClient(ClientBaseConfiguration configuration) { }
             #nullable restore
-            public virtual global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse Export(
+            public virtual OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse Export(
             #nullable disable
-                global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request,
+                OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request,
             #nullable restore
             #nullable disable
                 Grpc.Core.Metadata headers = null,
@@ -594,11 +594,11 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
                 System.Threading.CancellationToken cancellationToken = null
                 ) => throw null;
             #nullable disable
-            public virtual global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse Export(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.CallOptions options) => throw null;
+            public virtual OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse Export(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
-            public virtual Grpc.Core.AsyncUnaryCall<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> ExportAsync(
+            public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> ExportAsync(
             #nullable disable
-                global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request,
+                OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request,
             #nullable restore
             #nullable disable
                 Grpc.Core.Metadata headers = null,
@@ -607,7 +607,7 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
                 System.Threading.CancellationToken cancellationToken = null
                 ) => throw null;
             #nullable disable
-            public virtual Grpc.Core.AsyncUnaryCall<global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> ExportAsync(global::OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.CallOptions options) => throw null;
+            public virtual Grpc.Core.AsyncUnaryCall<OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceResponse> ExportAsync(OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest request, Grpc.Core.CallOptions options) => throw null;
             #nullable restore
             #nullable disable
             protected override TraceServiceClient NewInstance(ClientBaseConfiguration configuration) => throw null;
@@ -623,14 +623,14 @@ namespace OpenTelemetry.Proto.Collector.Trace.V1
 namespace OpenTelemetry.Proto.Common.V1
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class AnyValue : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Common.V1.AnyValue>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Common.V1.AnyValue>, System.IEquatable<global::OpenTelemetry.Proto.Common.V1.AnyValue>
+    public sealed class AnyValue : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Common.V1.AnyValue>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Common.V1.AnyValue>, System.IEquatable<OpenTelemetry.Proto.Common.V1.AnyValue>
     {
         public const int StringValueFieldNumber = 1;
         public const int BoolValueFieldNumber = 2;
         public const int IntValueFieldNumber = 3;
         public const int DoubleValueFieldNumber = 4;
         public const int BytesValueFieldNumber = 5;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Common.V1.AnyValue> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Common.V1.AnyValue> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public string StringValue { get => throw null; set { } }
         public bool HasStringValue { get => throw null; }
@@ -644,10 +644,10 @@ namespace OpenTelemetry.Proto.Common.V1
         public bool HasBytesValue { get => throw null; }
         public ValueOneofCase ValueCase { get => throw null; }
         #nullable disable
-        public AnyValue(global::OpenTelemetry.Proto.Common.V1.AnyValue other) { }
+        public AnyValue(OpenTelemetry.Proto.Common.V1.AnyValue other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Common.V1.AnyValue Clone() => throw null;
+        public OpenTelemetry.Proto.Common.V1.AnyValue Clone() => throw null;
         #nullable restore
         public void ClearStringValue() { }
         public void ClearBoolValue() { }
@@ -659,7 +659,7 @@ namespace OpenTelemetry.Proto.Common.V1
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Common.V1.AnyValue other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Common.V1.AnyValue other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -671,7 +671,7 @@ namespace OpenTelemetry.Proto.Common.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Common.V1.AnyValue other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Common.V1.AnyValue other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -694,27 +694,27 @@ namespace OpenTelemetry.Proto.Common.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class InstrumentationScope : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Common.V1.InstrumentationScope>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Common.V1.InstrumentationScope>, System.IEquatable<global::OpenTelemetry.Proto.Common.V1.InstrumentationScope>
+    public sealed class InstrumentationScope : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Common.V1.InstrumentationScope>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Common.V1.InstrumentationScope>, System.IEquatable<OpenTelemetry.Proto.Common.V1.InstrumentationScope>
     {
         public const int NameFieldNumber = 1;
         public const int VersionFieldNumber = 2;
         public const int AttributesFieldNumber = 3;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Common.V1.InstrumentationScope> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Common.V1.InstrumentationScope> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public string Name { get => throw null; set { } }
         public string Version { get => throw null; set { } }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
         #nullable disable
-        public InstrumentationScope(global::OpenTelemetry.Proto.Common.V1.InstrumentationScope other) { }
+        public InstrumentationScope(OpenTelemetry.Proto.Common.V1.InstrumentationScope other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Common.V1.InstrumentationScope Clone() => throw null;
+        public OpenTelemetry.Proto.Common.V1.InstrumentationScope Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Common.V1.InstrumentationScope other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Common.V1.InstrumentationScope other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -726,7 +726,7 @@ namespace OpenTelemetry.Proto.Common.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Common.V1.InstrumentationScope other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Common.V1.InstrumentationScope other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -735,25 +735,25 @@ namespace OpenTelemetry.Proto.Common.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class KeyValue : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Common.V1.KeyValue>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Common.V1.KeyValue>, System.IEquatable<global::OpenTelemetry.Proto.Common.V1.KeyValue>
+    public sealed class KeyValue : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Common.V1.KeyValue>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Common.V1.KeyValue>, System.IEquatable<OpenTelemetry.Proto.Common.V1.KeyValue>
     {
         public const int KeyFieldNumber = 1;
         public const int ValueFieldNumber = 2;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Common.V1.KeyValue> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Common.V1.KeyValue> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public string Key { get => throw null; set { } }
-        public global::OpenTelemetry.Proto.Common.V1.AnyValue Value { get => throw null; set { } }
+        public OpenTelemetry.Proto.Common.V1.AnyValue Value { get => throw null; set { } }
         #nullable disable
-        public KeyValue(global::OpenTelemetry.Proto.Common.V1.KeyValue other) { }
+        public KeyValue(OpenTelemetry.Proto.Common.V1.KeyValue other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Common.V1.KeyValue Clone() => throw null;
+        public OpenTelemetry.Proto.Common.V1.KeyValue Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Common.V1.KeyValue other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Common.V1.KeyValue other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -765,7 +765,7 @@ namespace OpenTelemetry.Proto.Common.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Common.V1.KeyValue other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Common.V1.KeyValue other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -776,27 +776,27 @@ namespace OpenTelemetry.Proto.Common.V1
 namespace OpenTelemetry.Proto.Logs.V1
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class LogRecord : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Logs.V1.LogRecord>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Logs.V1.LogRecord>, System.IEquatable<global::OpenTelemetry.Proto.Logs.V1.LogRecord>
+    public sealed class LogRecord : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Logs.V1.LogRecord>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Logs.V1.LogRecord>, System.IEquatable<OpenTelemetry.Proto.Logs.V1.LogRecord>
     {
         public const int TimeUnixNanoFieldNumber = 1;
         public const int BodyFieldNumber = 5;
         public const int AttributesFieldNumber = 6;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Logs.V1.LogRecord> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Logs.V1.LogRecord> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public ulong TimeUnixNano { get => throw null; set { } }
-        public global::OpenTelemetry.Proto.Common.V1.AnyValue Body { get => throw null; set { } }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
+        public OpenTelemetry.Proto.Common.V1.AnyValue Body { get => throw null; set { } }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
         #nullable disable
-        public LogRecord(global::OpenTelemetry.Proto.Logs.V1.LogRecord other) { }
+        public LogRecord(OpenTelemetry.Proto.Logs.V1.LogRecord other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Logs.V1.LogRecord Clone() => throw null;
+        public OpenTelemetry.Proto.Logs.V1.LogRecord Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Logs.V1.LogRecord other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Logs.V1.LogRecord other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -808,7 +808,7 @@ namespace OpenTelemetry.Proto.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Logs.V1.LogRecord other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Logs.V1.LogRecord other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -822,27 +822,27 @@ namespace OpenTelemetry.Proto.Logs.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ResourceLogs : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Logs.V1.ResourceLogs>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Logs.V1.ResourceLogs>, System.IEquatable<global::OpenTelemetry.Proto.Logs.V1.ResourceLogs>
+    public sealed class ResourceLogs : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Logs.V1.ResourceLogs>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Logs.V1.ResourceLogs>, System.IEquatable<OpenTelemetry.Proto.Logs.V1.ResourceLogs>
     {
         public const int ResourceFieldNumber = 1;
         public const int ScopeLogsFieldNumber = 2;
         public const int SchemaUrlFieldNumber = 3;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Logs.V1.ResourceLogs> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Logs.V1.ResourceLogs> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Logs.V1.ScopeLogs> ScopeLogs { get => throw null; }
+        public OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Logs.V1.ScopeLogs> ScopeLogs { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
         #nullable disable
-        public ResourceLogs(global::OpenTelemetry.Proto.Logs.V1.ResourceLogs other) { }
+        public ResourceLogs(OpenTelemetry.Proto.Logs.V1.ResourceLogs other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Logs.V1.ResourceLogs Clone() => throw null;
+        public OpenTelemetry.Proto.Logs.V1.ResourceLogs Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Logs.V1.ResourceLogs other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Logs.V1.ResourceLogs other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -854,7 +854,7 @@ namespace OpenTelemetry.Proto.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Logs.V1.ResourceLogs other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Logs.V1.ResourceLogs other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -863,27 +863,27 @@ namespace OpenTelemetry.Proto.Logs.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ScopeLogs : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Logs.V1.ScopeLogs>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Logs.V1.ScopeLogs>, System.IEquatable<global::OpenTelemetry.Proto.Logs.V1.ScopeLogs>
+    public sealed class ScopeLogs : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Logs.V1.ScopeLogs>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Logs.V1.ScopeLogs>, System.IEquatable<OpenTelemetry.Proto.Logs.V1.ScopeLogs>
     {
         public const int ScopeFieldNumber = 1;
         public const int LogRecordsFieldNumber = 2;
         public const int SchemaUrlFieldNumber = 3;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Logs.V1.ScopeLogs> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Logs.V1.ScopeLogs> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Logs.V1.LogRecord> LogRecords { get => throw null; }
+        public OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Logs.V1.LogRecord> LogRecords { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
         #nullable disable
-        public ScopeLogs(global::OpenTelemetry.Proto.Logs.V1.ScopeLogs other) { }
+        public ScopeLogs(OpenTelemetry.Proto.Logs.V1.ScopeLogs other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Logs.V1.ScopeLogs Clone() => throw null;
+        public OpenTelemetry.Proto.Logs.V1.ScopeLogs Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Logs.V1.ScopeLogs other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Logs.V1.ScopeLogs other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -895,7 +895,7 @@ namespace OpenTelemetry.Proto.Logs.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Logs.V1.ScopeLogs other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Logs.V1.ScopeLogs other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -906,27 +906,27 @@ namespace OpenTelemetry.Proto.Logs.V1
 namespace OpenTelemetry.Proto.Metrics.V1
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class Metric : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Metrics.V1.Metric>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Metrics.V1.Metric>, System.IEquatable<global::OpenTelemetry.Proto.Metrics.V1.Metric>
+    public sealed class Metric : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Metrics.V1.Metric>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Metrics.V1.Metric>, System.IEquatable<OpenTelemetry.Proto.Metrics.V1.Metric>
     {
         public const int NameFieldNumber = 1;
         public const int DescriptionFieldNumber = 2;
         public const int UnitFieldNumber = 3;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Metrics.V1.Metric> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Metrics.V1.Metric> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public string Name { get => throw null; set { } }
         public string Description { get => throw null; set { } }
         public string Unit { get => throw null; set { } }
         #nullable disable
-        public Metric(global::OpenTelemetry.Proto.Metrics.V1.Metric other) { }
+        public Metric(OpenTelemetry.Proto.Metrics.V1.Metric other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Metrics.V1.Metric Clone() => throw null;
+        public OpenTelemetry.Proto.Metrics.V1.Metric Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Metrics.V1.Metric other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Metrics.V1.Metric other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -938,7 +938,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Metrics.V1.Metric other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Metrics.V1.Metric other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -952,27 +952,27 @@ namespace OpenTelemetry.Proto.Metrics.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ResourceMetrics : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>, System.IEquatable<global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>
+    public sealed class ResourceMetrics : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>, System.IEquatable<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics>
     {
         public const int ResourceFieldNumber = 1;
         public const int ScopeMetricsFieldNumber = 2;
         public const int SchemaUrlFieldNumber = 3;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Metrics.V1.ResourceMetrics> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics> ScopeMetrics { get => throw null; }
+        public OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics> ScopeMetrics { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
         #nullable disable
-        public ResourceMetrics(global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics other) { }
+        public ResourceMetrics(OpenTelemetry.Proto.Metrics.V1.ResourceMetrics other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics Clone() => throw null;
+        public OpenTelemetry.Proto.Metrics.V1.ResourceMetrics Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Metrics.V1.ResourceMetrics other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -984,7 +984,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Metrics.V1.ResourceMetrics other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Metrics.V1.ResourceMetrics other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -993,27 +993,27 @@ namespace OpenTelemetry.Proto.Metrics.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ScopeMetrics : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>, System.IEquatable<global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>
+    public sealed class ScopeMetrics : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>, System.IEquatable<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics>
     {
         public const int ScopeFieldNumber = 1;
         public const int MetricsFieldNumber = 2;
         public const int SchemaUrlFieldNumber = 3;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Metrics.V1.ScopeMetrics> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Metrics.V1.Metric> Metrics { get => throw null; }
+        public OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Metrics.V1.Metric> Metrics { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
         #nullable disable
-        public ScopeMetrics(global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics other) { }
+        public ScopeMetrics(OpenTelemetry.Proto.Metrics.V1.ScopeMetrics other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics Clone() => throw null;
+        public OpenTelemetry.Proto.Metrics.V1.ScopeMetrics Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Metrics.V1.ScopeMetrics other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -1025,7 +1025,7 @@ namespace OpenTelemetry.Proto.Metrics.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Metrics.V1.ScopeMetrics other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Metrics.V1.ScopeMetrics other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -1036,23 +1036,23 @@ namespace OpenTelemetry.Proto.Metrics.V1
 namespace OpenTelemetry.Proto.Resource.V1
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class Resource : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Resource.V1.Resource>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Resource.V1.Resource>, System.IEquatable<global::OpenTelemetry.Proto.Resource.V1.Resource>
+    public sealed class Resource : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Resource.V1.Resource>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Resource.V1.Resource>, System.IEquatable<OpenTelemetry.Proto.Resource.V1.Resource>
     {
         public const int AttributesFieldNumber = 1;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Resource.V1.Resource> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Resource.V1.Resource> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Common.V1.KeyValue> Attributes { get => throw null; }
         #nullable disable
-        public Resource(global::OpenTelemetry.Proto.Resource.V1.Resource other) { }
+        public Resource(OpenTelemetry.Proto.Resource.V1.Resource other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Resource.V1.Resource Clone() => throw null;
+        public OpenTelemetry.Proto.Resource.V1.Resource Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Resource.V1.Resource other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Resource.V1.Resource other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -1064,7 +1064,7 @@ namespace OpenTelemetry.Proto.Resource.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Resource.V1.Resource other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Resource.V1.Resource other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -1080,27 +1080,27 @@ namespace OpenTelemetry.Proto.Resource.V1
 namespace OpenTelemetry.Proto.Trace.V1
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ResourceSpans : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Trace.V1.ResourceSpans>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Trace.V1.ResourceSpans>, System.IEquatable<global::OpenTelemetry.Proto.Trace.V1.ResourceSpans>
+    public sealed class ResourceSpans : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Trace.V1.ResourceSpans>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Trace.V1.ResourceSpans>, System.IEquatable<OpenTelemetry.Proto.Trace.V1.ResourceSpans>
     {
         public const int ResourceFieldNumber = 1;
         public const int ScopeSpansFieldNumber = 2;
         public const int SchemaUrlFieldNumber = 3;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Trace.V1.ResourceSpans> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Trace.V1.ResourceSpans> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Trace.V1.ScopeSpans> ScopeSpans { get => throw null; }
+        public OpenTelemetry.Proto.Resource.V1.Resource Resource { get => throw null; set { } }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Trace.V1.ScopeSpans> ScopeSpans { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
         #nullable disable
-        public ResourceSpans(global::OpenTelemetry.Proto.Trace.V1.ResourceSpans other) { }
+        public ResourceSpans(OpenTelemetry.Proto.Trace.V1.ResourceSpans other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Trace.V1.ResourceSpans Clone() => throw null;
+        public OpenTelemetry.Proto.Trace.V1.ResourceSpans Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Trace.V1.ResourceSpans other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Trace.V1.ResourceSpans other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -1112,7 +1112,7 @@ namespace OpenTelemetry.Proto.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Trace.V1.ResourceSpans other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Trace.V1.ResourceSpans other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -1121,27 +1121,27 @@ namespace OpenTelemetry.Proto.Trace.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class ScopeSpans : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Trace.V1.ScopeSpans>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Trace.V1.ScopeSpans>, System.IEquatable<global::OpenTelemetry.Proto.Trace.V1.ScopeSpans>
+    public sealed class ScopeSpans : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Trace.V1.ScopeSpans>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Trace.V1.ScopeSpans>, System.IEquatable<OpenTelemetry.Proto.Trace.V1.ScopeSpans>
     {
         public const int ScopeFieldNumber = 1;
         public const int SpansFieldNumber = 2;
         public const int SchemaUrlFieldNumber = 3;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Trace.V1.ScopeSpans> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Trace.V1.ScopeSpans> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
-        public global::OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
-        public Google.Protobuf.Collections.RepeatedField<global::OpenTelemetry.Proto.Trace.V1.Span> Spans { get => throw null; }
+        public OpenTelemetry.Proto.Common.V1.InstrumentationScope Scope { get => throw null; set { } }
+        public Google.Protobuf.Collections.RepeatedField<OpenTelemetry.Proto.Trace.V1.Span> Spans { get => throw null; }
         public string SchemaUrl { get => throw null; set { } }
         #nullable disable
-        public ScopeSpans(global::OpenTelemetry.Proto.Trace.V1.ScopeSpans other) { }
+        public ScopeSpans(OpenTelemetry.Proto.Trace.V1.ScopeSpans other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Trace.V1.ScopeSpans Clone() => throw null;
+        public OpenTelemetry.Proto.Trace.V1.ScopeSpans Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Trace.V1.ScopeSpans other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Trace.V1.ScopeSpans other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -1153,7 +1153,7 @@ namespace OpenTelemetry.Proto.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Trace.V1.ScopeSpans other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Trace.V1.ScopeSpans other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }
@@ -1162,29 +1162,29 @@ namespace OpenTelemetry.Proto.Trace.V1
     }
 
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class Span : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<global::OpenTelemetry.Proto.Trace.V1.Span>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<global::OpenTelemetry.Proto.Trace.V1.Span>, System.IEquatable<global::OpenTelemetry.Proto.Trace.V1.Span>
+    public sealed class Span : Google.Protobuf.IBufferMessage, Google.Protobuf.IDeepCloneable<OpenTelemetry.Proto.Trace.V1.Span>, Google.Protobuf.IMessage, Google.Protobuf.IMessage<OpenTelemetry.Proto.Trace.V1.Span>, System.IEquatable<OpenTelemetry.Proto.Trace.V1.Span>
     {
         public const int TraceIdFieldNumber = 1;
         public const int SpanIdFieldNumber = 2;
         public const int ParentSpanIdFieldNumber = 4;
         public const int NameFieldNumber = 5;
-        public static Google.Protobuf.MessageParser<global::OpenTelemetry.Proto.Trace.V1.Span> Parser { get => throw null; }
+        public static Google.Protobuf.MessageParser<OpenTelemetry.Proto.Trace.V1.Span> Parser { get => throw null; }
         public static Google.Protobuf.Reflection.MessageDescriptor Descriptor { get => throw null; }
         public Google.Protobuf.ByteString TraceId { get => throw null; set { } }
         public Google.Protobuf.ByteString SpanId { get => throw null; set { } }
         public Google.Protobuf.ByteString ParentSpanId { get => throw null; set { } }
         public string Name { get => throw null; set { } }
         #nullable disable
-        public Span(global::OpenTelemetry.Proto.Trace.V1.Span other) { }
+        public Span(OpenTelemetry.Proto.Trace.V1.Span other) { }
         #nullable restore
         #nullable disable
-        public global::OpenTelemetry.Proto.Trace.V1.Span Clone() => throw null;
+        public OpenTelemetry.Proto.Trace.V1.Span Clone() => throw null;
         #nullable restore
         #nullable disable
         public override bool Equals(object other) => throw null;
         #nullable restore
         #nullable disable
-        public bool Equals(global::OpenTelemetry.Proto.Trace.V1.Span other) => throw null;
+        public bool Equals(OpenTelemetry.Proto.Trace.V1.Span other) => throw null;
         #nullable restore
         public override int GetHashCode() => throw null;
         #nullable disable
@@ -1196,7 +1196,7 @@ namespace OpenTelemetry.Proto.Trace.V1
         void pb::Google.Protobuf.IBufferMessage.InternalWriteTo(ref Google.Protobuf.WriteContext output) { }
         public int CalculateSize() => throw null;
         #nullable disable
-        public void MergeFrom(global::OpenTelemetry.Proto.Trace.V1.Span other) { }
+        public void MergeFrom(OpenTelemetry.Proto.Trace.V1.Span other) { }
         #nullable restore
         #nullable disable
         public void MergeFrom(Google.Protobuf.CodedInputStream input) { }

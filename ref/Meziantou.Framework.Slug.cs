@@ -13,7 +13,7 @@ namespace Meziantou.Framework
     public static class Slug
     {
         public static string? Create(string? text) => throw null;
-        public static string? Create(string? text, global::Meziantou.Framework.SlugOptions? options) => throw null;
+        public static string? Create(string? text, Meziantou.Framework.SlugOptions? options) => throw null;
     }
 
     public class SlugOptions
@@ -25,7 +25,7 @@ namespace Meziantou.Framework
         public string Separator { get => throw null; set { } }
         public System.Globalization.CultureInfo? Culture { get => throw null; set { } }
         public bool CanEndWithSeparator { get => throw null; set { } }
-        public global::Meziantou.Framework.CasingTransformation CasingTransformation { get => throw null; set { } }
+        public Meziantou.Framework.CasingTransformation CasingTransformation { get => throw null; set { } }
         public virtual bool IsAllowed(System.Text.Rune character) => throw null;
         public virtual string Replace(System.Text.Rune rune) => throw null;
     }

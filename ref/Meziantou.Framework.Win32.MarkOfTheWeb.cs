@@ -7,9 +7,9 @@ namespace Meziantou.Framework.Win32
     {
         public static void RemoveFileZone(string filePath) { }
         [System.Runtime.Versioning.SupportedOSPlatform]
-        public static global::Meziantou.Framework.Win32.UrlZone GetFileZone(string filePath) => throw null;
+        public static Meziantou.Framework.Win32.UrlZone GetFileZone(string filePath) => throw null;
         public static string? GetFileZoneContent(string filePath) => throw null;
-        public static void SetFileZone(string filePath, global::Meziantou.Framework.Win32.UrlZone zone, string? referrerUrl = null, string? hostUrl = null) { }
+        public static void SetFileZone(string filePath, Meziantou.Framework.Win32.UrlZone zone, string? referrerUrl = null, string? hostUrl = null) { }
         [System.Runtime.Versioning.SupportedOSPlatform]
         public static bool IsUntrusted(string filePath) => throw null;
     }

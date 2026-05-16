@@ -70,7 +70,15 @@
     <Error Condition="'@(_PublicApiGeneratorAssembly)' == ''"
            Text="No build output assembly was found to generate the public API for project '$(MSBuildProjectName)'." />
 
-    <Exec Command="dotnet &quot;$(_PublicApiGeneratorToolAssemblyPath)&quot; @(_PublicApiGeneratorAssembly->'--input &quot;%(TargetFramework)=%(Identity)&quot;', ' ') --output-file &quot;$(_PublicApiGeneratorResolvedOutputPath)&quot; --file-layout $(PublicApiGeneratorFileLayout) $(_PublicApiGeneratorIncludeCommentArg) $(_PublicApiGeneratorVerifyNoChangeArg)" />
+    <PropertyGroup>
+      <_PublicApiGeneratorCommand>dotnet &quot;$(_PublicApiGeneratorToolAssemblyPath)&quot; @(_PublicApiGeneratorAssembly->'--input &quot;%(TargetFramework)=%(Identity)&quot;', ' ') --output-file &quot;$(_PublicApiGeneratorResolvedOutputPath)&quot; --file-layout $(PublicApiGeneratorFileLayout) $(_PublicApiGeneratorIncludeCommentArg) $(_PublicApiGeneratorVerifyNoChangeArg)</_PublicApiGeneratorCommand>
+    </PropertyGroup>
+
+    <Message Importance="High"
+             Condition="'$(PublicApiGeneratorVerifyNoChangeOnBuild)' == 'true'"
+             Text="Public API verify command: $(_PublicApiGeneratorCommand)" />
+
+    <Exec Command="$(_PublicApiGeneratorCommand)" />
   </Target>
 
   <Target Name="GeneratePublicApiOnBuildSingleTargeting"
@@ -83,6 +91,14 @@
       </_PublicApiGeneratorAssembly>
     </ItemGroup>
 
-    <Exec Command="dotnet &quot;$(_PublicApiGeneratorToolAssemblyPath)&quot; @(_PublicApiGeneratorAssembly->'--input &quot;%(TargetFramework)=%(Identity)&quot;', ' ') --output-file &quot;$(_PublicApiGeneratorResolvedOutputPath)&quot; --file-layout $(PublicApiGeneratorFileLayout) $(_PublicApiGeneratorIncludeCommentArg) $(_PublicApiGeneratorVerifyNoChangeArg)" />
+    <PropertyGroup>
+      <_PublicApiGeneratorCommand>dotnet &quot;$(_PublicApiGeneratorToolAssemblyPath)&quot; @(_PublicApiGeneratorAssembly->'--input &quot;%(TargetFramework)=%(Identity)&quot;', ' ') --output-file &quot;$(_PublicApiGeneratorResolvedOutputPath)&quot; --file-layout $(PublicApiGeneratorFileLayout) $(_PublicApiGeneratorIncludeCommentArg) $(_PublicApiGeneratorVerifyNoChangeArg)</_PublicApiGeneratorCommand>
+    </PropertyGroup>
+
+    <Message Importance="High"
+             Condition="'$(PublicApiGeneratorVerifyNoChangeOnBuild)' == 'true'"
+             Text="Public API verify command: $(_PublicApiGeneratorCommand)" />
+
+    <Exec Command="$(_PublicApiGeneratorCommand)" />
   </Target>
 </Project>

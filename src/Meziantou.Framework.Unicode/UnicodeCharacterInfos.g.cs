@@ -11,6 +11,8 @@
 // Specification: https://www.unicode.org/reports/tr44/
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
 
+#nullable enable
+
 namespace Meziantou.Framework;
 internal static partial class UnicodeCharacterInfos
 {

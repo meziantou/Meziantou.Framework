@@ -12,6 +12,8 @@ internal static class PublicApiModelReader
 {
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
+    private static readonly Lock EnumMetadataCacheLock = new();
+    private static readonly Dictionary<string, EnumMetadata?> EnumMetadataCache = new(StringComparer.Ordinal);
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
     {
@@ -110,7 +112,7 @@ internal static class PublicApiModelReader
         var accessibility = GetAccessibility(typeDefinition.Attributes);
         var genericArguments = BuildGenericArguments(metadataReader, typeDefinitionHandle);
         var keyword = GetTypeKeyword(metadataReader, typeDefinition);
-        var inheritance = BuildTypeInheritance(metadataReader, typeDefinition);
+        var inheritance = BuildTypeInheritance(metadataReader, typeDefinitionHandle, typeDefinition);
         var constraints = BuildTypeConstraints(metadataReader, typeDefinitionHandle);
         var typeAttributes = BuildAttributes(metadataReader, typeDefinition.GetCustomAttributes());
 
@@ -122,7 +124,7 @@ internal static class PublicApiModelReader
                 throw new InvalidOperationException("Delegate type must have an Invoke method");
 
             var invokeMethod = metadataReader.GetMethodDefinition(invokeMethodHandle);
-            var invokeSignature = DecodeMethodSignature(metadataReader, invokeMethod);
+            var invokeSignature = DecodeMethodSignature(metadataReader, typeDefinitionHandle, invokeMethodHandle, invokeMethod);
             var returnType = ApplyNullableReferenceType(
                 invokeSignature.Signature.ReturnType,
                 GetNullableMetadataInfo(metadataReader, typeDefinitionHandle, GetParameterCustomAttributes(metadataReader, invokeMethod, sequenceNumber: 0), invokeMethodHandle));
@@ -351,9 +353,10 @@ internal static class PublicApiModelReader
         }
     }
 
-    private static string BuildTypeInheritance(MetadataReader metadataReader, TypeDefinition typeDefinition)
+    private static string BuildTypeInheritance(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
     {
         var keyword = GetTypeKeyword(metadataReader, typeDefinition);
+        var genericContext = BuildSignatureGenericContext(metadataReader, typeDefinitionHandle);
         var baseTypes = new List<string>();
         if (keyword == "class" && !typeDefinition.BaseType.IsNil)
         {
@@ -361,14 +364,14 @@ internal static class PublicApiModelReader
             if (!string.Equals(baseTypeName, "System.Object", StringComparison.Ordinal) &&
                 !string.Equals(baseTypeName, "System.ValueType", StringComparison.Ordinal))
             {
-                baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, typeDefinition.BaseType)));
+                baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, typeDefinition.BaseType, genericContext)));
             }
         }
 
         foreach (var interfaceImplementationHandle in typeDefinition.GetInterfaceImplementations())
         {
             var interfaceImplementation = metadataReader.GetInterfaceImplementation(interfaceImplementationHandle);
-            baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, interfaceImplementation.Interface)));
+            baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, interfaceImplementation.Interface, genericContext)));
         }
 
         if (baseTypes.Count == 0)
@@ -379,10 +382,10 @@ internal static class PublicApiModelReader
 
     private static List<string> BuildTypeConstraints(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle)
     {
-        return BuildConstraints(metadataReader, metadataReader.GetTypeDefinition(typeDefinitionHandle).GetGenericParameters());
+        return BuildConstraints(metadataReader, metadataReader.GetTypeDefinition(typeDefinitionHandle).GetGenericParameters(), BuildSignatureGenericContext(metadataReader, typeDefinitionHandle));
     }
 
-    private static List<string> BuildConstraints(MetadataReader metadataReader, GenericParameterHandleCollection genericParameters)
+    private static List<string> BuildConstraints(MetadataReader metadataReader, GenericParameterHandleCollection genericParameters, SignatureGenericContext genericContext)
     {
         var constraints = new List<string>();
         foreach (var genericParameterHandle in genericParameters)
@@ -404,7 +407,7 @@ internal static class PublicApiModelReader
             foreach (var constraintHandle in genericParameter.GetConstraints())
             {
                 var constraint = metadataReader.GetGenericParameterConstraint(constraintHandle);
-                var constraintType = FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, constraint.Type));
+                var constraintType = FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, constraint.Type, genericContext));
                 if (hasStructConstraint && string.Equals(constraintType, "System.ValueType", StringComparison.Ordinal))
                     continue;
 
@@ -432,7 +435,7 @@ internal static class PublicApiModelReader
 
     private static string BuildField(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, FieldDefinition field)
     {
-        var type = DecodeFieldType(metadataReader, field);
+        var type = DecodeFieldType(metadataReader, declaringTypeHandle, field);
         var nullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, field.GetCustomAttributes());
         var isByRefField = type.Kind == DecodedTypeKind.ByReference;
         var typeName = isByRefField
@@ -539,7 +542,7 @@ internal static class PublicApiModelReader
             propertyNullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, property.GetCustomAttributes());
         }
 
-        var propertySignature = DecodePropertySignature(metadataReader, property);
+        var propertySignature = DecodePropertySignature(metadataReader, declaringTypeHandle, property);
         var propertyType = ApplyNullableReferenceType(propertySignature.ReturnType, propertyNullableInfo);
         var propertyName = propertySignature.ParameterTypes.Length > 0
             ? "this[" + BuildIndexerParameters(metadataReader, declaringTypeHandle, getAccessorHandle, setAccessorHandle, getAccessor, setAccessor, propertySignature.ParameterTypes) + "]"
@@ -554,7 +557,7 @@ internal static class PublicApiModelReader
 
         if (isSetVisible)
         {
-            var setterSignature = DecodeMethodSignature(metadataReader, setAccessor!.Value);
+            var setterSignature = DecodeMethodSignature(metadataReader, declaringTypeHandle, setAccessorHandle, setAccessor!.Value);
             var accessorKeyword = setterSignature.ContainsIsExternalInitModifier ? "init" : "set";
             var accessorModifier = BuildAccessorModifier(setAccessor.Value.Attributes, representativeAttributes);
             var accessorBody = setAccessor.Value.Attributes.HasFlag(MethodAttributes.Abstract)
@@ -597,7 +600,7 @@ internal static class PublicApiModelReader
             GetParameterCustomAttributes(metadataReader, addMethod, sequenceNumber: 1),
             accessors.Adder,
             eventDefinition.GetCustomAttributes());
-        var addMethodSignature = DecodeMethodSignature(metadataReader, addMethod);
+        var addMethodSignature = DecodeMethodSignature(metadataReader, declaringTypeHandle, accessors.Adder, addMethod);
         var eventType = ApplyNullableReferenceType(addMethodSignature.Signature.ParameterTypes[0], eventNullableInfo);
         var eventName = metadataReader.GetString(eventDefinition.Name);
         var declaration = $"{string.Join(' ', modifiers)} event {eventType} {eventName};";
@@ -607,7 +610,7 @@ internal static class PublicApiModelReader
 
     private static string BuildMethod(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method, string name)
     {
-        var signature = DecodeMethodSignature(metadataReader, method);
+        var signature = DecodeMethodSignature(metadataReader, declaringTypeHandle, methodHandle, method);
         if (IsDestructor(method, signature, name))
         {
             var declaringTypeDefinition = metadataReader.GetTypeDefinition(declaringTypeHandle);
@@ -622,7 +625,7 @@ internal static class PublicApiModelReader
             ? []
             : BuildMethodModifiers(method.Attributes, declaringType.Attributes.HasFlag(TypeAttributes.Interface));
         var genericArguments = BuildGenericArguments(metadataReader, method.GetGenericParameters());
-        var constraints = BuildConstraints(metadataReader, method.GetGenericParameters());
+        var constraints = BuildConstraints(metadataReader, method.GetGenericParameters(), BuildSignatureGenericContext(metadataReader, declaringTypeHandle, methodHandle));
         var isExtensionMethod = method.Attributes.HasFlag(MethodAttributes.Static) &&
                                 HasAttribute(metadataReader, method.GetCustomAttributes(), "System.Runtime.CompilerServices.ExtensionAttribute");
         var returnNullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, GetParameterCustomAttributes(metadataReader, method, sequenceNumber: 0), methodHandle);
@@ -655,7 +658,7 @@ internal static class PublicApiModelReader
 
     private static string? BuildConstructor(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method)
     {
-        var signature = DecodeMethodSignature(metadataReader, method);
+        var signature = DecodeMethodSignature(metadataReader, declaringTypeHandle, methodHandle, method);
         var declaringType = metadataReader.GetTypeDefinition(declaringTypeHandle);
         var typeName = RemoveGenericArity(metadataReader.GetString(declaringType.Name));
         var accessibility = GetAccessibility(method.Attributes);
@@ -1137,7 +1140,7 @@ internal static class PublicApiModelReader
             if (!IsExternallyVisible(baseMethod.Attributes))
                 continue;
 
-            var baseSignature = DecodeMethodSignature(metadataReader, baseMethod);
+            var baseSignature = DecodeMethodSignature(metadataReader, baseTypeHandle, baseMethodHandle, baseMethod);
             if (baseSignature.Signature.ParameterTypes.Length == 0)
             {
                 hasAccessibleParameterlessConstructor = true;
@@ -1154,7 +1157,7 @@ internal static class PublicApiModelReader
             return string.Empty;
 
         var selectedBaseConstructor = metadataReader.GetMethodDefinition(selectedBaseConstructorHandle);
-        var selectedSignature = DecodeMethodSignature(metadataReader, selectedBaseConstructor);
+        var selectedSignature = DecodeMethodSignature(metadataReader, baseTypeHandle, selectedBaseConstructorHandle, selectedBaseConstructor);
         var arguments = string.Join(", ", selectedSignature.Signature.ParameterTypes.Select(static parameterType =>
         {
             var type = parameterType.Kind == DecodedTypeKind.ByReference
@@ -1178,7 +1181,7 @@ internal static class PublicApiModelReader
             if (!TryGetExtensionPropertyAccessorInfo(metadataReader, method, out var accessorType, out var propertyName))
                 continue;
 
-            var signature = DecodeMethodSignature(metadataReader, method);
+            var signature = DecodeMethodSignature(metadataReader, declaringTypeHandle, methodHandle, method);
             if (accessorType == "get" && signature.Signature.ParameterTypes.Length < 1)
                 continue;
 
@@ -1493,6 +1496,11 @@ internal static class PublicApiModelReader
             return methodName;
 
         var interfaceName = methodName[..separatorIndex];
+        if (interfaceName.StartsWith("global::", StringComparison.Ordinal))
+        {
+            interfaceName = interfaceName["global::".Length..];
+        }
+
         var memberName = methodName[(separatorIndex + 1)..];
         return interfaceName + "." + memberName;
     }
@@ -1773,38 +1781,61 @@ internal static class PublicApiModelReader
         }
     }
 
-    private static DecodedMethodSignature DecodeMethodSignature(MetadataReader metadataReader, MethodDefinition method)
+    private static DecodedMethodSignature DecodeMethodSignature(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method)
     {
-        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
-        var signature = method.DecodeSignature(provider, genericContext: null);
+        var signature = method.DecodeSignature(provider, BuildSignatureGenericContext(metadataReader, declaringTypeHandle, methodHandle));
         return new DecodedMethodSignature(signature, provider.ContainsIsExternalInitModifier);
     }
 
-    private static DecodedType DecodeFieldType(MetadataReader metadataReader, FieldDefinition field)
+    private static DecodedType DecodeFieldType(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, FieldDefinition field)
     {
-        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
-        return field.DecodeSignature(provider, genericContext: null);
+        return field.DecodeSignature(provider, BuildSignatureGenericContext(metadataReader, declaringTypeHandle));
     }
 
-    private static MethodSignature<DecodedType> DecodePropertySignature(MetadataReader metadataReader, PropertyDefinition property)
+    private static MethodSignature<DecodedType> DecodePropertySignature(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, PropertyDefinition property)
     {
-        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
-        return property.DecodeSignature(provider, genericContext: null);
+        return property.DecodeSignature(provider, BuildSignatureGenericContext(metadataReader, declaringTypeHandle));
     }
 
-    private static DecodedType DecodeTypeFromEntityHandle(MetadataReader metadataReader, EntityHandle handle)
+    private static DecodedType DecodeTypeFromEntityHandle(MetadataReader metadataReader, EntityHandle handle, SignatureGenericContext genericContext = default)
     {
         var provider = new MetadataTypeNameProvider();
         return handle.Kind switch
         {
             HandleKind.TypeReference => provider.GetTypeFromReference(metadataReader, (TypeReferenceHandle)handle, rawTypeKind: 0x12),
             HandleKind.TypeDefinition => DecodeTypeDefinitionHandle(metadataReader, provider, (TypeDefinitionHandle)handle),
-            HandleKind.TypeSpecification => provider.GetTypeFromSpecification(metadataReader, genericContext: null, (TypeSpecificationHandle)handle, rawTypeKind: 0),
+            HandleKind.TypeSpecification => provider.GetTypeFromSpecification(metadataReader, genericContext, (TypeSpecificationHandle)handle, rawTypeKind: 0),
             _ => new DecodedType("object", IsReferenceType: true, IsTypeParameter: false),
         };
+    }
+
+    private static SignatureGenericContext BuildSignatureGenericContext(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle = default)
+    {
+        var typeParameterNames = declaringTypeHandle.IsNil
+            ? []
+            : GetGenericParameterNames(metadataReader, metadataReader.GetTypeDefinition(declaringTypeHandle).GetGenericParameters());
+        var methodParameterNames = methodHandle.IsNil
+            ? []
+            : GetGenericParameterNames(metadataReader, metadataReader.GetMethodDefinition(methodHandle).GetGenericParameters());
+        return new SignatureGenericContext(typeParameterNames, methodParameterNames);
+    }
+
+    private static ImmutableArray<string> GetGenericParameterNames(MetadataReader metadataReader, GenericParameterHandleCollection genericParameters)
+    {
+        if (genericParameters.Count == 0)
+            return [];
+
+        var result = ImmutableArray.CreateBuilder<string>(genericParameters.Count);
+        foreach (var genericParameterHandle in genericParameters)
+        {
+            var genericParameter = metadataReader.GetGenericParameter(genericParameterHandle);
+            result.Add(metadataReader.GetString(genericParameter.Name));
+        }
+
+        return result.MoveToImmutable();
     }
 
     private static DecodedType DecodeTypeDefinitionHandle(MetadataReader metadataReader, MetadataTypeNameProvider provider, TypeDefinitionHandle typeDefinitionHandle)
@@ -2057,7 +2088,7 @@ internal static class PublicApiModelReader
     private static string BuildAttribute(MetadataReader metadataReader, CustomAttribute attribute, string attributeTypeFullName)
     {
         var attributeName = BuildAttributeName(attributeTypeFullName);
-        var arguments = BuildAttributeArguments(metadataReader, attribute, attributeTypeFullName);
+        var arguments = BuildAttributeArguments(metadataReader, attribute);
         return "[" + attributeName + arguments + "]";
     }
 
@@ -2106,64 +2137,355 @@ internal static class PublicApiModelReader
         return name;
     }
 
-    private static string BuildAttributeArguments(MetadataReader metadataReader, CustomAttribute attribute, string attributeTypeFullName)
+    private static string BuildAttributeArguments(MetadataReader metadataReader, CustomAttribute attribute)
     {
-        if (string.Equals(attributeTypeFullName, "System.CLSCompliantAttribute", StringComparison.Ordinal))
+        if (!TryDecodeAttributeArguments(metadataReader, attribute, out var fixedArguments, out var namedArguments))
+            return string.Empty;
+
+        if (fixedArguments.Length == 0 && namedArguments.Length == 0)
+            return string.Empty;
+
+        var values = new List<string>(fixedArguments.Length + namedArguments.Length);
+        foreach (var fixedArgument in fixedArguments)
         {
-            if (TryReadBooleanAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var boolValue))
-            {
-                return "(" + (boolValue ? "true" : "false") + ")";
-            }
+            values.Add(FormatAttributeArgument(metadataReader, fixedArgument));
         }
 
-        if (string.Equals(attributeTypeFullName, "System.ObsoleteAttribute", StringComparison.Ordinal))
+        foreach (var namedArgument in namedArguments)
         {
-            if (TryReadObsoleteAttributeArguments(metadataReader.GetBlobBytes(attribute.Value), out var message, out var isError))
-            {
-                return isError is null
-                    ? "(" + FormatConstant(message) + ")"
-                    : "(" + FormatConstant(message) + ", " + (isError.Value ? "true" : "false") + ")";
-            }
+            values.Add(FormatNamedAttributeArgument(metadataReader, namedArgument));
         }
 
-        if (string.Equals(attributeTypeFullName, "System.Runtime.Versioning.UnsupportedOSPlatformAttribute", StringComparison.Ordinal))
-        {
-            if (TryReadStringAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var platformName))
-            {
-                return "(" + FormatConstant(platformName) + ")";
-            }
-        }
-
-        if (string.Equals(attributeTypeFullName, "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute", StringComparison.Ordinal) ||
-            string.Equals(attributeTypeFullName, "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute", StringComparison.Ordinal) ||
-            string.Equals(attributeTypeFullName, "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute", StringComparison.Ordinal))
-        {
-            if (TryReadBooleanAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var boolValue))
-            {
-                return "(" + (boolValue ? "true" : "false") + ")";
-            }
-        }
-
-        if (string.Equals(attributeTypeFullName, "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute", StringComparison.Ordinal))
-        {
-            if (TryReadStringAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var parameterName))
-            {
-                return "(" + FormatConstant(parameterName) + ")";
-            }
-        }
-
-        return string.Empty;
+        return "(" + string.Join(", ", values) + ")";
     }
 
-    private static bool TryReadBooleanAttributeArgument(byte[] value, out bool result)
+    private static bool TryDecodeAttributeArguments(
+        MetadataReader metadataReader,
+        CustomAttribute attribute,
+        out ImmutableArray<CustomAttributeTypedArgument<DecodedType>> fixedArguments,
+        out ImmutableArray<CustomAttributeNamedArgument<DecodedType>> namedArguments)
     {
-        if (value.Length >= 3 && value[0] == 1 && value[1] == 0)
+        try
         {
-            result = value[2] != 0;
+            var decoded = attribute.DecodeValue(new MetadataCustomAttributeTypeProvider(metadataReader));
+            fixedArguments = decoded.FixedArguments;
+            namedArguments = decoded.NamedArguments;
+            return true;
+        }
+        catch (BadImageFormatException)
+        {
+            fixedArguments = [];
+            namedArguments = [];
+            return false;
+        }
+    }
+
+    private static string FormatNamedAttributeArgument(MetadataReader metadataReader, CustomAttributeNamedArgument<DecodedType> namedArgument)
+    {
+        return namedArgument.Name + " = " + FormatAttributeArgument(metadataReader, new CustomAttributeTypedArgument<DecodedType>(namedArgument.Type, namedArgument.Value));
+    }
+
+    private static string FormatAttributeArgument(MetadataReader metadataReader, CustomAttributeTypedArgument<DecodedType> argument)
+    {
+        if (argument.Value is null)
+            return "null";
+
+        if (argument.Value is CustomAttributeTypedArgument<DecodedType> boxedValue)
+            return FormatAttributeArgument(metadataReader, boxedValue);
+
+        if (argument.Value is ImmutableArray<CustomAttributeTypedArgument<DecodedType>> arrayValues)
+        {
+            var elementType = argument.Type.ElementType ?? new DecodedType("object", IsReferenceType: true, IsTypeParameter: false);
+            var typeName = FormatDecodedTypeWithoutNullable(elementType);
+            return "new " + typeName + "[] { " + string.Join(", ", arrayValues.Select(value => FormatAttributeArgument(metadataReader, value))) + " }";
+        }
+
+        if (argument.Value is DecodedType typeValue)
+        {
+            return "typeof(" + FormatDecodedTypeWithoutNullable(typeValue) + ")";
+        }
+
+        if (IsEnumType(metadataReader, argument.Type))
+        {
+            return FormatEnumAttributeArgument(metadataReader, argument.Type, argument.Value);
+        }
+
+        return FormatConstant(argument.Value);
+    }
+
+    private static string FormatEnumAttributeArgument(MetadataReader metadataReader, DecodedType enumType, object enumValue)
+    {
+        var enumTypeName = FormatDecodedTypeWithoutNullable(enumType);
+        if (TryFormatEnumAttributeArgumentUsingMetadata(metadataReader, enumType, enumTypeName, enumValue, out var result))
+            return result;
+
+        return "(" + enumTypeName + ")" + FormatConstant(enumValue);
+    }
+
+    private static bool TryFormatEnumAttributeArgumentUsingMetadata(MetadataReader metadataReader, DecodedType enumType, string formattedTypeName, object enumValue, out string result)
+    {
+        result = string.Empty;
+        if (!TryGetEnumValueBits(enumValue, out var enumValueBits))
+            return false;
+
+        if (!TryGetEnumMetadata(metadataReader, enumType.Name, out var enumMetadata))
+            return false;
+
+        if (enumMetadata.MemberNamesByValue.TryGetValue(enumValueBits, out var memberName))
+        {
+            result = formattedTypeName + "." + memberName;
             return true;
         }
 
-        result = false;
+        if (!enumMetadata.IsFlags)
+        {
+            return false;
+        }
+
+        var remainingValue = enumValueBits;
+        var formattedMemberNames = new List<string>();
+        foreach (var member in enumMetadata.MembersDescending)
+        {
+            if (member.Value == 0)
+                continue;
+
+            if ((remainingValue & member.Value) != member.Value)
+                continue;
+
+            formattedMemberNames.Add(formattedTypeName + "." + member.Name);
+            remainingValue &= ~member.Value;
+        }
+
+        if (remainingValue != 0 || formattedMemberNames.Count == 0)
+        {
+            return false;
+        }
+
+        result = string.Join(" | ", formattedMemberNames);
+        return true;
+    }
+
+    private static bool TryGetEnumValueBits(object value, out ulong bits)
+    {
+        if (value is null)
+        {
+            bits = 0;
+            return false;
+        }
+
+        bits = value switch
+        {
+            sbyte sbyteValue => unchecked((ulong)sbyteValue),
+            byte byteValue => byteValue,
+            short shortValue => unchecked((ulong)shortValue),
+            ushort ushortValue => ushortValue,
+            int intValue => unchecked((ulong)intValue),
+            uint uintValue => uintValue,
+            long longValue => unchecked((ulong)longValue),
+            ulong ulongValue => ulongValue,
+            _ => 0,
+        };
+
+        if (value is sbyte or byte or short or ushort or int or uint or long or ulong)
+            return true;
+
+        try
+        {
+            bits = Convert.ToUInt64(value, System.Globalization.CultureInfo.InvariantCulture);
+            return true;
+        }
+        catch (InvalidCastException)
+        {
+            return false;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryGetEnumMetadata(MetadataReader metadataReader, string enumTypeName, out EnumMetadata enumMetadata)
+    {
+        if (TryResolveTypeDefinitionHandle(metadataReader, enumTypeName, out var typeDefinitionHandle) &&
+            TryBuildEnumMetadata(metadataReader, typeDefinitionHandle, out enumMetadata))
+        {
+            return true;
+        }
+
+        return TryGetEnumMetadataFromLoadedAssemblies(enumTypeName, out enumMetadata);
+    }
+
+    private static bool TryBuildEnumMetadata(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, out EnumMetadata enumMetadata)
+    {
+        var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+        if (!string.Equals(GetTypeFullName(metadataReader, typeDefinition.BaseType), "System.Enum", StringComparison.Ordinal))
+        {
+            enumMetadata = null!;
+            return false;
+        }
+
+        var memberNamesByValue = new Dictionary<ulong, string>();
+        var members = new List<EnumMember>();
+        foreach (var fieldHandle in typeDefinition.GetFields())
+        {
+            var field = metadataReader.GetFieldDefinition(fieldHandle);
+            if (!field.Attributes.HasFlag(FieldAttributes.Static))
+                continue;
+
+            var constantHandle = field.GetDefaultValue();
+            if (constantHandle.IsNil)
+                continue;
+
+            var constantValue = DecodeConstantValue(metadataReader, metadataReader.GetConstant(constantHandle));
+            if (!TryGetEnumValueBits(constantValue!, out var memberValue))
+                continue;
+
+            var memberName = metadataReader.GetString(field.Name);
+            if (memberNamesByValue.TryAdd(memberValue, memberName))
+            {
+                members.Add(new EnumMember(memberValue, memberName));
+            }
+        }
+
+        if (members.Count == 0)
+        {
+            enumMetadata = null!;
+            return false;
+        }
+
+        var isFlags = HasAttribute(metadataReader, typeDefinition.GetCustomAttributes(), "System.FlagsAttribute");
+        enumMetadata = new EnumMetadata(
+            IsFlags: isFlags,
+            MemberNamesByValue: memberNamesByValue,
+            MembersDescending: [.. members.OrderByDescending(static member => member.Value).ThenBy(static member => member.Name, StringComparer.Ordinal)]);
+        return true;
+    }
+
+    private static bool TryGetEnumMetadataFromLoadedAssemblies(string enumTypeName, out EnumMetadata enumMetadata)
+    {
+        lock (EnumMetadataCacheLock)
+        {
+            if (EnumMetadataCache.TryGetValue(enumTypeName, out var cachedMetadata))
+            {
+                enumMetadata = cachedMetadata!;
+                return cachedMetadata is not null;
+            }
+        }
+
+        EnumMetadata? discoveredMetadata = null;
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            string? assemblyLocation;
+            try
+            {
+                assemblyLocation = assembly.Location;
+            }
+            catch (NotSupportedException)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(assemblyLocation) || !File.Exists(assemblyLocation))
+                continue;
+
+            if (TryGetEnumMetadataFromAssembly(assemblyLocation, enumTypeName, out var assemblyEnumMetadata))
+            {
+                discoveredMetadata = assemblyEnumMetadata;
+                break;
+            }
+        }
+
+        lock (EnumMetadataCacheLock)
+        {
+            EnumMetadataCache[enumTypeName] = discoveredMetadata;
+        }
+
+        enumMetadata = discoveredMetadata!;
+        return discoveredMetadata is not null;
+    }
+
+    private static bool TryGetEnumMetadataFromAssembly(string assemblyPath, string enumTypeName, out EnumMetadata enumMetadata)
+    {
+        try
+        {
+            using var stream = File.OpenRead(assemblyPath);
+            using var peReader = new PEReader(stream);
+            if (!peReader.HasMetadata)
+            {
+                enumMetadata = null!;
+                return false;
+            }
+
+            var metadataReader = peReader.GetMetadataReader();
+            if (TryResolveTypeDefinitionHandle(metadataReader, enumTypeName, out var typeDefinitionHandle) &&
+                TryBuildEnumMetadata(metadataReader, typeDefinitionHandle, out enumMetadata))
+            {
+                return true;
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+        catch (BadImageFormatException)
+        {
+        }
+
+        enumMetadata = null!;
+        return false;
+    }
+
+    private static bool IsEnumType(MetadataReader metadataReader, DecodedType type)
+    {
+        if (IsPrimitiveTypeName(type.Name))
+            return false;
+
+        if (string.Equals(type.Name, "string", StringComparison.Ordinal) ||
+            string.Equals(type.Name, "object", StringComparison.Ordinal) ||
+            string.Equals(type.Name, "System.Type", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (TryResolveTypeDefinitionHandle(metadataReader, type.Name, out var typeDefinitionHandle))
+        {
+            var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+            var baseTypeName = GetTypeFullName(metadataReader, typeDefinition.BaseType);
+            return string.Equals(baseTypeName, "System.Enum", StringComparison.Ordinal);
+        }
+
+        return true;
+    }
+
+    private static bool IsPrimitiveTypeName(string typeName)
+    {
+        return typeName is "bool" or "char" or "sbyte" or "byte" or "short" or "ushort" or "int" or "uint" or "long" or "ulong" or "float" or "double" or "nint" or "nuint";
+    }
+
+    private static bool TryResolveTypeDefinitionHandle(MetadataReader metadataReader, string fullTypeName, out TypeDefinitionHandle typeDefinitionHandle)
+    {
+        var separator = fullTypeName.LastIndexOf('.');
+        var namespaceName = separator < 0 ? string.Empty : fullTypeName[..separator];
+        var typeName = separator < 0 ? fullTypeName : fullTypeName[(separator + 1)..];
+        foreach (var candidateHandle in metadataReader.TypeDefinitions)
+        {
+            var candidate = metadataReader.GetTypeDefinition(candidateHandle);
+            var candidateNamespace = candidate.Namespace.IsNil ? string.Empty : metadataReader.GetString(candidate.Namespace);
+            if (string.Equals(candidateNamespace, namespaceName, StringComparison.Ordinal) &&
+                string.Equals(RemoveGenericArity(metadataReader.GetString(candidate.Name)), typeName, StringComparison.Ordinal))
+            {
+                typeDefinitionHandle = candidateHandle;
+                return true;
+            }
+        }
+
+        typeDefinitionHandle = default;
         return false;
     }
 
@@ -2325,7 +2647,322 @@ internal static class PublicApiModelReader
         return name[..index];
     }
 
-    private sealed class MetadataTypeNameProvider : ISignatureTypeProvider<DecodedType, object?>
+    private sealed record EnumMetadata(
+        bool IsFlags,
+        IReadOnlyDictionary<ulong, string> MemberNamesByValue,
+        ImmutableArray<EnumMember> MembersDescending);
+
+    private readonly record struct EnumMember(ulong Value, string Name);
+
+    private readonly record struct SignatureGenericContext(ImmutableArray<string> TypeParameterNames, ImmutableArray<string> MethodParameterNames)
+    {
+        public string GetMethodParameterName(int index)
+        {
+            return index >= 0 && !MethodParameterNames.IsDefault && index < MethodParameterNames.Length
+                ? MethodParameterNames[index]
+                : "TMethod" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public string GetTypeParameterName(int index)
+        {
+            return index >= 0 && !TypeParameterNames.IsDefault && index < TypeParameterNames.Length
+                ? TypeParameterNames[index]
+                : "T" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
+
+    private sealed class MetadataCustomAttributeTypeProvider : ICustomAttributeTypeProvider<DecodedType>
+    {
+        private const byte ElementTypeValueType = 0x11;
+        private readonly Dictionary<string, PrimitiveTypeCode> _enumUnderlyingTypesByName;
+
+        public MetadataCustomAttributeTypeProvider(MetadataReader metadataReader)
+        {
+            _enumUnderlyingTypesByName = BuildEnumUnderlyingTypeMap(metadataReader);
+        }
+
+        public DecodedType GetPrimitiveType(PrimitiveTypeCode typeCode)
+        {
+            return typeCode switch
+            {
+                PrimitiveTypeCode.Void => new("void", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Boolean => new("bool", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Char => new("char", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.SByte => new("sbyte", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Byte => new("byte", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Int16 => new("short", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.UInt16 => new("ushort", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Int32 => new("int", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.UInt32 => new("uint", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Int64 => new("long", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.UInt64 => new("ulong", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Single => new("float", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Double => new("double", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.String => new("string", IsReferenceType: true, IsTypeParameter: false),
+                PrimitiveTypeCode.IntPtr => new("nint", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.UIntPtr => new("nuint", IsReferenceType: false, IsTypeParameter: false),
+                PrimitiveTypeCode.Object => new("object", IsReferenceType: true, IsTypeParameter: false),
+                _ => new("object", IsReferenceType: true, IsTypeParameter: false),
+            };
+        }
+
+        public bool IsSystemType(DecodedType type)
+        {
+            return string.Equals(type.Name, "System.Type", StringComparison.Ordinal);
+        }
+
+        public DecodedType GetSystemType()
+        {
+            return new("System.Type", IsReferenceType: true, IsTypeParameter: false);
+        }
+
+        public DecodedType GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+        {
+            var type = reader.GetTypeDefinition(handle);
+            var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
+            var name = RemoveGenericArity(reader.GetString(type.Name));
+            return new(
+                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                IsReferenceType: rawTypeKind != ElementTypeValueType,
+                IsTypeParameter: false);
+        }
+
+        public DecodedType GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+        {
+            var type = reader.GetTypeReference(handle);
+            var namespaceName = type.Namespace.IsNil ? string.Empty : reader.GetString(type.Namespace);
+            var name = RemoveGenericArity(reader.GetString(type.Name));
+            return new(
+                string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name,
+                IsReferenceType: rawTypeKind != ElementTypeValueType,
+                IsTypeParameter: false);
+        }
+
+        public DecodedType GetSZArrayType(DecodedType elementType)
+        {
+            return new(elementType.Name, IsReferenceType: true, IsTypeParameter: false, Kind: DecodedTypeKind.Array, ElementType: elementType);
+        }
+
+        public DecodedType GetTypeFromSerializedName(string name)
+        {
+            var typeName = NormalizeSerializedTypeName(name);
+            return new(typeName, IsReferenceType: true, IsTypeParameter: false);
+        }
+
+        public PrimitiveTypeCode GetUnderlyingEnumType(DecodedType type)
+        {
+            return _enumUnderlyingTypesByName.TryGetValue(type.Name, out var typeCode)
+                ? typeCode
+                : PrimitiveTypeCode.Int32;
+        }
+
+        private static Dictionary<string, PrimitiveTypeCode> BuildEnumUnderlyingTypeMap(MetadataReader metadataReader)
+        {
+            var result = new Dictionary<string, PrimitiveTypeCode>(StringComparer.Ordinal);
+            foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
+            {
+                var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+                if (!string.Equals(GetTypeFullName(metadataReader, typeDefinition.BaseType), "System.Enum", StringComparison.Ordinal))
+                    continue;
+
+                if (!TryGetEnumUnderlyingType(metadataReader, typeDefinition, out var typeCode))
+                    continue;
+
+                var namespaceName = typeDefinition.Namespace.IsNil ? string.Empty : metadataReader.GetString(typeDefinition.Namespace);
+                var typeName = RemoveGenericArity(metadataReader.GetString(typeDefinition.Name));
+                var fullName = string.IsNullOrEmpty(namespaceName) ? typeName : namespaceName + "." + typeName;
+                result[fullName] = typeCode;
+            }
+
+            return result;
+        }
+
+        private static bool TryGetEnumUnderlyingType(MetadataReader metadataReader, TypeDefinition typeDefinition, out PrimitiveTypeCode typeCode)
+        {
+            foreach (var fieldHandle in typeDefinition.GetFields())
+            {
+                var field = metadataReader.GetFieldDefinition(fieldHandle);
+                var fieldName = metadataReader.GetString(field.Name);
+                if (!string.Equals(fieldName, "value__", StringComparison.Ordinal))
+                    continue;
+
+                var signature = metadataReader.GetBlobBytes(field.Signature);
+                if (signature.Length < 2 || signature[0] != 0x06)
+                    break;
+
+                if (TryMapElementTypeToPrimitiveTypeCode(signature[1], out typeCode))
+                    return true;
+
+                break;
+            }
+
+            typeCode = PrimitiveTypeCode.Int32;
+            return false;
+        }
+
+        private static bool TryMapElementTypeToPrimitiveTypeCode(byte elementType, out PrimitiveTypeCode typeCode)
+        {
+            switch (elementType)
+            {
+                case 0x02:
+                    typeCode = PrimitiveTypeCode.Boolean;
+                    return true;
+                case 0x03:
+                    typeCode = PrimitiveTypeCode.Char;
+                    return true;
+                case 0x04:
+                    typeCode = PrimitiveTypeCode.SByte;
+                    return true;
+                case 0x05:
+                    typeCode = PrimitiveTypeCode.Byte;
+                    return true;
+                case 0x06:
+                    typeCode = PrimitiveTypeCode.Int16;
+                    return true;
+                case 0x07:
+                    typeCode = PrimitiveTypeCode.UInt16;
+                    return true;
+                case 0x08:
+                    typeCode = PrimitiveTypeCode.Int32;
+                    return true;
+                case 0x09:
+                    typeCode = PrimitiveTypeCode.UInt32;
+                    return true;
+                case 0x0A:
+                    typeCode = PrimitiveTypeCode.Int64;
+                    return true;
+                case 0x0B:
+                    typeCode = PrimitiveTypeCode.UInt64;
+                    return true;
+                default:
+                    typeCode = PrimitiveTypeCode.Int32;
+                    return false;
+            }
+        }
+
+        private static string NormalizeSerializedTypeName(string typeName)
+        {
+            var trimmedTypeName = typeName.Trim();
+            if (trimmedTypeName.Length == 0)
+                return trimmedTypeName;
+
+            if (trimmedTypeName[0] == '[' && trimmedTypeName[^1] == ']')
+            {
+                trimmedTypeName = trimmedTypeName[1..^1].Trim();
+            }
+
+            var assemblySeparator = FindTopLevelSeparator(trimmedTypeName, ',');
+            if (assemblySeparator >= 0)
+            {
+                trimmedTypeName = trimmedTypeName[..assemblySeparator].Trim();
+            }
+
+            var backtickIndex = trimmedTypeName.IndexOf('`', StringComparison.Ordinal);
+            if (backtickIndex < 0)
+            {
+                return trimmedTypeName.Replace('+', '.');
+            }
+
+            var genericArgumentsStart = trimmedTypeName.IndexOf('[', backtickIndex);
+            if (genericArgumentsStart < 0)
+            {
+                return trimmedTypeName[..backtickIndex].Replace('+', '.');
+            }
+
+            var genericArgumentsEnd = FindMatchingBracket(trimmedTypeName, genericArgumentsStart);
+            if (genericArgumentsEnd < 0)
+            {
+                return trimmedTypeName.Replace('+', '.');
+            }
+
+            var genericArgumentsContent = trimmedTypeName[(genericArgumentsStart + 1)..genericArgumentsEnd];
+            var genericArguments = SplitTopLevel(genericArgumentsContent, ',')
+                .Select(NormalizeSerializedTypeName)
+                .ToArray();
+
+            var baseTypeName = trimmedTypeName[..backtickIndex].Replace('+', '.');
+            var suffix = trimmedTypeName[(genericArgumentsEnd + 1)..];
+            return baseTypeName + "<" + string.Join(", ", genericArguments) + ">" + suffix;
+        }
+
+        private static int FindTopLevelSeparator(string text, char separator)
+        {
+            var depth = 0;
+            for (var index = 0; index < text.Length; index++)
+            {
+                switch (text[index])
+                {
+                    case '[':
+                        depth++;
+                        break;
+                    case ']':
+                        depth--;
+                        break;
+                    default:
+                        if (depth == 0 && text[index] == separator)
+                            return index;
+                        break;
+                }
+            }
+
+            return -1;
+        }
+
+        private static int FindMatchingBracket(string text, int openingBracketIndex)
+        {
+            var depth = 0;
+            for (var index = openingBracketIndex; index < text.Length; index++)
+            {
+                if (text[index] == '[')
+                {
+                    depth++;
+                }
+                else if (text[index] == ']')
+                {
+                    depth--;
+                    if (depth == 0)
+                        return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private static IEnumerable<string> SplitTopLevel(string text, char separator)
+        {
+            var depth = 0;
+            var startIndex = 0;
+            for (var index = 0; index < text.Length; index++)
+            {
+                if (text[index] == '[')
+                {
+                    depth++;
+                }
+                else if (text[index] == ']')
+                {
+                    depth--;
+                }
+                else if (text[index] == separator && depth == 0)
+                {
+                    var value = text[startIndex..index].Trim();
+                    if (value.Length > 0)
+                    {
+                        yield return value;
+                    }
+
+                    startIndex = index + 1;
+                }
+            }
+
+            var lastValue = text[startIndex..].Trim();
+            if (lastValue.Length > 0)
+            {
+                yield return lastValue;
+            }
+        }
+    }
+
+    private sealed class MetadataTypeNameProvider : ISignatureTypeProvider<DecodedType, SignatureGenericContext>
     {
         private const byte ElementTypeValueType = 0x11;
         private const byte ElementTypeClass = 0x12;
@@ -2352,9 +2989,9 @@ internal static class PublicApiModelReader
             return new(genericType.Name, genericType.IsReferenceType, IsTypeParameter: false, Kind: DecodedTypeKind.GenericInstantiation, TypeArguments: typeArguments);
         }
 
-        public DecodedType GetGenericMethodParameter(object? genericContext, int index) => new("TMethod" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), IsReferenceType: false, IsTypeParameter: true);
+        public DecodedType GetGenericMethodParameter(SignatureGenericContext genericContext, int index) => new(genericContext.GetMethodParameterName(index), IsReferenceType: false, IsTypeParameter: true);
 
-        public DecodedType GetGenericTypeParameter(object? genericContext, int index) => new("T" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), IsReferenceType: false, IsTypeParameter: true);
+        public DecodedType GetGenericTypeParameter(SignatureGenericContext genericContext, int index) => new(genericContext.GetTypeParameterName(index), IsReferenceType: false, IsTypeParameter: true);
 
         public DecodedType GetModifiedType(DecodedType modifier, DecodedType unmodifiedType, bool isRequired)
         {
@@ -2428,7 +3065,7 @@ internal static class PublicApiModelReader
                 IsTypeParameter: false);
         }
 
-        public DecodedType GetTypeFromSpecification(MetadataReader reader, object? genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+        public DecodedType GetTypeFromSpecification(MetadataReader reader, SignatureGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
         {
             var typeSpecification = reader.GetTypeSpecification(handle);
             var decodedType = typeSpecification.DecodeSignature(this, genericContext);

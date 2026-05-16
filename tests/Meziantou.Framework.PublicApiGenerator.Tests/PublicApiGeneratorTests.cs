@@ -147,6 +147,66 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task ExplicitInterfaceMethod_StripsRedundantGlobalQualifier()
+    {
+        await Validate("""
+            namespace Meziantou.Framework.FixedStringBuilder;
+
+            public interface IFixedString
+            {
+                void M();
+            }
+
+            public struct S : IFixedString
+            {
+                void global::Meziantou.Framework.FixedStringBuilder.IFixedString.M()
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            namespace Meziantou.Framework.FixedStringBuilder
+            {
+                public interface IFixedString
+                {
+                    void M();
+                }
+
+                public struct S : Meziantou.Framework.FixedStringBuilder.IFixedString
+                {
+                    void Meziantou.Framework.FixedStringBuilder.IFixedString.M() { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ExplicitInterfaceMethod_KeepsGlobalQualifierWhenNamespaceConflicts()
+    {
+        await Validate("""
+            namespace Sample.System;
+
+            public sealed class C : global::System.IDisposable
+            {
+                void global::System.IDisposable.Dispose()
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            namespace Sample.System
+            {
+                public sealed class C : global::System.IDisposable
+                {
+                    void global::System.IDisposable.Dispose() { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task NestedTypes_Basic()
     {
         await Validate("""

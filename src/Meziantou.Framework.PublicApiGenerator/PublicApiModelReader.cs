@@ -1494,6 +1494,11 @@ internal static class PublicApiModelReader
             return methodName;
 
         var interfaceName = methodName[..separatorIndex];
+        if (interfaceName.StartsWith("global::", StringComparison.Ordinal))
+        {
+            interfaceName = interfaceName["global::".Length..];
+        }
+
         var memberName = methodName[(separatorIndex + 1)..];
         return interfaceName + "." + memberName;
     }

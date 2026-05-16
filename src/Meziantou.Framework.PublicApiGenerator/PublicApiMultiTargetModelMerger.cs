@@ -21,7 +21,7 @@ internal static class PublicApiMultiTargetModelMerger
             return modelsBySymbol.Values.Single();
         }
 
-        var orderedSymbols = modelsBySymbol.Keys.OrderBy(value => value, StringComparer.Ordinal).ToArray();
+        var orderedSymbols = SortSymbols(modelsBySymbol.Keys);
         var typesByQualifiedName = new Dictionary<string, Dictionary<string, PublicApiTypeModel>>(StringComparer.Ordinal);
         foreach (var symbol in orderedSymbols)
         {
@@ -159,7 +159,11 @@ internal static class PublicApiMultiTargetModelMerger
     private static void AppendConditionalSegment(StringBuilder sb, IReadOnlyDictionary<string, ImmutableArray<string>> segmentBySymbol, string[] orderedSymbols)
     {
         var groups = GroupSegmentBySymbols(segmentBySymbol, orderedSymbols);
-        var nonEmptyGroups = groups.Where(group => group.Members.Length > 0).ToArray();
+        var nonEmptyGroups = groups
+            .Where(group => group.Members.Length > 0)
+            .OrderBy(group => BuildCondition(group.Symbols), StringComparer.Ordinal)
+            .ThenBy(group => string.Join('\u001f', group.Members), StringComparer.Ordinal)
+            .ToArray();
         if (nonEmptyGroups.Length == 0)
         {
             return;
@@ -223,8 +227,7 @@ internal static class PublicApiMultiTargetModelMerger
 
     private static void AppendConditionalDirective(StringBuilder sb, string directive, IReadOnlyList<string> symbols)
     {
-        var condition = string.Join(" || ", symbols);
-        AppendIndentedDirective(sb, directive + " " + condition);
+        AppendIndentedDirective(sb, directive + " " + BuildCondition(symbols));
     }
 
     private static void AppendIndentedDirective(StringBuilder sb, string directive)
@@ -233,9 +236,22 @@ internal static class PublicApiMultiTargetModelMerger
         sb.AppendLine(directive);
     }
 
+    private static string BuildCondition(IReadOnlyList<string> symbols)
+    {
+        return string.Join(" || ", SortSymbols(symbols));
+    }
+
+    private static string[] SortSymbols(IEnumerable<string> symbols)
+    {
+        return symbols.OrderBy(symbol => symbol, StringComparer.Ordinal).ToArray();
+    }
+
     private static string BuildConditionalTypeSource(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols)
     {
-        var sourceGroups = GroupSources(typesBySymbol, orderedSymbols);
+        var sourceGroups = GroupSources(typesBySymbol, orderedSymbols)
+            .OrderBy(group => BuildCondition(group.Symbols), StringComparer.Ordinal)
+            .ThenBy(group => group.Source, StringComparer.Ordinal)
+            .ToList();
         if (sourceGroups.Count == 1 && sourceGroups[0].Symbols.Count == orderedSymbols.Length)
         {
             return sourceGroups[0].Source;
@@ -245,7 +261,7 @@ internal static class PublicApiMultiTargetModelMerger
         for (var index = 0; index < sourceGroups.Count; index++)
         {
             var directive = index == 0 ? "#if" : "#elif";
-            var condition = string.Join(" || ", sourceGroups[index].Symbols);
+            var condition = BuildCondition(sourceGroups[index].Symbols);
             sb.Append(directive);
             sb.Append(' ');
             sb.AppendLine(condition);

@@ -12,7 +12,7 @@ internal static class PublicApiModelReader
 {
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
-    private static readonly object EnumMetadataCacheLock = new();
+    private static readonly Lock EnumMetadataCacheLock = new();
     private static readonly Dictionary<string, EnumMetadata?> EnumMetadataCache = new(StringComparer.Ordinal);
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
@@ -2088,7 +2088,7 @@ internal static class PublicApiModelReader
     private static string BuildAttribute(MetadataReader metadataReader, CustomAttribute attribute, string attributeTypeFullName)
     {
         var attributeName = BuildAttributeName(attributeTypeFullName);
-        var arguments = BuildAttributeArguments(metadataReader, attribute, attributeTypeFullName);
+        var arguments = BuildAttributeArguments(metadataReader, attribute);
         return "[" + attributeName + arguments + "]";
     }
 
@@ -2137,7 +2137,7 @@ internal static class PublicApiModelReader
         return name;
     }
 
-    private static string BuildAttributeArguments(MetadataReader metadataReader, CustomAttribute attribute, string attributeTypeFullName)
+    private static string BuildAttributeArguments(MetadataReader metadataReader, CustomAttribute attribute)
     {
         if (!TryDecodeAttributeArguments(metadataReader, attribute, out var fixedArguments, out var namedArguments))
             return string.Empty;
@@ -2489,18 +2489,6 @@ internal static class PublicApiModelReader
         return false;
     }
 
-    private static bool TryReadBooleanAttributeArgument(byte[] value, out bool result)
-    {
-        if (value.Length >= 3 && value[0] == 1 && value[1] == 0)
-        {
-            result = value[2] != 0;
-            return true;
-        }
-
-        result = false;
-        return false;
-    }
-
     private static bool TryReadObsoleteAttributeArguments(byte[] value, out string message, out bool? isError)
     {
         isError = null;
@@ -2686,11 +2674,11 @@ internal static class PublicApiModelReader
     private sealed class MetadataCustomAttributeTypeProvider : ICustomAttributeTypeProvider<DecodedType>
     {
         private const byte ElementTypeValueType = 0x11;
-        private readonly Dictionary<string, PrimitiveTypeCode> enumUnderlyingTypesByName;
+        private readonly Dictionary<string, PrimitiveTypeCode> _enumUnderlyingTypesByName;
 
         public MetadataCustomAttributeTypeProvider(MetadataReader metadataReader)
         {
-            enumUnderlyingTypesByName = BuildEnumUnderlyingTypeMap(metadataReader);
+            _enumUnderlyingTypesByName = BuildEnumUnderlyingTypeMap(metadataReader);
         }
 
         public DecodedType GetPrimitiveType(PrimitiveTypeCode typeCode)
@@ -2763,7 +2751,7 @@ internal static class PublicApiModelReader
 
         public PrimitiveTypeCode GetUnderlyingEnumType(DecodedType type)
         {
-            return enumUnderlyingTypesByName.TryGetValue(type.Name, out var typeCode)
+            return _enumUnderlyingTypesByName.TryGetValue(type.Name, out var typeCode)
                 ? typeCode
                 : PrimitiveTypeCode.Int32;
         }
@@ -2869,7 +2857,7 @@ internal static class PublicApiModelReader
                 trimmedTypeName = trimmedTypeName[..assemblySeparator].Trim();
             }
 
-            var backtickIndex = trimmedTypeName.IndexOf('`');
+            var backtickIndex = trimmedTypeName.IndexOf('`', StringComparison.Ordinal);
             if (backtickIndex < 0)
             {
                 return trimmedTypeName.Replace('+', '.');

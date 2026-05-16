@@ -23,7 +23,9 @@ public class HtmlMicroDataExtensionsTests
         var document = new HtmlDocument();
         document.LoadHtml($"<{tagName} {attributeName}='test'>");
 
-        var value = document.FirstChild.GetItemValue();
+        var node = document.FirstChild;
+        Assert.NotNull(node);
+        var value = node!.GetItemValue();
         Assert.Equal("test", value);
     }
 
@@ -33,7 +35,9 @@ public class HtmlMicroDataExtensionsTests
         var document = new HtmlDocument();
         document.LoadHtml($"<time>test</time>");
 
-        var value = document.FirstChild.GetItemValue();
+        var node = document.FirstChild;
+        Assert.NotNull(node);
+        var value = node!.GetItemValue();
         Assert.Equal("test", value);
     }
 
@@ -43,7 +47,9 @@ public class HtmlMicroDataExtensionsTests
         var document = new HtmlDocument();
         document.LoadHtml($"<dummy>test</dummy>");
 
-        var value = document.FirstChild.GetItemValue();
+        var node = document.FirstChild;
+        Assert.NotNull(node);
+        var value = node!.GetItemValue();
         Assert.Equal("test", value);
     }
 
@@ -53,7 +59,9 @@ public class HtmlMicroDataExtensionsTests
         var document = new HtmlDocument();
         document.LoadHtml($"<a>test</a>");
 
-        var value = document.FirstChild.GetItemValue();
+        var node = document.FirstChild;
+        Assert.NotNull(node);
+        var value = node!.GetItemValue();
         Assert.Empty(value);
     }
 
@@ -63,7 +71,9 @@ public class HtmlMicroDataExtensionsTests
         var document = new HtmlDocument();
         document.LoadHtml($"<a itemscope itemtype='https://schema.org/Recipe'></a>");
 
-        var value = document.FirstChild.GetItemScopeType();
+        var node = document.FirstChild;
+        Assert.NotNull(node);
+        var value = node!.GetItemScopeType();
         Assert.Equal("https://schema.org/Recipe", value);
     }
 
@@ -73,7 +83,9 @@ public class HtmlMicroDataExtensionsTests
         var document = new HtmlDocument();
         document.LoadHtml($"<a itemscope itemtype='https://schema.org/Recipe'><img/></a>");
 
-        var value = document.SelectSingleNode("//img").GetItemScopeType();
+        var node = document.SelectSingleNode("//img");
+        Assert.NotNull(node);
+        var value = node!.GetItemScopeType();
         Assert.Equal("https://schema.org/Recipe", value);
     }
 }

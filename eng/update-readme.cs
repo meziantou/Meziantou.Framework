@@ -196,8 +196,7 @@ int UpdateToolReadmes()
     {
         var project = orderedToolProjects[index];
         Console.WriteLine($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Building tool project: {project.Csproj}");
-        string[] buildArgs = ["build", project.Csproj, "--framework", latestTfm, "-p:RunAnalyzers=false", "-p:RunAnalyzersDuringBuild=false"];
-        _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2));
+        BuildToolProjectWithRetry(project.Csproj, latestTfm);
 
         Console.WriteLine($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Generating help output for tool project: {project.Csproj}");
 
@@ -391,28 +390,30 @@ static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm,
     return result;
 }
 
-static string RunProcessAndCaptureOutput(string fileName, string[] arguments, TimeSpan? timeout = null)
-    => RunProcessAndCaptureOutputs(fileName, arguments, timeout).StandardOutput;
-
-static (string StandardOutput, string StandardError) RunProcessAndCaptureOutputs(string fileName, string[] arguments, TimeSpan? timeout = null)
+static void BuildToolProjectWithRetry(string csproj, string latestTfm)
 {
-    TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3)];
+    string[] buildArgs = ["build", csproj, "--framework", latestTfm, "-p:RunAnalyzers=false", "-p:RunAnalyzersDuringBuild=false"];
+    TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
+    _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2), retryDelays: retryDelays);
+}
+
+static string RunProcessAndCaptureOutput(string fileName, string[] arguments, TimeSpan? timeout = null, IReadOnlyList<TimeSpan>? retryDelays = null)
+    => RunProcessAndCaptureOutputs(fileName, arguments, timeout, retryDelays).StandardOutput;
+
+static (string StandardOutput, string StandardError) RunProcessAndCaptureOutputs(string fileName, string[] arguments, TimeSpan? timeout = null, IReadOnlyList<TimeSpan>? retryDelays = null)
+{
+    retryDelays ??= [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3)];
     for (var attempt = 0; ; attempt++)
     {
         try
         {
             return RunProcessAndCaptureOutputsCore(fileName, arguments, timeout);
         }
-        catch (TimeoutException) when (attempt < retryDelays.Length)
+        catch (Exception ex) when ((ex is TimeoutException or InvalidOperationException) && attempt < retryDelays.Count)
         {
             var retryDelay = retryDelays[attempt];
-            Console.Error.WriteLine($"WARNING: Process '{fileName} {string.Join(' ', arguments)}' timed out on attempt {attempt + 1}/{retryDelays.Length + 1}. Retrying in {retryDelay.TotalSeconds:F0}s...");
-            Thread.Sleep(retryDelay);
-        }
-        catch (InvalidOperationException) when (attempt < retryDelays.Length)
-        {
-            var retryDelay = retryDelays[attempt];
-            Console.Error.WriteLine($"WARNING: Process '{fileName} {string.Join(' ', arguments)}' failed on attempt {attempt + 1}/{retryDelays.Length + 1}. Retrying in {retryDelay.TotalSeconds:F0}s...");
+            Console.Error.WriteLine($"WARNING: Process '{fileName} {string.Join(' ', arguments)}' failed on attempt {attempt + 1}/{retryDelays.Count + 1}. Retrying in {retryDelay.TotalSeconds:F0}s...");
+            Console.Error.WriteLine(ex.Message);
             Thread.Sleep(retryDelay);
         }
     }
@@ -446,10 +447,40 @@ static (string StandardOutput, string StandardError) RunProcessAndCaptureOutputs
     var error = standardErrorTask.GetAwaiter().GetResult();
     if (process.ExitCode is not 0)
     {
-        throw new InvalidOperationException($"Process '{fileName} {string.Join(' ', arguments)}' exited with code {process.ExitCode}.{Environment.NewLine}{error}");
+        throw new InvalidOperationException(BuildProcessFailureMessage(fileName, arguments, process.ExitCode, output, error));
     }
 
     return (output, error);
+}
+
+static string BuildProcessFailureMessage(string fileName, string[] arguments, int exitCode, string standardOutput, string standardError)
+{
+    var sb = new StringBuilder();
+    sb.Append("Process '");
+    sb.Append(fileName);
+    sb.Append(' ');
+    sb.Append(string.Join(' ', arguments));
+    sb.Append("' exited with code ");
+    sb.Append(exitCode);
+    sb.Append('.');
+
+    if (!string.IsNullOrWhiteSpace(standardOutput))
+    {
+        sb.AppendLine();
+        sb.AppendLine();
+        sb.AppendLine("Standard output:");
+        sb.AppendLine(standardOutput.TrimEnd());
+    }
+
+    if (!string.IsNullOrWhiteSpace(standardError))
+    {
+        sb.AppendLine();
+        sb.AppendLine();
+        sb.AppendLine("Standard error:");
+        sb.AppendLine(standardError.TrimEnd());
+    }
+
+    return sb.ToString();
 }
 
 static bool IsExecutableProject(string csproj, string targetFramework)

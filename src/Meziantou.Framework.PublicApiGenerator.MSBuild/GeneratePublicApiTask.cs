@@ -39,7 +39,7 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
             .OrderBy(item => item.GetMetadata("TargetFramework"), StringComparer.Ordinal)
             .ThenBy(item => item.ItemSpec, StringComparer.Ordinal))
         {
-            var assemblyPath = FullPath.FromPath(assembly.ItemSpec);
+            var assemblyPath = Path.GetFullPath(assembly.ItemSpec);
             if (!File.Exists(assemblyPath))
             {
                 Log.LogError("The assembly '{0}' does not exist.", assemblyPath);
@@ -65,19 +65,19 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
                 return false;
             }
 
-            var outputFilePath = FullPath.FromPath(OutputPath);
+            var outputFilePath = Path.GetFullPath(OutputPath);
             if (VerifyNoChange)
             {
                 LogValidationErrors(ValidateSingleFile(files[0], outputFilePath));
                 return !Log.HasLoggedErrors;
             }
 
-            outputFilePath.CreateParentDirectory();
+            CreateParentDirectory(outputFilePath);
             File.WriteAllText(outputFilePath, files[0].Content);
             return !Log.HasLoggedErrors;
         }
 
-        var outputDirectoryPath = FullPath.FromPath(OutputPath);
+        var outputDirectoryPath = Path.GetFullPath(OutputPath);
         if (VerifyNoChange)
         {
             var files = PublicApi.Generate(assemblySources, options);
@@ -98,7 +98,7 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static List<string> ValidateSingleFile(PublicApiFile expectedFile, FullPath outputFilePath)
+    private static List<string> ValidateSingleFile(PublicApiFile expectedFile, string outputFilePath)
     {
         var errors = new List<string>();
         if (!File.Exists(outputFilePath))
@@ -116,17 +116,17 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
         return errors;
     }
 
-    private static List<string> ValidateDirectory(IReadOnlyList<PublicApiFile> expectedFiles, FullPath outputDirectoryPath)
+    private static List<string> ValidateDirectory(IReadOnlyList<PublicApiFile> expectedFiles, string outputDirectoryPath)
     {
         var errors = new List<string>();
         var comparer = GetRelativePathComparer();
         var expectedFilesByRelativePath = expectedFiles
-            .GroupBy(file => file.RelativePath, comparer)
+            .GroupBy(file => NormalizeRelativePath(file.RelativePath), comparer)
             .ToDictionary(group => group.Key, group => group.Last(), comparer);
 
         foreach (var expectedFile in expectedFilesByRelativePath.Values)
         {
-            var outputFilePath = outputDirectoryPath / expectedFile.RelativePath;
+            var outputFilePath = Path.Combine(outputDirectoryPath, expectedFile.RelativePath.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(outputFilePath))
             {
                 errors.Add($"Expected file '{outputFilePath}' does not exist.");
@@ -142,9 +142,9 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
 
         if (Directory.Exists(outputDirectoryPath))
         {
-            foreach (var outputFilePath in Directory.EnumerateFiles(outputDirectoryPath, "*", SearchOption.AllDirectories).Select(FullPath.FromPath))
+            foreach (var outputFilePath in Directory.EnumerateFiles(outputDirectoryPath, "*", SearchOption.AllDirectories))
             {
-                var relativePath = outputFilePath.MakePathRelativeTo(outputDirectoryPath);
+                var relativePath = NormalizeRelativePath(Path.GetRelativePath(outputDirectoryPath, outputFilePath));
                 if (!expectedFilesByRelativePath.ContainsKey(relativePath))
                 {
                     errors.Add($"Unexpected file '{outputFilePath}' exists in the output directory.");
@@ -168,5 +168,19 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
     private static StringComparer GetRelativePathComparer()
     {
         return OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+    }
+
+    private static void CreateParentDirectory(string path)
+    {
+        var parentDirectory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(parentDirectory))
+        {
+            Directory.CreateDirectory(parentDirectory);
+        }
+    }
+
+    private static string NormalizeRelativePath(string path)
+    {
+        return path.Replace('\\', '/');
     }
 }

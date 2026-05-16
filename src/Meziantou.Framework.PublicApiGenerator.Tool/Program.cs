@@ -1,6 +1,5 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using Meziantou.Framework;
 using Meziantou.Framework.PublicApiGenerator;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Meziantou.Framework.PublicApiGenerator.Tests")]
@@ -98,14 +97,14 @@ internal static class Program
                     throw new InvalidOperationException($"Expected a single generated file when using {nameof(PublicApiFileLayout.SingleFile)} layout.");
                 }
 
-                var outputFilePath = FullPath.FromPath(outputFile);
+                var outputFilePath = Path.GetFullPath(outputFile);
                 if (verifyNoChange)
                 {
                     ThrowIfValidationFailed(ValidateSingleFile(files[0], outputFilePath));
                     return;
                 }
 
-                outputFilePath.CreateParentDirectory();
+                CreateParentDirectory(outputFilePath);
                 File.WriteAllText(outputFilePath, files[0].Content);
                 return;
             }
@@ -115,7 +114,7 @@ internal static class Program
                 if (verifyNoChange)
                 {
                     var files = PublicApi.Generate(inputs, options);
-                    var outputDirectoryPath = FullPath.FromPath(outputDirectory);
+                    var outputDirectoryPath = Path.GetFullPath(outputDirectory);
                     ThrowIfValidationFailed(ValidateDirectory(files, outputDirectoryPath));
                     return;
                 }
@@ -140,7 +139,7 @@ internal static class Program
         if (verifyNoChange)
         {
             var files = PublicApi.Generate(inputs, options);
-            var outputDirectoryPath = FullPath.FromPath(outputDirectory);
+            var outputDirectoryPath = Path.GetFullPath(outputDirectory);
             ThrowIfValidationFailed(ValidateDirectory(files, outputDirectoryPath));
             return;
         }
@@ -158,7 +157,7 @@ internal static class Program
         throw new InvalidOperationException("Public API validation failed:\n" + string.Join('\n', errors.Select(error => " - " + error)));
     }
 
-    private static List<string> ValidateSingleFile(PublicApiFile expectedFile, FullPath outputFilePath)
+    private static List<string> ValidateSingleFile(PublicApiFile expectedFile, string outputFilePath)
     {
         var errors = new List<string>();
         if (!File.Exists(outputFilePath))
@@ -176,17 +175,17 @@ internal static class Program
         return errors;
     }
 
-    private static List<string> ValidateDirectory(IReadOnlyList<PublicApiFile> expectedFiles, FullPath outputDirectoryPath)
+    private static List<string> ValidateDirectory(IReadOnlyList<PublicApiFile> expectedFiles, string outputDirectoryPath)
     {
         var errors = new List<string>();
         var comparer = GetRelativePathComparer();
         var expectedFilesByRelativePath = expectedFiles
-            .GroupBy(file => file.RelativePath, comparer)
+            .GroupBy(file => NormalizeRelativePath(file.RelativePath), comparer)
             .ToDictionary(group => group.Key, group => group.Last(), comparer);
 
         foreach (var expectedFile in expectedFilesByRelativePath.Values)
         {
-            var outputFilePath = outputDirectoryPath / expectedFile.RelativePath;
+            var outputFilePath = Path.Combine(outputDirectoryPath, expectedFile.RelativePath.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(outputFilePath))
             {
                 errors.Add($"Expected file '{outputFilePath}' does not exist.");
@@ -202,9 +201,9 @@ internal static class Program
 
         if (Directory.Exists(outputDirectoryPath))
         {
-            foreach (var outputFilePath in Directory.EnumerateFiles(outputDirectoryPath, "*", SearchOption.AllDirectories).Select(FullPath.FromPath))
+            foreach (var outputFilePath in Directory.EnumerateFiles(outputDirectoryPath, "*", SearchOption.AllDirectories))
             {
-                var relativePath = outputFilePath.MakePathRelativeTo(outputDirectoryPath);
+                var relativePath = NormalizeRelativePath(Path.GetRelativePath(outputDirectoryPath, outputFilePath));
                 if (!expectedFilesByRelativePath.ContainsKey(relativePath))
                 {
                     errors.Add($"Unexpected file '{outputFilePath}' exists in the output directory.");
@@ -228,6 +227,20 @@ internal static class Program
     private static StringComparer GetRelativePathComparer()
     {
         return OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+    }
+
+    private static void CreateParentDirectory(string path)
+    {
+        var parentDirectory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(parentDirectory))
+        {
+            Directory.CreateDirectory(parentDirectory);
+        }
+    }
+
+    private static string NormalizeRelativePath(string path)
+    {
+        return path.Replace('\\', '/');
     }
 
     private static List<AssemblySource> ParseInputs(string[] inputValues)

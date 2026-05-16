@@ -14,7 +14,6 @@
     <None Include="build/**" Pack="true" PackagePath="build" />
     <None Include="buildTransitive/**" Pack="true" PackagePath="buildTransitive" />
     <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting" />
-    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_net8.0/Meziantou.Framework.FullPath.dll" Pack="true" PackagePath="tasks/net8.0" Visible="false" />
     <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_net8.0/Meziantou.Framework.PublicApiGenerator.dll" Pack="true" PackagePath="tasks/net8.0" Visible="false" />
     <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_net8.0/Meziantou.Framework.PublicApiGenerator.MSBuild.dll" Pack="true" PackagePath="tasks/net8.0" Visible="false" />
     <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_net8.0/Meziantou.Framework.PublicApiGenerator.MSBuild.deps.json" Pack="true" PackagePath="tasks/net8.0" Visible="false" />
@@ -26,7 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="../Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
   </ItemGroup>
 

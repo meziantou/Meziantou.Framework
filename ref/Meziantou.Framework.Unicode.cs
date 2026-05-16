@@ -404,12 +404,8 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeBlock VariationSelectorsSupplement { get => throw null; }
         public static Meziantou.Framework.UnicodeBlock SupplementaryPrivateUseAreaA { get => throw null; }
         public static Meziantou.Framework.UnicodeBlock SupplementaryPrivateUseAreaB { get => throw null; }
-        #nullable disable
         public static Meziantou.Framework.UnicodeBlock GetBlock(int codePoint) => throw null;
-        #nullable restore
-        #nullable disable
         public static Meziantou.Framework.UnicodeBlock GetBlock(System.Text.Rune rune) => throw null;
-        #nullable restore
     }
 
     public readonly struct UnicodeCharacterInfo

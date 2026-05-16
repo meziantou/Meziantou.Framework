@@ -15,7 +15,7 @@ using System.Xml.Linq;
 using Meziantou.Framework;
 using Meziantou.Framework.Versioning;
 
-if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Exists(path / ".git"), out var root))
+if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
     throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
 
 var outputPath = root / "src" / "Meziantou.Framework.Http.Hsts";

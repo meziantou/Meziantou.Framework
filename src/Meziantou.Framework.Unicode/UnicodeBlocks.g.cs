@@ -8,6 +8,8 @@
 // Specification: https://www.unicode.org/reports/tr44/#Blocks.txt
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
 
+#nullable enable
+
 namespace Meziantou.Framework;
 
 /// <summary>Provides access to all Unicode blocks.</summary>

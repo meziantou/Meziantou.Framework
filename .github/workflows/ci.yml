@@ -229,7 +229,7 @@ jobs:
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /p:PublicApiGeneratorGenerateOnBuild=false /p:PublicApiGeneratorVerifyNoChangeOnBuild=false /bl ${{ matrix.additionalArguments }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'

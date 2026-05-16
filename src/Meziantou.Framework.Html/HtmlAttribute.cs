@@ -143,7 +143,7 @@ sealed class HtmlAttribute : HtmlNode
         set
         {
             IsValueDefined = value is not null;
-            InnerText = value;
+            InnerText = value ?? string.Empty;
         }
     }
 

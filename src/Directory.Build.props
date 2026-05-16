@@ -5,8 +5,8 @@
     <IsPackable>True</IsPackable>
     <SkipLocalsInit>true</SkipLocalsInit>
     <EnablePackageValidation Condition="'$(EnablePackageValidation)' == ''">true</EnablePackageValidation>
-    <PublicApiGeneratorGenerateOnBuild Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(PublicApiGeneratorGenerateOnBuild)' == ''">false</PublicApiGeneratorGenerateOnBuild>
-    <PublicApiGeneratorVerifyNoChangeOnBuild Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(PublicApiGeneratorVerifyNoChangeOnBuild)' == ''">true</PublicApiGeneratorVerifyNoChangeOnBuild>
+    <PublicApiGeneratorGenerateOnBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and '$(PublicApiGeneratorGenerateOnBuild)' == ''">false</PublicApiGeneratorGenerateOnBuild>
+    <PublicApiGeneratorVerifyNoChangeOnBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and '$(PublicApiGeneratorVerifyNoChangeOnBuild)' == ''">false</PublicApiGeneratorVerifyNoChangeOnBuild>
     <PublicApiGeneratorGenerateOnBuild Condition="'$(PublicApiGeneratorGenerateOnBuild)' == ''">true</PublicApiGeneratorGenerateOnBuild>
     <PublicApiGeneratorVerifyNoChangeOnBuild Condition="'$(PublicApiGeneratorVerifyNoChangeOnBuild)' == ''">false</PublicApiGeneratorVerifyNoChangeOnBuild>
     <PublicApiGeneratorFileLayout Condition="'$(PublicApiGeneratorFileLayout)' == ''">SingleFile</PublicApiGeneratorFileLayout>

@@ -742,7 +742,7 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
-    public async Task Tool_ValidateSingleFile_SucceedsWhenFileIsUpToDate()
+    public async Task Tool_VerifyNoChangeSingleFile_SucceedsWhenFileIsUpToDate()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
@@ -766,21 +766,21 @@ public sealed class PublicApiGeneratorTests
 
         Assert.Equal(0, generateExitCode);
 
-        var validateExitCode = await Program.MainImpl(
+        var verifyNoChangeExitCode = await Program.MainImpl(
             [
                 "--input", assemblyPath.ToString(),
                 "--output-file", outputFilePath.ToString(),
                 "--file-layout", nameof(PublicApiFileLayout.SingleFile),
                 "--omit-auto-generated-comment",
-                "--validate",
+                "--verify-no-change",
             ],
             configure: null);
 
-        Assert.Equal(0, validateExitCode);
+        Assert.Equal(0, verifyNoChangeExitCode);
     }
 
     [Fact]
-    public async Task Tool_ValidateSingleFile_FailsWhenFileIsOutOfDate()
+    public async Task Tool_VerifyNoChangeSingleFile_FailsWhenFileIsOutOfDate()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         var assemblyPath = await CompileSource(temporaryDirectory, "net8", "net8.0", """
@@ -806,17 +806,17 @@ public sealed class PublicApiGeneratorTests
 
         File.WriteAllText(outputFilePath, "// stale");
 
-        var validateExitCode = await Program.MainImpl(
+        var verifyNoChangeExitCode = await Program.MainImpl(
             [
                 "--input", assemblyPath.ToString(),
                 "--output-file", outputFilePath.ToString(),
                 "--file-layout", nameof(PublicApiFileLayout.SingleFile),
                 "--omit-auto-generated-comment",
-                "--validate",
+                "--verify-no-change",
             ],
             configure: null);
 
-        Assert.Equal(1, validateExitCode);
+        Assert.Equal(1, verifyNoChangeExitCode);
         Assert.Equal("// stale", File.ReadAllText(outputFilePath));
     }
 

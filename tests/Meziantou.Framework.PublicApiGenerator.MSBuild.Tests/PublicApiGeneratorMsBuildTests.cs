@@ -194,7 +194,7 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
     }
 
     [Fact]
-    public async Task ValidateOnBuild_UpToDateFile_Succeeds()
+    public async Task VerifyNoChangeOnBuild_UpToDateFile_Succeeds()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         var projectDirectory = temporaryDirectory.CreateDirectory("validate-up-to-date");
@@ -225,11 +225,11 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
-        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "/p:PublicApiGeneratorValidateOnBuild=true"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "/p:PublicApiGeneratorVerifyNoChangeOnBuild=true"], expectedExitCode: 0);
     }
 
     [Fact]
-    public async Task ValidateOnBuild_OutOfDateFile_FailsWithoutOverwriting()
+    public async Task VerifyNoChangeOnBuild_OutOfDateFile_FailsWithoutOverwriting()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
         var projectDirectory = temporaryDirectory.CreateDirectory("validate-out-of-date");
@@ -264,7 +264,7 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
         var generatedFilePath = projectDirectory / "obj" / "PublicApi" / "PublicApi.g.cs";
         await File.WriteAllTextAsync(generatedFilePath, "// stale", XunitCancellationToken);
 
-        var buildResult = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "/p:PublicApiGeneratorValidateOnBuild=true"], expectedExitCode: 1);
+        var buildResult = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "/p:PublicApiGeneratorVerifyNoChangeOnBuild=true"], expectedExitCode: 1);
         var buildOutput = string.Join('\n', buildResult.Output);
         Assert.Contains("out of date", buildOutput, StringComparison.Ordinal);
         Assert.Equal("// stale", await File.ReadAllTextAsync(generatedFilePath, XunitCancellationToken));

@@ -181,7 +181,7 @@ internal static class Program
         var errors = new List<string>();
         var comparer = GetRelativePathComparer();
         var expectedFilesByRelativePath = expectedFiles
-            .GroupBy(file => NormalizeRelativePath(file.RelativePath), comparer)
+            .GroupBy(file => file.RelativePath, comparer)
             .ToDictionary(group => group.Key, group => group.Last(), comparer);
 
         foreach (var expectedFile in expectedFilesByRelativePath.Values)
@@ -204,7 +204,7 @@ internal static class Program
         {
             foreach (var outputFilePath in Directory.EnumerateFiles(outputDirectoryPath, "*", SearchOption.AllDirectories).Select(FullPath.FromPath))
             {
-                var relativePath = NormalizeRelativePath(outputFilePath.MakePathRelativeTo(outputDirectoryPath));
+                var relativePath = outputFilePath.MakePathRelativeTo(outputDirectoryPath);
                 if (!expectedFilesByRelativePath.ContainsKey(relativePath))
                 {
                     errors.Add($"Unexpected file '{outputFilePath}' exists in the output directory.");
@@ -223,11 +223,6 @@ internal static class Program
     private static string NormalizeLineEndings(string value)
     {
         return value.ReplaceLineEndings("\n");
-    }
-
-    private static string NormalizeRelativePath(string path)
-    {
-        return path.Replace('\\', '/');
     }
 
     private static StringComparer GetRelativePathComparer()

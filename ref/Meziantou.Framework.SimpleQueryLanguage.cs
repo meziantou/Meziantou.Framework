@@ -6,22 +6,22 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     public sealed class ExpressionQuery<T>
     {
         public string Text { get => throw null; }
-        public System.Linq.Expressions.Expression<System.Func<T0, bool>>? Predicate { get => throw null; }
-        public System.Linq.IQueryable<T0> Apply(System.Linq.IQueryable<T0> queryable) => throw null;
+        public System.Linq.Expressions.Expression<System.Func<T, bool>>? Predicate { get => throw null; }
+        public System.Linq.IQueryable<T> Apply(System.Linq.IQueryable<T> queryable) => throw null;
     }
 
     public sealed class ExpressionQueryBuilder<T>
     {
-        public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T0, string?>> selector, System.StringComparison comparisonType = 5) { }
-        public void AddHandler<TValue>(string key, System.Linq.Expressions.Expression<System.Func<T0, TMethod0>> selector, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TMethod0>? tryParseValue = null) { }
-        public void AddHandler(string key, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T0, bool>>> handler) { }
-        public void AddHandler(string key, System.Func<string, System.Linq.Expressions.Expression<System.Func<T0, bool>>> handler) { }
-        public void SetFreeTextHandler(global::Meziantou.Framework.SimpleQueryLanguage.FreeTextExpressionHandler<T0>? handler) { }
-        public void SetUnhandledPropertyHandler(global::Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyExpressionHandler<T0>? handler) { }
-        public global::Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T0> Build(string query) => throw null;
+        public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, System.StringComparison comparisonType = 5) { }
+        public void AddHandler<TValue>(string key, System.Linq.Expressions.Expression<System.Func<T, TValue>> selector, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue = null) { }
+        public void AddHandler(string key, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
+        public void AddHandler(string key, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
+        public void SetFreeTextHandler(global::Meziantou.Framework.SimpleQueryLanguage.FreeTextExpressionHandler<T>? handler) { }
+        public void SetUnhandledPropertyHandler(global::Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyExpressionHandler<T>? handler) { }
+        public global::Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T> Build(string query) => throw null;
     }
 
-    public delegate System.Linq.Expressions.Expression<System.Func<T0, bool>> FreeTextExpressionHandler<T>(string text);
+    public delegate System.Linq.Expressions.Expression<System.Func<T, bool>> FreeTextExpressionHandler<T>(string text);
 
     public enum KeyValueOperator
     {
@@ -36,32 +36,32 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     public sealed class Query<T>
     {
         public string Text { get => throw null; }
-        public bool Evaluate(T0 value) => throw null;
+        public bool Evaluate(T value) => throw null;
     }
 
     public sealed class QueryBuilder<T>
     {
         public QueryBuilder(System.TimeProvider? timeProvider) { }
-        public void AddHandler(string key, string? value, System.Func<T0, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, bool> predicate) { }
-        public void AddHandler(string key, System.Func<T0, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, string, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T0, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TMethod0, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T0, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TMethod0, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TMethod0>? tryParseValue) { }
-        public void AddHandler(string key, string? value, System.Func<T0, bool> predicate) { }
-        public void AddHandler(string key, System.Func<T0, string, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T0, TMethod0, bool> predicate) { }
-        public void AddHandler<TValue>(string key, System.Func<T0, TMethod0, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TMethod0>? tryParseValue) { }
-        public void AddRangeHandler<TValue>(string key, System.Func<T0, global::Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TMethod0>, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TMethod0>? tryParseValue) { }
-        public void AddRangeHandler<TValue>(string key, System.Func<T0, global::Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TMethod0>, bool> predicate) { }
-        public void SetTextFilterHandler(System.Func<T0, string, bool> predicate) { }
-        public void SetUnhandledPropertyHandler(global::Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyDelegate<T0>? predicate) { }
-        public global::Meziantou.Framework.SimpleQueryLanguage.Query<T0> Build(string query) => throw null;
+        public void AddHandler(string key, string? value, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, bool> predicate) { }
+        public void AddHandler(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, string, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, TValue, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
+        public void AddHandler(string key, string? value, System.Func<T, bool> predicate) { }
+        public void AddHandler(string key, System.Func<T, string, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, TValue, bool> predicate) { }
+        public void AddHandler<TValue>(string key, System.Func<T, TValue, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
+        public void AddRangeHandler<TValue>(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate, global::Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue) { }
+        public void AddRangeHandler<TValue>(string key, System.Func<T, global::Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax<TValue>, bool> predicate) { }
+        public void SetTextFilterHandler(System.Func<T, string, bool> predicate) { }
+        public void SetUnhandledPropertyHandler(global::Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyDelegate<T>? predicate) { }
+        public global::Meziantou.Framework.SimpleQueryLanguage.Query<T> Build(string query) => throw null;
     }
 
-    public delegate bool ScalarParser<T>(string value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T0 result);
+    public delegate bool ScalarParser<T>(string value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result);
 
-    public delegate bool UnhandledPropertyDelegate<T>(T0 obj, string propertyName, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
+    public delegate bool UnhandledPropertyDelegate<T>(T obj, string propertyName, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
 
-    public delegate System.Linq.Expressions.Expression<System.Func<T0, bool>>? UnhandledPropertyExpressionHandler<T>(string propertyName, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
+    public delegate System.Linq.Expressions.Expression<System.Func<T, bool>>? UnhandledPropertyExpressionHandler<T>(string propertyName, global::Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
 }
 namespace Meziantou.Framework.SimpleQueryLanguage.Binding
 {
@@ -108,8 +108,8 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Ranges
 {
     public abstract class RangeSyntax<T>
     {
-        public bool IsInRange(T0 value) => throw null;
-        public abstract bool IsInRange(T0 value, System.Collections.Generic.IComparer<T0>? comparer);
+        public bool IsInRange(T value) => throw null;
+        public abstract bool IsInRange(T value, System.Collections.Generic.IComparer<T>? comparer);
     }
 }
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax

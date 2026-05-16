@@ -5,11 +5,11 @@ namespace Meziantou.Framework.HttpArchive
 {
     public sealed class HarBrowser
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string Name { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("version")]
         public string Version { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -17,11 +17,11 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarCache
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("beforeRequest")]
         public global::Meziantou.Framework.HttpArchive.HarCacheEntry? BeforeRequest { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("afterRequest")]
         public global::Meziantou.Framework.HttpArchive.HarCacheEntry? AfterRequest { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -29,15 +29,15 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarCacheEntry
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("expires")]
         public System.DateTimeOffset? Expires { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("lastAccess")]
         public System.DateTimeOffset LastAccess { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("eTag")]
         public string ETag { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("hitCount")]
         public int HitCount { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -45,17 +45,17 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarContent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("size")]
         public long Size { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("compression")]
         public long? Compression { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("mimeType")]
         public string MimeType { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("text")]
         public string? Text { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("encoding")]
         public string? Encoding { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -63,21 +63,21 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarCookie
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string Name { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
         public string Value { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("path")]
         public string? Path { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("domain")]
         public string? Domain { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("expires")]
         public System.DateTimeOffset? Expires { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("httpOnly")]
         public bool? HttpOnly { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("secure")]
         public bool? Secure { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -85,11 +85,11 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarCreator
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string Name { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("version")]
         public string Version { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -97,7 +97,7 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarDocument
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("log")]
         public global::Meziantou.Framework.HttpArchive.HarLog Log { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -111,25 +111,25 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarEntry
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("pageref")]
         public string? Pageref { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("startedDateTime")]
         public System.DateTimeOffset StartedDateTime { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("time")]
         public double Time { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("request")]
         public global::Meziantou.Framework.HttpArchive.HarRequest Request { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("response")]
         public global::Meziantou.Framework.HttpArchive.HarResponse Response { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("cache")]
         public global::Meziantou.Framework.HttpArchive.HarCache Cache { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("timings")]
         public global::Meziantou.Framework.HttpArchive.HarTimings Timings { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("serverIPAddress")]
         public string? ServerIPAddress { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("connection")]
         public string? Connection { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -145,11 +145,11 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarHeader
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string Name { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
         public string Value { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -157,17 +157,17 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarLog
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("version")]
         public string Version { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("creator")]
         public global::Meziantou.Framework.HttpArchive.HarCreator Creator { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("browser")]
         public global::Meziantou.Framework.HttpArchive.HarBrowser? Browser { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("pages")]
         public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarPage>? Pages { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("entries")]
         public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarEntry> Entries { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -175,15 +175,15 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarPage
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("startedDateTime")]
         public System.DateTimeOffset StartedDateTime { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("id")]
         public string Id { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("title")]
         public string Title { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("pageTimings")]
         public global::Meziantou.Framework.HttpArchive.HarPageTimings PageTimings { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -191,11 +191,11 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarPageTimings
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("onContentLoad")]
         public double? OnContentLoad { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("onLoad")]
         public double? OnLoad { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -203,13 +203,13 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarPostData
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("mimeType")]
         public string MimeType { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("params")]
         public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarPostDataParameter>? Params { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("text")]
         public string? Text { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -223,15 +223,15 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarPostDataParameter
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string? Name { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
         public string? Value { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("fileName")]
         public string? FileName { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("contentType")]
         public string? ContentType { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -239,11 +239,11 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarQueryParameter
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string Name { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("value")]
         public string Value { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -251,25 +251,25 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarRequest
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("method")]
         public string Method { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("url")]
         public string Url { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("httpVersion")]
         public string HttpVersion { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("cookies")]
         public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarCookie> Cookies { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("headers")]
         public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarHeader> Headers { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("queryString")]
         public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarQueryParameter> QueryString { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("postData")]
         public global::Meziantou.Framework.HttpArchive.HarPostData? PostData { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("headersSize")]
         public long HeadersSize { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("bodySize")]
         public long BodySize { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -277,25 +277,25 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarResponse
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("status")]
         public int Status { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("statusText")]
         public string StatusText { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("httpVersion")]
         public string HttpVersion { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("cookies")]
         public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarCookie> Cookies { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("headers")]
         public System.Collections.Generic.List<global::Meziantou.Framework.HttpArchive.HarHeader> Headers { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("content")]
         public global::Meziantou.Framework.HttpArchive.HarContent Content { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("redirectURL")]
         public string RedirectUrl { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("headersSize")]
         public long HeadersSize { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("bodySize")]
         public long BodySize { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }
@@ -303,21 +303,21 @@ namespace Meziantou.Framework.HttpArchive
 
     public sealed class HarTimings
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("blocked")]
         public double? Blocked { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("dns")]
         public double? Dns { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("connect")]
         public double? Connect { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("send")]
         public double Send { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("wait")]
         public double Wait { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("receive")]
         public double Receive { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ssl")]
         public double? Ssl { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("comment")]
         public string? Comment { get => throw null; set { } }
         [System.Text.Json.Serialization.JsonExtensionData]
         public System.Collections.Generic.Dictionary<string, System.Text.Json.JsonElement>? ExtensionData { get => throw null; set { } }

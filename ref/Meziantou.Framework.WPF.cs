@@ -78,30 +78,30 @@ namespace Meziantou.Framework.WPF
 }
 namespace Meziantou.Framework.WPF.Collections
 {
-    public sealed class ConcurrentObservableCollection<T> : System.Collections.Generic.ICollection<T0>, System.Collections.Generic.IEnumerable<T0>, System.Collections.Generic.IList<T0>, System.Collections.Generic.IReadOnlyCollection<T0>, System.Collections.Generic.IReadOnlyList<T0>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
+    public sealed class ConcurrentObservableCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public bool SupportRangeNotifications { get => throw null; set { } }
-        public global::Meziantou.Framework.WPF.Collections.IReadOnlyObservableCollection<T0> AsObservable { get => throw null; }
+        public global::Meziantou.Framework.WPF.Collections.IReadOnlyObservableCollection<T> AsObservable { get => throw null; }
         public int Count { get => throw null; }
-        public T0 this[int index] { get => throw null; set { } }
+        public T this[int index] { get => throw null; set { } }
         public ConcurrentObservableCollection(System.Windows.Threading.Dispatcher dispatcher) { }
-        public void Add(T0 item) { }
-        public void AddRange(params T0[] items) { }
-        public void AddRange(System.Collections.Generic.IEnumerable<T0> items) { }
-        public void InsertRange(int index, System.Collections.Generic.IEnumerable<T0> items) { }
+        public void Add(T item) { }
+        public void AddRange(params T[] items) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
+        public void InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { }
         public void Clear() { }
-        public void Insert(int index, T0 item) { }
-        public bool Remove(T0 item) => throw null;
+        public void Insert(int index, T item) { }
+        public bool Remove(T item) => throw null;
         public void RemoveAt(int index) { }
-        public System.Collections.Generic.IEnumerator<T0> GetEnumerator() => throw null;
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public int IndexOf(T0 item) => throw null;
-        public bool Contains(T0 item) => throw null;
-        public void CopyTo(T0[] array, int arrayIndex) { }
+        public int IndexOf(T item) => throw null;
+        public bool Contains(T item) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
         public void Sort() { }
-        public void Sort(System.Collections.Generic.IComparer<T0>? comparer) { }
+        public void Sort(System.Collections.Generic.IComparer<T>? comparer) { }
         public void StableSort() { }
-        public void StableSort(System.Collections.Generic.IComparer<T0>? comparer) { }
+        public void StableSort(System.Collections.Generic.IComparer<T>? comparer) { }
         int System.Collections.IList.Add(object? value) => throw null;
         bool System.Collections.IList.Contains(object? value) => throw null;
         void System.Collections.IList.Clear() { }
@@ -112,7 +112,7 @@ namespace Meziantou.Framework.WPF.Collections
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 
-    public interface IReadOnlyObservableCollection<T> : System.Collections.Generic.IEnumerable<T0>, System.Collections.Generic.IReadOnlyCollection<T0>, System.Collections.Generic.IReadOnlyList<T0>, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged, System.ComponentModel.INotifyPropertyChanged
+    public interface IReadOnlyObservableCollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable, System.Collections.Specialized.INotifyCollectionChanged, System.ComponentModel.INotifyPropertyChanged
     {
     }
 }

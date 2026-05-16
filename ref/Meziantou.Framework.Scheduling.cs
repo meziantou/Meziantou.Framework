@@ -183,8 +183,8 @@ namespace Meziantou.Framework.Scheduling
         protected abstract string GetText(global::Meziantou.Framework.Scheduling.WeeklyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
         protected abstract string GetText(global::Meziantou.Framework.Scheduling.MonthlyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
         protected abstract string GetText(global::Meziantou.Framework.Scheduling.YearlyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
-        protected static void ListToHumanText<T>(System.Text.StringBuilder sb, System.Globalization.CultureInfo cultureInfo, System.Collections.Generic.IList<TMethod0> list, string separator, string lastSeparator) { }
-        protected static string ListToHumanText<T>(System.Globalization.CultureInfo cultureInfo, System.Collections.Generic.IList<TMethod0> list, string separator, string lastSeparator) => throw null;
+        protected static void ListToHumanText<T>(System.Text.StringBuilder sb, System.Globalization.CultureInfo cultureInfo, System.Collections.Generic.IList<T> list, string separator, string lastSeparator) { }
+        protected static string ListToHumanText<T>(System.Globalization.CultureInfo cultureInfo, System.Collections.Generic.IList<T> list, string separator, string lastSeparator) => throw null;
         protected static bool IsWeekday(System.Collections.Generic.ICollection<System.DayOfWeek> daysOfWeek) => throw null;
         protected static bool IsWeekendDay(System.Collections.Generic.ICollection<System.DayOfWeek> daysOfWeek) => throw null;
         protected static bool IsFullWeek(System.Collections.Generic.ICollection<System.DayOfWeek> daysOfWeek) => throw null;

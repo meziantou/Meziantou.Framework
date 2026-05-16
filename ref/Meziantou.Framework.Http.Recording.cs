@@ -24,21 +24,21 @@ namespace Meziantou.Framework.Http.Recording
 
     public sealed class HttpRecordingEntry
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("method")]
         public required string Method { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("requestUri")]
         public required string RequestUri { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("requestHeaders")]
         public System.Collections.Generic.Dictionary<string, string[]>? RequestHeaders { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("requestBody")]
         public byte[]? RequestBody { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("statusCode")]
         public required int StatusCode { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("responseHeaders")]
         public System.Collections.Generic.Dictionary<string, string[]>? ResponseHeaders { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("responseBody")]
         public byte[]? ResponseBody { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("recordedAt")]
         public System.DateTimeOffset RecordedAt { get => throw null; set { } }
     }
 

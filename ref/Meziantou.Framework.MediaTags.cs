@@ -103,11 +103,11 @@ namespace Meziantou.Framework.MediaTags
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
         public bool IsSuccess { get => throw null; }
-        public T0 Value { get => throw null; }
+        public T Value { get => throw null; }
         public global::Meziantou.Framework.MediaTags.MediaTagError? Error { get => throw null; }
         public string? ErrorMessage { get => throw null; }
-        public static global::Meziantou.Framework.MediaTags.MediaTagResult<T0> Success(T0 value) => throw null;
-        public static global::Meziantou.Framework.MediaTags.MediaTagResult<T0> Failure(global::Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
+        public static global::Meziantou.Framework.MediaTags.MediaTagResult<T> Success(T value) => throw null;
+        public static global::Meziantou.Framework.MediaTags.MediaTagResult<T> Failure(global::Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
     }
 
     public readonly struct ReplayGainInfo : System.IEquatable<global::Meziantou.Framework.MediaTags.ReplayGainInfo>

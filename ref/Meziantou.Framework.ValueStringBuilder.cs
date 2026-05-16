@@ -11,7 +11,7 @@ namespace Meziantou.Framework
         public System.Span<char> RawChars { get => throw null; }
         public void Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgument] ref AppendInterpolatedStringHandler handler) { }
         public void Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgument] ref AppendInterpolatedStringHandler handler) { }
-        public void AppendSpanFormattable<T>(TMethod0 value, string? format = null, System.IFormatProvider? provider = null) where T : System.ISpanFormattable { }
+        public void AppendSpanFormattable<T>(T value, string? format = null, System.IFormatProvider? provider = null) where T : System.ISpanFormattable { }
         public ValueStringBuilder(System.Span<char> initialBuffer) { }
         public ValueStringBuilder(int initialCapacity) { }
         public void EnsureCapacity(int capacity) { }
@@ -39,10 +39,10 @@ namespace Meziantou.Framework
             public AppendInterpolatedStringHandler(int literalLength, int formattedCount, global::Meziantou.Framework.ValueStringBuilder valueStringBuilder, System.IFormatProvider? provider) { }
             public AppendInterpolatedStringHandler(int literalLength, int formattedCount, global::Meziantou.Framework.ValueStringBuilder valueStringBuilder, System.IFormatProvider? provider, out bool shouldAppend) { }
             public void AppendLiteral(string value) { }
-            public void AppendFormatted<T>(TMethod0 value) { }
-            public void AppendFormatted<T>(TMethod0 value, string? format) { }
-            public void AppendFormatted<T>(TMethod0 value, int alignment) { }
-            public void AppendFormatted<T>(TMethod0 value, int alignment, string? format) { }
+            public void AppendFormatted<T>(T value) { }
+            public void AppendFormatted<T>(T value, string? format) { }
+            public void AppendFormatted<T>(T value, int alignment) { }
+            public void AppendFormatted<T>(T value, int alignment, string? format) { }
             public void AppendFormatted(System.ReadOnlySpan<char> value) { }
             public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
             public void AppendFormatted(string? value) { }

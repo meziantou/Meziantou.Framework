@@ -180,7 +180,7 @@ namespace Meziantou.Framework.Tds.QueryEngine
         public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineAuthorizationHandler IsAuthorized { get => throw null; set { } }
         public System.Func<global::Meziantou.Framework.Tds.Handler.TdsQueryContext, global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind, string, global::Meziantou.Framework.Tds.Handler.TdsQueryError> NotAuthorizedErrorFactory { get => throw null; set { } }
         public System.Collections.Generic.IDictionary<string, System.Xml.Schema.XmlSchemaSet> XmlSchemaCollections { get => throw null; }
-        public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddQueryRoot<T>(string name, System.Func<global::Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable<TMethod0>> queryFactory) => throw null;
+        public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddQueryRoot<T>(string name, System.Func<global::Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable<T>> queryFactory) => throw null;
         public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddScalarFunction(string name, global::Meziantou.Framework.Tds.QueryEngine.TdsQueryScalarFunction function) => throw null;
         public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddXmlSchemaCollection(string name, string schemaDefinition) => throw null;
         public global::Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddXmlSchemaCollection(string name, System.Xml.Schema.XmlSchemaSet schemaSet) => throw null;

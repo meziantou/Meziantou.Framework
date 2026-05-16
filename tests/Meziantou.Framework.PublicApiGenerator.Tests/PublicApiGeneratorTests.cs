@@ -1571,6 +1571,26 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Property_WithJsonPropertyNameAttribute()
+    {
+        await Validate("""
+            public class Sample
+            {
+                [System.Text.Json.Serialization.JsonPropertyNameAttribute("my_name")]
+                public string Property { get; set; }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                [System.Text.Json.Serialization.JsonPropertyName("my_name")]
+                public string Property { get => throw null; set { } }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Nullable_DisabledAndRestored()
     {
         await Validate("""
@@ -1807,6 +1827,26 @@ public sealed class PublicApiGeneratorTests
             public class Sample
             {
                 public TMethod0 M<TMethod0>(TMethod0 value) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task GenericMembers_WithCustomGenericParameterNames()
+    {
+        await Validate("""
+            public class Sample<T>
+            {
+                public T[] RevealToArray() => null;
+                public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction) { }
+            }
+            """, """
+            #nullable enable
+
+            public class Sample<T>
+            {
+                public T[] RevealToArray() => throw null;
+                public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction) { }
             }
             """);
     }

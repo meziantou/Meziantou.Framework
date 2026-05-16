@@ -110,7 +110,7 @@ internal static class PublicApiModelReader
         var accessibility = GetAccessibility(typeDefinition.Attributes);
         var genericArguments = BuildGenericArguments(metadataReader, typeDefinitionHandle);
         var keyword = GetTypeKeyword(metadataReader, typeDefinition);
-        var inheritance = BuildTypeInheritance(metadataReader, typeDefinition);
+        var inheritance = BuildTypeInheritance(metadataReader, typeDefinitionHandle, typeDefinition);
         var constraints = BuildTypeConstraints(metadataReader, typeDefinitionHandle);
         var typeAttributes = BuildAttributes(metadataReader, typeDefinition.GetCustomAttributes());
 
@@ -122,7 +122,7 @@ internal static class PublicApiModelReader
                 throw new InvalidOperationException("Delegate type must have an Invoke method");
 
             var invokeMethod = metadataReader.GetMethodDefinition(invokeMethodHandle);
-            var invokeSignature = DecodeMethodSignature(metadataReader, invokeMethod);
+            var invokeSignature = DecodeMethodSignature(metadataReader, typeDefinitionHandle, invokeMethodHandle, invokeMethod);
             var returnType = ApplyNullableReferenceType(
                 invokeSignature.Signature.ReturnType,
                 GetNullableMetadataInfo(metadataReader, typeDefinitionHandle, GetParameterCustomAttributes(metadataReader, invokeMethod, sequenceNumber: 0), invokeMethodHandle));
@@ -351,9 +351,10 @@ internal static class PublicApiModelReader
         }
     }
 
-    private static string BuildTypeInheritance(MetadataReader metadataReader, TypeDefinition typeDefinition)
+    private static string BuildTypeInheritance(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
     {
         var keyword = GetTypeKeyword(metadataReader, typeDefinition);
+        var genericContext = BuildSignatureGenericContext(metadataReader, typeDefinitionHandle);
         var baseTypes = new List<string>();
         if (keyword == "class" && !typeDefinition.BaseType.IsNil)
         {
@@ -361,14 +362,14 @@ internal static class PublicApiModelReader
             if (!string.Equals(baseTypeName, "System.Object", StringComparison.Ordinal) &&
                 !string.Equals(baseTypeName, "System.ValueType", StringComparison.Ordinal))
             {
-                baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, typeDefinition.BaseType)));
+                baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, typeDefinition.BaseType, genericContext)));
             }
         }
 
         foreach (var interfaceImplementationHandle in typeDefinition.GetInterfaceImplementations())
         {
             var interfaceImplementation = metadataReader.GetInterfaceImplementation(interfaceImplementationHandle);
-            baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, interfaceImplementation.Interface)));
+            baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, interfaceImplementation.Interface, genericContext)));
         }
 
         if (baseTypes.Count == 0)
@@ -379,10 +380,10 @@ internal static class PublicApiModelReader
 
     private static List<string> BuildTypeConstraints(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle)
     {
-        return BuildConstraints(metadataReader, metadataReader.GetTypeDefinition(typeDefinitionHandle).GetGenericParameters());
+        return BuildConstraints(metadataReader, metadataReader.GetTypeDefinition(typeDefinitionHandle).GetGenericParameters(), BuildSignatureGenericContext(metadataReader, typeDefinitionHandle));
     }
 
-    private static List<string> BuildConstraints(MetadataReader metadataReader, GenericParameterHandleCollection genericParameters)
+    private static List<string> BuildConstraints(MetadataReader metadataReader, GenericParameterHandleCollection genericParameters, SignatureGenericContext genericContext)
     {
         var constraints = new List<string>();
         foreach (var genericParameterHandle in genericParameters)
@@ -404,7 +405,7 @@ internal static class PublicApiModelReader
             foreach (var constraintHandle in genericParameter.GetConstraints())
             {
                 var constraint = metadataReader.GetGenericParameterConstraint(constraintHandle);
-                var constraintType = FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, constraint.Type));
+                var constraintType = FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, constraint.Type, genericContext));
                 if (hasStructConstraint && string.Equals(constraintType, "System.ValueType", StringComparison.Ordinal))
                     continue;
 
@@ -432,7 +433,7 @@ internal static class PublicApiModelReader
 
     private static string BuildField(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, FieldDefinition field)
     {
-        var type = DecodeFieldType(metadataReader, field);
+        var type = DecodeFieldType(metadataReader, declaringTypeHandle, field);
         var nullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, field.GetCustomAttributes());
         var isByRefField = type.Kind == DecodedTypeKind.ByReference;
         var typeName = isByRefField
@@ -539,7 +540,7 @@ internal static class PublicApiModelReader
             propertyNullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, property.GetCustomAttributes());
         }
 
-        var propertySignature = DecodePropertySignature(metadataReader, property);
+        var propertySignature = DecodePropertySignature(metadataReader, declaringTypeHandle, property);
         var propertyType = ApplyNullableReferenceType(propertySignature.ReturnType, propertyNullableInfo);
         var propertyName = propertySignature.ParameterTypes.Length > 0
             ? "this[" + BuildIndexerParameters(metadataReader, declaringTypeHandle, getAccessorHandle, setAccessorHandle, getAccessor, setAccessor, propertySignature.ParameterTypes) + "]"
@@ -554,7 +555,7 @@ internal static class PublicApiModelReader
 
         if (isSetVisible)
         {
-            var setterSignature = DecodeMethodSignature(metadataReader, setAccessor!.Value);
+            var setterSignature = DecodeMethodSignature(metadataReader, declaringTypeHandle, setAccessorHandle, setAccessor!.Value);
             var accessorKeyword = setterSignature.ContainsIsExternalInitModifier ? "init" : "set";
             var accessorModifier = BuildAccessorModifier(setAccessor.Value.Attributes, representativeAttributes);
             var accessorBody = setAccessor.Value.Attributes.HasFlag(MethodAttributes.Abstract)
@@ -597,7 +598,7 @@ internal static class PublicApiModelReader
             GetParameterCustomAttributes(metadataReader, addMethod, sequenceNumber: 1),
             accessors.Adder,
             eventDefinition.GetCustomAttributes());
-        var addMethodSignature = DecodeMethodSignature(metadataReader, addMethod);
+        var addMethodSignature = DecodeMethodSignature(metadataReader, declaringTypeHandle, accessors.Adder, addMethod);
         var eventType = ApplyNullableReferenceType(addMethodSignature.Signature.ParameterTypes[0], eventNullableInfo);
         var eventName = metadataReader.GetString(eventDefinition.Name);
         var declaration = $"{string.Join(' ', modifiers)} event {eventType} {eventName};";
@@ -607,7 +608,7 @@ internal static class PublicApiModelReader
 
     private static string BuildMethod(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method, string name)
     {
-        var signature = DecodeMethodSignature(metadataReader, method);
+        var signature = DecodeMethodSignature(metadataReader, declaringTypeHandle, methodHandle, method);
         if (IsDestructor(method, signature, name))
         {
             var declaringTypeDefinition = metadataReader.GetTypeDefinition(declaringTypeHandle);
@@ -622,7 +623,7 @@ internal static class PublicApiModelReader
             ? []
             : BuildMethodModifiers(method.Attributes, declaringType.Attributes.HasFlag(TypeAttributes.Interface));
         var genericArguments = BuildGenericArguments(metadataReader, method.GetGenericParameters());
-        var constraints = BuildConstraints(metadataReader, method.GetGenericParameters());
+        var constraints = BuildConstraints(metadataReader, method.GetGenericParameters(), BuildSignatureGenericContext(metadataReader, declaringTypeHandle, methodHandle));
         var isExtensionMethod = method.Attributes.HasFlag(MethodAttributes.Static) &&
                                 HasAttribute(metadataReader, method.GetCustomAttributes(), "System.Runtime.CompilerServices.ExtensionAttribute");
         var returnNullableInfo = GetNullableMetadataInfo(metadataReader, declaringTypeHandle, GetParameterCustomAttributes(metadataReader, method, sequenceNumber: 0), methodHandle);
@@ -655,7 +656,7 @@ internal static class PublicApiModelReader
 
     private static string? BuildConstructor(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method)
     {
-        var signature = DecodeMethodSignature(metadataReader, method);
+        var signature = DecodeMethodSignature(metadataReader, declaringTypeHandle, methodHandle, method);
         var declaringType = metadataReader.GetTypeDefinition(declaringTypeHandle);
         var typeName = RemoveGenericArity(metadataReader.GetString(declaringType.Name));
         var accessibility = GetAccessibility(method.Attributes);
@@ -1137,7 +1138,7 @@ internal static class PublicApiModelReader
             if (!IsExternallyVisible(baseMethod.Attributes))
                 continue;
 
-            var baseSignature = DecodeMethodSignature(metadataReader, baseMethod);
+            var baseSignature = DecodeMethodSignature(metadataReader, baseTypeHandle, baseMethodHandle, baseMethod);
             if (baseSignature.Signature.ParameterTypes.Length == 0)
             {
                 hasAccessibleParameterlessConstructor = true;
@@ -1154,7 +1155,7 @@ internal static class PublicApiModelReader
             return string.Empty;
 
         var selectedBaseConstructor = metadataReader.GetMethodDefinition(selectedBaseConstructorHandle);
-        var selectedSignature = DecodeMethodSignature(metadataReader, selectedBaseConstructor);
+        var selectedSignature = DecodeMethodSignature(metadataReader, baseTypeHandle, selectedBaseConstructorHandle, selectedBaseConstructor);
         var arguments = string.Join(", ", selectedSignature.Signature.ParameterTypes.Select(static parameterType =>
         {
             var type = parameterType.Kind == DecodedTypeKind.ByReference
@@ -1178,7 +1179,7 @@ internal static class PublicApiModelReader
             if (!TryGetExtensionPropertyAccessorInfo(metadataReader, method, out var accessorType, out var propertyName))
                 continue;
 
-            var signature = DecodeMethodSignature(metadataReader, method);
+            var signature = DecodeMethodSignature(metadataReader, declaringTypeHandle, methodHandle, method);
             if (accessorType == "get" && signature.Signature.ParameterTypes.Length < 1)
                 continue;
 
@@ -1773,38 +1774,61 @@ internal static class PublicApiModelReader
         }
     }
 
-    private static DecodedMethodSignature DecodeMethodSignature(MetadataReader metadataReader, MethodDefinition method)
+    private static DecodedMethodSignature DecodeMethodSignature(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method)
     {
-        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
-        var signature = method.DecodeSignature(provider, genericContext: null);
+        var signature = method.DecodeSignature(provider, BuildSignatureGenericContext(metadataReader, declaringTypeHandle, methodHandle));
         return new DecodedMethodSignature(signature, provider.ContainsIsExternalInitModifier);
     }
 
-    private static DecodedType DecodeFieldType(MetadataReader metadataReader, FieldDefinition field)
+    private static DecodedType DecodeFieldType(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, FieldDefinition field)
     {
-        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
-        return field.DecodeSignature(provider, genericContext: null);
+        return field.DecodeSignature(provider, BuildSignatureGenericContext(metadataReader, declaringTypeHandle));
     }
 
-    private static MethodSignature<DecodedType> DecodePropertySignature(MetadataReader metadataReader, PropertyDefinition property)
+    private static MethodSignature<DecodedType> DecodePropertySignature(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, PropertyDefinition property)
     {
-        _ = metadataReader;
         var provider = new MetadataTypeNameProvider();
-        return property.DecodeSignature(provider, genericContext: null);
+        return property.DecodeSignature(provider, BuildSignatureGenericContext(metadataReader, declaringTypeHandle));
     }
 
-    private static DecodedType DecodeTypeFromEntityHandle(MetadataReader metadataReader, EntityHandle handle)
+    private static DecodedType DecodeTypeFromEntityHandle(MetadataReader metadataReader, EntityHandle handle, SignatureGenericContext genericContext = default)
     {
         var provider = new MetadataTypeNameProvider();
         return handle.Kind switch
         {
             HandleKind.TypeReference => provider.GetTypeFromReference(metadataReader, (TypeReferenceHandle)handle, rawTypeKind: 0x12),
             HandleKind.TypeDefinition => DecodeTypeDefinitionHandle(metadataReader, provider, (TypeDefinitionHandle)handle),
-            HandleKind.TypeSpecification => provider.GetTypeFromSpecification(metadataReader, genericContext: null, (TypeSpecificationHandle)handle, rawTypeKind: 0),
+            HandleKind.TypeSpecification => provider.GetTypeFromSpecification(metadataReader, genericContext, (TypeSpecificationHandle)handle, rawTypeKind: 0),
             _ => new DecodedType("object", IsReferenceType: true, IsTypeParameter: false),
         };
+    }
+
+    private static SignatureGenericContext BuildSignatureGenericContext(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle = default)
+    {
+        var typeParameterNames = declaringTypeHandle.IsNil
+            ? []
+            : GetGenericParameterNames(metadataReader, metadataReader.GetTypeDefinition(declaringTypeHandle).GetGenericParameters());
+        var methodParameterNames = methodHandle.IsNil
+            ? []
+            : GetGenericParameterNames(metadataReader, metadataReader.GetMethodDefinition(methodHandle).GetGenericParameters());
+        return new SignatureGenericContext(typeParameterNames, methodParameterNames);
+    }
+
+    private static ImmutableArray<string> GetGenericParameterNames(MetadataReader metadataReader, GenericParameterHandleCollection genericParameters)
+    {
+        if (genericParameters.Count == 0)
+            return [];
+
+        var result = ImmutableArray.CreateBuilder<string>(genericParameters.Count);
+        foreach (var genericParameterHandle in genericParameters)
+        {
+            var genericParameter = metadataReader.GetGenericParameter(genericParameterHandle);
+            result.Add(metadataReader.GetString(genericParameter.Name));
+        }
+
+        return result.MoveToImmutable();
     }
 
     private static DecodedType DecodeTypeDefinitionHandle(MetadataReader metadataReader, MetadataTypeNameProvider provider, TypeDefinitionHandle typeDefinitionHandle)
@@ -2152,6 +2176,14 @@ internal static class PublicApiModelReader
             }
         }
 
+        if (string.Equals(attributeTypeFullName, "System.Text.Json.Serialization.JsonPropertyNameAttribute", StringComparison.Ordinal))
+        {
+            if (TryReadStringAttributeArgument(metadataReader.GetBlobBytes(attribute.Value), out var propertyName))
+            {
+                return "(" + FormatConstant(propertyName) + ")";
+            }
+        }
+
         return string.Empty;
     }
 
@@ -2325,7 +2357,24 @@ internal static class PublicApiModelReader
         return name[..index];
     }
 
-    private sealed class MetadataTypeNameProvider : ISignatureTypeProvider<DecodedType, object?>
+    private readonly record struct SignatureGenericContext(ImmutableArray<string> TypeParameterNames, ImmutableArray<string> MethodParameterNames)
+    {
+        public string GetMethodParameterName(int index)
+        {
+            return index >= 0 && !MethodParameterNames.IsDefault && index < MethodParameterNames.Length
+                ? MethodParameterNames[index]
+                : "TMethod" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public string GetTypeParameterName(int index)
+        {
+            return index >= 0 && !TypeParameterNames.IsDefault && index < TypeParameterNames.Length
+                ? TypeParameterNames[index]
+                : "T" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
+
+    private sealed class MetadataTypeNameProvider : ISignatureTypeProvider<DecodedType, SignatureGenericContext>
     {
         private const byte ElementTypeValueType = 0x11;
         private const byte ElementTypeClass = 0x12;
@@ -2352,9 +2401,9 @@ internal static class PublicApiModelReader
             return new(genericType.Name, genericType.IsReferenceType, IsTypeParameter: false, Kind: DecodedTypeKind.GenericInstantiation, TypeArguments: typeArguments);
         }
 
-        public DecodedType GetGenericMethodParameter(object? genericContext, int index) => new("TMethod" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), IsReferenceType: false, IsTypeParameter: true);
+        public DecodedType GetGenericMethodParameter(SignatureGenericContext genericContext, int index) => new(genericContext.GetMethodParameterName(index), IsReferenceType: false, IsTypeParameter: true);
 
-        public DecodedType GetGenericTypeParameter(object? genericContext, int index) => new("T" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), IsReferenceType: false, IsTypeParameter: true);
+        public DecodedType GetGenericTypeParameter(SignatureGenericContext genericContext, int index) => new(genericContext.GetTypeParameterName(index), IsReferenceType: false, IsTypeParameter: true);
 
         public DecodedType GetModifiedType(DecodedType modifier, DecodedType unmodifiedType, bool isRequired)
         {
@@ -2428,7 +2477,7 @@ internal static class PublicApiModelReader
                 IsTypeParameter: false);
         }
 
-        public DecodedType GetTypeFromSpecification(MetadataReader reader, object? genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+        public DecodedType GetTypeFromSpecification(MetadataReader reader, SignatureGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
         {
             var typeSpecification = reader.GetTypeSpecification(handle);
             var decodedType = typeSpecification.DecodeSignature(this, genericContext);

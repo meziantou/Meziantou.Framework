@@ -5,6 +5,6 @@ namespace Meziantou.Framework
 {
     public interface IStronglyTypedId<T> : global::Meziantou.Framework.IStronglyTypedId
     {
-        T0 Value { get; }
+        T Value { get; }
     }
 }

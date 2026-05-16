@@ -7,10 +7,10 @@ namespace Meziantou.Framework
     public sealed class SensitiveData<T> : System.IDisposable where T : struct
     {
         public int GetLength() => throw null;
-        public int RevealInto(System.Span<T0> destination) => throw null;
-        public T0[] RevealToArray() => throw null;
-        public void RevealAndUse<TArg>(TMethod0 arg, System.Buffers.ReadOnlySpanAction<T0, TMethod0> spanAction) { }
-        public global::Meziantou.Framework.SensitiveData<T0> Clone() => throw null;
+        public int RevealInto(System.Span<T> destination) => throw null;
+        public T[] RevealToArray() => throw null;
+        public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction) { }
+        public global::Meziantou.Framework.SensitiveData<T> Clone() => throw null;
         public void Dispose() { }
     }
 }

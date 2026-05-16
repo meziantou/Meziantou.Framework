@@ -11,59 +11,59 @@ namespace Meziantou.Framework.ChromiumTracing
 
     public sealed class ChromiumTracingAsyncBeginEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingAsyncEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingAsyncEndEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingAsyncEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public abstract class ChromiumTracingAsyncEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("id")]
         public int? Id { get => throw null; set { } }
     }
 
     public sealed class ChromiumTracingAsyncInstantEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingAsyncEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingClockSyncEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string? Name { get => throw null; set { } }
     }
 
     public sealed class ChromiumTracingCompleteEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("dur")]
         [System.Text.Json.Serialization.JsonConverter]
         public System.TimeSpan Duration { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("tdur")]
         [System.Text.Json.Serialization.JsonConverter]
         public System.TimeSpan? ThreadDuration { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("estack")]
         public System.Collections.Generic.IEnumerable<string>? EndStackTrace { get => throw null; set { } }
     }
 
     public sealed class ChromiumTracingContextBeginEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingContextEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingContextEndEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingContextEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
@@ -73,21 +73,21 @@ namespace Meziantou.Framework.ChromiumTracing
 
     public sealed class ChromiumTracingCounterEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("id")]
         public int? Id { get => throw null; set { } }
     }
 
     public sealed class ChromiumTracingDurationBeginEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingDurationEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingDurationEndEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingDurationEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
@@ -97,41 +97,41 @@ namespace Meziantou.Framework.ChromiumTracing
 
     public abstract class ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get; }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string? Name { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("cat")]
         public string? Category { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ts")]
         [System.Text.Json.Serialization.JsonConverter]
         public System.DateTimeOffset Timestamp { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("tts")]
         [System.Text.Json.Serialization.JsonConverter]
         public System.DateTimeOffset? ThreadTimestamp { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("pid")]
         public int? ProcessId { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("tid")]
         public int? ThreadId { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("cname")]
         public string? ColorName { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("stack")]
         public System.Collections.Generic.IEnumerable<string>? StackTrace { get => throw null; set { } }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("args")]
         public System.Collections.Generic.IReadOnlyDictionary<string, object?>? Arguments { get => throw null; set { } }
     }
 
     public sealed class ChromiumTracingFlowBeginEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingFlowEndEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("bp")]
         [System.Text.Json.Serialization.JsonIgnore]
         [System.Text.Json.Serialization.JsonConverter]
         public global::Meziantou.Framework.ChromiumTracing.BindingPoint BindingPoint { get => throw null; set { } }
@@ -143,15 +143,15 @@ namespace Meziantou.Framework.ChromiumTracing
 
     public sealed class ChromiumTracingFlowStepEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingInstantEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("s")]
         [System.Text.Json.Serialization.JsonConverter]
         public global::Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEventScope? Scope { get => throw null; set { } }
     }
@@ -165,15 +165,15 @@ namespace Meziantou.Framework.ChromiumTracing
 
     public sealed class ChromiumTracingLinkIdEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("id")]
         public string? Id { get => throw null; set { } }
     }
 
     public sealed class ChromiumTracingMarkEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
@@ -183,19 +183,19 @@ namespace Meziantou.Framework.ChromiumTracing
 
     public sealed class ChromiumTracingMemoryDumpGlobalEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingMemoryDumpEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingMemoryDumpProcessEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingMemoryDumpEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingMetadataEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
         public static global::Meziantou.Framework.ChromiumTracing.ChromiumTracingMetadataEvent ProcessName(int pid, string name) => throw null;
         public static global::Meziantou.Framework.ChromiumTracing.ChromiumTracingMetadataEvent ProcessLabels(int pid, params string[] labels) => throw null;
@@ -206,25 +206,25 @@ namespace Meziantou.Framework.ChromiumTracing
 
     public sealed class ChromiumTracingObjectCreatedEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingObjectEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public sealed class ChromiumTracingObjectDestroyedEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingObjectEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 
     public abstract class ChromiumTracingObjectEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("id")]
         public string? Id { get => throw null; set { } }
     }
 
     public sealed class ChromiumTracingObjectSnapshotEvent : global::Meziantou.Framework.ChromiumTracing.ChromiumTracingObjectEvent
     {
-        [System.Text.Json.Serialization.JsonPropertyName]
+        [System.Text.Json.Serialization.JsonPropertyName("ph")]
         public string Type { get => throw null; }
     }
 

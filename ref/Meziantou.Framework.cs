@@ -22,22 +22,22 @@ namespace Meziantou.Framework
 
     public static class AsyncEnumerableExtensions
     {
-        public static System.Collections.Generic.IAsyncEnumerable<TMethod0> WhereNotNull<T>(this System.Collections.Generic.IAsyncEnumerable<TMethod0> enumerable) where T : class => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IAsyncEnumerable<T> enumerable) where T : class => throw null;
         public static System.Collections.Generic.IAsyncEnumerable<string> WhereNotNullOrEmpty(this System.Collections.Generic.IAsyncEnumerable<string?> source) => throw null;
         public static System.Collections.Generic.IAsyncEnumerable<string> WhereNotNullOrWhiteSpace(this System.Collections.Generic.IAsyncEnumerable<string?> source) => throw null;
     }
 
     public static class CachedEnumerable
     {
-        public static global::Meziantou.Framework.ICachedEnumerable<TMethod0> Create<T>(System.Collections.Generic.IEnumerable<TMethod0> enumerable, bool threadSafe = true) => throw null;
-        public static global::Meziantou.Framework.ICachedAsyncEnumerable<TMethod0> Create<T>(System.Collections.Generic.IAsyncEnumerable<TMethod0> enumerable, bool threadSafe = true) => throw null;
+        public static global::Meziantou.Framework.ICachedEnumerable<T> Create<T>(System.Collections.Generic.IEnumerable<T> enumerable, bool threadSafe = true) => throw null;
+        public static global::Meziantou.Framework.ICachedAsyncEnumerable<T> Create<T>(System.Collections.Generic.IAsyncEnumerable<T> enumerable, bool threadSafe = true) => throw null;
     }
 
     public static class ConcurrentQueueExtensions
     {
-        public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<TMethod0> queue, params TMethod0[] items) { }
-        public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<TMethod0> queue, System.Collections.Generic.IEnumerable<TMethod0> items) { }
-        public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<TMethod0> queue, System.ReadOnlySpan<TMethod0> items) { }
+        public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<T> queue, params T[] items) { }
+        public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<T> queue, System.Collections.Generic.IEnumerable<T> items) { }
+        public static void EnqueueRange<T>(this System.Collections.Concurrent.ConcurrentQueue<T> queue, System.ReadOnlySpan<T> items) { }
     }
 
     public static class Country
@@ -51,8 +51,8 @@ namespace Meziantou.Framework
         public static void SetCurrentThreadCulture(System.Globalization.CultureInfo cultureInfo) { }
         public static void UseCulture(System.Globalization.CultureInfo cultureInfo, System.Action action) { }
         public static void UseCulture(string cultureName, System.Action action) { }
-        public static TMethod0 UseCulture<T>(System.Globalization.CultureInfo cultureInfo, System.Func<TMethod0> action) => throw null;
-        public static TMethod0 UseCulture<T>(string cultureName, System.Func<TMethod0> action) => throw null;
+        public static T UseCulture<T>(System.Globalization.CultureInfo cultureInfo, System.Func<T> action) => throw null;
+        public static T UseCulture<T>(string cultureName, System.Func<T> action) => throw null;
         public static System.Globalization.CultureInfo? GetCulture(string? name) => throw null;
         public static System.Globalization.CultureInfo GetNeutralCulture(this System.Globalization.CultureInfo cultureInfo) => throw null;
         public static bool NeutralEquals(this System.Globalization.CultureInfo a, System.Globalization.CultureInfo b) => throw null;
@@ -122,24 +122,24 @@ namespace Meziantou.Framework
     {
         public static System.Action Debounce(this System.Action action, System.TimeSpan interval) => throw null;
         public static System.Action Debounce(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0> Debounce<T0>(this System.Action<TMethod0> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0> Debounce<T0>(this System.Action<TMethod0> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1> Debounce<T0, T1>(this System.Action<TMethod0, TMethod1> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1> Debounce<T0, T1>(this System.Action<TMethod0, TMethod1> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2> Debounce<T0, T1, T2>(this System.Action<TMethod0, TMethod1, TMethod2> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2> Debounce<T0, T1, T2>(this System.Action<TMethod0, TMethod1, TMethod2> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3> Debounce<T0, T1, T2, T3>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3> Debounce<T0, T1, T2, T3>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4> Debounce<T0, T1, T2, T3, T4>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4> Debounce<T0, T1, T2, T3, T4>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0> Debounce<T0>(this System.Action<T0> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0> Debounce<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1> Debounce<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1> Debounce<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2> Debounce<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2> Debounce<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
     }
 
     public static class DeterministicGuid
@@ -160,10 +160,10 @@ namespace Meziantou.Framework
 
     public static class DictionaryExtensions
     {
-        public static TMethod1 GetOrAdd<TKey, TValue>(this System.Collections.Generic.Dictionary<TMethod0, TMethod1> dict, TMethod0 key, TMethod1 value) => throw null;
-        public static TMethod1 GetOrAdd<TKey, TValue>(this System.Collections.Generic.Dictionary<TMethod0, TMethod1> dict, TMethod0 key, System.Func<TMethod0, TMethod1> valueFactory) => throw null;
-        public static bool TryUpdate<TKey, TValue>(this System.Collections.Generic.Dictionary<TMethod0, TMethod1> dict, TMethod0 key, TMethod1 value) => throw null;
-        public static bool TryUpdate<TKey, TValue>(this System.Collections.Generic.Dictionary<TMethod0, TMethod1> dict, TMethod0 key, System.Func<TMethod0, TMethod1, TMethod1> valueFactory) => throw null;
+        public static TValue GetOrAdd<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, TValue value) => throw null;
+        public static TValue GetOrAdd<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, System.Func<TKey, TValue> valueFactory) => throw null;
+        public static bool TryUpdate<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, TValue value) => throw null;
+        public static bool TryUpdate<TKey, TValue>(this System.Collections.Generic.Dictionary<TKey, TValue> dict, TKey key, System.Func<TKey, TValue, TValue> valueFactory) => throw null;
     }
 
     public static class EncodingExtensions
@@ -173,66 +173,66 @@ namespace Meziantou.Framework
 
     public static class EnumExtensions
     {
-        public static TMethod0 Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
-        public static TMethod0 Parse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
-        public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? value, bool ignoreCase, out TMethod0 result) where TEnum : struct, System.Enum => throw null;
-        public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase, out TMethod0 result) where TEnum : struct, System.Enum => throw null;
+        public static TEnum Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
+        public static TEnum Parse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase) where TEnum : struct, System.Enum => throw null;
+        public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct, System.Enum => throw null;
+        public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) where TEnum : struct, System.Enum => throw null;
     }
 
     public static class EnumerableExtensions
     {
-        public static System.Collections.Generic.IEnumerator<TMethod0> GetEnumerator<T>(this System.Collections.Generic.IEnumerator<TMethod0> enumerator) => throw null;
-        public static System.Collections.Generic.IAsyncEnumerator<TMethod0> GetAsyncEnumerator<T>(this System.Collections.Generic.IAsyncEnumerator<TMethod0> enumerator) => throw null;
-        public static void AddRange<T>(this System.Collections.Generic.ICollection<TMethod0> collection, params TMethod0[] items) { }
-        public static void AddRange<T>(this System.Collections.Generic.ICollection<TMethod0> collection, System.Collections.Generic.IEnumerable<TMethod0>? items) { }
-        public static void RemoveAll<T>(this System.Collections.Generic.ICollection<TMethod0> collection, System.Predicate<TMethod0> match) { }
-        public static void Replace<T>(this System.Collections.Generic.IList<TMethod0> list, TMethod0 oldItem, TMethod0 newItem) { }
-        public static void AddOrReplace<T>(this System.Collections.Generic.IList<TMethod0> list, TMethod0 oldItem, TMethod0 newItem) { }
-        public static System.Collections.Generic.IEnumerable<TMethod0> WhereNotNull<T>(this System.Collections.Generic.IEnumerable<TMethod0?> items) where T : struct => throw null;
-        public static System.Collections.Generic.IEnumerable<TMethod0> WhereNotNull<T>(this System.Collections.Generic.IEnumerable<TMethod0> source) where T : class => throw null;
+        public static System.Collections.Generic.IEnumerator<T> GetEnumerator<T>(this System.Collections.Generic.IEnumerator<T> enumerator) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerator<T> GetAsyncEnumerator<T>(this System.Collections.Generic.IAsyncEnumerator<T> enumerator) => throw null;
+        public static void AddRange<T>(this System.Collections.Generic.ICollection<T> collection, params T[] items) { }
+        public static void AddRange<T>(this System.Collections.Generic.ICollection<T> collection, System.Collections.Generic.IEnumerable<T>? items) { }
+        public static void RemoveAll<T>(this System.Collections.Generic.ICollection<T> collection, System.Predicate<T> match) { }
+        public static void Replace<T>(this System.Collections.Generic.IList<T> list, T oldItem, T newItem) { }
+        public static void AddOrReplace<T>(this System.Collections.Generic.IList<T> list, T oldItem, T newItem) { }
+        public static System.Collections.Generic.IEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IEnumerable<T?> items) where T : struct => throw null;
+        public static System.Collections.Generic.IEnumerable<T> WhereNotNull<T>(this System.Collections.Generic.IEnumerable<T> source) where T : class => throw null;
         public static System.Collections.Generic.IEnumerable<string> WhereNotNullOrEmpty(this System.Collections.Generic.IEnumerable<string?> source) => throw null;
         public static System.Collections.Generic.IEnumerable<string> WhereNotNullOrWhiteSpace(this System.Collections.Generic.IEnumerable<string?> source) => throw null;
-        public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, TMethod1> keySelector) => throw null;
-        public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, TMethod1> keySelector, System.Collections.Generic.IEqualityComparer<TMethod1>? comparer) => throw null;
-        public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source) => throw null;
-        public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Collections.Generic.IEqualityComparer<TMethod0>? comparer) => throw null;
+        public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector) => throw null;
+        public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer) => throw null;
+        public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) => throw null;
+        public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IEqualityComparer<TSource>? comparer) => throw null;
         [System.Obsolete("Use Order()", true)]
-        public static System.Collections.Generic.IEnumerable<TMethod0> Sort<T>(this System.Collections.Generic.IEnumerable<TMethod0> list) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> Sort<T>(this System.Collections.Generic.IEnumerable<T> list) => throw null;
         [System.Obsolete("Use Order()", true)]
-        public static System.Collections.Generic.IEnumerable<TMethod0> Sort<T>(this System.Collections.Generic.IEnumerable<TMethod0> list, System.Collections.Generic.IComparer<TMethod0>? comparer) => throw null;
-        public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<TMethod0> list, TMethod0 value) => throw null;
-        public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<TMethod0> list, TMethod0 value, System.Collections.Generic.IEqualityComparer<TMethod0>? comparer) => throw null;
-        public static long LongIndexOf<T>(this System.Collections.Generic.IEnumerable<TMethod0> list, TMethod0 value) where T : System.IEquatable<TMethod0> => throw null;
-        public static long LongIndexOf<T>(this System.Collections.Generic.IEnumerable<TMethod0> list, TMethod0 value, System.Collections.Generic.IEqualityComparer<TMethod0>? comparer) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> Sort<T>(this System.Collections.Generic.IEnumerable<T> list, System.Collections.Generic.IComparer<T>? comparer) => throw null;
+        public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value) => throw null;
+        public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value, System.Collections.Generic.IEqualityComparer<T>? comparer) => throw null;
+        public static long LongIndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value) where T : System.IEquatable<T> => throw null;
+        public static long LongIndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value, System.Collections.Generic.IEqualityComparer<T>? comparer) => throw null;
         public static bool ContainsIgnoreCase(this System.Collections.Generic.IEnumerable<string> str, string value) => throw null;
-        public static void EnumerateAll<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source) { }
-        public static System.Collections.Generic.IEnumerable<TMethod0> EmptyIfNull<T>(this System.Collections.Generic.IEnumerable<TMethod0>? items) => throw null;
-        public static void ForEach<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Action<TMethod0> action) { }
-        public static void ForEach<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Action<TMethod0, int> action) { }
+        public static void EnumerateAll<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) { }
+        public static System.Collections.Generic.IEnumerable<T> EmptyIfNull<T>(this System.Collections.Generic.IEnumerable<T>? items) => throw null;
+        public static void ForEach<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Action<TSource> action) { }
+        public static void ForEach<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Action<TSource, int> action) { }
         public static System.TimeSpan Sum(this System.Collections.Generic.IEnumerable<System.TimeSpan> enumerable) => throw null;
         public static System.TimeSpan Average(this System.Collections.Generic.IEnumerable<System.TimeSpan> enumerable) => throw null;
-        public static System.Collections.Generic.IEnumerable<TMethod0> AsEnumerableOnce<T>(this System.Collections.Generic.IEnumerable<TMethod0> enumerable) => throw null;
-        public static System.Collections.Generic.IEnumerable<TMethod0> ToOnlyEnumerable<T>(this System.Collections.Generic.IEnumerable<TMethod0> enumerable) => throw null;
-        public static System.Collections.ObjectModel.ReadOnlyCollection<TMethod0> ToReadOnlyCollection<T>(this System.Collections.Generic.IEnumerable<TMethod0> source) => throw null;
-        public static System.Collections.Generic.ICollection<TMethod0> ToCollection<T>(this System.Collections.Generic.IEnumerable<TMethod0> sequence) => throw null;
-        public static System.Threading.Tasks.Task<System.Collections.Generic.List<TMethod0>> ToListAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<TMethod0>> task) => throw null;
-        public static System.Threading.Tasks.Task<TMethod0[]> ToArrayAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<TMethod0>> task) => throw null;
-        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, System.Threading.CancellationToken, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, int, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, int, System.Threading.CancellationToken, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, System.Threading.Tasks.Task> action) => throw null;
-        public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken) => throw null;
-        public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, int degreeOfParallelism, System.Func<TMethod0, System.Threading.Tasks.Task> action) => throw null;
-        public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TMethod0> source, int degreeOfParallelism, System.Func<TMethod0, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken) => throw null;
-        public static System.Collections.Generic.IAsyncEnumerable<TMethod0> ToAsyncEnumerable<T>(this System.Collections.Generic.IEnumerable<TMethod0> source) => throw null;
-        public static System.Collections.Generic.IAsyncEnumerator<TMethod0> ToAsyncEnumerator<T>(this System.Collections.Generic.IEnumerator<TMethod0> source) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> AsEnumerableOnce<T>(this System.Collections.Generic.IEnumerable<T> enumerable) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> ToOnlyEnumerable<T>(this System.Collections.Generic.IEnumerable<T> enumerable) => throw null;
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> ToReadOnlyCollection<T>(this System.Collections.Generic.IEnumerable<T> source) => throw null;
+        public static System.Collections.Generic.ICollection<T> ToCollection<T>(this System.Collections.Generic.IEnumerable<T> sequence) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> ToListAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
+        public static System.Threading.Tasks.Task<T[]> ToArrayAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
+        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.CancellationToken, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, int, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task ForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, int, System.Threading.CancellationToken, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.Tasks.Task> action) => throw null;
+        public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken) => throw null;
+        public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, int degreeOfParallelism, System.Func<TSource, System.Threading.Tasks.Task> action) => throw null;
+        public static System.Threading.Tasks.Task ParallelForEachAsync<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, int degreeOfParallelism, System.Func<TSource, System.Threading.Tasks.Task> action, System.Threading.CancellationToken cancellationToken) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<T> ToAsyncEnumerable<T>(this System.Collections.Generic.IEnumerable<T> source) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerator<T> ToAsyncEnumerator<T>(this System.Collections.Generic.IEnumerator<T> source) => throw null;
     }
 
     public static class EnumeratorExtensions
     {
-        public static System.Collections.Generic.List<TMethod0> ToList<T>(this System.Collections.Generic.IEnumerator<TMethod0> enumerator) => throw null;
-        public static System.Collections.Generic.IEnumerable<TMethod0> AsEnumerable<T>(this System.Collections.Generic.IEnumerator<TMethod0> enumerator) => throw null;
+        public static System.Collections.Generic.List<T> ToList<T>(this System.Collections.Generic.IEnumerator<T> enumerator) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> AsEnumerable<T>(this System.Collections.Generic.IEnumerator<T> enumerator) => throw null;
     }
 
     public static class EnvironmentExtensions
@@ -253,22 +253,22 @@ namespace Meziantou.Framework
 
     public static class ExpressionExtensions
     {
-        public static System.Linq.Expressions.Expression<System.Func<TMethod0, bool>> AndAlso<T>(this System.Linq.Expressions.Expression<System.Func<TMethod0, bool>> expr1, System.Linq.Expressions.Expression<System.Func<TMethod0, bool>> expr2) => throw null;
-        public static System.Linq.Expressions.Expression<System.Func<TMethod0, bool>> OrElse<T>(this System.Linq.Expressions.Expression<System.Func<TMethod0, bool>> expr1, System.Linq.Expressions.Expression<System.Func<TMethod0, bool>> expr2) => throw null;
-        public static System.Linq.Expressions.Expression<System.Func<TMethod0, bool>> Negate<T>(this System.Linq.Expressions.Expression<System.Func<TMethod0, bool>> expression) => throw null;
+        public static System.Linq.Expressions.Expression<System.Func<T, bool>> AndAlso<T>(this System.Linq.Expressions.Expression<System.Func<T, bool>> expr1, System.Linq.Expressions.Expression<System.Func<T, bool>> expr2) => throw null;
+        public static System.Linq.Expressions.Expression<System.Func<T, bool>> OrElse<T>(this System.Linq.Expressions.Expression<System.Func<T, bool>> expr1, System.Linq.Expressions.Expression<System.Func<T, bool>> expr2) => throw null;
+        public static System.Linq.Expressions.Expression<System.Func<T, bool>> Negate<T>(this System.Linq.Expressions.Expression<System.Func<T, bool>> expression) => throw null;
     }
 
     public static class FormattableExtensions
     {
-        public static string ToStringInvariant<T>(this TMethod0 value) where T : System.IFormattable => throw null;
-        public static string ToStringInvariant<T>(this TMethod0 value, string? format) where T : System.IFormattable => throw null;
+        public static string ToStringInvariant<T>(this T value) where T : System.IFormattable => throw null;
+        public static string ToStringInvariant<T>(this T value, string? format) where T : System.IFormattable => throw null;
     }
 
     public static class HashCodeExtensions
     {
-        public static void AddValues<T>(this System.HashCode hashCode, TMethod0[] values, System.Collections.Generic.IEqualityComparer<TMethod0>? equalityComparer = null) { }
-        public static void AddValues<T>(this System.HashCode hashCode, System.ReadOnlySpan<TMethod0> values, System.Collections.Generic.IEqualityComparer<TMethod0>? equalityComparer = null) { }
-        public static void AddValues<T>(this System.HashCode hashCode, System.Collections.Generic.IEnumerable<TMethod0> values, System.Collections.Generic.IEqualityComparer<TMethod0>? equalityComparer = null) { }
+        public static void AddValues<T>(this System.HashCode hashCode, T[] values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
+        public static void AddValues<T>(this System.HashCode hashCode, System.ReadOnlySpan<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
+        public static void AddValues<T>(this System.HashCode hashCode, System.Collections.Generic.IEnumerable<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
     }
 
     public static class HexaConverter
@@ -308,11 +308,11 @@ namespace Meziantou.Framework
         UpperCase = 1
     }
 
-    public interface ICachedAsyncEnumerable<T> : System.Collections.Generic.IAsyncEnumerable<T0>, System.IAsyncDisposable
+    public interface ICachedAsyncEnumerable<T> : System.Collections.Generic.IAsyncEnumerable<T>, System.IAsyncDisposable
     {
     }
 
-    public interface ICachedEnumerable<T> : System.Collections.Generic.IEnumerable<T0>, System.Collections.IEnumerable, System.IDisposable
+    public interface ICachedEnumerable<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.IDisposable
     {
     }
 
@@ -401,19 +401,19 @@ namespace Meziantou.Framework
         protected virtual void VisitValue(object value) { }
     }
 
-    public readonly struct Optional<T> : System.IEquatable<global::Meziantou.Framework.Optional<T0>>
+    public readonly struct Optional<T> : System.IEquatable<global::Meziantou.Framework.Optional<T>>
     {
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen]
         public bool HasValue { get => throw null; }
-        public T0 Value { get => throw null; }
-        public Optional(T0 value) { }
+        public T Value { get => throw null; }
+        public Optional(T value) { }
         public override string? ToString() => throw null;
-        public void Deconstruct(out bool hasValue, out T0 value) => throw null;
-        public bool Equals(global::Meziantou.Framework.Optional<T0> other) => throw null;
+        public void Deconstruct(out bool hasValue, out T value) => throw null;
+        public bool Equals(global::Meziantou.Framework.Optional<T> other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.Optional<T0> left, global::Meziantou.Framework.Optional<T0> right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.Optional<T0> left, global::Meziantou.Framework.Optional<T0> right) => throw null;
+        public static bool operator ==(global::Meziantou.Framework.Optional<T> left, global::Meziantou.Framework.Optional<T> right) => throw null;
+        public static bool operator !=(global::Meziantou.Framework.Optional<T> left, global::Meziantou.Framework.Optional<T> right) => throw null;
     }
 
     public readonly struct ProcessEntry : System.IEquatable<global::Meziantou.Framework.ProcessEntry>
@@ -485,20 +485,20 @@ namespace Meziantou.Framework
 
     public static class QueueExtensions
     {
-        public static void EnqueueRange<T>(this System.Collections.Generic.Queue<TMethod0> queue, params TMethod0[] items) { }
-        public static void EnqueueRange<T>(this System.Collections.Generic.Queue<TMethod0> queue, System.Collections.Generic.IEnumerable<TMethod0> items) { }
-        public static void EnqueueRange<T>(this System.Collections.Generic.Queue<TMethod0> queue, System.ReadOnlySpan<TMethod0> items) { }
+        public static void EnqueueRange<T>(this System.Collections.Generic.Queue<T> queue, params T[] items) { }
+        public static void EnqueueRange<T>(this System.Collections.Generic.Queue<T> queue, System.Collections.Generic.IEnumerable<T> items) { }
+        public static void EnqueueRange<T>(this System.Collections.Generic.Queue<T> queue, System.ReadOnlySpan<T> items) { }
     }
 
     public static class RandomExtensions
     {
-        public static TMethod0 NextFromList<T>(this System.Random random, TMethod0[] array) => throw null;
-        public static TMethod0 NextFromList<T>(this System.Random random, System.Collections.Generic.IList<TMethod0> list) => throw null;
-        public static TMethod0 NextFromList<T>(this System.Random random, System.Collections.Generic.ICollection<TMethod0> list) => throw null;
-        public static TMethod0 NextFromList<T>(this System.Random random, System.ReadOnlySpan<TMethod0> list) => throw null;
-        public static TMethod0 NextFromList<T>(this System.Random random, System.ReadOnlyMemory<TMethod0> list) => throw null;
-        public static TMethod0 NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyList<TMethod0> list) => throw null;
-        public static TMethod0 NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyCollection<TMethod0> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, T[] array) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IList<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.ICollection<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.ReadOnlySpan<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.ReadOnlyMemory<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyList<T> list) => throw null;
+        public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyCollection<T> list) => throw null;
         public static bool NextBoolean(this System.Random random) => throw null;
         public static byte NextByte(this System.Random random, byte min = 0, byte max = 255) => throw null;
         public static sbyte NextSByte(this System.Random random, sbyte min = 0, sbyte max = 127) => throw null;
@@ -516,25 +516,25 @@ namespace Meziantou.Framework
         public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
     }
 
-    public readonly struct Range<T> : System.IEquatable<global::Meziantou.Framework.Range<T0>> where T : System.IComparable<T0>
+    public readonly struct Range<T> : System.IEquatable<global::Meziantou.Framework.Range<T>> where T : System.IComparable<T>
     {
-        public T0 From { get => throw null; }
-        public T0 To { get => throw null; }
-        public Range(T0 from, T0 to) { }
-        public bool IsInRangeInclusive(T0 value) => throw null;
-        public bool IsInRangeExclusive(T0 value) => throw null;
-        public bool IsInRangeLowerInclusive(T0 value) => throw null;
-        public bool IsInRangeUpperInclusive(T0 value) => throw null;
-        public bool IsInRangeInclusive(global::Meziantou.Framework.Range<T0> range) => throw null;
-        public bool IsInRangeExclusive(global::Meziantou.Framework.Range<T0> range) => throw null;
-        public bool IsInRangeLowerInclusive(global::Meziantou.Framework.Range<T0> range) => throw null;
-        public bool IsInRangeUpperInclusive(global::Meziantou.Framework.Range<T0> range) => throw null;
-        public bool Equals(global::Meziantou.Framework.Range<T0> other) => throw null;
+        public T From { get => throw null; }
+        public T To { get => throw null; }
+        public Range(T from, T to) { }
+        public bool IsInRangeInclusive(T value) => throw null;
+        public bool IsInRangeExclusive(T value) => throw null;
+        public bool IsInRangeLowerInclusive(T value) => throw null;
+        public bool IsInRangeUpperInclusive(T value) => throw null;
+        public bool IsInRangeInclusive(global::Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeExclusive(global::Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeLowerInclusive(global::Meziantou.Framework.Range<T> range) => throw null;
+        public bool IsInRangeUpperInclusive(global::Meziantou.Framework.Range<T> range) => throw null;
+        public bool Equals(global::Meziantou.Framework.Range<T> other) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
         public override string? ToString() => throw null;
-        public static bool operator ==(global::Meziantou.Framework.Range<T0> left, global::Meziantou.Framework.Range<T0> right) => throw null;
-        public static bool operator !=(global::Meziantou.Framework.Range<T0> left, global::Meziantou.Framework.Range<T0> right) => throw null;
+        public static bool operator ==(global::Meziantou.Framework.Range<T> left, global::Meziantou.Framework.Range<T> right) => throw null;
+        public static bool operator !=(global::Meziantou.Framework.Range<T> left, global::Meziantou.Framework.Range<T> right) => throw null;
     }
 
     public sealed class ReflectionDynamicObject : System.Dynamic.DynamicObject
@@ -644,30 +644,30 @@ namespace Meziantou.Framework
 
     public static class SpanExtensions
     {
-        public static void ParallelSort<T>(this System.Span<TMethod0> span) { }
-        public static void ParallelSort<T>(this System.Span<TMethod0> span, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelSort<T>(this System.Span<TMethod0> span, int degreeOfParallelism) { }
-        public static void ParallelSort<T>(this System.Span<TMethod0> span, int degreeOfParallelism, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelStableSort<T>(this System.Span<TMethod0> span) { }
-        public static void ParallelStableSort<T>(this System.Span<TMethod0> span, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelStableSort<T>(this System.Span<TMethod0> span, int degreeOfParallelism) { }
-        public static void ParallelStableSort<T>(this System.Span<TMethod0> span, int degreeOfParallelism, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelSort<T>(this TMethod0[] array) { }
-        public static void ParallelSort<T>(this TMethod0[] array, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelSort<T>(this TMethod0[] array, int degreeOfParallelism) { }
-        public static void ParallelSort<T>(this TMethod0[] array, int degreeOfParallelism, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelStableSort<T>(this TMethod0[] array) { }
-        public static void ParallelStableSort<T>(this TMethod0[] array, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelStableSort<T>(this TMethod0[] array, int degreeOfParallelism) { }
-        public static void ParallelStableSort<T>(this TMethod0[] array, int degreeOfParallelism, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelSort<T>(this System.Collections.Generic.List<TMethod0> list) { }
-        public static void ParallelSort<T>(this System.Collections.Generic.List<TMethod0> list, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelSort<T>(this System.Collections.Generic.List<TMethod0> list, int degreeOfParallelism) { }
-        public static void ParallelSort<T>(this System.Collections.Generic.List<TMethod0> list, int degreeOfParallelism, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelStableSort<T>(this System.Collections.Generic.List<TMethod0> list) { }
-        public static void ParallelStableSort<T>(this System.Collections.Generic.List<TMethod0> list, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
-        public static void ParallelStableSort<T>(this System.Collections.Generic.List<TMethod0> list, int degreeOfParallelism) { }
-        public static void ParallelStableSort<T>(this System.Collections.Generic.List<TMethod0> list, int degreeOfParallelism, System.Collections.Generic.IComparer<TMethod0>? comparer) { }
+        public static void ParallelSort<T>(this System.Span<T> span) { }
+        public static void ParallelSort<T>(this System.Span<T> span, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this System.Span<T> span, int degreeOfParallelism) { }
+        public static void ParallelSort<T>(this System.Span<T> span, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this System.Span<T> span) { }
+        public static void ParallelStableSort<T>(this System.Span<T> span, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this System.Span<T> span, int degreeOfParallelism) { }
+        public static void ParallelStableSort<T>(this System.Span<T> span, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this T[] array) { }
+        public static void ParallelSort<T>(this T[] array, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this T[] array, int degreeOfParallelism) { }
+        public static void ParallelSort<T>(this T[] array, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this T[] array) { }
+        public static void ParallelStableSort<T>(this T[] array, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this T[] array, int degreeOfParallelism) { }
+        public static void ParallelStableSort<T>(this T[] array, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this System.Collections.Generic.List<T> list) { }
+        public static void ParallelSort<T>(this System.Collections.Generic.List<T> list, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelSort<T>(this System.Collections.Generic.List<T> list, int degreeOfParallelism) { }
+        public static void ParallelSort<T>(this System.Collections.Generic.List<T> list, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this System.Collections.Generic.List<T> list) { }
+        public static void ParallelStableSort<T>(this System.Collections.Generic.List<T> list, System.Collections.Generic.IComparer<T>? comparer) { }
+        public static void ParallelStableSort<T>(this System.Collections.Generic.List<T> list, int degreeOfParallelism) { }
+        public static void ParallelStableSort<T>(this System.Collections.Generic.List<T> list, int degreeOfParallelism, System.Collections.Generic.IComparer<T>? comparer) { }
     }
 
     public static class StreamExtensions
@@ -708,7 +708,7 @@ namespace Meziantou.Framework
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.Decimal value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.Decimal? value) => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, System.FormattableString? value) => throw null;
-        public static System.Text.StringBuilder AppendInvariant<T>(this System.Text.StringBuilder sb, TMethod0 value) where T : System.IFormattable => throw null;
+        public static System.Text.StringBuilder AppendInvariant<T>(this System.Text.StringBuilder sb, T value) where T : System.IFormattable => throw null;
         public static System.Text.StringBuilder AppendInvariant(this System.Text.StringBuilder sb, object? value) => throw null;
         public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, object? args0) => throw null;
         public static System.Text.StringBuilder AppendFormatInvariant(this System.Text.StringBuilder sb, string format, object? args0, object? args1) => throw null;
@@ -758,7 +758,7 @@ namespace Meziantou.Framework
     {
         public static uint Hamming(uint word1, uint word2) => throw null;
         public static int Hamming(string word1, string word2) => throw null;
-        public static int Hamming<T>(System.Collections.Generic.IEnumerable<TMethod0> word1, System.Collections.Generic.IEnumerable<TMethod0> word2) => throw null;
+        public static int Hamming<T>(System.Collections.Generic.IEnumerable<T> word1, System.Collections.Generic.IEnumerable<T> word2) => throw null;
         public static int Levenshtein(string word1, string word2) => throw null;
         public static int Levenshtein(System.ReadOnlySpan<char> word1, System.ReadOnlySpan<char> word2) => throw null;
         public static int Levenshtein(System.ReadOnlySpan<char> word1, System.ReadOnlySpan<char> word2, int maxDistance) => throw null;
@@ -774,31 +774,31 @@ namespace Meziantou.Framework
     {
         public static System.Action Throttle(this System.Action action, System.TimeSpan interval) => throw null;
         public static System.Action Throttle(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0> Throttle<T0>(this System.Action<TMethod0> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0> Throttle<T0>(this System.Action<TMethod0> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1> Throttle<T0, T1>(this System.Action<TMethod0, TMethod1> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1> Throttle<T0, T1>(this System.Action<TMethod0, TMethod1> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2> Throttle<T0, T1, T2>(this System.Action<TMethod0, TMethod1, TMethod2> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2> Throttle<T0, T1, T2>(this System.Action<TMethod0, TMethod1, TMethod2> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3> Throttle<T0, T1, T2, T3>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3> Throttle<T0, T1, T2, T3>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4> Throttle<T0, T1, T2, T3, T4>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4> Throttle<T0, T1, T2, T3, T4>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8, TMethod9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8, TMethod9> action, System.TimeSpan interval) => throw null;
-        public static System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8, TMethod9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<TMethod0, TMethod1, TMethod2, TMethod3, TMethod4, TMethod5, TMethod6, TMethod7, TMethod8, TMethod9> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0> Throttle<T0>(this System.Action<T0> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0> Throttle<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1> Throttle<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1> Throttle<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2> Throttle<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2> Throttle<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, System.TimeSpan interval) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
     }
 
     public static class TupleExtensions
     {
-        public static object?[] ToArray<T>(this TMethod0 tuple) where T : System.Runtime.CompilerServices.ITuple => throw null;
+        public static object?[] ToArray<T>(this T tuple) where T : System.Runtime.CompilerServices.ITuple => throw null;
     }
 
     public static class UriExtensions
@@ -821,45 +821,45 @@ namespace Meziantou.Framework
 namespace Meziantou.Framework.Collections
 {
     [System.Diagnostics.DebuggerDisplay]
-    public sealed class AppendOnlyCollection<T> : System.Collections.Generic.ICollection<T0>, System.Collections.Generic.IEnumerable<T0>, System.Collections.Generic.IReadOnlyCollection<T0>, System.Collections.IEnumerable
+    public sealed class AppendOnlyCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
-        public T0 this[int index] { get => throw null; }
+        public T this[int index] { get => throw null; }
         public AppendOnlyCollection(int capacity) { }
-        public void Add(T0 item) { }
-        public Enumerator<T0> GetEnumerator() => throw null;
+        public void Add(T item) { }
+        public Enumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public bool Contains(System.Func<T0, bool> predicate) => throw null;
-        public T0 Find(System.Func<T0, bool> predicate) => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T0>, System.Collections.IEnumerator, System.IDisposable
+        public bool Contains(System.Func<T, bool> predicate) => throw null;
+        public T Find(System.Func<T, bool> predicate) => throw null;
+        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T0 Current { get => throw null; }
+            public T Current { get => throw null; }
             public bool MoveNext() => throw null;
             public void Dispose() { }
             public void Reset() { }
         }
     }
 
-    public sealed class CircularBuffer<T> : System.Collections.Generic.ICollection<T0>, System.Collections.Generic.IEnumerable<T0>, System.Collections.Generic.IReadOnlyCollection<T0>, System.Collections.Generic.IReadOnlyList<T0>, System.Collections.IEnumerable
+    public sealed class CircularBuffer<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         public int Capacity { get => throw null; set { } }
         public int Count { get => throw null; }
         public bool AllowOverwrite { get => throw null; set { } }
-        public T0 this[int index] { get => throw null; }
+        public T this[int index] { get => throw null; }
         public CircularBuffer(int capacity) { }
-        public void AddFirst(T0 value) { }
-        public void AddLast(T0 value) { }
-        public T0 RemoveFirst() => throw null;
-        public T0 RemoveLast() => throw null;
+        public void AddFirst(T value) { }
+        public void AddLast(T value) { }
+        public T RemoveFirst() => throw null;
+        public T RemoveLast() => throw null;
         public void Clear() { }
-        public bool Contains(T0 item) => throw null;
-        public void CopyTo(T0[] array, int arrayIndex) { }
-        public int IndexOf(T0 item) => throw null;
-        public Enumerator<T0> GetEnumerator() => throw null;
+        public bool Contains(T item) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public int IndexOf(T item) => throw null;
+        public Enumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T0>, System.Collections.IEnumerator, System.IDisposable
+        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T0 Current { get => throw null; }
+            public T Current { get => throw null; }
             public void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
@@ -868,102 +868,102 @@ namespace Meziantou.Framework.Collections
 
     public static class ImmutableEquatableArray
     {
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<TMethod0> ToImmutableEquatableArray<T>(this System.Collections.Generic.IEnumerable<TMethod0> values) where T : System.IEquatable<TMethod0> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<TMethod0> Create<T>(System.ReadOnlySpan<TMethod0> values) where T : System.IEquatable<TMethod0> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<TMethod0> Create<T>(System.Collections.Immutable.ImmutableArray<TMethod0> values) where T : System.IEquatable<TMethod0> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.Collections.Immutable.ImmutableArray<T> values) where T : System.IEquatable<T> => throw null;
     }
 
     public static class ImmutableEquatableDictionary
     {
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TMethod0, TMethod1> Empty<TKey, TValue>() where TKey : System.IEquatable<TMethod0> where TValue : System.IEquatable<TMethod1> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TMethod0, TMethod1> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<TMethod1> values, System.Func<TMethod1, TMethod0> keySelector) where TKey : System.IEquatable<TMethod0> where TValue : System.IEquatable<TMethod1> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TMethod1, TMethod2> ToImmutableEquatableDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TMethod0> source, System.Func<TMethod0, TMethod1> keySelector, System.Func<TMethod0, TMethod2> valueSelector) where TKey : System.IEquatable<TMethod1> where TValue : System.IEquatable<TMethod2> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TMethod0, TMethod1> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TMethod0, TMethod1>> values) where TKey : System.IEquatable<TMethod0> where TValue : System.IEquatable<TMethod1> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TMethod0, TMethod1> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.ValueTuple<TMethod0, TMethod1>> values) where TKey : System.IEquatable<TMethod0> where TValue : System.IEquatable<TMethod1> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty<TKey, TValue>() where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<TValue> values, System.Func<TValue, TKey> keySelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> valueSelector) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.ValueTuple<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
     }
 
     public static class ImmutableEquatableSet
     {
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<TMethod0> ToImmutableEquatableSet<T>(this System.Collections.Generic.IEnumerable<TMethod0> values) where T : System.IEquatable<TMethod0> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<TMethod0> Create<T>(System.ReadOnlySpan<TMethod0> values) where T : System.IEquatable<TMethod0> => throw null;
-        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<TMethod0> Create<T>(System.Collections.Generic.IEnumerable<TMethod0> values) where T : System.IEquatable<TMethod0> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<T> ToImmutableEquatableSet<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
+        public static global::Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
     }
 
-    public sealed class LimitList<T> : System.Collections.Generic.ICollection<T0>, System.Collections.Generic.IEnumerable<T0>, System.Collections.Generic.IReadOnlyCollection<T0>, System.Collections.Generic.IReadOnlyList<T0>, System.Collections.IEnumerable
+    public sealed class LimitList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         public int Capacity { get => throw null; }
         public int Count { get => throw null; }
-        public T0 this[int index] { get => throw null; set { } }
+        public T this[int index] { get => throw null; set { } }
         public LimitList(int maximumCount) { }
-        public void AddFirst(T0 value) { }
-        public void AddLast(T0 value) { }
+        public void AddFirst(T value) { }
+        public void AddLast(T value) { }
         public void RemoveFirst() { }
         public void RemoveLast() { }
         public void Clear() { }
-        public bool Contains(T0 item) => throw null;
-        public void CopyTo(T0[] array, int arrayIndex) { }
-        public bool Remove(T0 item) => throw null;
-        public int IndexOf(T0 item) => throw null;
+        public bool Contains(T item) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public bool Remove(T item) => throw null;
+        public int IndexOf(T item) => throw null;
         public void RemoveAt(int index) { }
-        public System.Collections.Generic.IEnumerator<T0> GetEnumerator() => throw null;
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
-    public sealed class SortedList<T> : System.Collections.Generic.ICollection<T0>, System.Collections.Generic.IEnumerable<T0>, System.Collections.Generic.IReadOnlyCollection<T0>, System.Collections.Generic.IReadOnlyList<T0>, System.Collections.ICollection, System.Collections.IEnumerable
+    public sealed class SortedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
-        public T0 this[int index] { get => throw null; }
+        public T this[int index] { get => throw null; }
         public int Capacity { get => throw null; set { } }
         public SortedList(int capacity) { }
-        public SortedList(System.Collections.Generic.IComparer<T0>? comparer) { }
-        public SortedList(int capacity, System.Collections.Generic.IComparer<T0>? comparer) { }
-        public void Add(T0 item) { }
-        public bool Remove(T0 item) => throw null;
+        public SortedList(System.Collections.Generic.IComparer<T>? comparer) { }
+        public SortedList(int capacity, System.Collections.Generic.IComparer<T>? comparer) { }
+        public void Add(T item) { }
+        public bool Remove(T item) => throw null;
         public void RemoveAt(int index) { }
         public void Clear() { }
-        public void CopyTo(T0[] array) { }
-        public void CopyTo(System.Span<T0> array) { }
-        public void CopyTo(System.Memory<T0> array) { }
+        public void CopyTo(T[] array) { }
+        public void CopyTo(System.Span<T> array) { }
+        public void CopyTo(System.Memory<T> array) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
-        public void CopyTo(int index, T0[] array, int arrayIndex, int count) { }
-        public void CopyTo(int index, System.Span<T0> array, int count) { }
-        public void CopyTo(int index, System.Memory<T0> array, int count) { }
-        public void CopyTo(T0[] array, int arrayIndex) { }
-        public bool Contains(T0 item) => throw null;
-        public int IndexOf(T0 item) => throw null;
-        public int FirstIndexOf(T0 item) => throw null;
-        public int LastIndexOf(T0 item) => throw null;
-        public int BinarySearch(T0 item) => throw null;
-        public System.ReadOnlySpan<T0> UnsafeAsReadOnlySpan() => throw null;
-        public Enumerator<T0> GetEnumerator() => throw null;
+        public void CopyTo(int index, T[] array, int arrayIndex, int count) { }
+        public void CopyTo(int index, System.Span<T> array, int count) { }
+        public void CopyTo(int index, System.Memory<T> array, int count) { }
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public bool Contains(T item) => throw null;
+        public int IndexOf(T item) => throw null;
+        public int FirstIndexOf(T item) => throw null;
+        public int LastIndexOf(T item) => throw null;
+        public int BinarySearch(T item) => throw null;
+        public System.ReadOnlySpan<T> UnsafeAsReadOnlySpan() => throw null;
+        public Enumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T0>, System.Collections.IEnumerator, System.IDisposable
+        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
-            public T0 Current { get => throw null; }
+            public T Current { get => throw null; }
             public void Dispose() { }
             public bool MoveNext() => throw null;
             void System.Collections.IEnumerator.Reset() { }
         }
     }
 
-    public sealed class UnsafeListDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<T0, T1>>, System.Collections.Generic.IDictionary<T0, T1>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<T0, T1>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<T0, T1>>, System.Collections.Generic.IReadOnlyDictionary<T0, T1>, System.Collections.IEnumerable
+    public sealed class UnsafeListDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable
     {
-        public T1 this[T0 key] { get => throw null; set { } }
-        public System.Collections.Generic.ICollection<T0> Keys { get => throw null; }
-        public System.Collections.Generic.ICollection<T1> Values { get => throw null; }
+        public TValue this[TKey key] { get => throw null; set { } }
+        public System.Collections.Generic.ICollection<TKey> Keys { get => throw null; }
+        public System.Collections.Generic.ICollection<TValue> Values { get => throw null; }
         public int Count { get => throw null; }
         public UnsafeListDictionary(int capacity) { }
-        public UnsafeListDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<T0, T1>> items) { }
-        public void Add(T0 key, T1 value) { }
-        public void Add(System.Collections.Generic.KeyValuePair<T0, T1> item) { }
-        public void AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<T0, T1>> items) { }
+        public UnsafeListDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { }
+        public void Add(TKey key, TValue value) { }
+        public void Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { }
         public void Clear() { }
-        public bool Contains(System.Collections.Generic.KeyValuePair<T0, T1> item) => throw null;
-        public bool ContainsKey(T0 key) => throw null;
-        public bool Remove(T0 key) => throw null;
-        public bool Remove(System.Collections.Generic.KeyValuePair<T0, T1> item) => throw null;
-        public bool TryGetValue(T0 key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T1 value) => throw null;
-        public Enumerator<System.Collections.Generic.KeyValuePair<T0, T1>> GetEnumerator() => throw null;
+        public bool Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
+        public bool ContainsKey(TKey key) => throw null;
+        public bool Remove(TKey key) => throw null;
+        public bool Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
+        public Enumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 }

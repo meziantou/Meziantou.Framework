@@ -8,15 +8,15 @@ namespace Meziantou.Extensions.Logging.Xunit.v3
         public static Microsoft.Extensions.Logging.ILogger CreateLogger() => throw null;
         public static Microsoft.Extensions.Logging.ILogger CreateLogger(global::Xunit.ITestOutputHelper? testOutputHelper) => throw null;
         public static Microsoft.Extensions.Logging.ILogger CreateLogger(global::Xunit.ITestOutputHelper? testOutputHelper, global::Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) => throw null;
-        public static Microsoft.Extensions.Logging.ILogger<TMethod0> CreateLogger<T>() => throw null;
-        public static Microsoft.Extensions.Logging.ILogger<TMethod0> CreateLogger<T>(global::Xunit.ITestOutputHelper? testOutputHelper) => throw null;
-        public static Microsoft.Extensions.Logging.ILogger<TMethod0> CreateLogger<T>(global::Xunit.ITestOutputHelper? testOutputHelper, global::Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) => throw null;
+        public static Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>() => throw null;
+        public static Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>(global::Xunit.ITestOutputHelper? testOutputHelper) => throw null;
+        public static Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>(global::Xunit.ITestOutputHelper? testOutputHelper, global::Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) => throw null;
         public XUnitLogger(global::Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.LoggerExternalScopeProvider scopeProvider, string? categoryName) { }
         public XUnitLogger(global::Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.LoggerExternalScopeProvider scopeProvider, string? categoryName, bool appendScope) { }
         public XUnitLogger(global::Xunit.ITestOutputHelper? testOutputHelper, Microsoft.Extensions.Logging.LoggerExternalScopeProvider scopeProvider, string? categoryName, global::Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions? options) { }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => throw null;
-        public System.IDisposable? BeginScope<TState>(TMethod0 state) => throw null;
-        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TMethod0 state, System.Exception? exception, System.Func<TMethod0, System.Exception?, string> formatter) { }
+        public System.IDisposable? BeginScope<TState>(TState state) => throw null;
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
 
     public static class XUnitLoggerBuilderExtensions

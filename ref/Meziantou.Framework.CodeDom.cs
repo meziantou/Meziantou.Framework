@@ -248,32 +248,32 @@ namespace Meziantou.Framework.CodeDom
         public System.Collections.Generic.IDictionary<string, object?> Data { get => throw null; }
         public global::Meziantou.Framework.CodeDom.CodeObject? Parent { get => throw null; }
         public void SetData(string key, object? value) { }
-        protected void SetParent<T>(ref TMethod0 field, TMethod0 value) where T : global::Meziantou.Framework.CodeDom.CodeObject { }
-        protected static void SetParent<T>(global::Meziantou.Framework.CodeDom.CodeObject parent, ref TMethod0 field, TMethod0 value) where T : global::Meziantou.Framework.CodeDom.CodeObject { }
-        protected TMethod0 SetParent<T>(TMethod0 value) where T : global::Meziantou.Framework.CodeDom.CodeObject => throw null;
-        protected static TMethod0 SetParent<T>(global::Meziantou.Framework.CodeDom.CodeObject parent, TMethod0 value) where T : global::Meziantou.Framework.CodeDom.CodeObject => throw null;
+        protected void SetParent<T>(ref T field, T value) where T : global::Meziantou.Framework.CodeDom.CodeObject { }
+        protected static void SetParent<T>(global::Meziantou.Framework.CodeDom.CodeObject parent, ref T field, T value) where T : global::Meziantou.Framework.CodeDom.CodeObject { }
+        protected T SetParent<T>(T value) where T : global::Meziantou.Framework.CodeDom.CodeObject => throw null;
+        protected static T SetParent<T>(global::Meziantou.Framework.CodeDom.CodeObject parent, T value) where T : global::Meziantou.Framework.CodeDom.CodeObject => throw null;
         public override string ToString() => throw null;
         public string ToCsharpString() => throw null;
     }
 
-    public class CodeObjectCollection<T> : global::Meziantou.Framework.CodeDom.CodeObject, System.Collections.Generic.ICollection<T0>, System.Collections.Generic.IEnumerable<T0>, System.Collections.Generic.IList<T0>, System.Collections.Generic.IReadOnlyCollection<T0>, System.Collections.Generic.IReadOnlyList<T0>, System.Collections.IEnumerable where T : global::Meziantou.Framework.CodeDom.CodeObject
+    public class CodeObjectCollection<T> : global::Meziantou.Framework.CodeDom.CodeObject, System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable where T : global::Meziantou.Framework.CodeDom.CodeObject
     {
         public int Count { get => throw null; }
         public bool IsReadOnly { get => throw null; }
-        public T0 this[int index] { get => throw null; set { } }
+        public T this[int index] { get => throw null; set { } }
         public CodeObjectCollection(global::Meziantou.Framework.CodeDom.CodeObject parent) { }
-        public System.Collections.Generic.IEnumerator<T0> GetEnumerator() => throw null;
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public void AddRange(System.Collections.Generic.IEnumerable<T0> items) { }
-        public TMethod0 Add<TCodeObject>(TMethod0 item) where TCodeObject : T0 => throw null;
+        public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
+        public TCodeObject Add<TCodeObject>(TCodeObject item) where TCodeObject : T => throw null;
         public void Clear() { }
-        public bool Contains(T0 item) => throw null;
-        public void CopyTo(T0[] array, int arrayIndex) { }
-        public bool Remove(T0 item) => throw null;
-        public int IndexOf(T0 item) => throw null;
-        public void Insert(int index, T0 item) { }
+        public bool Contains(T item) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public bool Remove(T item) => throw null;
+        public int IndexOf(T item) => throw null;
+        public void Insert(int index, T item) { }
         public void RemoveAt(int index) { }
-        public void Sort(System.Collections.Generic.IComparer<T0> comparer) { }
+        public void Sort(System.Collections.Generic.IComparer<T> comparer) { }
     }
 
     public class Comment : global::Meziantou.Framework.CodeDom.CodeObject
@@ -530,16 +530,16 @@ namespace Meziantou.Framework.CodeDom
 
     public static class Extensions
     {
-        public static TMethod0 SelfOrAnscestorOfType<T>(this global::Meziantou.Framework.CodeDom.CodeObject? codeObject) where T : global::Meziantou.Framework.CodeDom.CodeObject => throw null;
-        public static TMethod0 AnscestorOfType<T>(this global::Meziantou.Framework.CodeDom.CodeObject? codeObject) where T : global::Meziantou.Framework.CodeDom.CodeObject => throw null;
+        public static T SelfOrAnscestorOfType<T>(this global::Meziantou.Framework.CodeDom.CodeObject? codeObject) where T : global::Meziantou.Framework.CodeDom.CodeObject => throw null;
+        public static T AnscestorOfType<T>(this global::Meziantou.Framework.CodeDom.CodeObject? codeObject) where T : global::Meziantou.Framework.CodeDom.CodeObject => throw null;
         public static global::Meziantou.Framework.CodeDom.NamespaceDeclaration AddNamespace(this global::Meziantou.Framework.CodeDom.INamespaceDeclarationContainer unit, string name) => throw null;
         public static global::Meziantou.Framework.CodeDom.NamespaceDeclaration AddNamespace(this global::Meziantou.Framework.CodeDom.INamespaceDeclarationContainer unit, global::Meziantou.Framework.CodeDom.NamespaceDeclaration ns) => throw null;
-        public static TMethod0 AddType<T>(this global::Meziantou.Framework.CodeDom.ITypeDeclarationContainer unit, TMethod0 type) where T : global::Meziantou.Framework.CodeDom.TypeDeclaration => throw null;
+        public static T AddType<T>(this global::Meziantou.Framework.CodeDom.ITypeDeclarationContainer unit, T type) where T : global::Meziantou.Framework.CodeDom.TypeDeclaration => throw null;
         public static global::Meziantou.Framework.CodeDom.UsingDirective AddUsing(this global::Meziantou.Framework.CodeDom.IUsingDirectiveContainer unit, string ns) => throw null;
         public static global::Meziantou.Framework.CodeDom.MethodArgumentDeclaration AddArgument(this global::Meziantou.Framework.CodeDom.MethodDeclaration method, global::Meziantou.Framework.CodeDom.MethodArgumentDeclaration argument) => throw null;
         public static global::Meziantou.Framework.CodeDom.MethodArgumentDeclaration AddArgument(this global::Meziantou.Framework.CodeDom.MethodDeclaration method, string name, global::Meziantou.Framework.CodeDom.TypeReference type) => throw null;
         public static global::Meziantou.Framework.CodeDom.MethodArgumentDeclaration AddArgument(this global::Meziantou.Framework.CodeDom.MethodDeclaration method, string name, global::Meziantou.Framework.CodeDom.TypeReference type, global::Meziantou.Framework.CodeDom.Direction direction) => throw null;
-        public static TMethod0 AddMember<T>(this global::Meziantou.Framework.CodeDom.IMemberContainer c, TMethod0 member) where T : global::Meziantou.Framework.CodeDom.MemberDeclaration => throw null;
+        public static T AddMember<T>(this global::Meziantou.Framework.CodeDom.IMemberContainer c, T member) where T : global::Meziantou.Framework.CodeDom.MemberDeclaration => throw null;
         public static global::Meziantou.Framework.CodeDom.ConditionStatement CreateThrowIfNullStatement(this global::Meziantou.Framework.CodeDom.MethodArgumentDeclaration argument) => throw null;
         public static global::Meziantou.Framework.CodeDom.MethodInvokeExpression InvokeMethod(this global::Meziantou.Framework.CodeDom.Expression expression, params global::Meziantou.Framework.CodeDom.Expression[] arguments) => throw null;
         public static global::Meziantou.Framework.CodeDom.MethodInvokeExpression InvokeMethod(this global::Meziantou.Framework.CodeDom.Expression expression, global::Meziantou.Framework.CodeDom.TypeReference[] parameters, params global::Meziantou.Framework.CodeDom.Expression[] arguments) => throw null;
@@ -929,7 +929,7 @@ namespace Meziantou.Framework.CodeDom
     public class StatementCollection : global::Meziantou.Framework.CodeDom.CodeObjectCollection<global::Meziantou.Framework.CodeDom.Statement>
     {
         public StatementCollection(global::Meziantou.Framework.CodeDom.CodeObject parent) { }
-        public TMethod0 Add<TCodeObject>(TMethod0 item) where TCodeObject : global::Meziantou.Framework.CodeDom.Statement => throw null;
+        public TCodeObject Add<TCodeObject>(TCodeObject item) where TCodeObject : global::Meziantou.Framework.CodeDom.Statement => throw null;
         public global::Meziantou.Framework.CodeDom.Expression Add(global::Meziantou.Framework.CodeDom.Expression expression) => throw null;
         public static implicit operator global::Meziantou.Framework.CodeDom.StatementCollection(global::Meziantou.Framework.CodeDom.Statement codeStatement) => throw null;
         public static implicit operator global::Meziantou.Framework.CodeDom.StatementCollection(global::Meziantou.Framework.CodeDom.Expression codeExpression) => throw null;

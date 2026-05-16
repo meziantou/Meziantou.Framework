@@ -14,10 +14,10 @@ namespace Meziantou.Framework.FixedStringBuilder
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
         public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted<T>(TMethod0 value) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, string? format) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, int alignment) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, int alignment, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, int alignment) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) where T : System.ISpanFormattable { }
         public bool Equals(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 other) => throw null;
         public bool Equals(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 other, System.StringComparison comparison) => throw null;
         public static bool operator ==(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 left, global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16 right) => throw null;
@@ -43,10 +43,10 @@ namespace Meziantou.Framework.FixedStringBuilder
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
         public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted<T>(TMethod0 value) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, string? format) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, int alignment) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, int alignment, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, int alignment) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) where T : System.ISpanFormattable { }
         public bool Equals(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 other) => throw null;
         public bool Equals(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 other, System.StringComparison comparison) => throw null;
         public static bool operator ==(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 left, global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32 right) => throw null;
@@ -72,10 +72,10 @@ namespace Meziantou.Framework.FixedStringBuilder
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
         public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted<T>(TMethod0 value) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, string? format) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, int alignment) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, int alignment, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, int alignment) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) where T : System.ISpanFormattable { }
         public bool Equals(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 other) => throw null;
         public bool Equals(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 other, System.StringComparison comparison) => throw null;
         public static bool operator ==(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 left, global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64 right) => throw null;
@@ -101,10 +101,10 @@ namespace Meziantou.Framework.FixedStringBuilder
         public void AppendLiteral(System.ReadOnlySpan<char> value) { }
         public void AppendFormatted(string value) { }
         public void AppendFormatted(string value, int alignment) { }
-        public void AppendFormatted<T>(TMethod0 value) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, string? format) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, int alignment) where T : System.ISpanFormattable { }
-        public void AppendFormatted<T>(TMethod0 value, int alignment, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, string? format) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, int alignment) where T : System.ISpanFormattable { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) where T : System.ISpanFormattable { }
         public bool Equals(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 other) => throw null;
         public bool Equals(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 other, System.StringComparison comparison) => throw null;
         public static bool operator ==(global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 left, global::Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8 right) => throw null;
@@ -119,8 +119,8 @@ namespace Meziantou.Framework.FixedStringBuilder
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) => throw null;
     }
 
-    public interface IFixedString<T> : global::Meziantou.Framework.FixedStringBuilder.IFixedString, System.IEquatable<T0>, System.IFormattable, System.ISpanFormattable where T : global::Meziantou.Framework.FixedStringBuilder.IFixedString<T0>
+    public interface IFixedString<T> : global::Meziantou.Framework.FixedStringBuilder.IFixedString, System.IEquatable<T>, System.IFormattable, System.ISpanFormattable where T : global::Meziantou.Framework.FixedStringBuilder.IFixedString<T>
     {
-        static implicit operator T0(string s);
+        static implicit operator T(string s);
     }
 }

@@ -3,7 +3,7 @@
 
 namespace Meziantou.Extensions.Logging.InMemory
 {
-    public interface IInMemoryLogger<T> : Microsoft.Extensions.Logging.ILogger, Microsoft.Extensions.Logging.ILogger<T0>
+    public interface IInMemoryLogger<T> : Microsoft.Extensions.Logging.ILogger, Microsoft.Extensions.Logging.ILogger<T>
     {
         global::Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection Logs { get; }
     }
@@ -50,10 +50,10 @@ namespace Meziantou.Extensions.Logging.InMemory
     {
         public global::Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection Logs { get => throw null; }
         public static global::Meziantou.Extensions.Logging.InMemory.IInMemoryLogger CreateLogger(string category, global::Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs = null, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider = null, System.TimeProvider? timeProvider = null) => throw null;
-        public static global::Meziantou.Extensions.Logging.InMemory.IInMemoryLogger<TMethod0> CreateLogger<T>(global::Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs = null, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider = null, System.TimeProvider? timeProvider = null) => throw null;
-        public System.IDisposable? BeginScope<TState>(TMethod0 state) => throw null;
+        public static global::Meziantou.Extensions.Logging.InMemory.IInMemoryLogger<T> CreateLogger<T>(global::Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs = null, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider = null, System.TimeProvider? timeProvider = null) => throw null;
+        public System.IDisposable? BeginScope<TState>(TState state) => throw null;
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => throw null;
-        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TMethod0 state, System.Exception? exception, System.Func<TMethod0, System.Exception?, string> formatter) { }
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
 
     public sealed class InMemoryLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
@@ -67,7 +67,7 @@ namespace Meziantou.Extensions.Logging.InMemory
         public InMemoryLoggerProvider(System.TimeProvider? timeProvider, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider) { }
         public InMemoryLoggerProvider(System.TimeProvider? timeProvider, global::Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection? logs, Microsoft.Extensions.Logging.IExternalScopeProvider? scopeProvider) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => throw null;
-        public Microsoft.Extensions.Logging.ILogger<TMethod0> CreateLogger<T>() => throw null;
+        public Microsoft.Extensions.Logging.ILogger<T> CreateLogger<T>() => throw null;
         public void Dispose() { }
     }
 }

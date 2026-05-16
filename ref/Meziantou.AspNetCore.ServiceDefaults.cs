@@ -41,8 +41,8 @@ namespace Meziantou.AspNetCore.ServiceDefaults
 
     public static class MeziantouServiceDefaults
     {
-        public static TMethod0 TryUseMeziantouConventions<TBuilder>(this TMethod0 builder, System.Action<global::Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaultsOptions>? configure = null) where TBuilder : Microsoft.Extensions.Hosting.IHostApplicationBuilder => throw null;
-        public static TMethod0 UseMeziantouConventions<TBuilder>(this TMethod0 builder, System.Action<global::Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaultsOptions>? configure = null) where TBuilder : Microsoft.Extensions.Hosting.IHostApplicationBuilder => throw null;
+        public static TBuilder TryUseMeziantouConventions<TBuilder>(this TBuilder builder, System.Action<global::Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaultsOptions>? configure = null) where TBuilder : Microsoft.Extensions.Hosting.IHostApplicationBuilder => throw null;
+        public static TBuilder UseMeziantouConventions<TBuilder>(this TBuilder builder, System.Action<global::Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaultsOptions>? configure = null) where TBuilder : Microsoft.Extensions.Hosting.IHostApplicationBuilder => throw null;
         public static void MapMeziantouDefaultEndpoints(this Microsoft.AspNetCore.Builder.WebApplication app) { }
     }
 

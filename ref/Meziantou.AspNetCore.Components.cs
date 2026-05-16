@@ -26,20 +26,20 @@ namespace Meziantou.AspNetCore.Components
     public class DataGrid<TRowData> : Microsoft.AspNetCore.Components.ComponentBase
     {
         public System.Collections.Generic.Dictionary<string, object>? TableAttributes { get => throw null; set { } }
-        public System.Collections.Generic.IEnumerable<T0>? Items { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<TRowData>? Items { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? ChildContent { get => throw null; set { } }
-        public System.Func<T0, int, string?>? RowClass { get => throw null; set { } }
+        public System.Func<TRowData, int, string?>? RowClass { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
         protected override void OnAfterRender(bool firstRender) { }
     }
 
     public class DataGridColumn<TRowData> : Microsoft.AspNetCore.Components.ComponentBase
     {
-        public global::Meziantou.AspNetCore.Components.DataGrid<T0>? OwnerGrid { get => throw null; set { } }
+        public global::Meziantou.AspNetCore.Components.DataGrid<TRowData>? OwnerGrid { get => throw null; set { } }
         public string? Title { get => throw null; set { } }
-        public System.Linq.Expressions.Expression<System.Func<T0, object>>? Expression { get => throw null; set { } }
+        public System.Linq.Expressions.Expression<System.Func<TRowData, object>>? Expression { get => throw null; set { } }
         public string? Format { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.RenderFragment<T0>? ChildContent { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.RenderFragment<TRowData>? ChildContent { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
         protected override void OnInitialized() { }
         protected override void OnParametersSet() { }
@@ -47,11 +47,11 @@ namespace Meziantou.AspNetCore.Components
 
     public class GenericForm<TModel> : Microsoft.AspNetCore.Components.ComponentBase
     {
-        public T0 Model { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.EventCallback<T0> ModelChanged { get => throw null; set { } }
+        public TModel Model { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.EventCallback<TModel> ModelChanged { get => throw null; set { } }
         public bool EnableFieldValidation { get => throw null; set { } }
         public string? EditorClass { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.RenderFragment<global::Meziantou.AspNetCore.Components.GenericFormField<T0>>? FieldTemplate { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.RenderFragment<global::Meziantou.AspNetCore.Components.GenericFormField<TModel>>? FieldTemplate { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
         protected override void OnParametersSet() { }
     }
@@ -60,7 +60,7 @@ namespace Meziantou.AspNetCore.Components
     {
         public System.Reflection.PropertyInfo Property { get => throw null; }
         public string EditorId { get => throw null; }
-        public T0 Owner { get => throw null; }
+        public TModel Owner { get => throw null; }
         public string DisplayName { get => throw null; }
         public int DisplayOrder { get => throw null; }
         public string? Description { get => throw null; }
@@ -74,8 +74,8 @@ namespace Meziantou.AspNetCore.Components
 
     public class InfiniteScrolling<T> : Microsoft.AspNetCore.Components.ComponentBase, System.IAsyncDisposable
     {
-        public global::Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequestDelegate<T0>? ItemsProvider { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.RenderFragment<T0>? ItemTemplate { get => throw null; set { } }
+        public global::Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequestDelegate<T>? ItemsProvider { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.RenderFragment<T>? ItemTemplate { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? LoadingTemplate { get => throw null; set { } }
         public string LastItemIndicatorElement { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
@@ -93,37 +93,37 @@ namespace Meziantou.AspNetCore.Components
         public InfiniteScrollingItemsProviderRequest(int startIndex, System.Threading.CancellationToken cancellationToken) { }
     }
 
-    public delegate System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T0>> InfiniteScrollingItemsProviderRequestDelegate<T>(global::Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest context);
+    public delegate System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> InfiniteScrollingItemsProviderRequestDelegate<T>(global::Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest context);
 
-    public class InputDateTime<TValue> : Microsoft.AspNetCore.Components.Forms.InputDate<T0>
+    public class InputDateTime<TValue> : Microsoft.AspNetCore.Components.Forms.InputDate<TValue>
     {
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
-        protected override string FormatValueAsString(T0 value) => throw null;
-        protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T0 result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
+        protected override string FormatValueAsString(TValue value) => throw null;
+        protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
     }
 
-    public sealed class InputEnumSelect<TEnum> : Microsoft.AspNetCore.Components.Forms.InputBase<T0>
+    public sealed class InputEnumSelect<TEnum> : Microsoft.AspNetCore.Components.Forms.InputBase<TEnum>
     {
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
-        protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T0 result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
+        protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TEnum result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
     }
 
-    public class InputGuid<TValue> : Microsoft.AspNetCore.Components.Forms.InputBase<T0>
+    public class InputGuid<TValue> : Microsoft.AspNetCore.Components.Forms.InputBase<TValue>
     {
         public string ParsingErrorMessage { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.ElementReference? Element { get => throw null; protected set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
-        protected override string FormatValueAsString(T0 value) => throw null;
-        protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T0 result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
+        protected override string FormatValueAsString(TValue value) => throw null;
+        protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
     }
 
-    public class InputUrl<TValue> : Microsoft.AspNetCore.Components.Forms.InputBase<T0>
+    public class InputUrl<TValue> : Microsoft.AspNetCore.Components.Forms.InputBase<TValue>
     {
         public string ParsingErrorMessage { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.ElementReference? Element { get => throw null; protected set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
-        protected override string FormatValueAsString(T0 value) => throw null;
-        protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T0 result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
+        protected override string FormatValueAsString(TValue value) => throw null;
+        protected override bool TryParseValueFromString(string? value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue result, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out string? validationErrorMessage) => throw null;
     }
 
     public class LoadingIndicator : Microsoft.AspNetCore.Components.ComponentBase
@@ -153,8 +153,8 @@ namespace Meziantou.AspNetCore.Components
     public sealed class QueryStringService
     {
         public QueryStringService(Microsoft.AspNetCore.Components.NavigationManager navigationManager, Microsoft.JSInterop.IJSRuntime jsRuntime) { }
-        public void SetParametersFromQueryString<T>(TMethod0 component) where T : Microsoft.AspNetCore.Components.IComponent { }
-        public System.Threading.Tasks.ValueTask UpdateQueryString<T>(TMethod0 component, bool reloadPage = true, System.Threading.CancellationToken cancellationToken = null) where T : Microsoft.AspNetCore.Components.IComponent => throw null;
+        public void SetParametersFromQueryString<T>(T component) where T : Microsoft.AspNetCore.Components.IComponent { }
+        public System.Threading.Tasks.ValueTask UpdateQueryString<T>(T component, bool reloadPage = true, System.Threading.CancellationToken cancellationToken = null) where T : Microsoft.AspNetCore.Components.IComponent => throw null;
     }
 
     public static class QueryStringServiceExtensions
@@ -164,10 +164,10 @@ namespace Meziantou.AspNetCore.Components
 
     public class Repeater<T> : Microsoft.AspNetCore.Components.ComponentBase
     {
-        public System.Collections.Generic.IEnumerable<T0>? Items { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<T>? Items { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? LoadingTemplate { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment<Microsoft.AspNetCore.Components.RenderFragment> RepeaterContainerTemplate { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.RenderFragment<T0>? ItemTemplate { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.RenderFragment<T>? ItemTemplate { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? ItemSeparatorTemplate { get => throw null; set { } }
         public Microsoft.AspNetCore.Components.RenderFragment? EmptyTemplate { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }

@@ -14,10 +14,10 @@ namespace Meziantou.Framework
     public static class ConvertUtilities
     {
         public static global::Meziantou.Framework.IConverter DefaultConverter { get => throw null; }
-        public static bool TryChangeType<T>(object? input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TMethod0 value) => throw null;
-        public static bool TryChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TMethod0 value) => throw null;
-        public static bool TryChangeType<T>(object? input, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TMethod0 value) => throw null;
-        public static bool TryChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TMethod0 value) => throw null;
+        public static bool TryChangeType<T>(object? input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T value) => throw null;
+        public static bool TryChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T value) => throw null;
+        public static bool TryChangeType<T>(object? input, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T value) => throw null;
+        public static bool TryChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T value) => throw null;
         public static bool TryChangeType(object? input, System.Type conversionType, out object? value) => throw null;
         public static bool TryChangeType(this global::Meziantou.Framework.IConverter converter, object? input, System.Type conversionType, out object? value) => throw null;
         public static bool TryChangeType(object? input, System.Type conversionType, System.IFormatProvider? provider, out object? value) => throw null;
@@ -28,12 +28,12 @@ namespace Meziantou.Framework
         public static object? ChangeType(this global::Meziantou.Framework.IConverter converter, object? input, System.Type conversionType, object? defaultValue) => throw null;
         public static object? ChangeType(object? input, System.Type conversionType, object? defaultValue, System.IFormatProvider? provider) => throw null;
         public static object? ChangeType(this global::Meziantou.Framework.IConverter converter, object? input, System.Type conversionType, object? defaultValue, System.IFormatProvider? provider) => throw null;
-        public static TMethod0 ChangeType<T>(object? input) => throw null;
-        public static TMethod0 ChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input) => throw null;
-        public static TMethod0 ChangeType<T>(object? input, TMethod0 defaultValue) => throw null;
-        public static TMethod0 ChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input, TMethod0 defaultValue) => throw null;
-        public static TMethod0 ChangeType<T>(object? input, TMethod0 defaultValue, System.IFormatProvider? provider) => throw null;
-        public static TMethod0 ChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input, TMethod0 defaultValue, System.IFormatProvider? provider) => throw null;
+        public static T ChangeType<T>(object? input) => throw null;
+        public static T ChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input) => throw null;
+        public static T ChangeType<T>(object? input, T defaultValue) => throw null;
+        public static T ChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input, T defaultValue) => throw null;
+        public static T ChangeType<T>(object? input, T defaultValue, System.IFormatProvider? provider) => throw null;
+        public static T ChangeType<T>(this global::Meziantou.Framework.IConverter converter, object? input, T defaultValue, System.IFormatProvider? provider) => throw null;
     }
 
     public class DefaultConverter : global::Meziantou.Framework.IConverter
@@ -73,8 +73,8 @@ namespace Meziantou.Framework
 
     public static class DictionaryExtensions
     {
-        public static TMethod2 GetValueOrDefault<TKey, TValue, TResult>(this System.Collections.Generic.IReadOnlyDictionary<TMethod0, TMethod1> dict, TMethod0 key, TMethod2 defaultValue) => throw null;
-        public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this System.Collections.Generic.IReadOnlyDictionary<TMethod0, TMethod1> dict, TMethod0 key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TMethod2 value) => throw null;
+        public static TResult GetValueOrDefault<TKey, TValue, TResult>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dict, TKey key, TResult defaultValue) => throw null;
+        public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dict, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TResult value) => throw null;
     }
 
     public interface IConverter

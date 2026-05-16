@@ -5,8 +5,8 @@ namespace Meziantou.Framework.HumanReadable
 {
     public static class ConverterListExtensions
     {
-        public static void Add<T>(this System.Collections.Generic.IList<global::Meziantou.Framework.HumanReadable.HumanReadableConverter> converters, System.Func<TMethod0, string> convert) { }
-        public static void Add<T>(this System.Collections.Generic.IList<global::Meziantou.Framework.HumanReadable.HumanReadableConverter> converters, System.Func<TMethod0, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions, string> convert) { }
+        public static void Add<T>(this System.Collections.Generic.IList<global::Meziantou.Framework.HumanReadable.HumanReadableConverter> converters, System.Func<T, string> convert) { }
+        public static void Add<T>(this System.Collections.Generic.IList<global::Meziantou.Framework.HumanReadable.HumanReadableConverter> converters, System.Func<T, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions, string> convert) { }
     }
 
     public abstract class HumanReadableAttribute : System.Attribute
@@ -17,7 +17,7 @@ namespace Meziantou.Framework.HumanReadable
     {
         public sealed override bool CanConvert(System.Type type) => throw null;
         public sealed override void WriteValue(global::Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        protected abstract void WriteValue(global::Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T0 value, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
+        protected abstract void WriteValue(global::Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
 
     [System.AttributeUsage]
@@ -90,7 +90,7 @@ namespace Meziantou.Framework.HumanReadable
         public static string Serialize(object? value, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options = null) => throw null;
         public static string Serialize(object? value, System.Type type, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions? options = null) => throw null;
         public static void Serialize(global::Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type type, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        public static void Serialize<T>(global::Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, TMethod0 value, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        public static void Serialize<T>(global::Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
     }
 
     public class HumanReadableSerializerException : System.Exception
@@ -110,14 +110,14 @@ namespace Meziantou.Framework.HumanReadable
         public bool IncludeFields { get => throw null; set { } }
         public bool IncludeObsoleteMembers { get => throw null; set { } }
         public global::Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }
-        public TMethod0 GetOrSetSerializationData<T>(string name, System.Func<TMethod0> addValue) => throw null;
+        public T GetOrSetSerializationData<T>(string name, System.Func<T> addValue) => throw null;
         public void AddFormatter(string mediaType, global::Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter formatter) { }
         public void AddAttribute(System.Type type, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddAttribute(System.Type type, string memberName, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddAttribute(System.Reflection.FieldInfo member, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddAttribute(System.Reflection.PropertyInfo member, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddPropertyAttribute(System.Func<System.Reflection.PropertyInfo, bool> condition, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
-        public void AddAttribute<T>(System.Linq.Expressions.Expression<System.Func<TMethod0, object>> member, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
+        public void AddAttribute<T>(System.Linq.Expressions.Expression<System.Func<T, object>> member, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddFieldAttribute(System.Func<System.Reflection.FieldInfo, bool> condition, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public void AddTypeAttribute(System.Func<System.Type, bool> condition, global::Meziantou.Framework.HumanReadable.HumanReadableAttribute attribute) { }
         public global::Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter? GetFormatter(string mediaType) => throw null;
@@ -135,7 +135,7 @@ namespace Meziantou.Framework.HumanReadable
         public static void IgnoreMembersThatThrow(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
         public static void IgnoreMembersThatThrow<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
         public static void IgnoreMembersThatThrow(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type exceptionType) { }
-        public static void IgnoreMember<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Linq.Expressions.Expression<System.Func<TMethod0, object>> member) { }
+        public static void IgnoreMember<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Linq.Expressions.Expression<System.Func<T, object>> member) { }
         public static void IgnoreMember<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string memberName) { }
         public static void IgnoreMember(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Type type, string memberName) { }
         public static void IgnoreMember(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Reflection.PropertyInfo propertyInfo) { }

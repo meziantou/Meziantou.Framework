@@ -28,10 +28,10 @@ namespace Meziantou.Framework.InlineSnapshotTesting
     {
         public static void ScrubGuid(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
         public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Collections.Generic.IEqualityComparer<TMethod0>? comparer) { }
-        public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<TMethod0, string> scrubber) { }
-        public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<TMethod0, int, string> scrubber) { }
-        public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<TMethod0, int, string> scrubber, System.Collections.Generic.IEqualityComparer<TMethod0>? comparer) { }
+        public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
+        public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, string> scrubber) { }
+        public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, int, string> scrubber) { }
+        public static void ScrubValue<T>(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, int, string> scrubber, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
         public static void ScrubXmlAttribute(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Func<System.Xml.Linq.XAttribute, string?> scrubber) { }
         public static void ScrubXmlAttribute(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Xml.IXmlNamespaceResolver? nsResolver, System.Func<System.Xml.Linq.XAttribute, string?> scrubber) { }
         public static void ScrubXmlNode(this global::Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, string xpath, System.Func<System.Xml.Linq.XNode, System.Xml.Linq.XNode?> scrubber) { }

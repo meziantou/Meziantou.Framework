@@ -989,32 +989,19 @@ namespace Meziantou.Framework.IO
 {
     #if NET10_0 || NET9_0
     [System.Obsolete("Use TextWriter.CreateBroadcasting", true)]
-    public sealed class TeeTextWriter : System.IO.TextWriter
-    {
-        public System.IO.TextWriter Stream1 { get => throw null; }
-        public System.IO.TextWriter Stream2 { get => throw null; }
-        public System.Text.Encoding Encoding { get => throw null; }
-        public TeeTextWriter(System.IO.TextWriter stream1, System.IO.TextWriter stream2) { }
-        public override void Write(char value) { }
-        public override void Write(char[] buffer, int index, int count) { }
-        public override void Write(string? value) { }
-        public override void Flush() { }
-        protected override void Dispose(bool disposing) { }
-    }
-    #elif NET8_0
-    public sealed class TeeTextWriter : System.IO.TextWriter
-    {
-        public System.IO.TextWriter Stream1 { get => throw null; }
-        public System.IO.TextWriter Stream2 { get => throw null; }
-        public System.Text.Encoding Encoding { get => throw null; }
-        public TeeTextWriter(System.IO.TextWriter stream1, System.IO.TextWriter stream2) { }
-        public override void Write(char value) { }
-        public override void Write(char[] buffer, int index, int count) { }
-        public override void Write(string? value) { }
-        public override void Flush() { }
-        protected override void Dispose(bool disposing) { }
-    }
     #endif
+    public sealed class TeeTextWriter : System.IO.TextWriter
+    {
+        public System.IO.TextWriter Stream1 { get => throw null; }
+        public System.IO.TextWriter Stream2 { get => throw null; }
+        public System.Text.Encoding Encoding { get => throw null; }
+        public TeeTextWriter(System.IO.TextWriter stream1, System.IO.TextWriter stream2) { }
+        public override void Write(char value) { }
+        public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(string? value) { }
+        public override void Flush() { }
+        protected override void Dispose(bool disposing) { }
+    }
 }
 namespace Meziantou.Framework.Text
 {

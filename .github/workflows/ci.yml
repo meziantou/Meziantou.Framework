@@ -109,6 +109,8 @@ jobs:
 
       - run: dotnet restore ${{ steps.package-project.outputs.project }} -p:Configuration=Release /p:IsOfficialBuild=true /p:PublicApiGeneratorGenerateOnBuild=false /p:PublicApiGeneratorVerifyNoChangeOnBuild=true -warnaserror
         if: steps.package-project.outputs.has-project == 'true'
+      - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorGenerateOnBuild=false /p:PublicApiGeneratorVerifyNoChangeOnBuild=true -warnaserror
+        if: steps.package-project.outputs.has-project == 'true'
       - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorGenerateOnBuild=false /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /bl:build.binlog -warnaserror
         if: steps.package-project.outputs.has-project == 'true'
 

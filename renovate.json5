@@ -5,6 +5,11 @@
   ],
   "packageRules": [
     {
+      "matchPackageNames": [ "/^Microsoft\\.Build\\..*/" ],
+      "matchFileNames": [ "src/Meziantou.Framework.PublicApiGenerator.MSBuild/Meziantou.Framework.PublicApiGenerator.MSBuild.csproj" ],
+      "enabled": false
+    },
+    {
       "matchPackageNames": [ "Microsoft.CodeAnalysis", "Microsoft.CodeAnalysis.CSharp", "Microsoft.CodeAnalysis.CSharp.Workspaces" ],
       "matchFileNames": [
         "src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj",

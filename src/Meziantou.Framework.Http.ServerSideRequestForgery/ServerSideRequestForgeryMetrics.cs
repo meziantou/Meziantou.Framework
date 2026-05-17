@@ -7,7 +7,7 @@ internal static class ServerSideRequestForgeryMetrics
     internal const string MeterName = "Meziantou.Framework.Http.ServerSideRequestForgery";
     internal const string MeterVersion = "1.0.0";
     internal const string RejectedRequestsCounterName = "meziantou.framework.http.server_side_request_forgery.rejected_requests.total";
-    private const string ReasonTagName = "reason";
+    internal const string ReasonTagName = "reason";
 
     private static readonly Meter Meter = new(MeterName, MeterVersion);
     private static readonly Counter<long> RejectedRequestsCounter = Meter.CreateCounter<long>(

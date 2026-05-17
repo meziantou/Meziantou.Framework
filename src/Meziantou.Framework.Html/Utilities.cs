@@ -50,16 +50,16 @@ internal static class Utilities
         return new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, 0x400, leaveOpen: false);
     }
 
-    public static StreamReader OpenReader(string filePath, Encoding encoding)
+    public static StreamReader OpenReader(string filePath, Encoding? encoding)
     {
         var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, 0x400, leaveOpen: false);
+        return new StreamReader(stream, encoding ?? GetDefaultEncoding(), detectEncodingFromByteOrderMarks: true, 0x400, leaveOpen: false);
     }
 
-    public static StreamReader OpenReader(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+    public static StreamReader OpenReader(string filePath, Encoding? encoding, bool detectEncodingFromByteOrderMarks)
     {
         var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, 0x400, leaveOpen: false);
+        return new StreamReader(stream, encoding ?? GetDefaultEncoding(), detectEncodingFromByteOrderMarks, 0x400, leaveOpen: false);
     }
 
     public static StreamReader OpenReader(string filePath, bool detectEncodingFromByteOrderMarks)
@@ -68,13 +68,13 @@ internal static class Utilities
         return new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks, 0x400, leaveOpen: false);
     }
 
-    public static StreamReader OpenReader(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+    public static StreamReader OpenReader(string filePath, Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
     {
         var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false);
+        return new StreamReader(stream, encoding ?? GetDefaultEncoding(), detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false);
     }
 
-    public static StreamWriter OpenWriter(string filePath, bool append, Encoding encoding, int bufferSize)
+    public static StreamWriter OpenWriter(string filePath, bool append, Encoding? encoding, int bufferSize)
     {
         var stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read);
         if (append)
@@ -82,10 +82,10 @@ internal static class Utilities
             stream.Seek(0, SeekOrigin.End);
         }
 
-        return new StreamWriter(stream, encoding, bufferSize, leaveOpen: false);
+        return new StreamWriter(stream, encoding ?? GetDefaultEncoding(), bufferSize, leaveOpen: false);
     }
 
-    public static StreamWriter OpenWriter(string filePath, bool append, Encoding encoding)
+    public static StreamWriter OpenWriter(string filePath, bool append, Encoding? encoding)
     {
         var stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read);
         if (append)
@@ -93,7 +93,7 @@ internal static class Utilities
             stream.Seek(0, SeekOrigin.End);
         }
 
-        return new StreamWriter(stream, encoding, 0x400, leaveOpen: false);
+        return new StreamWriter(stream, encoding ?? GetDefaultEncoding(), 0x400, leaveOpen: false);
     }
 
     public static StreamWriter OpenWriter(string filePath)

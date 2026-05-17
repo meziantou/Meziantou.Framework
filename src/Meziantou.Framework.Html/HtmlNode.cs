@@ -48,7 +48,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    protected HtmlNode(string prefix, string localName, string namespaceURI, HtmlDocument ownerDocument)
+    protected HtmlNode(string prefix, string localName, string namespaceURI, HtmlDocument? ownerDocument)
     {
         if (ownerDocument is null && this is not HtmlDocument)
             throw new ArgumentNullException(nameof(ownerDocument));
@@ -712,7 +712,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (att is null)
             return defaultValue;
 
-        return att.Value;
+        return att.Value ?? defaultValue;
     }
 
     public string GetAttributeValueByPrefix(string prefix, string localName, string defaultValue)
@@ -728,7 +728,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (att is null)
             return defaultValue;
 
-        return att.Value;
+        return att.Value ?? defaultValue;
     }
 
     public string? GetNullifiedAttributeValue(string name)
@@ -776,7 +776,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (att is null)
             return defaultValue;
 
-        return att.Value;
+        return att.Value ?? defaultValue;
     }
 
     public virtual void AppendChild(HtmlNode newChild)
@@ -974,7 +974,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         foreach (var att in Attributes)
         {
             if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix) && att.LocalName.EqualsIgnoreCase(prefix))
-                return att.Value;
+                return att.Value ?? "";
         }
 
         if (ParentNode is not null && ParentNode != this)
@@ -996,7 +996,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
         foreach (var att in Attributes)
         {
-            if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix) && att.Value.EqualsIgnoreCase(namespaceURI))
+            if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix) && att.Value?.EqualsIgnoreCase(namespaceURI) == true)
                 return att.LocalName;
         }
 
@@ -1037,7 +1037,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         {
             if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix))
             {
-                namespaces[att.LocalName] = att.Value;
+                if (att.Value is not null)
+                {
+                    namespaces[att.LocalName] = att.Value;
+                }
             }
         }
 

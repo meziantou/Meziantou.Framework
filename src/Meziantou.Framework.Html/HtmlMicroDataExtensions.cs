@@ -1,4 +1,3 @@
-#nullable disable
 
 namespace Meziantou.Framework.Html;
 
@@ -24,18 +23,18 @@ static class HtmlMicroDataExtensions
     //    return type;
     //};
 
-    public static string GetItemScopePath(this HtmlNode node, string separator)
+    public static string? GetItemScopePath(this HtmlNode node, string separator)
     {
         return GetItemScopePath(node, separator, typeParser: null);
     }
 
-    public static string GetItemScopePath(this HtmlNode node, string separator, Func<string, string> typeParser)
+    public static string? GetItemScopePath(this HtmlNode node, string separator, Func<string, string>? typeParser)
     {
         var path = GetItemProp(node);
         if (path is null)
             return null;
 
-        var current = node;
+        HtmlNode? current = node;
         while (true)
         {
             var scope = GetItemScope(current);
@@ -62,12 +61,12 @@ static class HtmlMicroDataExtensions
         return path;
     }
 
-    public static string GetItemScopeType(this HtmlNode node)
+    public static string? GetItemScopeType(this HtmlNode node)
     {
         return GetItemType(GetItemScope(node));
     }
 
-    public static HtmlNode GetItemScope(this HtmlNode node)
+    public static HtmlNode? GetItemScope(this HtmlNode? node)
     {
         if (node is null)
             return null;
@@ -78,7 +77,7 @@ static class HtmlMicroDataExtensions
         return GetItemScope(node.ParentNode);
     }
 
-    public static bool IsItemScope(this HtmlNode node)
+    public static bool IsItemScope(this HtmlNode? node)
     {
         if (node is null)
             return false;
@@ -86,22 +85,22 @@ static class HtmlMicroDataExtensions
         return node.HasAttribute("itemscope");
     }
 
-    public static string GetItemType(this HtmlNode node)
+    public static string? GetItemType(this HtmlNode? node)
     {
         return node?.GetNullifiedAttributeValue("itemtype");
     }
 
-    public static string GetItemProp(this HtmlNode node)
+    public static string? GetItemProp(this HtmlNode? node)
     {
         return node?.GetNullifiedAttributeValue("itemprop");
     }
 
-    public static string GetItemRef(this HtmlNode node)
+    public static string? GetItemRef(this HtmlNode? node)
     {
         return node?.GetNullifiedAttributeValue("itemref");
     }
 
-    public static string GetItemId(this HtmlNode node)
+    public static string? GetItemId(this HtmlNode? node)
     {
         return node?.GetNullifiedAttributeValue("itemid");
     }
@@ -113,7 +112,7 @@ static class HtmlMicroDataExtensions
         if (node is null)
             return "";
 
-        string value;
+        string? value;
         var name = node.Name.ToUpperInvariant();
         switch (name)
         {

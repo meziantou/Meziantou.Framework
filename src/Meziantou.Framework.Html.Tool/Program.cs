@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using System.Text;
 using Meziantou.Framework.Globbing;
 using Microsoft.AspNetCore.StaticFiles;
 
@@ -96,7 +97,7 @@ internal static class Program
                 count++;
             }
 
-            doc.Save(file, doc.DetectedEncoding ?? doc.StreamEncoding);
+            doc.Save(file, GetDocumentEncoding(doc));
             Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
         }
     }
@@ -243,7 +244,7 @@ internal static class Program
 
                 if (count > 0)
                 {
-                    doc.Save(file, doc.DetectedEncoding ?? doc.StreamEncoding);
+                    doc.Save(file, GetDocumentEncoding(doc));
                 }
 
                 Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
@@ -390,7 +391,7 @@ internal static class Program
 
                 if (count > 0)
                 {
-                    doc.Save(file, doc.DetectedEncoding ?? doc.StreamEncoding);
+                    doc.Save(file, GetDocumentEncoding(doc));
                 }
 
                 Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
@@ -398,5 +399,10 @@ internal static class Program
         });
 
         rootCommand.Subcommands.Add(command);
+    }
+
+    private static Encoding GetDocumentEncoding(HtmlDocument document)
+    {
+        return document.DetectedEncoding ?? document.StreamEncoding ?? Encoding.UTF8;
     }
 }

@@ -1,4 +1,3 @@
-#nullable disable
 using System.Xml;
 
 namespace Meziantou.Framework.Html;
@@ -87,7 +86,7 @@ sealed class HtmlAttribute : HtmlNode
         }
     }
 
-    public HtmlElement OwnerElement => (HtmlElement)ParentNode;
+    public HtmlElement? OwnerElement => ParentNode as HtmlElement;
 
     public override HtmlNodeType NodeType => HtmlNodeType.Attribute;
 
@@ -108,7 +107,7 @@ sealed class HtmlAttribute : HtmlNode
         }
     }
 
-    public new HtmlAttribute NextSibling
+    public new HtmlAttribute? NextSibling
     {
         get
         {
@@ -123,7 +122,7 @@ sealed class HtmlAttribute : HtmlNode
         }
     }
 
-    public new HtmlAttribute PreviousSibling
+    public new HtmlAttribute? PreviousSibling
     {
         get
         {
@@ -138,13 +137,13 @@ sealed class HtmlAttribute : HtmlNode
         }
     }
 
-    public override string Value
+    public override string? Value
     {
         get => InnerText;
         set
         {
             IsValueDefined = value is not null;
-            InnerText = value;
+            InnerText = value ?? string.Empty;
         }
     }
 
@@ -228,7 +227,8 @@ sealed class HtmlAttribute : HtmlNode
         writer.Write('\'');
     }
 
-    internal static string UnescapeText(string text, char quoteChar)
+    [return: NotNullIfNotNull(nameof(text))]
+    internal static string? UnescapeText(string? text, char quoteChar)
     {
         if (text is null)
             return null;

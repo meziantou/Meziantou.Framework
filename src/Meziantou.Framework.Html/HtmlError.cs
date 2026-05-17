@@ -1,4 +1,3 @@
-#nullable disable
 
 namespace Meziantou.Framework.Html;
 
@@ -25,7 +24,7 @@ sealed class HtmlError
         ErrorType = errorType;
     }
 
-    public HtmlNode Node { get; internal set; }
+    public HtmlNode? Node { get; internal set; }
     public HtmlErrorType ErrorType { get; }
     public int Offset { get; }
     public int Line { get; }
@@ -33,10 +32,6 @@ sealed class HtmlError
 
     public override string ToString()
     {
-#if NET6_0_OR_GREATER
-        return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{Line}x{Column}x{Offset} {ErrorType}");
-#else
-        return FormattableString.Invariant($"{Line}x{Column}x{Offset} {ErrorType}");
-#endif
+        return string.Create(CultureInfo.InvariantCulture, $"{Line}x{Column}x{Offset} {ErrorType}");
     }
 }

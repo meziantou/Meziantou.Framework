@@ -1,4 +1,3 @@
-#nullable disable
 using System.Diagnostics;
 using System.Xml;
 
@@ -10,14 +9,14 @@ namespace Meziantou.Framework.Html;
 /// // Load from file
 /// var doc = new HtmlDocument();
 /// doc.Load("page.html");
-/// 
+///
 /// // Load from string
 /// doc.LoadHtml("&lt;html&gt;&lt;body&gt;Hello&lt;/body&gt;&lt;/html&gt;");
-/// 
+///
 /// // Query elements using XPath
 /// var title = doc.SelectSingleNode("//title")?.InnerText;
 /// var links = doc.SelectNodes("//a[@href]");
-/// 
+///
 /// // Modify and save
 /// doc.HtmlElement.SetAttributeValue("lang", "en");
 /// doc.Save("modified.html");
@@ -35,19 +34,19 @@ internal
 #endif
 sealed class HtmlDocument : HtmlNode
 {
-    private string _filePath;
-    private HtmlElement _baseElement;
+    private string? _filePath;
+    private HtmlElement? _baseElement;
     private bool _baseElementSearched;
     private bool? _xhtml;
-    private Dictionary<string, string> _declaredNamespaces;
-    private Dictionary<string, string> _declaredPrefixes;
+    private Dictionary<string, string>? _declaredNamespaces;
+    private Dictionary<string, string>? _declaredPrefixes;
 
     /// <summary>Occurs when the document is being parsed.</summary>
     /// <remarks>This event can be used to customize the parsing process or track progress.</remarks>
-    public event EventHandler<HtmlDocumentParseEventArgs> Parsing;
+    public event EventHandler<HtmlDocumentParseEventArgs>? Parsing;
 
     /// <summary>Occurs after the document has been parsed.</summary>
-    public event EventHandler<HtmlDocumentParseEventArgs> Parsed;
+    public event EventHandler<HtmlDocumentParseEventArgs>? Parsed;
 
     /// <summary>Initializes a new instance of the <see cref="HtmlDocument"/> class.</summary>
     public HtmlDocument()
@@ -57,19 +56,19 @@ sealed class HtmlDocument : HtmlNode
 
     /// <summary>Gets the encoding used to read the document stream.</summary>
     /// <value>The stream encoding, or <see langword="null"/> if the document was not loaded from a stream.</value>
-    public Encoding StreamEncoding { get; private set; }
+    public Encoding? StreamEncoding { get; private set; }
 
     /// <summary>Gets the encoding detected from the HTML meta tags.</summary>
     /// <value>The detected encoding, or <see langword="null"/> if no encoding was detected.</value>
     /// <remarks>
-    /// The encoding is detected from meta tags like &lt;meta charset="utf-8"&gt; or 
+    /// The encoding is detected from meta tags like &lt;meta charset="utf-8"&gt; or
     /// &lt;meta http-equiv="Content-Type" content="text/html; charset=utf-8"&gt;.
     /// </remarks>
-    public Encoding DetectedEncoding { get; private set; }
+    public Encoding? DetectedEncoding { get; private set; }
 
     /// <summary>Gets or sets the base URI of the document.</summary>
     /// <value>The base URI used to resolve relative URLs.</value>
-    public new Uri BaseAddress { get; set; }
+    public new Uri? BaseAddress { get; set; }
 
     /// <summary>Gets a value indicating whether the reader was restarted during parsing due to encoding detection.</summary>
     /// <value><see langword="true"/> if the reader was restarted; otherwise, <see langword="false"/>.</value>
@@ -77,21 +76,21 @@ sealed class HtmlDocument : HtmlNode
 
     /// <summary>Gets the document type declaration element (&lt;!DOCTYPE&gt;).</summary>
     /// <value>The document type element, or <see langword="null"/> if no DOCTYPE was found.</value>
-    public HtmlElement DocumentType { get; private set; }
+    public HtmlElement? DocumentType { get; private set; }
 
     /// <summary>Gets the root &lt;html&gt; element of the document.</summary>
     /// <value>The html element, or <see langword="null"/> if no html element was found.</value>
-    public HtmlElement HtmlElement { get; private set; }
+    public HtmlElement? HtmlElement { get; private set; }
 
     /// <summary>Gets the &lt;body&gt; element of the document.</summary>
     /// <value>The body element, or <see langword="null"/> if no body element was found.</value>
-    public HtmlElement BodyElement { get; private set; }
+    public HtmlElement? BodyElement { get; private set; }
 
     /// <summary>Gets the &lt;head&gt; element of the document.</summary>
     /// <value>The head element, or <see langword="null"/> if no head element was found.</value>
-    public HtmlElement HeadElement { get; private set; }
+    public HtmlElement? HeadElement { get; private set; }
 
-    internal static void RemoveIntrinsicElement(HtmlDocument doc, HtmlElement element)
+    internal static void RemoveIntrinsicElement(HtmlDocument? doc, HtmlElement? element)
     {
         if (doc is null || element is null)
             return;
@@ -123,13 +122,16 @@ sealed class HtmlDocument : HtmlNode
 
     /// <summary>Gets the file path from which the document was loaded.</summary>
     /// <value>The file path, or <see langword="null"/> if the document was not loaded from a file.</value>
-    public string FilePath
+    public string? FilePath
     {
         get => _filePath;
         private set
         {
             _filePath = value;
-            BaseAddress ??= (Utilities.IsRooted(value) ? new Uri(value) : new Uri(Path.GetFullPath(value)));
+            if (value is not null)
+            {
+                BaseAddress ??= (Utilities.IsRooted(value) ? new Uri(value) : new Uri(Path.GetFullPath(value)));
+            }
         }
     }
 
@@ -197,7 +199,7 @@ sealed class HtmlDocument : HtmlNode
         else
         {
             // use ansi as the default encoding
-            using var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: false);
+            using var reader = Utilities.OpenReader(filePath, encoding: null, detectEncodingFromByteOrderMarks: false);
             reader.Peek();
             StreamEncoding = reader.CurrentEncoding;
             if (InternalLoad(reader, firstPass: true))
@@ -238,7 +240,7 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+    public void Load(string filePath, Encoding? encoding, bool detectEncodingFromByteOrderMarks)
     {
         ArgumentNullException.ThrowIfNull(filePath);
 
@@ -420,31 +422,29 @@ sealed class HtmlDocument : HtmlNode
 
     [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public void AddNamespace(string prefix, string uri)
+    public void AddNamespace(string? prefix, string? uri)
     {
         if (prefix is null)
         {
-            _declaredPrefixes?.Remove(prefix);
-        }
-        else
-        {
-            ArgumentNullException.ThrowIfNull(uri);
+            if (uri is not null)
+            {
+                _declaredNamespaces?.Remove(uri);
+            }
 
-            _declaredPrefixes ??= new Dictionary<string, string>(StringComparer.Ordinal);
-            _declaredPrefixes[prefix] = uri;
+            return;
         }
 
         if (uri is null)
         {
-            _declaredNamespaces?.Remove(uri);
+            _declaredPrefixes?.Remove(prefix);
+            return;
         }
-        else
-        {
-            ArgumentNullException.ThrowIfNull(prefix);
 
-            _declaredNamespaces ??= new Dictionary<string, string>(StringComparer.Ordinal);
-            _declaredNamespaces[uri] = prefix;
-        }
+        _declaredPrefixes ??= new Dictionary<string, string>(StringComparer.Ordinal);
+        _declaredPrefixes[prefix] = uri;
+
+        _declaredNamespaces ??= new Dictionary<string, string>(StringComparer.Ordinal);
+        _declaredNamespaces[uri] = prefix;
     }
 
     public override string GetNamespaceOfPrefix(string prefix)
@@ -500,7 +500,7 @@ sealed class HtmlDocument : HtmlNode
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI)
+    public HtmlAttribute CreateAttribute(string prefix, string localName, string? namespaceURI)
     {
         ArgumentNullException.ThrowIfNull(prefix);
 
@@ -509,7 +509,7 @@ sealed class HtmlDocument : HtmlNode
         if (prefix.Contains(':', StringComparison.Ordinal))
             throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
 
-        return new HtmlAttribute(prefix, localName, namespaceURI, this);
+        return new HtmlAttribute(prefix, localName, namespaceURI ?? "", this);
     }
 
     public HtmlText CreateText()
@@ -533,7 +533,7 @@ sealed class HtmlDocument : HtmlNode
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public HtmlElement CreateElement(string prefix, string localName, string namespaceURI)
+    public HtmlElement CreateElement(string prefix, string localName, string? namespaceURI)
     {
         ArgumentNullException.ThrowIfNull(prefix);
 
@@ -542,7 +542,7 @@ sealed class HtmlDocument : HtmlNode
         if (prefix.Contains(':', StringComparison.Ordinal))
             throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
 
-        return new HtmlElement(prefix, localName, namespaceURI, this);
+        return new HtmlElement(prefix, localName, namespaceURI ?? "", this);
     }
 
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
@@ -583,7 +583,7 @@ sealed class HtmlDocument : HtmlNode
     }
 
     // see http://stackoverflow.com/questions/4696499/meta-charset-utf-8-vs-meta-http-equiv-content-type
-    private static string GetEncodingName(HtmlElement meta)
+    private static string? GetEncodingName(HtmlElement meta)
     {
         var name = Utilities.Nullify(meta.GetAttributeValue("charset"), trim: true);
         if (name is not null)
@@ -596,7 +596,7 @@ sealed class HtmlDocument : HtmlNode
         return Utilities.GetAttributeFromHeader(Utilities.Nullify(meta.GetAttributeValue("content"), trim: true), "charset");
     }
 
-    private bool DetectEncoding(HtmlReader reader, HtmlElement element, bool firstPass)
+    private bool DetectEncoding(HtmlReader reader, HtmlElement? element, bool firstPass)
     {
         if (DetectedEncoding is not null)
             return true;
@@ -656,7 +656,7 @@ sealed class HtmlDocument : HtmlNode
         Parsed?.Invoke(this, e);
     }
 
-    private bool OnParsing(HtmlReader reader, ref HtmlNode currentNode, ref HtmlAttribute currentAttribute, out bool cont)
+    private bool OnParsing(HtmlReader reader, ref HtmlNode? currentNode, ref HtmlAttribute? currentAttribute, out bool cont)
     {
         var e = new HtmlDocumentParseEventArgs(reader)
         {
@@ -673,7 +673,7 @@ sealed class HtmlDocument : HtmlNode
         return !e.Cancel;
     }
 
-    private bool OnParsed(HtmlReader reader, ref HtmlNode currentNode, ref HtmlAttribute currentAttribute)
+    private bool OnParsed(HtmlReader reader, ref HtmlNode? currentNode, ref HtmlAttribute? currentAttribute)
     {
         var e = new HtmlDocumentParseEventArgs(reader)
         {
@@ -696,8 +696,8 @@ sealed class HtmlDocument : HtmlNode
 
     private bool InternalLoad(TextReader reader, bool firstPass)
     {
-        HtmlNode current = this;
-        HtmlAttribute currentAtt = null;
+        HtmlNode? current = this;
+        HtmlAttribute? currentAtt = null;
         var htmlReader = CreateReader(reader);
         while (htmlReader.Read())
         {
@@ -707,7 +707,7 @@ sealed class HtmlDocument : HtmlNode
             if (mustContinue)
                 continue;
 
-            HtmlElement element;
+            HtmlElement? element;
             HtmlError error;
             switch (htmlReader.State.FragmentType)
             {
@@ -715,22 +715,23 @@ sealed class HtmlDocument : HtmlNode
                 case HtmlFragmentType.Text:
                     var text = CreateText();
                     text.StreamOrder = htmlReader.Offset;
-                    text.IsCData = htmlReader.State.FragmentType == HtmlFragmentType.CDataText;
+                    text.IsCData = htmlReader.State.FragmentType is HtmlFragmentType.CDataText;
                     text.Value = htmlReader.State.Value;
                     current?.ChildNodes.Add(text);
                     break;
 
                 case HtmlFragmentType.TagOpen:
+                    var stateValue = htmlReader.State.Value ?? string.Empty;
                     string elementName;
                     bool processingInstruction;
-                    if (htmlReader.State.Value.StartsWith('?'))
+                    if (stateValue.StartsWith('?'))
                     {
-                        elementName = htmlReader.State.Value[1..];
+                        elementName = stateValue[1..];
                         processingInstruction = true;
                     }
                     else
                     {
-                        elementName = htmlReader.State.Value;
+                        elementName = stateValue;
                         processingInstruction = false;
                     }
 
@@ -784,7 +785,7 @@ sealed class HtmlDocument : HtmlNode
                             {
                                 current = element;
                             }
-                            else if (current.ParentNode is not null)
+                            else if (current?.ParentNode is not null)
                             {
                                 current = current.ParentNode;
                             }
@@ -806,7 +807,7 @@ sealed class HtmlDocument : HtmlNode
                             element.IsEmpty = false;
                         }
 
-                        var parent = element.GetParentToClose(0, htmlReader.State.Value);
+                        var parent = element.GetParentToClose(0, htmlReader.State.Value ?? string.Empty);
                         if (parent is not null)
                         {
                             parent.IsClosed = true;
@@ -854,7 +855,7 @@ sealed class HtmlDocument : HtmlNode
                     if (string.Equals(htmlReader.State.Value, "?", StringComparison.Ordinal))
                         break;
 
-                    var att = CreateAttribute(htmlReader.State.Value);
+                    var att = CreateAttribute(htmlReader.State.Value ?? string.Empty);
                     att.StreamOrder = htmlReader.Offset;
                     att.NameQuoteChar = htmlReader.State.QuoteChar;
 
@@ -879,9 +880,10 @@ sealed class HtmlDocument : HtmlNode
                     if (currentAtt.Name.EqualsIgnoreCase(XmlnsPrefix))
                     {
                         element = current as HtmlElement;
-                        if (element is not null && !Options.EmptyNamespaces.Contains(currentAtt.Value, StringComparer.Ordinal))
+                        var currentAttributeValue = currentAtt.Value;
+                        if (element is not null && currentAttributeValue is not null && !Options.EmptyNamespaces.Contains(currentAttributeValue, StringComparer.Ordinal))
                         {
-                            element.NamespaceURI = currentAtt.Value;
+                            element.NamespaceURI = currentAttributeValue;
                         }
                     }
 
@@ -905,7 +907,7 @@ sealed class HtmlDocument : HtmlNode
             if (DetectedEncoding is null)
             {
                 if (htmlReader.Options.ReaderThrowsOnEncodingMismatch)
-                    throw new HtmlException(string.Format(CultureInfo.CurrentCulture, "HTML0003: Html text encoding error. There seems to be a mismatch between the encoding '{0}', used to read the input Html text, or to open the input Html file, and the real detected text encoding, which cannot be determined at that time. If you do not want to see this exception thrown, please configure the ThrowOnEncodingError HtmlReader option. Offset of the first detected text encoding mismatch is {1}.", StreamEncoding.EncodingName, htmlReader.FirstEncodingErrorOffset));
+                    throw new HtmlException(string.Format(CultureInfo.CurrentCulture, "HTML0003: Html text encoding error. There seems to be a mismatch between the encoding '{0}', used to read the input Html text, or to open the input Html file, and the real detected text encoding, which cannot be determined at that time. If you do not want to see this exception thrown, please configure the ThrowOnEncodingError HtmlReader option. Offset of the first detected text encoding mismatch is {1}.", StreamEncoding?.EncodingName, htmlReader.FirstEncodingErrorOffset));
             }
         }
 
@@ -947,7 +949,7 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public HtmlElement BaseElement
+    public HtmlElement? BaseElement
     {
         get
         {
@@ -1122,14 +1124,14 @@ sealed class HtmlDocument : HtmlNode
             return;
 
         var name = DocumentType.Attributes.Count > 0 ? DocumentType.Attributes[0].Name : "html";
-        string pubid = null;
+        string? pubid = null;
         var att = DocumentType.Attributes["public"];
         if ((att?.NextSibling) is not null)
         {
             pubid = att.NextSibling.Name;
         }
 
-        string sysid = null;
+        string? sysid = null;
         if ((att?.NextSibling) is not null && att.NextSibling.NextSibling is not null)
         {
             sysid = att.NextSibling.NextSibling.Name;
@@ -1322,7 +1324,7 @@ sealed class HtmlDocument : HtmlNode
         return new Uri(baseAddress, uri);
     }
 
-    public string GetTitle()
+    public string? GetTitle()
     {
         return SelectSingleNode("//title")?.InnerText;
     }

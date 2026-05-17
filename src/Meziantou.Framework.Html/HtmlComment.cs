@@ -1,4 +1,3 @@
-#nullable disable
 using System.Diagnostics;
 using System.Xml;
 
@@ -24,7 +23,7 @@ internal
 #endif
 sealed class HtmlComment : HtmlNode
 {
-    private string _value;
+    private string _value = string.Empty;
 
     internal HtmlComment(HtmlDocument ownerDocument)
         : base("", "#comment", "", ownerDocument)
@@ -49,7 +48,7 @@ sealed class HtmlComment : HtmlNode
     /// <value>The comment text without the &lt;!-- and --&gt; delimiters.</value>
     public override string InnerText
     {
-        get => Value;
+        get => Value ?? string.Empty;
         set
         {
             if (!string.Equals(value, Value, StringComparison.Ordinal))
@@ -62,14 +61,15 @@ sealed class HtmlComment : HtmlNode
 
     /// <summary>Gets or sets the value of the comment.</summary>
     /// <value>The comment text without the &lt;!-- and --&gt; delimiters.</value>
-    public override string Value
+    public override string? Value
     {
         get => _value;
         set
         {
-            if (!string.Equals(value, _value, StringComparison.Ordinal))
+            var newValue = value ?? string.Empty;
+            if (!string.Equals(newValue, _value, StringComparison.Ordinal))
             {
-                _value = value;
+                _value = newValue;
                 OnPropertyChanged();
             }
         }

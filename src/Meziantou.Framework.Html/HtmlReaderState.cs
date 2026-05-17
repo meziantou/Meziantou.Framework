@@ -1,4 +1,3 @@
-#nullable disable
 using System.Diagnostics;
 
 namespace Meziantou.Framework.Html;
@@ -11,7 +10,7 @@ internal
 #endif
 sealed class HtmlReaderState
 {
-    public HtmlReaderState(HtmlReader reader, HtmlParserState rawParserState, string rawValue)
+    public HtmlReaderState(HtmlReader reader, HtmlParserState rawParserState, string? rawValue)
     {
         Reader = reader ?? throw new ArgumentNullException(nameof(reader));
         Line = reader.Line;
@@ -27,7 +26,7 @@ sealed class HtmlReaderState
     public int Offset { get; private set; }
     public int Line { get; private set; }
     public int Column { get; private set; }
-    public string RawValue { get; private set; }
+    public string? RawValue { get; private set; }
     public HtmlParserState RawParserState { get; private set; }
 
     public HtmlFragmentType FragmentType => (HtmlFragmentType)(int)ParserState;
@@ -43,7 +42,7 @@ sealed class HtmlReaderState
         }
     }
 
-    public string Value
+    public string? Value
     {
         get
         {

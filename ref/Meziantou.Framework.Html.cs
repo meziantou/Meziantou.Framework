@@ -11,27 +11,17 @@ namespace Meziantou.Framework.Html
         public bool IsValueDefined { get => throw null; set { } }
         public char QuoteChar { get => throw null; set { } }
         public char NameQuoteChar { get => throw null; set { } }
-        public Meziantou.Framework.Html.HtmlElement OwnerElement { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement? OwnerElement { get => throw null; }
         public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public int ParentIndex { get => throw null; }
-        public Meziantou.Framework.Html.HtmlAttribute NextSibling { get => throw null; }
-        public Meziantou.Framework.Html.HtmlAttribute PreviousSibling { get => throw null; }
-        public string Value { get => throw null; set { } }
-        #nullable disable
+        public Meziantou.Framework.Html.HtmlAttribute? NextSibling { get => throw null; }
+        public Meziantou.Framework.Html.HtmlAttribute? PreviousSibling { get => throw null; }
+        public string? Value { get => throw null; set { } }
         public override void WriteTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
-        #nullable restore
     }
 
     public sealed class HtmlAttributeList : System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IList<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Html.HtmlAttribute>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Specialized.INotifyCollectionChanged
@@ -41,86 +31,36 @@ namespace Meziantou.Framework.Html
         public Meziantou.Framework.Html.HtmlAttribute this[string localName, string namespaceURI] { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlAttribute this[int index] { get => throw null; set { } }
         public int Count { get => throw null; }
-        public event System.Collections.Specialized.NotifyCollectionChangedEventHandler CollectionChanged;
-        #nullable disable
+        public event System.Collections.Specialized.NotifyCollectionChangedEventHandler? CollectionChanged;
         public Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI) => throw null;
-        #nullable restore
-        #nullable disable
-        public Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI, string value) => throw null;
-        #nullable restore
-        #nullable disable
+        public Meziantou.Framework.Html.HtmlAttribute Add(string prefix, string localName, string namespaceURI, string? value) => throw null;
         public Meziantou.Framework.Html.HtmlAttribute Add(string name, string value) => throw null;
-        #nullable restore
-        #nullable disable
         public void Add(Meziantou.Framework.Html.HtmlAttribute item) { }
-        #nullable restore
-        #nullable disable
         public void Add(Meziantou.Framework.Html.HtmlAttribute attribute, bool replace) { }
-        #nullable restore
-        #nullable disable
-        public string GetNamespacePrefixIfDefined(string namespaceURI) => throw null;
-        #nullable restore
+        public string? GetNamespacePrefixIfDefined(string namespaceURI) => throw null;
         public void RemoveAll() { }
-        #nullable disable
         public void Insert(int index, Meziantou.Framework.Html.HtmlAttribute item) { }
-        #nullable restore
-        #nullable disable
         public bool Contains(Meziantou.Framework.Html.HtmlAttribute item) => throw null;
-        #nullable restore
-        #nullable disable
         public void CopyTo(Meziantou.Framework.Html.HtmlAttribute[] array, int arrayIndex) { }
-        #nullable restore
-        #nullable disable
         public int IndexOf(Meziantou.Framework.Html.HtmlAttribute item) => throw null;
-        #nullable restore
-        #nullable disable
         public int IndexOf(string name) => throw null;
-        #nullable restore
-        #nullable disable
         public int IndexOf(string localName, string namespaceURI) => throw null;
-        #nullable restore
         public bool RemoveAt(int index) => throw null;
-        #nullable disable
         public void RemoveRange(System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlAttribute> attributes) { }
-        #nullable restore
-        #nullable disable
         public bool RemoveByPrefix(string prefix, string localName) => throw null;
-        #nullable restore
-        #nullable disable
         public bool Remove(string localName, string namespaceURI) => throw null;
-        #nullable restore
-        #nullable disable
         public bool Remove(string name) => throw null;
-        #nullable restore
-        #nullable disable
         public bool Remove(Meziantou.Framework.Html.HtmlAttribute item) => throw null;
-        #nullable restore
-        #nullable disable
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Html.HtmlAttribute> GetEnumerator() => throw null;
-        #nullable restore
-        #nullable disable
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        #nullable restore
-        #nullable disable
-        int System.Collections.IList.Add(object value) => throw null;
-        #nullable restore
+        int System.Collections.IList.Add(object? value) => throw null;
         void System.Collections.IList.Clear() { }
-        #nullable disable
-        bool System.Collections.IList.Contains(object value) => throw null;
-        #nullable restore
-        #nullable disable
-        int System.Collections.IList.IndexOf(object value) => throw null;
-        #nullable restore
-        #nullable disable
-        void System.Collections.IList.Insert(int index, object value) { }
-        #nullable restore
-        #nullable disable
-        void System.Collections.IList.Remove(object value) { }
-        #nullable restore
+        bool System.Collections.IList.Contains(object? value) => throw null;
+        int System.Collections.IList.IndexOf(object? value) => throw null;
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-        #nullable disable
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        #nullable restore
     }
 
     [System.Flags]
@@ -141,180 +81,88 @@ namespace Meziantou.Framework.Html
         public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public string Name { get => throw null; set { } }
         public string InnerText { get => throw null; set { } }
-        public string Value { get => throw null; set { } }
-        #nullable disable
+        public string? Value { get => throw null; set { } }
         public override void WriteTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
-        #nullable restore
     }
 
     [System.Diagnostics.DebuggerDisplay("{Name}")]
     public sealed class HtmlDocument : Meziantou.Framework.Html.HtmlNode
     {
-        public System.Text.Encoding StreamEncoding { get => throw null; }
-        public System.Text.Encoding DetectedEncoding { get => throw null; }
-        public System.Uri BaseAddress { get => throw null; set { } }
+        public System.Text.Encoding? StreamEncoding { get => throw null; }
+        public System.Text.Encoding? DetectedEncoding { get => throw null; }
+        public System.Uri? BaseAddress { get => throw null; set { } }
         public bool ReaderWasRestarted { get => throw null; }
-        public Meziantou.Framework.Html.HtmlElement DocumentType { get => throw null; }
-        public Meziantou.Framework.Html.HtmlElement HtmlElement { get => throw null; }
-        public Meziantou.Framework.Html.HtmlElement BodyElement { get => throw null; }
-        public Meziantou.Framework.Html.HtmlElement HeadElement { get => throw null; }
-        public string FilePath { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement? DocumentType { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement? HtmlElement { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement? BodyElement { get => throw null; }
+        public Meziantou.Framework.Html.HtmlElement? HeadElement { get => throw null; }
+        public string? FilePath { get => throw null; }
         public Meziantou.Framework.Html.HtmlOptions Options { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DeclaredNamespaces { get => throw null; }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DeclaredPrefixes { get => throw null; }
         public string InnerHtml { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
         public string Name { get => throw null; set { } }
-        public Meziantou.Framework.Html.HtmlElement BaseElement { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlElement? BaseElement { get => throw null; set { } }
         public bool IsXhtml { get => throw null; set { } }
         public bool IsValidXmlDocument { get => throw null; }
-        public event System.EventHandler<Meziantou.Framework.Html.HtmlDocumentParseEventArgs> Parsing;
-        public event System.EventHandler<Meziantou.Framework.Html.HtmlDocumentParseEventArgs> Parsed;
+        public event System.EventHandler<Meziantou.Framework.Html.HtmlDocumentParseEventArgs>? Parsing;
+        public event System.EventHandler<Meziantou.Framework.Html.HtmlDocumentParseEventArgs>? Parsed;
         public HtmlDocument() : base(default(string), default(string), default(string), default(Meziantou.Framework.Html.HtmlDocument)) { }
-        #nullable disable
         public void LoadHtml(string html) { }
-        #nullable restore
-        #nullable disable
         public void Load(string filePath, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        #nullable restore
-        #nullable disable
         public void Load(string filePath, bool detectEncodingFromByteOrderMarks) { }
-        #nullable restore
-        #nullable disable
         public void Load(string filePath, System.Text.Encoding encoding) { }
-        #nullable restore
-        #nullable disable
-        public void Load(string filePath, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        #nullable restore
-        #nullable disable
+        public void Load(string filePath, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks) { }
         public void Load(string filePath) { }
-        #nullable restore
-        #nullable disable
         public void Load(System.IO.Stream stream, bool detectEncodingFromByteOrderMarks) { }
-        #nullable restore
-        #nullable disable
         public void Load(System.IO.Stream stream, System.Text.Encoding encoding) { }
-        #nullable restore
-        #nullable disable
         public void Load(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        #nullable restore
-        #nullable disable
         public void Load(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        #nullable restore
-        #nullable disable
         public void Load(System.IO.Stream stream) { }
-        #nullable restore
-        #nullable disable
         public void Load(System.IO.TextReader reader) { }
-        #nullable restore
-        #nullable disable
-        public void AddNamespace(string prefix, string uri) { }
-        #nullable restore
-        #nullable disable
+        public void AddNamespace(string? prefix, string? uri) { }
         public override string GetNamespaceOfPrefix(string prefix) => throw null;
-        #nullable restore
-        #nullable disable
         public override string GetPrefixOfNamespace(string namespaceURI) => throw null;
-        #nullable restore
-        #nullable disable
         protected override void GetNamespaceAttributes(System.Collections.Generic.IDictionary<string, string> namespaces) { }
-        #nullable restore
-        #nullable disable
-        public Meziantou.Framework.Html.HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI) => throw null;
-        #nullable restore
-        #nullable disable
+        public Meziantou.Framework.Html.HtmlAttribute CreateAttribute(string prefix, string localName, string? namespaceURI) => throw null;
         public Meziantou.Framework.Html.HtmlText CreateText() => throw null;
-        #nullable restore
-        #nullable disable
         public Meziantou.Framework.Html.HtmlText CreateText(string value) => throw null;
-        #nullable restore
-        #nullable disable
         public Meziantou.Framework.Html.HtmlElement CreateElement(string name) => throw null;
-        #nullable restore
-        #nullable disable
-        public Meziantou.Framework.Html.HtmlElement CreateElement(string prefix, string localName, string namespaceURI) => throw null;
-        #nullable restore
-        #nullable disable
+        public Meziantou.Framework.Html.HtmlElement CreateElement(string prefix, string localName, string? namespaceURI) => throw null;
         public Meziantou.Framework.Html.HtmlDocument CreateDocument() => throw null;
-        #nullable restore
-        #nullable disable
         public Meziantou.Framework.Html.HtmlComment CreateComment() => throw null;
-        #nullable restore
-        #nullable disable
         public void Save(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public void Save(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public void Save(string filePath) { }
-        #nullable restore
-        #nullable disable
         public void Save(string filePath, System.Text.Encoding encoding) { }
-        #nullable restore
-        #nullable disable
         public void Save(System.IO.Stream outStream) { }
-        #nullable restore
-        #nullable disable
         public void Save(System.IO.Stream outStream, System.Text.Encoding encoding) { }
-        #nullable restore
-        #nullable disable
         public override void WriteTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public void WriteDocType(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public Meziantou.Framework.Html.HtmlNode ImportNode(Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
-        #nullable disable
         public Meziantou.Framework.Html.HtmlNode ImportNode(Meziantou.Framework.Html.HtmlNode node, Meziantou.Framework.Html.HtmlCloneOptions cloneOptions) => throw null;
-        #nullable restore
-        #nullable disable
         protected override void AddNamespacesInScope(System.Xml.XmlNamespaceScope scope, System.Collections.Generic.IDictionary<string, string> dictionary) { }
-        #nullable restore
-        #nullable disable
         public string MakeAbsoluteUrl(string url) => throw null;
-        #nullable restore
-        #nullable disable
         public System.Uri MakeAbsoluteUrl(System.Uri uri) => throw null;
-        #nullable restore
-        #nullable disable
-        public string GetTitle() => throw null;
-        #nullable restore
+        public string? GetTitle() => throw null;
     }
 
     public sealed class HtmlDocumentParseEventArgs : System.ComponentModel.CancelEventArgs
     {
         public Meziantou.Framework.Html.HtmlReader Reader { get => throw null; }
-        public System.Text.Encoding DetectedEncoding { get => throw null; set { } }
-        public Meziantou.Framework.Html.HtmlNode CurrentNode { get => throw null; set { } }
-        public Meziantou.Framework.Html.HtmlAttribute CurrentAttribute { get => throw null; set { } }
+        public System.Text.Encoding? DetectedEncoding { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlNode? CurrentNode { get => throw null; set { } }
+        public Meziantou.Framework.Html.HtmlAttribute? CurrentAttribute { get => throw null; set { } }
         public bool Continue { get => throw null; set { } }
-        #nullable disable
         public HtmlDocumentParseEventArgs(Meziantou.Framework.Html.HtmlReader reader) { }
-        #nullable restore
     }
 
     [System.Diagnostics.DebuggerDisplay("{Name}")]
@@ -330,21 +178,11 @@ namespace Meziantou.Framework.Html
         public bool NoChild { get => throw null; set { } }
         public bool AlwaysClose { get => throw null; set { } }
         public bool DontCloseIfEmpty { get => throw null; set { } }
-        #nullable disable
         public override void WriteTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
-        #nullable restore
     }
 
     [System.Flags]
@@ -367,18 +205,14 @@ namespace Meziantou.Framework.Html
 
     public sealed class HtmlError
     {
-        public Meziantou.Framework.Html.HtmlNode Node { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? Node { get => throw null; }
         public Meziantou.Framework.Html.HtmlErrorType ErrorType { get => throw null; }
         public int Offset { get => throw null; }
         public int Line { get => throw null; }
         public int Column { get => throw null; }
-        #nullable disable
         public HtmlError(Meziantou.Framework.Html.HtmlReaderState state, Meziantou.Framework.Html.HtmlErrorType errorType) { }
-        #nullable restore
         public HtmlError(int line, int column, int offset, Meziantou.Framework.Html.HtmlErrorType errorType) { }
-        #nullable disable
         public override string ToString() => throw null;
-        #nullable restore
     }
 
     public enum HtmlErrorType
@@ -414,36 +248,16 @@ namespace Meziantou.Framework.Html
 
     public static class HtmlMicroDataExtensions
     {
-        #nullable disable
-        public static string GetItemScopePath(this Meziantou.Framework.Html.HtmlNode node, string separator) => throw null;
-        #nullable restore
-        #nullable disable
-        public static string GetItemScopePath(this Meziantou.Framework.Html.HtmlNode node, string separator, System.Func<string, string> typeParser) => throw null;
-        #nullable restore
-        #nullable disable
-        public static string GetItemScopeType(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
-        #nullable disable
-        public static Meziantou.Framework.Html.HtmlNode GetItemScope(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
-        #nullable disable
-        public static bool IsItemScope(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
-        #nullable disable
-        public static string GetItemType(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
-        #nullable disable
-        public static string GetItemProp(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
-        #nullable disable
-        public static string GetItemRef(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
-        #nullable disable
-        public static string GetItemId(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
-        #nullable disable
+        public static string? GetItemScopePath(this Meziantou.Framework.Html.HtmlNode node, string separator) => throw null;
+        public static string? GetItemScopePath(this Meziantou.Framework.Html.HtmlNode node, string separator, System.Func<string, string>? typeParser) => throw null;
+        public static string? GetItemScopeType(this Meziantou.Framework.Html.HtmlNode node) => throw null;
+        public static Meziantou.Framework.Html.HtmlNode? GetItemScope(this Meziantou.Framework.Html.HtmlNode? node) => throw null;
+        public static bool IsItemScope(this Meziantou.Framework.Html.HtmlNode? node) => throw null;
+        public static string? GetItemType(this Meziantou.Framework.Html.HtmlNode? node) => throw null;
+        public static string? GetItemProp(this Meziantou.Framework.Html.HtmlNode? node) => throw null;
+        public static string? GetItemRef(this Meziantou.Framework.Html.HtmlNode? node) => throw null;
+        public static string? GetItemId(this Meziantou.Framework.Html.HtmlNode? node) => throw null;
         public static string GetItemValue(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
     }
 
     public abstract class HtmlNode : System.ComponentModel.INotifyPropertyChanged, System.Xml.IXmlNamespaceResolver, System.Xml.XPath.IXPathNavigable
@@ -491,7 +305,7 @@ namespace Meziantou.Framework.Html
         public string? XPathExpression { get => throw null; }
         public System.Xml.IXmlNamespaceResolver ParentNamespaceResolver { get => throw null; }
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
-        protected HtmlNode(string prefix, string localName, string namespaceURI, Meziantou.Framework.Html.HtmlDocument ownerDocument) { }
+        protected HtmlNode(string prefix, string localName, string namespaceURI, Meziantou.Framework.Html.HtmlDocument? ownerDocument) { }
         public override string ToString() => throw null;
         protected internal virtual void ClearCaches() { }
         protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null) { }
@@ -562,77 +376,41 @@ namespace Meziantou.Framework.Html
     public sealed class HtmlNodeDepthComparer : System.Collections.Generic.IComparer<Meziantou.Framework.Html.HtmlNode>
     {
         public Meziantou.Framework.Html.ListSortDirection Direction { get => throw null; set { } }
-        #nullable disable
-        public int Compare(Meziantou.Framework.Html.HtmlNode x, Meziantou.Framework.Html.HtmlNode y) => throw null;
-        #nullable restore
+        public int Compare(Meziantou.Framework.Html.HtmlNode? x, Meziantou.Framework.Html.HtmlNode? y) => throw null;
     }
 
     public static class HtmlNodeExtensions
     {
-        #nullable disable
         public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> Descendants(this Meziantou.Framework.Html.HtmlNode node) => throw null;
-        #nullable restore
     }
 
     public sealed class HtmlNodeList : System.Collections.Generic.ICollection<Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IList<Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Html.HtmlNode>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Html.HtmlNode>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Specialized.INotifyCollectionChanged
     {
-        public Meziantou.Framework.Html.HtmlNode this[string name] { get => throw null; }
-        public Meziantou.Framework.Html.HtmlNode this[string localName, string namespaceURI] { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? this[string name] { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? this[string localName, string namespaceURI] { get => throw null; }
         public Meziantou.Framework.Html.HtmlNode this[int index] { get => throw null; set { } }
         public int Count { get => throw null; }
-        public event System.Collections.Specialized.NotifyCollectionChangedEventHandler CollectionChanged;
-        #nullable disable
+        public event System.Collections.Specialized.NotifyCollectionChangedEventHandler? CollectionChanged;
         public void Replace(Meziantou.Framework.Html.HtmlNode newChild, Meziantou.Framework.Html.HtmlNode oldChild) { }
-        #nullable restore
         public void RemoveAll() { }
-        #nullable disable
         public void Insert(int index, Meziantou.Framework.Html.HtmlNode item) { }
-        #nullable restore
-        #nullable disable
         public void AddRange(System.Collections.Generic.IEnumerable<Meziantou.Framework.Html.HtmlNode> nodes) { }
-        #nullable restore
-        #nullable disable
         public void Add(Meziantou.Framework.Html.HtmlNode item) { }
-        #nullable restore
         public bool RemoveAt(int index) => throw null;
-        #nullable disable
         public bool Remove(Meziantou.Framework.Html.HtmlNode item) => throw null;
-        #nullable restore
-        #nullable disable
         public int IndexOf(Meziantou.Framework.Html.HtmlNode item) => throw null;
-        #nullable restore
-        #nullable disable
         public bool Contains(Meziantou.Framework.Html.HtmlNode item) => throw null;
-        #nullable restore
-        #nullable disable
         public void CopyTo(Meziantou.Framework.Html.HtmlNode[] array, int arrayIndex) { }
-        #nullable restore
-        #nullable disable
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Html.HtmlNode> GetEnumerator() => throw null;
-        #nullable restore
-        #nullable disable
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        #nullable restore
-        #nullable disable
-        int System.Collections.IList.Add(object value) => throw null;
-        #nullable restore
+        int System.Collections.IList.Add(object? value) => throw null;
         void System.Collections.IList.Clear() { }
-        #nullable disable
-        bool System.Collections.IList.Contains(object value) => throw null;
-        #nullable restore
-        #nullable disable
-        int System.Collections.IList.IndexOf(object value) => throw null;
-        #nullable restore
-        #nullable disable
-        void System.Collections.IList.Insert(int index, object value) { }
-        #nullable restore
-        #nullable disable
-        void System.Collections.IList.Remove(object value) { }
-        #nullable restore
+        bool System.Collections.IList.Contains(object? value) => throw null;
+        int System.Collections.IList.IndexOf(object? value) => throw null;
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-        #nullable disable
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        #nullable restore
     }
 
     public sealed class HtmlNodeNavigator : System.Xml.XPath.XPathNavigator
@@ -709,18 +487,10 @@ namespace Meziantou.Framework.Html
         public bool ReaderThrowsOnEncodingMismatch { get => throw null; set { } }
         public bool ReaderRestartsOnEncodingDetected { get => throw null; set { } }
         public bool ReaderThrowsOnUnknownDetectedEncoding { get => throw null; set { } }
-        #nullable disable
         public Meziantou.Framework.Html.HtmlElementWriteOptions GetElementWriteOptions(string name) => throw null;
-        #nullable restore
-        #nullable disable
         public void SetElementWriteOptions(string name, Meziantou.Framework.Html.HtmlElementWriteOptions options) { }
-        #nullable restore
-        #nullable disable
         public Meziantou.Framework.Html.HtmlElementReadOptions GetElementReadOptions(string name) => throw null;
-        #nullable restore
-        #nullable disable
         public void SetElementReadOptions(string name, Meziantou.Framework.Html.HtmlElementReadOptions options) { }
-        #nullable restore
     }
 
     public enum HtmlParserState
@@ -752,19 +522,13 @@ namespace Meziantou.Framework.Html
         public Meziantou.Framework.Html.HtmlParserState ParserState { get => throw null; }
         public System.Text.StringBuilder Value { get => throw null; }
         public bool IsRestartable { get => throw null; }
-        public event System.EventHandler<Meziantou.Framework.Html.HtmlReaderParseEventArgs> Parsing;
-        #nullable disable
+        public event System.EventHandler<Meziantou.Framework.Html.HtmlReaderParseEventArgs>? Parsing;
         public HtmlReader(System.IO.TextReader reader) { }
-        #nullable restore
-        #nullable disable
-        public HtmlReader(System.IO.TextReader reader, Meziantou.Framework.Html.HtmlOptions options) { }
-        #nullable restore
+        public HtmlReader(System.IO.TextReader reader, Meziantou.Framework.Html.HtmlOptions? options) { }
         public bool Restart() => throw null;
         public static bool IsAnyQuote(int character) => throw null;
         public static bool IsWhiteSpace(int character) => throw null;
-        #nullable disable
-        public Meziantou.Framework.Html.HtmlReaderState CreateState(Meziantou.Framework.Html.HtmlParserState rawParserState, string rawValue) => throw null;
-        #nullable restore
+        public Meziantou.Framework.Html.HtmlReaderState CreateState(Meziantou.Framework.Html.HtmlParserState rawParserState, string? rawValue) => throw null;
         public bool Read() => throw null;
     }
 
@@ -772,7 +536,7 @@ namespace Meziantou.Framework.Html
     {
         public bool Continue { get => throw null; set { } }
         public bool Eof { get => throw null; set { } }
-        public string CurrentElement { get => throw null; set { } }
+        public string? CurrentElement { get => throw null; set { } }
         public int EatNextCharacters { get => throw null; set { } }
         public char PreviousCharacter { get => throw null; set { } }
         public char CurrentCharacter { get => throw null; set { } }
@@ -780,9 +544,7 @@ namespace Meziantou.Framework.Html
         public Meziantou.Framework.Html.HtmlParserState State { get => throw null; set { } }
         public System.Text.StringBuilder Value { get => throw null; }
         public System.Text.StringBuilder RawValue { get => throw null; }
-        #nullable disable
         public HtmlReaderParseEventArgs(System.Text.StringBuilder value, System.Text.StringBuilder rawValue) { }
-        #nullable restore
     }
 
     [System.Diagnostics.DebuggerDisplay("{Line}x{Column}x{Offset} {ParserState} '{RawValue}'")]
@@ -793,14 +555,12 @@ namespace Meziantou.Framework.Html
         public int Offset { get => throw null; }
         public int Line { get => throw null; }
         public int Column { get => throw null; }
-        public string RawValue { get => throw null; }
+        public string? RawValue { get => throw null; }
         public Meziantou.Framework.Html.HtmlParserState RawParserState { get => throw null; }
         public Meziantou.Framework.Html.HtmlFragmentType FragmentType { get => throw null; }
         public Meziantou.Framework.Html.HtmlParserState ParserState { get => throw null; }
-        public string Value { get => throw null; }
-        #nullable disable
-        public HtmlReaderState(Meziantou.Framework.Html.HtmlReader reader, Meziantou.Framework.Html.HtmlParserState rawParserState, string rawValue) { }
-        #nullable restore
+        public string? Value { get => throw null; }
+        public HtmlReaderState(Meziantou.Framework.Html.HtmlReader reader, Meziantou.Framework.Html.HtmlParserState rawParserState, string? rawValue) { }
     }
 
     [System.Diagnostics.DebuggerDisplay("'{Value}'")]
@@ -816,103 +576,55 @@ namespace Meziantou.Framework.Html
         public string Name { get => throw null; set { } }
         public string InnerText { get => throw null; set { } }
         public string InnerHtml { get => throw null; set { } }
-        public string Value { get => throw null; set { } }
-        #nullable disable
+        public string? Value { get => throw null; set { } }
         public override void WriteTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void CopyTo(Meziantou.Framework.Html.HtmlNode target, Meziantou.Framework.Html.HtmlCloneOptions options) { }
-        #nullable restore
     }
 
     public sealed class HtmlXPathResult : Meziantou.Framework.Html.HtmlNode
     {
-        public object Result { get => throw null; }
-        public string Value { get => throw null; set { } }
+        public object? Result { get => throw null; }
+        public string? Value { get => throw null; set { } }
         public Meziantou.Framework.Html.HtmlNodeType NodeType { get => throw null; }
-        #nullable disable
         public override void WriteTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.IO.TextWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
-        #nullable disable
         public override void WriteContentTo(System.Xml.XmlWriter writer) { }
-        #nullable restore
     }
 
     public sealed class HtmlXmlWriter : System.Xml.XmlWriter
     {
         public Meziantou.Framework.Html.HtmlDocument OwnerDocument { get => throw null; }
         public Meziantou.Framework.Html.HtmlNode Parent { get => throw null; }
-        public Meziantou.Framework.Html.HtmlNode Current { get => throw null; }
+        public Meziantou.Framework.Html.HtmlNode? Current { get => throw null; }
         public System.Xml.WriteState WriteState { get => throw null; }
-        #nullable disable
         public HtmlXmlWriter(Meziantou.Framework.Html.HtmlNode parent) { }
-        #nullable restore
         public override void Flush() { }
-        #nullable disable
-        public override string LookupPrefix(string ns) => throw null;
-        #nullable restore
-        #nullable disable
+        public override string? LookupPrefix(string ns) => throw null;
         public override void WriteBase64(byte[] buffer, int index, int count) { }
-        #nullable restore
-        #nullable disable
-        public override void WriteCData(string text) { }
-        #nullable restore
+        public override void WriteCData(string? text) { }
         public override void WriteCharEntity(char ch) { }
-        #nullable disable
         public override void WriteChars(char[] buffer, int index, int count) { }
-        #nullable restore
-        #nullable disable
-        public override void WriteComment(string text) { }
-        #nullable restore
-        #nullable disable
-        public override void WriteDocType(string name, string pubid, string sysid, string subset) { }
-        #nullable restore
+        public override void WriteComment(string? text) { }
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset) { }
         public override void WriteEndElement() { }
-        #nullable disable
         public override void WriteEntityRef(string name) { }
-        #nullable restore
         public override void WriteFullEndElement() { }
-        #nullable disable
-        public override void WriteProcessingInstruction(string name, string text) { }
-        #nullable restore
-        #nullable disable
-        public override void WriteRaw(string data) { }
-        #nullable restore
-        #nullable disable
+        public override void WriteProcessingInstruction(string name, string? text) { }
+        public override void WriteRaw(string? data) { }
         public override void WriteRaw(char[] buffer, int index, int count) { }
-        #nullable restore
-        #nullable disable
-        public override void WriteStartAttribute(string prefix, string localName, string ns) { }
-        #nullable restore
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns) { }
         public override void WriteEndAttribute() { }
         public override void WriteStartDocument(bool standalone) { }
         public override void WriteStartDocument() { }
         public override void WriteEndDocument() { }
-        #nullable disable
-        public override void WriteStartElement(string prefix, string localName, string ns) { }
-        #nullable restore
-        #nullable disable
-        public override void WriteString(string text) { }
-        #nullable restore
+        public override void WriteStartElement(string? prefix, string localName, string? ns) { }
+        public override void WriteString(string? text) { }
         public override void WriteSurrogateCharEntity(char lowChar, char highChar) { }
-        #nullable disable
-        public override void WriteWhitespace(string ws) { }
-        #nullable restore
+        public override void WriteWhitespace(string? ws) { }
     }
 
     public enum ListSortDirection

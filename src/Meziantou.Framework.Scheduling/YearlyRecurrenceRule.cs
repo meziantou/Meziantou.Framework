@@ -3,11 +3,11 @@ namespace Meziantou.Framework.Scheduling;
 /// <summary>Represents a yearly recurrence rule.</summary>
 /// <example>
 /// <code>
-/// var rrule = new YearlyRecurrenceRule { ByMonths = { Month.January }, ByMonthDays = { 1 } };
+/// var rrule = new YearlyRecurrenceRule { ByMonths = { 1 }, ByMonthDays = { 1 } };
 /// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
 /// </code>
 /// </example>
-public sealed class YearlyRecurrenceRule : RecurrenceRule
+internal sealed class YearlyRecurrenceRule : RecurrenceRule
 {
     /// <summary>Limits occurrences to specific days of the month.</summary>
     public new IList<int>? ByMonthDays { get; set; }
@@ -16,7 +16,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
     public IList<ByDay>? ByWeekDays { get; set; }
 
     /// <summary>Limits occurrences to specific months.</summary>
-    public new IList<Month>? ByMonths { get; set; }
+    public new IList<int>? ByMonths { get; set; }
     //public IList<int> ByWeekNo { get; set; }
 
     /// <summary>Limits occurrences to specific days of the year (1-366).</summary>
@@ -241,9 +241,9 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
             result = [];
             foreach (var month in ByMonths.Distinct().Order())
             {
-                if (month is >= Month.January and <= Month.December)
+                if (month is >= 1 and <= 12)
                 {
-                    for (var dt = startOfYear.AddMonths((int)month - 1); dt.Month == (int)month; dt = dt.AddDays(1))
+                    for (var dt = startOfYear.AddMonths(month - 1); dt.Month == month; dt = dt.AddDays(1))
                     {
                         result.Add(dt);
                     }
@@ -309,7 +309,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByMonths))
             {
                 sb.Append(";BYMONTH=");
-                sb.AppendJoin(',', ByMonths.Cast<int>());
+                sb.AppendJoin(',', ByMonths);
             }
 
             //if (!IsEmpty(ByWeekNo))

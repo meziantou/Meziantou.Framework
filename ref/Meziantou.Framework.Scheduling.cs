@@ -8,20 +8,6 @@ namespace Meziantou.Framework.Scheduling
         public Meziantou.Framework.Scheduling.InternetCalendarUserAddress? Address { get => throw null; set { } }
     }
 
-    public sealed class ByDay : System.IEquatable<Meziantou.Framework.Scheduling.ByDay>
-    {
-        public System.DayOfWeek DayOfWeek { get => throw null; set { } }
-        public int? Ordinal { get => throw null; set { } }
-        public ByDay(System.DayOfWeek dayOfWeek) { }
-        public ByDay(System.DayOfWeek dayOfWeek, int? ordinal) { }
-        public bool Equals(Meziantou.Framework.Scheduling.ByDay? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.Scheduling.ByDay left, Meziantou.Framework.Scheduling.ByDay right) => throw null;
-        public static bool operator !=(Meziantou.Framework.Scheduling.ByDay left, Meziantou.Framework.Scheduling.ByDay right) => throw null;
-        public override string ToString() => throw null;
-    }
-
     public sealed class CronExpression : Meziantou.Framework.Scheduling.IRecurrenceRule, System.IParsable<Meziantou.Framework.Scheduling.CronExpression>, System.ISpanParsable<Meziantou.Framework.Scheduling.CronExpression>
     {
         public static Meziantou.Framework.Scheduling.CronExpression Parse(string expression) => throw null;
@@ -29,13 +15,6 @@ namespace Meziantou.Framework.Scheduling
         public static Meziantou.Framework.Scheduling.CronExpression Parse(System.ReadOnlySpan<char> expression) => throw null;
         public static bool TryParse(System.ReadOnlySpan<char> expression, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Scheduling.CronExpression? cronExpression) => throw null;
         public System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrences(System.DateTime startDate) => throw null;
-    }
-
-    public sealed class DailyRecurrenceRule : Meziantou.Framework.Scheduling.RecurrenceRule
-    {
-        public System.Collections.Generic.IList<System.DayOfWeek> ByWeekDays { get => throw null; set { } }
-        public string Text { get => throw null; }
-        protected override System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate) => throw null;
     }
 
     public sealed class Event
@@ -61,25 +40,6 @@ namespace Meziantou.Framework.Scheduling
         Cancelled = 2
     }
 
-    public enum Frequency
-    {
-        None = 0,
-        Secondly = 1,
-        Minutely = 2,
-        Hourly = 3,
-        Daily = 4,
-        Weekly = 5,
-        Monthly = 6,
-        Yearly = 7
-    }
-
-    public sealed class HourlyRecurrenceRule : Meziantou.Framework.Scheduling.RecurrenceRule
-    {
-        public System.Collections.Generic.IList<System.DayOfWeek> ByWeekDays { get => throw null; set { } }
-        public string Text { get => throw null; }
-        protected override System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate) => throw null;
-    }
-
     public interface IRecurrenceRule
     {
         System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrences(System.DateTime startDate);
@@ -102,36 +62,6 @@ namespace Meziantou.Framework.Scheduling
         public override string ToString() => throw null;
     }
 
-    public sealed class MinutelyRecurrenceRule : Meziantou.Framework.Scheduling.RecurrenceRule
-    {
-        public System.Collections.Generic.IList<System.DayOfWeek> ByWeekDays { get => throw null; set { } }
-        public string Text { get => throw null; }
-        protected override System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate) => throw null;
-    }
-
-    public enum Month
-    {
-        January = 1,
-        February = 2,
-        March = 3,
-        April = 4,
-        May = 5,
-        June = 6,
-        July = 7,
-        August = 8,
-        September = 9,
-        October = 10,
-        November = 11,
-        December = 12
-    }
-
-    public sealed class MonthlyRecurrenceRule : Meziantou.Framework.Scheduling.RecurrenceRule
-    {
-        public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.ByDay> ByWeekDays { get => throw null; set { } }
-        public string Text { get => throw null; }
-        protected override System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate) => throw null;
-    }
-
     public sealed class Organizer
     {
         public Meziantou.Framework.Scheduling.InternetCalendarUserAddress? Address { get => throw null; set { } }
@@ -148,7 +78,7 @@ namespace Meziantou.Framework.Scheduling
         public System.Collections.Generic.IList<int>? BySeconds { get => throw null; set { } }
         public System.Collections.Generic.IList<int>? ByMinutes { get => throw null; set { } }
         public System.Collections.Generic.IList<int>? ByHours { get => throw null; set { } }
-        public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.Month> ByMonths { get => throw null; set { } }
+        public System.Collections.Generic.IList<int> ByMonths { get => throw null; set { } }
         public System.Collections.Generic.IList<int> ByMonthDays { get => throw null; set { } }
         public System.Collections.Generic.IList<int>? BySetPositions { get => throw null; set { } }
         public bool IsForever { get => throw null; }
@@ -169,76 +99,9 @@ namespace Meziantou.Framework.Scheduling
         public static System.DateTime? GetNextOccurrence(this Meziantou.Framework.Scheduling.IRecurrenceRule recurrenceRule, System.DateTime startDate) => throw null;
     }
 
-    public abstract class RecurrenceRuleHumanizer
-    {
-        protected static readonly System.Globalization.CultureInfo EnglishCultureInfo;
-        protected static readonly System.Globalization.CultureInfo FrenchCultureInfo;
-        public static System.Collections.Generic.IDictionary<System.Globalization.CultureInfo, Meziantou.Framework.Scheduling.RecurrenceRuleHumanizer> SupportedHumanizers { get => throw null; }
-        public static string? GetText(Meziantou.Framework.Scheduling.RecurrenceRule rrule) => throw null;
-        public static string? GetText(Meziantou.Framework.Scheduling.RecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected abstract string GetText(Meziantou.Framework.Scheduling.SecondlyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
-        protected abstract string GetText(Meziantou.Framework.Scheduling.MinutelyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
-        protected abstract string GetText(Meziantou.Framework.Scheduling.HourlyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
-        protected abstract string GetText(Meziantou.Framework.Scheduling.DailyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
-        protected abstract string GetText(Meziantou.Framework.Scheduling.WeeklyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
-        protected abstract string GetText(Meziantou.Framework.Scheduling.MonthlyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
-        protected abstract string GetText(Meziantou.Framework.Scheduling.YearlyRecurrenceRule rrule, System.Globalization.CultureInfo cultureInfo);
-        protected static void ListToHumanText<T>(System.Text.StringBuilder sb, System.Globalization.CultureInfo cultureInfo, System.Collections.Generic.IList<T> list, string separator, string lastSeparator) { }
-        protected static string ListToHumanText<T>(System.Globalization.CultureInfo cultureInfo, System.Collections.Generic.IList<T> list, string separator, string lastSeparator) => throw null;
-        protected static bool IsWeekday(System.Collections.Generic.ICollection<System.DayOfWeek> daysOfWeek) => throw null;
-        protected static bool IsWeekendDay(System.Collections.Generic.ICollection<System.DayOfWeek> daysOfWeek) => throw null;
-        protected static bool IsFullWeek(System.Collections.Generic.ICollection<System.DayOfWeek> daysOfWeek) => throw null;
-    }
-
-    public sealed class RecurrenceRuleHumanizerEnglish : Meziantou.Framework.Scheduling.RecurrenceRuleHumanizer
-    {
-        protected override string GetText(Meziantou.Framework.Scheduling.DailyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.SecondlyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.MinutelyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.HourlyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.WeeklyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.MonthlyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.YearlyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-    }
-
     public static class RecurrenceRuleHumanizerExtensions
     {
         public static string? GetHumanText(this Meziantou.Framework.Scheduling.RecurrenceRule rrule) => throw null;
         public static string? GetHumanText(this Meziantou.Framework.Scheduling.RecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-    }
-
-    public sealed class RecurrenceRuleHumanizerFrench : Meziantou.Framework.Scheduling.RecurrenceRuleHumanizer
-    {
-        protected override string GetText(Meziantou.Framework.Scheduling.DailyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.SecondlyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.MinutelyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.HourlyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.WeeklyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.MonthlyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-        protected override string GetText(Meziantou.Framework.Scheduling.YearlyRecurrenceRule rrule, System.Globalization.CultureInfo? cultureInfo) => throw null;
-    }
-
-    public sealed class SecondlyRecurrenceRule : Meziantou.Framework.Scheduling.RecurrenceRule
-    {
-        public System.Collections.Generic.IList<System.DayOfWeek> ByWeekDays { get => throw null; set { } }
-        public string Text { get => throw null; }
-        protected override System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate) => throw null;
-    }
-
-    public sealed class WeeklyRecurrenceRule : Meziantou.Framework.Scheduling.RecurrenceRule
-    {
-        public System.Collections.Generic.IList<System.DayOfWeek> ByWeekDays { get => throw null; set { } }
-        public string Text { get => throw null; }
-        protected override System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate) => throw null;
-    }
-
-    public sealed class YearlyRecurrenceRule : Meziantou.Framework.Scheduling.RecurrenceRule
-    {
-        public System.Collections.Generic.IList<int>? ByMonthDays { get => throw null; set { } }
-        public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.ByDay>? ByWeekDays { get => throw null; set { } }
-        public System.Collections.Generic.IList<Meziantou.Framework.Scheduling.Month>? ByMonths { get => throw null; set { } }
-        public System.Collections.Generic.IList<int>? ByYearDays { get => throw null; set { } }
-        public string Text { get => throw null; }
-        protected override System.Collections.Generic.IEnumerable<System.DateTime> GetNextOccurrencesInternal(System.DateTime startDate) => throw null;
     }
 }

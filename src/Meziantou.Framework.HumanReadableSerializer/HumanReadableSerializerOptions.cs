@@ -495,18 +495,14 @@ public sealed record HumanReadableSerializerOptions
             new ComplexConverter(),
             new ConstructorInfoConverter(),
             new CultureInfoConverter(),
-#if NET6_0_OR_GREATER
             new DateOnlyConverter(),
-#endif
             new DateTimeConverter(),
             new DateTimeOffsetConverter(),
             new DBNullConverter(),
             new DecimalConverter(),
             new DoubleConverter(),
             new ExpressionConverter(),
-#if NET5_0_OR_GREATER
             new HalfConverter(),
-#endif
             new HttpContentConverter(),
             new HttpMethodConverter(),
             new HttpHeadersConverter(),
@@ -514,14 +510,10 @@ public sealed record HumanReadableSerializerOptions
             new Int16Converter(),
             new Int32Converter(),
             new Int64Converter(),
-#if NET7_0_OR_GREATER
             new Int128Converter(),
-#endif
             new IntPtrConverter(),
             new IPAddressConverter(),
-#if NET8_0_OR_GREATER
             new IPNetworkConverter(),
-#endif
             new FieldInfoConverter(),
             new GuidConverter(),
             new MediaTypeHeaderValueConverter(),
@@ -540,16 +532,12 @@ public sealed record HumanReadableSerializerOptions
             new StringWriterConverter(),
             new SystemTypeConverter(),
             new TargetInvocationExceptionConverter(),
-#if NET6_0_OR_GREATER
             new TimeOnlyConverter(),
-#endif
             new TimeSpanConverter(),
             new UInt16Converter(),
             new UInt32Converter(),
             new UInt64Converter(),
-#if NET7_0_OR_GREATER
             new UInt128Converter(),
-#endif
             new UIntPtrConverter(),
             new UriConverter(),
             new VersionConverter(),

@@ -88,7 +88,6 @@ public sealed class QueryBuilderTests
         Assert.False(query.Evaluate(new()));
     }
 
-#if NET7_0_OR_GREATER
     [Fact]
     public void FieldEquals_Int128()
     {
@@ -108,7 +107,6 @@ public sealed class QueryBuilderTests
         Assert.True(query.Evaluate(new() { UInt128Value = 10 }));
         Assert.False(query.Evaluate(new()));
     }
-#endif
 
     [Fact]
     public void FieldEquals_BigInteger()
@@ -845,10 +843,8 @@ public sealed class QueryBuilderTests
         public uint UInt32Value { get; set; }
         public long Int64Value { get; set; }
         public ulong UInt64Value { get; set; }
-#if NET7_0_OR_GREATER
         public Int128 Int128Value { get; set; }
         public UInt128 UInt128Value { get; set; }
-#endif
         public BigInteger BigIntegerValue { get; set; }
         public Half HalfValue { get; set; }
         public float SingleValue { get; set; }

@@ -200,9 +200,7 @@ public sealed class ExpressionQueryBuilder<T>
     {
         return typeof(TValue) == typeof(sbyte) || typeof(TValue) == typeof(short) || typeof(TValue) == typeof(int) || typeof(TValue) == typeof(long) ||
                typeof(TValue) == typeof(byte) || typeof(TValue) == typeof(ushort) || typeof(TValue) == typeof(uint) || typeof(TValue) == typeof(ulong) ||
-#if NET7_0_OR_GREATER
                typeof(TValue) == typeof(Int128) || typeof(TValue) == typeof(UInt128) ||
-#endif
                typeof(TValue) == typeof(float) || typeof(TValue) == typeof(double) || typeof(TValue) == typeof(decimal) ||
                typeof(TValue) == typeof(DateTime) || typeof(TValue) == typeof(DateTimeOffset) || typeof(TValue) == typeof(DateOnly) || typeof(TValue) == typeof(TimeOnly);
     }

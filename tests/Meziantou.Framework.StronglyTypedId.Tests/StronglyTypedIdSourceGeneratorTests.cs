@@ -214,7 +214,6 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         await TestGeneratedAssembly(sourceCode, type => { });
     }
 
-#if NET7_0_OR_GREATER
     [Fact]
     public async Task GenericAttribute()
     {
@@ -236,7 +235,6 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
         await TestGeneratedAssembly(sourceCode, type => { });
     }
-#endif
 
     [Fact]
     public async Task GenerateStruct_Guid_New()
@@ -596,7 +594,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
                     }
                 }
             }
-#if NET7_0_OR_GREATER
+
             // Add specific test cases
             foreach (var declaration in declarations)
             {
@@ -614,7 +612,6 @@ public sealed class StronglyTypedIdSourceGeneratorTests
                     ]);
                 }
             }
-#endif
         }
     }
 

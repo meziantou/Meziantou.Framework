@@ -22,17 +22,7 @@ namespace Meziantou.Framework;
 /// </code>
 /// </example>
 [StructLayout(LayoutKind.Auto)]
-public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, IComparable<ByteSize>, IFormattable
-#if NET6_0_OR_GREATER
-    , ISpanFormattable
-#endif
-#if NET7_0_OR_GREATER
-    , ISpanParsable<ByteSize>
-#endif
-#if NET8_0_OR_GREATER
-    , IUtf8SpanFormattable
-    , IUtf8SpanParsable<ByteSize>
-#endif
+public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, IComparable<ByteSize>, IFormattable, ISpanFormattable, ISpanParsable<ByteSize>, IUtf8SpanFormattable, IUtf8SpanParsable<ByteSize>
 {
     /// <summary>Initializes a new instance of the <see cref="ByteSize"/> struct with the specified byte value.</summary>
     /// <param name="length">The size in bytes.</param>
@@ -170,7 +160,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return GetValue(unit).ToString(numberFormat, formatProvider) + UnitToString(unit);
     }
 
-#if NET6_0_OR_GREATER
     /// <summary>Tries to format the value into the provided span of characters.</summary>
     /// <param name="destination">The span in which to write this instance's value formatted as a span of characters.</param>
     /// <param name="charsWritten">When this method returns, contains the number of characters that were written in destination.</param>
@@ -251,7 +240,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         charsWritten = numberCharsWritten + unitStr.Length;
         return true;
     }
-#endif
 
     private ByteSizeUnit FindBestUnit()
     {
@@ -499,18 +487,13 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Convert number
-#if NET7_0_OR_GREATER
-        var valueToParse = s;
-#else
-        var valueToParse = s.ToString();
-#endif
-        if (long.TryParse(valueToParse, NumberStyles.Integer, provider, out var resultLong))
+        if (long.TryParse(s, NumberStyles.Integer, provider, out var resultLong))
         {
             result = From(resultLong, unit);
             return true;
         }
 
-        if (double.TryParse(valueToParse, NumberStyles.Float, provider, out var resultDouble))
+        if (double.TryParse(s, NumberStyles.Float, provider, out var resultDouble))
         {
             result = From(resultDouble, unit);
             return true;
@@ -520,7 +503,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return false;
     }
 
-#if NET8_0_OR_GREATER
     /// <summary>Tries to format the value as UTF-8 into the provided span of bytes.</summary>
     /// <param name="utf8Destination">The span in which to write this instance's value formatted as UTF-8.</param>
     /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in utf8Destination.</param>
@@ -734,7 +716,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         result = ByteSizeUnit.Byte;
         return true;
     }
-#endif
 
     /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
     /// <param name="value">The numeric value.</param>

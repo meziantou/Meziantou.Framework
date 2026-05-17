@@ -155,17 +155,13 @@ public static partial class EnumerableExtensions
         return true;
     }
 
-#if NET7_0_OR_GREATER
     [Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
-#endif
     public static IEnumerable<T> Sort<T>(this IEnumerable<T> list)
     {
         return Sort(list, comparer: null);
     }
 
-#if NET7_0_OR_GREATER
     [Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
-#endif
     public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T>? comparer)
     {
         ArgumentNullException.ThrowIfNull(list);

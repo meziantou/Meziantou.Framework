@@ -901,11 +901,7 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
 
     private static bool TryParseInt(ReadOnlySpan<char> value, out int result)
     {
-#if NET7_0_OR_GREATER
         return int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out result);
-#else
-        return int.TryParse(value.ToString(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out result);
-#endif
     }
 
     private static SpaceEnumerable SplitBySpace(ReadOnlySpan<char> value) => new(value);

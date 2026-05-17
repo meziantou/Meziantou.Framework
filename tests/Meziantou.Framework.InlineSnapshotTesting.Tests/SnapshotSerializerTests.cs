@@ -200,7 +200,6 @@ public sealed class SnapshotSerializerTests
             """);
     }
 
-#if NET5_0_OR_GREATER
     [Fact]
     public void HumanReadable_HttpResponseMessage_TrailingHeaders()
     {
@@ -229,7 +228,6 @@ public sealed class SnapshotSerializerTests
               Value: foo
             """);
     }
-#endif
 
     private sealed class Sample
     {

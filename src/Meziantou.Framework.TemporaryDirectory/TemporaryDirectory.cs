@@ -127,7 +127,6 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         return path;
     }
 
-#if NETCOREAPP2_0_OR_GREATER
     /// <summary>Asynchronously creates a text file with the specified content at the relative path.</summary>
     /// <param name="relativePath">The relative path for the file (can include subdirectories).</param>
     /// <param name="content">The text content to write to the file.</param>
@@ -147,7 +146,6 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         await File.WriteAllTextAsync(path, content, cancellationToken).ConfigureAwait(false);
         return path;
     }
-#endif
 
     /// <summary>Creates a directory at the specified relative path.</summary>
     /// <param name="relativePath">The relative path for the directory (can include subdirectories).</param>

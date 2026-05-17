@@ -40,9 +40,7 @@ public static class HumanReadableHttpExtensions
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Method), new HumanReadablePropertyOrderAttribute(0));
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.RequestUri), new HumanReadablePropertyOrderAttribute(1));
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Version), new HumanReadablePropertyOrderAttribute(2));
-#if NET5_0_OR_GREATER
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.VersionPolicy), new HumanReadablePropertyOrderAttribute(3));
-#endif
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Headers), new HumanReadablePropertyOrderAttribute(4));
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Content), new HumanReadablePropertyOrderAttribute(5));
 
@@ -63,9 +61,7 @@ public static class HumanReadableHttpExtensions
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Properties), new HumanReadableIgnoreAttribute() { Condition = HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection });
 #pragma warning restore CS0618
 
-#if NET5_0_OR_GREATER
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Options), new HumanReadableIgnoreAttribute() { Condition = HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection });
-#endif
     }
 
     private static void ConfigureHttpResponseMessage(HumanReadableSerializerOptions options, HumanReadableHttpResponseMessageOptions? responseOptions)
@@ -93,13 +89,11 @@ public static class HumanReadableHttpExtensions
             CustomCondition = data => FilterHeaders(data.Value, responseOptions?.ExcludedHeaderNames),
         });
 
-#if NETCOREAPP3_1_OR_GREATER
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.TrailingHeaders), new HumanReadableIgnoreAttribute()
         {
             Condition = HumanReadableIgnoreCondition.Custom,
             CustomCondition = data => FilterHeaders(data.Value, responseOptions?.ExcludedHeaderNames),
         });
-#endif
 
         if (responseOptions is not null && responseOptions.OmitProtocolVersion)
         {
@@ -111,9 +105,7 @@ public static class HumanReadableHttpExtensions
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.StatusCode), new HumanReadablePropertyOrderAttribute(0));
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadablePropertyOrderAttribute(1));
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Headers), new HumanReadablePropertyOrderAttribute(2));
-#if NETCOREAPP3_1_OR_GREATER
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.TrailingHeaders), new HumanReadablePropertyOrderAttribute(3));
-#endif
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Content), new HumanReadablePropertyOrderAttribute(4));
 
     }

@@ -1,4 +1,3 @@
-#if NET7_0_OR_GREATER
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class UInt128Converter : HumanReadableConverter<UInt128>
@@ -8,4 +7,3 @@ internal sealed class UInt128Converter : HumanReadableConverter<UInt128>
         writer.WriteValue(value.ToString(CultureInfo.InvariantCulture));
     }
 }
-#endif

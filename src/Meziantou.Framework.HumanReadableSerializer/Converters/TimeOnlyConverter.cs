@@ -1,4 +1,3 @@
-#if NET6_0_OR_GREATER
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class TimeOnlyConverter : HumanReadableConverter<TimeOnly>
@@ -8,4 +7,3 @@ internal sealed class TimeOnlyConverter : HumanReadableConverter<TimeOnly>
         writer.WriteValue(value.ToString("O", CultureInfo.InvariantCulture));
     }
 }
-#endif

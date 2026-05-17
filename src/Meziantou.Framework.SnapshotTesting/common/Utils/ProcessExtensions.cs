@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Microsoft.Win32.SafeHandles;
+using Windows.Win32;
+using Windows.Win32.System.Diagnostics.ToolHelp;
 
 #if MEZIANTOU_INLINE_SNAPSHOT_TESTING
 namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
@@ -115,84 +116,23 @@ internal static partial class ProcessExtensions
     [SupportedOSPlatform("windows")]
     public static IEnumerable<ProcessEntry> GetProcesses()
     {
-        if (!OperatingSystem.IsWindows())
+        if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
             throw new PlatformNotSupportedException("Only supported on Windows");
 
-        using var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);
-        var entry = new ProcessEntry32
+        using var snapShotHandle = PInvoke.CreateToolhelp32Snapshot_SafeHandle(CREATE_TOOLHELP_SNAPSHOT_FLAGS.TH32CS_SNAPPROCESS, 0);
+        if (snapShotHandle.IsInvalid)
+            yield break;
+
+        var entry = new PROCESSENTRY32W
         {
-            dwSize = (uint)Marshal.SizeOf<ProcessEntry32>(),
+            dwSize = (uint)Marshal.SizeOf<PROCESSENTRY32W>(),
         };
 
-        var result = Process32First(snapShotHandle, ref entry);
-        while (result != 0)
+        var result = PInvoke.Process32FirstW(snapShotHandle, ref entry);
+        while (result)
         {
-            yield return new ProcessEntry(entry.th32ProcessID, entry.th32ParentProcessID);
-            result = Process32Next(snapShotHandle, ref entry);
-        }
-    }
-
-    [LibraryImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial bool CloseHandle(IntPtr hObject);
-
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern int Process32First(SnapshotSafeHandle handle, ref ProcessEntry32 entry);
-
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern int Process32Next(SnapshotSafeHandle handle, ref ProcessEntry32 entry);
-
-    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms682489.aspx
-    [LibraryImport("kernel32.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial SnapshotSafeHandle CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
-
-    private const int MAX_PATH = 260;
-
-    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms684839.aspx
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    internal struct ProcessEntry32
-    {
-#pragma warning disable IDE1006 // Naming Styles
-        public uint dwSize;
-        public uint cntUsage;
-        public int th32ProcessID;
-        public IntPtr th32DefaultHeapID;
-        public uint th32ModuleID;
-        public uint cntThreads;
-        public int th32ParentProcessID;
-        public int pcPriClassBase;
-        public uint dwFlags;
-
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH)]
-        public string szExeFile;
-#pragma warning restore IDE1006 // Naming Styles
-    }
-
-    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms682489.aspx
-    private enum SnapshotFlags : uint
-    {
-        TH32CS_SNAPHEAPLIST = 0x00000001,
-        TH32CS_SNAPPROCESS = 0x00000002,
-        TH32CS_SNAPTHREAD = 0x00000004,
-        TH32CS_SNAPMODULE = 0x00000008,
-        TH32CS_SNAPMODULE32 = 0x00000010,
-        TH32CS_INHERIT = 0x80000000,
-    }
-
-    private sealed class SnapshotSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
-    {
-        public SnapshotSafeHandle()
-            : base(ownsHandle: true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return CloseHandle(handle);
+            yield return new ProcessEntry(unchecked((int)entry.th32ProcessID), unchecked((int)entry.th32ParentProcessID));
+            result = PInvoke.Process32NextW(snapShotHandle, ref entry);
         }
     }
 }

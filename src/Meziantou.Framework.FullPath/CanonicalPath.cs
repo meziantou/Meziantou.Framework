@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Meziantou.Framework;
 
-internal static class CanonicalPath
+internal static partial class CanonicalPath
 {
     public static bool TryGetCanonicalPath(string path, [NotNullWhen(true)] out string? canonicalPath)
     {
@@ -69,7 +69,7 @@ internal static class CanonicalPath
         }
     }
 
-    private static class UnixCanonicalPath
+    private static partial class UnixCanonicalPath
     {
         public static bool TryGetCanonicalPath(string path, [NotNullWhen(true)] out string? canonicalPath)
         {
@@ -92,15 +92,15 @@ internal static class CanonicalPath
             }
         }
 
-        private static class Interop
+        private static partial class Interop
         {
-            [DllImport("libc", EntryPoint = "realpath", SetLastError = true, ExactSpelling = true)]
+            [LibraryImport("libc", EntryPoint = "realpath", SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            private static extern IntPtr RealPathCore(byte[] path, IntPtr resolvedPath);
+            private static partial IntPtr RealPathCore(byte[] path, IntPtr resolvedPath);
 
-            [DllImport("libc", EntryPoint = "free", SetLastError = false, ExactSpelling = true)]
+            [LibraryImport("libc", EntryPoint = "free", SetLastError = false)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            private static extern void FreeCore(IntPtr pointer);
+            private static partial void FreeCore(IntPtr pointer);
 
             internal static IntPtr RealPath(byte[] path, IntPtr resolvedPath)
             {

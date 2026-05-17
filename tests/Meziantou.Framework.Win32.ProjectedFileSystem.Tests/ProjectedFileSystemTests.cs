@@ -269,7 +269,7 @@ public sealed class ProjectedFileSystemTests
     }
 
     [ProjectedFileSystemFact]
-    public void AsyncCallbackCompletion()
+    public void AsyncCallbacksAllMethods()
     {
         var guid = Guid.NewGuid();
         var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
@@ -279,12 +279,25 @@ public sealed class ProjectedFileSystemTests
             using var vfs = new AsyncSampleVirtualFileSystem(fullPath);
             vfs.Start(options: null);
 
-            var files = Directory.GetFiles(fullPath);
-            Assert.Single(files);
-            Assert.Equal("async-file.bin", Path.GetFileName(files[0]));
+            var entries = Directory.GetFileSystemEntries(fullPath).Select(path => Path.GetFileName(path)!).OrderBy(name => name, StringComparer.Ordinal).ToArray();
+            Assert.Equal(["async-dir", "async-file.bin"], entries);
 
             var content = File.ReadAllBytes(Path.Combine(fullPath, "async-file.bin"));
             Assert.Equal([10, 20, 30, 40], content);
+
+            var nestedContent = File.ReadAllBytes(Path.Combine(fullPath, "async-dir", "nested-async.txt"));
+            Assert.Equal([50, 60, 70], nestedContent);
+
+            var missingFile = new FileInfo(Path.Combine(fullPath, "missing.txt"));
+            Assert.False(missingFile.Exists);
+            Assert.Throws<FileNotFoundException>(() => missingFile.Length);
+
+            Assert.True(vfs.GetEntriesAsyncCalls > 0);
+            Assert.Equal(vfs.GetEntriesAsyncCalls, vfs.GetEntriesAsyncContinuations);
+            Assert.True(vfs.GetEntryAsyncCalls > 0);
+            Assert.Equal(vfs.GetEntryAsyncCalls, vfs.GetEntryAsyncContinuations);
+            Assert.True(vfs.OpenReadAsyncCalls > 0);
+            Assert.Equal(vfs.OpenReadAsyncCalls, vfs.OpenReadAsyncContinuations);
         }
         finally
         {

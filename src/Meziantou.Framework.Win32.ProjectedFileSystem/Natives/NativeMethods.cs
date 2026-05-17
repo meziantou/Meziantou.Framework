@@ -70,9 +70,9 @@ internal static partial class NativeMethods
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial HResult PrjCompleteCommand(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, in PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS extendedParameters);
 
-    [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode, EntryPoint = nameof(PrjCompleteCommand))]
+    [LibraryImport("ProjectedFSLib.dll", EntryPoint = nameof(PrjCompleteCommand))]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern HResult PrjCompleteCommandWithExtendedParameters(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, in PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS extendedParameters);
+    internal static partial HResult PrjCompleteCommandWithExtendedParameters(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, in PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS extendedParameters);
 
     [StructLayout(LayoutKind.Explicit)]
     internal struct PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS

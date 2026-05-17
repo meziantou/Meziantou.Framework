@@ -11,13 +11,15 @@ internal sealed class LargeFileVirtualFileSystem : ProjectedFileSystemBase
 
     public LargeFileVirtualFileSystem(string rootFolder) : base(rootFolder) { }
 
-    protected override IEnumerable<ProjectedFileSystemEntry> GetEntries(string path)
+    protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
     {
         if (AreFileNamesEqual(path, ""))
-            yield return ProjectedFileSystemEntry.File("largefile.bin", FileSize);
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([ProjectedFileSystemEntry.File("largefile.bin", FileSize)]);
+
+        return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
     }
 
-    protected override Stream? OpenRead(string path)
+    protected override ValueTask<Stream?> OpenReadAsync(string path)
     {
         if (AreFileNamesEqual(path, "largefile.bin"))
         {
@@ -26,8 +28,9 @@ internal sealed class LargeFileVirtualFileSystem : ProjectedFileSystemBase
             var data = new byte[FileSize];
             for (var i = 0; i < FileSize; i++)
                 data[i] = (byte)(i % 256);
-            return new MemoryStream(data);
+            return ValueTask.FromResult<Stream?>(new MemoryStream(data));
         }
-        return null;
+
+        return ValueTask.FromResult<Stream?>(null);
     }
 }

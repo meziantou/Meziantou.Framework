@@ -10,7 +10,7 @@ internal sealed class NestedVirtualFileSystem : ProjectedFileSystemBase
 {
     public NestedVirtualFileSystem(string rootFolder) : base(rootFolder) { }
 
-    protected override IEnumerable<ProjectedFileSystemEntry> GetEntries(string path)
+    protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
     {
         // Structure:
         // /
@@ -18,17 +18,22 @@ internal sealed class NestedVirtualFileSystem : ProjectedFileSystemBase
         //     └── Bar/
         //         └── Baz.txt
         if (AreFileNamesEqual(path, ""))
-            yield return ProjectedFileSystemEntry.Directory("Foo");
-        else if (AreFileNamesEqual(path, "Foo"))
-            yield return ProjectedFileSystemEntry.Directory("Bar");
-        else if (AreFileNamesEqual(path, @"Foo\Bar"))
-            yield return ProjectedFileSystemEntry.File("Baz.txt", 18);
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([ProjectedFileSystemEntry.Directory("Foo")]);
+
+        if (AreFileNamesEqual(path, "Foo"))
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([ProjectedFileSystemEntry.Directory("Bar")]);
+
+        if (AreFileNamesEqual(path, @"Foo\Bar"))
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([ProjectedFileSystemEntry.File("Baz.txt", 18)]);
+
+        return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
     }
 
-    protected override Stream? OpenRead(string path)
+    protected override ValueTask<Stream?> OpenReadAsync(string path)
     {
         if (AreFileNamesEqual(path, @"Foo\Bar\Baz.txt"))
-            return new MemoryStream(Encoding.UTF8.GetBytes("Hello from Foo Bar"));
-        return null;
+            return ValueTask.FromResult<Stream?>(new MemoryStream(Encoding.UTF8.GetBytes("Hello from Foo Bar")));
+
+        return ValueTask.FromResult<Stream?>(null);
     }
 }

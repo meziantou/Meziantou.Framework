@@ -12,13 +12,15 @@ internal sealed class NonSeekableStreamVirtualFileSystem : ProjectedFileSystemBa
 
     public NonSeekableStreamVirtualFileSystem(string rootFolder) : base(rootFolder) { }
 
-    protected override IEnumerable<ProjectedFileSystemEntry> GetEntries(string path)
+    protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
     {
         if (AreFileNamesEqual(path, ""))
-            yield return ProjectedFileSystemEntry.File("nonseekabledatafile.bin", FileSize);
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([ProjectedFileSystemEntry.File("nonseekabledatafile.bin", FileSize)]);
+
+        return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
     }
 
-    protected override Stream? OpenRead(string path)
+    protected override ValueTask<Stream?> OpenReadAsync(string path)
     {
         if (AreFileNamesEqual(path, "nonseekabledatafile.bin"))
         {
@@ -26,9 +28,10 @@ internal sealed class NonSeekableStreamVirtualFileSystem : ProjectedFileSystemBa
             var data = new byte[FileSize];
             for (var i = 0; i < FileSize; i++)
                 data[i] = (byte)(i % 256);
-            return new NonSeekableStream(new MemoryStream(data));
+            return ValueTask.FromResult<Stream?>(new NonSeekableStream(new MemoryStream(data)));
         }
-        return null;
+
+        return ValueTask.FromResult<Stream?>(null);
     }
 
     /// <summary>

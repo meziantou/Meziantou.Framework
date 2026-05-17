@@ -267,4 +267,28 @@ public sealed class ProjectedFileSystemTests
             try { Directory.Delete(fullPath, recursive: true); } catch { }
         }
     }
+
+    [ProjectedFileSystemFact]
+    public void AsyncCallbackCompletion()
+    {
+        var guid = Guid.NewGuid();
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(fullPath);
+            using var vfs = new AsyncSampleVirtualFileSystem(fullPath);
+            vfs.Start(options: null);
+
+            var files = Directory.GetFiles(fullPath);
+            Assert.Single(files);
+            Assert.Equal("async-file.bin", Path.GetFileName(files[0]));
+
+            var content = File.ReadAllBytes(Path.Combine(fullPath, "async-file.bin"));
+            Assert.Equal([10, 20, 30, 40], content);
+        }
+        finally
+        {
+            try { Directory.Delete(fullPath, recursive: true); } catch { }
+        }
+    }
 }

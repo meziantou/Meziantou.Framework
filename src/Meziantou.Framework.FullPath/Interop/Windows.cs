@@ -36,9 +36,9 @@ namespace Meziantou.Framework
             private const string Kernel32Name = "kernel32.dll";
 
             /// <summary>WARNING: This method does not implicitly handle long paths. Use CreateFile.</summary>
-            [DllImport(Kernel32Name, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
+            [LibraryImport(Kernel32Name, EntryPoint = "CreateFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            private static extern unsafe SafeFileHandle CreateFilePrivate(
+            private static unsafe partial SafeFileHandle CreateFilePrivate(
                 string lpFileName,
                 int dwDesiredAccess,
                 FileShare dwShareMode,
@@ -88,14 +88,15 @@ namespace Meziantou.Framework
                 internal const int FILE_LIST_DIRECTORY = 0x0001;
             }
 
-            [DllImport(Kernel32Name, SetLastError = true)]
+            [LibraryImport(Kernel32Name, SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            internal static extern bool FindClose(IntPtr hFindFile);
+            [return: MarshalAs(UnmanagedType.Bool)]
+            internal static partial bool FindClose(IntPtr hFindFile);
 
             /// <summary>WARNING: This method does not implicitly handle long paths. Use FindFirstFile.</summary>
-            [DllImport(Kernel32Name, EntryPoint = "FindFirstFileExW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
+            [LibraryImport(Kernel32Name, EntryPoint = "FindFirstFileExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            private static extern SafeFindHandle FindFirstFileExPrivate(string lpFileName, FINDEX_INFO_LEVELS fInfoLevelId, ref WIN32_FIND_DATA lpFindFileData, FINDEX_SEARCH_OPS fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
+            private static partial SafeFindHandle FindFirstFileExPrivate(string lpFileName, FINDEX_INFO_LEVELS fInfoLevelId, ref WIN32_FIND_DATA lpFindFileData, FINDEX_SEARCH_OPS fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
 
             internal static SafeFindHandle FindFirstFile(string fileName, ref WIN32_FIND_DATA data)
             {
@@ -138,9 +139,10 @@ namespace Meziantou.Framework
                 public uint Flags;
             }
 
-            [DllImport(Kernel32Name, CharSet = CharSet.Unicode, SetLastError = true)]
+            [LibraryImport(Kernel32Name, SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            internal static extern bool DeviceIoControl
+            [return: MarshalAs(UnmanagedType.Bool)]
+            internal static partial bool DeviceIoControl
             (
                 SafeFileHandle fileHandle,
                 uint ioControlCode,

@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives;
 
-internal static class NativeMethods
+internal static partial class NativeMethods
 {
 #pragma warning disable IDE1006 // Naming Styles
     internal const int S_OK = 0x00000000;
@@ -10,9 +10,9 @@ internal static class NativeMethods
     internal const int FILE_NOT_FOUND = unchecked((int)0x80070002);
 #pragma warning restore IDE1006 // Naming Styles
 
-    [DllImport("user32")]
+    [LibraryImport("user32")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern IntPtr GetActiveWindow();
+    internal static partial IntPtr GetActiveWindow();
 
     [DllImport("shell32")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

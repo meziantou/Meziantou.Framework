@@ -3,7 +3,7 @@ using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
 namespace Meziantou.Framework.Win32.Natives;
 
-internal static class NativeMethods
+internal static partial class NativeMethods
 {
     /// <summary>
     /// Registers resources to a Restart Manager session.
@@ -46,17 +46,17 @@ internal static class NativeMethods
     /// The string must be allocated before calling the RmStartSession function.
     /// </param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
-    [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+    [LibraryImport("rstrtmgr.dll", StringMarshalling = StringMarshalling.Utf16)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static extern RmResult RmStartSession(out int pSessionHandle, int dwSessionFlags, string strSessionKey);
+    public static partial RmResult RmStartSession(out int pSessionHandle, int dwSessionFlags, string strSessionKey);
 
     /// <summary>Joins a secondary installer to an existing Restart Manager session. This function must be called with a session key that can only be obtained from the primary installer that started the session. A valid session key is required to use any of the Restart Manager functions. After a secondary installer joins a session, it can call the RmRegisterResources function to register resources.</summary>
     /// <param name="pSessionHandle">A pointer to the handle of a Restart Manager session.</param>
     /// <param name="strSessionKey">A null-terminated string that contains the session key of an existing session.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
-    [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+    [LibraryImport("rstrtmgr.dll", StringMarshalling = StringMarshalling.Utf16)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static extern RmResult RmJoinSession(out int pSessionHandle, string strSessionKey);
+    public static partial RmResult RmJoinSession(out int pSessionHandle, string strSessionKey);
 
     /// <summary>
     /// Ends the Restart Manager session.
@@ -66,9 +66,9 @@ internal static class NativeMethods
     /// </summary>
     /// <param name="dwSessionHandle">A handle to an existing Restart Manager session.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
-    [DllImport("rstrtmgr.dll")]
+    [LibraryImport("rstrtmgr.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static extern RmResult RmEndSession(int dwSessionHandle);
+    public static partial RmResult RmEndSession(int dwSessionHandle);
 
     /// <summary>Gets a list of all applications and services that are currently using resources that have been registered with the Restart Manager session.</summary>
     /// <param name="dwSessionHandle">A handle to an existing Restart Manager session.</param>
@@ -91,18 +91,18 @@ internal static class NativeMethods
     /// <param name="lActionFlags">One or more RM_SHUTDOWN_TYPE options that configure the shut down of components. The following values can be combined by an OR operator to specify that unresponsive applications and services are to be forced to shut down if, and only if, all applications have been registered for restart.</param>
     /// <param name="fnStatus">A pointer to an RM_WRITE_STATUS_CALLBACK function that is used to communicate detailed status while this function is executing. If NULL, no status is provided.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
-    [DllImport("rstrtmgr.dll")]
+    [LibraryImport("rstrtmgr.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static extern RmResult RmShutdown(int pSessionHandle, RestartManagerShutdownType lActionFlags, RestartManagerWriteStatusCallback? fnStatus);
+    public static partial RmResult RmShutdown(int pSessionHandle, RestartManagerShutdownType lActionFlags, RestartManagerWriteStatusCallback? fnStatus);
 
     /// <summary>Restarts applications and services that have been shut down by the RmShutdown function and that have been registered to be restarted using the RegisterApplicationRestart function. This function can only be called by the primary installer that called the RmStartSession function to start the Restart Manager session.</summary>
     /// <param name="pSessionHandle">A handle to the existing Restart Manager session.</param>
     /// <param name="dwRestartFlags">Reserved. This parameter should be 0.</param>
     /// <param name="fnStatus">A pointer to a status message callback function that is used to communicate status while the RmRestart function is running. If NULL, no status is provided.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
-    [DllImport("rstrtmgr.dll")]
+    [LibraryImport("rstrtmgr.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static extern RmResult RmRestart(int pSessionHandle, int dwRestartFlags, RestartManagerWriteStatusCallback? fnStatus);
+    public static partial RmResult RmRestart(int pSessionHandle, int dwRestartFlags, RestartManagerWriteStatusCallback? fnStatus);
 
     [DllImport("kernel32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

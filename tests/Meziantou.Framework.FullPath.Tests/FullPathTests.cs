@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
-public sealed class FullPathTests
+public sealed partial class FullPathTests
 {
     [Fact]
     public void IsEmpty()
@@ -574,15 +574,15 @@ public sealed class FullPathTests
         return CreateUnixSymbolicLinkCore(utf8TargetPath, utf8LinkPath);
     }
 
-    [DllImport("libc", EntryPoint = "symlink", SetLastError = true, ExactSpelling = true)]
+    [LibraryImport("libc", EntryPoint = "symlink", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static extern int CreateUnixSymbolicLinkCore(byte[] targetPath, byte[] linkPath);
+    private static partial int CreateUnixSymbolicLinkCore(byte[] targetPath, byte[] linkPath);
 #endif
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [LibraryImport("kernel32.dll", EntryPoint = "CreateSymbolicLinkW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.I1)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, SymbolicLink dwFlags);
+    private static partial bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, SymbolicLink dwFlags);
 
     private enum SymbolicLink
     {

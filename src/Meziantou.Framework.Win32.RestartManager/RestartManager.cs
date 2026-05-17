@@ -1,7 +1,12 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Meziantou.Framework.Win32.Natives;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.System.RestartManager;
+
+#pragma warning disable CA1416 // RestartManager is Windows-only
 
 namespace Meziantou.Framework.Win32;
 
@@ -34,12 +39,12 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows")]
 public sealed class RestartManager : IDisposable
 {
-    private int SessionHandle { get; }
+    private uint SessionHandle { get; }
 
     /// <summary>Gets the session key for this Restart Manager session.</summary>
     public string SessionKey { get; }
 
-    private RestartManager(int sessionHandle, string sessionKey)
+    private RestartManager(uint sessionHandle, string sessionKey)
     {
         SessionHandle = sessionHandle;
         SessionKey = sessionKey;
@@ -50,11 +55,13 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the session creation fails.</exception>
     public static RestartManager CreateSession()
     {
-        var sessionKey = Guid.NewGuid().ToString();
-        var result = NativeMethods.RmStartSession(out var handle, 0, strSessionKey: sessionKey);
-        if (result != RmResult.ERROR_SUCCESS)
+        Span<char> sessionKeyBuffer = stackalloc char[(int)PInvoke.CCH_RM_SESSION_KEY + 1];
+        var result = StartSession(out var handle, sessionKeyBuffer);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
 
+        var sessionKeyLength = sessionKeyBuffer.IndexOf('\0');
+        var sessionKey = sessionKeyLength >= 0 ? new string(sessionKeyBuffer[..sessionKeyLength]) : new string(sessionKeyBuffer);
         return new RestartManager(handle, sessionKey);
     }
 
@@ -64,8 +71,8 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when joining the session fails.</exception>
     public static RestartManager JoinSession(string sessionKey)
     {
-        var result = NativeMethods.RmJoinSession(out var handle, sessionKey);
-        if (result != RmResult.ERROR_SUCCESS)
+        var result = PInvoke.RmJoinSession(out var handle, sessionKey);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
 
         return new RestartManager(handle, sessionKey);
@@ -80,8 +87,8 @@ public sealed class RestartManager : IDisposable
         ArgumentNullException.ThrowIfNull(path);
 
         string[] resources = [path];
-        var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)resources.Length, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
-        if (result != RmResult.ERROR_SUCCESS)
+        var result = RegisterResources(SessionHandle, resources);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
 
@@ -93,8 +100,8 @@ public sealed class RestartManager : IDisposable
     {
         ArgumentNullException.ThrowIfNull(paths);
 
-        var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, rgApplications: null, 0, rgsServiceNames: null);
-        if (result != RmResult.ERROR_SUCCESS)
+        var result = RegisterResources(SessionHandle, paths);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
     }
 
@@ -107,8 +114,8 @@ public sealed class RestartManager : IDisposable
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = NativeMethods.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
-            if (result is RmResult.ERROR_SUCCESS or RmResult.ERROR_MORE_DATA)
+            var result = PInvoke.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            if (result is WIN32_ERROR.ERROR_SUCCESS or WIN32_ERROR.ERROR_MORE_DATA)
             {
                 return arrayCount > 0;
             }
@@ -126,15 +133,15 @@ public sealed class RestartManager : IDisposable
         while (true)
         {
             var array = new RM_PROCESS_INFO[arraySize];
-            var result = NativeMethods.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
-            if (result == RmResult.ERROR_SUCCESS)
+            var result = PInvoke.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            if (result == WIN32_ERROR.ERROR_SUCCESS)
             {
                 var processes = new List<Process>((int)arrayCount);
                 for (var i = 0; i < arrayCount; i++)
                 {
                     try
                     {
-                        var process = Process.GetProcessById(array[i].Process.ProcessId);
+                        var process = Process.GetProcessById((int)array[i].Process.dwProcessId);
                         if (process is not null)
                             processes.Add(process);
                     }
@@ -145,7 +152,7 @@ public sealed class RestartManager : IDisposable
 
                 return processes;
             }
-            else if (result == RmResult.ERROR_MORE_DATA)
+            else if (result == WIN32_ERROR.ERROR_MORE_DATA)
             {
                 arraySize = arrayCount;
             }
@@ -170,8 +177,9 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
     {
-        var result = NativeMethods.RmShutdown(SessionHandle, action, statusCallback);
-        if (result != RmResult.ERROR_SUCCESS)
+        RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
+        var result = PInvoke.RmShutdown(SessionHandle, (uint)action, callback);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
     }
 
@@ -187,9 +195,50 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the restart operation fails.</exception>
     public void Restart(RestartManagerWriteStatusCallback? statusCallback)
     {
-        var result = NativeMethods.RmRestart(SessionHandle, 0, statusCallback);
-        if (result != RmResult.ERROR_SUCCESS)
+        RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
+        var result = PInvoke.RmRestart(SessionHandle, 0, callback);
+        if (result != WIN32_ERROR.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRestart failed ({result})");
+    }
+
+    private static unsafe WIN32_ERROR StartSession(out uint handle, Span<char> sessionKeyBuffer)
+    {
+        uint localHandle = 0;
+        fixed (char* sessionKeyBufferPtr = sessionKeyBuffer)
+        {
+            var result = PInvoke.RmStartSession(&localHandle, 0, new PWSTR(sessionKeyBufferPtr));
+            handle = localHandle;
+            return result;
+        }
+    }
+
+    private static unsafe WIN32_ERROR RegisterResources(uint sessionHandle, string[] paths)
+    {
+        if (paths.Length == 0)
+            return PInvoke.RmRegisterResources(sessionHandle, 0, (PCWSTR*)null, 0, (RM_UNIQUE_PROCESS*)null, 0, (PCWSTR*)null);
+
+        var handles = new GCHandle[paths.Length];
+        try
+        {
+            var pathPointers = stackalloc PCWSTR[paths.Length];
+            for (var i = 0; i < paths.Length; i++)
+            {
+                handles[i] = GCHandle.Alloc(paths[i], GCHandleType.Pinned);
+                pathPointers[i] = new PCWSTR((char*)handles[i].AddrOfPinnedObject());
+            }
+
+            return PInvoke.RmRegisterResources(sessionHandle, (uint)paths.Length, pathPointers, 0, (RM_UNIQUE_PROCESS*)null, 0, (PCWSTR*)null);
+        }
+        finally
+        {
+            foreach (var handle in handles)
+            {
+                if (handle.IsAllocated)
+                {
+                    handle.Free();
+                }
+            }
+        }
     }
 
     /// <summary>Ends the Restart Manager session and releases all resources.</summary>
@@ -199,8 +248,8 @@ public sealed class RestartManager : IDisposable
     {
         if (SessionHandle != 0)
         {
-            var result = NativeMethods.RmEndSession(SessionHandle);
-            if (result != RmResult.ERROR_SUCCESS)
+            var result = PInvoke.RmEndSession(SessionHandle);
+            if (result != WIN32_ERROR.ERROR_SUCCESS)
                 throw new Win32Exception((int)result, $"RmEndSession failed ({result})");
         }
     }
@@ -227,3 +276,5 @@ public sealed class RestartManager : IDisposable
         return restartManager.GetProcessesLockingResources();
     }
 }
+
+#pragma warning restore CA1416

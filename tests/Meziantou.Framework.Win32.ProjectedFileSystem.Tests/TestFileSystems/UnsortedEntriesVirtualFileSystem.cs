@@ -9,18 +9,23 @@ internal sealed class UnsortedEntriesVirtualFileSystem : ProjectedFileSystemBase
 {
     public UnsortedEntriesVirtualFileSystem(string rootFolder) : base(rootFolder) { }
 
-    protected override IEnumerable<ProjectedFileSystemEntry> GetEntries(string path)
+    protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
     {
         if (AreFileNamesEqual(path, ""))
         {
             // Return entries in unsorted order (z, a, m, b, y)
-            yield return ProjectedFileSystemEntry.File("zebra.txt", 1);
-            yield return ProjectedFileSystemEntry.File("apple.txt", 1);
-            yield return ProjectedFileSystemEntry.File("mango.txt", 1);
-            yield return ProjectedFileSystemEntry.Directory("banana");
-            yield return ProjectedFileSystemEntry.File("yellow.txt", 1);
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>(
+            [
+                ProjectedFileSystemEntry.File("zebra.txt", 1),
+                ProjectedFileSystemEntry.File("apple.txt", 1),
+                ProjectedFileSystemEntry.File("mango.txt", 1),
+                ProjectedFileSystemEntry.Directory("banana"),
+                ProjectedFileSystemEntry.File("yellow.txt", 1),
+            ]);
         }
+
+        return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
     }
 
-    protected override Stream? OpenRead(string path) => new MemoryStream([0]);
+    protected override ValueTask<Stream?> OpenReadAsync(string path) => ValueTask.FromResult<Stream?>(new MemoryStream([0]));
 }

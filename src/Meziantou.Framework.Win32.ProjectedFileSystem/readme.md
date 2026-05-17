@@ -27,37 +27,46 @@ public class MyVirtualFileSystem : ProjectedFileSystemBase
     }
 
     // Return the list of files and folders for a given path
-    protected override IEnumerable<ProjectedFileSystemEntry> GetEntries(string path)
+    protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
     {
         if (string.IsNullOrEmpty(path))
         {
-            yield return ProjectedFileSystemEntry.Directory("folder");
-            yield return ProjectedFileSystemEntry.File("file1.txt", length: 100);
-            yield return ProjectedFileSystemEntry.File("file2.txt", length: 200);
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>(
+            [
+                ProjectedFileSystemEntry.Directory("folder"),
+                ProjectedFileSystemEntry.File("file1.txt", length: 100),
+                ProjectedFileSystemEntry.File("file2.txt", length: 200),
+            ]);
         }
-        else if (AreFileNamesEqual(path, "folder"))
+
+        if (AreFileNamesEqual(path, "folder"))
         {
-            yield return ProjectedFileSystemEntry.File("nested.txt", length: 50);
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>(
+            [
+                ProjectedFileSystemEntry.File("nested.txt", length: 50),
+            ]);
         }
+
+        return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
     }
 
     // Return a stream to read the file content
-    protected override Stream? OpenRead(string path)
+    protected override ValueTask<Stream?> OpenReadAsync(string path)
     {
         if (AreFileNamesEqual(path, "file1.txt"))
         {
-            return new MemoryStream(Encoding.UTF8.GetBytes("Hello, World!"));
+            return ValueTask.FromResult<Stream?>(new MemoryStream(Encoding.UTF8.GetBytes("Hello, World!")));
         }
         else if (AreFileNamesEqual(path, "file2.txt"))
         {
-            return new MemoryStream(Encoding.UTF8.GetBytes("Another file content"));
+            return ValueTask.FromResult<Stream?>(new MemoryStream(Encoding.UTF8.GetBytes("Another file content")));
         }
         else if (AreFileNamesEqual(path, "folder\\nested.txt"))
         {
-            return new MemoryStream(Encoding.UTF8.GetBytes("Nested file"));
+            return ValueTask.FromResult<Stream?>(new MemoryStream(Encoding.UTF8.GetBytes("Nested file")));
         }
 
-        return null;
+        return ValueTask.FromResult<Stream?>(null);
     }
 }
 
@@ -102,9 +111,9 @@ vfs.Start(options);
 
 The base class for creating a virtual file system. Override these methods:
 
-- **`GetEntries(string path)`**: Returns the files and folders for a given directory path
-- **`OpenRead(string path)`**: Returns a stream to read file content
-- **`GetEntry(string path)`** (optional): Returns metadata for a specific file or folder
+- **`GetEntriesAsync(string path)`**: Returns the files and folders for a given directory path
+- **`OpenReadAsync(string path)`**: Returns a stream to read file content
+- **`GetEntryAsync(string path)`** (optional): Returns metadata for a specific file or folder
 
 Protected helper methods:
 

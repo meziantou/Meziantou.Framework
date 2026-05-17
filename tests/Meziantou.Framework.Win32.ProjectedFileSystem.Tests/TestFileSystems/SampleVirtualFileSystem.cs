@@ -7,38 +7,47 @@ internal sealed class SampleVirtualFileSystem : ProjectedFileSystemBase
     {
     }
 
-    protected override IEnumerable<ProjectedFileSystemEntry> GetEntries(string path)
+    protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
     {
         if (AreFileNamesEqual(path, ""))
         {
-            yield return ProjectedFileSystemEntry.Directory("folder");
-            yield return ProjectedFileSystemEntry.File("a", 1);
-            yield return ProjectedFileSystemEntry.File("b", 2);
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>(
+            [
+                ProjectedFileSystemEntry.Directory("folder"),
+                ProjectedFileSystemEntry.File("a", 1),
+                ProjectedFileSystemEntry.File("b", 2),
+            ]);
         }
-        else if (AreFileNamesEqual(path, "folder"))
+
+        if (AreFileNamesEqual(path, "folder"))
         {
-            yield return ProjectedFileSystemEntry.File("c", 3);
+            return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>(
+            [
+                ProjectedFileSystemEntry.File("c", 3),
+            ]);
         }
+
+        return ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
     }
 
     [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
-    protected override Stream? OpenRead(string path)
+    protected override ValueTask<Stream?> OpenReadAsync(string path)
     {
         if (AreFileNamesEqual(path, "a"))
         {
-            return new MemoryStream([1]);
+            return ValueTask.FromResult<Stream?>(new MemoryStream([1]));
         }
 
         if (AreFileNamesEqual(path, "b"))
         {
-            return new MemoryStream([1, 2]);
+            return ValueTask.FromResult<Stream?>(new MemoryStream([1, 2]));
         }
 
         if (AreFileNamesEqual(path, "folder\\c"))
         {
-            return new MemoryStream([1, 2, 3]);
+            return ValueTask.FromResult<Stream?>(new MemoryStream([1, 2, 3]));
         }
 
-        return null;
+        return ValueTask.FromResult<Stream?>(null);
     }
 }

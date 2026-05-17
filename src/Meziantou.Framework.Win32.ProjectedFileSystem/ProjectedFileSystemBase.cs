@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading.Tasks;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
@@ -12,20 +13,26 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 /// {
 ///     public MyVirtualFileSystem(string rootFolder) : base(rootFolder) { }
 ///
-///     protected override IEnumerable&lt;ProjectedFileSystemEntry&gt; GetEntries(string path)
+///     protected override ValueTask&lt;IEnumerable&lt;ProjectedFileSystemEntry&gt;&gt; GetEntriesAsync(string path)
 ///     {
 ///         if (string.IsNullOrEmpty(path))
 ///         {
-///             yield return ProjectedFileSystemEntry.File("file.txt", length: 100);
-///             yield return ProjectedFileSystemEntry.Directory("folder");
+///             return ValueTask.FromResult&lt;IEnumerable&lt;ProjectedFileSystemEntry&gt;&gt;(
+///             [
+///                 ProjectedFileSystemEntry.File("file.txt", length: 100),
+///                 ProjectedFileSystemEntry.Directory("folder"),
+///             ]);
 ///         }
+///
+///         return ValueTask.FromResult(Enumerable.Empty&lt;ProjectedFileSystemEntry&gt;());
 ///     }
 ///
-///     protected override Stream? OpenRead(string path)
+///     protected override ValueTask&lt;Stream?&gt; OpenReadAsync(string path)
 ///     {
 ///         if (AreFileNamesEqual(path, "file.txt"))
-///             return new MemoryStream(Encoding.UTF8.GetBytes("Hello, World!"));
-///         return null;
+///             return ValueTask.FromResult&lt;Stream?&gt;(new MemoryStream(Encoding.UTF8.GetBytes("Hello, World!")));
+///
+///         return ValueTask.FromResult&lt;Stream?&gt;(null);
 ///     }
 /// }
 ///
@@ -41,7 +48,6 @@ public abstract class ProjectedFileSystemBase : IDisposable
 {
     // Remaining work
     // * Use VersionInfo
-    // * Async loading, GetEntries should return ValueTask (https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjcompletecommand)
     // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjupdatefileifneeded
 
     private readonly Guid _virtualizationInstanceId;
@@ -222,23 +228,24 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     /// <summary>When overridden in a derived class, returns the list of files and directories for the specified path.</summary>
     /// <param name="path">The relative path of the directory to enumerate. Empty string represents the root directory.</param>
-    /// <returns>An enumerable collection of <see cref="ProjectedFileSystemEntry"/> objects representing the files and directories.</returns>
-    protected abstract IEnumerable<ProjectedFileSystemEntry> GetEntries(string path);
+    /// <returns>A <see cref="ValueTask{TResult}"/> resolving to an enumerable collection of <see cref="ProjectedFileSystemEntry"/> objects representing the files and directories.</returns>
+    protected abstract ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path);
 
     /// <summary>Gets metadata for a specific file or directory at the specified path.</summary>
     /// <param name="path">The relative path of the file or directory.</param>
-    /// <returns>The <see cref="ProjectedFileSystemEntry"/> for the specified path, or <see langword="null"/> if not found.</returns>
-    protected virtual ProjectedFileSystemEntry? GetEntry(string path)
+    /// <returns>A <see cref="ValueTask{TResult}"/> resolving to the <see cref="ProjectedFileSystemEntry"/> for the specified path, or <see langword="null"/> if not found.</returns>
+    protected virtual async ValueTask<ProjectedFileSystemEntry?> GetEntryAsync(string path)
     {
         var directory = Path.GetDirectoryName(path);
         var fileName = Path.GetFileName(path);
-        return GetEntries(directory ?? "").FirstOrDefault(entry => CompareFileName(entry.Name, fileName) == 0);
+        var entries = await GetEntriesAsync(directory ?? "").ConfigureAwait(false);
+        return entries.FirstOrDefault(entry => CompareFileName(entry.Name, fileName) == 0);
     }
 
     /// <summary>When overridden in a derived class, opens a stream to read the content of a file at the specified path.</summary>
     /// <param name="path">The relative path of the file to read.</param>
-    /// <returns>A <see cref="Stream"/> to read the file content, or <see langword="null"/> if the file does not exist.</returns>
-    protected abstract Stream? OpenRead(string path);
+    /// <returns>A <see cref="ValueTask{TResult}"/> resolving to a <see cref="Stream"/> to read the file content, or <see langword="null"/> if the file does not exist.</returns>
+    protected abstract ValueTask<Stream?> OpenReadAsync(string path);
 
     public void Dispose()
     {
@@ -253,12 +260,16 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private HResult QueryFileNameCallback(in NativeMethods.PrjCallbackData callbackData)
     {
-        var fileName = callbackData.FilePathName;
-        var entry = GetEntry(fileName);
-        if (entry is null)
-            return HResult.E_FILENOTFOUND;
+        return ExecuteCallback(
+            in callbackData,
+            QueryFileNameCallbackAsync(callbackData.FilePathName),
+            extendedParameters: null);
+    }
 
-        return HResult.S_OK;
+    private async ValueTask<HResult> QueryFileNameCallbackAsync(string fileName)
+    {
+        var entry = await GetEntryAsync(fileName).ConfigureAwait(false);
+        return entry is null ? HResult.E_FILENOTFOUND : HResult.S_OK;
     }
 
     private static HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters)
@@ -275,7 +286,15 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private HResult StartDirectoryEnumerationCallback(in NativeMethods.PrjCallbackData callbackData, in Guid enumerationId)
     {
-        var entries = GetEntries(callbackData.FilePathName);
+        return ExecuteCallback(
+            in callbackData,
+            StartDirectoryEnumerationCallbackAsync(callbackData.FilePathName, enumerationId),
+            extendedParameters: null);
+    }
+
+    private async ValueTask<HResult> StartDirectoryEnumerationCallbackAsync(string filePathName, Guid enumerationId)
+    {
+        var entries = await GetEntriesAsync(filePathName).ConfigureAwait(false);
         _activeEnumerations[enumerationId] = new DirectoryEnumerationSession(entries);
         return HResult.S_OK;
     }
@@ -322,7 +341,15 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private HResult GetPlaceholderInfoCallback(in NativeMethods.PrjCallbackData callbackData)
     {
-        var entry = GetEntry(callbackData.FilePathName);
+        return ExecuteCallback(
+            in callbackData,
+            GetPlaceholderInfoCallbackAsync(callbackData.FilePathName, callbackData.NamespaceVirtualizationContext),
+            extendedParameters: null);
+    }
+
+    private async ValueTask<HResult> GetPlaceholderInfoCallbackAsync(string filePathName, IntPtr namespaceVirtualizationContext)
+    {
+        var entry = await GetEntryAsync(filePathName).ConfigureAwait(false);
         if (entry is null)
             return HResult.E_FILENOTFOUND;
 
@@ -332,19 +359,30 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
 #pragma warning disable CA2000 // Dispose objects before losing scope (ownHandle: false)
         var hr = NativeMethods.PrjWritePlaceholderInfo(
-                    new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false),
-                    callbackData.FilePathName, // Use the full relative path from the callback, not just the entry name
+                    new ProjFSSafeHandle(namespaceVirtualizationContext, ownHandle: false),
+                    filePathName, // Use the full relative path from the callback, not just the entry name
                     in info,
                     (uint)Marshal.SizeOf(info));
 #pragma warning restore CA2000
-
-        hr.EnsureSuccess();
-        return HResult.S_OK;
+        return hr;
     }
 
     private HResult GetFileDataCallback(in NativeMethods.PrjCallbackData callbackData, ulong byteOffset, uint length)
     {
-        using var stream = OpenRead(callbackData.FilePathName);
+        return ExecuteCallback(
+            in callbackData,
+            GetFileDataCallbackAsync(
+                callbackData.FilePathName,
+                callbackData.NamespaceVirtualizationContext,
+                callbackData.DataStreamId,
+                byteOffset,
+                length),
+            extendedParameters: null);
+    }
+
+    private async ValueTask<HResult> GetFileDataCallbackAsync(string filePathName, IntPtr namespaceVirtualizationContext, Guid dataStreamId, ulong byteOffset, uint length)
+    {
+        using var stream = await OpenReadAsync(filePathName).ConfigureAwait(false);
         if (stream is null)
             return HResult.E_FILENOTFOUND;
 
@@ -372,7 +410,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
             }
         }
 
-        using var safeHandle = new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false);
+        using var safeHandle = new ProjFSSafeHandle(namespaceVirtualizationContext, ownHandle: false);
 
         var maxBufferSize = (uint)BufferSize;
         uint writeLength;
@@ -421,7 +459,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
                 // Write the data to the file in the local file system.
                 var hr = NativeMethods.PrjWriteFileData(safeHandle,
-                    callbackData.DataStreamId,
+                    dataStreamId,
                     writeBuffer,
                     currentOffset,
                     (uint)read);
@@ -438,6 +476,41 @@ public abstract class ProjectedFileSystemBase : IDisposable
         finally
         {
             NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
+        }
+    }
+
+    private static HResult ExecuteCallback(in NativeMethods.PrjCallbackData callbackData, ValueTask<HResult> callbackResult, NativeMethods.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    {
+        if (callbackResult.IsCompletedSuccessfully)
+            return callbackResult.Result;
+
+        _ = CompleteCommandAsync(callbackData.NamespaceVirtualizationContext, callbackData.CommandId, callbackResult.AsTask(), extendedParameters);
+        return HResult.ERROR_IO_PENDING;
+    }
+
+    private static async Task CompleteCommandAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, NativeMethods.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    {
+        HResult completionResult;
+        try
+        {
+            completionResult = await callbackTask.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            completionResult = new HResult(Marshal.GetHRForException(ex));
+        }
+
+#pragma warning disable CA2000 // Dispose objects before losing scope (ownHandle: false)
+        using var instanceHandle = new ProjFSSafeHandle(namespaceVirtualizationContext, ownHandle: false);
+#pragma warning restore CA2000
+
+        var completionHr = extendedParameters is { } value
+            ? NativeMethods.PrjCompleteCommandWithExtendedParameters(instanceHandle, commandId, completionResult, in value)
+            : NativeMethods.PrjCompleteCommand(instanceHandle, commandId, completionResult, IntPtr.Zero);
+
+        if (!completionHr.IsSuccess)
+        {
+            Debug.WriteLine($"PrjCompleteCommand failed for command {commandId}: 0x{completionHr.Value:X8}");
         }
     }
 

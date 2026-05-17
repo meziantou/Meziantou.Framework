@@ -83,9 +83,9 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         protected static bool FileNameMatch(string fileName, string pattern) => throw null;
         protected static bool AreFileNamesEqual(string fileName1, string fileName2) => throw null;
         protected static int CompareFileName(string fileName1, string fileName2) => throw null;
-        protected abstract System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry> GetEntries(string path);
-        protected virtual Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry? GetEntry(string path) => throw null;
-        protected abstract System.IO.Stream? OpenRead(string path);
+        protected abstract System.Threading.Tasks.ValueTask<System.Collections.Generic.IEnumerable<Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry>> GetEntriesAsync(string path);
+        protected virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry?> GetEntryAsync(string path) => throw null;
+        protected abstract System.Threading.Tasks.ValueTask<System.IO.Stream?> OpenReadAsync(string path);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
     }

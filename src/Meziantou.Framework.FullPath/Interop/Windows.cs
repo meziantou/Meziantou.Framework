@@ -2,28 +2,15 @@
 #pragma warning disable IDE1006 // Naming Styles
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Meziantou.Framework;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
+using Windows.Win32;
+using Windows.Win32.Storage.FileSystem;
 
 namespace Meziantou.Framework
 {
     internal static partial class Interop
     {
-        /// <summary>
-        /// Blittable version of Windows BOOL type. It is convenient in situations where
-        /// manual marshalling is required, or to avoid overhead of regular bool marshalling.
-        /// </summary>
-        /// <remarks>
-        /// Some Windows APIs return arbitrary integer values although the return type is defined
-        /// as BOOL. It is best to never compare BOOL to TRUE. Always use bResult != BOOL.FALSE
-        /// or bResult == BOOL.FALSE .
-        /// </remarks>
-        internal enum BOOL : int
-        {
-            FALSE = 0,
-            TRUE = 1,
-        }
-
         internal static partial class Errors
         {
             internal const int ERROR_SUCCESS = 0x0;
@@ -33,21 +20,8 @@ namespace Meziantou.Framework
 
         internal static partial class Kernel32
         {
-            private const string Kernel32Name = "kernel32.dll";
-
-            /// <summary>WARNING: This method does not implicitly handle long paths. Use CreateFile.</summary>
-            [LibraryImport(Kernel32Name, EntryPoint = "CreateFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-            [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            private static unsafe partial SafeFileHandle CreateFilePrivate(
-                string lpFileName,
-                int dwDesiredAccess,
-                FileShare dwShareMode,
-                SECURITY_ATTRIBUTES* lpSecurityAttributes,
-                FileMode dwCreationDisposition,
-                int dwFlagsAndAttributes,
-                IntPtr hTemplateFile);
-
-            internal static unsafe SafeFileHandle CreateFile(
+            [SupportedOSPlatform("windows5.1.2600")]
+            internal static SafeFileHandle CreateFile(
                 string lpFileName,
                 int dwDesiredAccess,
                 FileShare dwShareMode,
@@ -55,7 +29,15 @@ namespace Meziantou.Framework
                 int dwFlagsAndAttributes)
             {
                 lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
-                return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes: null, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
+
+                return PInvoke.CreateFile(
+                    lpFileName,
+                    (uint)dwDesiredAccess,
+                    (FILE_SHARE_MODE)(uint)dwShareMode,
+                    lpSecurityAttributes: null,
+                    (FILE_CREATION_DISPOSITION)(uint)dwCreationDisposition,
+                    (FILE_FLAGS_AND_ATTRIBUTES)(uint)dwFlagsAndAttributes,
+                    hTemplateFile: null);
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -88,37 +70,16 @@ namespace Meziantou.Framework
                 internal const int FILE_LIST_DIRECTORY = 0x0001;
             }
 
-            [LibraryImport(Kernel32Name, SetLastError = true)]
-            [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            internal static partial bool FindClose(IntPtr hFindFile);
-
-            /// <summary>WARNING: This method does not implicitly handle long paths. Use FindFirstFile.</summary>
-            [LibraryImport(Kernel32Name, EntryPoint = "FindFirstFileExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-            [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            private static partial SafeFindHandle FindFirstFileExPrivate(string lpFileName, FINDEX_INFO_LEVELS fInfoLevelId, ref WIN32_FIND_DATA lpFindFileData, FINDEX_SEARCH_OPS fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
-
-            internal static SafeFindHandle FindFirstFile(string fileName, ref WIN32_FIND_DATA data)
+            [SupportedOSPlatform("windows5.1.2600")]
+            internal static unsafe FindCloseSafeHandle FindFirstFile(string fileName, ref WIN32_FIND_DATA data)
             {
                 fileName = PathInternal.EnsureExtendedPrefixIfNeeded(fileName);
 
                 // use FindExInfoBasic since we don't care about short name and it has better perf
-                return FindFirstFileExPrivate(fileName, FINDEX_INFO_LEVELS.FindExInfoBasic, ref data, FINDEX_SEARCH_OPS.FindExSearchNameMatch, IntPtr.Zero, 0);
-            }
-
-            internal enum FINDEX_INFO_LEVELS : uint
-            {
-                FindExInfoStandard = 0x0u,
-                FindExInfoBasic = 0x1u,
-                FindExInfoMaxInfoLevel = 0x2u,
-            }
-
-            internal enum FINDEX_SEARCH_OPS : uint
-            {
-                FindExSearchNameMatch = 0x0u,
-                FindExSearchLimitToDirectories = 0x1u,
-                FindExSearchLimitToDevices = 0x2u,
-                FindExSearchMaxSearchOp = 0x3u,
+                fixed (WIN32_FIND_DATA* dataPtr = &data)
+                {
+                    return PInvoke.FindFirstFileEx(fileName, FINDEX_INFO_LEVELS.FindExInfoBasic, dataPtr, FINDEX_SEARCH_OPS.FindExSearchNameMatch, (FIND_FIRST_EX_FLAGS)0u);
+                }
             }
 
             internal const uint FSCTL_GET_REPARSE_POINT = 0x000900a8;
@@ -139,11 +100,8 @@ namespace Meziantou.Framework
                 public uint Flags;
             }
 
-            [LibraryImport(Kernel32Name, SetLastError = true)]
-            [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            internal static partial bool DeviceIoControl
-            (
+            [SupportedOSPlatform("windows5.1.2600")]
+            internal static unsafe bool DeviceIoControl(
                 SafeFileHandle fileHandle,
                 uint ioControlCode,
                 [In] byte[]? inBuffer,
@@ -151,26 +109,30 @@ namespace Meziantou.Framework
                 [Out] byte[] outBuffer,
                 uint cbOutBuffer,
                 out uint cbBytesReturned,
-                IntPtr overlapped
-            );
+                IntPtr overlapped)
+            {
+                ArgumentOutOfRangeException.ThrowIfNotEqual(overlapped, IntPtr.Zero);
 
-            [DllImport(Kernel32Name, EntryPoint = "GetFinalPathNameByHandleW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
-            [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-            internal static extern uint GetFinalPathNameByHandle(
+                return PInvoke.DeviceIoControl(
+                    fileHandle,
+                    ioControlCode,
+                    inBuffer is null ? default : inBuffer.AsSpan(0, checked((int)cbInBuffer)),
+                    outBuffer.AsSpan(0, checked((int)cbOutBuffer)),
+                    out cbBytesReturned,
+                    lpOverlapped: null);
+            }
+
+            [SupportedOSPlatform("windows6.0.6000")]
+            internal static uint GetFinalPathNameByHandle(
                 SafeFileHandle hFile,
                 [Out] char[] lpszFilePath,
                 uint cchFilePath,
-                uint dwFlags);
+                uint dwFlags)
+            {
+                return PInvoke.GetFinalPathNameByHandle(hFile, lpszFilePath.AsSpan(0, checked((int)cchFilePath)), (GETFINALPATHNAMEBYHANDLE_FLAGS)dwFlags);
+            }
 
             internal const int MAX_PATH = 260;
-
-            [StructLayout(LayoutKind.Sequential)]
-            internal struct SECURITY_ATTRIBUTES
-            {
-                internal uint nLength;
-                internal IntPtr lpSecurityDescriptor;
-                internal BOOL bInheritHandle;
-            }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
             internal unsafe struct WIN32_FIND_DATA
@@ -367,19 +329,5 @@ namespace System.IO
         {
             return c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
         }
-    }
-}
-namespace Microsoft.Win32.SafeHandles
-{
-    internal sealed class SafeFindHandle : SafeHandle
-    {
-        public SafeFindHandle() : base(IntPtr.Zero, ownsHandle: true) { }
-
-        protected override bool ReleaseHandle()
-        {
-            return Interop.Kernel32.FindClose(handle);
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero || handle == new IntPtr(-1);
     }
 }

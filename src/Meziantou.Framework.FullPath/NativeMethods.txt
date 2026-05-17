@@ -2,3 +2,8 @@ SHGetKnownFolderPath
 ILFree
 ILCreateFromPathW
 SHOpenFolderAndSelectItems
+CreateFileW
+DeviceIoControl
+FindClose
+FindFirstFileExW
+GetFinalPathNameByHandleW

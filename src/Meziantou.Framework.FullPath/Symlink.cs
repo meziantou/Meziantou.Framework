@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace Meziantou.Framework;
@@ -9,7 +10,7 @@ internal static partial class Symlink
 {
     public static bool IsSymbolicLink(string path)
     {
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
         {
             return WindowsSymlink.IsSymbolicLink(path);
         }
@@ -21,7 +22,7 @@ internal static partial class Symlink
 
     public static bool TryGetSymLinkTarget(string path, [NotNullWhen(true)] out string? target)
     {
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
         {
             return WindowsSymlink.TryGetSymLinkTarget(path, out target);
         }
@@ -104,6 +105,7 @@ internal static partial class Symlink
         }
     }
 
+    [SupportedOSPlatform("windows5.1.2600")]
     private static class WindowsSymlink
     {
         public static bool TryGetSymLinkTarget(string path, [NotNullWhen(true)] out string? target)

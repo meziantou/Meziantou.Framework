@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
+using Windows.Win32;
 
 namespace Meziantou.Framework.Win32;
 
@@ -24,7 +25,7 @@ namespace Meziantou.Framework.Win32;
 /// This dialog provides a modern Windows folder picker experience similar to the one used in
 /// File Explorer. It is only supported on Windows platforms.
 /// </remarks>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows6.0.6000")]
 public sealed class OpenFolderDialog
 {
     /// <summary>Shows the folder selection dialog.</summary>
@@ -39,7 +40,7 @@ public sealed class OpenFolderDialog
     /// <returns>A <see cref="DialogResult"/> indicating whether the user clicked OK, Cancel, or if the operation was aborted.</returns>
     public DialogResult ShowDialog(IntPtr owner) // IWin32Window
     {
-        var hwndOwner = owner != IntPtr.Zero ? owner : NativeMethods.GetActiveWindow();
+        var hwndOwner = owner != IntPtr.Zero ? owner : (IntPtr)PInvoke.GetActiveWindow();
         var dialog = (IFileOpenDialog)new NativeFileOpenDialog();
         Configure(dialog);
 
@@ -81,11 +82,11 @@ public sealed class OpenFolderDialog
 
         if (!string.IsNullOrEmpty(InitialDirectory))
         {
-            var result = NativeMethods.SHCreateItemFromParsingName(InitialDirectory, IntPtr.Zero, typeof(IShellItem).GUID, out var item);
-            switch (result)
+            var result = PInvoke.SHCreateItemFromParsingName(InitialDirectory, null, typeof(IShellItem).GUID, out var shellItem);
+            switch ((int)result)
             {
                 case NativeMethods.S_OK:
-                    if (item is not null)
+                    if (shellItem is IShellItem item)
                     {
                         dialog.SetFolder(item);
                     }
@@ -94,7 +95,7 @@ public sealed class OpenFolderDialog
                 case NativeMethods.FILE_NOT_FOUND:
                     break;
                 default:
-                    throw new Win32Exception(result);
+                    throw new Win32Exception((int)result);
             }
         }
 

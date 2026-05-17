@@ -1,5 +1,6 @@
 namespace Meziantou.Framework;
 
+[Obsolete("Use Meziantou.Framework.ProcessWrapper (add using Meziantou.Framework.ProcessWrapper).")]
 public sealed class ProcessOutput
 {
     internal ProcessOutput(ProcessOutputType type, string text)

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Meziantou.Framework;
 
-internal static class Symlink
+internal static partial class Symlink
 {
     public static bool IsSymbolicLink(string path)
     {
@@ -31,7 +31,7 @@ internal static class Symlink
         }
     }
 
-    private static class UnixSymlink
+    private static partial class UnixSymlink
     {
         internal static bool TryGetSymLinkTarget(string path, [NotNullWhen(true)] out string? target)
         {
@@ -90,7 +90,7 @@ internal static class Symlink
             }
         }
 
-        private static class Interop
+        private static partial class Interop
         {
             internal static nint ReadLink(string path, byte[] buffer, nuint bufferSize)
             {
@@ -98,9 +98,9 @@ internal static class Symlink
                 return ReadLinkCore(utf8Path, buffer, bufferSize);
             }
 
-            [DllImport("libc", EntryPoint = "readlink", SetLastError = true, ExactSpelling = true)]
+            [LibraryImport("libc", EntryPoint = "readlink", SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            private static extern nint ReadLinkCore(byte[] path, byte[] buffer, nuint bufferSize);
+            private static partial nint ReadLinkCore(byte[] path, byte[] buffer, nuint bufferSize);
         }
     }
 

@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Scheduling;
 
-public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
+internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
 {
     [Flags]
     private enum WeekdayHumanTextOptions
@@ -95,6 +95,14 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             4 => "fourth",
             _ => Extensions.ToEnglishOrdinal(setPosition),
         };
+    }
+
+    private static string MonthToString(int month)
+    {
+        if (month is < 1 or > 12)
+            throw new ArgumentOutOfRangeException(nameof(month), month, message: null);
+
+        return EnglishCultureInfo.DateTimeFormat.GetMonthName(month);
     }
 
     protected override string GetText(DailyRecurrenceRule rrule, CultureInfo? cultureInfo)
@@ -311,7 +319,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
                 if (rrule.ByMonths is not null && rrule.ByMonths.Any())
                 {
                     sb.Append(" of ");
-                    sb.Append(rrule.ByMonths[0]);
+                    sb.Append(MonthToString(rrule.ByMonths[0]));
                 }
             }
             else
@@ -319,7 +327,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
                 if (rrule.ByMonths is not null && rrule.ByMonths.Any())
                 {
                     sb.Append(" on ");
-                    sb.Append(rrule.ByMonths[0]);
+                    sb.Append(MonthToString(rrule.ByMonths[0]));
                 }
 
                 sb.Append(" the ");
@@ -342,7 +350,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             if (rrule.ByMonths is not null && rrule.ByMonths.Any())
             {
                 sb.Append(" of ");
-                sb.Append(rrule.ByMonths[0]);
+                sb.Append(MonthToString(rrule.ByMonths[0]));
             }
         }
 

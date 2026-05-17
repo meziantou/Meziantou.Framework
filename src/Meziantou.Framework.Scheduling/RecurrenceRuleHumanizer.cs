@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Provides functionality to convert recurrence rules to human-readable text.</summary>
-public abstract class RecurrenceRuleHumanizer
+internal abstract class RecurrenceRuleHumanizer
 {
     /// <summary>The English culture information.</summary>
     protected static readonly CultureInfo EnglishCultureInfo = GetCulture("en");

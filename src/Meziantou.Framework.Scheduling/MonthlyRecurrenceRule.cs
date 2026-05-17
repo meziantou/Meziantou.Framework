@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Scheduling;
 /// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
 /// </code>
 /// </example>
-public sealed class MonthlyRecurrenceRule : RecurrenceRule
+internal sealed class MonthlyRecurrenceRule : RecurrenceRule
 {
     /// <summary>Limits occurrences to specific days of the week with optional ordinal positions.</summary>
     public IList<ByDay> ByWeekDays { get; set; } = [];
@@ -41,7 +41,7 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
             var b = true;
             if (!IsEmpty(ByMonths))
             {
-                if (ByMonths.Contains((Month)startOfMonth.Month))
+                if (ByMonths.Contains(startOfMonth.Month))
                 {
                     b = false;
                 }
@@ -135,7 +135,7 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByMonths))
             {
                 sb.Append(";BYMONTH=");
-                sb.AppendJoin(',', ByMonths.Cast<int>());
+                sb.AppendJoin(',', ByMonths);
             }
 
             if (!IsEmpty(ByMonthDays))

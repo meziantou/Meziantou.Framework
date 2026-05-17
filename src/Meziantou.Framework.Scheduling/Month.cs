@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Specifies the months of the year.</summary>
-public enum Month
+internal enum Month
 {
     /// <summary>January (month 1).</summary>
     January = 1,

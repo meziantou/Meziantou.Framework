@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Specifies the frequency of a recurrence rule.</summary>
-public enum Frequency
+internal enum Frequency
 {
     /// <summary>No frequency specified.</summary>
     None,

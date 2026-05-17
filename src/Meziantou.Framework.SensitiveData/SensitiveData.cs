@@ -26,7 +26,7 @@ namespace Meziantou.Framework;
 /// byte[] revealedKey = sensitiveKey.RevealToArray();
 /// </code>
 /// </example>
-public static class SensitiveData
+public static partial class SensitiveData
 {
     /// <summary>Creates an instance of <see cref="SensitiveData{Char}" /> from a string.</summary>
     /// <param name="value">The sensitive string data to protect.</param>
@@ -62,7 +62,7 @@ public static class SensitiveData
         return string.Create(secret.GetLength(), secret, (span, buffer) => buffer.RevealInto(span));
     }
 
-    internal static class UnixMemoryProtection
+    internal static partial class UnixMemoryProtection
     {
         public const int PROT_NONE = 0;
         public const int PROT_READ = 1;
@@ -130,29 +130,29 @@ public static class SensitiveData
             return MAP_ANON_LINUX;
         }
 
-        private static class Interop
+        private static partial class Interop
         {
             private const string Libc = "libc";
 
-            [DllImport(Libc, EntryPoint = "mlock", SetLastError = true)]
+            [LibraryImport(Libc, EntryPoint = "mlock", SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            internal static extern int mlock(IntPtr addr, nuint len);
+            internal static partial int mlock(IntPtr addr, nuint len);
 
-            [DllImport(Libc, EntryPoint = "mmap", SetLastError = true)]
+            [LibraryImport(Libc, EntryPoint = "mmap", SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            internal static extern IntPtr mmap(IntPtr addr, nuint len, int prot, int flags, int fd, nint offset);
+            internal static partial IntPtr mmap(IntPtr addr, nuint len, int prot, int flags, int fd, nint offset);
 
-            [DllImport(Libc, EntryPoint = "mprotect", SetLastError = true)]
+            [LibraryImport(Libc, EntryPoint = "mprotect", SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            internal static extern int mprotect(IntPtr addr, nuint len, int prot);
+            internal static partial int mprotect(IntPtr addr, nuint len, int prot);
 
-            [DllImport(Libc, EntryPoint = "munlock", SetLastError = true)]
+            [LibraryImport(Libc, EntryPoint = "munlock", SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            internal static extern int munlock(IntPtr addr, nuint len);
+            internal static partial int munlock(IntPtr addr, nuint len);
 
-            [DllImport(Libc, EntryPoint = "munmap", SetLastError = true)]
+            [LibraryImport(Libc, EntryPoint = "munmap", SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-            internal static extern int munmap(IntPtr addr, nuint len);
+            internal static partial int munmap(IntPtr addr, nuint len);
         }
     }
 }

@@ -28,7 +28,10 @@ internal sealed class NonSeekableStreamVirtualFileSystem : ProjectedFileSystemBa
             var data = new byte[FileSize];
             for (var i = 0; i < FileSize; i++)
                 data[i] = (byte)(i % 256);
+            // CA2000 can't track ownership transfer through ValueTask.FromResult.
+#pragma warning disable CA2000 // Dispose objects before losing scope
             return ValueTask.FromResult<Stream?>(new NonSeekableStream(new MemoryStream(data)));
+#pragma warning restore CA2000 // Dispose objects before losing scope
         }
 
         return ValueTask.FromResult<Stream?>(null);

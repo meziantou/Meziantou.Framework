@@ -55,7 +55,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
     public IList<int>? ByHours { get; set; }
 
     /// <summary>Limits occurrences to specific months (1-12).</summary>
-    public IList<Month> ByMonths { get; set; } = [];
+    public IList<int> ByMonths { get; set; } = [];
 
     /// <summary>Limits occurrences to specific days of the month (1-31, -1 to -31).</summary>
     public IList<int> ByMonthDays { get; set; } = [];
@@ -318,7 +318,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         return monthDays;
     }
 
-    private static List<Month> ParseByMonth(Dictionary<string, string> values)
+    private static List<int> ParseByMonth(Dictionary<string, string> values)
     {
         if (values.TryGetNonEmptyValue("BYMONTH", out var str))
             return ParseByMonth(str.AsSpan());
@@ -326,12 +326,12 @@ public abstract class RecurrenceRule : IRecurrenceRule
         return [];
     }
 
-    private static List<Month> ParseByMonth(ReadOnlySpan<char> str)
+    private static List<int> ParseByMonth(ReadOnlySpan<char> str)
     {
         var months = SplitToMonthList(str);
         foreach (var month in months)
         {
-            if (!Enum.IsDefined(month))
+            if (month is < 1 or > 12)
                 throw new FormatException($"BYMONTH value '{month}' is invalid.");
         }
 
@@ -696,9 +696,9 @@ public abstract class RecurrenceRule : IRecurrenceRule
         return list;
     }
 
-    private static List<Month> SplitToMonthList(ReadOnlySpan<char> text)
+    private static List<int> SplitToMonthList(ReadOnlySpan<char> text)
     {
-        var list = new List<Month>();
+        var list = new List<int>();
         if (text.IsEmpty)
             return list;
 
@@ -710,9 +710,18 @@ public abstract class RecurrenceRule : IRecurrenceRule
             remaining = commaIndex >= 0 ? remaining[(commaIndex + 1)..] : [];
 
             var trimmed = part.Trim();
-            if (!trimmed.IsEmpty && Enum.TryParse<Month>(trimmed, ignoreCase: true, out var month))
+            if (trimmed.IsEmpty)
+                continue;
+
+            if (int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var monthValue))
             {
-                list.Add(month);
+                list.Add(monthValue);
+                continue;
+            }
+
+            if (Enum.TryParse<Month>(trimmed, ignoreCase: true, out var month))
+            {
+                list.Add((int)month);
             }
         }
 

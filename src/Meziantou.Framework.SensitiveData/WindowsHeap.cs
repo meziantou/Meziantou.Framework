@@ -1,5 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.System.Memory;
 
 namespace Meziantou.Framework;
 
@@ -9,10 +12,23 @@ internal static partial class WindowsHeap
     private const uint CRYPTPROTECTMEMORY_BLOCK_SIZE = 16;
     private const uint CRYPTPROTECTMEMORY_SAME_PROCESS = 0x00;
 
-    private static readonly IntPtr Heap = GetOrCreateHeap();
+    private static readonly HANDLE Heap = GetOrCreateHeap();
 
-    public static IntPtr Allocate(nuint length) => Interop.HeapAlloc(Heap, 0, length);
-    public static bool Free(IntPtr handle) => Interop.HeapFree(Heap, 0, handle);
+    public static unsafe IntPtr Allocate(nuint length)
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+            throw new PlatformNotSupportedException();
+
+        return (IntPtr)PInvoke.HeapAlloc(Heap, (HEAP_FLAGS)0, length);
+    }
+
+    public static unsafe bool Free(IntPtr handle)
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+            throw new PlatformNotSupportedException();
+
+        return PInvoke.HeapFree(Heap, (HEAP_FLAGS)0, (void*)handle);
+    }
 
     public static nuint GetAlignedSize(nuint size)
     {
@@ -22,30 +38,39 @@ internal static partial class WindowsHeap
         return (size + CRYPTPROTECTMEMORY_BLOCK_SIZE - 1) / CRYPTPROTECTMEMORY_BLOCK_SIZE * CRYPTPROTECTMEMORY_BLOCK_SIZE;
     }
 
-    public static void ProtectMemory(IntPtr pData, nuint cbData)
+    public static unsafe void ProtectMemory(IntPtr pData, nuint cbData)
     {
         if (cbData == 0)
             return;
 
-        if (!Interop.CryptProtectMemory(pData, (uint)cbData, CRYPTPROTECTMEMORY_SAME_PROCESS))
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
+            throw new PlatformNotSupportedException();
+
+        if (!PInvoke.CryptProtectMemory((void*)pData, (uint)cbData, CRYPTPROTECTMEMORY_SAME_PROCESS))
         {
             Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
         }
     }
 
-    public static void UnprotectMemory(IntPtr pData, nuint cbData)
+    public static unsafe void UnprotectMemory(IntPtr pData, nuint cbData)
     {
         if (cbData == 0)
             return;
 
-        if (!Interop.CryptUnprotectMemory(pData, (uint)cbData, CRYPTPROTECTMEMORY_SAME_PROCESS))
+        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
+            throw new PlatformNotSupportedException();
+
+        if (!PInvoke.CryptUnprotectMemory((void*)pData, (uint)cbData, CRYPTPROTECTMEMORY_SAME_PROCESS))
         {
             Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
         }
     }
 
-    private static IntPtr GetOrCreateHeap()
+    private static HANDLE GetOrCreateHeap()
     {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+            throw new PlatformNotSupportedException();
+
         // In 64-bit processes where the virtual address space is larger,
         // we use our own private heap to store the shrouded data. This
         // somewhat isolates the shrouded data's storage space from that of
@@ -53,7 +78,7 @@ internal static partial class WindowsHeap
         // use-after-free elsewhere in the application accidentally pointing
         // to an address used by a shrouded buffer instance.
 
-        var hHeap = (IntPtr.Size == 8) ? Interop.HeapCreate(0, 0, 0) : Interop.GetProcessHeap();
+        var hHeap = (IntPtr.Size == 8) ? PInvoke.HeapCreate((HEAP_FLAGS)0, 0, 0) : PInvoke.GetProcessHeap();
         if (hHeap == IntPtr.Zero)
         {
             Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
@@ -61,38 +86,5 @@ internal static partial class WindowsHeap
         }
 
         return hHeap;
-    }
-
-    private static partial class Interop
-    {
-        private const string KERNEL32_LIB = "kernel32.dll";
-        private const string CRYPT32_LIB = "crypt32.dll";
-
-        [LibraryImport(KERNEL32_LIB, SetLastError = true)]
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        internal static partial IntPtr GetProcessHeap();
-
-        [LibraryImport(KERNEL32_LIB, SetLastError = true)]
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        internal static partial IntPtr HeapCreate(uint flOptions, nuint dwInitialSize, nuint dwMaximumSize);
-
-        [LibraryImport(KERNEL32_LIB, SetLastError = false)]
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        internal static partial IntPtr HeapAlloc(IntPtr hHeap, uint dwFlags, nuint dwBytes);
-
-        [LibraryImport(KERNEL32_LIB, SetLastError = true)]
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool HeapFree(IntPtr hHeap, uint dwFlags, IntPtr lpMem);
-
-        [LibraryImport(CRYPT32_LIB, SetLastError = true)]
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool CryptProtectMemory(IntPtr pDataIn, uint cbDataIn, uint dwFlags);
-
-        [LibraryImport(CRYPT32_LIB, SetLastError = true)]
-        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool CryptUnprotectMemory(IntPtr pDataIn, uint cbDataIn, uint dwFlags);
     }
 }

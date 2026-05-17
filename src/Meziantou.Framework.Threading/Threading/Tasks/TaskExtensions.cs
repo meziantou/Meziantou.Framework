@@ -20,19 +20,7 @@ public static partial class TaskExtensions
 
         async static Task ForgetAwaited(Task task)
         {
-#if NET8_0_OR_GREATER
             await task.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-#else
-            try
-            {
-                // No need to resume on the original SynchronizationContext
-                await task.ConfigureAwait(false);
-            }
-            catch
-            {
-                // Nothing to do here
-            }
-#endif
         }
     }
 }

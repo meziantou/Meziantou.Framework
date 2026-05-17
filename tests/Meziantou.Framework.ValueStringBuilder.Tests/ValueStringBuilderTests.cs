@@ -105,7 +105,6 @@ public class ValueStringBuilderTests
         Assert.Equal("A=<12>, B=<34>", sb.ToString());
     }
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void AppendRuneSupportsSurrogatePairs()
     {
@@ -176,7 +175,6 @@ public class ValueStringBuilderTests
             return true;
         }
     }
-#endif
 
     private sealed class TestCustomFormatterProvider : IFormatProvider, ICustomFormatter
     {

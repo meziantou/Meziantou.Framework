@@ -27,11 +27,7 @@ namespace Meziantou.Framework.Versioning;
 // https://github.com/semver/semver/blob/master/semver.md
 // https://github.com/semver/semver/blob/master/semver.svg
 [Meziantou.Analyzer.Annotations.CultureInsensitiveType]
-public sealed class SemanticVersion : IFormattable, IComparable, IComparable<SemanticVersion>, IEquatable<SemanticVersion>
-#if NET7_0_OR_GREATER
-    , IParsable<SemanticVersion>
-    , ISpanParsable<SemanticVersion>
-#endif
+public sealed class SemanticVersion : IFormattable, IComparable, IComparable<SemanticVersion>, IEquatable<SemanticVersion>, IParsable<SemanticVersion>, ISpanParsable<SemanticVersion>
 {
     private static readonly IReadOnlyList<string> EmptyArray = Array.Empty<string>();
 
@@ -221,13 +217,11 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return SemanticVersionComparer.Instance.Compare(this, other);
     }
 
-#if NET7_0_OR_GREATER
     static SemanticVersion IParsable<SemanticVersion>.Parse(string versionsString, IFormatProvider? provider) => Parse(versionsString);
     static bool IParsable<SemanticVersion>.TryParse(string? versionsString, IFormatProvider? provider, [NotNullWhen(true)] out SemanticVersion? result) => TryParse(versionsString, out result);
 
     static SemanticVersion ISpanParsable<SemanticVersion>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
     static bool ISpanParsable<SemanticVersion>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out SemanticVersion? result) => TryParse(s, out result);
-#endif
 
     /// <summary>Converts the string representation of a semantic version to its <see cref="SemanticVersion"/> equivalent.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="versionString"/> is <see langword="null"/>.</exception>

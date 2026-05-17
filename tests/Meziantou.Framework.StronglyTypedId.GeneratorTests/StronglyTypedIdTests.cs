@@ -41,9 +41,7 @@ public sealed partial class StronglyTypedIdTests
             { typeof(IdInt16), "FromInt16", (short)42 },
             { typeof(IdInt32), "FromInt32", 42 },
             { typeof(IdInt64), "FromInt64", 42L },
-#if NET7_0_OR_GREATER
             { typeof(IdInt128), "FromInt128", Int128.MaxValue },
-#endif
             { typeof(IdSByte), "FromSByte", (sbyte)42 },
             { typeof(IdSingle), "FromSingle", 42f },
             { typeof(IdString), "FromString", "test" },
@@ -51,9 +49,7 @@ public sealed partial class StronglyTypedIdTests
             { typeof(IdUInt16), "FromUInt16", (ushort) 42 },
             { typeof(IdUInt32), "FromUInt32", (uint) 42 },
             { typeof(IdUInt64), "FromUInt64", (ulong) 42 },
-#if NET7_0_OR_GREATER
             { typeof(IdUInt128), "FromUInt128", UInt128.MaxValue },
-#endif
 
             { typeof(IdClassBoolean), "FromBoolean", true },
             { typeof(IdClassByte), "FromByte", (byte)42 },
@@ -149,7 +145,6 @@ public sealed partial class StronglyTypedIdTests
         Assert.Null(typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
     }
 
-#if NET7_0_OR_GREATER
     [Fact]
     public void IParsable_Int32()
     {
@@ -165,7 +160,6 @@ public sealed partial class StronglyTypedIdTests
         static void Parse<T>(string _) where T : ISpanParsable<IdInt32>
         { }
     }
-#endif
 
     [Fact]
     public void String_Parse()
@@ -244,7 +238,7 @@ public sealed partial class StronglyTypedIdTests
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32?>("42");
         Assert.Equal(42, value!.Value.Value);
     }
-    #if NET7_0_OR_GREATER
+
     [Fact]
     public void NewtonsoftJson_Int128_ParseStringValue()
     {
@@ -337,7 +331,6 @@ public sealed partial class StronglyTypedIdTests
         var value = System.Text.Json.JsonSerializer.Deserialize<Dictionary<IdUInt128, object?>>(json);
         Assert.Equal(UInt128.Parse("1", CultureInfo.InvariantCulture), value!.Single().Key.Value);
     }
-#endif
 
     [Fact]
     public void NewtonsoftJson_IdClassString_ParseNull()
@@ -496,10 +489,8 @@ public sealed partial class StronglyTypedIdTests
     [StronglyTypedId(typeof(long))]
     private partial struct IdInt64 { }
 
-#if NET7_0_OR_GREATER
     [StronglyTypedId(typeof(Int128))]
     private partial struct IdInt128 { }
-#endif
 
     [StronglyTypedId(typeof(BigInteger))]
     private partial struct IdBigInteger { }
@@ -531,10 +522,8 @@ public sealed partial class StronglyTypedIdTests
     [StronglyTypedId(typeof(ulong))]
     private partial struct IdUInt64 { }
 
-#if NET7_0_OR_GREATER
     [StronglyTypedId(typeof(UInt128))]
     private partial struct IdUInt128 { }
-#endif
 
     [StronglyTypedId(typeof(bool))]
     private sealed partial class IdClassBoolean { }

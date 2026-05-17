@@ -19,22 +19,12 @@ static partial class StringExtensions
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public ref struct LineSplitEnumerator
     {
-#if NET8_0_OR_GREATER
         private static SearchValues<char> StandardLineBreakCharacters { get; } = SearchValues.Create("\r\n");
         private static SearchValues<char> UnicodeLineBreakCharacters { get; } = SearchValues.Create("\r\n\u0085\u2028\u2029");
         private static SearchValues<char> UnicodeWithLegacyControlLineBreakCharacters { get; } = SearchValues.Create("\r\n\u0085\u2028\u2029\v\f");
-#else
-        private static ReadOnlySpan<char> StandardLineBreakCharacters => "\r\n";
-        private static ReadOnlySpan<char> UnicodeLineBreakCharacters => "\r\n\u0085\u2028\u2029";
-        private static ReadOnlySpan<char> UnicodeWithLegacyControlLineBreakCharacters => "\r\n\u0085\u2028\u2029\v\f";
-#endif
 
         private ReadOnlySpan<char> _str;
-#if NET8_0_OR_GREATER
         private readonly SearchValues<char> _newLineCharacters;
-#else
-        private readonly ReadOnlySpan<char> _newLineCharacters;
-#endif
 
         public LineSplitEnumerator(ReadOnlySpan<char> str)
             : this(str, LineBreakMode.Unicode)
@@ -80,11 +70,7 @@ static partial class StringExtensions
             return true;
         }
 
-#if NET8_0_OR_GREATER
         private static SearchValues<char> GetNewLineCharacters(LineBreakMode lineBreakMode)
-#else
-        private static ReadOnlySpan<char> GetNewLineCharacters(LineBreakMode lineBreakMode)
-#endif
         {
             return lineBreakMode switch
             {

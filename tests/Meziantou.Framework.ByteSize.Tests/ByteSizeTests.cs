@@ -76,7 +76,6 @@ public sealed class ByteSizeTests
         Assert.Equal(3000L, result);
     }
 
-#if NET6_0_OR_GREATER
     [Theory]
     [InlineData(10L, null, "10B")]
     [InlineData(10L, "", "10B")]
@@ -113,9 +112,7 @@ public sealed class ByteSizeTests
         Assert.False(success);
         Assert.Equal(0, charsWritten);
     }
-#endif
 
-#if NET7_0_OR_GREATER
     [Theory]
     [InlineData("1", 1L)]
     [InlineData("1b", 1L)]
@@ -144,9 +141,7 @@ public sealed class ByteSizeTests
         var parsed = ByteSize.TryParse(str.AsSpan(), CultureInfo.InvariantCulture, out var actualTry);
         Assert.False(parsed);
     }
-#endif
 
-#if NET8_0_OR_GREATER
     [Theory]
     [InlineData(10L, null, "10B")]
     [InlineData(10L, "", "10B")]
@@ -214,5 +209,4 @@ public sealed class ByteSizeTests
         var parsed = ByteSize.TryParse(utf8Bytes.AsSpan(), out var actualTry);
         Assert.False(parsed);
     }
-#endif
 }

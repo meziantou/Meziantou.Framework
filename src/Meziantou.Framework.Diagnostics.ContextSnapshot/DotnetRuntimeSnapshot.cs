@@ -9,12 +9,7 @@ public sealed class DotnetRuntimeSnapshot
     public string? FrameworkDescription { get; } = RuntimeInformation.FrameworkDescription;
     public bool IsMono { get; } = IsMonoStatic;
 
-    internal static bool IsFullFramework =>
-#if NET6_0_OR_GREATER
-        false;
-#else
-        FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
-#endif
+    internal static bool IsFullFramework => false;
 
     internal static bool IsMonoStatic { get; } = Type.GetType("Mono.RuntimeStructs") != null;
 }

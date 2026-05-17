@@ -235,7 +235,6 @@ internal static class ValueConverter
             return false;
         }
 
-#if NET7_0_OR_GREATER
         if (typeof(TValue) == typeof(Int128))
         {
             if (Int128.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedValue))
@@ -259,7 +258,6 @@ internal static class ValueConverter
             result = default;
             return false;
         }
-#endif
 
         // Try find TryParse(string, IFormatProvider, out TValue) method
         var methodInfo = GetStaticMethodFromHierarchy(typeof(TValue), "TryParse", [typeof(string), typeof(IFormatProvider), typeof(TValue).MakeByRefType()], ValidateReturnType);

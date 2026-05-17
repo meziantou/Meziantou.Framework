@@ -9,10 +9,7 @@ namespace Meziantou.Framework.Json;
 /// This class is immutable and thread-safe; a single instance can be reused to evaluate
 /// multiple JSON documents.
 /// </summary>
-public sealed class JsonPath
-#if NET7_0_OR_GREATER
-    : IParsable<JsonPath>, ISpanParsable<JsonPath>
-#endif
+public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
 {
     private readonly string _expression;
     private readonly JsonPathExpression _ast;
@@ -159,7 +156,6 @@ public sealed class JsonPath
     /// <summary>Returns the original JSONPath expression string.</summary>
     public override string ToString() => _expression;
 
-#if NET7_0_OR_GREATER
     static JsonPath IParsable<JsonPath>.Parse(string s, IFormatProvider? provider)
     {
         return Parse(s);
@@ -179,7 +175,6 @@ public sealed class JsonPath
     {
         return TryParse(s, out result);
     }
-#endif
 
     private static JsonPath Parse(ReadOnlySpan<char> expression, string? originalString)
     {

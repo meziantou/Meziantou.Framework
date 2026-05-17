@@ -864,7 +864,6 @@ static partial class StringExtensions
             }
         }
 
-#if NET6_0_OR_GREATER
         if (GlobalizationMode.Invariant)
         {
             // InvariantMode doesn't support string normalization, so many characters are not replaced
@@ -879,7 +878,6 @@ static partial class StringExtensions
                 }
             }
         }
-#endif
 
         return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }

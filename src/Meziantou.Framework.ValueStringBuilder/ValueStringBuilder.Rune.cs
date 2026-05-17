@@ -11,7 +11,6 @@ internal
 #endif
 ref partial struct ValueStringBuilder
 {
-#if NET6_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Append(Rune rune)
     {
@@ -50,5 +49,4 @@ ref partial struct ValueStringBuilder
             Append(rune);
         }
     }
-#endif
 }

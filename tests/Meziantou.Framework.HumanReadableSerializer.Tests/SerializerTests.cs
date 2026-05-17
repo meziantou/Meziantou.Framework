@@ -895,15 +895,11 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void UIntPtr() => AssertSerialization((UIntPtr)1, "1");
 
-#if NET7_0_OR_GREATER
     [Fact]
     public void Int128() => AssertSerialization(new Int128(123, 456), "2268949521066274849224");
-#endif
 
-#if NET7_0_OR_GREATER
     [Fact]
     public void UInt128() => AssertSerialization(new UInt128(123, 456), "2268949521066274849224");
-#endif
 
     [Fact]
     public void BigInteger() => AssertSerialization(new BigInteger(12), "12");
@@ -911,10 +907,8 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void Complex() => AssertSerialization(new Complex(12, 34), "<12; 34>");
 
-#if NET5_0_OR_GREATER
     [Fact]
     public void Half() => AssertSerialization((Half)0.5, "0.5");
-#endif
 
     [Fact]
     public void Single() => AssertSerialization(-5.30f, "-5.3");
@@ -1111,15 +1105,11 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void Timespan_DaysHoursMinutesSecondsMilliseconds() => AssertSerialization(new TimeSpan(1, 2, 3, 4, 5), "1.02:03:04.0050000");
 
-#if NET7_0_OR_GREATER
     [Fact]
     public void Timespan_DaysHoursMinutesSecondsMillisecondsMicroseconds() => AssertSerialization(new TimeSpan(1, 2, 3, 4, 5, 6), "1.02:03:04.0050060");
-#endif
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void DateOnly() => AssertSerialization(new DateOnly(2123, 4, 5), "2123-04-05");
-#endif
 
     [Fact]
     public void Guid() => AssertSerialization(System.Guid.Empty, "00000000-0000-0000-0000-000000000000");
@@ -1623,7 +1613,6 @@ public sealed partial class SerializerTests : SerializerTestsBase
             """);
     }
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void UnixDomainSocketEndPoint()
     {
@@ -1633,7 +1622,6 @@ public sealed partial class SerializerTests : SerializerTestsBase
             /var/run/dummy.sock
             """);
     }
-#endif
 
     [Fact]
     public void IPAddress()
@@ -1645,7 +1633,6 @@ public sealed partial class SerializerTests : SerializerTestsBase
             """);
     }
 
-#if NET8_0_OR_GREATER
     [Fact]
     public void IPNetwork()
     {
@@ -1655,9 +1642,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Expected = "192.168.1.0/24",
         });
     }
-#endif
 
-#if NET6_0_OR_GREATER
     [Fact]
     public void HttpRequestMessage()
     {
@@ -1692,7 +1677,6 @@ public sealed partial class SerializerTests : SerializerTestsBase
                 """,
         });
     }
-#endif
 
     [Fact]
     public void NullPropertyFollowedByNonNullProperty()

@@ -555,7 +555,6 @@ public sealed partial class FullPathTests
                 throw new Win32Exception(error, "Cannot create the symbolic link. You may need to enable Developer Mode or run the tests as admin.");
             }
         }
-#if NETCOREAPP3_1_OR_GREATER
         else
         {
             if (CreateUnixSymbolicLink(target, source) != 0)
@@ -563,10 +562,8 @@ public sealed partial class FullPathTests
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
         }
-#endif
     }
 
-#if NETCOREAPP3_1_OR_GREATER
     private static int CreateUnixSymbolicLink(string targetPath, string linkPath)
     {
         var utf8TargetPath = Encoding.UTF8.GetBytes(targetPath + '\0');
@@ -577,7 +574,6 @@ public sealed partial class FullPathTests
     [LibraryImport("libc", EntryPoint = "symlink", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
     private static partial int CreateUnixSymbolicLinkCore(byte[] targetPath, byte[] linkPath);
-#endif
 
     [LibraryImport("kernel32.dll", EntryPoint = "CreateSymbolicLinkW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.I1)]

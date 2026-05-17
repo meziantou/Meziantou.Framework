@@ -67,10 +67,8 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
         if (content is StringContent or FormUrlEncodedContent)
             return true;
 
-#if NET5_0_OR_GREATER
         if (content is System.Net.Http.Json.JsonContent)
             return true;
-#endif
 
         var charSet = content.Headers.ContentType?.CharSet;
         if (!string.IsNullOrEmpty(charSet))

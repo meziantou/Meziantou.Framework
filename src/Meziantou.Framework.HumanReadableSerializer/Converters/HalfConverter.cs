@@ -1,4 +1,3 @@
-#if NET5_0_OR_GREATER
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class HalfConverter : HumanReadableConverter<Half>
@@ -8,4 +7,3 @@ internal sealed class HalfConverter : HumanReadableConverter<Half>
         writer.WriteValue(value.ToString(CultureInfo.InvariantCulture));
     }
 }
-#endif

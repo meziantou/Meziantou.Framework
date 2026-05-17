@@ -1,4 +1,3 @@
-#if NET8_0_OR_GREATER
 using System.Net;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
@@ -9,4 +8,3 @@ internal sealed class IPNetworkConverter : HumanReadableConverter<IPNetwork>
         writer.WriteValue(value.ToString());
     }
 }
-#endif

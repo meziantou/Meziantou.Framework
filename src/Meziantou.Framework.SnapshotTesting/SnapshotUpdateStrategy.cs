@@ -87,12 +87,7 @@ public abstract class SnapshotUpdateStrategy
         var fi = new FileInfo(source);
         fi.TrySetReadOnly(false);
 
-#if NETCOREAPP3_0_OR_GREATER
         File.Move(source, destination, overwrite: true);
-#else
-        File.Copy(source, destination, overwrite: true);
-        TryDeleteFile(source);
-#endif
     }
 
     private protected static void CopyFile(string source, string destination)

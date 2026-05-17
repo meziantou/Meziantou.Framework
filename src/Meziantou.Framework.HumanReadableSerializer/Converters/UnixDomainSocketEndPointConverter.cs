@@ -1,4 +1,3 @@
-#if NETCOREAPP2_1_OR_GREATER
 using System.Diagnostics;
 using System.Net.Sockets;
 
@@ -12,4 +11,3 @@ internal sealed class UnixDomainSocketEndPointConverter : HumanReadableConverter
         writer.WriteValue(value.ToString());
     }
 }
-#endif

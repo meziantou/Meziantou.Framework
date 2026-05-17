@@ -1,6 +1,3 @@
-#if NET
-#pragma warning disable MA0042
-#endif
 using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Reflection.Metadata;

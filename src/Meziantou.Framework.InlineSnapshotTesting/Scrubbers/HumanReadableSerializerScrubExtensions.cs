@@ -23,14 +23,10 @@ public static class HumanReadableSerializerScrubExtensions
         index += 1; // Distinct from Guid.Empty
 
         const string Prefix = "00000000-0000-0000-0000-";
-#if NET6_0_OR_GREATER
         Span<char> data = stackalloc char[36];
         Prefix.AsSpan().CopyTo(data);
         _ = index.TryFormat(data[Prefix.Length..], out _, "000000000000", CultureInfo.InvariantCulture);
         return data.ToString();
-#else
-        return Prefix + index.ToString("000000000000", CultureInfo.InvariantCulture);
-#endif
     });
 
     /// <summary>Scrubs values of type T by replacing them with deterministic values like "TypeName_0", "TypeName_1", etc.</summary>

@@ -106,7 +106,6 @@ public static partial class StringBuilderExtensions
         return sb;
     }
 
-#if NET6_0_OR_GREATER
     public static StringBuilder AppendInvariant(this StringBuilder sb, Half value)
     {
         return sb.Append(value.ToString(CultureInfo.InvariantCulture));
@@ -119,7 +118,6 @@ public static partial class StringBuilderExtensions
 
         return sb;
     }
-#endif
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, float value)
     {

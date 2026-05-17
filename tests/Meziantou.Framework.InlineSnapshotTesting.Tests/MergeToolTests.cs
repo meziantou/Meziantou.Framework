@@ -6,7 +6,7 @@ public sealed class MergeToolTests
     [Fact]
     public void ValidateEnumMembers()
     {
-        var diffToolNames = Enum.GetNames<DiffEngine.DiffTool>();
+        var diffToolNames = Enum.GetNames<Meziantou.Framework.DiffEngine.DiffTool>();
         var inlineSnapshotPreferredDiffToolNames =
             typeof(MergeTool)
             .GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)

@@ -443,6 +443,9 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private static HResult NotificationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, bool isDirectory, ProjFs.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters)
     {
+        _ = isDirectory;
+        _ = destinationFileName;
+        _ = operationParameters;
         Debug.WriteLine($"{notification} {callbackData.FilePathName} {callbackData.Flags}");
         return HResult.S_OK;
     }
@@ -470,6 +473,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private HResult EndDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId)
     {
+        _ = callbackData;
         if (_activeEnumerations.TryRemove(enumerationId, out _))
             return HResult.S_OK;
 
@@ -478,6 +482,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private HResult GetDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId, string searchExpression, IntPtr dirEntryBufferHandle)
     {
+        _ = searchExpression;
         if (!_activeEnumerations.TryGetValue(enumerationId, out var session))
         {
             return HResult.E_INVALIDARG;

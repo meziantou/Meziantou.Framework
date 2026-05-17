@@ -255,7 +255,7 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     [Fact]
     public async Task ResolveAndSelectIpAddressAsync_IncrementsRejectedRequestsCounter()
     {
-        const string expectedReasonTag = "resolution_strategy_failure";
+        const string ExpectedReasonTag = "resolution_strategy_failure";
         var context = Guid.NewGuid();
         var rejectedRequestCount = 0L;
         string? reasonTag = null;
@@ -286,7 +286,7 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
                     if (string.Equals(tag.Key, ServerSideRequestForgeryMetrics.ReasonTagName, StringComparison.Ordinal))
                     {
                         reasonTag = tag.Value?.ToString();
-                        hasExpectedReasonTag = string.Equals(reasonTag, expectedReasonTag, StringComparison.Ordinal);
+                        hasExpectedReasonTag = string.Equals(reasonTag, ExpectedReasonTag, StringComparison.Ordinal);
                     }
                 }
 
@@ -310,7 +310,7 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
                 cancellationToken: CancellationToken.None).AsTask());
 
             Assert.Equal(1, rejectedRequestCount);
-            Assert.Equal(expectedReasonTag, reasonTag);
+            Assert.Equal(ExpectedReasonTag, reasonTag);
         }
         finally
         {
@@ -321,7 +321,7 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     [Fact]
     public async Task ResolveAndSelectIpAddressAsync_DoesNotIncrementRejectedRequestsCounterForHostNotFound()
     {
-        const string expectedReasonTag = "resolution_strategy_failure";
+        const string ExpectedReasonTag = "resolution_strategy_failure";
         var context = Guid.NewGuid();
         var rejectedRequestCount = 0L;
         var previousContext = MeterTestContext.Value;
@@ -348,7 +348,7 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
                 var hasExpectedReasonTag = false;
                 foreach (var tag in tags)
                 {
-                    if (string.Equals(tag.Key, ServerSideRequestForgeryMetrics.ReasonTagName, StringComparison.Ordinal) && string.Equals(tag.Value?.ToString(), expectedReasonTag, StringComparison.Ordinal))
+                    if (string.Equals(tag.Key, ServerSideRequestForgeryMetrics.ReasonTagName, StringComparison.Ordinal) && string.Equals(tag.Value?.ToString(), ExpectedReasonTag, StringComparison.Ordinal))
                     {
                         hasExpectedReasonTag = true;
                         break;

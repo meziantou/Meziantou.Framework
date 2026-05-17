@@ -1,12 +1,15 @@
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using Meziantou.Extensions.Logging.InMemory;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;
 
 public sealed class ServerSideRequestForgeryConnectPipelineTests
 {
+    private static readonly AsyncLocal<Guid> MeterTestContext = new();
+
     [Fact]
     public void ConfigureSsrf_SetsConnectCallback()
     {
@@ -252,76 +255,128 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     [Fact]
     public async Task ResolveAndSelectIpAddressAsync_IncrementsRejectedRequestsCounter()
     {
+        const string expectedReasonTag = "resolution_strategy_failure";
+        var context = Guid.NewGuid();
         var rejectedRequestCount = 0L;
         string? reasonTag = null;
-        using var listener = new MeterListener();
-        listener.InstrumentPublished = (instrument, meterListener) =>
+        var previousContext = MeterTestContext.Value;
+        MeterTestContext.Value = context;
+        try
         {
-            if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
+            using var listener = new MeterListener();
+            listener.InstrumentPublished = (instrument, meterListener) =>
             {
-                meterListener.EnableMeasurementEvents(instrument);
-            }
-        };
-        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
-        {
-            _ = instrument;
-            _ = state;
-            foreach (var tag in tags)
-            {
-                if (string.Equals(tag.Key, "reason", StringComparison.Ordinal))
+                if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
                 {
-                    reasonTag = tag.Value?.ToString();
+                    meterListener.EnableMeasurementEvents(instrument);
                 }
-            }
+            };
+            listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+            {
+                _ = instrument;
+                _ = state;
+                if (MeterTestContext.Value != context)
+                {
+                    return;
+                }
 
-            Interlocked.Add(ref rejectedRequestCount, measurement);
-        });
-        listener.Start();
+                var hasExpectedReasonTag = false;
+                foreach (var tag in tags)
+                {
+                    if (string.Equals(tag.Key, ServerSideRequestForgeryMetrics.ReasonTagName, StringComparison.Ordinal))
+                    {
+                        reasonTag = tag.Value?.ToString();
+                        hasExpectedReasonTag = string.Equals(reasonTag, expectedReasonTag, StringComparison.Ordinal);
+                    }
+                }
 
-        var options = new ServerSideRequestForgeryOptions();
-        options.SafeSchemes.Clear();
-        options.SafeSchemes.Add(Uri.UriSchemeHttps);
+                if (!hasExpectedReasonTag)
+                {
+                    return;
+                }
 
-        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
-            requestUri: new Uri("http://example.com"),
-            dnsEndPoint: new DnsEndPoint("example.com", 80),
-            options: options,
-            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]),
-            cancellationToken: CancellationToken.None).AsTask());
+                Interlocked.Add(ref rejectedRequestCount, measurement);
+            });
+            listener.Start();
 
-        Assert.Equal(1, rejectedRequestCount);
-        Assert.Equal("unsafe_scheme", reasonTag);
+            var options = new ServerSideRequestForgeryOptions();
+            options.ResolutionStrategy = new ThrowingResolutionStrategy();
+
+            await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+                requestUri: new Uri("https://example.com"),
+                dnsEndPoint: new DnsEndPoint("example.com", 443),
+                options: options,
+                dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]),
+                cancellationToken: CancellationToken.None).AsTask());
+
+            Assert.Equal(1, rejectedRequestCount);
+            Assert.Equal(expectedReasonTag, reasonTag);
+        }
+        finally
+        {
+            MeterTestContext.Value = previousContext;
+        }
     }
 
     [Fact]
     public async Task ResolveAndSelectIpAddressAsync_DoesNotIncrementRejectedRequestsCounterForHostNotFound()
     {
+        const string expectedReasonTag = "resolution_strategy_failure";
+        var context = Guid.NewGuid();
         var rejectedRequestCount = 0L;
-        using var listener = new MeterListener();
-        listener.InstrumentPublished = (instrument, meterListener) =>
+        var previousContext = MeterTestContext.Value;
+        MeterTestContext.Value = context;
+        try
         {
-            if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
+            using var listener = new MeterListener();
+            listener.InstrumentPublished = (instrument, meterListener) =>
             {
-                meterListener.EnableMeasurementEvents(instrument);
-            }
-        };
-        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+                if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
+                {
+                    meterListener.EnableMeasurementEvents(instrument);
+                }
+            };
+            listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+            {
+                _ = instrument;
+                _ = state;
+                if (MeterTestContext.Value != context)
+                {
+                    return;
+                }
+
+                var hasExpectedReasonTag = false;
+                foreach (var tag in tags)
+                {
+                    if (string.Equals(tag.Key, ServerSideRequestForgeryMetrics.ReasonTagName, StringComparison.Ordinal) && string.Equals(tag.Value?.ToString(), expectedReasonTag, StringComparison.Ordinal))
+                    {
+                        hasExpectedReasonTag = true;
+                        break;
+                    }
+                }
+
+                if (!hasExpectedReasonTag)
+                {
+                    return;
+                }
+
+                Interlocked.Add(ref rejectedRequestCount, measurement);
+            });
+            listener.Start();
+
+            await Assert.ThrowsAsync<SocketException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+                requestUri: new Uri("https://example.com"),
+                dnsEndPoint: new DnsEndPoint("example.com", 443),
+                options: new ServerSideRequestForgeryOptions(),
+                dnsIpAddressResolver: new FakeDnsIpAddressResolver([]),
+                cancellationToken: CancellationToken.None).AsTask());
+
+            Assert.Equal(0, rejectedRequestCount);
+        }
+        finally
         {
-            _ = instrument;
-            _ = tags;
-            _ = state;
-            Interlocked.Add(ref rejectedRequestCount, measurement);
-        });
-        listener.Start();
-
-        await Assert.ThrowsAsync<SocketException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
-            requestUri: new Uri("https://example.com"),
-            dnsEndPoint: new DnsEndPoint("example.com", 443),
-            options: new ServerSideRequestForgeryOptions(),
-            dnsIpAddressResolver: new FakeDnsIpAddressResolver([]),
-            cancellationToken: CancellationToken.None).AsTask());
-
-        Assert.Equal(0, rejectedRequestCount);
+            MeterTestContext.Value = previousContext;
+        }
     }
 
     private sealed class FakeDnsIpAddressResolver(IReadOnlyList<IPAddress> addresses) : IDnsIpAddressResolver
@@ -342,6 +397,17 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             _ = options;
             _ = cancellationToken;
             return ValueTask.FromResult(IPAddress.Parse("198.51.100.11"));
+        }
+    }
+
+    private sealed class ThrowingResolutionStrategy : IpAddressResolutionStrategy
+    {
+        protected internal override ValueTask<IPAddress> ResolveAsync(IReadOnlyList<IPAddress> addresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+        {
+            _ = addresses;
+            _ = options;
+            _ = cancellationToken;
+            throw new ServerSideRequestForgeryException("strategy failure");
         }
     }
 

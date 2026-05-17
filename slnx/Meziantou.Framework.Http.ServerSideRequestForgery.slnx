@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Http.ServerSideRequestForgery/Meziantou.Framework.Http.ServerSideRequestForgery.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests.csproj" />
+  </Folder>
+</Solution>

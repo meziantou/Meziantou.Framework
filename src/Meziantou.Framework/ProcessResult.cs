@@ -1,5 +1,6 @@
 namespace Meziantou.Framework;
 
+[Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
 public sealed class ProcessResult
 {
     internal ProcessResult(int exitCode, IReadOnlyList<ProcessOutput> output)

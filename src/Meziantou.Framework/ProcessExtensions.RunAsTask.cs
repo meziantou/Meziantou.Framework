@@ -5,11 +5,13 @@ namespace Meziantou.Framework;
 
 public static partial class ProcessExtensions
 {
+    [Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
     public static Task<ProcessResult> RunAsTaskAsync(string fileName, string? arguments, CancellationToken cancellationToken = default)
     {
         return RunAsTaskAsync(fileName, arguments, workingDirectory: null, cancellationToken);
     }
 
+    [Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
     public static Task<ProcessResult> RunAsTaskAsync(string fileName, string? arguments, string? workingDirectory, CancellationToken cancellationToken = default)
     {
         var psi = new ProcessStartInfo
@@ -34,6 +36,7 @@ public static partial class ProcessExtensions
         return RunAsTaskAsync(psi, cancellationToken);
     }
 
+    [Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
     public static Task<ProcessResult> RunAsTaskAsync(string fileName, IEnumerable<string>? arguments, string? workingDirectory, CancellationToken cancellationToken = default)
     {
         var psi = new ProcessStartInfo
@@ -58,6 +61,7 @@ public static partial class ProcessExtensions
         return RunAsTaskAsync(psi, cancellationToken);
     }
 
+    [Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
     public static Task<ProcessResult> RunAsTaskAsync(this ProcessStartInfo psi, bool redirectOutput, CancellationToken cancellationToken = default)
     {
         if (redirectOutput)
@@ -75,6 +79,7 @@ public static partial class ProcessExtensions
         return RunAsTaskAsync(psi, cancellationToken);
     }
 
+    [Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
     public static async Task<ProcessResult> RunAsTaskAsync(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

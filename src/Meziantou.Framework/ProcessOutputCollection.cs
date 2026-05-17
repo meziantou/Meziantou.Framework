@@ -2,6 +2,7 @@ using System.Collections;
 
 namespace Meziantou.Framework;
 
+[Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
 public sealed class ProcessOutputCollection : IReadOnlyList<ProcessOutput>
 {
     private readonly IReadOnlyList<ProcessOutput> _output;

@@ -447,13 +447,19 @@ namespace Meziantou.Framework
         public static System.Diagnostics.Process? GetParentProcess(this System.Diagnostics.Process process) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessEntry> GetProcesses() => throw null;
+        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
         public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
         public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
         public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
         public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(this System.Diagnostics.ProcessStartInfo psi, bool redirectOutput, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
         public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(this System.Diagnostics.ProcessStartInfo psi, System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 
+    [System.Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
     public sealed class ProcessOutput
     {
         public Meziantou.Framework.ProcessOutputType Type { get => throw null; }
@@ -462,6 +468,7 @@ namespace Meziantou.Framework
         public override string ToString() => throw null;
     }
 
+    [System.Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
     public sealed class ProcessOutputCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessOutput>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.ProcessOutput>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.ProcessOutput>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
@@ -471,12 +478,14 @@ namespace Meziantou.Framework
         public override string ToString() => throw null;
     }
 
+    [System.Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
     public enum ProcessOutputType
     {
         StandardOutput = 0,
         StandardError = 1
     }
 
+    [System.Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
     public sealed class ProcessResult
     {
         public int ExitCode { get => throw null; }

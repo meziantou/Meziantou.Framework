@@ -1,8 +1,11 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using Windows.Win32;
+using Windows.Win32.System.Antimalware;
 
 namespace Meziantou.Framework.Win32;
 
+[SupportedOSPlatform("windows")]
+#pragma warning disable CA1416 // The containing APIs are Windows-only.
 internal static partial class Amsi
 {
     internal static bool AmsiResultIsMalware(AmsiResult result)
@@ -10,33 +13,42 @@ internal static partial class Amsi
         return result >= AmsiResult.AMSI_RESULT_DETECTED;
     }
 
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [LibraryImport("Amsi.dll", EntryPoint = "AmsiInitialize", StringMarshalling = StringMarshalling.Utf16)]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
-    internal static partial int AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext);
+    internal static int AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext)
+    {
+        var result = PInvoke.AmsiInitialize(appName, out var context);
+        amsiContext = new AmsiContextSafeHandle((nint)context);
+        return result;
+    }
 
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [LibraryImport("Amsi.dll", EntryPoint = "AmsiUninitialize")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
-    internal static partial void AmsiUninitialize(IntPtr amsiContext);
+    internal static void AmsiUninitialize(IntPtr amsiContext)
+    {
+        PInvoke.AmsiUninitialize((HAMSICONTEXT)amsiContext);
+    }
 
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [LibraryImport("Amsi.dll", EntryPoint = "AmsiOpenSession")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
-    internal static partial int AmsiOpenSession(AmsiContextSafeHandle amsiContext, out AmsiSessionSafeHandle session);
+    internal static int AmsiOpenSession(AmsiContextSafeHandle amsiContext, out AmsiSessionSafeHandle session)
+    {
+        var result = PInvoke.AmsiOpenSession((HAMSICONTEXT)amsiContext.DangerousGetHandle(), out var nativeSession);
+        session = new AmsiSessionSafeHandle(amsiContext, (nint)nativeSession);
+        return result;
+    }
 
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [LibraryImport("Amsi.dll", EntryPoint = "AmsiCloseSession")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
-    internal static partial void AmsiCloseSession(AmsiContextSafeHandle amsiContext, IntPtr session);
+    internal static void AmsiCloseSession(AmsiContextSafeHandle amsiContext, IntPtr session)
+    {
+        PInvoke.AmsiCloseSession((HAMSICONTEXT)amsiContext.DangerousGetHandle(), (HAMSISESSION)session);
+    }
 
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [LibraryImport("Amsi.dll", EntryPoint = "AmsiScanString", StringMarshalling = StringMarshalling.Utf16)]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
-    internal static partial int AmsiScanString(AmsiContextSafeHandle amsiContext, string payload, string contentName, AmsiSessionSafeHandle session, out AmsiResult result);
+    internal static int AmsiScanString(AmsiContextSafeHandle amsiContext, string payload, string contentName, AmsiSessionSafeHandle session, out AmsiResult result)
+    {
+        var returnValue = PInvoke.AmsiScanString((HAMSICONTEXT)amsiContext.DangerousGetHandle(), payload, contentName, (HAMSISESSION)session.DangerousGetHandle(), out var nativeResult);
+        result = (AmsiResult)nativeResult;
+        return returnValue;
+    }
 
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    [LibraryImport("Amsi.dll", EntryPoint = "AmsiScanBuffer", StringMarshalling = StringMarshalling.Utf16)]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
-    internal static partial int AmsiScanBuffer(AmsiContextSafeHandle amsiContext, byte[] buffer, uint length, string contentName, AmsiSessionSafeHandle session, out AmsiResult result);
+    internal static int AmsiScanBuffer(AmsiContextSafeHandle amsiContext, byte[] buffer, uint length, string contentName, AmsiSessionSafeHandle session, out AmsiResult result)
+    {
+        var returnValue = PInvoke.AmsiScanBuffer((HAMSICONTEXT)amsiContext.DangerousGetHandle(), buffer.AsSpan(0, checked((int)length)), contentName, (HAMSISESSION)session.DangerousGetHandle(), out var nativeResult);
+        result = (AmsiResult)nativeResult;
+        return returnValue;
+    }
 }
+#pragma warning restore CA1416

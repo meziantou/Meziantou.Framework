@@ -43,6 +43,11 @@ internal static class ServerSideRequestForgeryConnectPipeline
         // Caching DNS would allow stale validation decisions and could reopen SSRF vectors
         // if a hostname changes after an earlier check but before later use.
         var resolvedAddresses = await dnsIpAddressResolver.ResolveAsync(dnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
+        if (resolvedAddresses.Count == 0)
+        {
+            throw new SocketException((int)SocketError.HostNotFound);
+        }
+
         var safeAddresses = FilterSafeAddresses(requestUri, resolvedAddresses, options, logger);
         IPAddress selectedAddress;
         try

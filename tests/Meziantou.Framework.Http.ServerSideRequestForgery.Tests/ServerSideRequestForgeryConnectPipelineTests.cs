@@ -1,5 +1,6 @@
 using System.Diagnostics.Metrics;
 using System.Net;
+using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;
@@ -139,6 +140,19 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             options: new ServerSideRequestForgeryOptions(),
             dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]),
             cancellationToken: CancellationToken.None).AsTask());
+    }
+
+    [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_ThrowsHostNotFoundWhenNoIpAddressIsResolved()
+    {
+        var exception = await Assert.ThrowsAsync<SocketException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([]),
+            cancellationToken: CancellationToken.None).AsTask());
+
+        Assert.Equal(SocketError.HostNotFound, exception.SocketErrorCode);
     }
 
     [Fact]

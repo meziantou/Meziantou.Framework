@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Win32
         No = 7
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
     public sealed class OpenFolderDialog
     {
         public string? Title { get => throw null; set { } }

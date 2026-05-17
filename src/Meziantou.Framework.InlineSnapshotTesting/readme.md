@@ -234,7 +234,7 @@ When a snapshot is updated, a diff tool is used to compare the expected value an
 - The merge tool from the local git configuration
 - The diff tool from the local git configuration
 - The diff tool from the current IDE (support VS Code, VS, Rider)
-- The first available diff tool (rely on [DiffEngine](https://github.com/VerifyTests/DiffEngine?tab=readme-ov-file#supported-tools))
+- The first available diff tool (rely on [Meziantou.Framework.DiffEngine](../Meziantou.Framework.DiffEngine/readme.md))
 
 You can disable the diff tool by setting the `DiffEngine_Disabled` environment variable.
 

@@ -44,6 +44,7 @@
     <Project Path="src/Meziantou.Framework.DependencyScanning.Tool/Meziantou.Framework.DependencyScanning.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
     <Project Path="src/Meziantou.Framework.Diagnostics.ContextSnapshot/Meziantou.Framework.Diagnostics.ContextSnapshot.csproj" />
+    <Project Path="src/Meziantou.Framework.DiffEngine/Meziantou.Framework.DiffEngine.csproj" />
     <Project Path="src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
     <Project Path="src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
     <Project Path="src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
@@ -150,6 +151,7 @@
     <Project Path="tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DependencyScanning.Tool.Tests/Meziantou.Framework.DependencyScanning.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.DiffEngine.Tests/Meziantou.Framework.DiffEngine.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsFilter.Tests/Meziantou.Framework.DnsFilter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />

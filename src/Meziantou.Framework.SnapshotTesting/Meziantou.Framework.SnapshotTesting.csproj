@@ -23,11 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.DiffEngine/Meziantou.Framework.DiffEngine.csproj" />
     <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="../Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="DiffEngine" Version="19.2.0" />
   </ItemGroup>
 </Project>

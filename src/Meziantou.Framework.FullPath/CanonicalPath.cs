@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace Meziantou.Framework;
@@ -7,7 +8,7 @@ internal static partial class CanonicalPath
 {
     public static bool TryGetCanonicalPath(string path, [NotNullWhen(true)] out string? canonicalPath)
     {
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
         {
             return WindowsCanonicalPath.TryGetCanonicalPath(path, out canonicalPath);
         }
@@ -15,6 +16,7 @@ internal static partial class CanonicalPath
         return UnixCanonicalPath.TryGetCanonicalPath(path, out canonicalPath);
     }
 
+    [SupportedOSPlatform("windows6.0.6000")]
     private static class WindowsCanonicalPath
     {
         public static bool TryGetCanonicalPath(string path, [NotNullWhen(true)] out string? canonicalPath)

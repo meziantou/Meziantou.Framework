@@ -1,0 +1,6 @@
+CreateToolhelp32Snapshot
+Process32First
+Process32Next
+CloseHandle
+PROCESSENTRY32
+CREATE_TOOLHELP_SNAPSHOT_FLAGS

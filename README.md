@@ -4,7 +4,7 @@
 | :--- | :---: | :---: |
 | Meziantou.AspNetCore | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore/) | |
 | Meziantou.AspNetCore.Authentication.HttpBasic | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Authentication.HttpBasic.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Authentication.HttpBasic/) | [readme](src/Meziantou.AspNetCore.Authentication.HttpBasic/readme.md) |
-| Meziantou.AspNetCore.Components | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components/) | |
+| Meziantou.AspNetCore.Components | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components/) | [readme](src/Meziantou.AspNetCore.Components/readme.md) |
 | Meziantou.AspNetCore.Components.LogViewer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.LogViewer.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components.LogViewer/) | [readme](src/Meziantou.AspNetCore.Components.LogViewer/readme.md) |
 | Meziantou.AspNetCore.Components.WebAssembly | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.WebAssembly.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components.WebAssembly/) | [readme](src/Meziantou.AspNetCore.Components.WebAssembly/readme.md) |
 | Meziantou.AspNetCore.Mvc | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Mvc.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Mvc/) | |

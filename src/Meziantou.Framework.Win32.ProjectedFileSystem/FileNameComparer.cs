@@ -3,7 +3,7 @@ using System.Runtime.Versioning;
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 /// <summary>Compares file names using Windows file name comparison rules.</summary>
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows10.0.17763")]
 public sealed class FileNameComparer : IComparer<string?>
 {
     private FileNameComparer()

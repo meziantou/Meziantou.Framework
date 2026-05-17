@@ -1,253 +1,136 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using ProjFs = Windows.Win32.Storage.ProjectedFileSystem;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
-internal static partial class NativeMethods
+[SupportedOSPlatform("windows10.0.17763")]
+internal static class NativeMethods
 {
-    // C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um\projectedfslib.h
-
-    [LibraryImport("ProjectedFSLib.dll", StringMarshalling = StringMarshalling.Utf16)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjMarkDirectoryAsPlaceholder(string rootPathName, string? targetPathName, IntPtr versionInfo, in Guid virtualizationInstanceID);
-
-    [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern HResult PrjStartVirtualizing(string virtualizationRootPath, in PrjCallbacks callbacks, IntPtr instanceContext, in PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle namespaceVirtualizationContext);
-
-    [LibraryImport("ProjectedFSLib.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjStopVirtualizing(IntPtr namespaceVirtualizationContext);
-
-    [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern HResult PrjFillDirEntryBuffer(string fileName, in PRJ_FILE_BASIC_INFO callbacks, IntPtr dirEntryBufferHandle);
-
-    [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern HResult PrjWritePlaceholderInfo(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize);
-
-    [LibraryImport("ProjectedFSLib.dll", StringMarshalling = StringMarshalling.Utf16)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial int PrjFileNameCompare(string fileName1, string fileName2);
-
-    [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern bool PrjFileNameMatch(string fileNameToCheck, string pattern);
-
-    [LibraryImport("ProjectedFSLib.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjGetVirtualizationInstanceInfo(ProjFSSafeHandle namespaceVirtualizationContext, out PRJ_VIRTUALIZATION_INSTANCE_INFO virtualizationInstanceInfo);
-
-    [LibraryImport("ProjectedFSLib.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial IntPtr PrjAllocateAlignedBuffer(ProjFSSafeHandle namespaceVirtualizationContext, uint size);
-
-    [LibraryImport("ProjectedFSLib.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial void PrjFreeAlignedBuffer(IntPtr buffer);
-
-    [LibraryImport("ProjectedFSLib.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjWriteFileData(ProjFSSafeHandle namespaceVirtualizationContext, in Guid dataStreamId, IntPtr buffer, ulong byteOffset, uint length);
-
-    [LibraryImport("ProjectedFSLib.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjClearNegativePathCache(ProjFSSafeHandle namespaceVirtualizationContext, out uint totalEntryNumber);
-
-    [LibraryImport("ProjectedFSLib.dll", StringMarshalling = StringMarshalling.Utf16)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjGetOnDiskFileState(string destinationFileName, out PRJ_FILE_STATE fileState);
-
-    [LibraryImport("ProjectedFSLib.dll", StringMarshalling = StringMarshalling.Utf16)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjDeleteFile(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason);
-
-    [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern HResult PrjUpdateFileIfNeeded(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason);
-
-    [LibraryImport("ProjectedFSLib.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjCompleteCommand(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, IntPtr extendedParameters);
-
-    [LibraryImport("ProjectedFSLib.dll", EntryPoint = nameof(PrjCompleteCommand))]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial HResult PrjCompleteCommandWithExtendedParameters(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, in PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS extendedParameters);
-
-    [StructLayout(LayoutKind.Explicit)]
-    internal struct PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS
+    internal static HResult PrjMarkDirectoryAsPlaceholder(string rootPathName, string? targetPathName, IntPtr versionInfo, in Guid virtualizationInstanceID)
     {
-        [FieldOffset(0)]
-        public PRJ_COMPLETE_COMMAND_TYPE CommandType;
+        if (versionInfo != IntPtr.Zero)
+            throw new NotSupportedException($"'{nameof(versionInfo)}' must be {nameof(IntPtr)}.{nameof(IntPtr.Zero)}");
 
-        [FieldOffset(4)]
-        public PRJ_NOTIFY_TYPES NotificationMask;
-
-        [FieldOffset(4)]
-        public IntPtr DirEntryBufferHandle;
+        return ToHResult(PInvoke.PrjMarkDirectoryAsPlaceholder(rootPathName, targetPathName, versionInfo: null, in virtualizationInstanceID));
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct PRJ_PLACEHOLDER_INFO
+    internal static unsafe HResult PrjStartVirtualizing(string virtualizationRootPath, in ProjFs.PRJ_CALLBACKS callbacks, IntPtr instanceContext, in ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle namespaceVirtualizationContext)
     {
-        public PRJ_FILE_BASIC_INFO FileBasicInfo;
-        public EaInformation EaInformation;
-        public SecurityInformation SecurityInformation;
-        public StreamsInformation StreamsInformation;
-        public PRJ_PLACEHOLDER_VERSION_INFO VersionInfo;
-        public byte VariableData;
+        var hr = ToHResult(PInvoke.PrjStartVirtualizing(virtualizationRootPath, in callbacks, (void*)instanceContext, options, out var context));
+        namespaceVirtualizationContext = new ProjFSSafeHandle((IntPtr)context, ownHandle: true);
+        return hr;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct EaInformation
+    internal static HResult PrjStopVirtualizing(IntPtr namespaceVirtualizationContext)
     {
-        public uint EaBufferSize;
-        public uint OffsetToFirstEa;
+        PInvoke.PrjStopVirtualizing((ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT)namespaceVirtualizationContext);
+        return HResult.S_OK;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SecurityInformation
+    internal static HResult PrjFillDirEntryBuffer(string fileName, in ProjFs.PRJ_FILE_BASIC_INFO callbacks, IntPtr dirEntryBufferHandle)
     {
-        public uint SecurityBufferSize;
-        public uint OffsetToSecurityDescriptor;
+        return ToHResult(PInvoke.PrjFillDirEntryBuffer(fileName, callbacks, (ProjFs.PRJ_DIR_ENTRY_BUFFER_HANDLE)dirEntryBufferHandle));
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct StreamsInformation
+    internal static unsafe HResult PrjWritePlaceholderInfo(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in ProjFs.PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize)
     {
-        public uint StreamsInfoBufferSize;
-        public uint OffsetToFirstStreamInfo;
+        fixed (ProjFs.PRJ_PLACEHOLDER_INFO* placeholderInfoPointer = &placeholderInfo)
+        {
+            var placeholderInfoData = new ReadOnlySpan<byte>((byte*)placeholderInfoPointer, checked((int)placeholderInfoSize));
+            return ToHResult(PInvoke.PrjWritePlaceholderInfo(ToContext(namespaceVirtualizationContext), destinationFileName, placeholderInfoData));
+        }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct PRJ_PLACEHOLDER_VERSION_INFO
+    internal static int PrjFileNameCompare(string fileName1, string fileName2)
     {
-        public const int PRJ_PLACEHOLDER_ID_LENGTH = 128;
-
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
-        public byte[] ProviderID;
-
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
-        public byte[] ContentID;
+        return PInvoke.PrjFileNameCompare(fileName1, fileName2);
     }
 
-    // Structure configuring the projection provider callbacks.
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct PrjCallbacks
+    internal static bool PrjFileNameMatch(string fileNameToCheck, string pattern)
     {
-        public PrjStartDirectoryEnumerationCb StartDirectoryEnumerationCallback;
-        public PrjEndDirectoryEnumerationCb EndDirectoryEnumerationCallback;
-        public PrjGetDirectoryEnumerationCb GetDirectoryEnumerationCallback;
-        public PrjGetPlaceholderInfoCb GetPlaceholderInfoCallback;
-        public PrjGetFileDataCb GetFileDataCallback;
-        public PrjQueryFileNameCb QueryFileNameCallback;
-        public PrjNotificationCb NotificationCallback;
-        public PrjCancelCommandCb CancelCommandCallback;
+        return PInvoke.PrjFileNameMatch(fileNameToCheck, pattern);
     }
 
-    // Callback signatures.
-    internal delegate HResult PrjStartDirectoryEnumerationCb(in PrjCallbackData callbackData, in Guid enumerationId);
-    internal delegate HResult PrjGetDirectoryEnumerationCb(in PrjCallbackData callbackData, in Guid enumerationId, [MarshalAs(UnmanagedType.LPWStr), In] string searchExpression, IntPtr dirEntryBufferHandle);
-    internal delegate HResult PrjEndDirectoryEnumerationCb(in PrjCallbackData callbackData, in Guid enumerationId);
-
-    internal delegate HResult PrjGetPlaceholderInfoCb(in PrjCallbackData callbackData);
-    internal delegate HResult PrjGetFileDataCb(in PrjCallbackData callbackData, ulong byteOffset, uint length);
-    internal delegate HResult PrjQueryFileNameCb(in PrjCallbackData callbackData);
-    internal delegate HResult PrjNotificationCb(in PrjCallbackData callbackData, bool isDirectory, PRJ_NOTIFICATION notification, [MarshalAs(UnmanagedType.LPWStr), In] string destinationFileName, [In, Out] IntPtr operationParameters);
-    internal delegate HResult PrjCancelCommandCb(in PrjCallbackData callbackData);
-
-    // Callback data passed to each of the callbacks above.
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct PrjCallbackData
+    internal static HResult PrjGetVirtualizationInstanceInfo(ProjFSSafeHandle namespaceVirtualizationContext, out ProjFs.PRJ_VIRTUALIZATION_INSTANCE_INFO virtualizationInstanceInfo)
     {
-        public uint Size;
-        public PRJ_CALLBACK_DATA_FLAGS Flags;
-        public IntPtr NamespaceVirtualizationContext;
-        public int CommandId;
-        public Guid FileId;
-        public Guid DataStreamId;
-        public string FilePathName;
-        public IntPtr VersionInfo;
-        public uint TriggeringProcessId;
-        public string TriggeringProcessImageFileName;
-        public IntPtr InstanceContext;
+        return ToHResult(PInvoke.PrjGetVirtualizationInstanceInfo(ToContext(namespaceVirtualizationContext), out virtualizationInstanceInfo));
     }
 
-    internal enum PRJ_CALLBACK_DATA_FLAGS : uint
+    internal static unsafe IntPtr PrjAllocateAlignedBuffer(ProjFSSafeHandle namespaceVirtualizationContext, uint size)
     {
-        PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN = 1,
-        PRJ_CB_DATA_FLAG_ENUM_RETURN_SINGLE_ENTRY = 2,
+        return (IntPtr)PInvoke.PrjAllocateAlignedBuffer(ToContext(namespaceVirtualizationContext), (nuint)size);
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct PRJ_FILE_BASIC_INFO
+    internal static unsafe void PrjFreeAlignedBuffer(IntPtr buffer)
     {
-        public bool IsDirectory;
-        public long FileSize;
-        public LARGE_INTEGER CreationTime;
-        public LARGE_INTEGER LastAccessTime;
-        public LARGE_INTEGER LastWriteTime;
-        public LARGE_INTEGER ChangeTime;
-        public FileAttributes FileAttributes;
+        PInvoke.PrjFreeAlignedBuffer((void*)buffer);
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct PRJ_VIRTUALIZATION_INSTANCE_INFO
+    internal static unsafe HResult PrjWriteFileData(ProjFSSafeHandle namespaceVirtualizationContext, in Guid dataStreamId, IntPtr buffer, ulong byteOffset, uint length)
     {
-        public Guid InstanceID;
-        public uint WriteAlignment;
+        var payload = new ReadOnlySpan<byte>((void*)buffer, checked((int)length));
+        return ToHResult(PInvoke.PrjWriteFileData(ToContext(namespaceVirtualizationContext), in dataStreamId, payload, byteOffset));
     }
 
-    [StructLayout(LayoutKind.Explicit, Size = 8)]
-    internal struct LARGE_INTEGER
+    internal static HResult PrjClearNegativePathCache(ProjFSSafeHandle namespaceVirtualizationContext, out uint totalEntryNumber)
     {
-        [FieldOffset(0)] public long QuadPart;
-        [FieldOffset(0)] public uint LowPart;
-        [FieldOffset(4)] public int HighPart;
+        return ToHResult(PInvoke.PrjClearNegativePathCache(ToContext(namespaceVirtualizationContext), out totalEntryNumber));
     }
 
-    internal enum PRJ_STARTVIRTUALIZING_FLAGS
+    internal static HResult PrjGetOnDiskFileState(string destinationFileName, out PRJ_FILE_STATE fileState)
     {
-        PRJ_FLAG_NONE,
-        PRJ_FLAG_USE_NEGATIVE_PATH_CACHE,
-    };
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct PRJ_STARTVIRTUALIZING_OPTIONS
-    {
-        public PRJ_STARTVIRTUALIZING_FLAGS Flags;
-        public uint PoolThreadCount;
-        public uint ConcurrentThreadCount;
-        public IntPtr NotificationMappings;
-        public uint NotificationMappingsCount;
+        var hr = ToHResult(PInvoke.PrjGetOnDiskFileState(destinationFileName, out var nativeFileState));
+        fileState = (PRJ_FILE_STATE)nativeFileState;
+        return hr;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct PRJ_NOTIFICATION_MAPPING
+    internal static HResult PrjDeleteFile(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
     {
-        public PRJ_NOTIFY_TYPES NotificationBitMask;
-        public string NotificationRoot;
+        var hr = ToHResult(PInvoke.PrjDeleteFile(ToContext(namespaceVirtualizationContext), destinationFileName, (ProjFs.PRJ_UPDATE_TYPES)updateFlags, out var nativeFailureReason));
+        failureReason = (PRJ_UPDATE_FAILURE_CAUSES)nativeFailureReason;
+        return hr;
     }
 
-    internal enum PRJ_NOTIFICATION
+    internal static unsafe HResult PrjUpdateFileIfNeeded(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in ProjFs.PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
     {
-        PRJ_NOTIFICATION_FILE_OPENED = 0x00000002,
-        PRJ_NOTIFICATION_NEW_FILE_CREATED = 0x00000004,
-        PRJ_NOTIFICATION_FILE_OVERWRITTEN = 0x00000008,
-        PRJ_NOTIFICATION_PRE_DELETE = 0x00000010,
-        PRJ_NOTIFICATION_PRE_RENAME = 0x00000020,
-        PRJ_NOTIFICATION_PRE_SET_HARDLINK = 0x00000040,
-        PRJ_NOTIFICATION_FILE_RENAMED = 0x00000080,
-        PRJ_NOTIFICATION_HARDLINK_CREATED = 0x00000100,
-        PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_NO_MODIFICATION = 0x00000200,
-        PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED = 0x00000400,
-        PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED = 0x00000800,
-        PRJ_NOTIFICATION_FILE_PRE_CONVERT_TO_FULL = 0x00001000,
+        ProjFs.PRJ_UPDATE_FAILURE_CAUSES nativeFailureReason;
+        fixed (ProjFs.PRJ_PLACEHOLDER_INFO* placeholderInfoPointer = &placeholderInfo)
+        {
+            var placeholderInfoData = new ReadOnlySpan<byte>((byte*)placeholderInfoPointer, checked((int)placeholderInfoSize));
+            var hr = ToHResult(PInvoke.PrjUpdateFileIfNeeded(ToContext(namespaceVirtualizationContext), destinationFileName, placeholderInfoData, (ProjFs.PRJ_UPDATE_TYPES)updateFlags, out nativeFailureReason));
+            failureReason = (PRJ_UPDATE_FAILURE_CAUSES)nativeFailureReason;
+            return hr;
+        }
     }
 
-    internal enum PRJ_COMPLETE_COMMAND_TYPE
+    internal static HResult PrjCompleteCommand(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, IntPtr extendedParameters)
     {
-        PRJ_COMPLETE_COMMAND_TYPE_NOTIFICATION = 1,
-        PRJ_COMPLETE_COMMAND_TYPE_ENUMERATION = 2,
+        ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? parameters = extendedParameters == IntPtr.Zero
+            ? null
+            : Marshal.PtrToStructure<ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS>(extendedParameters);
+        return ToHResult(PInvoke.PrjCompleteCommand(ToContext(namespaceVirtualizationContext), commandId, ToHRESULT(completionResult), parameters));
+    }
+
+    internal static HResult PrjCompleteCommandWithExtendedParameters(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, in ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS extendedParameters)
+    {
+        return ToHResult(PInvoke.PrjCompleteCommand(ToContext(namespaceVirtualizationContext), commandId, ToHRESULT(completionResult), extendedParameters));
+    }
+
+    private static ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT ToContext(ProjFSSafeHandle handle)
+    {
+        return (ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT)handle.DangerousGetHandle();
+    }
+
+    private static HResult ToHResult(HRESULT value)
+    {
+        return new HResult(value.Value);
+    }
+
+    private static HRESULT ToHRESULT(HResult value)
+    {
+        return (HRESULT)value.Value;
     }
 }

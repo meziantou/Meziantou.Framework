@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
-[System.Runtime.Versioning.SupportedOSPlatform("windows")]
+[System.Runtime.Versioning.SupportedOSPlatform("windows10.0.17763")]
 internal sealed class DirectoryEnumerationSession : IDisposable
 {
     private IEnumerator<ProjectedFileSystemEntry>? _enumerator;

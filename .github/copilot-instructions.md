@@ -3,6 +3,7 @@
 You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
 Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
+When building and running tests, use `/p:TreatsWarningsAsErrors=true`.
 Also, do not assume that tests pass just because you did not see any failures in your last test run; verify that all relevant tests were actually run.
 When running tests, you can ignore the warning about "Blame" data collector errors.
 When running tests, set `DiffEngine_Disabled=true` to disable DiffTool usage from InlineSnapshotTesting.
@@ -36,3 +37,5 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Do not use `static` lambdas unless necessary to avoid a closure allocation.
 
 Do not consider solution files (sln, slnx) in the slnx folders. These files are automatically generated and only for developers working on the project.
+
+Do not manually update files under the `ref/` folder. Their content is generated when building the solution.

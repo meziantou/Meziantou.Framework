@@ -1,0 +1,16 @@
+PrjMarkDirectoryAsPlaceholder
+PrjStartVirtualizing
+PrjStopVirtualizing
+PrjFillDirEntryBuffer
+PrjWritePlaceholderInfo
+PrjFileNameCompare
+PrjFileNameMatch
+PrjGetVirtualizationInstanceInfo
+PrjAllocateAlignedBuffer
+PrjFreeAlignedBuffer
+PrjWriteFileData
+PrjClearNegativePathCache
+PrjGetOnDiskFileState
+PrjDeleteFile
+PrjUpdateFileIfNeeded
+PrjCompleteCommand

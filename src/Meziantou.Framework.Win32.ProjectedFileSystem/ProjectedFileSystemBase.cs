@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using Windows.Win32.Foundation;
+using ProjFs = Windows.Win32.Storage.ProjectedFileSystem;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
@@ -43,7 +45,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 /// </code>
 /// </example>
 // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows10.0.17763")]
 public abstract class ProjectedFileSystemBase : IDisposable
 {
     // Remaining work
@@ -52,10 +54,10 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     private readonly Guid _virtualizationInstanceId;
     private ProjFSSafeHandle? _instanceHandle;
-    private NativeMethods.PrjCallbacks _callbacks;
+    private ProjFs.PRJ_CALLBACKS _callbacks;
+    private GCHandle _instanceContextHandle;
 
     private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new();
-    private long _context;
 
     /// <summary>Gets the root folder path where the virtual file system is mounted.</summary>
     public string RootFolder { get; }
@@ -81,7 +83,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
     /// <summary>Starts the virtual file system with the specified options.</summary>
     /// <param name="options">Configuration options for the virtual file system. Can be null to use default settings.</param>
     /// <exception cref="NotSupportedException">Thrown when the Projected File System Windows feature is not installed.</exception>
-    public void Start(ProjectedFileSystemStartOptions? options)
+    public unsafe void Start(ProjectedFileSystemStartOptions? options)
     {
         if (_instanceHandle is not null)
             return;
@@ -97,53 +99,74 @@ public abstract class ProjectedFileSystemBase : IDisposable
         }
 
         // Set up the callback table for the projection provider.
-        _callbacks = new NativeMethods.PrjCallbacks
+        _callbacks = new ProjFs.PRJ_CALLBACKS
         {
-            StartDirectoryEnumerationCallback = StartDirectoryEnumerationCallback,
-            EndDirectoryEnumerationCallback = EndDirectoryEnumerationCallback,
-            GetDirectoryEnumerationCallback = GetDirectoryEnumerationCallback,
-            GetPlaceholderInfoCallback = GetPlaceholderInfoCallback,
-            GetFileDataCallback = GetFileDataCallback,
-            CancelCommandCallback = CancelCommandCallback,
-            NotificationCallback = NotificationCallback,
-            QueryFileNameCallback = QueryFileNameCallback,
+            StartDirectoryEnumerationCallback = StartDirectoryEnumerationCallbackNative,
+            EndDirectoryEnumerationCallback = EndDirectoryEnumerationCallbackNative,
+            GetDirectoryEnumerationCallback = GetDirectoryEnumerationCallbackNative,
+            GetPlaceholderInfoCallback = GetPlaceholderInfoCallbackNative,
+            GetFileDataCallback = GetFileDataCallbackNative,
+            CancelCommandCallback = CancelCommandCallbackNative,
+            NotificationCallback = NotificationCallbackNative,
+            QueryFileNameCallback = QueryFileNameCallbackNative,
         };
 
-        var opt = new NativeMethods.PRJ_STARTVIRTUALIZING_OPTIONS();
-        var notificationMappingsPtr = IntPtr.Zero;
+        var opt = new ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS();
+        ProjFs.PRJ_NOTIFICATION_MAPPING* notificationMappingsPointer = null;
+        IntPtr[]? notificationRoots = null;
+        var instanceContextHandle = GCHandle.Alloc(this);
         try
         {
             if (options is not null)
             {
-                opt.Flags = options.UseNegativePathCache ? NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_USE_NEGATIVE_PATH_CACHE : NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_NONE;
+                opt.Flags = options.UseNegativePathCache ? ProjFs.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_USE_NEGATIVE_PATH_CACHE : ProjFs.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_NONE;
 
-                var structureSize = Marshal.SizeOf<NativeMethods.PRJ_NOTIFICATION_MAPPING>();
-                notificationMappingsPtr = Marshal.AllocHGlobal(structureSize * options.Notifications.Count);
+                var structureSize = sizeof(ProjFs.PRJ_NOTIFICATION_MAPPING);
+                notificationRoots = new IntPtr[options.Notifications.Count];
+                notificationMappingsPointer = (ProjFs.PRJ_NOTIFICATION_MAPPING*)Marshal.AllocHGlobal(structureSize * options.Notifications.Count);
 
                 for (var i = 0; i < options.Notifications.Count; i++)
                 {
-                    var copy = new NativeMethods.PRJ_NOTIFICATION_MAPPING()
+                    var notificationRoot = options.Notifications[i].Path ?? "";
+                    notificationRoots[i] = Marshal.StringToHGlobalUni(notificationRoot);
+                    notificationMappingsPointer[i] = new ProjFs.PRJ_NOTIFICATION_MAPPING
                     {
-                        NotificationBitMask = options.Notifications[i].NotificationType,
-                        NotificationRoot = options.Notifications[i].Path ?? "",
+                        NotificationBitMask = (ProjFs.PRJ_NOTIFY_TYPES)options.Notifications[i].NotificationType,
+                        NotificationRoot = (char*)notificationRoots[i],
                     };
-
-                    Marshal.StructureToPtr(copy, IntPtr.Add(notificationMappingsPtr, structureSize * i), fDeleteOld: false);
                 }
 
-                opt.NotificationMappings = notificationMappingsPtr;
+                opt.NotificationMappings = notificationMappingsPointer;
                 opt.NotificationMappingsCount = (uint)options.Notifications.Count;
             }
 
-            var context = ++_context;
-            var hr = NativeMethods.PrjStartVirtualizing(RootFolder, in _callbacks, new IntPtr(context), in opt, out _instanceHandle);
+            var context = GCHandle.ToIntPtr(instanceContextHandle);
+            var hr = NativeMethods.PrjStartVirtualizing(RootFolder, in _callbacks, context, in opt, out _instanceHandle);
             hr.EnsureSuccess();
+            _instanceContextHandle = instanceContextHandle;
+            instanceContextHandle = default;
         }
         finally
         {
-            if (notificationMappingsPtr != IntPtr.Zero)
+            if (instanceContextHandle.IsAllocated)
             {
-                Marshal.FreeHGlobal(notificationMappingsPtr);
+                instanceContextHandle.Free();
+            }
+
+            if (notificationRoots is not null)
+            {
+                foreach (var notificationRoot in notificationRoots)
+                {
+                    if (notificationRoot != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(notificationRoot);
+                    }
+                }
+            }
+
+            if (notificationMappingsPointer is not null)
+            {
+                Marshal.FreeHGlobal((IntPtr)notificationMappingsPointer);
             }
         }
     }
@@ -197,6 +220,12 @@ public abstract class ProjectedFileSystemBase : IDisposable
         _callbacks = default;
         _instanceHandle.Dispose();
         _instanceHandle = null;
+
+        if (_instanceContextHandle.IsAllocated)
+        {
+            _instanceContextHandle.Free();
+            _instanceContextHandle = default;
+        }
     }
 
     /// <summary>Determines whether a file name matches a pattern using Windows file name matching rules.</summary>
@@ -258,11 +287,151 @@ public abstract class ProjectedFileSystemBase : IDisposable
         Stop();
     }
 
-    private HResult QueryFileNameCallback(in NativeMethods.PrjCallbackData callbackData)
+    private static unsafe HRESULT QueryFileNameCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData)
+    {
+        if (callbackData is null)
+            return ToHRESULT(HResult.E_INVALIDARG);
+
+        try
+        {
+            var instance = GetInstance(callbackData);
+            return ToHRESULT(instance.QueryFileNameCallback(in *callbackData));
+        }
+        catch (Exception ex)
+        {
+            return (HRESULT)Marshal.GetHRForException(ex);
+        }
+    }
+
+    private static unsafe HRESULT StartDirectoryEnumerationCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData, Guid* enumerationId)
+    {
+        if (callbackData is null || enumerationId is null)
+            return ToHRESULT(HResult.E_INVALIDARG);
+
+        try
+        {
+            var instance = GetInstance(callbackData);
+            return ToHRESULT(instance.StartDirectoryEnumerationCallback(in *callbackData, in *enumerationId));
+        }
+        catch (Exception ex)
+        {
+            return (HRESULT)Marshal.GetHRForException(ex);
+        }
+    }
+
+    private static unsafe HRESULT EndDirectoryEnumerationCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData, Guid* enumerationId)
+    {
+        if (callbackData is null || enumerationId is null)
+            return ToHRESULT(HResult.E_INVALIDARG);
+
+        try
+        {
+            var instance = GetInstance(callbackData);
+            return ToHRESULT(instance.EndDirectoryEnumerationCallback(in *callbackData, in *enumerationId));
+        }
+        catch (Exception ex)
+        {
+            return (HRESULT)Marshal.GetHRForException(ex);
+        }
+    }
+
+    private static unsafe HRESULT GetDirectoryEnumerationCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData, Guid* enumerationId, PCWSTR searchExpression, ProjFs.PRJ_DIR_ENTRY_BUFFER_HANDLE dirEntryBufferHandle)
+    {
+        if (callbackData is null || enumerationId is null)
+            return ToHRESULT(HResult.E_INVALIDARG);
+
+        try
+        {
+            var instance = GetInstance(callbackData);
+            return ToHRESULT(instance.GetDirectoryEnumerationCallback(in *callbackData, in *enumerationId, searchExpression.ToString() ?? "", (IntPtr)dirEntryBufferHandle));
+        }
+        catch (Exception ex)
+        {
+            return (HRESULT)Marshal.GetHRForException(ex);
+        }
+    }
+
+    private static unsafe HRESULT GetPlaceholderInfoCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData)
+    {
+        if (callbackData is null)
+            return ToHRESULT(HResult.E_INVALIDARG);
+
+        try
+        {
+            var instance = GetInstance(callbackData);
+            return ToHRESULT(instance.GetPlaceholderInfoCallback(in *callbackData));
+        }
+        catch (Exception ex)
+        {
+            return (HRESULT)Marshal.GetHRForException(ex);
+        }
+    }
+
+    private static unsafe HRESULT GetFileDataCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData, ulong byteOffset, uint length)
+    {
+        if (callbackData is null)
+            return ToHRESULT(HResult.E_INVALIDARG);
+
+        try
+        {
+            var instance = GetInstance(callbackData);
+            return ToHRESULT(instance.GetFileDataCallback(in *callbackData, byteOffset, length));
+        }
+        catch (Exception ex)
+        {
+            return (HRESULT)Marshal.GetHRForException(ex);
+        }
+    }
+
+    private static unsafe HRESULT NotificationCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData, BOOLEAN isDirectory, ProjFs.PRJ_NOTIFICATION notification, PCWSTR destinationFileName, ProjFs.PRJ_NOTIFICATION_PARAMETERS* operationParameters)
+    {
+        if (callbackData is null)
+            return ToHRESULT(HResult.E_INVALIDARG);
+
+        try
+        {
+            return ToHRESULT(NotificationCallback(in *callbackData, isDirectory, notification, destinationFileName.ToString() ?? "", (IntPtr)operationParameters));
+        }
+        catch (Exception ex)
+        {
+            return (HRESULT)Marshal.GetHRForException(ex);
+        }
+    }
+
+    private static unsafe void CancelCommandCallbackNative(ProjFs.PRJ_CALLBACK_DATA* callbackData)
+    {
+        if (callbackData is null)
+            return;
+
+        try
+        {
+            _ = CancelCommandCallback(in *callbackData);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+        }
+    }
+
+    private static unsafe ProjectedFileSystemBase GetInstance(ProjFs.PRJ_CALLBACK_DATA* callbackData)
+    {
+        if (callbackData->InstanceContext is null)
+            throw new InvalidOperationException("Cannot resolve callback instance context");
+
+        var handle = GCHandle.FromIntPtr((IntPtr)callbackData->InstanceContext);
+        return (ProjectedFileSystemBase)handle.Target!;
+    }
+
+    private static HRESULT ToHRESULT(HResult value)
+    {
+        return (HRESULT)value.Value;
+    }
+
+    private HResult QueryFileNameCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData)
     {
         return ExecuteCallback(
             in callbackData,
-            QueryFileNameCallbackAsync(callbackData.FilePathName),
+            QueryFileNameCallbackAsync(callbackData.FilePathName.ToString() ?? ""),
             extendedParameters: null);
     }
 
@@ -272,23 +441,23 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return entry is null ? HResult.E_FILENOTFOUND : HResult.S_OK;
     }
 
-    private static HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters)
+    private static HResult NotificationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, bool isDirectory, ProjFs.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters)
     {
         Debug.WriteLine($"{notification} {callbackData.FilePathName} {callbackData.Flags}");
         return HResult.S_OK;
     }
 
-    private static HResult CancelCommandCallback(in NativeMethods.PrjCallbackData callbackData)
+    private static HResult CancelCommandCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData)
     {
         Debug.WriteLine($"CancelCommandCallback {callbackData.FilePathName}");
         return HResult.S_OK;
     }
 
-    private HResult StartDirectoryEnumerationCallback(in NativeMethods.PrjCallbackData callbackData, in Guid enumerationId)
+    private HResult StartDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId)
     {
         return ExecuteCallback(
             in callbackData,
-            StartDirectoryEnumerationCallbackAsync(callbackData.FilePathName, enumerationId),
+            StartDirectoryEnumerationCallbackAsync(callbackData.FilePathName.ToString() ?? "", enumerationId),
             extendedParameters: null);
     }
 
@@ -299,7 +468,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return HResult.S_OK;
     }
 
-    private HResult EndDirectoryEnumerationCallback(in NativeMethods.PrjCallbackData callbackData, in Guid enumerationId)
+    private HResult EndDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId)
     {
         if (_activeEnumerations.TryRemove(enumerationId, out _))
             return HResult.S_OK;
@@ -307,14 +476,14 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return HResult.E_INVALIDARG;
     }
 
-    private HResult GetDirectoryEnumerationCallback(in NativeMethods.PrjCallbackData callbackData, in Guid enumerationId, string searchExpression, IntPtr dirEntryBufferHandle)
+    private HResult GetDirectoryEnumerationCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, in Guid enumerationId, string searchExpression, IntPtr dirEntryBufferHandle)
     {
         if (!_activeEnumerations.TryGetValue(enumerationId, out var session))
         {
             return HResult.E_INVALIDARG;
         }
 
-        if ((callbackData.Flags & NativeMethods.PRJ_CALLBACK_DATA_FLAGS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN) == NativeMethods.PRJ_CALLBACK_DATA_FLAGS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN)
+        if ((callbackData.Flags & ProjFs.PRJ_CALLBACK_DATA_FLAGS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN) == ProjFs.PRJ_CALLBACK_DATA_FLAGS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN)
         {
             session.Reset();
         }
@@ -322,7 +491,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
         ProjectedFileSystemEntry? entry;
         while ((entry = session.GetNextEntry()) is not null)
         {
-            var info = new NativeMethods.PRJ_FILE_BASIC_INFO
+            var info = new ProjFs.PRJ_FILE_BASIC_INFO
             {
                 FileSize = entry.Length,
                 IsDirectory = entry.IsDirectory,
@@ -339,11 +508,11 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return HResult.S_OK;
     }
 
-    private HResult GetPlaceholderInfoCallback(in NativeMethods.PrjCallbackData callbackData)
+    private HResult GetPlaceholderInfoCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData)
     {
         return ExecuteCallback(
             in callbackData,
-            GetPlaceholderInfoCallbackAsync(callbackData.FilePathName, callbackData.NamespaceVirtualizationContext),
+            GetPlaceholderInfoCallbackAsync(callbackData.FilePathName.ToString() ?? "", callbackData.NamespaceVirtualizationContext),
             extendedParameters: null);
     }
 
@@ -353,7 +522,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
         if (entry is null)
             return HResult.E_FILENOTFOUND;
 
-        var info = new NativeMethods.PRJ_PLACEHOLDER_INFO();
+        var info = new ProjFs.PRJ_PLACEHOLDER_INFO();
         info.FileBasicInfo.IsDirectory = entry.IsDirectory;
         info.FileBasicInfo.FileSize = entry.Length;
 
@@ -367,12 +536,12 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return hr;
     }
 
-    private HResult GetFileDataCallback(in NativeMethods.PrjCallbackData callbackData, ulong byteOffset, uint length)
+    private HResult GetFileDataCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, ulong byteOffset, uint length)
     {
         return ExecuteCallback(
             in callbackData,
             GetFileDataCallbackAsync(
-                callbackData.FilePathName,
+                callbackData.FilePathName.ToString() ?? "",
                 callbackData.NamespaceVirtualizationContext,
                 callbackData.DataStreamId,
                 byteOffset,
@@ -479,7 +648,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
         }
     }
 
-    private static HResult ExecuteCallback(in NativeMethods.PrjCallbackData callbackData, ValueTask<HResult> callbackResult, NativeMethods.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    private static HResult ExecuteCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, ValueTask<HResult> callbackResult, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
     {
         if (callbackResult.IsCompletedSuccessfully)
             return callbackResult.Result;
@@ -488,7 +657,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return HResult.ERROR_IO_PENDING;
     }
 
-    private static async Task CompleteCommandAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, NativeMethods.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    private static async Task CompleteCommandAsync(IntPtr namespaceVirtualizationContext, int commandId, Task<HResult> callbackTask, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
     {
         HResult completionResult;
         try

@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a day of the week with an optional ordinal position for recurrence rules.</summary>
-public sealed class ByDay : IEquatable<ByDay>
+internal sealed class ByDay : IEquatable<ByDay>
 {
     /// <summary>Initializes a new instance of the <see cref="ByDay"/> class.</summary>
     public ByDay()

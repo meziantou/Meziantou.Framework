@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Scheduling;
 
-public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
+internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 {
     private static readonly char[] PrecededByApostropheChars = ['a', 'e', 'i', 'o', 'u', 'y', 'h'];
 
@@ -336,22 +336,22 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
         };
     }
 
-    private static string MonthToString(Month month)
+    private static string MonthToString(int month)
     {
         return month switch
         {
-            Month.January => "janvier",
-            Month.February => "février",
-            Month.March => "mars",
-            Month.April => "avril",
-            Month.May => "mai",
-            Month.June => "juin",
-            Month.July => "juillet",
-            Month.August => "aout",
-            Month.September => "septembre",
-            Month.October => "octobre",
-            Month.November => "novembre",
-            Month.December => "décembre",
+            1 => "janvier",
+            2 => "février",
+            3 => "mars",
+            4 => "avril",
+            5 => "mai",
+            6 => "juin",
+            7 => "juillet",
+            8 => "aout",
+            9 => "septembre",
+            10 => "octobre",
+            11 => "novembre",
+            12 => "décembre",
             _ => throw new ArgumentOutOfRangeException(nameof(month), month, message: null),
         };
     }

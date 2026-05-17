@@ -1,4 +1,6 @@
 using System.Net;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery;
 
@@ -49,4 +51,6 @@ public sealed class ServerSideRequestForgeryOptions
     public IpAddressResolutionStrategy ResolutionStrategy { get; set; } = IpAddressResolutionStrategy.PreferIpv4;
 
     public bool DisallowMixedSafeAndUnsafeIpAddresses { get; set; } = true;
+
+    public ILogger Logger { get; set; } = NullLogger.Instance;
 }

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery;
 
@@ -22,14 +23,19 @@ internal static class ServerSideRequestForgeryConnectPipeline
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(options.ResolutionStrategy);
         ArgumentNullException.ThrowIfNull(dnsIpAddressResolver);
+        var logger = options.Logger;
 
         if (!IsAllowedScheme(requestUri, options))
         {
+            Log.RejectedUnsafeScheme(logger, requestUri, requestUri.Scheme);
+            ServerSideRequestForgeryMetrics.IncrementRejectedRequest("unsafe_scheme");
             throw new ServerSideRequestForgeryException($"The URI scheme '{requestUri.Scheme}' is not allowed.");
         }
 
         if (!HostsMatch(dnsEndPoint.Host, requestUri.IdnHost))
         {
+            Log.RejectedHostMismatch(logger, requestUri, dnsEndPoint.Host, requestUri.IdnHost);
+            ServerSideRequestForgeryMetrics.IncrementRejectedRequest("host_mismatch");
             throw new ServerSideRequestForgeryException("The host resolved for the connection does not match the request URI authority.");
         }
 
@@ -37,11 +43,23 @@ internal static class ServerSideRequestForgeryConnectPipeline
         // Caching DNS would allow stale validation decisions and could reopen SSRF vectors
         // if a hostname changes after an earlier check but before later use.
         var resolvedAddresses = await dnsIpAddressResolver.ResolveAsync(dnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
-        var safeAddresses = FilterSafeAddresses(resolvedAddresses, options);
-        var selectedAddress = await options.ResolutionStrategy.ResolveAsync(safeAddresses, options, cancellationToken).ConfigureAwait(false);
+        var safeAddresses = FilterSafeAddresses(requestUri, resolvedAddresses, options, logger);
+        IPAddress selectedAddress;
+        try
+        {
+            selectedAddress = await options.ResolutionStrategy.ResolveAsync(safeAddresses, options, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ServerSideRequestForgeryException ex)
+        {
+            Log.RejectedResolutionStrategyFailure(logger, requestUri, ex.Message);
+            ServerSideRequestForgeryMetrics.IncrementRejectedRequest("resolution_strategy_failure");
+            throw;
+        }
 
         if (!safeAddresses.Exists(address => address.Equals(selectedAddress)))
         {
+            Log.RejectedSelectedAddressNotInSafeSet(logger, requestUri);
+            ServerSideRequestForgeryMetrics.IncrementRejectedRequest("selected_address_not_validated");
             throw new ServerSideRequestForgeryException("The resolution strategy selected an address that was not part of the validated safe set.");
         }
 
@@ -71,10 +89,12 @@ internal static class ServerSideRequestForgeryConnectPipeline
         }
     }
 
-    private static List<IPAddress> FilterSafeAddresses(IReadOnlyList<IPAddress> resolvedAddresses, ServerSideRequestForgeryOptions options)
+    private static List<IPAddress> FilterSafeAddresses(Uri requestUri, IReadOnlyList<IPAddress> resolvedAddresses, ServerSideRequestForgeryOptions options, ILogger logger)
     {
+        ArgumentNullException.ThrowIfNull(requestUri);
         ArgumentNullException.ThrowIfNull(resolvedAddresses);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
 
         var safeAddresses = new List<IPAddress>(resolvedAddresses.Count);
         var hasUnsafeAddress = false;
@@ -92,11 +112,15 @@ internal static class ServerSideRequestForgeryConnectPipeline
 
         if (safeAddresses.Count == 0)
         {
+            Log.RejectedAllResolvedAddressesUnsafe(logger, requestUri);
+            ServerSideRequestForgeryMetrics.IncrementRejectedRequest("all_resolved_addresses_unsafe");
             throw new ServerSideRequestForgeryException("No safe IP addresses were found after validation.");
         }
 
         if (hasUnsafeAddress && options.DisallowMixedSafeAndUnsafeIpAddresses)
         {
+            Log.RejectedMixedResolvedAddresses(logger, requestUri);
+            ServerSideRequestForgeryMetrics.IncrementRejectedRequest("mixed_addresses_disallowed");
             throw new ServerSideRequestForgeryException("The hostname resolved to a mix of safe and unsafe IP addresses.");
         }
 

@@ -26,6 +26,7 @@ namespace Meziantou.Framework.Http.ServerSideRequestForgery
         public System.Collections.Generic.ICollection<System.Net.IPNetwork> SafeIpNetworks { get => throw null; }
         public Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy ResolutionStrategy { get => throw null; set { } }
         public bool DisallowMixedSafeAndUnsafeIpAddresses { get => throw null; set { } }
+        public Microsoft.Extensions.Logging.ILogger Logger { get => throw null; set { } }
     }
 
     public static class SocketHttpHandlerServerSideRequestForgeryExtensions

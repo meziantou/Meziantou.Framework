@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
-using System.Threading;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery;
 
@@ -61,15 +60,11 @@ public abstract class IpAddressResolutionStrategy
             foreach (var address in addresses)
             {
                 if (address.AddressFamily == AddressFamily.InterNetwork)
-                {
                     return ValueTask.FromResult(address);
-                }
             }
 
             if (addresses.Count == 0)
-            {
                 throw new ServerSideRequestForgeryException("No safe IP addresses available after validation.");
-            }
 
             return ValueTask.FromResult(addresses[0]);
         }
@@ -100,10 +95,8 @@ public abstract class IpAddressResolutionStrategy
             _ = options;
             _ = cancellationToken;
 
-            if (addresses.Count == 0)
-            {
+            if (addresses.Count is 0)
                 throw new ServerSideRequestForgeryException("No safe IP addresses available after validation.");
-            }
 
             var index = Interlocked.Increment(ref _counter);
             var position = index % addresses.Count;

@@ -1,6 +1,5 @@
 using System.Net;
-using Meziantou.Framework.Http.ServerSideRequestForgery;
-using Xunit;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;
 
@@ -16,6 +15,7 @@ public sealed class ServerSideRequestForgeryOptionsTests
         Assert.Contains(options.UnsafeIpNetworks, network => network.Contains(IPAddress.Loopback));
         Assert.Same(IpAddressResolutionStrategy.PreferIpv4, options.ResolutionStrategy);
         Assert.True(options.DisallowMixedSafeAndUnsafeIpAddresses);
+        Assert.Same(NullLogger.Instance, options.Logger);
     }
 
     [Fact]

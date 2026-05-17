@@ -1,13 +1,10 @@
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.Json;
 using Meziantou.Xunit;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
-public sealed partial class FullPathTests
+public sealed class FullPathTests
 {
     [Fact]
     public void IsEmpty()
@@ -167,7 +164,7 @@ public sealed partial class FullPathTests
 
         // Create symlink
         var symlink = temp.GetFullPath("b.txt");
-        CreateSymlink(symlink, path, SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
+        CreateSymlink(symlink, path, isDirectory: false);
         Assert.True(File.Exists(symlink));
         Assert.True(symlink.IsSymbolicLink());
         Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
@@ -184,7 +181,7 @@ public sealed partial class FullPathTests
 
         // Create symlink
         var symlink = temp.GetFullPath("b.txt");
-        CreateSymlink(symlink, "a.txt", SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
+        CreateSymlink(symlink, "a.txt", isDirectory: false);
         Assert.True(File.Exists(symlink));
         Assert.True(symlink.IsSymbolicLink());
         Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
@@ -201,7 +198,7 @@ public sealed partial class FullPathTests
 
         // Create symlink
         var symlink = temp.GetFullPath("b");
-        CreateSymlink(symlink, path, SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
+        CreateSymlink(symlink, path, isDirectory: true);
         Assert.True(Directory.Exists(symlink));
         Assert.True(symlink.IsSymbolicLink());
         Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
@@ -218,7 +215,7 @@ public sealed partial class FullPathTests
 
         // Create symlink
         var symlink = temp.GetFullPath("b");
-        CreateSymlink(symlink, "a", SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
+        CreateSymlink(symlink, "a", isDirectory: true);
         Assert.True(Directory.Exists(symlink));
         Assert.True(symlink.IsSymbolicLink());
         Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
@@ -232,8 +229,8 @@ public sealed partial class FullPathTests
         var file = temp.CreateEmptyFile("a/b.txt");
         var symlink = temp.GetFullPath("c");
         var symlink2 = temp.GetFullPath("d");
-        CreateSymlink(symlink, file, SymbolicLink.AllowUnpriviledgedCreate);
-        CreateSymlink(symlink2, symlink, SymbolicLink.AllowUnpriviledgedCreate);
+        CreateSymlink(symlink, file, isDirectory: false);
+        CreateSymlink(symlink2, symlink, isDirectory: false);
         Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out var resolved1));
         Assert.Equal(symlink, resolved1);
         Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved2));
@@ -246,7 +243,7 @@ public sealed partial class FullPathTests
         await using var temp = TemporaryDirectory.Create();
         var path = temp.CreateDirectory("a/b");
         var symlink = temp.GetFullPath("c");
-        CreateSymlink(symlink, path, SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
+        CreateSymlink(symlink, path, isDirectory: true);
         var file = temp.CreateEmptyFile("c/d.txt");
         Assert.True(file.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved));
 
@@ -269,7 +266,7 @@ public sealed partial class FullPathTests
         await using var temp = TemporaryDirectory.Create();
         var target = temp.CreateEmptyFile("a.txt");
         var symlink = temp.GetFullPath("b.txt");
-        CreateSymlink(symlink, "a.txt", SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
+        CreateSymlink(symlink, "a.txt", isDirectory: false);
 
         Assert.True(target.TryGetCanonicalPath(out var expected));
         Assert.True(symlink.TryGetCanonicalPath(out var actual));
@@ -545,45 +542,15 @@ public sealed partial class FullPathTests
         Assert.Contains(longSegment, extended, StringComparison.Ordinal);
     }
 
-    private static void CreateSymlink(string source, string target, SymbolicLink options)
+    private static void CreateSymlink(string source, string target, bool isDirectory)
     {
-        if (OperatingSystem.IsWindows())
+        if (isDirectory)
         {
-            if (!CreateSymbolicLink(source, target, options))
-            {
-                var error = Marshal.GetLastWin32Error();
-                throw new Win32Exception(error, "Cannot create the symbolic link. You may need to enable Developer Mode or run the tests as admin.");
-            }
+            Directory.CreateSymbolicLink(source, target);
         }
         else
         {
-            if (CreateUnixSymbolicLink(target, source) != 0)
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
+            File.CreateSymbolicLink(source, target);
         }
-    }
-
-    private static int CreateUnixSymbolicLink(string targetPath, string linkPath)
-    {
-        var utf8TargetPath = Encoding.UTF8.GetBytes(targetPath + '\0');
-        var utf8LinkPath = Encoding.UTF8.GetBytes(linkPath + '\0');
-        return CreateUnixSymbolicLinkCore(utf8TargetPath, utf8LinkPath);
-    }
-
-    [LibraryImport("libc", EntryPoint = "symlink", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
-    private static partial int CreateUnixSymbolicLinkCore(byte[] targetPath, byte[] linkPath);
-
-    [LibraryImport("kernel32.dll", EntryPoint = "CreateSymbolicLinkW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-    [return: MarshalAs(UnmanagedType.I1)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, SymbolicLink dwFlags);
-
-    private enum SymbolicLink
-    {
-        File = 0,
-        Directory = 1,
-        AllowUnpriviledgedCreate = 2,
     }
 }

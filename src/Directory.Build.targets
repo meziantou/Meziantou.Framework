@@ -70,10 +70,7 @@
       <_PublicApiGeneratorCommand>dotnet &quot;$(_PublicApiGeneratorToolAssemblyPath)&quot; @(_PublicApiGeneratorAssembly->'--input &quot;%(TargetFramework)=%(Identity)&quot;', ' ') --output-file &quot;$(_PublicApiGeneratorResolvedOutputPath)&quot; --file-layout $(PublicApiGeneratorFileLayout) $(_PublicApiGeneratorIncludeCommentArg) $(_PublicApiGeneratorVerifyNoChangeArg)</_PublicApiGeneratorCommand>
     </PropertyGroup>
 
-    <Message Importance="High"
-             Condition="'$(PublicApiGeneratorVerifyNoChangeOnBuild)' == 'true'"
-             Text="Public API verify command: $(_PublicApiGeneratorCommand)" />
-
+    <Message Importance="High" Text="Public API verify command: $(_PublicApiGeneratorCommand)" />
     <Exec Command="$(_PublicApiGeneratorCommand)" />
   </Target>
 
@@ -91,10 +88,7 @@
       <_PublicApiGeneratorCommand>dotnet &quot;$(_PublicApiGeneratorToolAssemblyPath)&quot; @(_PublicApiGeneratorAssembly->'--input &quot;%(TargetFramework)=%(Identity)&quot;', ' ') --output-file &quot;$(_PublicApiGeneratorResolvedOutputPath)&quot; --file-layout $(PublicApiGeneratorFileLayout) $(_PublicApiGeneratorIncludeCommentArg) $(_PublicApiGeneratorVerifyNoChangeArg)</_PublicApiGeneratorCommand>
     </PropertyGroup>
 
-    <Message Importance="High"
-             Condition="'$(PublicApiGeneratorVerifyNoChangeOnBuild)' == 'true'"
-             Text="Public API verify command: $(_PublicApiGeneratorCommand)" />
-
+    <Message Importance="High" Text="Public API verify command: $(_PublicApiGeneratorCommand)" />
     <Exec Command="$(_PublicApiGeneratorCommand)" />
   </Target>
 </Project>

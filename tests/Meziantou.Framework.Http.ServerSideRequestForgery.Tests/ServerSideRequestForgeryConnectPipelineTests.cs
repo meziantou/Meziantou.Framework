@@ -1,7 +1,7 @@
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Sockets;
-using Microsoft.Extensions.Logging;
+using Meziantou.Extensions.Logging.InMemory;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;
 
@@ -193,10 +193,10 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
     [Fact]
     public async Task ResolveAndSelectIpAddressAsync_LogsRejectionReason()
     {
-        var logger = new TestLogger();
+        using var loggerProvider = new InMemoryLoggerProvider();
         var options = new ServerSideRequestForgeryOptions
         {
-            Logger = logger,
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
         };
         options.SafeSchemes.Clear();
         options.SafeSchemes.Add(Uri.UriSchemeHttps);
@@ -208,15 +208,54 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]),
             cancellationToken: CancellationToken.None).AsTask());
 
-        Assert.Contains(logger.Entries, entry => entry.EventId == 1 && entry.Level == LogLevel.Warning && entry.Message.Contains("Scheme", StringComparison.Ordinal));
+        Assert.Contains(loggerProvider.Logs.Warnings, entry => entry.EventId.Id == 1 && entry.Message.Contains("Scheme", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_LogsHostMismatchRejectionReason()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("other.example", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]),
+            cancellationToken: CancellationToken.None).AsTask());
+
+        Assert.Contains(loggerProvider.Logs.Warnings, entry => entry.EventId.Id == 2);
+    }
+
+    [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_LogsMixedAddressesRejectionReason()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var options = new ServerSideRequestForgeryOptions
+        {
+            Logger = loggerProvider.CreateLogger("ssrf-test"),
+        };
+
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Loopback, IPAddress.Parse("203.0.113.10")]),
+            cancellationToken: CancellationToken.None).AsTask());
+
+        Assert.Contains(loggerProvider.Logs.Warnings, entry => entry.EventId.Id == 4);
     }
 
     [Fact]
     public async Task ResolveAndSelectIpAddressAsync_IncrementsRejectedRequestsCounter()
     {
         var rejectedRequestCount = 0L;
+        string? reasonTag = null;
         using var listener = new MeterListener();
-        listener.InstrumentPublished = static (instrument, meterListener) =>
+        listener.InstrumentPublished = (instrument, meterListener) =>
         {
             if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
             {
@@ -226,8 +265,15 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
         {
             _ = instrument;
-            _ = tags;
             _ = state;
+            foreach (var tag in tags)
+            {
+                if (string.Equals(tag.Key, "reason", StringComparison.Ordinal))
+                {
+                    reasonTag = tag.Value?.ToString();
+                }
+            }
+
             Interlocked.Add(ref rejectedRequestCount, measurement);
         });
         listener.Start();
@@ -244,6 +290,38 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             cancellationToken: CancellationToken.None).AsTask());
 
         Assert.Equal(1, rejectedRequestCount);
+        Assert.Equal("unsafe_scheme", reasonTag);
+    }
+
+    [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_DoesNotIncrementRejectedRequestsCounterForHostNotFound()
+    {
+        var rejectedRequestCount = 0L;
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name == ServerSideRequestForgeryMetrics.MeterName && instrument.Name == ServerSideRequestForgeryMetrics.RejectedRequestsCounterName)
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((instrument, measurement, tags, state) =>
+        {
+            _ = instrument;
+            _ = tags;
+            _ = state;
+            Interlocked.Add(ref rejectedRequestCount, measurement);
+        });
+        listener.Start();
+
+        await Assert.ThrowsAsync<SocketException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([]),
+            cancellationToken: CancellationToken.None).AsTask());
+
+        Assert.Equal(0, rejectedRequestCount);
     }
 
     private sealed class FakeDnsIpAddressResolver(IReadOnlyList<IPAddress> addresses) : IDnsIpAddressResolver
@@ -279,42 +357,4 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         }
     }
 
-    private sealed class TestLogger : ILogger
-    {
-        public List<LogEntry> Entries { get; } = [];
-
-        public IDisposable? BeginScope<TState>(TState state)
-            where TState : notnull
-        {
-            _ = state;
-            return NullScope.Instance;
-        }
-
-        public bool IsEnabled(LogLevel logLevel)
-        {
-            _ = logLevel;
-            return true;
-        }
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-        {
-            _ = state;
-            Entries.Add(new LogEntry(logLevel, eventId.Id, formatter(state, exception)));
-        }
-
-        public sealed record LogEntry(LogLevel Level, int EventId, string Message);
-    }
-
-    private sealed class NullScope : IDisposable
-    {
-        public static NullScope Instance { get; } = new();
-
-        private NullScope()
-        {
-        }
-
-        public void Dispose()
-        {
-        }
-    }
 }

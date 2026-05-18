@@ -15,17 +15,8 @@ namespace Meziantou.Framework.StronglyTypedId.Tests;
 
 public sealed class StronglyTypedIdSourceGeneratorTests
 {
-    private const string NetCoreVersion =
-#if NET8_0
-        "8.0.0"
-#elif NET9_0
-        "9.0.0"
-#elif NET10_0
-        "10.0.0"
-#else
-#error Version not supported
-#endif
-        ;
+    private static readonly string NetCoreVersion = TargetFrameworkHelper.GetMicrosoftNetCoreAppRefVersion();
+
     public sealed record NuGetReference(string Name, string Version, string ReferencePath);
 
     private static async Task<Compilation> CreateCompilation(string sourceText, NuGetReference[] nuGetReferences)

@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using System.Text;
 
 namespace Meziantou.Framework.PublicApiGenerator;
 

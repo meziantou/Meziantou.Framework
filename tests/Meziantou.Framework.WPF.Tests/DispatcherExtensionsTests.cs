@@ -1,5 +1,4 @@
 using System.Windows.Threading;
-using Xunit;
 
 namespace Meziantou.Framework.WPF.Tests;
 

@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Linq;
 using Google.Protobuf;
 using Grpc.Net.Client;
 using Meziantou.Framework.OpenTelemetryCollector.InMemory;

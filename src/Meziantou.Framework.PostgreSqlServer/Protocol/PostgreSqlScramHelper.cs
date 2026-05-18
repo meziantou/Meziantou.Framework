@@ -1,6 +1,4 @@
 using System.Security.Cryptography;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace Meziantou.Framework.PostgreSql.Protocol;
 

@@ -1,4 +1,3 @@
-using Meziantou.Framework.MediaTags;
 using Meziantou.Framework.MediaTags.Formats.Ogg;
 
 namespace Meziantou.Framework.MediaTags.Tests;

@@ -1,5 +1,4 @@
 using Meziantou.Framework.Collections.Concurrent;
-using Xunit;
 
 namespace Meziantou.Framework.Tests.Collections;
 

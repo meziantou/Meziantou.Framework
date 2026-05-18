@@ -1,11 +1,9 @@
 using System.Buffers.Binary;
 using System.Net;
 using System.Net.Security;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using Meziantou.Framework.PostgreSql.Handler;
 using Meziantou.Framework.PostgreSql.Protocol;
 using Microsoft.Extensions.Logging;

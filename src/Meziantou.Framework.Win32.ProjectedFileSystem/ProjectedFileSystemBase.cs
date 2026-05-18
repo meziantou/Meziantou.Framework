@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Threading.Tasks;
 using Windows.Win32.Foundation;
 using ProjFs = Windows.Win32.Storage.ProjectedFileSystem;
 

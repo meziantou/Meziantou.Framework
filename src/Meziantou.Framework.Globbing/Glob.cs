@@ -1,4 +1,3 @@
-using Meziantou.Framework;
 using Meziantou.Framework.Globbing.Internals;
 
 using System.IO.Enumeration;

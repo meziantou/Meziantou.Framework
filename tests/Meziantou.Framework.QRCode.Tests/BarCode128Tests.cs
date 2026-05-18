@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Globalization;
 using System.Xml.Linq;
 using Meziantou.Framework.SnapshotTesting;
 

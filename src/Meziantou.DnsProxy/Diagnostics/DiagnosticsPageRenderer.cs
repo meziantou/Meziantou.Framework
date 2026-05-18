@@ -1,4 +1,3 @@
-using System.Text;
 using Meziantou.DnsProxy.Filtering;
 using Meziantou.DnsProxy.Forwarding;
 using Meziantou.DnsProxy.History;

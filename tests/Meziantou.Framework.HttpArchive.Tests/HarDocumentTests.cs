@@ -1,7 +1,3 @@
-using System.Text;
-using System.Text.Json;
-using Xunit;
-
 namespace Meziantou.Framework.HttpArchive.Tests;
 
 public sealed class HarDocumentTests

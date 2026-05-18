@@ -2,7 +2,6 @@
 #pragma warning disable IDE1006 // Naming Styles
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Xunit;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Meziantou.Extensions.Logging.Xunit.v3.Tests;

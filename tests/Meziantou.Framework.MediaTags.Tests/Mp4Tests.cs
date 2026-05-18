@@ -1,6 +1,4 @@
 using System.Buffers.Binary;
-using System.Text;
-using Meziantou.Framework.MediaTags;
 
 namespace Meziantou.Framework.MediaTags.Tests;
 

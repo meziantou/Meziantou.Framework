@@ -1,6 +1,3 @@
-using System.Buffers.Binary;
-using System.Globalization;
-using System.Text;
 using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Id3v2;

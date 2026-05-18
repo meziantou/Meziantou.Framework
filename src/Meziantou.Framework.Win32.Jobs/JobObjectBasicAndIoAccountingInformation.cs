@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Contains basic and io accounting information for a job object.</summary>

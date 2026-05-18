@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Scheduling.Tests;
 
 public partial class RecurrenceRuleTests

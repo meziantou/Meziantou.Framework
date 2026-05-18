@@ -1,7 +1,5 @@
-using System.Globalization;
 using System.IO.Hashing;
 using System.Security;
-using System.Text;
 
 namespace Meziantou.Framework;
 

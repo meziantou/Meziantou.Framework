@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Meziantou.Framework.Tds.Handler;
 
 /// <summary>Represents a column type used for TDS serialization.</summary>

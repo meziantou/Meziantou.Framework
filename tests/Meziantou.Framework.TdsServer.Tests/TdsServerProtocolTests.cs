@@ -1,12 +1,9 @@
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
 using Microsoft.Data.SqlClient;
 using Microsoft.SqlServer.Management.SqlParser.SqlCodeDom;
@@ -14,7 +11,6 @@ using Meziantou.Xunit;
 using SqlParser = Microsoft.SqlServer.Management.SqlParser.Parser.Parser;
 using SqlParserParseOptions = Microsoft.SqlServer.Management.SqlParser.Parser.ParseOptions;
 using SqlParserParseResult = Microsoft.SqlServer.Management.SqlParser.Parser.ParseResult;
-using Xunit;
 
 namespace Meziantou.Framework.Tds.Tests;
 

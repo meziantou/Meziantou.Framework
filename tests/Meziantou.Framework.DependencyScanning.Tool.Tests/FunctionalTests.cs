@@ -1,9 +1,5 @@
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using Meziantou.Framework;
-using Meziantou.Framework.DependencyScanning;
-using Meziantou.Framework.DependencyScanning.Tool;
 using NuGet.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool.Tests;

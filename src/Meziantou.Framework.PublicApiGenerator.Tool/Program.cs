@@ -1,7 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
-using Meziantou.Framework;
-using Meziantou.Framework.PublicApiGenerator;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Meziantou.Framework.PublicApiGenerator.Tests")]
 

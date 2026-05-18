@@ -1,6 +1,4 @@
 using System.Buffers.Binary;
-using System.Globalization;
-using System.Text;
 using Meziantou.Framework.PostgreSql.Handler;
 
 namespace Meziantou.Framework.PostgreSql.Protocol;

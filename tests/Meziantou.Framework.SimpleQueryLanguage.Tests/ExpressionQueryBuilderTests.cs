@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 
 public sealed class ExpressionQueryBuilderTests

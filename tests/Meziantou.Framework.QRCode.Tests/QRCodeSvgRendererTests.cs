@@ -1,7 +1,6 @@
 using System.Xml.Linq;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Meziantou.Framework.SnapshotTesting;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

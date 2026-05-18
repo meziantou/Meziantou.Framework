@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

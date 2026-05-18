@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Meziantou.Framework.PostgreSql.Handler;
 
 /// <summary>Represents a PostgreSQL column type used for wire serialization.</summary>

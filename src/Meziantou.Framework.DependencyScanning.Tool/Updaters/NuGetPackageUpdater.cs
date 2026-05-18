@@ -1,9 +1,4 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using Meziantou.Framework;
-using Meziantou.Framework.DependencyScanning;
 using NuGet.Common;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;

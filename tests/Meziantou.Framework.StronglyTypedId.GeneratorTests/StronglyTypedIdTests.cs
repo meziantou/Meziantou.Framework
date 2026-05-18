@@ -2,7 +2,6 @@
 #pragma warning disable IDE0250 // Make struct readonly
 #pragma warning disable MA0182 // Unused internal type
 using System.ComponentModel;
-using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using Meziantou.Framework.Annotations;
@@ -11,7 +10,6 @@ using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using Newtonsoft.Json;
-using Xunit;
 
 namespace Meziantou.Framework.StronglyTypedId.GeneratorTests;
 
@@ -25,7 +23,7 @@ public sealed partial class StronglyTypedIdTests
     public static TheoryData<Type, string, object> GetData()
     {
         var now = DateTime.UtcNow;
-        now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc); // MongoDB serializer truncates milliseconds. 
+        now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc); // MongoDB serializer truncates milliseconds.
 
         return new TheoryData<Type, string, object>
         {

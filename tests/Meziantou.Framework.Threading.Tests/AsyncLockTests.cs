@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Threading.Tests;
 
 public class AsyncLockTests

@@ -1,5 +1,4 @@
 using System.Net;
-using Xunit;
 
 namespace Meziantou.Framework.DnsFilter.Tests;
 

@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using Meziantou.Framework.Http;
-using Xunit;
 
 namespace Meziantou.Framework.Tests.Http;
 

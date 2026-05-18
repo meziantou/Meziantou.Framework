@@ -1,6 +1,4 @@
-using System.Globalization;
 using Meziantou.Framework.SnapshotTesting;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

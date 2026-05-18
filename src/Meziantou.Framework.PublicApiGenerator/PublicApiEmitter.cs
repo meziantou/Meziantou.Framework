@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.PublicApiGenerator;
 
 internal static class PublicApiEmitter

@@ -1,6 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using Meziantou.Framework;
-
 namespace Meziantou.Framework.DiffEngine;
 
 public static class DiffTools

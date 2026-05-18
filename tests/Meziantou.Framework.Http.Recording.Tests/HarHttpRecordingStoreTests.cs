@@ -1,6 +1,4 @@
-using Meziantou.Framework;
 using Meziantou.Framework.HttpArchive;
-using Xunit;
 
 namespace Meziantou.Framework.Http.Recording.Tests;
 

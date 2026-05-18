@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
 using System.Diagnostics;
-using Meziantou.Framework;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 

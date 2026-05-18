@@ -1,6 +1,5 @@
 using System.CommandLine;
 using System.Runtime.CompilerServices;
-using Meziantou.Framework;
 
 [assembly: InternalsVisibleTo("Meziantou.Framework.SnapshotTesting.Tool.Tests")]
 

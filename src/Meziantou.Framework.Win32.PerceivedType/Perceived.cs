@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.Versioning;
 using Windows.Win32;
-using Windows.Win32.Foundation;
 
 namespace Meziantou.Framework.Win32;
 

@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.Internal.RMQR;
 
 internal static class RMQREncoder

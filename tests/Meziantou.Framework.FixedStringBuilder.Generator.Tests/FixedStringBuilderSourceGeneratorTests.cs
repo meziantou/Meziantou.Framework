@@ -1,12 +1,9 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using Meziantou.Framework.FixedStringBuilder.Generator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Meziantou.Xunit;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.FixedStringBuilder.Generator.Tests;
 

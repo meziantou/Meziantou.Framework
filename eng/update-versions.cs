@@ -255,7 +255,7 @@ if (updated)
         RunProcess("git", ["commit", "-m", $"Bump package versions\n\n{prBody}"]);
 
         Console.WriteLine("Pushing changes");
-        RunProcess("git", ["push", "origin", "main:generated/bump-package-versions", "--force"]);
+        RunProcess("git", ["push", "origin", "HEAD:generated/bump-package-versions", "--force"]);
 
         Thread.Sleep(10000);
 

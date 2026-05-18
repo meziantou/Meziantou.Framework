@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Windows;
 
 namespace Meziantou.Framework.Win32.DialogsSamples;
@@ -10,6 +11,7 @@ public partial class MainWindow : Window
         InitializeComponent();
     }
 
+    [SupportedOSPlatform("windows6.0.6000")]
     private void ButtonOpenFolder_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFolderDialog

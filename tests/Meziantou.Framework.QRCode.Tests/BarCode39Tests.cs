@@ -161,6 +161,22 @@ public class BarCode39Tests
         Snapshot.Validate(png, SnapshotType.Png);
     }
 
+    [Fact]
+    public void ToPng_Code39_TransparentColors_Snapshot()
+    {
+        var barcode = Barcode.CreateCode39("A");
+        var png = barcode.ToPng(new BarcodePngOptions
+        {
+            ModuleWidth = 1,
+            ModuleHeight = 1,
+            QuietZoneModules = 0,
+            DarkColor = Color.Transparent,
+            LightColor = Color.FromArgb(0x80, 0xff, 0xff, 0x00),
+        });
+
+        Snapshot.Validate(png, SnapshotType.Png);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]

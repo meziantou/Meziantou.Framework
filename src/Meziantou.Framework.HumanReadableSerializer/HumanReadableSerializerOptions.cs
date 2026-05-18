@@ -195,12 +195,6 @@ public sealed record HumanReadableSerializerOptions
 
         VerifyMutable();
 
-#if !NET7_0_OR_GREATER
-        // .NET 6 and earlier versions, the GetProperties method does not return properties in a particular order, such as alphabetical or declaration order.
-        // Type.GetMember can change this order. To make sure the order is "always" the same, let's first list all properties.
-        type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-#endif
-
         var members = type.GetMember(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         if (members.Length == 0)
             throw new ArgumentException($"Cannot find an instance member named '{memberName}' in type '{type.AssemblyQualifiedName}'.", nameof(memberName));

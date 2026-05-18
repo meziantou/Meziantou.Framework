@@ -275,7 +275,7 @@ jobs:
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
-    runs-on: windows-2025
+    runs-on: windows-2025-vs2026
     timeout-minutes: 60
     strategy:
       matrix:

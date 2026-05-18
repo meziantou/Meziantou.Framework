@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Win32.Lsa/Meziantou.Framework.Win32.Lsa.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
   </ItemGroup>
 
 </Project>

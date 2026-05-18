@@ -17,7 +17,6 @@
     <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
     <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
-    <Project Path="../src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
@@ -26,6 +25,5 @@
     <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" />
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
 </Solution>

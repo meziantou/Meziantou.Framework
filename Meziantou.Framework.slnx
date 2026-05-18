@@ -226,7 +226,6 @@
     <Project Path="tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.RestartManager.Tests/Meziantou.Framework.Win32.RestartManager.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
-    <Project Path="tests/TestUtilities/TestUtilities.csproj" />
     <Project Path="tests/Trimmable.Wpf/Trimmable.Wpf.csproj" />
     <Project Path="tests/Trimmable/Trimmable.csproj" />
   </Folder>

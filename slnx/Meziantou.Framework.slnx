@@ -15,7 +15,6 @@
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.ProjectedFileSystem/Meziantou.Framework.Win32.ProjectedFileSystem.csproj" />
     <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
-    <Project Path="../src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
@@ -25,6 +24,5 @@
     <Project Path="../tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
-    <Project Path="../tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
 </Solution>

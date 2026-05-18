@@ -21,7 +21,6 @@ if (args.Length > 0 && args[0] is "--help" or "-h")
 
 var rootPath = GetRepositoryRoot();
 var testsRootPath = rootPath / "tests";
-var utilsPath = testsRootPath / "TestUtilities" / "TestUtilities.csproj";
 var tfmCache = new ConcurrentDictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
 var testProjects = Directory.GetFiles(testsRootPath, "*.csproj", SearchOption.AllDirectories);
@@ -46,9 +45,6 @@ await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
 
     foreach (var refProj in references)
     {
-        if (string.Equals(refProj, utilsPath, StringComparison.OrdinalIgnoreCase))
-            continue;
-
         // Only consider the main referenced project (test project name starts with ref project name)
         if (!Path.GetFileNameWithoutExtension(proj).StartsWith(Path.GetFileNameWithoutExtension(refProj), StringComparison.Ordinal))
             continue;

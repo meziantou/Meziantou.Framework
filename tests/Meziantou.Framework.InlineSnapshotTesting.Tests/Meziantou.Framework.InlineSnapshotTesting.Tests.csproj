@@ -7,7 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>

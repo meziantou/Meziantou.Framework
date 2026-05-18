@@ -13,7 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
     <ProjectReference Include="../../src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
   </ItemGroup>
 
   <Import Project="../../src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.targets" />

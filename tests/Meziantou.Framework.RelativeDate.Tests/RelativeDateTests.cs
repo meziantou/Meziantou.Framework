@@ -27,7 +27,7 @@ public class RelativeDateTests
         Assert.Equal(expectedValueEn, resultEn);
         Assert.NotEmpty(expectedValueFr);
 
-#if !InvariantGlobalization
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
         var resultDe = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("de"));
         Assert.Equal(expectedValueEn, resultDe);
 

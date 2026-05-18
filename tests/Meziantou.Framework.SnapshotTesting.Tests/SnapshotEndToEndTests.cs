@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using TestUtilities;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 

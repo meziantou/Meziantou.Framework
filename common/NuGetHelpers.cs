@@ -79,7 +79,7 @@ public static class NuGetHelpers
             }
 
             if (result is [])
-                throw new Exception("No valid assembly found in the NuGet package");
+                throw new InvalidOperationException("No valid assembly found in the NuGet package");
 
             return [.. result];
         }

@@ -9,7 +9,8 @@
     <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
-    <ProjectReference Include="../TestUtilities/TestUtilities.csproj" />
+    <Compile Include="../../common/NuGetHelpers.cs" Link="NuGetHelpers.cs" />
+    <Compile Include="../../common/SharedHttpClient.cs" Link="SharedHttpClient.cs" />
   </ItemGroup>
 
   <ItemGroup>

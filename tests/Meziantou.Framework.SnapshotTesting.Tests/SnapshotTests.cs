@@ -55,6 +55,7 @@ public sealed class SnapshotTests
         var original = new SnapshotSettings();
         original.Serializers.Add(new FixedCountSerializer(count: 1));
         original.Comparers.Set(SnapshotType.Create("dummy"), ByteArraySnapshotComparer.Instance);
+        original.ScrubLinesContaining(StringComparison.OrdinalIgnoreCase, "line2");
         var originalSerializerCount = original.Serializers.Count;
 
         var clone = original.Clone();
@@ -62,6 +63,8 @@ public sealed class SnapshotTests
 
         Assert.NotSame(original.Serializers, clone.Serializers);
         Assert.NotSame(original.Comparers, clone.Comparers);
+        Assert.NotSame(original.Scrubbers, clone.Scrubbers);
+        Assert.Equal(original.Scrubbers, clone.Scrubbers);
         Assert.Equal(originalSerializerCount + 1, clone.Serializers.Count);
         Assert.Equal(originalSerializerCount, original.Serializers.Count);
     }
@@ -536,6 +539,157 @@ public sealed class SnapshotTests
         ValidateWithSerializerCount(validateSettings, count: 2);
     }
 
+    [Fact]
+    public void ScrubLinesMatching_Regex()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ScrubLinesMatching(new Regex("Line[2]", RegexOptions.None, TimeSpan.FromSeconds(10)));
+        settings.Serializers.Add(new FixedValueSerializer("Line1\nLine2\nLine3"));
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal(["Line1", "Line3"], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Fact]
+    public void ScrubLinesMatching_Pattern()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ScrubLinesMatching("Line[2]");
+        settings.Serializers.Add(new FixedValueSerializer("Line1\nLine2\nLine3"));
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal(["Line1", "Line3"], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_StringComparison_OrdinalIgnoreCase()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ScrubLinesContaining(StringComparison.OrdinalIgnoreCase, "line2");
+        settings.Serializers.Add(new FixedValueSerializer("Line1\nLine2\nLine3"));
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal(["Line1", "Line3"], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_StringComparison_Ordinal()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ScrubLinesContaining(StringComparison.Ordinal, "line2");
+        settings.Serializers.Add(new FixedValueSerializer("Line1\nLine2\nLine3"));
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal(["Line1", "Line2", "Line3"], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Fact]
+    public void ScrubLinesWithReplace()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ScrubLinesWithReplace(line => line.ToLowerInvariant());
+        settings.Serializers.Add(new FixedValueSerializer("Line1\nLine2\nLine3"));
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal(["line1", "line2", "line3"], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Fact]
+    public void ScrubLinesWithReplace_RemoveLine()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ScrubLinesWithReplace(line => line == "Line2" ? null : line);
+        settings.Serializers.Add(new FixedValueSerializer("Line1\nLine2\nLine3"));
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal(["Line1", "Line3"], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Fact]
+    public void Scrub_Guid()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ConfigureHumanReadableSerializer(options => options.ScrubGuid());
+        var guids = new[]
+        {
+            new Guid("43164674-b264-42b8-a7e5-6565667360b0"),
+            new Guid("43164674-b264-42b8-a7e5-6565667360b0"),
+            new Guid("6ff5182f-7644-4bc1-a3a4-38092cb3663a"),
+            Guid.Empty,
+        };
+
+        Snapshot.Validate(guids, settings);
+
+        Assert.Equal(
+        [
+            "- 00000000-0000-0000-0000-000000000001",
+            "- 00000000-0000-0000-0000-000000000001",
+            "- 00000000-0000-0000-0000-000000000002",
+            "- 00000000-0000-0000-0000-000000000000",
+        ], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Fact]
+    public void Scrub_UseRelativeTimeSpan()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        var origin = TimeSpan.FromSeconds(1);
+        settings.ConfigureHumanReadableSerializer(options => options.UseRelativeTimeSpan(origin));
+        var values = new[]
+        {
+            TimeSpan.FromSeconds(0),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2),
+        };
+
+        Snapshot.Validate(values, settings);
+
+        Assert.Equal(
+        [
+            "- -00:00:01",
+            "- 00:00:00",
+            "- 00:00:01",
+        ], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Fact]
+    public void Scrub_UseRelativeDateTime()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        var origin = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        settings.ConfigureHumanReadableSerializer(options => options.UseRelativeDateTime(origin));
+        var values = new[]
+        {
+            origin,
+            origin.AddSeconds(1),
+            origin.AddSeconds(2),
+        };
+
+        Snapshot.Validate(values, settings);
+
+        Assert.Equal(
+        [
+            "- 00:00:00",
+            "- 00:00:01",
+            "- 00:00:02",
+        ], ReadVerifiedSnapshotLines(directory));
+    }
+
     [Theory]
     [InlineData("ping", "ping", "")]
     [InlineData("ping ", "ping", "")]
@@ -582,6 +736,23 @@ public sealed class SnapshotTests
 
         settings.Serializers.Add(new FixedValueSerializer(serializedValue));
         return settings;
+    }
+
+    private static SnapshotSettings CreateScrubberSnapshotSettings(TemporaryDirectory directory)
+    {
+        return new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
+            SnapshotPathStrategy = _ => directory / "snapshot.verified.txt",
+        };
+    }
+
+    private static string[] ReadVerifiedSnapshotLines(TemporaryDirectory directory)
+    {
+        var path = directory / "snapshot.verified.txt";
+        return File.ReadAllLines(path);
     }
 
     private static SnapshotUpdateStrategy GetSnapshotUpdateStrategy(string name)

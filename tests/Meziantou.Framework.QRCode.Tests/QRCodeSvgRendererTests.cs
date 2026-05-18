@@ -1,7 +1,6 @@
 using System.Xml.Linq;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Meziantou.Framework.SnapshotTesting;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
@@ -76,6 +75,21 @@ public class QRCodeSvgRendererTests
         {
             DarkColor = Color.FromRgb(0xff, 0x00, 0x00),
             LightColor = Color.FromRgb(0x00, 0xff, 0x00),
+            QuietZoneModules = 4,
+            ModuleSize = 1,
+        });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_TransparentColors_Snapshot()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var svg = qr.ToSvg(new QRCodeSvgOptions
+        {
+            DarkColor = Color.FromArgb(0x80, 0x11, 0x22, 0x33),
+            LightColor = Color.Transparent,
             QuietZoneModules = 4,
             ModuleSize = 1,
         });

@@ -1,9 +1,7 @@
 #pragma warning disable MA0004 // Use Task.ConfigureAwait
 #pragma warning disable MA0047 // Declare types in namespaces
 #pragma warning disable MA0048 // File name must match type name
-using System.Globalization;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using Meziantou.Framework;
 

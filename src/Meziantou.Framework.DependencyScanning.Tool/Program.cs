@@ -1,12 +1,9 @@
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Meziantou.Framework;
-using Meziantou.Framework.DependencyScanning;
 using Meziantou.Framework.Globbing;
 
 [assembly: InternalsVisibleTo("Meziantou.Framework.DependencyScanning.Tool.Tests")]

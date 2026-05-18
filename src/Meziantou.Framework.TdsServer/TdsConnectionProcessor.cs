@@ -3,7 +3,6 @@ using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Tds.Handler;
 using Meziantou.Framework.Tds.Protocol;
 using Microsoft.Extensions.Logging;

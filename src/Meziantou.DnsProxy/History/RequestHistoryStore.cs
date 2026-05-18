@@ -1,6 +1,4 @@
 using System.Collections.Concurrent;
-using Meziantou.Framework.DnsServer.Protocol;
-using Meziantou.Framework.DnsServer.Protocol.Records;
 using Microsoft.Extensions.Options;
 
 namespace Meziantou.DnsProxy.History;

@@ -1,5 +1,4 @@
 using Meziantou.Xunit;
-using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests;
 
@@ -579,7 +578,7 @@ public partial class RecurrenceRuleTests
 
     private static void TestGetHumanText(string rruleText, string cultureInfo, string expectedText)
     {
-#if InvariantGlobalization
+#if INVARIANT_GLOBALIZATION_MODE_ENABLED
         var culture = cultureInfo is "en-US" or "en" ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo(cultureInfo);
 #else
         var culture = CultureInfo.GetCultureInfo(cultureInfo);

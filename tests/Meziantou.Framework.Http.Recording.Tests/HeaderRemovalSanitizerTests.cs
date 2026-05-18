@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Http.Recording.Tests;
 
 public sealed class HeaderRemovalSanitizerTests

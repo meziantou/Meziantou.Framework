@@ -1,9 +1,6 @@
 using System.Net;
-using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using Meziantou.Framework;
-using Meziantou.Framework.DependencyScanning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool;
 

@@ -1,10 +1,6 @@
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using Meziantou.Framework;
-using TestUtilities;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 

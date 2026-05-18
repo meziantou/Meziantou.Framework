@@ -1,5 +1,3 @@
-using Meziantou.Framework;
-
 namespace Meziantou.Framework.Globbing.Internals;
 
 internal sealed class CharacterRangeInverseSegment : Segment

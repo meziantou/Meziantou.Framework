@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.AspNetCore.Diagnostics;
 
 /// <summary>Represents a snapshot of the ASP.NET Core middleware pipeline and endpoint list.</summary>

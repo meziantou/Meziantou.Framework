@@ -1,11 +1,8 @@
 #!/usr/bin/env dotnet
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Text.RegularExpressions;
 using Meziantou.Framework;
 

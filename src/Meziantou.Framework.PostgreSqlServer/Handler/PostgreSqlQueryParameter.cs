@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace Meziantou.Framework.PostgreSql.Handler;

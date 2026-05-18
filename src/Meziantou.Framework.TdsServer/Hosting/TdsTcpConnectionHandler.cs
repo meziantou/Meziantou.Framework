@@ -1,5 +1,4 @@
 using System.Net;
-using Meziantou.Framework.Tds.Handler;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 

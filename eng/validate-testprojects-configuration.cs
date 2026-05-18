@@ -1,14 +1,8 @@
 #!/usr/bin/env dotnet
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 using Meziantou.Framework;
 

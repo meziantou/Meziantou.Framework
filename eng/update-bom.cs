@@ -1,10 +1,6 @@
 #!/usr/bin/env dotnet
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
 using Meziantou.Framework;
 
 if (args.Length > 0 && args[0] is "--help" or "-h")

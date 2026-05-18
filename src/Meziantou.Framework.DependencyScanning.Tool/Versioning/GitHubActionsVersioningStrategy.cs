@@ -1,5 +1,3 @@
-using System.Text;
-using System.Globalization;
 using Meziantou.Framework.Versioning;
 
 namespace Meziantou.Framework.DependencyScanning.Tool;

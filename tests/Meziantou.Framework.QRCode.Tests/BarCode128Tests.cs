@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Globalization;
 using System.Xml.Linq;
 using Meziantou.Framework.SnapshotTesting;
 
@@ -71,6 +70,22 @@ public class BarCode128Tests
         {
             DarkColor = Color.FromRgb(0xff, 0x00, 0x00),
             LightColor = Color.FromRgb(0x00, 0xff, 0x00),
+            ModuleWidth = 1,
+            ModuleHeight = 3,
+            QuietZoneModules = 1,
+        });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_Code128_TransparentColors_Snapshot()
+    {
+        var barcode = Barcode.CreateCode128(NumericData);
+        var svg = barcode.ToSvg(new BarcodeSvgOptions
+        {
+            DarkColor = Color.Transparent,
+            LightColor = Color.FromArgb(0x80, 0x00, 0xff, 0x00),
             ModuleWidth = 1,
             ModuleHeight = 3,
             QuietZoneModules = 1,

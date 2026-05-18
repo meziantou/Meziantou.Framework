@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.DnsFilter.Tests;
 
 public sealed class DnsFilterListReaderTests

@@ -1,4 +1,3 @@
-using Meziantou.Extensions.Logging;
 using Meziantou.Framework;
 using Microsoft.Extensions.Logging;
 

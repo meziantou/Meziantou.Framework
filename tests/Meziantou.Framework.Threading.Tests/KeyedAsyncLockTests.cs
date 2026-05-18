@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Meziantou.Framework.Threading.Tests;
+﻿namespace Meziantou.Framework.Threading.Tests;
 
 public sealed class KeyedAsyncLockTests
 {

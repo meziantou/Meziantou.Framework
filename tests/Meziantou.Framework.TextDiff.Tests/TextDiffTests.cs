@@ -1,10 +1,6 @@
 extern alias TextDiffLib;
-
-using System.Text;
-
 using Diff = TextDiffLib::Meziantou.Framework.TextDiff;
 using TextDiffLib::Meziantou.Framework;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

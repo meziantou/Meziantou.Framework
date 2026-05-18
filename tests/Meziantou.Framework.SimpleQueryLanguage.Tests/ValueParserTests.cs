@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
+﻿namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 
 public class ValueParserTests
 {

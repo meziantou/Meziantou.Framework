@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using Xunit;
 
 namespace Meziantou.Framework.HttpArchive.Tests;
 

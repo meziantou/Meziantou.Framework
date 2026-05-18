@@ -1,4 +1,3 @@
-using System.Net;
 using Meziantou.Framework.DnsServer.Handler;
 using Meziantou.Framework.DnsServer.Listeners;
 using Microsoft.AspNetCore.Connections;

@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Id3v1;

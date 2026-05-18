@@ -1,5 +1,3 @@
-using Meziantou.Framework.MediaTags;
-
 namespace Meziantou.Framework.MediaTags.Tests;
 
 public sealed class Mp3Id3v2Tests

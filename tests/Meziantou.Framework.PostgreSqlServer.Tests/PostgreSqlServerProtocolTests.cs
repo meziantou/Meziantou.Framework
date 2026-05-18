@@ -1,14 +1,9 @@
-using System.Globalization;
 using System.Net;
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using Meziantou.Framework.PostgreSql;
 using Meziantou.Framework.PostgreSql.Handler;
 using Npgsql;
 using Meziantou.Xunit;
-using Xunit;
 
 namespace Meziantou.Framework.PostgreSql.Tests;
 

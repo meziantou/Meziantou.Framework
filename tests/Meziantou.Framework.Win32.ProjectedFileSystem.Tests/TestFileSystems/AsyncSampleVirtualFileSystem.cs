@@ -1,5 +1,3 @@
-using System.Threading;
-
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 internal sealed class AsyncSampleVirtualFileSystem : ProjectedFileSystemBase

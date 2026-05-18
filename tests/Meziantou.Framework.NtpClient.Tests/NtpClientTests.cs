@@ -1,5 +1,4 @@
 using System.Net;
-using Meziantou.Framework.Ntp;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Ntp.Tests;

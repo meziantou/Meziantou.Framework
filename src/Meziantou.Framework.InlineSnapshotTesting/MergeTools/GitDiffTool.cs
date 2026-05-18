@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Meziantou.Framework;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 

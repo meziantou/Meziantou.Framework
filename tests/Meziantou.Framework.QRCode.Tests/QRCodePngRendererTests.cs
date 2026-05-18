@@ -128,6 +128,21 @@ public class QRCodePngRendererTests
         Assert.Equal(expectedCustomPixel[3], custom.ImageData[pixelIndex + 3]);
     }
 
+    [Fact]
+    public void ToPng_TransparentColors_Snapshot()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var png = qr.ToPng(new QRCodePngOptions
+        {
+            ModuleSize = 1,
+            QuietZoneModules = 0,
+            DarkColor = Color.FromArgb(0x80, 0x11, 0x22, 0x33),
+            LightColor = Color.Transparent,
+        });
+
+        Snapshot.Validate(png, SnapshotType.Png);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]

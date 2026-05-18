@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Tests;
 
 public sealed class ByteSizeTests
@@ -96,7 +94,7 @@ public sealed class ByteSizeTests
         var byteSize = new ByteSize(length);
         Span<char> destination = stackalloc char[100];
         var success = byteSize.TryFormat(destination, out var charsWritten, format, CultureInfo.InvariantCulture);
-        
+
         Assert.True(success);
         var formattedValue = destination[..charsWritten].ToString();
         Assert.Equal(expectedValue, formattedValue);
@@ -108,7 +106,7 @@ public sealed class ByteSizeTests
         var byteSize = new ByteSize(1_000_000L);
         Span<char> destination = stackalloc char[2];
         var success = byteSize.TryFormat(destination, out var charsWritten, "", CultureInfo.InvariantCulture);
-        
+
         Assert.False(success);
         Assert.Equal(0, charsWritten);
     }
@@ -162,7 +160,7 @@ public sealed class ByteSizeTests
         var byteSize = new ByteSize(length);
         Span<byte> destination = stackalloc byte[100];
         var success = byteSize.TryFormat(destination, out var bytesWritten, format, CultureInfo.InvariantCulture);
-        
+
         Assert.True(success);
         var formattedValue = System.Text.Encoding.UTF8.GetString(destination[..bytesWritten]);
         Assert.Equal(expectedValue, formattedValue);
@@ -174,7 +172,7 @@ public sealed class ByteSizeTests
         var byteSize = new ByteSize(1_000_000L);
         Span<byte> destination = stackalloc byte[2];
         var success = byteSize.TryFormat(destination, out var bytesWritten, "", CultureInfo.InvariantCulture);
-        
+
         Assert.False(success);
         Assert.Equal(0, bytesWritten);
     }

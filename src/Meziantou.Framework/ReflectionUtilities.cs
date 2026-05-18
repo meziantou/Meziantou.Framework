@@ -5,10 +5,10 @@ using System.Reflection.PortableExecutable;
 
 namespace Meziantou.Framework;
 
-#if ReflectionUtilities_Internal
-internal
-#else
+#if PUBLIC_REFLECTION_UTILITIES
 public
+#else
+internal
 #endif
 static class ReflectionUtilities
 {

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Meziantou.Framework;
 
 /// <summary>Builder for configuring environment variable modifications.</summary>

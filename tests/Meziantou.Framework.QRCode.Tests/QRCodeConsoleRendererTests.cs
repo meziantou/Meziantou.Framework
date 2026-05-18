@@ -1,5 +1,4 @@
 using Meziantou.Framework.InlineSnapshotTesting;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

@@ -1,6 +1,4 @@
 using System.Net;
-using Meziantou.Framework.Http.ServerSideRequestForgery;
-using Xunit;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;
 

@@ -1,16 +1,11 @@
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq.Expressions;
 using System.Net;
 using System.Security.Claims;
-using System.Text;
-using Meziantou.Framework.Tds;
 using Meziantou.Framework.Tds.Handler;
 using Meziantou.Framework.Tds.QueryEngine;
 using Microsoft.Data.SqlClient;
 using Meziantou.Xunit;
-using Xunit;
 
 namespace Meziantou.Framework.Tds.Tests;
 

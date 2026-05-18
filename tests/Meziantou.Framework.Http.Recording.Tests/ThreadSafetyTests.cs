@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Net;
-using Xunit;
 
 namespace Meziantou.Framework.Http.Recording.Tests;
 

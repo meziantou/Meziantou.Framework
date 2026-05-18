@@ -3,8 +3,6 @@
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Meziantou.Framework;

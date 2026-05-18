@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text.Json;
-using Meziantou.Xunit;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.CommandLineTests;

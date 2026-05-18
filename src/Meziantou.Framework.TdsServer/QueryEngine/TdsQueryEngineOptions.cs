@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Xml;
 using System.Xml.Schema;
 using Meziantou.Framework.Tds.Handler;

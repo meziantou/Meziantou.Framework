@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using Meziantou.Framework;
 using Meziantou.Framework.SnapshotTesting;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;

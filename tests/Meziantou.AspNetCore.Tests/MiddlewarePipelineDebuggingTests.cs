@@ -4,7 +4,6 @@ using System.Text.RegularExpressions;
 using Meziantou.AspNetCore.Diagnostics;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Hosting;
@@ -149,10 +148,10 @@ public sealed class MiddlewarePipelineDebuggingTests
               - Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware [System.Func`2[[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*],[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*]]::CreateMiddleware]
               - Meziantou.AspNetCore.NoCacheMiddleware [System.Func`2[[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*],[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*]]::CreateMiddleware]
               - Microsoft.AspNetCore.Routing.EndpointMiddleware [System.Func`2[[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*],[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*]]::CreateMiddleware]
-            
+
             Endpoints:
               - [GET] /hello (Order: 0) HTTP: GET /hello [Microsoft.AspNetCore.Routing.RouteEndpoint]
-            
+
             """);
     }
 

@@ -1,7 +1,6 @@
 using System.CommandLine;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
-using System.Text;
 using Meziantou.Framework.Globbing;
 using Microsoft.AspNetCore.StaticFiles;
 

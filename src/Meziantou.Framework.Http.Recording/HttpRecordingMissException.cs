@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Meziantou.Framework.Http.Recording;
 
 /// <summary>Thrown when no recorded response matches an incoming request during replay.</summary>

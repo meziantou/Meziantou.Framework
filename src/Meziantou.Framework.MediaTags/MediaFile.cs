@@ -1,7 +1,6 @@
 using Meziantou.Framework.MediaTags.Formats;
 using Meziantou.Framework.MediaTags.Formats.Aiff;
 using Meziantou.Framework.MediaTags.Formats.Flac;
-using Meziantou.Framework.MediaTags.Formats.Id3v1;
 using Meziantou.Framework.MediaTags.Formats.Id3v2;
 using Meziantou.Framework.MediaTags.Formats.Mp4;
 using Meziantou.Framework.MediaTags.Formats.Ogg;

@@ -1,5 +1,3 @@
-using Meziantou.Framework.MediaTags;
-
 namespace Meziantou.Framework.MediaTags.Tests;
 
 public sealed class WavTests

@@ -1,5 +1,4 @@
 using Meziantou.Framework.WPF.Collections;
-using Xunit;
 
 namespace Meziantou.Framework.Windows.Tests;
 

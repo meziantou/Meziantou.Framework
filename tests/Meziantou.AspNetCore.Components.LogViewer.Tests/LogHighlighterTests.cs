@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.AspNetCore.Components.LogViewer.Tests;
 
 public class LogHighlighterTests

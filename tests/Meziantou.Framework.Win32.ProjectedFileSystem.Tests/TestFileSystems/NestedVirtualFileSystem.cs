@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 /// <summary>

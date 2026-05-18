@@ -1,7 +1,5 @@
 using System.Numerics;
-using Meziantou.Framework.SimpleQueryLanguage.Ranges;
 using Microsoft.Extensions.Time.Testing;
-using Xunit;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 

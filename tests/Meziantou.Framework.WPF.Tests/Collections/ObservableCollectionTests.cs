@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using Meziantou.Framework.WPF.Collections;
-using Xunit;
 
 namespace Meziantou.Framework.Windows.Tests;
 

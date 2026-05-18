@@ -1,6 +1,4 @@
 ﻿#pragma warning disable CA1861 // Avoid constant arrays as arguments
-using Xunit;
-
 namespace Meziantou.Framework.Threading.Tests;
 public sealed class MixedConsumerProducerTests
 {

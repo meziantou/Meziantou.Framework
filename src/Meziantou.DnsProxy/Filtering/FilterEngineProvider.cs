@@ -1,7 +1,6 @@
 using Meziantou.Framework.DnsFilter;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Threading;
 
 namespace Meziantou.DnsProxy.Filtering;
 

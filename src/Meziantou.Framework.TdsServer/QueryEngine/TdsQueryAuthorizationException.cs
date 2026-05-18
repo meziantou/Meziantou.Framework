@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Meziantou.Framework.Tds.QueryEngine;
 
 [SuppressMessage("Design", "CA1032:Implement standard exception constructors", Justification = "Internal exception used only to carry query-engine authorization errors to TDS error responses.")]

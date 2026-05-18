@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using System.Net;
 using System.Security.Claims;
-using System.Text;
 using Meziantou.Framework.Tds.Handler;
 
 namespace Meziantou.Framework.Tds.Protocol;

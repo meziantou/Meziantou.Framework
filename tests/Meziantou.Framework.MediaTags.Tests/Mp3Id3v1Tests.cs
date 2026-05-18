@@ -1,4 +1,3 @@
-using Meziantou.Framework.MediaTags;
 using Meziantou.Framework.MediaTags.Formats.Id3v1;
 
 namespace Meziantou.Framework.MediaTags.Tests;

@@ -1,6 +1,5 @@
 using Meziantou.Framework.Globbing.Internals;
 using Meziantou.Framework.Globbing.Internals.Segments;
-using Xunit;
 
 namespace Meziantou.Framework.Globbing.Tests;
 

@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.Internal.MicroQR;
 
 internal static class MicroQREncoder

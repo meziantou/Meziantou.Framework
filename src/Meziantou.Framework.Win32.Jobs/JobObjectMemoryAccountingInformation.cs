@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Represents the memory accounting information for a job object.</summary>

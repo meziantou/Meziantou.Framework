@@ -1,6 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-
 namespace Meziantou.Framework.Http.Recording;
 
 /// <summary>Matches requests based on HTTP method and URL with sorted query parameters.</summary>

@@ -1,7 +1,4 @@
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
-using Meziantou.Framework.PublicApiGenerator;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.PublicApiGenerator.MSBuild;
 

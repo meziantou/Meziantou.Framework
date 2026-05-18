@@ -5,7 +5,6 @@ using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Meziantou.Xunit;
 
 using DnsClientType = Meziantou.Framework.DnsClient.DnsClient;
 using DnsClientProtocol = Meziantou.Framework.DnsClient.DnsClientProtocol;

@@ -1,5 +1,3 @@
-using Meziantou.Framework.Ntp;
-
 namespace Meziantou.Framework.Ntp.Tests;
 
 public sealed class NtpServerTests : IAsyncLifetime

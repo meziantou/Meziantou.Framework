@@ -1,6 +1,3 @@
-using Meziantou.Framework;
-using Meziantou.Framework.DependencyScanning;
-
 namespace Meziantou.Framework.DependencyScanning.Tool;
 
 internal abstract class PackageUpdater

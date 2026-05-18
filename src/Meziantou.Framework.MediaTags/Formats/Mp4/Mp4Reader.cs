@@ -1,6 +1,4 @@
 using System.Buffers.Binary;
-using System.Globalization;
-using System.Text;
 
 namespace Meziantou.Framework.MediaTags.Formats.Mp4;
 

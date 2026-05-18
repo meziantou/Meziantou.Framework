@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;
 

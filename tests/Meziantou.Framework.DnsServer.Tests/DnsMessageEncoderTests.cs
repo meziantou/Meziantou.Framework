@@ -2,7 +2,6 @@ using System.Net;
 using Meziantou.Framework.DnsServer.Protocol;
 using Meziantou.Framework.DnsServer.Protocol.Records;
 using Meziantou.Framework.DnsServer.Protocol.Wire;
-using Xunit;
 
 namespace Meziantou.Framework.DnsServer.Tests;
 

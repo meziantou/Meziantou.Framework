@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using DotNet.Testcontainers.Builders;
 using Microsoft.Data.Sqlite;
 using Meziantou.Framework.Http.Caching.InMemory;
 using Meziantou.Framework.Http.Caching.Redis;

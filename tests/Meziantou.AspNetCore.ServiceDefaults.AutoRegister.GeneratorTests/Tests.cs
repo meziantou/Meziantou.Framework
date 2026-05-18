@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Testing.Platform.Services;
-using Xunit;
 
 namespace Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests;
 

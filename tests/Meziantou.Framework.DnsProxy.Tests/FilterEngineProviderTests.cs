@@ -1,7 +1,5 @@
 using System.Net;
-using System.Net.Http;
 using System.Diagnostics;
-using System.Threading;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Filtering;
 using Meziantou.Framework.DnsFilter;

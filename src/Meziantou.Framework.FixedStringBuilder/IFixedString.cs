@@ -1,5 +1,3 @@
-using System;
-
 namespace Meziantou.Framework.FixedStringBuilder;
 
 /// <summary>

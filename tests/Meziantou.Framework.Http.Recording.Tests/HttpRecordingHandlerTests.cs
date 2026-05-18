@@ -1,9 +1,7 @@
 using System.Net;
-using Meziantou.Framework;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
-using Xunit;
 
 namespace Meziantou.Framework.Http.Recording.Tests;
 

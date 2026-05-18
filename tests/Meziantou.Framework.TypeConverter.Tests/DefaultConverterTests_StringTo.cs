@@ -1,5 +1,4 @@
 using Meziantou.Xunit;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

@@ -1,7 +1,6 @@
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using Meziantou.Extensions.Logging.InMemory;
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery.Tests;

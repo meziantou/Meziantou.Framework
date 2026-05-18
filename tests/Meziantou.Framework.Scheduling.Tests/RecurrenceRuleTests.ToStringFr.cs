@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Scheduling.Tests;
 
 public partial class RecurrenceRuleTests
 {
-#if !InvariantGlobalization
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
     [Fact]
     public void Daily_HumanText_fr_fr_01()
     {

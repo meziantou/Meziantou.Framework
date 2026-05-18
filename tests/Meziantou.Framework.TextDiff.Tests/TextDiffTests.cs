@@ -538,16 +538,16 @@ public sealed class TextDiffTests
     [Fact]
     public void ComputeHierarchyDiff_LinesThenWords_NestedChange()
     {
-        const string oldText = "line1\nhello world\nline3";
-        const string newText = "line1\nhello brave world\nline3";
+        const string OldText = "line1\nhello world\nline3";
+        const string NewText = "line1\nhello brave world\nline3";
 
-        var result = Diff.ComputeHierarchyDiff(oldText, newText, [TextChunker.Lines, TextChunker.Words]);
+        var result = Diff.ComputeHierarchyDiff(OldText, NewText, [TextChunker.Lines, TextChunker.Words]);
 
         Assert.True(result.HasDifferences);
-        Assert.Equal(oldText, ReconstructHierarchyOldText(result));
-        Assert.Equal(newText, ReconstructHierarchyNewText(result));
+        Assert.Equal(OldText, ReconstructHierarchyOldText(result));
+        Assert.Equal(NewText, ReconstructHierarchyNewText(result));
 
-        var replacedLine = Assert.Single(result.Entries.Where(e => e.Operation == TextDiffHierarchyOperation.Replace));
+        var replacedLine = Assert.Single(result.Entries, e => e.Operation == TextDiffHierarchyOperation.Replace);
         Assert.Equal("hello world\n", replacedLine.OldText);
         Assert.Equal("hello brave world\n", replacedLine.NewText);
         Assert.Contains(replacedLine.Children, e => e.Operation == TextDiffHierarchyOperation.Insert && e.NewText == "brave");
@@ -556,31 +556,31 @@ public sealed class TextDiffTests
     [Fact]
     public void ComputeHierarchyDiff_LinesWordsCharacters_NestedReplaceWithChildren()
     {
-        const string oldText = "line1\ncolor";
-        const string newText = "line1\ncolour";
+        const string OldText = "line1\ncolor";
+        const string NewText = "line1\ncolour";
 
-        var result = Diff.ComputeHierarchyDiff(oldText, newText, [TextChunker.Lines, TextChunker.Words, TextChunker.Characters]);
+        var result = Diff.ComputeHierarchyDiff(OldText, NewText, [TextChunker.Lines, TextChunker.Words, TextChunker.Characters]);
 
         Assert.True(result.HasDifferences);
-        Assert.Equal(oldText, ReconstructHierarchyOldText(result));
-        Assert.Equal(newText, ReconstructHierarchyNewText(result));
+        Assert.Equal(OldText, ReconstructHierarchyOldText(result));
+        Assert.Equal(NewText, ReconstructHierarchyNewText(result));
 
-        var replacedLine = Assert.Single(result.Entries.Where(e => e.Operation == TextDiffHierarchyOperation.Replace));
-        var replacedWord = Assert.Single(replacedLine.Children.Where(e => e.Operation == TextDiffHierarchyOperation.Replace));
+        var replacedLine = Assert.Single(result.Entries, e => e.Operation == TextDiffHierarchyOperation.Replace);
+        var replacedWord = Assert.Single(replacedLine.Children, e => e.Operation == TextDiffHierarchyOperation.Replace);
         Assert.Contains(replacedWord.Children, e => e.Operation == TextDiffHierarchyOperation.Insert && e.NewText == "u");
     }
 
     [Fact]
     public void ComputeHierarchyDiff_WordsThenCharacters_NestedChanges()
     {
-        const string oldText = "cat dog";
-        const string newText = "cot doge";
+        const string OldText = "cat dog";
+        const string NewText = "cot doge";
 
-        var result = Diff.ComputeHierarchyDiff(oldText, newText, [TextChunker.Words, TextChunker.Characters]);
+        var result = Diff.ComputeHierarchyDiff(OldText, NewText, [TextChunker.Words, TextChunker.Characters]);
 
         Assert.True(result.HasDifferences);
-        Assert.Equal(oldText, ReconstructHierarchyOldText(result));
-        Assert.Equal(newText, ReconstructHierarchyNewText(result));
+        Assert.Equal(OldText, ReconstructHierarchyOldText(result));
+        Assert.Equal(NewText, ReconstructHierarchyNewText(result));
 
         var replacedEntries = result.Entries.Where(e => e.Operation == TextDiffHierarchyOperation.Replace).ToList();
         Assert.Equal(2, replacedEntries.Count);

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using TestUtilities;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
@@ -923,7 +924,7 @@ public sealed class SnapshotEndToEndTests
             <Project Sdk="Microsoft.NET.Sdk">
               <Import Project="{{snapshotPropsPath}}" />
               <PropertyGroup>
-                <TargetFramework>{{targetFramework ?? GetTargetFramework()}}</TargetFramework>
+                <TargetFramework>{{targetFramework ?? TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <Nullable>disable</Nullable>
                 <IsPackable>false</IsPackable>
                 {{GetAdditionalProjectProperties(testFramework)}}
@@ -1056,19 +1057,6 @@ public sealed class SnapshotEndToEndTests
         }
 
         return string.Join(Environment.NewLine, globalUsings);
-    }
-
-    private static string GetTargetFramework()
-    {
-#if NET8_0
-        return "net8.0";
-#elif NET9_0
-        return "net9.0";
-#elif NET10_0
-        return "net10.0";
-#else
-        throw new NotSupportedException("Unsupported target framework");
-#endif
     }
 
     private static string GetSnapshotTestUtilitiesSource()

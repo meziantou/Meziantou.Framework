@@ -10,5 +10,6 @@
     <ProjectReference Include="../../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <Compile Include="../../common/TargetFrameworkHelper.cs" Link="TargetFrameworkHelper.cs" />
   </ItemGroup>
 </Project>

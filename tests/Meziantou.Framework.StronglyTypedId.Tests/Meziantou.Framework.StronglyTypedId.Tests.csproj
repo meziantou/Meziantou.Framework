@@ -11,6 +11,7 @@
     <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Compile Include="../../common/NuGetHelpers.cs" Link="NuGetHelpers.cs" />
     <Compile Include="../../common/SharedHttpClient.cs" Link="SharedHttpClient.cs" />
+    <Compile Include="../../common/TargetFrameworkHelper.cs" Link="TargetFrameworkHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>

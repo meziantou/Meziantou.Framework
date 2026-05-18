@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Microsoft.CodeAnalysis;
+using TestUtilities;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 
@@ -1112,7 +1113,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
                 <TargetType>exe</TargetType>
-                <TargetFramework>{{GetTargetFramework()}}</TargetFramework>
+                <TargetFramework>{{TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <LangVersion>{{languageVersion}}</LangVersion>
                 <Nullable>disable</Nullable>
                 <DebugType>portable</DebugType>
@@ -1192,17 +1193,6 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             var fullPath = directory.GetFullPath(path);
             File.WriteAllText(fullPath, content);
             return fullPath;
-        }
-
-        static string GetTargetFramework()
-        {
-#if NET8_0
-            return "net8.0";
-#elif NET9_0
-            return "net9.0";
-#elif NET10_0
-            return "net10.0";
-#endif
         }
 
         static string GetPackageReferences()

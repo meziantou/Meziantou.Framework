@@ -36,6 +36,27 @@ var options = new TextDiffOptions
 var result = TextDiff.ComputeDiff("Hello   world\r\n", "hello world\n", options);
 ````
 
+## Compute a hierarchical diff with multiple chunking levels
+
+````csharp
+var result = TextDiff.ComputeHierarchyDiff(
+    oldText: "line1\nhello world\nline3",
+    newText: "line1\nhello brave world\nline3",
+    chunkers: [TextChunker.Lines, TextChunker.Words, TextChunker.Characters]);
+
+foreach (var entry in result.Entries)
+{
+    Console.WriteLine($"{entry.Operation}: old={entry.OldText} new={entry.NewText}");
+
+    foreach (var child in entry.Children)
+    {
+        Console.WriteLine($"  {child.Operation}: old={child.OldText} new={child.NewText}");
+    }
+}
+````
+
+The hierarchy API lets you refine changed chunks progressively (`Lines -> Words -> Characters`, `Words -> Characters`, etc.).
+
 ## Choose a diff algorithm
 
 ````csharp

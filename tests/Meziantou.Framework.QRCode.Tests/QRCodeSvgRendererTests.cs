@@ -83,6 +83,21 @@ public class QRCodeSvgRendererTests
     }
 
     [Fact]
+    public void ToSvg_TransparentColors_Snapshot()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var svg = qr.ToSvg(new QRCodeSvgOptions
+        {
+            DarkColor = Color.FromArgb(0x80, 0x11, 0x22, 0x33),
+            LightColor = Color.Transparent,
+            QuietZoneModules = 4,
+            ModuleSize = 1,
+        });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
     public void ToSvg_QuietZone()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);

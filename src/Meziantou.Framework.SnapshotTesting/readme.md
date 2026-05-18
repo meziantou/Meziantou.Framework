@@ -93,3 +93,23 @@ Snapshot.Validate(value, SnapshotType.Default, settings);
 ```
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
+
+## Scrubbing
+
+Scrubbing helps make snapshots deterministic by removing unstable values or lines.
+
+```csharp
+var settings = SnapshotSettings.Default with { };
+settings.ConfigureHumanReadableSerializer(options => options.ScrubGuid());
+settings.ScrubLinesContaining("GeneratedAt:");
+
+Snapshot.Validate(value, SnapshotType.Default, settings);
+```
+
+You can also scrub relative temporal values:
+
+```csharp
+var now = DateTime.UtcNow;
+var settings = SnapshotSettings.Default with { };
+settings.ConfigureHumanReadableSerializer(options => options.UseRelativeDateTime(now));
+```

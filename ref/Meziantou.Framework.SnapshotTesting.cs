@@ -13,6 +13,19 @@ namespace Meziantou.Framework.SnapshotTesting
         public abstract string FormatMessage(string? expected, string? actual);
     }
 
+    public static class HumanReadableSerializerScrubExtensions
+    {
+        public static void ScrubGuid(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
+        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, string> scrubber) { }
+        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, int, string> scrubber) { }
+        public static void ScrubValue<T>(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.Func<T, int, string> scrubber, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
+        public static void UseRelativeTimeSpan(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.TimeSpan origin) { }
+        public static void UseRelativeDateTime(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.DateTime origin) { }
+        public static void UseRelativeDateTimeOffset(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options, System.DateTimeOffset origin) { }
+    }
+
     public interface ISnapshotComparer
     {
         bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData expected, Meziantou.Framework.SnapshotTesting.SnapshotData actual);
@@ -66,6 +79,11 @@ namespace Meziantou.Framework.SnapshotTesting
     {
         public abstract void Dispose();
         public abstract void WaitForExit();
+    }
+
+    public abstract class Scrubber
+    {
+        public abstract string Scrub(string text);
     }
 
     public sealed class SerializedSnapshot
@@ -193,6 +211,7 @@ namespace Meziantou.Framework.SnapshotTesting
         public Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection Serializers { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.SnapshotTesting.MergeTool>? MergeTools { get => throw null; set { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotComparerCollection Comparers { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.SnapshotTesting.Scrubber> Scrubbers { get => throw null; }
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotSettings? left, Meziantou.Framework.SnapshotTesting.SnapshotSettings? right) => throw null;
         public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotSettings? left, Meziantou.Framework.SnapshotTesting.SnapshotSettings? right) => throw null;
@@ -210,6 +229,20 @@ namespace Meziantou.Framework.SnapshotTesting
     {
         public static void ConfigureHumanReadableSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? options) { }
         public static void AddConverter(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, Meziantou.Framework.HumanReadable.HumanReadableConverter converter) { }
+    }
+
+    public static class SnapshotSettingsScrubberExtensions
+    {
+        public static void ScrubLines(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Func<string, bool> predicate) { }
+        public static void ScrubLinesContaining(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, params string[] searchText) { }
+        public static void ScrubLinesContaining(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.StringComparison stringComparison, params string[] searchText) { }
+        public static void ScrubLinesMatching(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Text.RegularExpressions.Regex regex) { }
+        public static void ScrubLinesMatching(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern) { }
+        public static void ScrubLinesMatching(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
+        public static void ScrubLinesMatching(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { }
+        public static void ScrubLinesWithReplace(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Func<string, string?> replaceLine) { }
+        public static void ScrubMachineName(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings) { }
+        public static void ScrubUserName(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings) { }
     }
 
     public sealed class SnapshotTestContext : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotTestContext>

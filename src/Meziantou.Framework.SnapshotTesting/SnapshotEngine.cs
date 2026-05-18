@@ -4,6 +4,8 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 internal static class SnapshotEngine
 {
+    private static readonly UTF8Encoding Utf8WithoutBomExceptionFallback = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     public static void Validate(SnapshotType? type, object? value, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -54,7 +56,37 @@ internal static class SnapshotEngine
     private static IReadOnlyList<SnapshotData> Serialize(SnapshotSettings settings, SnapshotType type, object? value)
     {
         var serializer = settings.Serializers.Get(type, value);
-        return serializer.Serialize(type, value).Data;
+        var data = serializer.Serialize(type, value).Data;
+        if (settings.Scrubbers.Count == 0)
+            return data;
+
+        var result = new List<SnapshotData>(data.Count);
+        foreach (var snapshotData in data)
+        {
+            result.Add(ApplyScrubbers(snapshotData, settings.Scrubbers));
+        }
+
+        return result;
+    }
+
+    private static SnapshotData ApplyScrubbers(SnapshotData snapshotData, IList<Scrubber> scrubbers)
+    {
+        string text;
+        try
+        {
+            text = Utf8WithoutBomExceptionFallback.GetString(snapshotData.Data);
+        }
+        catch (DecoderFallbackException ex)
+        {
+            throw new SnapshotException("Snapshot scrubbers can only be applied to UTF-8 text snapshots.", ex);
+        }
+
+        foreach (var scrubber in scrubbers)
+        {
+            text = scrubber.Scrub(text);
+        }
+
+        return new SnapshotData(snapshotData.Extension, Encoding.UTF8.GetBytes(text));
     }
 
     private static SnapshotComparisonResult Compare(SnapshotSettings settings, SnapshotType type, List<SnapshotFile> actualFiles, Dictionary<FullPath, SnapshotData> expectedFiles)

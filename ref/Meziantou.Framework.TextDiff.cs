@@ -14,6 +14,7 @@ namespace Meziantou.Framework
     public static class TextDiff
     {
         public static Meziantou.Framework.TextDiffResult ComputeDiff(string oldText, string newText, Meziantou.Framework.TextDiffOptions? options = null) => throw null;
+        public static Meziantou.Framework.TextDiffHierarchyResult ComputeHierarchyDiff(string oldText, string newText, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextChunker> chunkers, Meziantou.Framework.TextDiffOptions? options = null) => throw null;
     }
 
     public enum TextDiffAlgorithm
@@ -35,6 +36,29 @@ namespace Meziantou.Framework
         public static bool operator ==(Meziantou.Framework.TextDiffEntry left, Meziantou.Framework.TextDiffEntry right) => throw null;
         public static bool operator !=(Meziantou.Framework.TextDiffEntry left, Meziantou.Framework.TextDiffEntry right) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public sealed class TextDiffHierarchyEntry
+    {
+        public Meziantou.Framework.TextDiffHierarchyOperation Operation { get => throw null; }
+        public string? OldText { get => throw null; }
+        public string? NewText { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextDiffHierarchyEntry> Children { get => throw null; }
+        public TextDiffHierarchyEntry(Meziantou.Framework.TextDiffHierarchyOperation operation, string? oldText, string? newText, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextDiffHierarchyEntry>? children = null) { }
+    }
+
+    public enum TextDiffHierarchyOperation
+    {
+        Equal = 0,
+        Insert = 1,
+        Delete = 2,
+        Replace = 3
+    }
+
+    public sealed class TextDiffHierarchyResult
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextDiffHierarchyEntry> Entries { get => throw null; }
+        public bool HasDifferences { get => throw null; }
     }
 
     public enum TextDiffOperation

@@ -515,6 +515,91 @@ public sealed class TextDiffTests
         Assert.Equal("Insertions: 1, Deletions: 1, Equals: 2", text);
     }
 
+    [Fact]
+    public void ComputeHierarchyDiff_NullChunkers_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => Diff.ComputeHierarchyDiff("a", "b", chunkers: null!));
+    }
+
+    [Fact]
+    public void ComputeHierarchyDiff_InvalidChunkers_Throws()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Diff.ComputeHierarchyDiff("a", "b", [TextChunker.Lines]));
+        Assert.Equal("chunkers", exception.ParamName);
+
+        exception = Assert.Throws<ArgumentException>(() =>
+        {
+            IReadOnlyList<TextChunker> chunkers = [TextChunker.Lines, null!];
+            _ = Diff.ComputeHierarchyDiff("a", "b", chunkers);
+        });
+        Assert.Equal("chunkers", exception.ParamName);
+    }
+
+    [Fact]
+    public void ComputeHierarchyDiff_LinesThenWords_NestedChange()
+    {
+        const string oldText = "line1\nhello world\nline3";
+        const string newText = "line1\nhello brave world\nline3";
+
+        var result = Diff.ComputeHierarchyDiff(oldText, newText, [TextChunker.Lines, TextChunker.Words]);
+
+        Assert.True(result.HasDifferences);
+        Assert.Equal(oldText, ReconstructHierarchyOldText(result));
+        Assert.Equal(newText, ReconstructHierarchyNewText(result));
+
+        var replacedLine = Assert.Single(result.Entries.Where(e => e.Operation == TextDiffHierarchyOperation.Replace));
+        Assert.Equal("hello world\n", replacedLine.OldText);
+        Assert.Equal("hello brave world\n", replacedLine.NewText);
+        Assert.Contains(replacedLine.Children, e => e.Operation == TextDiffHierarchyOperation.Insert && e.NewText == "brave");
+    }
+
+    [Fact]
+    public void ComputeHierarchyDiff_LinesWordsCharacters_NestedReplaceWithChildren()
+    {
+        const string oldText = "line1\ncolor";
+        const string newText = "line1\ncolour";
+
+        var result = Diff.ComputeHierarchyDiff(oldText, newText, [TextChunker.Lines, TextChunker.Words, TextChunker.Characters]);
+
+        Assert.True(result.HasDifferences);
+        Assert.Equal(oldText, ReconstructHierarchyOldText(result));
+        Assert.Equal(newText, ReconstructHierarchyNewText(result));
+
+        var replacedLine = Assert.Single(result.Entries.Where(e => e.Operation == TextDiffHierarchyOperation.Replace));
+        var replacedWord = Assert.Single(replacedLine.Children.Where(e => e.Operation == TextDiffHierarchyOperation.Replace));
+        Assert.Contains(replacedWord.Children, e => e.Operation == TextDiffHierarchyOperation.Insert && e.NewText == "u");
+    }
+
+    [Fact]
+    public void ComputeHierarchyDiff_WordsThenCharacters_NestedChanges()
+    {
+        const string oldText = "cat dog";
+        const string newText = "cot doge";
+
+        var result = Diff.ComputeHierarchyDiff(oldText, newText, [TextChunker.Words, TextChunker.Characters]);
+
+        Assert.True(result.HasDifferences);
+        Assert.Equal(oldText, ReconstructHierarchyOldText(result));
+        Assert.Equal(newText, ReconstructHierarchyNewText(result));
+
+        var replacedEntries = result.Entries.Where(e => e.Operation == TextDiffHierarchyOperation.Replace).ToList();
+        Assert.Equal(2, replacedEntries.Count);
+
+        Assert.Contains(replacedEntries[0].Children, e => e.Operation == TextDiffHierarchyOperation.Delete && e.OldText == "a");
+        Assert.Contains(replacedEntries[0].Children, e => e.Operation == TextDiffHierarchyOperation.Insert && e.NewText == "o");
+        Assert.Contains(replacedEntries[1].Children, e => e.Operation == TextDiffHierarchyOperation.Insert && e.NewText == "e");
+    }
+
+    [Fact]
+    public void ComputeHierarchyDiff_IgnoreCase_PropagatesToNestedLevels()
+    {
+        var options = new TextDiffOptions { IgnoreCase = true };
+        var result = Diff.ComputeHierarchyDiff("Hello World", "hello world", [TextChunker.Words, TextChunker.Characters], options);
+
+        Assert.False(result.HasDifferences);
+        Assert.All(result.Entries, e => Assert.Equal(TextDiffHierarchyOperation.Equal, e.Operation));
+    }
+
     // Custom TextChunker
     [Fact]
     public void ComputeDiff_CustomChunker()
@@ -627,6 +712,34 @@ public sealed class TextDiffTests
             if (entry.Operation is TextDiffOperation.Equal or TextDiffOperation.Insert)
             {
                 sb.Append(entry.Text);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string ReconstructHierarchyOldText(TextDiffHierarchyResult result)
+    {
+        var sb = new StringBuilder();
+        foreach (var entry in result.Entries)
+        {
+            if (entry.Operation is TextDiffHierarchyOperation.Equal or TextDiffHierarchyOperation.Delete or TextDiffHierarchyOperation.Replace)
+            {
+                sb.Append(entry.OldText);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string ReconstructHierarchyNewText(TextDiffHierarchyResult result)
+    {
+        var sb = new StringBuilder();
+        foreach (var entry in result.Entries)
+        {
+            if (entry.Operation is TextDiffHierarchyOperation.Equal or TextDiffHierarchyOperation.Insert or TextDiffHierarchyOperation.Replace)
+            {
+                sb.Append(entry.NewText);
             }
         }
 

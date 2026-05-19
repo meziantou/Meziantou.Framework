@@ -85,13 +85,26 @@ queryEngineOptions.AddQueryRoot(
 
         return customers;
     });
-queryEngineOptions.StoredProcedures.Add("GetCustomer", (int id) => customers.Where(customer => customer.Id == id));
+queryEngineOptions.StoredProcedures.Add(
+    "GetCustomer",
+    (TdsQueryContext context, int id) =>
+    {
+        var userIdClaim = context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Array.Empty<Customer>().AsQueryable();
+        }
+
+        return customers.Where(customer => customer.Id == id && customer.Id == userId);
+    });
 
 app.MapTdsAuthenticationHandler((context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()));
 app.MapTdsQueryEngine(queryEngineOptions);
 ```
 
 Query roots are resolved per request and receive the full query `context`, so you can prefilter data for the authenticated user (or use other request metadata) before SQL translation happens.
+
+Stored procedure delegates can also declare a `TdsQueryContext` parameter (and optionally `CancellationToken`) to access authenticated user information and request metadata directly.
 
 You can also deny access to a specific stored procedure or query root:
 

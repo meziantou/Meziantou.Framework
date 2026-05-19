@@ -2963,6 +2963,41 @@ public sealed class TdsQueryEngineTests
 
     [Fact]
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
+    public async Task SqlClient_QueryEngine_StoredProcedure_CanUseQueryContext()
+    {
+        var procedureName = "query_engine_proc_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.StoredProcedures.Add(
+            procedureName,
+            (TdsQueryContext context, int id) =>
+            {
+                var userIdClaim = context.UserContext?.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, NumberStyles.Integer, CultureInfo.InvariantCulture, out var userId))
+                {
+                    return Array.Empty<Customer>().AsQueryable();
+                }
+
+                return GetCustomers().Where(customer => customer.Id == id && customer.Id == userId);
+            });
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandText = procedureName;
+                _ = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 2 });
+            },
+            """
+            Id Name
+            2 Bob
+            """,
+            expectedMaterializedQueries: "",
+            userContext: CreateUserContext("2"));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The stored procedure name is generated within the test and not user-controlled.")]
     public async Task SqlClient_QueryEngine_StoredProcedure_Unauthorized_ReturnsPermissionDenied()
     {
         var procedureName = "query_engine_proc_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);

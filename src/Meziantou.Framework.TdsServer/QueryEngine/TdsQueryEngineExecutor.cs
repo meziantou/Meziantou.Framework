@@ -106,7 +106,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         EnsureAuthorized(context, TdsQueryEngineResourceKind.StoredProcedure, context.ProcedureName);
-        var value = await InvokeStoredProcedureAsync(storedProcedure, context.Parameters, cancellationToken).ConfigureAwait(false);
+        var value = await InvokeStoredProcedureAsync(storedProcedure, context, context.Parameters, cancellationToken).ConfigureAwait(false);
         return TdsQueryResultBuilder.FromValue(value);
     }
 
@@ -121,13 +121,19 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
-    private static async ValueTask<object?> InvokeStoredProcedureAsync(Delegate storedProcedure, IReadOnlyList<TdsQueryParameter> parameters, CancellationToken cancellationToken)
+    private static async ValueTask<object?> InvokeStoredProcedureAsync(Delegate storedProcedure, TdsQueryContext context, IReadOnlyList<TdsQueryParameter> parameters, CancellationToken cancellationToken)
     {
         var methodParameters = storedProcedure.Method.GetParameters();
         var arguments = new object?[methodParameters.Length];
         for (var i = 0; i < methodParameters.Length; i++)
         {
             var parameter = methodParameters[i];
+            if (parameter.ParameterType == typeof(TdsQueryContext))
+            {
+                arguments[i] = context;
+                continue;
+            }
+
             if (parameter.ParameterType == typeof(CancellationToken))
             {
                 arguments[i] = cancellationToken;

@@ -20,7 +20,7 @@ builder.Services
     {
         options.Realm = "My application";
         options.MaxCredentialLength = 4096;
-        options.ValidateCredentials = static (_, username, password) =>
+        options.ValidateCredentials = (context, username, password) =>
         {
             if (!string.Equals(username, "admin", StringComparison.Ordinal) ||
                 !string.Equals(password, "secret", StringComparison.Ordinal))

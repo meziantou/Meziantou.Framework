@@ -30,5 +30,5 @@ public sealed class HttpBasicAuthenticationOptions : AuthenticationSchemeOptions
     /// Gets or sets the delegate used to validate credentials and create the <see cref="ClaimsPrincipal"/>.
     /// Returning <see langword="null"/> fails authentication.
     /// </summary>
-    public HttpBasicCredentialValidator ValidateCredentials { get; set; } = static (_, _, _) => ValueTask.FromResult<ClaimsPrincipal?>(null);
+    public HttpBasicCredentialValidator ValidateCredentials { get; set; } = (_, _, _) => ValueTask.FromResult<ClaimsPrincipal?>(null);
 }

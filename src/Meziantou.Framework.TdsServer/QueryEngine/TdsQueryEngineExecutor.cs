@@ -106,7 +106,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         EnsureAuthorized(context, TdsQueryEngineResourceKind.StoredProcedure, context.ProcedureName);
-        var value = await InvokeStoredProcedureAsync(storedProcedure, context, context.Parameters, cancellationToken).ConfigureAwait(false);
+        var value = await InvokeStoredProcedureAsync(storedProcedure, context, cancellationToken).ConfigureAwait(false);
         return TdsQueryResultBuilder.FromValue(value);
     }
 
@@ -121,7 +121,7 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
-    private static async ValueTask<object?> InvokeStoredProcedureAsync(Delegate storedProcedure, TdsQueryContext context, IReadOnlyList<TdsQueryParameter> parameters, CancellationToken cancellationToken)
+    private static async ValueTask<object?> InvokeStoredProcedureAsync(Delegate storedProcedure, TdsQueryContext context, CancellationToken cancellationToken)
     {
         var methodParameters = storedProcedure.Method.GetParameters();
         var arguments = new object?[methodParameters.Length];
@@ -140,7 +140,7 @@ internal sealed class TdsQueryEngineExecutor
                 continue;
             }
 
-            var queryParameter = parameters.FirstOrDefault(candidate => string.Equals(NormalizeName(candidate.Name), NormalizeName(parameter.Name), StringComparison.OrdinalIgnoreCase));
+            var queryParameter = context.Parameters.FirstOrDefault(candidate => string.Equals(NormalizeName(candidate.Name), NormalizeName(parameter.Name), StringComparison.OrdinalIgnoreCase));
             if (queryParameter is null)
             {
                 if (parameter.HasDefaultValue)

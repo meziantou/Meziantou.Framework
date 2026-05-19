@@ -2,7 +2,7 @@
 
 ASP.NET Core authentication handler for HTTP Basic authentication.
 
-Credential validation is delegate-based through `options.ValidateCredentials`.
+Credential validation is delegate-based through `options.ValidateCredentials`, which returns a `ClaimsPrincipal` for valid credentials and `null` for invalid credentials.
 
 You can also integrate with ASP.NET Core Identity using `AddHttpBasicIdentity<TUser>()`.
 
@@ -10,6 +10,7 @@ You can also integrate with ASP.NET Core Identity using `AddHttpBasicIdentity<TU
 
 ```csharp
 using Meziantou.AspNetCore.Authentication.HttpBasic;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,10 +20,21 @@ builder.Services
     {
         options.Realm = "My application";
         options.MaxCredentialLength = 4096;
-        options.ValidateCredentials = static (context, username, password) =>
+        options.ValidateCredentials = (context, username, password) =>
         {
-            var isValid = username == "admin" && password == "secret";
-            return ValueTask.FromResult(isValid);
+            if (!string.Equals(username, "admin", StringComparison.Ordinal) ||
+                !string.Equals(password, "secret", StringComparison.Ordinal))
+            {
+                return ValueTask.FromResult<ClaimsPrincipal?>(null);
+            }
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Name, username),
+                new Claim(ClaimTypes.NameIdentifier, username),
+            };
+            var identity = new ClaimsIdentity(claims, authenticationType: HttpBasicAuthenticationDefaults.AuthenticationScheme);
+            return ValueTask.FromResult<ClaimsPrincipal?>(new ClaimsPrincipal(identity));
         };
     });
 

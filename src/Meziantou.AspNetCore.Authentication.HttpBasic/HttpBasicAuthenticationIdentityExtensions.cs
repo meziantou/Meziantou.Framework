@@ -68,27 +68,18 @@ public static class HttpBasicAuthenticationIdentityExtensions
         where TUser : class
     {
         options.ValidateCredentials = (context, username, password) => ValidateCredentialsAsync<TUser>(context, username, password, lockoutOnFailure);
-        options.CreatePrincipal = static (context, _, username) => CreatePrincipalAsync<TUser>(context, username);
     }
 
-    private static async ValueTask<bool> ValidateCredentialsAsync<TUser>(HttpContext context, string username, string password, bool lockoutOnFailure)
+    private static async ValueTask<ClaimsPrincipal?> ValidateCredentialsAsync<TUser>(HttpContext context, string username, string password, bool lockoutOnFailure)
         where TUser : class
     {
         var signInManager = context.RequestServices.GetRequiredService<SignInManager<TUser>>();
         var user = await signInManager.UserManager.FindByNameAsync(username).ConfigureAwait(false);
         if (user is null)
-            return false;
+            return null;
 
         var result = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure).ConfigureAwait(false);
-        return result.Succeeded;
-    }
-
-    private static async ValueTask<ClaimsPrincipal?> CreatePrincipalAsync<TUser>(HttpContext context, string username)
-        where TUser : class
-    {
-        var signInManager = context.RequestServices.GetRequiredService<SignInManager<TUser>>();
-        var user = await signInManager.UserManager.FindByNameAsync(username).ConfigureAwait(false);
-        if (user is null)
+        if (!result.Succeeded)
             return null;
 
         return await signInManager.CreateUserPrincipalAsync(user).ConfigureAwait(false);

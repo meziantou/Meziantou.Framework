@@ -31,10 +31,7 @@ namespace Meziantou.AspNetCore.Authentication.HttpBasic
         public string? Realm { get => throw null; set { } }
         public int MaxCredentialLength { get => throw null; set { } }
         public Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicCredentialValidator ValidateCredentials { get => throw null; set { } }
-        public Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicPrincipalFactory CreatePrincipal { get => throw null; set { } }
     }
 
-    public delegate System.Threading.Tasks.ValueTask<bool> HttpBasicCredentialValidator(Microsoft.AspNetCore.Http.HttpContext httpContext, string username, string password);
-
-    public delegate System.Threading.Tasks.ValueTask<System.Security.Claims.ClaimsPrincipal?> HttpBasicPrincipalFactory(Microsoft.AspNetCore.Http.HttpContext httpContext, string authenticationScheme, string username);
+    public delegate System.Threading.Tasks.ValueTask<System.Security.Claims.ClaimsPrincipal?> HttpBasicCredentialValidator(Microsoft.AspNetCore.Http.HttpContext httpContext, string username, string password);
 }

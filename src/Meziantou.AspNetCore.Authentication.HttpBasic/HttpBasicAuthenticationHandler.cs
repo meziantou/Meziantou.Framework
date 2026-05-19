@@ -55,11 +55,7 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
 
         var username = credentials[..separatorIndex];
         var password = credentials[(separatorIndex + 1)..];
-        var isValid = await Options.ValidateCredentials.Invoke(Context, username, password).ConfigureAwait(false);
-        if (!isValid)
-            return InvalidUsernameOrPasswordResult;
-
-        var principal = await Options.CreatePrincipal.Invoke(Context, Scheme.Name, username).ConfigureAwait(false);
+        var principal = await Options.ValidateCredentials.Invoke(Context, username, password).ConfigureAwait(false);
         if (principal is null)
             return InvalidUsernameOrPasswordResult;
 

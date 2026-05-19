@@ -26,12 +26,7 @@ public sealed class HttpBasicAuthenticationTests
     {
         await using var application = await TestApplication.CreateAsync(options =>
         {
-            options.ValidateCredentials = static (_, username, password) =>
-            {
-                var isValid = string.Equals(username, "custom", StringComparison.Ordinal) &&
-                              string.Equals(password, "secret", StringComparison.Ordinal);
-                return ValueTask.FromResult(isValid);
-            };
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("custom", "secret", username, password);
         });
 
         await application.SendAndAssert("/", "custom", "secret", async response =>
@@ -46,7 +41,7 @@ public sealed class HttpBasicAuthenticationTests
         await using var application = await TestApplication.CreateAsync(options =>
         {
             options.Realm = "My API";
-            options.ValidateCredentials = (_, username, password) => ValueTask.FromResult((username, password) == ("myName", "myPassword"));
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
         });
 
         await application.SendAndAssert("/", "myName", "invalid", async response =>
@@ -64,7 +59,7 @@ public sealed class HttpBasicAuthenticationTests
         await using var application = await TestApplication.CreateAsync(options =>
         {
             options.Realm = null;
-            options.ValidateCredentials = (_, username, password) => ValueTask.FromResult((username, password) == ("myName", "myPassword"));
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
         });
 
         await application.SendAndAssert("/", "myName", "invalid", async response =>
@@ -82,7 +77,7 @@ public sealed class HttpBasicAuthenticationTests
         await using var application = await TestApplication.CreateAsync(options =>
         {
             options.MaxCredentialLength = 4; // "a:b" => "YTpi"
-            options.ValidateCredentials = (_, username, password) => ValueTask.FromResult((username, password) == ("a", "b"));
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("a", "b", username, password);
         });
 
         await application.SendAndAssert("/", "a", "b", async response =>
@@ -98,7 +93,7 @@ public sealed class HttpBasicAuthenticationTests
         await using var application = await TestApplication.CreateAsync(options =>
         {
             options.MaxCredentialLength = 4;
-            options.ValidateCredentials = (_, username, password) => ValueTask.FromResult((username, password) == ("myName", "myPassword"));
+            options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
         });
 
         await application.SendAndAssert("/", "myName", "myPassword", async response =>
@@ -146,6 +141,26 @@ public sealed class HttpBasicAuthenticationTests
         return user;
     }
 
+    private static ValueTask<ClaimsPrincipal?> ValidateCredentials(string expectedUsername, string expectedPassword, string username, string password)
+    {
+        if ((username, password) != (expectedUsername, expectedPassword))
+            return ValueTask.FromResult<ClaimsPrincipal?>(null);
+
+        return ValueTask.FromResult<ClaimsPrincipal?>(CreatePrincipal(username));
+    }
+
+    private static ClaimsPrincipal CreatePrincipal(string username)
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.NameIdentifier, username),
+        };
+
+        var identity = new ClaimsIdentity(claims, authenticationType: HttpBasicAuthenticationDefaults.AuthenticationScheme);
+        return new ClaimsPrincipal(identity);
+    }
+
     private sealed class TestApplication : IAsyncDisposable
     {
         private TestApplication(WebApplication app, HttpClient client)
@@ -160,7 +175,7 @@ public sealed class HttpBasicAuthenticationTests
 
         public static async Task<TestApplication> CreateAsync(string username, string password)
         {
-            return await CreateAsync(options => options.ValidateCredentials = (_, u, p) => ValueTask.FromResult((username, password) == (u, p)));
+            return await CreateAsync(options => options.ValidateCredentials = (_, u, p) => ValidateCredentials(username, password, u, p));
         }
 
         public static async Task<TestApplication> CreateAsync(Action<HttpBasicAuthenticationOptions> configureOptions)

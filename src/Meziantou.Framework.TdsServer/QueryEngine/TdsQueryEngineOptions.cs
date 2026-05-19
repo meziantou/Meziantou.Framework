@@ -17,6 +17,7 @@ public sealed class TdsQueryEngineOptions
     };
 
     /// <summary>Gets the stored procedures available to RPC requests.</summary>
+    /// <remarks>Stored procedure delegates can declare parameters matching RPC parameters, plus optional injected <see cref="TdsQueryContext" /> and <see cref="CancellationToken" /> parameters.</remarks>
     public IDictionary<string, Delegate> StoredProcedures { get; } = new Dictionary<string, Delegate>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Gets the query roots available to SQL text queries.</summary>

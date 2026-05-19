@@ -403,6 +403,14 @@ public sealed class HtmlToMarkdownConverterTests
             "`` `code` ``");
     }
 
+    [Fact]
+    public void InlineCode_TripleBackticksAtStartAndEnd()
+    {
+        AssertHtmlToMarkdown(
+            "<code>```code```</code>",
+            "```` ```code``` ````");
+    }
+
     // --- Links ---
 
     [Fact]
@@ -830,6 +838,18 @@ public sealed class HtmlToMarkdownConverterTests
     }
 
     [Fact]
+    public void CodeBlock_FencedWithLanguageAndBackticksInContent()
+    {
+        AssertHtmlToMarkdown(
+            """<pre><code class="language-javascript">const fence = "```";</code></pre>""",
+            """
+            ````javascript
+            const fence = "```";
+            ````
+            """);
+    }
+
+    [Fact]
     public void CodeBlock_FencedWithBackticksInContent()
     {
         AssertHtmlToMarkdown(
@@ -859,6 +879,18 @@ public sealed class HtmlToMarkdownConverterTests
             ```
             preformatted text
             ```
+            """);
+    }
+
+    [Fact]
+    public void CodeBlock_PreWithoutCode_WithBackticksInContent()
+    {
+        AssertHtmlToMarkdown(
+            "<pre>use ``` for code</pre>",
+            """
+            ````
+            use ``` for code
+            ````
             """);
     }
 

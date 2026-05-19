@@ -14,4 +14,9 @@ public enum AvatarShape
     /// Use a square background.
     /// </summary>
     Square,
+
+    /// <summary>
+    /// Use a square background with rounded corners.
+    /// </summary>
+    RoundedSquare,
 }

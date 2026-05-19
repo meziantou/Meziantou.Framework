@@ -175,6 +175,17 @@ public class AvatarGeneratorTests
     }
 
     [Fact]
+    public void CreateSvg_RendersRoundedSquareShape()
+    {
+        var options = new AvatarOptions();
+        options.Shape = AvatarShape.RoundedSquare;
+
+        var svg = AvatarGenerator.CreateSvg("John Doe", options);
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
     public void CreateSvg_UsesDefaultSize()
     {
         var svg = AvatarGenerator.CreateSvg("John Doe", new AvatarOptions());

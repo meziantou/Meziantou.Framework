@@ -42,6 +42,7 @@ public static class AvatarGenerator
         var fontSize = size * 0.5;
         var sizeString = size.ToString(CultureInfo.InvariantCulture);
         var halfSizeString = halfSize.ToString("0.##", CultureInfo.InvariantCulture);
+        var roundedCornerRadiusString = (size * 0.25).ToString("0.##", CultureInfo.InvariantCulture);
         var fontSizeString = fontSize.ToString("0.##", CultureInfo.InvariantCulture);
 
         var sb = new StringBuilder(capacity: 256);
@@ -75,6 +76,20 @@ public static class AvatarGenerator
             sb.Append(sizeString);
             sb.Append("\" height=\"");
             sb.Append(sizeString);
+            sb.Append("\" fill=\"");
+            sb.Append(escapedBackgroundColor);
+            sb.Append("\"/>");
+        }
+        else if (shape == AvatarShape.RoundedSquare)
+        {
+            sb.Append("<rect width=\"");
+            sb.Append(sizeString);
+            sb.Append("\" height=\"");
+            sb.Append(sizeString);
+            sb.Append("\" rx=\"");
+            sb.Append(roundedCornerRadiusString);
+            sb.Append("\" ry=\"");
+            sb.Append(roundedCornerRadiusString);
             sb.Append("\" fill=\"");
             sb.Append(escapedBackgroundColor);
             sb.Append("\"/>");

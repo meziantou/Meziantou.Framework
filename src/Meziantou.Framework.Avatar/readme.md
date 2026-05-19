@@ -20,7 +20,7 @@ using Meziantou.Framework;
 var options = new AvatarOptions
 {
     Bigram = "JD", // optional explicit 1-2 character bigram
-    Shape = AvatarShape.Round, // Round or Square
+    Shape = AvatarShape.Round, // Round, Square, or RoundedSquare
     Size = 128,
 };
 options.Palette.Clear();

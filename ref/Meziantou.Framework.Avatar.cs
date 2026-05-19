@@ -33,6 +33,7 @@ namespace Meziantou.Framework
     public enum AvatarShape
     {
         Round = 0,
-        Square = 1
+        Square = 1,
+        RoundedSquare = 2
     }
 }

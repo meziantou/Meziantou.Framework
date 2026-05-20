@@ -12,7 +12,7 @@ namespace Meziantou.Framework;
 /// </summary>
 public class ProcessInstance
 {
-    private Process? _process;
+    private IProcessHandle? _process;
     private readonly Task _inputStreamTask;
     private readonly Task _outputStreamTask;
     private readonly CancellationTokenRegistration _cancellationRegistration;
@@ -25,7 +25,7 @@ public class ProcessInstance
     private protected readonly Lock WaitTaskLock = new();
     private Task<ProcessResult>? _waitTask;
 
-    internal ProcessInstance(Process process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, CancellationToken cancellationToken)
+    internal ProcessInstance(IProcessHandle process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, CancellationToken cancellationToken)
     {
         _process = process;
         _inputStreamTask = inputStreamTask;
@@ -55,14 +55,7 @@ public class ProcessInstance
         if (process is null)
             return null;
 
-        try
-        {
-            return process.SafeHandle;
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
+        return process.SafeProcessHandle;
     }
 
     /// <summary>Gets an awaiter that waits for the process to exit and returns the process result.</summary>
@@ -84,31 +77,13 @@ public class ProcessInstance
         KillProcess(process, entireProcessTree);
     }
 
-    internal static void KillProcess(Process process, bool entireProcessTree)
+    internal static void KillProcess(IProcessHandle process, bool entireProcessTree)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         try
         {
             process.Kill(entireProcessTree);
-        }
-        catch (AggregateException) when (entireProcessTree)
-        {
-            try
-            {
-                process.Kill();
-            }
-            catch (InvalidOperationException)
-            {
-            }
-        }
-        catch (InvalidOperationException) when (entireProcessTree)
-        {
-            try
-            {
-                process.Kill();
-            }
-            catch (InvalidOperationException)
-            {
-            }
         }
         catch (InvalidOperationException)
         {
@@ -168,7 +143,7 @@ public class ProcessInstance
     }
 
     // Wait for process exit and dispose all resources (do not wait for user to await the instance)
-    private async Task<ProcessCompletion> WaitForProcessExitAsync(Process process)
+    private async Task<ProcessCompletion> WaitForProcessExitAsync(IProcessHandle process)
     {
         Exception? inputStreamException = null;
         Exception? outputStreamException = null;

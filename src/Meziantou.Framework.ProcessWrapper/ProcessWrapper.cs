@@ -14,6 +14,8 @@ namespace Meziantou.Framework;
 /// </summary>
 public sealed class ProcessWrapper
 {
+    private static IProcessFactory s_defaultProcessFactory = SystemProcessFactory.Instance;
+    private IProcessFactory? _processFactory;
     private readonly ProcessStartInfo _startInfo;
     private ProcessValidationMode _validationMode;
     private ImmutableArray<OutputTarget> _outputTargets;
@@ -44,6 +46,14 @@ public sealed class ProcessWrapper
         _limits = other._limits;
         _windowsJobObjectConfiguration = other._windowsJobObjectConfiguration;
         _linuxControlGroupConfiguration = other._linuxControlGroupConfiguration;
+        _processFactory = other._processFactory;
+    }
+
+    /// <summary>Gets or sets the default process factory used to create process handles.</summary>
+    public static IProcessFactory DefaultProcessFactory
+    {
+        get => Volatile.Read(ref s_defaultProcessFactory);
+        set => s_defaultProcessFactory = value ?? throw new ArgumentNullException(nameof(value));
     }
 
     private static ProcessStartInfo CreateStartInfo(string fileName)
@@ -146,6 +156,13 @@ public sealed class ProcessWrapper
     public ProcessWrapper WithValidation(ProcessValidationMode mode)
     {
         _validationMode = mode;
+        return this;
+    }
+
+    /// <summary>Sets the process factory for this process wrapper instance.</summary>
+    public ProcessWrapper WithProcessFactory(IProcessFactory processFactory)
+    {
+        _processFactory = processFactory ?? throw new ArgumentNullException(nameof(processFactory));
         return this;
     }
 
@@ -252,7 +269,7 @@ public sealed class ProcessWrapper
     public ProcessInstance ExecuteAsync(CancellationToken cancellationToken = default)
     {
         return StartProcess(_outputTargets, _errorTargets,
-            (process, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, ct) => new ProcessInstance(process, inputTask, outputTask, registration, limiter, _validationMode, hasStandardErrorOutput, activity, ct),
+            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, ct) => new ProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, hasStandardErrorOutput, activity, ct),
             cancellationToken);
     }
 
@@ -269,12 +286,12 @@ public sealed class ProcessWrapper
         var errorTargets = _errorTargets.Add(OutputTarget.ToProcessOutputCollection(output).ForOutputType(ProcessOutputType.StandardError));
 
         return StartProcess(outputTargets, errorTargets,
-            (process, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, ct) => new BufferedProcessInstance(process, inputTask, outputTask, registration, limiter, _validationMode, output, hasStandardErrorOutput, activity, ct),
+            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, ct) => new BufferedProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, output, hasStandardErrorOutput, activity, ct),
             cancellationToken);
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ProcessInstance will dispose it")]
-    private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<Process, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, Activity?, CancellationToken, T> factory, CancellationToken cancellationToken)
+    private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<IProcessHandle, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, Activity?, CancellationToken, T> factory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -284,43 +301,37 @@ public sealed class ProcessWrapper
         var hasInputStream = _inputSource is not null;
         var hasStandardErrorOutput = 0;
 
-        var configuredFileName = _startInfo.FileName;
-        var resolvedFileName = ResolveFileName(configuredFileName, _startInfo.WorkingDirectory);
-        _startInfo.RedirectStandardOutput = hasOutputHandlers;
-        _startInfo.RedirectStandardError = hasErrorHandlers;
-        _startInfo.RedirectStandardInput = hasInputStream;
-        _startInfo.FileName = resolvedFileName;
+        var startInfo = CloneStartInfo(_startInfo);
+        var resolvedFileName = ResolveFileName(startInfo.FileName, startInfo.WorkingDirectory);
+        startInfo.RedirectStandardOutput = hasOutputHandlers;
+        startInfo.RedirectStandardError = hasErrorHandlers;
+        startInfo.RedirectStandardInput = hasInputStream;
+        startInfo.FileName = resolvedFileName;
 
-        var process = new Process { StartInfo = _startInfo };
+        var processFactory = _processFactory ?? DefaultProcessFactory;
+        var processHandle = processFactory.Create(startInfo);
+        ArgumentNullException.ThrowIfNull(processHandle);
         var processLimiter = CreateProcessLimiter();
 
         var processStarted = false;
         try
         {
-            try
+            if (!processHandle.Start())
             {
-                if (!process.Start())
-                {
-                    throw new Win32Exception("Cannot start the process");
-                }
-
-                processStarted = true;
-            }
-            finally
-            {
-                _startInfo.FileName = configuredFileName;
+                throw new Win32Exception("Cannot start the process");
             }
 
-            processLimiter?.Apply(process);
+            processStarted = true;
+            processLimiter?.Apply(processHandle);
         }
         catch
         {
             if (processStarted)
             {
-                ProcessInstance.KillProcess(process, entireProcessTree: true);
+                ProcessInstance.KillProcess(processHandle, entireProcessTree: true);
             }
 
-            process.Dispose();
+            processHandle.Dispose();
             processLimiter?.Dispose();
             throw;
         }
@@ -328,19 +339,20 @@ public sealed class ProcessWrapper
         var outputStreamTask = Task.CompletedTask;
         if (hasOutputHandlers)
         {
-            outputStreamTask = PumpStreamAsync(process.StandardOutput.BaseStream, process.StandardOutput.CurrentEncoding, outputTargets, onDataRead: null);
+            outputStreamTask = PumpStreamAsync(processHandle.OutputStream, GetStreamEncoding(processHandle, startInfo.StandardOutputEncoding, ProcessOutputType.StandardOutput), outputTargets, onDataRead: null);
         }
 
         var errorStreamTask = Task.CompletedTask;
         if (hasErrorHandlers)
         {
-            errorStreamTask = PumpStreamAsync(process.StandardError.BaseStream, process.StandardError.CurrentEncoding, errorTargets, onDataRead: () => Interlocked.Exchange(ref hasStandardErrorOutput, 1));
+            errorStreamTask = PumpStreamAsync(processHandle.ErrorStream, GetStreamEncoding(processHandle, startInfo.StandardErrorEncoding, ProcessOutputType.StandardError), errorTargets, onDataRead: () => Interlocked.Exchange(ref hasStandardErrorOutput, 1));
         }
 
         var inputStreamTask = Task.CompletedTask;
         if (_inputSource is not null)
         {
             var inputSource = _inputSource;
+            var inputStream = processHandle.InputStream;
             inputStreamTask = Task.Run(() =>
             {
                 var buffer = new byte[4096];
@@ -354,29 +366,29 @@ public sealed class ProcessWrapper
                             break;
                         }
 
-                        process.StandardInput.BaseStream.Write(buffer, 0, bytesRead);
+                        inputStream.Write(buffer, 0, bytesRead);
                     }
 
-                    process.StandardInput.BaseStream.Flush();
+                    inputStream.Flush();
                 }
                 finally
                 {
                     inputSource.NotifyProcessCompleted();
-                    process.StandardInput.Close();
+                    inputStream.Close();
                 }
             }, cancellationToken);
         }
 
         var registration = default(CancellationTokenRegistration);
-        if (cancellationToken.CanBeCanceled && !process.HasExited)
+        if (cancellationToken.CanBeCanceled && !processHandle.HasExited)
         {
-            registration = cancellationToken.Register(() => ProcessInstance.KillProcess(process, entireProcessTree: true));
+            registration = cancellationToken.Register(() => ProcessInstance.KillProcess(processHandle, entireProcessTree: true));
         }
 
         var activity = ProcessWrapperTelemetry.ActivitySource.StartActivity("process.execute");
         activity?.SetTag("process.executable.path", resolvedFileName);
 
-        return factory(process, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, cancellationToken);
+        return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, cancellationToken);
     }
 
     private static async Task PumpStreamAsync(Stream stream, Encoding encoding, ImmutableArray<OutputTarget> targets, Action? onDataRead)
@@ -508,9 +520,27 @@ public sealed class ProcessWrapper
             throw new ArgumentOutOfRangeException(nameof(limits), limits.ProcessCountLimit, $"{nameof(ProcessLimits.ProcessCountLimit)} must be greater than 0.");
     }
 
+    private static Encoding GetStreamEncoding(IProcessHandle processHandle, Encoding? configuredEncoding, ProcessOutputType outputType)
+    {
+        if (processHandle is IProcessHandleWithEncoding processHandleWithEncoding)
+        {
+            return outputType == ProcessOutputType.StandardOutput ? processHandleWithEncoding.OutputEncoding : processHandleWithEncoding.ErrorEncoding;
+        }
+
+        return configuredEncoding ?? Encoding.UTF8;
+    }
+
+    private static Process GetSystemProcessHandle(IProcessHandle processHandle)
+    {
+        if (processHandle is not SystemProcessFactory.SystemProcessHandle systemProcessHandle)
+            throw new InvalidOperationException($"Process limits require {nameof(DefaultProcessFactory)} to be set to {nameof(SystemProcessFactory)}.");
+
+        return systemProcessHandle.Process;
+    }
+
     private interface IProcessLimiter : IDisposable
     {
-        void Apply(Process process);
+        void Apply(IProcessHandle processHandle);
     }
 
     [SupportedOSPlatform("windows5.1.2600")]
@@ -547,10 +577,10 @@ public sealed class ProcessWrapper
             configure?.Invoke(_jobObject);
         }
 
-        public void Apply(Process process)
+        public void Apply(IProcessHandle processHandle)
         {
-            ArgumentNullException.ThrowIfNull(process);
-            _jobObject.AssignProcess(process);
+            ArgumentNullException.ThrowIfNull(processHandle);
+            _jobObject.AssignProcess(GetSystemProcessHandle(processHandle));
         }
 
         public void Dispose()
@@ -573,9 +603,10 @@ public sealed class ProcessWrapper
             _configure = configure;
         }
 
-        public void Apply(Process process)
+        public void Apply(IProcessHandle processHandle)
         {
-            ArgumentNullException.ThrowIfNull(process);
+            ArgumentNullException.ThrowIfNull(processHandle);
+            var process = GetSystemProcessHandle(processHandle);
 
             _parentControlGroup = CGroup2.Root.CreateOrGetChild($"process-wrapper-{Environment.ProcessId}-{Guid.NewGuid():N}");
             var availableControllers = _parentControlGroup.GetAvailableControllers().ToHashSet(StringComparer.Ordinal);

@@ -2,9 +2,7 @@ using System.Collections.Immutable;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Represents an ordered set of commands connected through standard streams.
-/// </summary>
+/// <summary>Represents an ordered set of commands connected through standard streams.</summary>
 public sealed class ProcessPipeline
 {
     private readonly ImmutableArray<ProcessWrapper> _commands;
@@ -25,9 +23,7 @@ public sealed class ProcessPipeline
         return new ProcessPipeline([first, second]);
     }
 
-    /// <summary>
-    /// Appends a command to the pipeline.
-    /// </summary>
+    /// <summary>Appends a command to the pipeline.</summary>
     public static ProcessPipeline operator |(ProcessPipeline left, ProcessWrapper right)
     {
         ArgumentNullException.ThrowIfNull(left);
@@ -36,9 +32,7 @@ public sealed class ProcessPipeline
         return left.Append(right);
     }
 
-    /// <summary>
-    /// Prepends a command to the pipeline.
-    /// </summary>
+    /// <summary>Prepends a command to the pipeline.</summary>
     public static ProcessPipeline operator |(ProcessWrapper left, ProcessPipeline right)
     {
         ArgumentNullException.ThrowIfNull(left);
@@ -47,18 +41,14 @@ public sealed class ProcessPipeline
         return right.Prepend(left);
     }
 
-    /// <summary>
-    /// Executes the pipeline and returns the result of the last command.
-    /// </summary>
+    /// <summary>Executes the pipeline and returns the result of the last command.</summary>
     public Task<ProcessResult> ExecuteAsync(CancellationToken cancellationToken = default)
     {
         var execution = StartStages(bufferLastCommand: false, cancellationToken);
         return WaitForPipelineAsync(execution);
     }
 
-    /// <summary>
-    /// Executes the pipeline with buffering enabled for the last command.
-    /// </summary>
+    /// <summary>Executes the pipeline with buffering enabled for the last command.</summary>
     public Task<BufferedProcessResult> ExecuteBufferedAsync(CancellationToken cancellationToken = default)
     {
         var execution = StartStages(bufferLastCommand: true, cancellationToken);

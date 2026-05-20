@@ -33,6 +33,40 @@ foreach (var line in result.Output.StandardOutput)
 }
 ````
 
+## Intercepting process execution (for tests)
+
+Use `ProcessWrapper.DefaultProcessFactory` to intercept process creation globally.
+
+````c#
+var previousFactory = ProcessWrapper.DefaultProcessFactory;
+ProcessWrapper.DefaultProcessFactory = new FakeProcessFactory(startInfo =>
+{
+    return FakeProcess.Create(
+        exitCode: 0,
+        outputText: "simulated output",
+        errorText: "");
+});
+
+try
+{
+    var result = await ProcessWrapper.Create("my-command")
+        .WithArguments("--version")
+        .ExecuteBufferedAsync();
+}
+finally
+{
+    ProcessWrapper.DefaultProcessFactory = previousFactory;
+}
+````
+
+You can also override the factory per command:
+
+````c#
+var result = await ProcessWrapper.Create("my-command")
+    .WithProcessFactory(new FakeProcessFactory(_ => FakeProcess.Create(0, "instance output", "")))
+    .ExecuteBufferedAsync();
+````
+
 ## Working directory
 
 ````c#

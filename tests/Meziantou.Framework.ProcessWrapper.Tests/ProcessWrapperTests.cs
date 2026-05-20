@@ -969,6 +969,7 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithEnvironmentVariables(env => env.Set("TEST_VAR_45", "value")));
         Assert.Same(command, command.WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_45"] = "updated" }));
         Assert.Same(command, command.WithValidation(ProcessValidationMode.None));
+        Assert.Same(command, command.WithProcessFactory(SystemProcessFactory.Instance));
         Assert.Same(command, command.WithOutputEncoding(Encoding.UTF8));
         Assert.Same(command, command.WithErrorEncoding(Encoding.UTF8));
         Assert.Same(command, command.WithOutputStream(OutputTarget.ToTextDelegate(_ => { })));
@@ -1162,6 +1163,113 @@ public class ProcessWrapperTests
         Assert.True(processResult.ProcessId > 0);
     }
 
+    [Fact]
+    public void DefaultProcessFactory_SetNull_Throws()
+    {
+        _ = Assert.Throws<ArgumentNullException>(() => ProcessWrapper.DefaultProcessFactory = null!);
+    }
+
+    [Fact]
+    public void WithProcessFactory_SetNull_Throws()
+    {
+        var command = ProcessWrapper.Create("dotnet");
+        _ = Assert.Throws<ArgumentNullException>(() => command.WithProcessFactory(null!));
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_UsesCustomProcessFactory()
+    {
+        var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
+        var createdProcesses = new List<CreatedProcessInfo>();
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            createdProcesses.Add(new CreatedProcessInfo(startInfo.FileName, startInfo.WorkingDirectory, [.. startInfo.ArgumentList]));
+            return fakeProcess;
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            var processResult = await CreateEchoCommand("ignored")
+                .ExecuteBufferedAsync();
+
+            Assert.Equal("intercepted output", processResult.Output.StandardOutput.First().Text);
+            Assert.Single(createdProcesses);
+            Assert.False(string.IsNullOrEmpty(createdProcesses[0].FileName));
+        });
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCustomProcessFactory_CancellationKillsProcess()
+    {
+        var fakeProcess = FakeProcess.CreatePending(0);
+        var fakeFactory = new FakeProcessFactory(fakeProcess);
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            using var cts = new CancellationTokenSource();
+            var process = CreateEchoCommand("ignored")
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteAsync(cts.Token);
+
+            cts.Cancel();
+
+            _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await process);
+        });
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_UsesCustomProcessFactory()
+    {
+        var downstreamProcess = FakeProcess.Create(0, outputText: "final output\n", errorText: "");
+        var upstreamProcess = FakeProcess.Create(0, outputText: "hello from custom pipe\n", errorText: "");
+        var fakeFactory = new FakeProcessFactory(downstreamProcess, upstreamProcess);
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            var processResult = await (CreateEchoCommand("ignored") | CreatePassthroughCommand())
+                .ExecuteBufferedAsync();
+
+            Assert.Equal("final output", processResult.Output.StandardOutput.First().Text);
+            Assert.Contains("hello from custom pipe", downstreamProcess.ReadInputAsText(), StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithInstanceProcessFactory_OverridesGlobalFactory()
+    {
+        var globalProcess = FakeProcess.Create(0, outputText: "global output\n", errorText: "");
+        var instanceProcess = FakeProcess.Create(0, outputText: "instance output\n", errorText: "");
+        var globalFactory = new FakeProcessFactory(globalProcess);
+        var instanceFactory = new FakeProcessFactory(instanceProcess);
+
+        await RunWithDefaultProcessFactoryAsync(globalFactory, async () =>
+        {
+            var processResult = await CreateEchoCommand("ignored")
+                .WithProcessFactory(instanceFactory)
+                .ExecuteBufferedAsync();
+
+            Assert.Equal("instance output", processResult.Output.StandardOutput.First().Text);
+        });
+    }
+
+    private static async Task RunWithDefaultProcessFactoryAsync(IProcessFactory processFactory, Func<Task> callback)
+    {
+        ArgumentNullException.ThrowIfNull(processFactory);
+        ArgumentNullException.ThrowIfNull(callback);
+
+        var previousProcessFactory = ProcessWrapper.DefaultProcessFactory;
+        ProcessWrapper.DefaultProcessFactory = processFactory;
+
+        try
+        {
+            await callback();
+        }
+        finally
+        {
+            ProcessWrapper.DefaultProcessFactory = previousProcessFactory;
+        }
+    }
+
     private static ActivityListener CreateProcessWrapperActivityListener(Action<Activity> activityStopped)
     {
         return new ActivityListener
@@ -1270,4 +1378,6 @@ public class ProcessWrapperTests
 
         return path;
     }
+
+    private sealed record CreatedProcessInfo(string FileName, string WorkingDirectory, IReadOnlyList<string> Arguments);
 }

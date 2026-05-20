@@ -963,6 +963,8 @@ public class ProcessWrapperTests
         using var stream2 = new MemoryStream();
         using var textWriter = new StringWriter();
         using var textReader = new StringReader("stdin");
+        var processWrapperInterceptor = new WrapperEnvironmentVariableInterceptor("TEST_VAR_46", "value");
+        var processStartInfoInterceptor = new StartInfoEnvironmentVariableInterceptor("TEST_VAR_47", "value");
 
         Assert.Same(command, command.WithArguments("--version"));
         Assert.Same(command, command.WithWorkingDirectory(Path.GetTempPath()));
@@ -970,6 +972,8 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_45"] = "updated" }));
         Assert.Same(command, command.WithValidation(ProcessValidationMode.None));
         Assert.Same(command, command.WithProcessFactory(SystemProcessFactory.Instance));
+        Assert.Same(command, command.WithInterceptor(processWrapperInterceptor));
+        Assert.Same(command, command.WithInterceptor(processStartInfoInterceptor));
         Assert.Same(command, command.WithOutputEncoding(Encoding.UTF8));
         Assert.Same(command, command.WithErrorEncoding(Encoding.UTF8));
         Assert.Same(command, command.WithOutputStream(OutputTarget.ToTextDelegate(_ => { })));
@@ -1177,6 +1181,21 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public void AddInterceptor_SetNull_Throws()
+    {
+        _ = Assert.Throws<ArgumentNullException>(() => ProcessWrapper.AddInterceptor((IProcessWrapperInterceptor)null!));
+        _ = Assert.Throws<ArgumentNullException>(() => ProcessWrapper.AddInterceptor((IProcessStartInfoInterceptor)null!));
+    }
+
+    [Fact]
+    public void WithInterceptor_SetNull_Throws()
+    {
+        var command = ProcessWrapper.Create("dotnet");
+        _ = Assert.Throws<ArgumentNullException>(() => command.WithInterceptor((IProcessWrapperInterceptor)null!));
+        _ = Assert.Throws<ArgumentNullException>(() => command.WithInterceptor((IProcessStartInfoInterceptor)null!));
+    }
+
+    [Fact]
     public async Task ExecuteBufferedAsync_UsesCustomProcessFactory()
     {
         var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
@@ -1252,6 +1271,89 @@ public class ProcessWrapperTests
         });
     }
 
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithGlobalProcessWrapperInterceptor_Applies()
+    {
+        await RunWithGlobalInterceptorsAsync(
+            callback: async () =>
+            {
+                var processResult = await CreatePrintEnvironmentVariableCommand("TEST_VAR_48")
+                    .ExecuteBufferedAsync();
+
+                Assert.Equal("global-wrapper", processResult.Output.StandardOutput.First().Text);
+            },
+            processWrapperInterceptor: new WrapperEnvironmentVariableInterceptor("TEST_VAR_48", "global-wrapper"));
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithInstanceProcessWrapperInterceptor_Applies()
+    {
+        var processResult = await CreatePrintEnvironmentVariableCommand("TEST_VAR_49")
+            .WithInterceptor(new WrapperEnvironmentVariableInterceptor("TEST_VAR_49", "instance-wrapper"))
+            .ExecuteBufferedAsync();
+
+        Assert.Equal("instance-wrapper", processResult.Output.StandardOutput.First().Text);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithGlobalProcessStartInfoInterceptor_Applies()
+    {
+        await RunWithGlobalInterceptorsAsync(
+            callback: async () =>
+            {
+                var processResult = await CreatePrintEnvironmentVariableCommand("TEST_VAR_50")
+                    .ExecuteBufferedAsync();
+
+                Assert.Equal("global-startinfo", processResult.Output.StandardOutput.First().Text);
+            },
+            processStartInfoInterceptor: new StartInfoEnvironmentVariableInterceptor("TEST_VAR_50", "global-startinfo"));
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithInstanceProcessStartInfoInterceptor_Applies()
+    {
+        var processResult = await CreatePrintEnvironmentVariableCommand("TEST_VAR_51")
+            .WithInterceptor(new StartInfoEnvironmentVariableInterceptor("TEST_VAR_51", "instance-startinfo"))
+            .ExecuteBufferedAsync();
+
+        Assert.Equal("instance-startinfo", processResult.Output.StandardOutput.First().Text);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_Interceptors_RunInExpectedOrder()
+    {
+        var events = new List<string>();
+
+        await RunWithGlobalInterceptorsAsync(
+            callback: async () =>
+            {
+                _ = await CreateEchoCommand("test")
+                    .WithInterceptor(new RecordingProcessWrapperInterceptor(events, "instance-wrapper"))
+                    .WithInterceptor(new RecordingProcessStartInfoInterceptor(events, "instance-startinfo"))
+                    .ExecuteBufferedAsync();
+            },
+            processWrapperInterceptor: new RecordingProcessWrapperInterceptor(events, "global-wrapper"),
+            processStartInfoInterceptor: new RecordingProcessStartInfoInterceptor(events, "global-startinfo"));
+
+        Assert.Equal(["global-wrapper", "instance-wrapper", "global-startinfo", "instance-startinfo"], events);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_AppliesGlobalProcessStartInfoInterceptorsToEachStage()
+    {
+        var interceptor = new CountingProcessStartInfoInterceptor();
+
+        await RunWithGlobalInterceptorsAsync(
+            callback: async () =>
+            {
+                _ = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand())
+                    .ExecuteBufferedAsync();
+            },
+            processStartInfoInterceptor: interceptor);
+
+        Assert.Equal(2, interceptor.Count);
+    }
+
     private static async Task RunWithDefaultProcessFactoryAsync(IProcessFactory processFactory, Func<Task> callback)
     {
         ArgumentNullException.ThrowIfNull(processFactory);
@@ -1268,6 +1370,15 @@ public class ProcessWrapperTests
         {
             ProcessWrapper.DefaultProcessFactory = previousProcessFactory;
         }
+    }
+
+    private static async Task RunWithGlobalInterceptorsAsync(Func<Task> callback, IProcessWrapperInterceptor? processWrapperInterceptor = null, IProcessStartInfoInterceptor? processStartInfoInterceptor = null)
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+
+        using var processWrapperInterceptorRegistration = processWrapperInterceptor is null ? null : ProcessWrapper.AddInterceptor(processWrapperInterceptor);
+        using var processStartInfoInterceptorRegistration = processStartInfoInterceptor is null ? null : ProcessWrapper.AddInterceptor(processStartInfoInterceptor);
+        await callback();
     }
 
     private static ActivityListener CreateProcessWrapperActivityListener(Action<Activity> activityStopped)
@@ -1338,6 +1449,20 @@ public class ProcessWrapperTests
             .WithArguments("-c", $"printf '%s' \"{text}\"");
     }
 
+    private static ProcessWrapper CreatePrintEnvironmentVariableCommand(string variableName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(variableName);
+
+        if (OperatingSystem.IsWindows())
+        {
+            return ProcessWrapper.Create("cmd.exe")
+                .WithArguments("/C", $"echo %{variableName}%");
+        }
+
+        return ProcessWrapper.Create("sh")
+            .WithArguments("-c", $"echo ${variableName}");
+    }
+
     private static ProcessWrapper CreateSingleByteOutputCommand(byte value, bool standardError = false)
     {
         if (OperatingSystem.IsWindows())
@@ -1377,6 +1502,56 @@ public class ProcessWrapperTests
         }
 
         return path;
+    }
+
+    private sealed class WrapperEnvironmentVariableInterceptor(string variableName, string variableValue) : IProcessWrapperInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper)
+        {
+            ArgumentNullException.ThrowIfNull(processWrapper);
+            processWrapper.WithEnvironmentVariables(env => env.Set(variableName, variableValue));
+        }
+    }
+
+    private sealed class StartInfoEnvironmentVariableInterceptor(string variableName, string variableValue) : IProcessStartInfoInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper, ProcessStartInfo processStartInfo)
+        {
+            ArgumentNullException.ThrowIfNull(processWrapper);
+            ArgumentNullException.ThrowIfNull(processStartInfo);
+            processStartInfo.Environment[variableName] = variableValue;
+        }
+    }
+
+    private sealed class RecordingProcessWrapperInterceptor(List<string> events, string eventName) : IProcessWrapperInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper)
+        {
+            ArgumentNullException.ThrowIfNull(processWrapper);
+            events.Add(eventName);
+        }
+    }
+
+    private sealed class RecordingProcessStartInfoInterceptor(List<string> events, string eventName) : IProcessStartInfoInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper, ProcessStartInfo processStartInfo)
+        {
+            ArgumentNullException.ThrowIfNull(processWrapper);
+            ArgumentNullException.ThrowIfNull(processStartInfo);
+            events.Add(eventName);
+        }
+    }
+
+    private sealed class CountingProcessStartInfoInterceptor : IProcessStartInfoInterceptor
+    {
+        public int Count { get; private set; }
+
+        public void Intercept(ProcessWrapper processWrapper, ProcessStartInfo processStartInfo)
+        {
+            ArgumentNullException.ThrowIfNull(processWrapper);
+            ArgumentNullException.ThrowIfNull(processStartInfo);
+            Count++;
+        }
     }
 
     private sealed record CreatedProcessInfo(string FileName, string WorkingDirectory, IReadOnlyList<string> Arguments);

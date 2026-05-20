@@ -1,14 +1,8 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework;
-
-internal interface IProcessHandleWithEncoding
-{
-    Encoding OutputEncoding { get; }
-
-    Encoding ErrorEncoding { get; }
-}
 
 public sealed class SystemProcessFactory : IProcessFactory
 {
@@ -18,6 +12,7 @@ public sealed class SystemProcessFactory : IProcessFactory
     {
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "SystemProcessHandle owns and disposes the Process instance.")]
     public IProcessHandle Create(ProcessStartInfo startInfo)
     {
         ArgumentNullException.ThrowIfNull(startInfo);

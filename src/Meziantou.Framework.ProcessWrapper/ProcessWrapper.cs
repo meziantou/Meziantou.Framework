@@ -15,7 +15,12 @@ namespace Meziantou.Framework;
 public sealed class ProcessWrapper
 {
     private static IProcessFactory s_defaultProcessFactory = SystemProcessFactory.Instance;
+    private static readonly Lock DefaultInterceptorsLock = new();
+    private static ImmutableArray<IProcessWrapperInterceptor> s_defaultProcessWrapperInterceptors = [];
+    private static ImmutableArray<IProcessStartInfoInterceptor> s_defaultProcessStartInfoInterceptors = [];
     private IProcessFactory? _processFactory;
+    private ImmutableArray<IProcessWrapperInterceptor> _processWrapperInterceptors;
+    private ImmutableArray<IProcessStartInfoInterceptor> _processStartInfoInterceptors;
     private readonly ProcessStartInfo _startInfo;
     private ProcessValidationMode _validationMode;
     private ImmutableArray<OutputTarget> _outputTargets;
@@ -32,6 +37,8 @@ public sealed class ProcessWrapper
         _validationMode = ProcessValidationMode.FailIfNonZeroExitCode;
         _outputTargets = [];
         _errorTargets = [];
+        _processWrapperInterceptors = [];
+        _processStartInfoInterceptors = [];
     }
 
     private ProcessWrapper(ProcessWrapper other)
@@ -47,6 +54,8 @@ public sealed class ProcessWrapper
         _windowsJobObjectConfiguration = other._windowsJobObjectConfiguration;
         _linuxControlGroupConfiguration = other._linuxControlGroupConfiguration;
         _processFactory = other._processFactory;
+        _processWrapperInterceptors = other._processWrapperInterceptors;
+        _processStartInfoInterceptors = other._processStartInfoInterceptors;
     }
 
     /// <summary>Gets or sets the default process factory used to create process handles.</summary>
@@ -54,6 +63,34 @@ public sealed class ProcessWrapper
     {
         get => Volatile.Read(ref s_defaultProcessFactory);
         set => s_defaultProcessFactory = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>Adds a global process-wrapper interceptor.</summary>
+    /// <remarks>Dispose the returned registration to remove the interceptor.</remarks>
+    public static IDisposable AddInterceptor(IProcessWrapperInterceptor interceptor)
+    {
+        ArgumentNullException.ThrowIfNull(interceptor);
+
+        lock (DefaultInterceptorsLock)
+        {
+            s_defaultProcessWrapperInterceptors = s_defaultProcessWrapperInterceptors.Add(interceptor);
+        }
+
+        return new DefaultProcessWrapperInterceptorRegistration(interceptor);
+    }
+
+    /// <summary>Adds a global process-start-info interceptor.</summary>
+    /// <remarks>Dispose the returned registration to remove the interceptor.</remarks>
+    public static IDisposable AddInterceptor(IProcessStartInfoInterceptor interceptor)
+    {
+        ArgumentNullException.ThrowIfNull(interceptor);
+
+        lock (DefaultInterceptorsLock)
+        {
+            s_defaultProcessStartInfoInterceptors = s_defaultProcessStartInfoInterceptors.Add(interceptor);
+        }
+
+        return new DefaultProcessStartInfoInterceptorRegistration(interceptor);
     }
 
     private static ProcessStartInfo CreateStartInfo(string fileName)
@@ -166,6 +203,22 @@ public sealed class ProcessWrapper
         return this;
     }
 
+    /// <summary>Sets the process-wrapper interceptor for this process wrapper instance.</summary>
+    public ProcessWrapper WithInterceptor(IProcessWrapperInterceptor interceptor)
+    {
+        ArgumentNullException.ThrowIfNull(interceptor);
+        _processWrapperInterceptors = [interceptor];
+        return this;
+    }
+
+    /// <summary>Sets the process-start-info interceptor for this process wrapper instance.</summary>
+    public ProcessWrapper WithInterceptor(IProcessStartInfoInterceptor interceptor)
+    {
+        ArgumentNullException.ThrowIfNull(interceptor);
+        _processStartInfoInterceptors = [interceptor];
+        return this;
+    }
+
     /// <summary>Sets the encoding used to decode standard output.</summary>
     public ProcessWrapper WithOutputEncoding(Encoding encoding)
     {
@@ -268,6 +321,7 @@ public sealed class ProcessWrapper
     /// </summary>
     public ProcessInstance ExecuteAsync(CancellationToken cancellationToken = default)
     {
+        ApplyProcessWrapperInterceptors();
         return StartProcess(_outputTargets, _errorTargets,
             (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, ct) => new ProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, hasStandardErrorOutput, activity, ct),
             cancellationToken);
@@ -280,6 +334,7 @@ public sealed class ProcessWrapper
     /// </summary>
     public BufferedProcessInstance ExecuteBufferedAsync(CancellationToken cancellationToken = default)
     {
+        ApplyProcessWrapperInterceptors();
         var output = new ProcessOutputCollection();
 
         var outputTargets = _outputTargets.Add(OutputTarget.ToProcessOutputCollection(output).ForOutputType(ProcessOutputType.StandardOutput));
@@ -307,6 +362,7 @@ public sealed class ProcessWrapper
         startInfo.RedirectStandardError = hasErrorHandlers;
         startInfo.RedirectStandardInput = hasInputStream;
         startInfo.FileName = resolvedFileName;
+        ApplyProcessStartInfoInterceptors(startInfo);
 
         var processFactory = _processFactory ?? DefaultProcessFactory;
         var processHandle = processFactory.Create(startInfo);
@@ -382,13 +438,53 @@ public sealed class ProcessWrapper
         var registration = default(CancellationTokenRegistration);
         if (cancellationToken.CanBeCanceled && !processHandle.HasExited)
         {
-            registration = cancellationToken.Register(() => ProcessInstance.KillProcess(processHandle, entireProcessTree: true));
+            registration = cancellationToken.Register(static state => ProcessInstance.KillProcess((IProcessHandle)state!, entireProcessTree: true), processHandle);
         }
 
         var activity = ProcessWrapperTelemetry.ActivitySource.StartActivity("process.execute");
         activity?.SetTag("process.executable.path", resolvedFileName);
 
         return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, cancellationToken);
+    }
+
+    private void ApplyProcessWrapperInterceptors()
+    {
+        ImmutableArray<IProcessWrapperInterceptor> defaultInterceptors;
+        lock (DefaultInterceptorsLock)
+        {
+            defaultInterceptors = s_defaultProcessWrapperInterceptors;
+        }
+
+        foreach (var interceptor in defaultInterceptors)
+        {
+            interceptor.Intercept(this);
+        }
+
+        foreach (var interceptor in _processWrapperInterceptors)
+        {
+            interceptor.Intercept(this);
+        }
+    }
+
+    private void ApplyProcessStartInfoInterceptors(ProcessStartInfo processStartInfo)
+    {
+        ArgumentNullException.ThrowIfNull(processStartInfo);
+
+        ImmutableArray<IProcessStartInfoInterceptor> defaultInterceptors;
+        lock (DefaultInterceptorsLock)
+        {
+            defaultInterceptors = s_defaultProcessStartInfoInterceptors;
+        }
+
+        foreach (var interceptor in defaultInterceptors)
+        {
+            interceptor.Intercept(this, processStartInfo);
+        }
+
+        foreach (var interceptor in _processStartInfoInterceptors)
+        {
+            interceptor.Intercept(this, processStartInfo);
+        }
     }
 
     private static async Task PumpStreamAsync(Stream stream, Encoding encoding, ImmutableArray<OutputTarget> targets, Action? onDataRead)
@@ -536,6 +632,50 @@ public sealed class ProcessWrapper
             throw new InvalidOperationException($"Process limits require {nameof(DefaultProcessFactory)} to be set to {nameof(SystemProcessFactory)}.");
 
         return systemProcessHandle.Process;
+    }
+
+    private sealed class DefaultProcessWrapperInterceptorRegistration(IProcessWrapperInterceptor interceptor) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            lock (DefaultInterceptorsLock)
+            {
+                var index = s_defaultProcessWrapperInterceptors.IndexOf(interceptor);
+                if (index >= 0)
+                {
+                    s_defaultProcessWrapperInterceptors = s_defaultProcessWrapperInterceptors.RemoveAt(index);
+                }
+            }
+
+            _disposed = true;
+        }
+    }
+
+    private sealed class DefaultProcessStartInfoInterceptorRegistration(IProcessStartInfoInterceptor interceptor) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            lock (DefaultInterceptorsLock)
+            {
+                var index = s_defaultProcessStartInfoInterceptors.IndexOf(interceptor);
+                if (index >= 0)
+                {
+                    s_defaultProcessStartInfoInterceptors = s_defaultProcessStartInfoInterceptors.RemoveAt(index);
+                }
+            }
+
+            _disposed = true;
+        }
     }
 
     private interface IProcessLimiter : IDisposable

@@ -67,6 +67,39 @@ var result = await ProcessWrapper.Create("my-command")
     .ExecuteBufferedAsync();
 ````
 
+## Interceptors
+
+Use interceptors to update commands globally or per instance before execution.
+
+````c#
+public sealed class SampleProcessWrapperInterceptor : IProcessWrapperInterceptor
+{
+    public void Intercept(ProcessWrapper processWrapper)
+    {
+        // You can inspect/mutate the wrapper instance
+        processWrapper.WithEnvironmentVariables(env => env.Set("TRACE_ID", Guid.NewGuid().ToString("N")));
+    }
+}
+
+public sealed class SampleProcessStartInfoInterceptor : IProcessStartInfoInterceptor
+{
+    public void Intercept(ProcessWrapper processWrapper, ProcessStartInfo processStartInfo)
+    {
+        // You can inspect/mutate ProcessStartInfo right before process creation
+        Console.WriteLine($"Executing: {processStartInfo.FileName}");
+    }
+}
+
+using var globalWrapperRegistration = ProcessWrapper.AddInterceptor(new SampleProcessWrapperInterceptor());
+using var globalStartInfoRegistration = ProcessWrapper.AddInterceptor(new SampleProcessStartInfoInterceptor());
+
+var result = await ProcessWrapper.Create("dotnet")
+    .WithArguments("--version")
+    .WithInterceptor(new SampleProcessWrapperInterceptor())
+    .WithInterceptor(new SampleProcessStartInfoInterceptor())
+    .ExecuteBufferedAsync();
+````
+
 ## Working directory
 
 ````c#

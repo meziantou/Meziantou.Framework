@@ -35,8 +35,7 @@ namespace Meziantou.Framework
     {
         public FakeProcessFactory(System.Func<System.Diagnostics.ProcessStartInfo, Meziantou.Framework.FakeProcess> factory) { }
         public FakeProcessFactory(params Meziantou.Framework.FakeProcess[] processes) { }
-        public Meziantou.Framework.FakeProcess CreateProcess(System.Diagnostics.ProcessStartInfo processStartInfo) => throw null;
-        Meziantou.Framework.IProcessHandle Meziantou.Framework.IProcessFactory.Create(System.Diagnostics.ProcessStartInfo startInfo) => throw null;
+        Meziantou.Framework.IProcessHandle Meziantou.Framework.IProcessFactory.Create(System.Diagnostics.ProcessStartInfo processStartInfo) => throw null;
     }
 
     public interface IProcessFactory
@@ -56,6 +55,16 @@ namespace Meziantou.Framework
         bool Start();
         System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken);
         void Kill(bool entireProcessTree = true);
+    }
+
+    public interface IProcessStartInfoInterceptor
+    {
+        void Intercept(Meziantou.Framework.ProcessWrapper processWrapper, System.Diagnostics.ProcessStartInfo processStartInfo);
+    }
+
+    public interface IProcessWrapperInterceptor
+    {
+        void Intercept(Meziantou.Framework.ProcessWrapper processWrapper);
     }
 
     public abstract class InputSource
@@ -192,6 +201,8 @@ namespace Meziantou.Framework
     public sealed class ProcessWrapper
     {
         public static Meziantou.Framework.IProcessFactory DefaultProcessFactory { get => throw null; set { } }
+        public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
+        public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
         public static Meziantou.Framework.ProcessWrapper Create(string fileName) => throw null;
         public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessWrapper right) => throw null;
         public Meziantou.Framework.ProcessWrapper WithArguments(params string[] arguments) => throw null;
@@ -201,6 +212,8 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Collections.Generic.IReadOnlyDictionary<string, string?> variables) => throw null;
         public Meziantou.Framework.ProcessWrapper WithValidation(Meziantou.Framework.ProcessValidationMode mode) => throw null;
         public Meziantou.Framework.ProcessWrapper WithProcessFactory(Meziantou.Framework.IProcessFactory processFactory) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
         public Meziantou.Framework.ProcessWrapper WithOutputEncoding(System.Text.Encoding encoding) => throw null;
         public Meziantou.Framework.ProcessWrapper WithErrorEncoding(System.Text.Encoding encoding) => throw null;
         public Meziantou.Framework.ProcessWrapper WithLimits(Meziantou.Framework.ProcessLimits limits) => throw null;

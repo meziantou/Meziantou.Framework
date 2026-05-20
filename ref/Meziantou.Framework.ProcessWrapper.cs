@@ -15,6 +15,58 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessOutputCollection Output { get => throw null; }
     }
 
+    public sealed class FakeProcess : Meziantou.Framework.IProcessHandle, System.IDisposable
+    {
+        public static Meziantou.Framework.FakeProcess Create(int exitCode) => throw null;
+        public static Meziantou.Framework.FakeProcess Create(int exitCode, System.IO.Stream outputStream, System.IO.Stream errorStream) => throw null;
+        public static Meziantou.Framework.FakeProcess Create(int exitCode, string outputText, string errorText) => throw null;
+        public static Meziantou.Framework.FakeProcess CreatePending(int exitCode) => throw null;
+        public static Meziantou.Framework.FakeProcess CreatePending(int exitCode, System.IO.Stream outputStream, System.IO.Stream errorStream) => throw null;
+        public static Meziantou.Framework.FakeProcess CreatePending(int exitCode, string outputText, string errorText) => throw null;
+        public void Complete(int? exitCode = null) { }
+        public string ReadInputAsText(System.Text.Encoding? encoding = null) => throw null;
+        bool Meziantou.Framework.IProcessHandle.Start() => throw null;
+        System.Threading.Tasks.Task Meziantou.Framework.IProcessHandle.WaitForExitAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        void Meziantou.Framework.IProcessHandle.Kill(bool entireProcessTree) { }
+        void System.IDisposable.Dispose() { }
+    }
+
+    public sealed class FakeProcessFactory : Meziantou.Framework.IProcessFactory
+    {
+        public FakeProcessFactory(System.Func<System.Diagnostics.ProcessStartInfo, Meziantou.Framework.FakeProcess> factory) { }
+        public FakeProcessFactory(params Meziantou.Framework.FakeProcess[] processes) { }
+        Meziantou.Framework.IProcessHandle Meziantou.Framework.IProcessFactory.Create(System.Diagnostics.ProcessStartInfo processStartInfo) => throw null;
+    }
+
+    public interface IProcessFactory
+    {
+        Meziantou.Framework.IProcessHandle Create(System.Diagnostics.ProcessStartInfo startInfo);
+    }
+
+    public interface IProcessHandle : System.IDisposable
+    {
+        int Id { get; }
+        bool HasExited { get; }
+        int ExitCode { get; }
+        System.IO.Stream InputStream { get; }
+        System.IO.Stream OutputStream { get; }
+        System.IO.Stream ErrorStream { get; }
+        Microsoft.Win32.SafeHandles.SafeProcessHandle? SafeProcessHandle { get; }
+        bool Start();
+        System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken);
+        void Kill(bool entireProcessTree = true);
+    }
+
+    public interface IProcessStartInfoInterceptor
+    {
+        void Intercept(Meziantou.Framework.ProcessWrapper processWrapper, System.Diagnostics.ProcessStartInfo processStartInfo);
+    }
+
+    public interface IProcessWrapperInterceptor
+    {
+        void Intercept(Meziantou.Framework.ProcessWrapper processWrapper);
+    }
+
     public abstract class InputSource
     {
         public static Meziantou.Framework.InputSource FromStream(System.IO.Stream stream) => throw null;
@@ -148,6 +200,9 @@ namespace Meziantou.Framework
 
     public sealed class ProcessWrapper
     {
+        public static Meziantou.Framework.IProcessFactory DefaultProcessFactory { get => throw null; set { } }
+        public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
+        public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
         public static Meziantou.Framework.ProcessWrapper Create(string fileName) => throw null;
         public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessWrapper right) => throw null;
         public Meziantou.Framework.ProcessWrapper WithArguments(params string[] arguments) => throw null;
@@ -156,6 +211,9 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Action<Meziantou.Framework.ProcessWrapperEnvironmentVariables> configure) => throw null;
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Collections.Generic.IReadOnlyDictionary<string, string?> variables) => throw null;
         public Meziantou.Framework.ProcessWrapper WithValidation(Meziantou.Framework.ProcessValidationMode mode) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithProcessFactory(Meziantou.Framework.IProcessFactory processFactory) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
         public Meziantou.Framework.ProcessWrapper WithOutputEncoding(System.Text.Encoding encoding) => throw null;
         public Meziantou.Framework.ProcessWrapper WithErrorEncoding(System.Text.Encoding encoding) => throw null;
         public Meziantou.Framework.ProcessWrapper WithLimits(Meziantou.Framework.ProcessLimits limits) => throw null;
@@ -175,5 +233,11 @@ namespace Meziantou.Framework
     {
         public Meziantou.Framework.ProcessWrapperEnvironmentVariables Set(string name, string value) => throw null;
         public Meziantou.Framework.ProcessWrapperEnvironmentVariables Remove(string name) => throw null;
+    }
+
+    public sealed class SystemProcessFactory : Meziantou.Framework.IProcessFactory
+    {
+        public static Meziantou.Framework.SystemProcessFactory Instance { get => throw null; }
+        public Meziantou.Framework.IProcessHandle Create(System.Diagnostics.ProcessStartInfo startInfo) => throw null;
     }
 }

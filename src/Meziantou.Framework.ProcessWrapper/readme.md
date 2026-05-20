@@ -33,6 +33,73 @@ foreach (var line in result.Output.StandardOutput)
 }
 ````
 
+## Intercepting process execution (for tests)
+
+Use `ProcessWrapper.DefaultProcessFactory` to intercept process creation globally.
+
+````c#
+var previousFactory = ProcessWrapper.DefaultProcessFactory;
+ProcessWrapper.DefaultProcessFactory = new FakeProcessFactory(startInfo =>
+{
+    return FakeProcess.Create(
+        exitCode: 0,
+        outputText: "simulated output",
+        errorText: "");
+});
+
+try
+{
+    var result = await ProcessWrapper.Create("my-command")
+        .WithArguments("--version")
+        .ExecuteBufferedAsync();
+}
+finally
+{
+    ProcessWrapper.DefaultProcessFactory = previousFactory;
+}
+````
+
+You can also override the factory per command:
+
+````c#
+var result = await ProcessWrapper.Create("my-command")
+    .WithProcessFactory(new FakeProcessFactory(_ => FakeProcess.Create(0, "instance output", "")))
+    .ExecuteBufferedAsync();
+````
+
+## Interceptors
+
+Use interceptors to update commands globally or per instance before execution.
+
+````c#
+public sealed class SampleProcessWrapperInterceptor : IProcessWrapperInterceptor
+{
+    public void Intercept(ProcessWrapper processWrapper)
+    {
+        // You can inspect/mutate the wrapper instance
+        processWrapper.WithEnvironmentVariables(env => env.Set("TRACE_ID", Guid.NewGuid().ToString("N")));
+    }
+}
+
+public sealed class SampleProcessStartInfoInterceptor : IProcessStartInfoInterceptor
+{
+    public void Intercept(ProcessWrapper processWrapper, ProcessStartInfo processStartInfo)
+    {
+        // You can inspect/mutate ProcessStartInfo right before process creation
+        Console.WriteLine($"Executing: {processStartInfo.FileName}");
+    }
+}
+
+using var globalWrapperRegistration = ProcessWrapper.AddInterceptor(new SampleProcessWrapperInterceptor());
+using var globalStartInfoRegistration = ProcessWrapper.AddInterceptor(new SampleProcessStartInfoInterceptor());
+
+var result = await ProcessWrapper.Create("dotnet")
+    .WithArguments("--version")
+    .WithInterceptor(new SampleProcessWrapperInterceptor())
+    .WithInterceptor(new SampleProcessStartInfoInterceptor())
+    .ExecuteBufferedAsync();
+````
+
 ## Working directory
 
 ````c#

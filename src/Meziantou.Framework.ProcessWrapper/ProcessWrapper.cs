@@ -366,7 +366,6 @@ public sealed class ProcessWrapper
 
         var processFactory = _processFactory ?? DefaultProcessFactory;
         var processHandle = processFactory.Create(startInfo);
-        ArgumentNullException.ThrowIfNull(processHandle);
         var processLimiter = CreateProcessLimiter();
 
         var processStarted = false;

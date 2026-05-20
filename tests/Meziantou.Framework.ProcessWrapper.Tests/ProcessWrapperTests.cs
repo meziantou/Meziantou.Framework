@@ -1198,7 +1198,7 @@ public class ProcessWrapperTests
     [Fact]
     public async Task ExecuteBufferedAsync_UsesCustomProcessFactory()
     {
-        var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
+        using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
         var createdProcesses = new List<CreatedProcessInfo>();
         var fakeFactory = new FakeProcessFactory(startInfo =>
         {

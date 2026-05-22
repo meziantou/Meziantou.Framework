@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.6.0" />
-    <PackageReference Include="Testcontainers.Redis" Version="4.11.0" />
+    <PackageReference Include="Testcontainers.Redis" Version="4.12.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">

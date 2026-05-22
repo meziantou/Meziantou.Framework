@@ -706,7 +706,7 @@ public sealed class SnapshotTests
 
     private sealed class FixedCountSerializer(int count) : ISnapshotSerializer
     {
-        public bool TrySerialize(SnapshotType type, object? value, out SerializedSnapshot? result)
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
         {
             if (type != SnapshotType.Default)
             {
@@ -771,7 +771,7 @@ public sealed class SnapshotTests
 
     private sealed class SnapshotTypeSerializer : ISnapshotSerializer
     {
-        public bool TrySerialize(SnapshotType type, object? value, out SerializedSnapshot? result)
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
         {
             if (type != SnapshotType.Png)
             {
@@ -786,7 +786,7 @@ public sealed class SnapshotTests
 
     private sealed class FixedValueSerializer(string value) : ISnapshotSerializer
     {
-        public bool TrySerialize(SnapshotType type, object? value_, out SerializedSnapshot? result)
+        public bool TrySerialize(SnapshotType type, object? value_, [NotNullWhen(true)] out SerializedSnapshot? result)
         {
             if (type != SnapshotType.Default)
             {

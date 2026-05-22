@@ -8,7 +8,9 @@ public static class SnapshotComparerCollectionImageComparerExtensions
         {
             ArgumentNullException.ThrowIfNull(comparers);
 
-            comparers.Set(SnapshotType.Bmp, settings is null ? ImageComparer.Instance : new ImageComparer(settings));
+            var comparer = settings is null ? ImageComparer.Instance : new ImageComparer(settings);
+            comparers.Set(SnapshotType.Bmp, comparer);
+            comparers.Set(SnapshotType.Png, comparer);
         }
     }
 }

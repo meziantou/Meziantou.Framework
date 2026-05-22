@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using TestUtilities;
@@ -496,6 +497,35 @@ public sealed class SnapshotEndToEndTests
         Assert.Equal([0x01, 0x02, 0x03, 0x04], snapshotFile.Content);
     }
 
+    [Fact]
+    public async Task Validate_EndToEnd_SerializesGifFrames_WhenGifSerializerIsEnabled()
+    {
+        var payload = CreateTwoFrameGif();
+        var sourcePayload = ToByteArraySource(payload);
+        var snapshotFiles = await AssertSnapshot(
+            $$"""
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var payload = new byte[] { {{sourcePayload}} };
+                    var settings = SnapshotTestUtilities.CreateSuccessSettings();
+                    settings.Serializers.AddGifSerializer();
+                    Snapshot.Validate(payload, SnapshotType.Gif, settings);
+                }
+            }
+            """);
+
+        Assert.Equal(
+        [
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.gif",
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.gif",
+        ], snapshotFiles.Select(static item => item.RelativePath));
+        Assert.Equal(CreateSingleFrameGif(), snapshotFiles[0].Content);
+        Assert.Equal(CreateSingleFrameGif(), snapshotFiles[1].Content);
+    }
+
     [Theory]
     [InlineData(SnapshotTestFramework.Xunit)]
     [InlineData(SnapshotTestFramework.XunitV3)]
@@ -908,6 +938,58 @@ public sealed class SnapshotEndToEndTests
     private static void AssertSnapshotContent(SnapshotFile[] snapshotFiles, (string RelativePath, string Content)[] expected)
     {
         Assert.Equal(expected, snapshotFiles.Select(f => (f.RelativePath, f.ContentAsString)));
+    }
+
+    private static string ToByteArraySource(byte[] data)
+    {
+        return string.Join(", ", data.Select(static item => "0x" + item.ToString("X2", CultureInfo.InvariantCulture)));
+    }
+
+    private static byte[] CreateSingleFrameGif()
+    {
+        return
+        [
+            0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
+            0x01, 0x00, 0x01, 0x00,
+            0x80, 0x01, 0x00,
+            0xFF, 0xFF, 0xFF,
+            0x00, 0x00, 0x00,
+            0x2C,
+            0x00, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x01, 0x00,
+            0x00,
+            0x02,
+            0x02, 0x44, 0x01,
+            0x00,
+            0x3B,
+        ];
+    }
+
+    private static byte[] CreateTwoFrameGif()
+    {
+        return
+        [
+            0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
+            0x01, 0x00, 0x01, 0x00,
+            0x80, 0x01, 0x00,
+            0xFF, 0xFF, 0xFF,
+            0x00, 0x00, 0x00,
+            0x2C,
+            0x00, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x01, 0x00,
+            0x00,
+            0x02,
+            0x02, 0x44, 0x01,
+            0x00,
+            0x2C,
+            0x00, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x01, 0x00,
+            0x00,
+            0x02,
+            0x02, 0x44, 0x01,
+            0x00,
+            0x3B,
+        ];
     }
 
     private static async Task<SnapshotFile[]> AssertSnapshot(

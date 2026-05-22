@@ -23,6 +23,15 @@ Snapshot.Validate(imageBytes, SnapshotType.Png);
 Snapshot.Validate(svgText, SnapshotType.Svg);
 ```
 
+For GIF frame snapshots (opt-in):
+
+```csharp
+var settings = SnapshotSettings.Default with { };
+settings.Serializers.AddGifSerializer();
+
+Snapshot.Validate(gifBytes, SnapshotType.Gif, settings);
+```
+
 ## File naming convention
 
 Snapshots are stored in a `__snapshots__` directory next to the test source file:
@@ -93,6 +102,7 @@ Snapshot.Validate(value, SnapshotType.Default, settings);
 ```
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
+GIF frame extraction is opt-in via `Serializers.AddGifSerializer()`: when enabled and `SnapshotType.Gif` is used with a valid GIF `byte[]`, each frame is serialized as a separate `.gif` snapshot.
 
 ## Scrubbing
 

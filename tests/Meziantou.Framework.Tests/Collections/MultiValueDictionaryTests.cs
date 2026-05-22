@@ -4,23 +4,28 @@ namespace Meziantou.Framework.Tests.Collections;
 
 public sealed class MultiValueDictionaryTests
 {
+    private static MultiValueDictionary<string, int> CreateDictionary()
+    {
+        return new(StringComparer.Ordinal);
+    }
+
     [Fact]
     public void Add_AllowsMultipleValuesForSameKey()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
 
         dictionary.Add("a", 1);
         dictionary.Add("a", 2);
 
         Assert.True(dictionary.ContainsKey("a"));
-        Assert.Equal(1, dictionary.Count);
+        Assert.Single(dictionary);
         Assert.Equal([1, 2], dictionary["a"]);
     }
 
     [Fact]
     public void AddRange_AddsValuesForNewAndExistingKeys()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
 
         dictionary.AddRange("a", [1, 2]);
         dictionary.AddRange("a", [3, 4]);
@@ -34,7 +39,7 @@ public sealed class MultiValueDictionaryTests
     [Fact]
     public void ReturnedCollection_ReflectsSubsequentChanges()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
         dictionary.Add("a", 1);
         var values = dictionary["a"];
 
@@ -46,7 +51,7 @@ public sealed class MultiValueDictionaryTests
     [Fact]
     public void Remove_KeyValue_RemovesOnlyOneValue()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
         dictionary.Add("a", 1);
         dictionary.Add("a", 2);
         dictionary.Add("a", 2);
@@ -58,29 +63,29 @@ public sealed class MultiValueDictionaryTests
     [Fact]
     public void Remove_LastValue_RemovesTheKey()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
         dictionary.Add("a", 1);
 
         Assert.True(dictionary.Remove("a", 1));
         Assert.False(dictionary.ContainsKey("a"));
-        Assert.Equal(0, dictionary.Count);
+        Assert.Empty(dictionary);
     }
 
     [Fact]
     public void Remove_Key_RemovesAllValues()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
         dictionary.AddRange("a", [1, 2, 3]);
 
         Assert.True(dictionary.Remove("a"));
         Assert.False(dictionary.ContainsKey("a"));
-        Assert.Equal(0, dictionary.Count);
+        Assert.Empty(dictionary);
     }
 
     [Fact]
     public void ContainsAndContainsValue_ReturnExpectedValues()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
         dictionary.AddRange("a", [1, 2]);
         dictionary.AddRange("b", [3, 4]);
 
@@ -93,7 +98,7 @@ public sealed class MultiValueDictionaryTests
     [Fact]
     public void TryGetValue_ReturnsCollectionWhenFound()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
         dictionary.AddRange("a", [1, 2]);
 
         Assert.True(dictionary.TryGetValue("a", out var values));
@@ -106,7 +111,7 @@ public sealed class MultiValueDictionaryTests
     [Fact]
     public void Indexer_ThrowsWhenKeyIsMissing()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
 
         Assert.Throws<KeyNotFoundException>(() => _ = dictionary["missing"]);
     }
@@ -121,7 +126,7 @@ public sealed class MultiValueDictionaryTests
             new("b", [3]),
         ];
 
-        var dictionary = new MultiValueDictionary<string, int>(source);
+        var dictionary = new MultiValueDictionary<string, int>(source, StringComparer.Ordinal);
         sourceValues.Add(99);
 
         Assert.Equal(2, dictionary.Count);
@@ -136,18 +141,18 @@ public sealed class MultiValueDictionaryTests
         dictionary.Add("key", 1);
         dictionary.Add("KEY", 2);
 
-        Assert.Equal(1, dictionary.Count);
+        Assert.Single(dictionary);
         Assert.Equal([1, 2], dictionary["KeY"]);
     }
 
     [Fact]
     public void Enumeration_ReturnsKeysAndCollections()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
         dictionary.AddRange("a", [1, 2]);
         dictionary.AddRange("b", [3]);
 
-        var pairs = dictionary.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray());
+        var pairs = dictionary.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray(), StringComparer.Ordinal);
 
         Assert.Equal([1, 2], pairs["a"]);
         Assert.Equal([3], pairs["b"]);
@@ -156,7 +161,7 @@ public sealed class MultiValueDictionaryTests
     [Fact]
     public void AddRange_NullValues_Throws()
     {
-        var dictionary = new MultiValueDictionary<string, int>();
+        var dictionary = CreateDictionary();
 
         Assert.Throws<ArgumentNullException>(() => dictionary.AddRange("a", values: null!));
     }
@@ -164,6 +169,6 @@ public sealed class MultiValueDictionaryTests
     [Fact]
     public void Constructor_NullEnumerable_Throws()
     {
-        Assert.Throws<ArgumentNullException>(() => new MultiValueDictionary<string, int>(enumerable: null!));
+        Assert.Throws<ArgumentNullException>(() => new MultiValueDictionary<string, int>(enumerable: null!, comparer: StringComparer.Ordinal));
     }
 }

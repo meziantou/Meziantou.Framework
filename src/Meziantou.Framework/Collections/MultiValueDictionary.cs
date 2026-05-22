@@ -40,7 +40,9 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
         _dictionary = new(comparer);
         foreach (var pair in enumerable)
         {
-            ArgumentNullException.ThrowIfNull(pair.Value);
+            if (pair.Value is null)
+                throw new ArgumentException("The value collection cannot be null.", nameof(enumerable));
+
             AddRange(pair.Key, pair.Value);
         }
     }

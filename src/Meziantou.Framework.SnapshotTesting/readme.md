@@ -103,6 +103,16 @@ Snapshot.Validate(value, SnapshotType.Default, settings);
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
 GIF frame extraction is opt-in via `Serializers.AddGifSerializer()`: when enabled and `SnapshotType.Gif` is used with a valid GIF `byte[]`, each frame is serialized as a separate `.gif` snapshot.
+BMP image comparison is opt-in via `Comparers.AddImageComparer()`. When enabled, `SnapshotType.Bmp` snapshots are compared by decoded pixel content (ARGB), so BMP header metadata differences do not trigger snapshot mismatches.
+To allow small visual differences, configure the BMP comparer with an SSIM threshold:
+
+```csharp
+var settings = SnapshotSettings.Default with { };
+settings.Comparers.AddImageComparer(new ImageComparisonSettings
+{
+    SimilarityThreshold = 0.95f,
+});
+```
 
 ## Scrubbing
 

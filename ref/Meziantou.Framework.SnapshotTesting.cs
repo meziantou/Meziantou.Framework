@@ -36,6 +36,17 @@ namespace Meziantou.Framework.SnapshotTesting
         bool TrySerialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.SnapshotTesting.SerializedSnapshot? result);
     }
 
+    public sealed class ImageComparer : Meziantou.Framework.SnapshotTesting.ISnapshotComparer
+    {
+        public ImageComparer(Meziantou.Framework.SnapshotTesting.ImageComparisonSettings? settings = null) { }
+        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData expected, Meziantou.Framework.SnapshotTesting.SnapshotData actual) => throw null;
+    }
+
+    public sealed class ImageComparisonSettings
+    {
+        public float? SimilarityThreshold { get => throw null; set { } }
+    }
+
     public abstract class MergeTool
     {
         public static Meziantou.Framework.SnapshotTesting.MergeTool AraxisMerge { get => throw null; }
@@ -117,6 +128,11 @@ namespace Meziantou.Framework.SnapshotTesting
         public void Clear() { }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.SnapshotTesting.SnapshotType, Meziantou.Framework.SnapshotTesting.ISnapshotComparer>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
+    public static class SnapshotComparerCollectionImageComparerExtensions
+    {
+        public static void AddImageComparer(this Meziantou.Framework.SnapshotTesting.SnapshotComparerCollection comparers, Meziantou.Framework.SnapshotTesting.ImageComparisonSettings? settings = null) { }
     }
 
     public sealed class SnapshotData : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotData>

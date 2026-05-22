@@ -37,4 +37,4 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 
 Do not consider solution files (sln, slnx) in the slnx folders. These files are automatically generated and only for developers working on the project.
 
-Do not manually update files under the `ref/` folder. Their content is generated when building the solution.
+Do not manually update files under the `ref/` folder. Their content is generated when building the solution, and any resulting changes must be committed to git.

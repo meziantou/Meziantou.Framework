@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -526,6 +527,51 @@ public sealed class SnapshotEndToEndTests
         Assert.Equal(CreateSingleFrameGif(), snapshotFiles[1].Content);
     }
 
+    [Fact]
+    public async Task Validate_EndToEnd_UsesBmpPixelComparer_WhenOnlyMetadataDiffers()
+    {
+        var verifiedPayload = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010203u,
+            ],
+            pixelsPerMeter: 2835);
+        var actualPayload = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010203u,
+            ],
+            pixelsPerMeter: 3780);
+        var sourcePayload = ToByteArraySource(actualPayload);
+
+        var snapshotFiles = await AssertSnapshot(
+            $$"""
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var payload = new byte[] { {{sourcePayload}} };
+                    var settings = SnapshotTestUtilities.CreateFailureSettings();
+                    settings.Comparers.AddImageComparer();
+                    Snapshot.Validate(payload, SnapshotType.Bmp, settings);
+                }
+            }
+            """,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.bmp", verifiedPayload),
+            ]);
+
+        var snapshotFile = Assert.Single(snapshotFiles);
+        Assert.Equal("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.bmp", snapshotFile.RelativePath);
+        Assert.Equal(verifiedPayload, snapshotFile.Content);
+    }
+
     [Theory]
     [InlineData(SnapshotTestFramework.Xunit)]
     [InlineData(SnapshotTestFramework.XunitV3)]
@@ -943,6 +989,67 @@ public sealed class SnapshotEndToEndTests
     private static string ToByteArraySource(byte[] data)
     {
         return string.Join(", ", data.Select(static item => "0x" + item.ToString("X2", CultureInfo.InvariantCulture)));
+    }
+
+    private static byte[] CreateBmp24(int width, int height, IReadOnlyList<uint> pixels, int pixelsPerMeter)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+
+        if (pixels.Count != checked(width * height))
+            throw new ArgumentOutOfRangeException(nameof(pixels));
+
+        const int FileHeaderSize = 14;
+        const int InfoHeaderSize = 40;
+        var rowSizeWithoutPadding = checked(width * 3);
+        var rowStride = (rowSizeWithoutPadding + 3) & ~3;
+        var pixelDataSize = checked(rowStride * height);
+        var data = new byte[FileHeaderSize + InfoHeaderSize + pixelDataSize];
+
+        data[0] = (byte)'B';
+        data[1] = (byte)'M';
+        WriteUInt32LittleEndian(data, 2, (uint)data.Length);
+        WriteUInt32LittleEndian(data, 10, FileHeaderSize + InfoHeaderSize);
+        WriteUInt32LittleEndian(data, 14, InfoHeaderSize);
+        WriteInt32LittleEndian(data, 18, width);
+        WriteInt32LittleEndian(data, 22, height);
+        WriteUInt16LittleEndian(data, 26, 1);
+        WriteUInt16LittleEndian(data, 28, 24);
+        WriteUInt32LittleEndian(data, 30, 0);
+        WriteUInt32LittleEndian(data, 34, (uint)pixelDataSize);
+        WriteInt32LittleEndian(data, 38, pixelsPerMeter);
+        WriteInt32LittleEndian(data, 42, pixelsPerMeter);
+
+        for (var y = 0; y < height; y++)
+        {
+            var sourceRow = height - y - 1;
+            var sourceOffset = sourceRow * width;
+            var destinationOffset = FileHeaderSize + InfoHeaderSize + y * rowStride;
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = pixels[sourceOffset + x];
+                data[destinationOffset + x * 3] = (byte)(pixel & 0xFF);
+                data[destinationOffset + x * 3 + 1] = (byte)((pixel >> 8) & 0xFF);
+                data[destinationOffset + x * 3 + 2] = (byte)((pixel >> 16) & 0xFF);
+            }
+        }
+
+        return data;
+    }
+
+    private static void WriteUInt32LittleEndian(byte[] data, int offset, uint value)
+    {
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset, 4), value);
+    }
+
+    private static void WriteInt32LittleEndian(byte[] data, int offset, int value)
+    {
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset, 4), value);
+    }
+
+    private static void WriteUInt16LittleEndian(byte[] data, int offset, ushort value)
+    {
+        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(offset, 2), value);
     }
 
     private static byte[] CreateSingleFrameGif()

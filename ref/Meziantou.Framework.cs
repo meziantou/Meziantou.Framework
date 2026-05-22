@@ -875,6 +875,30 @@ namespace Meziantou.Framework.Collections
         }
     }
 
+    public sealed class DoubleEndedQueue<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public T this[int index] { get => throw null; }
+        public DoubleEndedQueue(int capacity) { }
+        public void AddFirst(T value) { }
+        public void AddLast(T value) { }
+        public T RemoveFirst() => throw null;
+        public T RemoveLast() => throw null;
+        public void Clear() { }
+        public bool Contains(T item) => throw null;
+        public int IndexOf(T item) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public Enumerator<T> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public T Current { get => throw null; }
+            public void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
+    }
+
     public static class ImmutableEquatableArray
     {
         public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;

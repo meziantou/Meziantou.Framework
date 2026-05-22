@@ -966,6 +966,31 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
+    public sealed class SkipList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public System.Collections.Generic.IComparer<T> Comparer { get => throw null; }
+        public SkipList(System.Collections.Generic.IComparer<T>? comparer) { }
+        public SkipList(System.Collections.Generic.IEnumerable<T> collection) { }
+        public SkipList(System.Collections.Generic.IEnumerable<T> collection, System.Collections.Generic.IComparer<T>? comparer) { }
+        public bool Add(T item) => throw null;
+        public bool Remove(T item) => throw null;
+        public bool Contains(T item) => throw null;
+        public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T actualValue) => throw null;
+        public void Clear() { }
+        public void CopyTo(T[] array, int arrayIndex) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int arrayIndex) { }
+        public Enumerator<T> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public T Current { get => throw null; }
+            public void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
+    }
+
     public sealed class SortedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }

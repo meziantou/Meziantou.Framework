@@ -849,6 +849,23 @@ namespace Meziantou.Framework.Collections
         }
     }
 
+    public sealed class BTree<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public BTree(System.Collections.Generic.IComparer<T>? comparer = null) { }
+        public bool Add(T item) => throw null;
+        public bool Contains(T item) => throw null;
+        public Enumerator<T> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public T Current { get => throw null; }
+            public void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
+    }
+
     public sealed class CircularBuffer<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         public int Capacity { get => throw null; set { } }

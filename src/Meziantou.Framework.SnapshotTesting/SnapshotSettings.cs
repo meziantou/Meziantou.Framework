@@ -101,7 +101,6 @@ public sealed record SnapshotSettings
         ];
         Comparers = new SnapshotComparerCollection();
         Comparers.Set(SnapshotType.None, ByteArraySnapshotComparer.Instance);
-        Comparers.Set(SnapshotType.Bmp, ImageComparer.Instance);
         Scrubbers = [];
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         AssertionExceptionCreator = AssertionExceptionBuilder.Default;

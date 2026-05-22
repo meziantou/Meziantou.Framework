@@ -556,7 +556,9 @@ public sealed class SnapshotEndToEndTests
                 public void SampleTest()
                 {
                     var payload = new byte[] { {{sourcePayload}} };
-                    Snapshot.Validate(payload, SnapshotType.Bmp, SnapshotTestUtilities.CreateFailureSettings());
+                    var settings = SnapshotTestUtilities.CreateFailureSettings();
+                    settings.Comparers.AddImageComparer();
+                    Snapshot.Validate(payload, SnapshotType.Bmp, settings);
                 }
             }
             """,

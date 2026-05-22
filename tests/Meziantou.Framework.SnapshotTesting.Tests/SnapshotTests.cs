@@ -496,7 +496,7 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void DefaultComparer_ComparesBmpSnapshotsByPixels()
+    public void AddImageComparer_ComparesBmpSnapshotsByPixels()
     {
         var expectedData = CreateBmp24(
             width: 1,
@@ -515,12 +515,14 @@ public sealed class SnapshotTests
             ],
             pixelsPerMeter: 3780);
 
-        var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Bmp);
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Bmp);
         Assert.True(comparer.Equals(new SnapshotData("bmp", expectedData), new SnapshotData("bmp", actualData)));
     }
 
     [Fact]
-    public void DefaultComparer_DetectsBmpPixelDifferences()
+    public void AddImageComparer_DetectsBmpPixelDifferences()
     {
         var expectedData = CreateBmp24(
             width: 1,
@@ -539,7 +541,9 @@ public sealed class SnapshotTests
             ],
             pixelsPerMeter: 2835);
 
-        var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Bmp);
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Bmp);
         Assert.False(comparer.Equals(new SnapshotData("bmp", expectedData), new SnapshotData("bmp", actualData)));
     }
 

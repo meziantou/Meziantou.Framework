@@ -4,7 +4,7 @@ namespace Meziantou.Framework.SnapshotTesting.ImageSharp;
 
 internal sealed class ImageSnapshotSerializer : ISnapshotSerializer
 {
-    public bool TrySerialize(SnapshotType type, object? value, out SerializedSnapshot? result)
+    public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
     {
         if (value is not Image image)
         {

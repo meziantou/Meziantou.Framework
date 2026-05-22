@@ -4,7 +4,7 @@ internal sealed class ByteArraySnapshotSerializer : ISnapshotSerializer
 {
     public static ISnapshotSerializer Instance { get; } = new ByteArraySnapshotSerializer();
 
-    public bool TrySerialize(SnapshotType type, object? value, out SerializedSnapshot? result)
+    public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
     {
         if (value is not byte[] byteArray)
         {

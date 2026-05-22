@@ -979,6 +979,20 @@ namespace Meziantou.Framework.Collections
         }
     }
 
+    public sealed class Trie<TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public bool IgnoreCase { get => throw null; }
+        public Trie(bool ignoreCase) { }
+        public void Add(string key, TValue value) { }
+        public bool Remove(string key) => throw null;
+        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
+        public bool ContainsKey(string key) => throw null;
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>> StartsWith(string prefix) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
     public sealed class UnsafeListDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable
     {
         public TValue this[TKey key] { get => throw null; set { } }

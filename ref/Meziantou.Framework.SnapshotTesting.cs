@@ -130,6 +130,11 @@ namespace Meziantou.Framework.SnapshotTesting
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
+    public static class SnapshotComparerCollectionImageComparerExtensions
+    {
+        public static void AddImageComparer(this Meziantou.Framework.SnapshotTesting.SnapshotComparerCollection comparers, Meziantou.Framework.SnapshotTesting.ImageComparisonSettings? settings = null) { }
+    }
+
     public sealed class SnapshotData : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotData>
     {
         public string? Extension { get => throw null; init { } }

@@ -6,7 +6,6 @@ Do not complete without checking the relevant code builds and relevant tests sti
 When building and running tests, use `/p:TreatsWarningsAsErrors=true`.
 Also, do not assume that tests pass just because you did not see any failures in your last test run; verify that all relevant tests were actually run.
 When running tests, you can ignore the warning about "Blame" data collector errors.
-When running tests, set `DiffEngine_Disabled=true` to disable DiffTool usage from InlineSnapshotTesting.
 
 In addition to building and testing your changes, you MUST run the following scripts:
 - `dotnet run ./eng/update-bom.cs`

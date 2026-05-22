@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.IO.Compression;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 
@@ -489,10 +490,34 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public async Task Image_LoadAsync_Stream_DecodesPngPixels()
+    {
+        var imageData = CreatePngRgba32(
+            width: 2,
+            height: 1,
+            pixels:
+            [
+                0xFFFF0000u,
+                0x800000FFu,
+            ]);
+
+        using var stream = new MemoryStream(imageData);
+        var image = await Image.LoadAsync(stream);
+
+        Assert.Equal(2, image.Width);
+        Assert.Equal(1, image.Height);
+        Assert.Equal(
+        [
+            new Argb(0xFFFF0000u),
+            new Argb(0x800000FFu),
+        ], image.Pixels.ToArray());
+    }
+
+    [Fact]
     public async Task Image_LoadAsync_ThrowsWhenFormatIsNotSupported()
     {
         var ex = await Assert.ThrowsAsync<NotSupportedException>(() => Image.LoadAsync(new MemoryStream("not-a-bmp"u8.ToArray())));
-        Assert.Contains("Only BMP is currently supported.", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Only BMP and PNG are currently supported.", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -545,6 +570,56 @@ public sealed class SnapshotTests
         settings.Comparers.AddImageComparer();
         var comparer = settings.Comparers.Get(SnapshotType.Bmp);
         Assert.False(comparer.Equals(new SnapshotData("bmp", expectedData), new SnapshotData("bmp", actualData)));
+    }
+
+    [Fact]
+    public void AddImageComparer_ComparesPngSnapshotsByPixels()
+    {
+        var expectedData = CreatePngRgba32(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010203u,
+            ],
+            gamma: 0.45455f);
+        var actualData = CreatePngRgba32(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010203u,
+            ],
+            gamma: 1.0f);
+
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Png);
+        Assert.True(comparer.Equals(new SnapshotData("png", expectedData), new SnapshotData("png", actualData)));
+    }
+
+    [Fact]
+    public void AddImageComparer_DetectsPngPixelDifferences()
+    {
+        var expectedData = CreatePngRgba32(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010203u,
+            ]);
+        var actualData = CreatePngRgba32(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF040506u,
+            ]);
+
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Png);
+        Assert.False(comparer.Equals(new SnapshotData("png", expectedData), new SnapshotData("png", actualData)));
     }
 
     [Fact]
@@ -977,6 +1052,103 @@ public sealed class SnapshotTests
         }
 
         return data;
+    }
+
+    private static byte[] CreatePngRgba32(int width, int height, IReadOnlyList<uint> pixels, float? gamma = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+
+        if (pixels.Count != checked(width * height))
+            throw new ArgumentOutOfRangeException(nameof(pixels));
+
+        var rowStride = checked(width * 4 + 1);
+        var imageData = new byte[checked(rowStride * height)];
+        for (var y = 0; y < height; y++)
+        {
+            var rowOffset = y * rowStride;
+            imageData[rowOffset] = 0;
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = pixels[y * width + x];
+                var pixelOffset = rowOffset + 1 + x * 4;
+                imageData[pixelOffset] = (byte)((pixel >> 16) & 0xFF);
+                imageData[pixelOffset + 1] = (byte)((pixel >> 8) & 0xFF);
+                imageData[pixelOffset + 2] = (byte)(pixel & 0xFF);
+                imageData[pixelOffset + 3] = (byte)(pixel >> 24);
+            }
+        }
+
+        byte[] compressedData;
+        using (var compressedStream = new MemoryStream())
+        {
+            using (var zlib = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
+            {
+                zlib.Write(imageData);
+            }
+
+            compressedData = compressedStream.ToArray();
+        }
+
+        using var stream = new MemoryStream();
+        stream.Write([137, 80, 78, 71, 13, 10, 26, 10]);
+
+        Span<byte> ihdrData = stackalloc byte[13];
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData, (uint)width);
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData[4..], (uint)height);
+        ihdrData[8] = 8;
+        ihdrData[9] = 6;
+        ihdrData[10] = 0;
+        ihdrData[11] = 0;
+        ihdrData[12] = 0;
+        WritePngChunk(stream, "IHDR"u8, ihdrData);
+
+        if (gamma is not null)
+        {
+            Span<byte> gammaData = stackalloc byte[4];
+            var gammaValue = checked((uint)Math.Round(gamma.Value * 100000f, MidpointRounding.AwayFromZero));
+            BinaryPrimitives.WriteUInt32BigEndian(gammaData, gammaValue);
+            WritePngChunk(stream, "gAMA"u8, gammaData);
+        }
+
+        WritePngChunk(stream, "IDAT"u8, compressedData);
+        WritePngChunk(stream, "IEND"u8, ReadOnlySpan<byte>.Empty);
+        return stream.ToArray();
+    }
+
+    private static void WritePngChunk(Stream stream, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
+    {
+        Span<byte> uintBuffer = stackalloc byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(uintBuffer, (uint)data.Length);
+        stream.Write(uintBuffer);
+        stream.Write(type);
+        stream.Write(data);
+
+        var crc = ComputePngCrc32(type, data);
+        BinaryPrimitives.WriteUInt32BigEndian(uintBuffer, crc);
+        stream.Write(uintBuffer);
+    }
+
+    private static uint ComputePngCrc32(ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
+    {
+        var crc = uint.MaxValue;
+        crc = UpdatePngCrc32(crc, type);
+        crc = UpdatePngCrc32(crc, data);
+        return ~crc;
+    }
+
+    private static uint UpdatePngCrc32(uint crc, ReadOnlySpan<byte> data)
+    {
+        foreach (var value in data)
+        {
+            crc ^= value;
+            for (var i = 0; i < 8; i++)
+            {
+                crc = (crc & 1) == 0 ? crc >> 1 : 0xEDB88320u ^ (crc >> 1);
+            }
+        }
+
+        return crc;
     }
 
     private static void WriteUInt32LittleEndian(byte[] data, int offset, uint value)

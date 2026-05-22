@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Collections;
@@ -9,25 +8,10 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
 {
     private readonly Dictionary<TKey, ValueCollection> _dictionary;
 
-    public MultiValueDictionary()
-    {
-        _dictionary = [];
-    }
-
-    public MultiValueDictionary(int capacity)
-    {
-        _dictionary = new(capacity);
-    }
-
-    public MultiValueDictionary(IEqualityComparer<TKey>? comparer)
-    {
-        _dictionary = new(comparer);
-    }
-
-    public MultiValueDictionary(int capacity, IEqualityComparer<TKey>? comparer)
-    {
-        _dictionary = new(capacity, comparer);
-    }
+    public MultiValueDictionary() => _dictionary = [];
+    public MultiValueDictionary(int capacity) => _dictionary = new(capacity);
+    public MultiValueDictionary(IEqualityComparer<TKey>? comparer) => _dictionary = new(comparer);
+    public MultiValueDictionary(int capacity, IEqualityComparer<TKey>? comparer) => _dictionary = new(capacity, comparer);
 
     public MultiValueDictionary(IEnumerable<KeyValuePair<TKey, IReadOnlyCollection<TValue>>> enumerable)
         : this(enumerable, comparer: null)
@@ -48,10 +32,7 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
         }
     }
 
-    public void Add(TKey key, TValue value)
-    {
-        GetOrAddCollection(key).Add(value);
-    }
+    public void Add(TKey key, TValue value) => GetOrAddCollection(key).Add(value);
 
     public void AddRange(TKey key, IEnumerable<TValue> values)
     {
@@ -60,10 +41,7 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
         GetOrAddCollection(key).AddRange(values);
     }
 
-    public bool Remove(TKey key)
-    {
-        return _dictionary.Remove(key);
-    }
+    public bool Remove(TKey key) => _dictionary.Remove(key);
 
     public bool Remove(TKey key, TValue value)
     {
@@ -81,10 +59,7 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
         return true;
     }
 
-    public bool Contains(TKey key, TValue value)
-    {
-        return _dictionary.TryGetValue(key, out var collection) && collection.Contains(value);
-    }
+    public bool Contains(TKey key, TValue value) => _dictionary.TryGetValue(key, out var collection) && collection.Contains(value);
 
     public bool ContainsValue(TValue value)
     {
@@ -97,15 +72,9 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
         return false;
     }
 
-    public void Clear()
-    {
-        _dictionary.Clear();
-    }
+    public void Clear() => _dictionary.Clear();
 
-    public bool ContainsKey(TKey key)
-    {
-        return _dictionary.ContainsKey(key);
-    }
+    public bool ContainsKey(TKey key) => _dictionary.ContainsKey(key);
 
     public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out IReadOnlyCollection<TValue> value)
     {
@@ -115,11 +84,9 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
     }
 
     public IEnumerable<TKey> Keys => _dictionary.Keys;
-
     public IEnumerable<IReadOnlyCollection<TValue>> Values => _dictionary.Values;
 
     public IReadOnlyCollection<TValue> this[TKey key] => _dictionary[key];
-
     public int Count => _dictionary.Count;
 
     public IEnumerator<KeyValuePair<TKey, IReadOnlyCollection<TValue>>> GetEnumerator()
@@ -130,15 +97,9 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
         }
     }
 
-    IEnumerator<KeyValuePair<TKey, IReadOnlyCollection<TValue>>> IEnumerable<KeyValuePair<TKey, IReadOnlyCollection<TValue>>>.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    IEnumerator<KeyValuePair<TKey, IReadOnlyCollection<TValue>>> IEnumerable<KeyValuePair<TKey, IReadOnlyCollection<TValue>>>.GetEnumerator() => GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     private ValueCollection GetOrAddCollection(TKey key)
     {
@@ -149,43 +110,14 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
 
     private sealed class ValueCollection : IReadOnlyCollection<TValue>
     {
-        private readonly List<TValue> _values = [];
-
+        private readonly List<TValue> _values = new List<TValue>(1); // Most of the time, there will be only one value per key, so we start with a capacity of 1
         public int Count => _values.Count;
-
-        internal void Add(TValue value)
-        {
-            _values.Add(value);
-        }
-
-        internal void AddRange(IEnumerable<TValue> values)
-        {
-            _values.AddRange(values);
-        }
-
-        internal bool Remove(TValue value)
-        {
-            return _values.Remove(value);
-        }
-
-        internal bool Contains(TValue value)
-        {
-            return _values.Contains(value);
-        }
-
-        public List<TValue>.Enumerator GetEnumerator()
-        {
-            return _values.GetEnumerator();
-        }
-
-        IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator()
-        {
-            return _values.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return _values.GetEnumerator();
-        }
+        public void Add(TValue value) => _values.Add(value);
+        public void AddRange(IEnumerable<TValue> values) => _values.AddRange(values);
+        public bool Remove(TValue value) => _values.Remove(value);
+        public bool Contains(TValue value) => _values.Contains(value);
+        public List<TValue>.Enumerator GetEnumerator() => _values.GetEnumerator();
+        IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => _values.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
     }
 }

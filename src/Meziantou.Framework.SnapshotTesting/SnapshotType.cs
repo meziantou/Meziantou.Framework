@@ -10,6 +10,7 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
     public static SnapshotType Jpeg { get; } = new("jpeg", "image/jpeg", "JPEG image");
     public static SnapshotType Tiff { get; } = new("tiff", "image/tiff", "TIFF image");
     public static SnapshotType Webp { get; } = new("webp", "image/webp", "WebP image");
+    public static SnapshotType Gif { get; } = new("gif", "image/gif", "GIF image");
 
     private static readonly Dictionary<string, SnapshotType> Cache = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -20,6 +21,7 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         ["jpeg"] = Jpeg,
         ["tiff"] = Tiff,
         ["webp"] = Webp,
+        ["gif"] = Gif,
     };
 
     private SnapshotType(string type, string? mimeType = null, string? displayName = null)

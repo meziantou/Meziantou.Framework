@@ -197,6 +197,11 @@ namespace Meziantou.Framework.SnapshotTesting
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
+    public static class SnapshotSerializerCollectionGifSerializerExtensions
+    {
+        public static void AddGifSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection serializers) { }
+    }
+
     public sealed class SnapshotSettings : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotSettings>
     {
         public static Meziantou.Framework.SnapshotTesting.SnapshotSettings Default { get => throw null; set { } }
@@ -268,6 +273,7 @@ namespace Meziantou.Framework.SnapshotTesting
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Jpeg { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Tiff { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Webp { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Gif { get => throw null; }
         public string Type { get => throw null; }
         public string? MimeType { get => throw null; }
         public string? DisplayName { get => throw null; }

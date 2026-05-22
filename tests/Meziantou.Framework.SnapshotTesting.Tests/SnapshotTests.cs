@@ -347,6 +347,8 @@ public sealed class SnapshotTests
         Assert.Equal("PNG image", SnapshotType.Png.DisplayName);
         Assert.Equal("image/svg+xml", SnapshotType.Svg.MimeType);
         Assert.Equal("SVG image", SnapshotType.Svg.DisplayName);
+        Assert.Equal("image/gif", SnapshotType.Gif.MimeType);
+        Assert.Equal("GIF image", SnapshotType.Gif.DisplayName);
     }
 
     [Fact]
@@ -396,6 +398,46 @@ public sealed class SnapshotTests
         Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
         Assert.Equal(expectedBytes, snapshot.Data);
         Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public void DefaultSerializer_HandlesGifByteArrayAsSingleBinarySnapshot()
+    {
+        var snapshotType = SnapshotType.Gif;
+        var expectedBytes = CreateTwoFrameGif();
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, expectedBytes);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
+        Assert.Equal(expectedBytes, snapshot.Data);
+    }
+
+    [Fact]
+    public void AddGifSerializer_SerializesGifByteArrayAsOneSnapshotPerFrame()
+    {
+        var snapshotType = SnapshotType.Gif;
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddGifSerializer();
+        var data = settings.Serializers.Serialize(snapshotType, CreateTwoFrameGif());
+
+        Assert.Equal(2, data.Data.Count);
+        Assert.All(data.Data, snapshot => Assert.Equal(snapshotType.FileExtension, snapshot.Extension));
+        Assert.Equal(CreateSingleFrameGif(), data.Data[0].Data);
+        Assert.Equal(CreateSingleFrameGif(), data.Data[1].Data);
+    }
+
+    [Fact]
+    public void AddGifSerializer_FallsBackToBinarySerializerWhenPayloadIsNotGif()
+    {
+        var snapshotType = SnapshotType.Gif;
+        var payload = "not-a-gif"u8.ToArray();
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddGifSerializer();
+        var data = settings.Serializers.Serialize(snapshotType, payload);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
+        Assert.Equal(payload, snapshot.Data);
     }
 
     [Fact]
@@ -767,6 +809,53 @@ public sealed class SnapshotTests
             nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure) => SnapshotUpdateStrategy.OverwriteWithoutFailure,
             _ => throw new ArgumentOutOfRangeException(nameof(name)),
         };
+    }
+
+    private static byte[] CreateSingleFrameGif()
+    {
+        return
+        [
+            0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
+            0x01, 0x00, 0x01, 0x00,
+            0x80, 0x01, 0x00,
+            0xFF, 0xFF, 0xFF,
+            0x00, 0x00, 0x00,
+            0x2C,
+            0x00, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x01, 0x00,
+            0x00,
+            0x02,
+            0x02, 0x44, 0x01,
+            0x00,
+            0x3B,
+        ];
+    }
+
+    private static byte[] CreateTwoFrameGif()
+    {
+        return
+        [
+            0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
+            0x01, 0x00, 0x01, 0x00,
+            0x80, 0x01, 0x00,
+            0xFF, 0xFF, 0xFF,
+            0x00, 0x00, 0x00,
+            0x2C,
+            0x00, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x01, 0x00,
+            0x00,
+            0x02,
+            0x02, 0x44, 0x01,
+            0x00,
+            0x2C,
+            0x00, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x01, 0x00,
+            0x00,
+            0x02,
+            0x02, 0x44, 0x01,
+            0x00,
+            0x3B,
+        ];
     }
 
     private sealed class SnapshotTypeSerializer : ISnapshotSerializer

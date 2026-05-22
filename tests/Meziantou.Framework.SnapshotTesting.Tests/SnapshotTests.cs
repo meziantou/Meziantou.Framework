@@ -461,8 +461,8 @@ public sealed class SnapshotTests
         Assert.Equal(1, image.Height);
         Assert.Equal(
         [
-            0xFFFF0000u,
-            0xFF00FF00u,
+            new Argb(0xFFFF0000u),
+            new Argb(0xFF00FF00u),
         ], image.Pixels.ToArray());
     }
 
@@ -485,7 +485,7 @@ public sealed class SnapshotTests
 
         Assert.Equal(1, image.Width);
         Assert.Equal(1, image.Height);
-        Assert.Equal([0xFF112233u], image.Pixels.ToArray());
+        Assert.Equal([new Argb(0xFF112233u)], image.Pixels.ToArray());
     }
 
     [Fact]
@@ -541,6 +541,34 @@ public sealed class SnapshotTests
 
         var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Bmp);
         Assert.False(comparer.Equals(new SnapshotData("bmp", expectedData), new SnapshotData("bmp", actualData)));
+    }
+
+    [Fact]
+    public void ImageComparer_WithSimilarityThreshold_AllowsSmallDifferences()
+    {
+        var expectedData = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF000000u,
+            ],
+            pixelsPerMeter: 2835);
+        var actualData = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010000u,
+            ],
+            pixelsPerMeter: 2835);
+
+        var comparer = new ImageComparer(new ImageComparisonSettings
+        {
+            SimilarityThreshold = 0.95f,
+        });
+
+        Assert.True(comparer.Equals(new SnapshotData("bmp", expectedData), new SnapshotData("bmp", actualData)));
     }
 
     [Fact]

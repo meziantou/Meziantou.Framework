@@ -1,12 +1,13 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
-public sealed class Image : IEquatable<Image>
+internal sealed class Image : IEquatable<Image>
 {
-    private readonly uint[] _pixels;
+    private readonly Argb[] _pixels;
 
-    private Image(int width, int height, uint[] pixels)
+    private Image(int width, int height, Argb[] pixels)
     {
         Width = width;
         Height = height;
@@ -15,7 +16,7 @@ public sealed class Image : IEquatable<Image>
 
     public int Width { get; }
     public int Height { get; }
-    public ReadOnlyMemory<uint> Pixels => _pixels;
+    public ReadOnlyMemory<Argb> Pixels => _pixels;
 
     public static async Task<Image> LoadAsync(string path)
     {
@@ -47,9 +48,12 @@ public sealed class Image : IEquatable<Image>
         if (other is null)
             return false;
 
-        return Width == other.Width &&
-               Height == other.Height &&
-               _pixels.AsSpan().SequenceEqual(other._pixels);
+        if (Width != other.Width || Height != other.Height)
+            return false;
+
+        var expectedPixels = MemoryMarshal.Cast<Argb, uint>(_pixels.AsSpan());
+        var actualPixels = MemoryMarshal.Cast<Argb, uint>(other._pixels.AsSpan());
+        return expectedPixels.SequenceEqual(actualPixels);
     }
 
     public override bool Equals(object? obj) => obj is Image image && Equals(image);
@@ -59,9 +63,10 @@ public sealed class Image : IEquatable<Image>
         var hash = new HashCode();
         hash.Add(Width);
         hash.Add(Height);
-        foreach (var pixel in _pixels)
+        var hashPixelCount = Math.Min(_pixels.Length, 32);
+        for (var i = 0; i < hashPixelCount; i++)
         {
-            hash.Add(pixel);
+            hash.Add(_pixels[i].PackedValue);
         }
 
         return hash.ToHashCode();
@@ -124,7 +129,7 @@ public sealed class Image : IEquatable<Image>
         if (pixelDataOffset + pixelDataSize > data.Length)
             throw new InvalidDataException("The BMP pixel data is truncated.");
 
-        var pixels = new uint[checked(width * absoluteHeight)];
+        var pixels = new Argb[checked(width * absoluteHeight)];
         for (var y = 0; y < absoluteHeight; y++)
         {
             var sourceRow = topDown ? y : absoluteHeight - y - 1;
@@ -137,7 +142,7 @@ public sealed class Image : IEquatable<Image>
                 var g = data[pixelOffset + 1];
                 var r = data[pixelOffset + 2];
                 var a = bitsPerPixel == 32 ? data[pixelOffset + 3] : (byte)0xFF;
-                pixels[destinationOffset + x] = (uint)(a << 24 | r << 16 | g << 8 | b);
+                pixels[destinationOffset + x] = new Argb((uint)(a << 24 | r << 16 | g << 8 | b));
             }
         }
 

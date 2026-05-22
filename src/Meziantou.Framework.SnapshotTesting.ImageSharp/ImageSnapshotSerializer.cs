@@ -4,11 +4,13 @@ namespace Meziantou.Framework.SnapshotTesting.ImageSharp;
 
 internal sealed class ImageSnapshotSerializer : ISnapshotSerializer
 {
-    public bool CanSerialize(SnapshotType type, object? value) => value is Image;
-    public SerializedSnapshot Serialize(SnapshotType type, object? value)
+    public bool TrySerialize(SnapshotType type, object? value, out SerializedSnapshot? result)
     {
         if (value is not Image image)
-            throw new ArgumentException("Value must be an Image.", nameof(value));
+        {
+            result = null;
+            return false;
+        }
 
         using var ms = new MemoryStream();
         if (type == SnapshotType.Png)
@@ -31,7 +33,13 @@ internal sealed class ImageSnapshotSerializer : ISnapshotSerializer
         {
             image.SaveAsWebp(ms);
         }
+        else
+        {
+            result = null;
+            return false;
+        }
 
-        return new SerializedSnapshot([new SnapshotData(type.FileExtension, ms.ToArray())]);
+        result = new SerializedSnapshot([new SnapshotData(type.FileExtension, ms.ToArray())]);
+        return true;
     }
 }

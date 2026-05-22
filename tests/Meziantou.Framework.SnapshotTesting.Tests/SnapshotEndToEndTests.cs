@@ -884,17 +884,22 @@ public sealed class SnapshotEndToEndTests
 
             file sealed class FixedCountSerializer(int count) : ISnapshotSerializer
             {
-                public bool CanSerialize(SnapshotType type, object? value) => type == SnapshotType.Default;
-
-                public SerializedSnapshot Serialize(SnapshotType type, object? value)
+                public bool TrySerialize(SnapshotType type, object? value, out SerializedSnapshot? result)
                 {
-                    var result = new List<SnapshotData>(count);
-                    for (var i = 0; i < count; i++)
+                    if (type != SnapshotType.Default)
                     {
-                        result.Add(new SnapshotData("txt", Encoding.UTF8.GetBytes("value_" + i.ToString(CultureInfo.InvariantCulture))));
+                        result = null;
+                        return false;
                     }
 
-                    return new SerializedSnapshot(result);
+                    var data = new List<SnapshotData>(count);
+                    for (var i = 0; i < count; i++)
+                    {
+                        data.Add(new SnapshotData("txt", Encoding.UTF8.GetBytes("value_" + i.ToString(CultureInfo.InvariantCulture))));
+                    }
+
+                    result = new SerializedSnapshot(data);
+                    return true;
                 }
             }
             """;

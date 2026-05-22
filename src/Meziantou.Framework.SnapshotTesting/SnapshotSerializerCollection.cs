@@ -16,7 +16,7 @@ public sealed class SnapshotSerializerCollection : IEnumerable<ISnapshotSerializ
 
     public int Count => _serializers.Count;
 
-    /// <summary>Adds an untyped serializer. Untyped serializers are matched using <see cref="ISnapshotSerializer.CanSerialize"/>.</summary>
+    /// <summary>Adds an untyped serializer. Untyped serializers are matched using <see cref="ISnapshotSerializer.TrySerialize"/>.</summary>
     public void Add(ISnapshotSerializer serializer)
     {
         ArgumentNullException.ThrowIfNull(serializer);
@@ -26,13 +26,18 @@ public sealed class SnapshotSerializerCollection : IEnumerable<ISnapshotSerializ
     public bool Remove(ISnapshotSerializer serializer) => _serializers.Remove(serializer);
     public void Clear() => _serializers.Clear();
 
-    public ISnapshotSerializer Get(SnapshotType type, object? value)
+    public SerializedSnapshot Serialize(SnapshotType type, object? value)
     {
         for (var i = _serializers.Count - 1; i >= 0; i--)
         {
             var serializer = _serializers[i];
-            if (serializer.CanSerialize(type, value))
-                return serializer;
+            if (!serializer.TrySerialize(type, value, out var result))
+                continue;
+
+            if (result is null)
+                throw new InvalidOperationException($"Serializer '{serializer.GetType()}' returned a null snapshot.");
+
+            return result;
         }
 
         throw new InvalidOperationException($"No suitable serializer found for '{type.DisplayName}' and value type '{value?.GetType()}'.");

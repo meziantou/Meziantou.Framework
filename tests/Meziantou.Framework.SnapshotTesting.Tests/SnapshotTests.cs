@@ -377,9 +377,7 @@ public sealed class SnapshotTests
     {
         var snapshotType = SnapshotType.Png;
         var expectedBytes = "binary-data"u8.ToArray();
-        var serializer = new SnapshotSettings().Serializers.Get(snapshotType, expectedBytes);
-
-        var data = serializer.Serialize(snapshotType, expectedBytes);
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, expectedBytes);
 
         var snapshot = Assert.Single(data.Data);
         Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
@@ -392,9 +390,7 @@ public sealed class SnapshotTests
         var snapshotType = SnapshotType.Png;
         var expectedBytes = "stream-binary-data"u8.ToArray();
         using var stream = new MemoryStream(expectedBytes);
-        var serializer = new SnapshotSettings().Serializers.Get(snapshotType, stream);
-
-        var data = serializer.Serialize(snapshotType, stream);
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, stream);
 
         var snapshot = Assert.Single(data.Data);
         Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
@@ -710,17 +706,22 @@ public sealed class SnapshotTests
 
     private sealed class FixedCountSerializer(int count) : ISnapshotSerializer
     {
-        public bool CanSerialize(SnapshotType type, object? value) => type == SnapshotType.Default;
-
-        public SerializedSnapshot Serialize(SnapshotType type, object? value)
+        public bool TrySerialize(SnapshotType type, object? value, out SerializedSnapshot? result)
         {
-            var result = new List<SnapshotData>(count);
-            for (var i = 0; i < count; i++)
+            if (type != SnapshotType.Default)
             {
-                result.Add(new SnapshotData("txt", Encoding.UTF8.GetBytes("value_" + i.ToString(CultureInfo.InvariantCulture))));
+                result = null;
+                return false;
             }
 
-            return new SerializedSnapshot(result);
+            var data = new List<SnapshotData>(count);
+            for (var i = 0; i < count; i++)
+            {
+                data.Add(new SnapshotData("txt", Encoding.UTF8.GetBytes("value_" + i.ToString(CultureInfo.InvariantCulture))));
+            }
+
+            result = new SerializedSnapshot(data);
+            return true;
         }
     }
 
@@ -770,14 +771,32 @@ public sealed class SnapshotTests
 
     private sealed class SnapshotTypeSerializer : ISnapshotSerializer
     {
-        public bool CanSerialize(SnapshotType type, object? value) => type == SnapshotType.Png;
-        public SerializedSnapshot Serialize(SnapshotType type, object? value) => new([new SnapshotData("txt", Encoding.UTF8.GetBytes(type.Type))]);
+        public bool TrySerialize(SnapshotType type, object? value, out SerializedSnapshot? result)
+        {
+            if (type != SnapshotType.Png)
+            {
+                result = null;
+                return false;
+            }
+
+            result = new SerializedSnapshot([new SnapshotData("txt", Encoding.UTF8.GetBytes(type.Type))]);
+            return true;
+        }
     }
 
     private sealed class FixedValueSerializer(string value) : ISnapshotSerializer
     {
-        public bool CanSerialize(SnapshotType type, object? value) => type == SnapshotType.Default;
-        public SerializedSnapshot Serialize(SnapshotType type, object? value_) => new([new SnapshotData("txt", Encoding.UTF8.GetBytes(value))]);
+        public bool TrySerialize(SnapshotType type, object? value_, out SerializedSnapshot? result)
+        {
+            if (type != SnapshotType.Default)
+            {
+                result = null;
+                return false;
+            }
+
+            result = new SerializedSnapshot([new SnapshotData("txt", Encoding.UTF8.GetBytes(value))]);
+            return true;
+        }
     }
 
     private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder

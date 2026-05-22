@@ -1,8 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Meziantou.Framework.SnapshotTesting;
 
 public interface ISnapshotSerializer
 {
-    bool CanSerialize(SnapshotType type, object? value);
-
-    SerializedSnapshot Serialize(SnapshotType type, object? value);
+    bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result);
 }

@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 
@@ -513,11 +515,58 @@ public sealed class SnapshotTests
         ], image.Pixels.ToArray());
     }
 
+    [Theory]
+    [InlineData("grayscale-baseline")]
+    [InlineData("ycbcr-444-baseline")]
+    [InlineData("ycbcr-420-baseline")]
+    public async Task Image_LoadAsync_JpegAndConvertedPng_AreIdentical(string scenario)
+    {
+        var jpegPath = GetImageFixturePath(scenario + ".jpg");
+        var pngPath = GetImageFixturePath(scenario + ".from-jpg.png");
+
+        var jpegImage = await Image.LoadAsync(jpegPath);
+        var pngImage = await Image.LoadAsync(pngPath);
+
+        Assert.Equal(jpegImage.Width, pngImage.Width);
+        Assert.Equal(jpegImage.Height, pngImage.Height);
+        Assert.Equal(jpegImage.Pixels.ToArray(), pngImage.Pixels.ToArray());
+        Assert.Equal(jpegImage, pngImage);
+    }
+
+    [Theory]
+    [InlineData("bmp-rgb24-baseline")]
+    [InlineData("bmp-rgba32-baseline")]
+    public async Task Image_LoadAsync_BmpAndConvertedPng_AreIdentical(string scenario)
+    {
+        var bmpPath = GetImageFixturePath(scenario + ".bmp");
+        var pngPath = GetImageFixturePath(scenario + ".from-bmp.png");
+
+        var bmpImage = await Image.LoadAsync(bmpPath);
+        var pngImage = await Image.LoadAsync(pngPath);
+
+        Assert.Equal(bmpImage.Width, pngImage.Width);
+        Assert.Equal(bmpImage.Height, pngImage.Height);
+        Assert.Equal(bmpImage.Pixels.ToArray(), pngImage.Pixels.ToArray());
+        Assert.Equal(bmpImage, pngImage);
+    }
+
+    [Fact]
+    public async Task Image_LoadAsync_ThrowsWhenJpegIsProgressive()
+    {
+        await Assert.ThrowsAsync<NotSupportedException>(() => Image.LoadAsync(new MemoryStream(CreateJpegProgressive())));
+    }
+
+    [Fact]
+    public async Task Image_LoadAsync_ThrowsWhenJpegUsesCmyk()
+    {
+        await Assert.ThrowsAsync<NotSupportedException>(() => Image.LoadAsync(new MemoryStream(CreateJpegCmyk())));
+    }
+
     [Fact]
     public async Task Image_LoadAsync_ThrowsWhenFormatIsNotSupported()
     {
         var ex = await Assert.ThrowsAsync<NotSupportedException>(() => Image.LoadAsync(new MemoryStream("not-a-bmp"u8.ToArray())));
-        Assert.Contains("Only BMP and PNG are currently supported.", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Only BMP, PNG, and JPEG are currently supported.", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -620,6 +669,42 @@ public sealed class SnapshotTests
         settings.Comparers.AddImageComparer();
         var comparer = settings.Comparers.Get(SnapshotType.Png);
         Assert.False(comparer.Equals(new SnapshotData("png", expectedData), new SnapshotData("png", actualData)));
+    }
+
+    [Fact]
+    public void AddImageComparer_ComparesJpegSnapshotsByPixels()
+    {
+        var expectedData = ReadImageFixture("ycbcr-420-baseline.jpg");
+        var actualData = AddJpegCommentSegment(expectedData, "metadata-only-difference");
+
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Jpeg);
+        Assert.True(comparer.Equals(new SnapshotData("jpeg", expectedData), new SnapshotData("jpeg", actualData)));
+    }
+
+    [Fact]
+    public void AddImageComparer_RegistersJpgAlias()
+    {
+        var expectedData = ReadImageFixture("ycbcr-420-baseline.jpg");
+        var actualData = AddJpegCommentSegment(expectedData, "jpg-alias");
+
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Create("jpg"));
+        Assert.True(comparer.Equals(new SnapshotData("jpg", expectedData), new SnapshotData("jpg", actualData)));
+    }
+
+    [Fact]
+    public void AddImageComparer_DetectsJpegPixelDifferences()
+    {
+        var expectedData = ReadImageFixture("ycbcr-420-baseline.jpg");
+        var actualData = ReadImageFixture("ycbcr-420-different.jpg");
+
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Jpeg);
+        Assert.False(comparer.Equals(new SnapshotData("jpeg", expectedData), new SnapshotData("jpeg", actualData)));
     }
 
     [Fact]
@@ -1006,6 +1091,53 @@ public sealed class SnapshotTests
     {
         var path = directory / "snapshot.verified.txt";
         return File.ReadAllLines(path);
+    }
+
+    private static FullPath GetImageFixturePath(string fileName, [CallerFilePath] string sourceFilePath = "")
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        var testFilePath = FullPath.FromPath(sourceFilePath);
+        return testFilePath.Parent / "TestAssets" / "images" / fileName;
+    }
+
+    private static byte[] ReadImageFixture(string fileName, [CallerFilePath] string sourceFilePath = "")
+    {
+        var path = GetImageFixturePath(fileName, sourceFilePath);
+        return File.ReadAllBytes(path);
+    }
+
+    private static byte[] CreateJpegProgressive()
+    {
+        return Convert.FromBase64String("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIBAQEBAQIBAQECAgICAgQDAgICAgUEBAMEBgUGBgYFBgYGBwkIBgcJBwYGCAsICQoKCgoKBggLDAsKDAkKCgr/2wBDAQICAgICAgUDAwUKBwYHCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgr/wgARCAABAAIDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUAQEAAAAAAAAAAAAAAAAAAAAI/9oADAMBAAIQAxAAAAGyC4Rv/8QAFRABAQAAAAAAAAAAAAAAAAAABTX/2gAIAQEAAQUCGj//xAAbEQAABwEAAAAAAAAAAAAAAAAAAQMEBjZzsv/aAAgBAwEBPwGUWZ9sp2Y//8QAGREAAQUAAAAAAAAAAAAAAAAAAAECAzNx/9oACAECAQE/AZ7nap//xAAYEAACAwAAAAAAAAAAAAAAAAAAAgR0sv/aAAgBAQAGPwKJWTJ//8QAFhAAAwAAAAAAAAAAAAAAAAAAAFHw/9oACAEBAAE/IaKH/9oADAMBAAIAAwAAABDz/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPxBF/8QAFxEAAwEAAAAAAAAAAAAAAAAAAAFR8P/aAAgBAgEBPxDMrP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAT8Qbf/Z");
+    }
+
+    private static byte[] CreateJpegCmyk()
+    {
+        return Convert.FromBase64String("/9j/7gAOQWRvYmUAZAAAAAAA/9sAQwACAQEBAQECAQEBAgICAgIEAwICAgIFBAQDBAYFBgYGBQYGBgcJCAYHCQcGBggLCAkKCgoKCgYICwwLCgwJCgoK/8AAFAgAAQABBEMRAE0RAFkRAEsRAP/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/aAA4EQwBNAFkASwAAPwD9/K/n/r+f+v38r//Z");
+    }
+
+    private static byte[] AddJpegCommentSegment(byte[] jpegData, string comment)
+    {
+        ArgumentNullException.ThrowIfNull(jpegData);
+        ArgumentNullException.ThrowIfNull(comment);
+
+        if (jpegData.Length < 2 || jpegData[0] != 0xFF || jpegData[1] != 0xD8)
+            throw new ArgumentException("Expected JPEG data", nameof(jpegData));
+
+        var commentData = Encoding.ASCII.GetBytes(comment);
+        var segmentLength = checked(commentData.Length + 2);
+        if (segmentLength > ushort.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(comment));
+
+        var result = new byte[checked(jpegData.Length + 4 + commentData.Length)];
+        result[0] = 0xFF;
+        result[1] = 0xD8;
+        result[2] = 0xFF;
+        result[3] = 0xFE;
+        BinaryPrimitives.WriteUInt16BigEndian(result.AsSpan(4, 2), (ushort)segmentLength);
+        commentData.CopyTo(result.AsSpan(6, commentData.Length));
+        jpegData.AsSpan(2).CopyTo(result.AsSpan(6 + commentData.Length));
+        return result;
     }
 
     private static byte[] CreateBmp24(int width, int height, IReadOnlyList<uint> pixels, int pixelsPerMeter)

@@ -918,6 +918,30 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
+    public sealed class MultiValueDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyDictionary<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>, System.Collections.IEnumerable
+    {
+        public System.Collections.Generic.IEnumerable<TKey> Keys { get => throw null; }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.IReadOnlyCollection<TValue>> Values { get => throw null; }
+        public System.Collections.Generic.IReadOnlyCollection<TValue> this[TKey key] { get => throw null; }
+        public int Count { get => throw null; }
+        public MultiValueDictionary(int capacity) { }
+        public MultiValueDictionary(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public MultiValueDictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public MultiValueDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> enumerable) { }
+        public MultiValueDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> enumerable, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public void Add(TKey key, TValue value) { }
+        public void AddRange(TKey key, System.Collections.Generic.IEnumerable<TValue> values) { }
+        public bool Remove(TKey key) => throw null;
+        public bool Remove(TKey key, TValue value) => throw null;
+        public bool Contains(TKey key, TValue value) => throw null;
+        public bool ContainsValue(TValue value) => throw null;
+        public void Clear() { }
+        public bool ContainsKey(TKey key) => throw null;
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out System.Collections.Generic.IReadOnlyCollection<TValue> value) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
     public sealed class SortedList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }

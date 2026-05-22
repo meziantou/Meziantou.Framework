@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 
@@ -441,6 +442,108 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public async Task Image_LoadAsync_Stream_DecodesBmpPixels()
+    {
+        var imageData = CreateBmp24(
+            width: 2,
+            height: 1,
+            pixels:
+            [
+                0xFFFF0000u,
+                0xFF00FF00u,
+            ],
+            pixelsPerMeter: 2835);
+
+        using var stream = new MemoryStream(imageData);
+        var image = await Image.LoadAsync(stream);
+
+        Assert.Equal(2, image.Width);
+        Assert.Equal(1, image.Height);
+        Assert.Equal(
+        [
+            0xFFFF0000u,
+            0xFF00FF00u,
+        ], image.Pixels.ToArray());
+    }
+
+    [Fact]
+    public async Task Image_LoadAsync_Path_DecodesBmpPixels()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "sample.bmp";
+        var imageData = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF112233u,
+            ],
+            pixelsPerMeter: 2835);
+
+        File.WriteAllBytes(path, imageData);
+        var image = await Image.LoadAsync(path.Value);
+
+        Assert.Equal(1, image.Width);
+        Assert.Equal(1, image.Height);
+        Assert.Equal([0xFF112233u], image.Pixels.ToArray());
+    }
+
+    [Fact]
+    public async Task Image_LoadAsync_ThrowsWhenFormatIsNotSupported()
+    {
+        var ex = await Assert.ThrowsAsync<NotSupportedException>(() => Image.LoadAsync(new MemoryStream("not-a-bmp"u8.ToArray())));
+        Assert.Contains("Only BMP is currently supported.", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DefaultComparer_ComparesBmpSnapshotsByPixels()
+    {
+        var expectedData = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010203u,
+            ],
+            pixelsPerMeter: 2835);
+        var actualData = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010203u,
+            ],
+            pixelsPerMeter: 3780);
+
+        var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Bmp);
+        Assert.True(comparer.Equals(new SnapshotData("bmp", expectedData), new SnapshotData("bmp", actualData)));
+    }
+
+    [Fact]
+    public void DefaultComparer_DetectsBmpPixelDifferences()
+    {
+        var expectedData = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF010203u,
+            ],
+            pixelsPerMeter: 2835);
+        var actualData = CreateBmp24(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF040506u,
+            ],
+            pixelsPerMeter: 2835);
+
+        var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Bmp);
+        Assert.False(comparer.Equals(new SnapshotData("bmp", expectedData), new SnapshotData("bmp", actualData)));
+    }
+
+    [Fact]
     public void Validate_CreatesActualFileWhenSnapshotChanged()
     {
         using var directory = TemporaryDirectory.Create();
@@ -796,6 +899,67 @@ public sealed class SnapshotTests
     {
         var path = directory / "snapshot.verified.txt";
         return File.ReadAllLines(path);
+    }
+
+    private static byte[] CreateBmp24(int width, int height, IReadOnlyList<uint> pixels, int pixelsPerMeter)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+
+        if (pixels.Count != checked(width * height))
+            throw new ArgumentOutOfRangeException(nameof(pixels));
+
+        const int FileHeaderSize = 14;
+        const int InfoHeaderSize = 40;
+        var rowSizeWithoutPadding = checked(width * 3);
+        var rowStride = (rowSizeWithoutPadding + 3) & ~3;
+        var pixelDataSize = checked(rowStride * height);
+        var data = new byte[FileHeaderSize + InfoHeaderSize + pixelDataSize];
+
+        data[0] = (byte)'B';
+        data[1] = (byte)'M';
+        WriteUInt32LittleEndian(data, 2, (uint)data.Length);
+        WriteUInt32LittleEndian(data, 10, FileHeaderSize + InfoHeaderSize);
+        WriteUInt32LittleEndian(data, 14, InfoHeaderSize);
+        WriteInt32LittleEndian(data, 18, width);
+        WriteInt32LittleEndian(data, 22, height);
+        WriteUInt16LittleEndian(data, 26, 1);
+        WriteUInt16LittleEndian(data, 28, 24);
+        WriteUInt32LittleEndian(data, 30, 0);
+        WriteUInt32LittleEndian(data, 34, (uint)pixelDataSize);
+        WriteInt32LittleEndian(data, 38, pixelsPerMeter);
+        WriteInt32LittleEndian(data, 42, pixelsPerMeter);
+
+        for (var y = 0; y < height; y++)
+        {
+            var sourceRow = height - y - 1;
+            var sourceOffset = sourceRow * width;
+            var destinationOffset = FileHeaderSize + InfoHeaderSize + y * rowStride;
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = pixels[sourceOffset + x];
+                data[destinationOffset + x * 3] = (byte)(pixel & 0xFF);
+                data[destinationOffset + x * 3 + 1] = (byte)((pixel >> 8) & 0xFF);
+                data[destinationOffset + x * 3 + 2] = (byte)((pixel >> 16) & 0xFF);
+            }
+        }
+
+        return data;
+    }
+
+    private static void WriteUInt32LittleEndian(byte[] data, int offset, uint value)
+    {
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset, 4), value);
+    }
+
+    private static void WriteInt32LittleEndian(byte[] data, int offset, int value)
+    {
+        BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset, 4), value);
+    }
+
+    private static void WriteUInt16LittleEndian(byte[] data, int offset, ushort value)
+    {
+        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(offset, 2), value);
     }
 
     private static SnapshotUpdateStrategy GetSnapshotUpdateStrategy(string name)

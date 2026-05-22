@@ -14,6 +14,8 @@ public sealed class SnapshotTypeTests
     {
         Assert.Equal(SnapshotType.Default, SnapshotType.Create("txt"));
         Assert.Equal(SnapshotType.Png, SnapshotType.Create("png"));
+        Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("jpeg"));
+        Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("jpg"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create("gif"));
     }
 
@@ -22,6 +24,8 @@ public sealed class SnapshotTypeTests
     {
         Assert.Equal(SnapshotType.Default, SnapshotType.Create("TXT"));
         Assert.Equal(SnapshotType.Png, SnapshotType.Create("PNG"));
+        Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("JPEG"));
+        Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("JPG"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create("GIF"));
     }
 
@@ -30,6 +34,8 @@ public sealed class SnapshotTypeTests
     {
         Assert.Equal(SnapshotType.Default, SnapshotType.Create(".txt"));
         Assert.Equal(SnapshotType.Png, SnapshotType.Create(".png"));
+        Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create(".jpeg"));
+        Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create(".jpg"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create(".gif"));
     }
 

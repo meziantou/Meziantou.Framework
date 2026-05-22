@@ -103,7 +103,7 @@ Snapshot.Validate(value, SnapshotType.Default, settings);
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
 GIF frame extraction is opt-in via `Serializers.AddGifSerializer()`: when enabled and `SnapshotType.Gif` is used with a valid GIF `byte[]`, each frame is serialized as a separate `.gif` snapshot.
-BMP/PNG image comparison is opt-in via `Comparers.AddImageComparer()`. When enabled, `SnapshotType.Bmp` and `SnapshotType.Png` snapshots are compared by decoded pixel content (ARGB), so format metadata differences do not trigger snapshot mismatches.
+BMP/PNG/JPEG image comparison is opt-in via `Comparers.AddImageComparer()`. When enabled, `SnapshotType.Bmp`, `SnapshotType.Png`, and `SnapshotType.Jpeg` (including `.jpg` aliases) snapshots are compared by decoded pixel content (ARGB), so format metadata differences do not trigger snapshot mismatches.
 To allow small visual differences, configure the image comparer with an SSIM threshold:
 
 ```csharp
@@ -113,6 +113,25 @@ settings.Comparers.AddImageComparer(new ImageComparisonSettings
     SimilarityThreshold = 0.95f,
 });
 ```
+
+### JPEG/JPG parsing limitations
+
+JPEG support in the core package is intentionally subset-based and dependency-free.
+
+Supported:
+
+- 8-bit baseline JPEG decoding
+- Grayscale and YCbCr color encodings
+- 4:4:4, 4:2:2, and 4:2:0 sampling
+- Restart markers (DRI/RST)
+
+Unsupported (throws `NotSupportedException`):
+
+- Progressive JPEG and arithmetic-coded JPEG
+- Non-8-bit precision JPEG
+- CMYK/YCCK or Adobe transform 0/2 workflows
+- JPEG files with ICC profiles
+- JPEG files with EXIF orientation values requiring auto-rotation
 
 ## Scrubbing
 

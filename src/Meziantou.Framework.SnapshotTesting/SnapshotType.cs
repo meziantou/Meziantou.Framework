@@ -19,6 +19,7 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         ["svg"] = Svg,
         ["bmp"] = Bmp,
         ["jpeg"] = Jpeg,
+        ["jpg"] = Jpeg,
         ["tiff"] = Tiff,
         ["webp"] = Webp,
         ["gif"] = Gif,

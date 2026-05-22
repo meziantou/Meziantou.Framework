@@ -11,6 +11,8 @@ public static class SnapshotComparerCollectionImageComparerExtensions
             var comparer = settings is null ? ImageComparer.Instance : new ImageComparer(settings);
             comparers.Set(SnapshotType.Bmp, comparer);
             comparers.Set(SnapshotType.Png, comparer);
+            comparers.Set(SnapshotType.Jpeg, comparer);
+            comparers.Set(SnapshotType.Create("jpg"), comparer);
         }
     }
 }

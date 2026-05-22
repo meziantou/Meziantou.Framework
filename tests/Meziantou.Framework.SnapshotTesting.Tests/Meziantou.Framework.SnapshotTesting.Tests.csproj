@@ -12,4 +12,8 @@
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Compile Include="../../common/TargetFrameworkHelper.cs" Link="TargetFrameworkHelper.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="TestAssets/images/*.*" />
+  </ItemGroup>
 </Project>

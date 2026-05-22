@@ -1,23 +1,41 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
-using System.Runtime.CompilerServices;
+using System.Reflection;
 using System.Text;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
 internal static class ImageTestData
 {
-    public static FullPath GetImageFixturePath(string fileName, [CallerFilePath] string sourceFilePath = "")
+    private static readonly string ResourcePrefix = typeof(ImageTestData).Namespace + ".TestAssets.images.";
+    private static readonly Assembly Assembly = typeof(ImageTestData).Assembly;
+
+    public static byte[] ReadImageFixture(string fileName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-        var testFilePath = FullPath.FromPath(sourceFilePath);
-        return testFilePath.Parent / "TestAssets" / "images" / fileName;
+
+        using var stream = OpenImageFixtureStream(fileName);
+        using var memoryStream = new MemoryStream();
+        stream.CopyTo(memoryStream);
+        return memoryStream.ToArray();
     }
 
-    public static byte[] ReadImageFixture(string fileName, [CallerFilePath] string sourceFilePath = "")
+    public static async Task<Image> LoadImageFixtureAsync(string fileName)
     {
-        var path = GetImageFixturePath(fileName, sourceFilePath);
-        return File.ReadAllBytes(path);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
+        await using var stream = OpenImageFixtureStream(fileName);
+        return await Image.LoadAsync(stream).ConfigureAwait(false);
+    }
+
+    private static Stream OpenImageFixtureStream(string fileName)
+    {
+        var resourceName = ResourcePrefix + fileName;
+        var stream = Assembly.GetManifestResourceStream(resourceName);
+        if (stream is null)
+            throw new InvalidOperationException($"Embedded test fixture '{fileName}' was not found.");
+
+        return stream;
     }
 
     public static byte[] CreateJpegProgressive()

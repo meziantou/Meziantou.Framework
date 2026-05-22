@@ -54,11 +54,8 @@ public sealed class BmpImageLoaderTests
     [InlineData("bmp-rgba32-baseline")]
     public async Task Image_LoadAsync_BmpAndConvertedPng_AreIdentical(string scenario)
     {
-        var bmpPath = ImageTestData.GetImageFixturePath(scenario + ".bmp");
-        var pngPath = ImageTestData.GetImageFixturePath(scenario + ".from-bmp.png");
-
-        var bmpImage = await Image.LoadAsync(bmpPath);
-        var pngImage = await Image.LoadAsync(pngPath);
+        var bmpImage = await ImageTestData.LoadImageFixtureAsync(scenario + ".bmp");
+        var pngImage = await ImageTestData.LoadImageFixtureAsync(scenario + ".from-bmp.png");
 
         Assert.Equal(bmpImage.Width, pngImage.Width);
         Assert.Equal(bmpImage.Height, pngImage.Height);

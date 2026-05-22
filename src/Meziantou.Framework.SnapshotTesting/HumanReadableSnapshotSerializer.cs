@@ -38,11 +38,9 @@ internal sealed class HumanReadableSnapshotSerializer : ISnapshotSerializer
         Options = options;
     }
 
-    public SerializedSnapshot Serialize(SnapshotType type, object? value)
+    public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
     {
-        return new SerializedSnapshot([new SnapshotData(type.FileExtension, Encoding.UTF8.GetBytes(HumanReadableSerializer.Serialize(value, Options)))]);
+        result = new SerializedSnapshot([new SnapshotData(type.FileExtension, Encoding.UTF8.GetBytes(HumanReadableSerializer.Serialize(value, Options)))]);
+        return true;
     }
-
-    public bool CanSerialize(SnapshotType type, object? value) => true;
 }
-

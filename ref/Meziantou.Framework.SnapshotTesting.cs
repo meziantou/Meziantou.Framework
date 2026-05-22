@@ -33,8 +33,7 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public interface ISnapshotSerializer
     {
-        bool CanSerialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value);
-        Meziantou.Framework.SnapshotTesting.SerializedSnapshot Serialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value);
+        bool TrySerialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.SnapshotTesting.SerializedSnapshot? result);
     }
 
     public abstract class MergeTool
@@ -193,7 +192,7 @@ namespace Meziantou.Framework.SnapshotTesting
         public void Add(Meziantou.Framework.SnapshotTesting.ISnapshotSerializer serializer) { }
         public bool Remove(Meziantou.Framework.SnapshotTesting.ISnapshotSerializer serializer) => throw null;
         public void Clear() { }
-        public Meziantou.Framework.SnapshotTesting.ISnapshotSerializer Get(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value) => throw null;
+        public Meziantou.Framework.SnapshotTesting.SerializedSnapshot Serialize(Meziantou.Framework.SnapshotTesting.SnapshotType type, object? value) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.SnapshotTesting.ISnapshotSerializer> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }

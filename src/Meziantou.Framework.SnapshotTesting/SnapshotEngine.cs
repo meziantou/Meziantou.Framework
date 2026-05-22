@@ -55,8 +55,7 @@ internal static class SnapshotEngine
 
     private static IReadOnlyList<SnapshotData> Serialize(SnapshotSettings settings, SnapshotType type, object? value)
     {
-        var serializer = settings.Serializers.Get(type, value);
-        var data = serializer.Serialize(type, value).Data;
+        var data = settings.Serializers.Serialize(type, value).Data;
         if (settings.Scrubbers.Count == 0)
             return data;
 

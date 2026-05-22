@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Collections;
 
@@ -49,26 +50,14 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
 
     public void Add(TKey key, TValue value)
     {
-        if (!_dictionary.TryGetValue(key, out var collection))
-        {
-            collection = new();
-            _dictionary.Add(key, collection);
-        }
-
-        collection.Add(value);
+        GetOrAddCollection(key).Add(value);
     }
 
     public void AddRange(TKey key, IEnumerable<TValue> values)
     {
         ArgumentNullException.ThrowIfNull(values);
 
-        if (!_dictionary.TryGetValue(key, out var collection))
-        {
-            collection = new();
-            _dictionary.Add(key, collection);
-        }
-
-        collection.AddRange(values);
+        GetOrAddCollection(key).AddRange(values);
     }
 
     public bool Remove(TKey key)
@@ -149,6 +138,13 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    private ValueCollection GetOrAddCollection(TKey key)
+    {
+        ref var collection = ref CollectionsMarshal.GetValueRefOrAddDefault(_dictionary, key, out _);
+        collection ??= new();
+        return collection;
     }
 
     private sealed class ValueCollection : IReadOnlyCollection<TValue>

@@ -226,7 +226,7 @@ internal static class SnapshotEngine
         for (var index = 0; index < serialized.Count; index++)
         {
             var snapshotData = serialized[index];
-            var extension = string.IsNullOrEmpty(type.Type) ? snapshotData.Extension : type.Type;
+            var extension = ResolveSnapshotExtension(type, snapshotData);
             var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
                 callerContext.SourceFilePath,
                 callerContext.ContainingTypeName,
@@ -243,6 +243,15 @@ internal static class SnapshotEngine
         }
 
         return result;
+    }
+
+    private static string? ResolveSnapshotExtension(SnapshotType type, SnapshotData snapshotData)
+    {
+        var extension = snapshotData.Extension;
+        if (string.IsNullOrWhiteSpace(extension))
+            return type.Type;
+
+        return extension.TrimStart('.');
     }
 
     private static IReadOnlyCollection<FullPath> DiscoverExpectedFilePaths(List<SnapshotFile> actualFiles)

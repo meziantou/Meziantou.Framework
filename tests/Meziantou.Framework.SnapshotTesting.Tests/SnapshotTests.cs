@@ -341,6 +341,26 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public void Validate_UsesSerializerProvidedExtension_WhenSet()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
+            SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension),
+        };
+
+        settings.Serializers.Add(new FixedExtensionSerializer(".png"));
+        Snapshot.Validate("sample", SnapshotType.Gif, settings);
+
+        var filePath = directory / "snapshot_0.verified.png";
+        Assert.True(File.Exists(filePath));
+        Assert.Equal("sample", File.ReadAllText(filePath));
+    }
+
+    [Fact]
     public void SnapshotType_DefaultsExposeOptionalMetadata()
     {
         Assert.Equal("text/plain", SnapshotType.Default.MimeType);
@@ -351,6 +371,8 @@ public sealed class SnapshotTests
         Assert.Equal("SVG image", SnapshotType.Svg.DisplayName);
         Assert.Equal("image/gif", SnapshotType.Gif.MimeType);
         Assert.Equal("GIF image", SnapshotType.Gif.DisplayName);
+        Assert.Equal("image/x-icon", SnapshotType.Ico.MimeType);
+        Assert.Equal("ICO image", SnapshotType.Ico.DisplayName);
     }
 
     [Fact]
@@ -415,7 +437,19 @@ public sealed class SnapshotTests
     }
 
     [Fact]
-    public void AddGifSerializer_SerializesGifByteArrayAsOneSnapshotPerFrame()
+    public void DefaultSerializer_HandlesIcoByteArrayAsSingleBinarySnapshot()
+    {
+        var snapshotType = SnapshotType.Ico;
+        var expectedBytes = CreateTwoImageIco();
+        var data = new SnapshotSettings().Serializers.Serialize(snapshotType, expectedBytes);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
+        Assert.Equal(expectedBytes, snapshot.Data);
+    }
+
+    [Fact]
+    public void AddGifSerializer_SerializesGifByteArrayAsOnePngSnapshotPerFrame()
     {
         var snapshotType = SnapshotType.Gif;
         var settings = new SnapshotSettings();
@@ -423,9 +457,11 @@ public sealed class SnapshotTests
         var data = settings.Serializers.Serialize(snapshotType, CreateTwoFrameGif());
 
         Assert.Equal(2, data.Data.Count);
-        Assert.All(data.Data, snapshot => Assert.Equal(snapshotType.FileExtension, snapshot.Extension));
-        Assert.Equal(CreateSingleFrameGif(), data.Data[0].Data);
-        Assert.Equal(CreateSingleFrameGif(), data.Data[1].Data);
+        Assert.All(data.Data, snapshot => Assert.Equal(".png", snapshot.Extension));
+        Assert.All(data.Data, static snapshot => Assert.True(PngImageLoader.IsPng(snapshot.Data)));
+        var firstFrame = Image.Load(data.Data[0].Data);
+        var secondFrame = Image.Load(data.Data[1].Data);
+        Assert.Equal(firstFrame, secondFrame);
     }
 
     [Fact]
@@ -435,6 +471,36 @@ public sealed class SnapshotTests
         var payload = "not-a-gif"u8.ToArray();
         var settings = new SnapshotSettings();
         settings.Serializers.AddGifSerializer();
+        var data = settings.Serializers.Serialize(snapshotType, payload);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
+        Assert.Equal(payload, snapshot.Data);
+    }
+
+    [Fact]
+    public void AddIcoSerializer_SerializesIcoByteArrayAsOnePngSnapshotPerImage()
+    {
+        var snapshotType = SnapshotType.Ico;
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddIcoSerializer();
+        var data = settings.Serializers.Serialize(snapshotType, CreateTwoImageIco());
+
+        Assert.Equal(2, data.Data.Count);
+        Assert.All(data.Data, snapshot => Assert.Equal(".png", snapshot.Extension));
+        Assert.All(data.Data, static snapshot => Assert.True(PngImageLoader.IsPng(snapshot.Data)));
+        var firstFrame = Image.Load(data.Data[0].Data);
+        var secondFrame = Image.Load(data.Data[1].Data);
+        Assert.NotEqual(firstFrame, secondFrame);
+    }
+
+    [Fact]
+    public void AddIcoSerializer_FallsBackToBinarySerializerWhenPayloadIsNotIco()
+    {
+        var snapshotType = SnapshotType.Ico;
+        var payload = "not-an-ico"u8.ToArray();
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddIcoSerializer();
         var data = settings.Serializers.Serialize(snapshotType, payload);
 
         var snapshot = Assert.Single(data.Data);
@@ -1226,6 +1292,50 @@ public sealed class SnapshotTests
         ];
     }
 
+    private static byte[] CreateTwoImageIco()
+    {
+        var firstImage = CreatePngRgba32(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFFFF0000u,
+            ]);
+        var secondImage = CreatePngRgba32(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF00FF00u,
+            ]);
+
+        var firstImageOffset = 6 + 16 + 16;
+        var secondImageOffset = firstImageOffset + firstImage.Length;
+        var data = new byte[secondImageOffset + secondImage.Length];
+        WriteUInt16LittleEndian(data, 0, 0);
+        WriteUInt16LittleEndian(data, 2, 1);
+        WriteUInt16LittleEndian(data, 4, 2);
+
+        WriteIcoDirectoryEntry(data, 6, width: 1, height: 1, bitsPerPixel: 32, firstImage.Length, firstImageOffset);
+        WriteIcoDirectoryEntry(data, 22, width: 1, height: 1, bitsPerPixel: 32, secondImage.Length, secondImageOffset);
+
+        Buffer.BlockCopy(firstImage, 0, data, firstImageOffset, firstImage.Length);
+        Buffer.BlockCopy(secondImage, 0, data, secondImageOffset, secondImage.Length);
+        return data;
+    }
+
+    private static void WriteIcoDirectoryEntry(byte[] data, int offset, byte width, byte height, ushort bitsPerPixel, int imageSize, int imageOffset)
+    {
+        data[offset] = width;
+        data[offset + 1] = height;
+        data[offset + 2] = 0;
+        data[offset + 3] = 0;
+        WriteUInt16LittleEndian(data, offset + 4, 1);
+        WriteUInt16LittleEndian(data, offset + 6, bitsPerPixel);
+        WriteUInt32LittleEndian(data, offset + 8, (uint)imageSize);
+        WriteUInt32LittleEndian(data, offset + 12, (uint)imageOffset);
+    }
+
     private sealed class SnapshotTypeSerializer : ISnapshotSerializer
     {
         public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
@@ -1236,7 +1346,16 @@ public sealed class SnapshotTests
                 return false;
             }
 
-            result = new SerializedSnapshot([new SnapshotData("txt", Encoding.UTF8.GetBytes(type.Type))]);
+            result = new SerializedSnapshot([new SnapshotData(null, Encoding.UTF8.GetBytes(type.Type))]);
+            return true;
+        }
+    }
+
+    private sealed class FixedExtensionSerializer(string extension) : ISnapshotSerializer
+    {
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+        {
+            result = new SerializedSnapshot([new SnapshotData(extension, Encoding.UTF8.GetBytes("sample"))]);
             return true;
         }
     }

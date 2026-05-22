@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Buffers.Binary;
 using System.Globalization;
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using TestUtilities;
@@ -499,7 +500,7 @@ public sealed class SnapshotEndToEndTests
     }
 
     [Fact]
-    public async Task Validate_EndToEnd_SerializesGifFrames_WhenGifSerializerIsEnabled()
+    public async Task Validate_EndToEnd_SerializesGifFramesAsPng_WhenGifSerializerIsEnabled()
     {
         var payload = CreateTwoFrameGif();
         var sourcePayload = ToByteArraySource(payload);
@@ -520,11 +521,44 @@ public sealed class SnapshotEndToEndTests
 
         Assert.Equal(
         [
-            "__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.gif",
-            "__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.gif",
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.png",
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.png",
         ], snapshotFiles.Select(static item => item.RelativePath));
-        Assert.Equal(CreateSingleFrameGif(), snapshotFiles[0].Content);
-        Assert.Equal(CreateSingleFrameGif(), snapshotFiles[1].Content);
+        Assert.All(snapshotFiles, static snapshotFile => Assert.True(PngImageLoader.IsPng(snapshotFile.Content)));
+        var firstFrame = Image.Load(snapshotFiles[0].Content);
+        var secondFrame = Image.Load(snapshotFiles[1].Content);
+        Assert.Equal(firstFrame, secondFrame);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_SerializesIcoImagesAsPng_WhenIcoSerializerIsEnabled()
+    {
+        var payload = CreateTwoImageIco();
+        var sourcePayload = ToByteArraySource(payload);
+        var snapshotFiles = await AssertSnapshot(
+            $$"""
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var payload = new byte[] { {{sourcePayload}} };
+                    var settings = SnapshotTestUtilities.CreateSuccessSettings();
+                    settings.Serializers.AddIcoSerializer();
+                    Snapshot.Validate(payload, SnapshotType.Ico, settings);
+                }
+            }
+            """);
+
+        Assert.Equal(
+        [
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.png",
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.png",
+        ], snapshotFiles.Select(static item => item.RelativePath));
+        Assert.All(snapshotFiles, static snapshotFile => Assert.True(PngImageLoader.IsPng(snapshotFile.Content)));
+        var firstFrame = Image.Load(snapshotFiles[0].Content);
+        var secondFrame = Image.Load(snapshotFiles[1].Content);
+        Assert.NotEqual(firstFrame, secondFrame);
     }
 
     [Fact]
@@ -1037,6 +1071,94 @@ public sealed class SnapshotEndToEndTests
         return data;
     }
 
+    private static byte[] CreatePngRgba32(int width, int height, IReadOnlyList<uint> pixels)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+
+        if (pixels.Count != checked(width * height))
+            throw new ArgumentOutOfRangeException(nameof(pixels));
+
+        var rowStride = checked(width * 4 + 1);
+        var imageData = new byte[checked(rowStride * height)];
+        for (var y = 0; y < height; y++)
+        {
+            var rowOffset = y * rowStride;
+            imageData[rowOffset] = 0;
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = pixels[y * width + x];
+                var pixelOffset = rowOffset + 1 + x * 4;
+                imageData[pixelOffset] = (byte)((pixel >> 16) & 0xFF);
+                imageData[pixelOffset + 1] = (byte)((pixel >> 8) & 0xFF);
+                imageData[pixelOffset + 2] = (byte)(pixel & 0xFF);
+                imageData[pixelOffset + 3] = (byte)(pixel >> 24);
+            }
+        }
+
+        byte[] compressedData;
+        using (var compressedStream = new MemoryStream())
+        {
+            using (var zlib = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
+            {
+                zlib.Write(imageData);
+            }
+
+            compressedData = compressedStream.ToArray();
+        }
+
+        using var stream = new MemoryStream();
+        stream.Write([137, 80, 78, 71, 13, 10, 26, 10]);
+
+        Span<byte> ihdrData = stackalloc byte[13];
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData, (uint)width);
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData[4..], (uint)height);
+        ihdrData[8] = 8;
+        ihdrData[9] = 6;
+        ihdrData[10] = 0;
+        ihdrData[11] = 0;
+        ihdrData[12] = 0;
+        WritePngChunk(stream, "IHDR"u8, ihdrData);
+        WritePngChunk(stream, "IDAT"u8, compressedData);
+        WritePngChunk(stream, "IEND"u8, ReadOnlySpan<byte>.Empty);
+        return stream.ToArray();
+    }
+
+    private static void WritePngChunk(Stream stream, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
+    {
+        Span<byte> uintBuffer = stackalloc byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(uintBuffer, (uint)data.Length);
+        stream.Write(uintBuffer);
+        stream.Write(type);
+        stream.Write(data);
+
+        var crc = ComputePngCrc32(type, data);
+        BinaryPrimitives.WriteUInt32BigEndian(uintBuffer, crc);
+        stream.Write(uintBuffer);
+    }
+
+    private static uint ComputePngCrc32(ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
+    {
+        var crc = uint.MaxValue;
+        crc = UpdatePngCrc32(crc, type);
+        crc = UpdatePngCrc32(crc, data);
+        return ~crc;
+    }
+
+    private static uint UpdatePngCrc32(uint crc, ReadOnlySpan<byte> data)
+    {
+        foreach (var value in data)
+        {
+            crc ^= value;
+            for (var i = 0; i < 8; i++)
+            {
+                crc = (crc & 1) == 0 ? crc >> 1 : 0xEDB88320u ^ (crc >> 1);
+            }
+        }
+
+        return crc;
+    }
+
     private static void WriteUInt32LittleEndian(byte[] data, int offset, uint value)
     {
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset, 4), value);
@@ -1097,6 +1219,50 @@ public sealed class SnapshotEndToEndTests
             0x00,
             0x3B,
         ];
+    }
+
+    private static byte[] CreateTwoImageIco()
+    {
+        var firstImage = CreatePngRgba32(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFFFF0000u,
+            ]);
+        var secondImage = CreatePngRgba32(
+            width: 1,
+            height: 1,
+            pixels:
+            [
+                0xFF00FF00u,
+            ]);
+
+        var firstImageOffset = 6 + 16 + 16;
+        var secondImageOffset = firstImageOffset + firstImage.Length;
+        var data = new byte[secondImageOffset + secondImage.Length];
+        WriteUInt16LittleEndian(data, 0, 0);
+        WriteUInt16LittleEndian(data, 2, 1);
+        WriteUInt16LittleEndian(data, 4, 2);
+
+        WriteIcoDirectoryEntry(data, 6, width: 1, height: 1, bitsPerPixel: 32, firstImage.Length, firstImageOffset);
+        WriteIcoDirectoryEntry(data, 22, width: 1, height: 1, bitsPerPixel: 32, secondImage.Length, secondImageOffset);
+
+        Buffer.BlockCopy(firstImage, 0, data, firstImageOffset, firstImage.Length);
+        Buffer.BlockCopy(secondImage, 0, data, secondImageOffset, secondImage.Length);
+        return data;
+    }
+
+    private static void WriteIcoDirectoryEntry(byte[] data, int offset, byte width, byte height, ushort bitsPerPixel, int imageSize, int imageOffset)
+    {
+        data[offset] = width;
+        data[offset + 1] = height;
+        data[offset + 2] = 0;
+        data[offset + 3] = 0;
+        WriteUInt16LittleEndian(data, offset + 4, 1);
+        WriteUInt16LittleEndian(data, offset + 6, bitsPerPixel);
+        WriteUInt32LittleEndian(data, offset + 8, (uint)imageSize);
+        WriteUInt32LittleEndian(data, offset + 12, (uint)imageOffset);
     }
 
     private static async Task<SnapshotFile[]> AssertSnapshot(

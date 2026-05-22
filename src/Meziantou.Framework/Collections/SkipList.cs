@@ -301,7 +301,9 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
     private static int GetRandomLevel()
     {
         var level = 1;
+#pragma warning disable CA5394 // Do not use insecure randomness
         while (level < MaxLevel && Random.Shared.Next(2) is 0)
+#pragma warning restore CA5394
         {
             level++;
         }

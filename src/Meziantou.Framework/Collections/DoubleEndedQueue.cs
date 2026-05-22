@@ -68,7 +68,7 @@ public sealed class DoubleEndedQueue<T> : ICollection<T>, IReadOnlyList<T>
         var result = item;
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
         {
-            item = default!;
+            item = default;
         }
 
         Count--;

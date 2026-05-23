@@ -8,14 +8,16 @@ public static class PublicApi
     {
         options ??= new PublicApiOptions();
         var model = ReadModel(assemblyPath);
-        return Generate(model, options);
+        var targetFrameworks = NormalizeAndSortTargetFrameworks([PublicApiTargetFramework.GetTargetFrameworkFromAssembly(assemblyPath)]);
+        return Generate(model, options, targetFrameworks);
     }
 
     public static IReadOnlyList<PublicApiFile> Generate(Assembly assembly, PublicApiOptions? options = null)
     {
         options ??= new PublicApiOptions();
         var model = ReadModel(assembly);
-        return Generate(model, options);
+        var targetFrameworks = NormalizeAndSortTargetFrameworks([PublicApiTargetFramework.GetTargetFrameworkFromAssembly(assembly)]);
+        return Generate(model, options, targetFrameworks);
     }
 
     public static IReadOnlyList<PublicApiFile> Generate(IReadOnlyList<AssemblySource> assemblySources, PublicApiOptions? options = null)
@@ -30,12 +32,14 @@ public static class PublicApi
 
         if (assemblySources.Count == 1)
         {
-            return Generate(ReadModel(assemblySources[0]), options);
+            var model = ReadModel(assemblySources[0]);
+            var singleTargetFrameworks = NormalizeAndSortTargetFrameworks([ResolveTargetFramework(assemblySources[0])]);
+            return Generate(model, options, singleTargetFrameworks);
         }
 
-        var modelsBySymbol = BuildModelsBySymbol(assemblySources, out var firstAssemblyName);
+        var modelsBySymbol = BuildModelsBySymbol(assemblySources, out var firstAssemblyName, out var targetFrameworks);
         var mergedModel = PublicApiMultiTargetModelMerger.Merge(modelsBySymbol, firstAssemblyName);
-        return Generate(mergedModel, options);
+        return Generate(mergedModel, options, targetFrameworks);
     }
 
     public static void GenerateToDirectory(string assemblyPath, string outputDirectory, PublicApiOptions? options = null)
@@ -85,17 +89,20 @@ public static class PublicApi
         throw new InvalidOperationException("AssemblySource must provide either an Assembly instance or an assembly path.");
     }
 
-    private static IReadOnlyList<PublicApiFile> Generate(PublicApiModel model, PublicApiOptions options)
+    private static IReadOnlyList<PublicApiFile> Generate(PublicApiModel model, PublicApiOptions options, IReadOnlyList<string> targetFrameworks)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(options);
-        return PublicApiEmitter.Generate(model, options);
+        ArgumentNullException.ThrowIfNull(targetFrameworks);
+        return PublicApiEmitter.Generate(model, options, targetFrameworks);
     }
 
-    private static Dictionary<string, PublicApiModel> BuildModelsBySymbol(IReadOnlyList<AssemblySource> assemblySources, out string firstAssemblyName)
+    private static Dictionary<string, PublicApiModel> BuildModelsBySymbol(IReadOnlyList<AssemblySource> assemblySources, out string firstAssemblyName, out IReadOnlyList<string> targetFrameworks)
     {
         firstAssemblyName = string.Empty;
+        targetFrameworks = [];
         var modelsBySymbol = new Dictionary<string, PublicApiModel>(StringComparer.Ordinal);
+        var resolvedTargetFrameworks = new List<string>(assemblySources.Count);
         var isFirstAssemblySource = true;
         foreach (var assemblySource in assemblySources)
         {
@@ -103,6 +110,7 @@ public static class PublicApi
                 throw new ArgumentException("Assembly sources cannot contain null values.", nameof(assemblySources));
 
             var targetFramework = ResolveTargetFramework(assemblySource);
+            resolvedTargetFrameworks.Add(targetFramework);
             var symbol = PublicApiTargetFramework.ToPreprocessorSymbol(targetFramework);
             var model = ReadModel(assemblySource);
             if (isFirstAssemblySource)
@@ -117,7 +125,17 @@ public static class PublicApi
             }
         }
 
+        targetFrameworks = NormalizeAndSortTargetFrameworks(resolvedTargetFrameworks);
         return modelsBySymbol;
+    }
+
+    private static IReadOnlyList<string> NormalizeAndSortTargetFrameworks(IEnumerable<string> targetFrameworks)
+    {
+        ArgumentNullException.ThrowIfNull(targetFrameworks);
+        return [.. targetFrameworks
+            .Select(PublicApiTargetFramework.ToTargetFramework)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(targetFramework => targetFramework, StringComparer.Ordinal)];
     }
 
     private static string ResolveTargetFramework(AssemblySource assemblySource)

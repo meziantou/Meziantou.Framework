@@ -477,6 +477,7 @@ public sealed class PublicApiGeneratorTests
             });
 
         InlineSnapshot.Validate(Assert.Single(files).Content.TrimEnd('\r', '\n'), """
+            // Target Frameworks: net8.0, netstandard2.0
             #nullable enable
 
             public class Sample
@@ -523,6 +524,7 @@ public sealed class PublicApiGeneratorTests
             });
 
         InlineSnapshot.Validate(Assert.Single(files).Content.TrimEnd('\r', '\n'), """
+            // Target Frameworks: net8.0, netstandard2.0
             #nullable enable
 
             public class Sample
@@ -607,6 +609,7 @@ public sealed class PublicApiGeneratorTests
             });
 
         InlineSnapshot.Validate(Assert.Single(files).Content.TrimEnd('\r', '\n'), """
+            // Target Frameworks: net8.0, netstandard2.0
             #nullable enable
 
             public class Sample
@@ -652,6 +655,7 @@ public sealed class PublicApiGeneratorTests
             });
 
         InlineSnapshot.Validate(Assert.Single(files).Content.TrimEnd('\r', '\n'), """
+            // Target Frameworks: net10.0, net8.0, netstandard2.0
             #nullable enable
 
             public class Sample
@@ -696,6 +700,7 @@ public sealed class PublicApiGeneratorTests
             });
 
         InlineSnapshot.Validate(Assert.Single(files).Content.TrimEnd('\r', '\n'), """
+            // Target Frameworks: net10.0, net8.0
             #nullable enable
 
             #if NET10_0
@@ -737,6 +742,7 @@ public sealed class PublicApiGeneratorTests
             });
 
         InlineSnapshot.Validate(Assert.Single(files).Content.TrimEnd('\r', '\n'), """
+            // Target Frameworks: net8.0, netstandard2.0
             #nullable enable
 
             public class Marker
@@ -789,6 +795,7 @@ public sealed class PublicApiGeneratorTests
 
         Assert.Equal(0, exitCode);
         InlineSnapshot.Validate(File.ReadAllText(outputDirectory / "Source.cs").TrimEnd('\r', '\n'), """
+            // Target Frameworks: net8.0, netstandard2.0
             #nullable enable
 
             public class Sample
@@ -826,6 +833,7 @@ public sealed class PublicApiGeneratorTests
 
         Assert.Equal(0, exitCode);
         InlineSnapshot.Validate(File.ReadAllText(outputFilePath).TrimEnd('\r', '\n'), """
+            // Target Frameworks: net8.0
             #nullable enable
 
             public class Sample
@@ -860,6 +868,7 @@ public sealed class PublicApiGeneratorTests
 
         Assert.Equal(0, exitCode);
         InlineSnapshot.Validate(File.ReadAllText(outputDirectory / "Source.cs").TrimEnd('\r', '\n'), """
+            // Target Frameworks: net8.0
             #nullable enable
 
             public class Sample
@@ -2234,7 +2243,8 @@ public sealed class PublicApiGeneratorTests
         var reflectionContent = SerializeFiles(reflectionFiles);
         var metadataContent = SerializeFiles(metadataFiles);
         Assert.Equal(reflectionContent, metadataContent);
-        InlineSnapshot.Validate(reflectionContent, expected, filePath, lineNumber);
+        var expectedWithTargetFrameworkHeader = AddTargetFrameworksHeader(expected, [compilerOptions.TargetFramework]);
+        InlineSnapshot.Validate(reflectionContent, expectedWithTargetFrameworkHeader, filePath, lineNumber);
 
         // Ensure the generated files are compilable
         var generatedDirectory = temporaryDirectory / "generated";
@@ -2327,6 +2337,35 @@ public sealed class PublicApiGeneratorTests
         }
 
         return PublicApi.Generate(assemblySources, options);
+    }
+
+    private static string AddTargetFrameworksHeader(string content, IReadOnlyList<string> targetFrameworks)
+    {
+        var orderedTargetFrameworks = targetFrameworks
+            .Select(NormalizeTargetFramework)
+            .OrderBy(targetFramework => targetFramework, StringComparer.Ordinal)
+            .ToArray();
+        var header = "// Target Frameworks: " + string.Join(", ", orderedTargetFrameworks);
+        var nullableEnableDirective = "#nullable enable";
+        var nullableEnableDirectiveIndex = content.IndexOf(nullableEnableDirective, StringComparison.Ordinal);
+        if (nullableEnableDirectiveIndex < 0)
+        {
+            return header + "\n" + content;
+        }
+
+        return string.Concat(content.AsSpan(0, nullableEnableDirectiveIndex), header, "\n", content.AsSpan(nullableEnableDirectiveIndex));
+    }
+
+    private static string NormalizeTargetFramework(string targetFramework)
+    {
+        var normalizedTargetFramework = targetFramework.Trim().ToLowerInvariant();
+        var platformSeparatorIndex = normalizedTargetFramework.IndexOf('-', StringComparison.Ordinal);
+        if (platformSeparatorIndex >= 0)
+        {
+            normalizedTargetFramework = normalizedTargetFramework[..platformSeparatorIndex];
+        }
+
+        return normalizedTargetFramework;
     }
 
     private static async Task<FullPath> CompileSource(TemporaryDirectory temporaryDirectory, string projectDirectoryName, string targetFramework, string source)

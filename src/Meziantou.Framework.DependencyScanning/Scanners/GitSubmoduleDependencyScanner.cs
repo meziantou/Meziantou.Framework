@@ -121,7 +121,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 
     private static bool TryParseAssignment(string line, out string key, out string value)
     {
-        var equalIndex = line.IndexOf('=');
+        var equalIndex = line.IndexOf('=', StringComparison.Ordinal);
         if (equalIndex < 0)
         {
             key = "";
@@ -240,6 +240,8 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
             result = new Dictionary<string, string>(StringComparer.Ordinal);
 
             Span<byte> entryHeader = stackalloc byte[62];
+            Span<byte> extendedFlagsBuffer = stackalloc byte[2];
+            Span<byte> paddingBuffer = stackalloc byte[8];
             for (uint i = 0; i < entryCount; i++)
             {
                 var entryStart = stream.Position;
@@ -253,8 +255,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
                 var flags = BinaryPrimitives.ReadUInt16BigEndian(entryHeader[60..62]);
                 if ((flags & ExtendedFlagsMask) != 0)
                 {
-                    Span<byte> extendedFlags = stackalloc byte[2];
-                    if (!TryReadExactly(stream, extendedFlags))
+                    if (!TryReadExactly(stream, extendedFlagsBuffer))
                     {
                         result = [];
                         return false;
@@ -281,7 +282,6 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
                 var paddingByteCount = (8 - (consumedBytes % 8)) % 8;
                 if (paddingByteCount > 0)
                 {
-                    Span<byte> paddingBuffer = stackalloc byte[8];
                     if (!TryReadExactly(stream, paddingBuffer[..paddingByteCount]))
                     {
                         result = [];

@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Unix.ControlGroups;
 using Meziantou.Framework.Win32;
@@ -151,6 +152,19 @@ public sealed class ProcessWrapper
 
     /// <summary>Sets the arguments for the process, replacing any previously set arguments.</summary>
     public ProcessWrapper WithArguments(params string[] arguments)
+    {
+        _startInfo.ArgumentList.Clear();
+        foreach (var argument in arguments)
+        {
+            _startInfo.ArgumentList.Add(argument);
+        }
+
+        return this;
+    }
+
+    /// <summary>Sets the arguments for the process, replacing any previously set arguments.</summary>
+    [OverloadResolutionPriority(-1)]
+    public ProcessWrapper WithArguments(params ReadOnlySpan<string> arguments)
     {
         _startInfo.ArgumentList.Clear();
         foreach (var argument in arguments)

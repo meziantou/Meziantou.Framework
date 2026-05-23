@@ -210,6 +210,8 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessWrapper right) => throw null;
         public override string ToString() => throw null;
         public Meziantou.Framework.ProcessWrapper WithArguments(params string[] arguments) => throw null;
+        [System.Runtime.CompilerServices.OverloadResolutionPriority(-1)]
+        public Meziantou.Framework.ProcessWrapper WithArguments(params System.ReadOnlySpan<string> arguments) => throw null;
         public Meziantou.Framework.ProcessWrapper WithArguments(System.Collections.Generic.IEnumerable<string> arguments) => throw null;
         public Meziantou.Framework.ProcessWrapper WithWorkingDirectory(string workingDirectory) => throw null;
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Action<Meziantou.Framework.ProcessWrapperEnvironmentVariables> configure) => throw null;

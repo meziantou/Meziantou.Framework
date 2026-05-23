@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.SnapshotTesting;
 
 /// <summary>
-/// Compares BMP/PNG/JPEG snapshots by decoding image pixels and comparing RGB similarity.
+/// Compares BMP/PNG/JPEG/TIFF snapshots by decoding image pixels and comparing RGB similarity.
 /// </summary>
 public sealed class ImageComparer(ImageComparisonSettings? settings = null) : ISnapshotComparer
 {

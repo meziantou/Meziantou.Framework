@@ -16,6 +16,8 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Png, SnapshotType.Create("png"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("jpeg"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("jpg"));
+        Assert.Equal(SnapshotType.Tiff, SnapshotType.Create("tiff"));
+        Assert.Equal(SnapshotType.Tiff, SnapshotType.Create("tif"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create("gif"));
         Assert.Equal(SnapshotType.Ico, SnapshotType.Create("ico"));
     }
@@ -27,6 +29,8 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Png, SnapshotType.Create("PNG"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("JPEG"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("JPG"));
+        Assert.Equal(SnapshotType.Tiff, SnapshotType.Create("TIFF"));
+        Assert.Equal(SnapshotType.Tiff, SnapshotType.Create("TIF"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create("GIF"));
         Assert.Equal(SnapshotType.Ico, SnapshotType.Create("ICO"));
     }
@@ -38,6 +42,8 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Png, SnapshotType.Create(".png"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create(".jpeg"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create(".jpg"));
+        Assert.Equal(SnapshotType.Tiff, SnapshotType.Create(".tiff"));
+        Assert.Equal(SnapshotType.Tiff, SnapshotType.Create(".tif"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create(".gif"));
         Assert.Equal(SnapshotType.Ico, SnapshotType.Create(".ico"));
     }

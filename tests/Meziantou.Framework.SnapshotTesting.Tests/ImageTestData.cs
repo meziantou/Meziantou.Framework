@@ -180,6 +180,45 @@ internal static class ImageTestData
         return stream.ToArray();
     }
 
+    public static byte[] CreateIcoWithPngEntries(params byte[][] pngImages)
+    {
+        ArgumentNullException.ThrowIfNull(pngImages);
+        if (pngImages.Length == 0)
+            throw new ArgumentException("At least one PNG image is required.", nameof(pngImages));
+
+        var directorySize = checked(6 + pngImages.Length * 16);
+        var imageDataSize = pngImages.Sum(static image => image.Length);
+        var result = new byte[checked(directorySize + imageDataSize)];
+
+        WriteUInt16LittleEndian(result, 0, 0);
+        WriteUInt16LittleEndian(result, 2, 1);
+        WriteUInt16LittleEndian(result, 4, checked((ushort)pngImages.Length));
+
+        var imageOffset = directorySize;
+        for (var i = 0; i < pngImages.Length; i++)
+        {
+            var image = pngImages[i];
+            ArgumentNullException.ThrowIfNull(image);
+            if (image.Length == 0)
+                throw new ArgumentException("PNG image cannot be empty.", nameof(pngImages));
+
+            var entryOffset = 6 + i * 16;
+            result[entryOffset] = 1; // Width
+            result[entryOffset + 1] = 1; // Height
+            result[entryOffset + 2] = 0; // Color count
+            result[entryOffset + 3] = 0; // Reserved
+            WriteUInt16LittleEndian(result, entryOffset + 4, 1); // Planes
+            WriteUInt16LittleEndian(result, entryOffset + 6, 32); // Bit count
+            WriteUInt32LittleEndian(result, entryOffset + 8, checked((uint)image.Length));
+            WriteUInt32LittleEndian(result, entryOffset + 12, checked((uint)imageOffset));
+
+            image.CopyTo(result, imageOffset);
+            imageOffset += image.Length;
+        }
+
+        return result;
+    }
+
     private static void WritePngChunk(Stream stream, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
     {
         Span<byte> uintBuffer = stackalloc byte[4];

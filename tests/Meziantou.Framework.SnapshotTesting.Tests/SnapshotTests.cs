@@ -349,6 +349,8 @@ public sealed class SnapshotTests
         Assert.Equal("SVG image", SnapshotType.Svg.DisplayName);
         Assert.Equal("image/gif", SnapshotType.Gif.MimeType);
         Assert.Equal("GIF image", SnapshotType.Gif.DisplayName);
+        Assert.Equal("image/x-icon", SnapshotType.Ico.MimeType);
+        Assert.Equal("ICO image", SnapshotType.Ico.DisplayName);
     }
 
     [Fact]
@@ -421,9 +423,9 @@ public sealed class SnapshotTests
         var data = settings.Serializers.Serialize(snapshotType, CreateTwoFrameGif());
 
         Assert.Equal(2, data.Data.Count);
-        Assert.All(data.Data, snapshot => Assert.Equal(snapshotType.FileExtension, snapshot.Extension));
-        Assert.Equal(CreateSingleFrameGif(), data.Data[0].Data);
-        Assert.Equal(CreateSingleFrameGif(), data.Data[1].Data);
+        Assert.All(data.Data, snapshot => Assert.Equal(SnapshotType.Png.FileExtension, snapshot.Extension));
+        Assert.Equal(CreateSingleFramePng(), data.Data[0].Data);
+        Assert.Equal(CreateSingleFramePng(), data.Data[1].Data);
     }
 
     [Fact]
@@ -433,6 +435,34 @@ public sealed class SnapshotTests
         var payload = "not-a-gif"u8.ToArray();
         var settings = new SnapshotSettings();
         settings.Serializers.AddGifSerializer();
+        var data = settings.Serializers.Serialize(snapshotType, payload);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
+        Assert.Equal(payload, snapshot.Data);
+    }
+
+    [Fact]
+    public void AddIcoSerializer_SerializesIcoByteArrayAsOneSnapshotPerEntry()
+    {
+        var snapshotType = SnapshotType.Ico;
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddIcoSerializer();
+        var data = settings.Serializers.Serialize(snapshotType, CreateTwoEntryIco());
+
+        Assert.Equal(2, data.Data.Count);
+        Assert.All(data.Data, snapshot => Assert.Equal(SnapshotType.Png.FileExtension, snapshot.Extension));
+        Assert.Equal(CreateSingleFramePng(), data.Data[0].Data);
+        Assert.Equal(CreateSingleFramePng(color: 0xFF000000u), data.Data[1].Data);
+    }
+
+    [Fact]
+    public void AddIcoSerializer_FallsBackToBinarySerializerWhenPayloadIsNotIco()
+    {
+        var snapshotType = SnapshotType.Ico;
+        var payload = "not-an-ico"u8.ToArray();
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddIcoSerializer();
         var data = settings.Serializers.Serialize(snapshotType, payload);
 
         var snapshot = Assert.Single(data.Data);
@@ -1022,6 +1052,16 @@ public sealed class SnapshotTests
             0x00,
             0x3B,
         ];
+    }
+
+    private static byte[] CreateSingleFramePng(uint color = 0xFFFFFFFFu)
+    {
+        return ImageTestData.CreatePngRgba32(width: 1, height: 1, pixels: [color]);
+    }
+
+    private static byte[] CreateTwoEntryIco()
+    {
+        return ImageTestData.CreateIcoWithPngEntries(CreateSingleFramePng(), CreateSingleFramePng(color: 0xFF000000u));
     }
 
     private sealed class SnapshotTypeSerializer : ISnapshotSerializer

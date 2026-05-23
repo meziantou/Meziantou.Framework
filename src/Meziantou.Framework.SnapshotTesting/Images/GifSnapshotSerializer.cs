@@ -15,7 +15,13 @@ internal sealed class GifSnapshotSerializer : ISnapshotSerializer
         var snapshotData = new SnapshotData[frames.Count];
         for (var i = 0; i < frames.Count; i++)
         {
-            snapshotData[i] = new SnapshotData(type.FileExtension, frames[i]);
+            if (!GifImageLoader.TryLoad(frames[i], out var image))
+            {
+                result = null;
+                return false;
+            }
+
+            snapshotData[i] = new SnapshotData(SnapshotType.Png.FileExtension, PngImageEncoder.Encode(image));
         }
 
         result = new SerializedSnapshot(snapshotData);

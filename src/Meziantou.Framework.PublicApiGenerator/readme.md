@@ -70,6 +70,7 @@ public sealed class Sample
 Generated API:
 
 ```csharp
+// Target Frameworks: net8.0
 #nullable enable
 
 namespace Demo

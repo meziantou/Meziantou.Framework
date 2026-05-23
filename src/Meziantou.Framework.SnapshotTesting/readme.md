@@ -117,25 +117,6 @@ settings.Comparers.AddImageComparer(new ImageComparisonSettings
 });
 ```
 
-### JPEG/JPG parsing limitations
-
-JPEG support in the core package is intentionally subset-based and dependency-free.
-
-Supported:
-
-- 8-bit baseline JPEG decoding
-- Grayscale and YCbCr color encodings
-- 4:4:4, 4:2:2, and 4:2:0 sampling
-- Restart markers (DRI/RST)
-
-Unsupported (throws `NotSupportedException`):
-
-- Progressive JPEG and arithmetic-coded JPEG
-- Non-8-bit precision JPEG
-- CMYK/YCCK or Adobe transform 0/2 workflows
-- JPEG files with ICC profiles
-- JPEG files with EXIF orientation values requiring auto-rotation
-
 ## Scrubbing
 
 Scrubbing helps make snapshots deterministic by removing unstable values or lines.

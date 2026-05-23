@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework;
 
 /// <summary>Represents a completed process execution.</summary>
@@ -7,8 +5,9 @@ public class ProcessResult
 {
     private readonly string _processFileName;
     private readonly IReadOnlyList<string> _arguments;
+    private readonly ProcessLogVerbosity _logVerbosity;
 
-    internal ProcessResult(int processId, ProcessExitCode exitCode, DateTimeOffset startDate, DateTimeOffset exitDate, string processFileName, IReadOnlyList<string> arguments)
+    internal ProcessResult(int processId, ProcessExitCode exitCode, DateTimeOffset startDate, DateTimeOffset exitDate, string processFileName, IReadOnlyList<string> arguments, ProcessLogVerbosity logVerbosity)
     {
         ProcessId = processId;
         ExitCode = exitCode;
@@ -16,6 +15,7 @@ public class ProcessResult
         ExitDate = exitDate;
         _processFileName = processFileName ?? throw new ArgumentNullException(nameof(processFileName));
         _arguments = [.. arguments ?? throw new ArgumentNullException(nameof(arguments))];
+        _logVerbosity = logVerbosity;
     }
 
     /// <summary>Gets the process ID.</summary>
@@ -33,21 +33,12 @@ public class ProcessResult
     /// <summary>Returns the command line and exit code of the process execution result.</summary>
     public override string ToString()
     {
-        var commandLine = CommandLineBuilder.WindowsQuotedArgument(_processFileName);
-        if (_arguments.Count == 0)
-            return $"{commandLine} (ExitCode: {ExitCode})";
-
-        var sb = new StringBuilder(commandLine);
-
-        foreach (var argument in _arguments)
+        var commandLine = ProcessCommandLineFormatter.Format(_processFileName, _arguments, _logVerbosity);
+        if (string.IsNullOrEmpty(commandLine))
         {
-            sb.Append(' ');
-            sb.Append(CommandLineBuilder.WindowsQuotedArgument(argument));
+            return $"(ExitCode: {ExitCode})";
         }
 
-        sb.Append(" (ExitCode: ");
-        sb.Append(ExitCode);
-        sb.Append(')');
-        return sb.ToString();
+        return $"{commandLine} (ExitCode: {ExitCode})";
     }
 }

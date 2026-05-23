@@ -440,11 +440,26 @@ public class ProcessWrapperTests
                 .ExecuteAsync();
 
             Assert.Single(createdProcesses);
-            var expectedCommandLine = ProcessWrapper.Create(createdProcesses[0].FileName)
-                .WithArguments([.. createdProcesses[0].Arguments])
-                .ToString();
+            var expectedCommandLine = ProcessWrapper.Create(createdProcesses[0].FileName).ToString();
             Assert.Equal($"{expectedCommandLine} (ExitCode: {processResult.ExitCode})", processResult.ToString());
+            Assert.DoesNotContain("ignored", processResult.ToString(), StringComparison.Ordinal);
         });
+    }
+
+    [Fact]
+    public async Task ProcessResult_ToString_WithIncludeArguments_IncludesArguments()
+    {
+        using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
+        var fakeFactory = new FakeProcessFactory(fakeProcess);
+
+        var processResult = await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            return await CreateEchoCommand("argument-marker")
+                .WithLogVerbosity(ProcessLogVerbosity.IncludeProcessPath | ProcessLogVerbosity.IncludeArguments)
+                .ExecuteAsync();
+        });
+
+        Assert.Contains("argument-marker", processResult.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -596,6 +611,65 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task Validation_FailIfNonZeroExitCode_DefaultLogVerbosity_IncludesProcessPathWithoutArguments()
+    {
+        using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
+        var createdProcesses = new List<CreatedProcessInfo>();
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            createdProcesses.Add(new CreatedProcessInfo(startInfo.FileName, startInfo.WorkingDirectory, [.. startInfo.ArgumentList]));
+            return fakeProcess;
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            var process = CreateEchoCommand("sensitive-argument")
+                .ExecuteAsync();
+
+            var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
+            Assert.Single(createdProcesses);
+            Assert.Contains(createdProcesses[0].FileName, ex.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("sensitive-argument", ex.Message, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task Validation_FailIfNonZeroExitCode_WithLogVerbosityIncludeArguments_IncludesArguments()
+    {
+        using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
+        var fakeFactory = new FakeProcessFactory(fakeProcess);
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            var process = CreateEchoCommand("sensitive-argument")
+                .WithLogVerbosity(ProcessLogVerbosity.IncludeProcessPath | ProcessLogVerbosity.IncludeArguments)
+                .ExecuteAsync();
+
+            var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
+            Assert.Contains("sensitive-argument", ex.Message, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task Validation_FailIfNonZeroExitCode_WithDefaultLogVerbosityIncludeArguments_IncludesArguments()
+    {
+        using var fakeProcess = FakeProcess.Create(42, outputText: "", errorText: "");
+        var fakeFactory = new FakeProcessFactory(fakeProcess);
+
+        await RunWithDefaultLogVerbosityAsync(ProcessLogVerbosity.IncludeProcessPath | ProcessLogVerbosity.IncludeArguments, async () =>
+        {
+            await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+            {
+                var process = CreateEchoCommand("global-sensitive-argument")
+                    .ExecuteAsync();
+
+                var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
+                Assert.Contains("global-sensitive-argument", ex.Message, StringComparison.Ordinal);
+            });
+        });
+    }
+
+    [Fact]
     public async Task Validation_FailIfNonZeroExitCode_SetsActivityStatusToError()
     {
         var activityTask = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -620,7 +694,10 @@ public class ProcessWrapperTests
 
         var activity = await activityTask.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
-        Assert.Equal("Process exited with code 1.", activity.StatusDescription);
+        var processPath = Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
+        Assert.NotNull(activity.StatusDescription);
+        Assert.StartsWith("Process exited with code 1.", activity.StatusDescription, StringComparison.Ordinal);
+        Assert.Contains(processPath, activity.StatusDescription, StringComparison.Ordinal);
         Assert.Equal(1, activity.GetTagItem("process.exit.code"));
     }
 
@@ -667,7 +744,7 @@ public class ProcessWrapperTests
             .ExecuteAsync();
 
         var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
-        Assert.Equal("Process wrote to standard error.", ex.Message);
+        Assert.StartsWith("Process wrote to standard error.", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1012,6 +1089,7 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithEnvironmentVariables(env => env.Set("TEST_VAR_45", "value")));
         Assert.Same(command, command.WithEnvironmentVariables(new Dictionary<string, string?>(StringComparer.Ordinal) { ["TEST_VAR_45"] = "updated" }));
         Assert.Same(command, command.WithValidation(ProcessValidationMode.None));
+        Assert.Same(command, command.WithLogVerbosity(ProcessLogVerbosity.IncludeProcessPath));
         Assert.Same(command, command.WithProcessFactory(SystemProcessFactory.Instance));
         Assert.Same(command, command.WithInterceptor(processWrapperInterceptor));
         Assert.Same(command, command.WithInterceptor(processStartInfoInterceptor));
@@ -1254,11 +1332,9 @@ public class ProcessWrapperTests
 
             Assert.Equal("intercepted output", processResult.Output.StandardOutput.First().Text);
             Assert.Single(createdProcesses);
-            Assert.False(string.IsNullOrEmpty(createdProcesses[0].FileName));
-            var expectedCommandLine = ProcessWrapper.Create(createdProcesses[0].FileName)
-                .WithArguments([.. createdProcesses[0].Arguments])
-                .ToString();
+            var expectedCommandLine = ProcessWrapper.Create(createdProcesses[0].FileName).ToString();
             Assert.Equal($"{expectedCommandLine} (ExitCode: {processResult.ExitCode})", processResult.ToString());
+            Assert.DoesNotContain("ignored", processResult.ToString(), StringComparison.Ordinal);
         });
     }
 
@@ -1417,6 +1493,24 @@ public class ProcessWrapperTests
         }
     }
 
+    private static async Task<T> RunWithDefaultProcessFactoryAsync<T>(IProcessFactory processFactory, Func<Task<T>> callback)
+    {
+        ArgumentNullException.ThrowIfNull(processFactory);
+        ArgumentNullException.ThrowIfNull(callback);
+
+        var previousProcessFactory = ProcessWrapper.DefaultProcessFactory;
+        ProcessWrapper.DefaultProcessFactory = processFactory;
+
+        try
+        {
+            return await callback();
+        }
+        finally
+        {
+            ProcessWrapper.DefaultProcessFactory = previousProcessFactory;
+        }
+    }
+
     private static async Task RunWithGlobalInterceptorsAsync(Func<Task> callback, IProcessWrapperInterceptor? processWrapperInterceptor = null, IProcessStartInfoInterceptor? processStartInfoInterceptor = null)
     {
         ArgumentNullException.ThrowIfNull(callback);
@@ -1424,6 +1518,23 @@ public class ProcessWrapperTests
         using var processWrapperInterceptorRegistration = processWrapperInterceptor is null ? null : ProcessWrapper.AddInterceptor(processWrapperInterceptor);
         using var processStartInfoInterceptorRegistration = processStartInfoInterceptor is null ? null : ProcessWrapper.AddInterceptor(processStartInfoInterceptor);
         await callback();
+    }
+
+    private static async Task RunWithDefaultLogVerbosityAsync(ProcessLogVerbosity verbosity, Func<Task> callback)
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+
+        var previousLogVerbosity = ProcessWrapper.DefaultLogVerbosity;
+        ProcessWrapper.DefaultLogVerbosity = verbosity;
+
+        try
+        {
+            await callback();
+        }
+        finally
+        {
+            ProcessWrapper.DefaultLogVerbosity = previousLogVerbosity;
+        }
     }
 
     private static ActivityListener CreateProcessWrapperActivityListener(Action<Activity> activityStopped)

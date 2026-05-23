@@ -24,12 +24,14 @@ public class ProcessInstance
     private readonly Task<ProcessCompletion> _processCompletionTask;
     private readonly string _processFileName;
     private readonly IReadOnlyList<string> _arguments;
+    private readonly ProcessLogVerbosity _logVerbosity;
     private protected string ProcessFileName => _processFileName;
     private protected IReadOnlyList<string> Arguments => _arguments;
+    private protected ProcessLogVerbosity LogVerbosity => _logVerbosity;
     private protected readonly Lock WaitTaskLock = new();
     private Task<ProcessResult>? _waitTask;
 
-    internal ProcessInstance(IProcessHandle process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, string processFileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    internal ProcessInstance(IProcessHandle process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, string processFileName, IReadOnlyList<string> arguments, ProcessLogVerbosity logVerbosity, CancellationToken cancellationToken)
     {
         _process = process;
         _inputStreamTask = inputStreamTask;
@@ -42,6 +44,7 @@ public class ProcessInstance
         _activity = activity;
         _processFileName = processFileName ?? throw new ArgumentNullException(nameof(processFileName));
         _arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
+        _logVerbosity = logVerbosity;
 
         ProcessId = process.Id;
         StartDate = DateTimeOffset.UtcNow;
@@ -135,17 +138,30 @@ public class ProcessInstance
 
     private ProcessExecutionException? GetValidationException(ProcessExitCode exitCode)
     {
+        var messageContext = GetValidationMessageContext();
+
         if ((_validationMode & ProcessValidationMode.FailIfNonZeroExitCode) == ProcessValidationMode.FailIfNonZeroExitCode && !exitCode.IsSuccess)
         {
-            return new ProcessExecutionException(exitCode);
+            return new ProcessExecutionException(exitCode, $"Process exited with code {exitCode}.{messageContext}");
         }
 
         if ((_validationMode & ProcessValidationMode.FailIfStdError) == ProcessValidationMode.FailIfStdError && _hasStandardErrorOutput())
         {
-            return new ProcessExecutionException("Process wrote to standard error.");
+            return new ProcessExecutionException($"Process wrote to standard error.{messageContext}");
         }
 
         return null;
+    }
+
+    private string GetValidationMessageContext()
+    {
+        var commandLine = ProcessCommandLineFormatter.Format(_processFileName, _arguments, _logVerbosity);
+        if (string.IsNullOrEmpty(commandLine))
+        {
+            return string.Empty;
+        }
+
+        return $" Command: {commandLine}";
     }
 
     // Wait for process exit and dispose all resources (do not wait for user to await the instance)
@@ -221,7 +237,7 @@ public class ProcessInstance
 
     private protected virtual ProcessResult CreateProcessResult(ProcessExitCode exitCode, DateTimeOffset exitDate)
     {
-        return new ProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate, processFileName: _processFileName, arguments: _arguments);
+        return new ProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate, processFileName: _processFileName, arguments: _arguments, logVerbosity: _logVerbosity);
     }
 
     private sealed class ProcessCompletion

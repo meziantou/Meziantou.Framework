@@ -23,7 +23,13 @@ public sealed class ProcessExecutionException : Exception
 
     /// <summary>Initializes a new instance of <see cref="ProcessExecutionException"/> with the specified exit code.</summary>
     public ProcessExecutionException(ProcessExitCode exitCode)
-        : base($"Process exited with code {exitCode}.")
+        : this(exitCode, $"Process exited with code {exitCode}.")
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="ProcessExecutionException"/> with the specified exit code and message.</summary>
+    public ProcessExecutionException(ProcessExitCode exitCode, string message)
+        : base(message)
     {
         ExitCode = exitCode;
     }

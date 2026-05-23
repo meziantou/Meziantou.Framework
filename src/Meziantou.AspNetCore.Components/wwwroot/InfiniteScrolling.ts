@@ -1,4 +1,4 @@
-﻿/// <reference path="./types/blazor.dts" />
+﻿/// <reference path="./types/blazor.d.ts" />
 
 export function initialize(lastIndicator : HTMLElement, instance : DotNet.DotNetObject) {
   const options = {

@@ -407,6 +407,23 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public void ToString_WithoutArguments_ReturnsCommand()
+    {
+        var command = ProcessWrapper.Create("dotnet");
+
+        Assert.Equal("dotnet", command.ToString());
+    }
+
+    [Fact]
+    public void ToString_QuotesFileNameAndArguments()
+    {
+        var command = ProcessWrapper.Create("my tool")
+            .WithArguments("arg", "with spaces", @"C:\path with spaces\", "with\"quote", "");
+
+        Assert.Equal("\"my tool\" arg \"with spaces\" \"C:\\path with spaces\\\\\" \"with\\\"quote\" \"\"", command.ToString());
+    }
+
+    [Fact]
     public async Task WithWorkingDirectory_SetsWorkingDirectory()
     {
         ProcessWrapper command;

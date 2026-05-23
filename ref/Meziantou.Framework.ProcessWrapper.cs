@@ -114,6 +114,7 @@ namespace Meziantou.Framework
         public int Value { get => throw null; }
         public bool IsSuccess { get => throw null; }
         public ProcessExitCode(int value) { }
+        public bool IsAnyOf(params System.ReadOnlySpan<int> expectedValues) => throw null;
         public bool Equals(Meziantou.Framework.ProcessExitCode other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -205,6 +206,7 @@ namespace Meziantou.Framework
         public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
         public static Meziantou.Framework.ProcessWrapper Create(string fileName) => throw null;
         public static Meziantou.Framework.ProcessPipeline operator |(Meziantou.Framework.ProcessWrapper left, Meziantou.Framework.ProcessWrapper right) => throw null;
+        public override string ToString() => throw null;
         public Meziantou.Framework.ProcessWrapper WithArguments(params string[] arguments) => throw null;
         public Meziantou.Framework.ProcessWrapper WithArguments(System.Collections.Generic.IEnumerable<string> arguments) => throw null;
         public Meziantou.Framework.ProcessWrapper WithWorkingDirectory(string workingDirectory) => throw null;

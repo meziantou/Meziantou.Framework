@@ -131,6 +131,24 @@ public sealed class ProcessWrapper
     /// <summary>Creates a pipeline between 2 commands.</summary>
     public static ProcessPipeline operator |(ProcessWrapper left, ProcessWrapper right) => ProcessPipeline.Create(left, right);
 
+    /// <summary>Returns the command line representation of this process configuration.</summary>
+    public override string ToString()
+    {
+        var fileName = CommandLineBuilder.WindowsQuotedArgument(_startInfo.FileName);
+        if (_startInfo.ArgumentList.Count == 0)
+            return fileName;
+
+        var sb = new StringBuilder(fileName);
+
+        foreach (var argument in _startInfo.ArgumentList)
+        {
+            sb.Append(' ');
+            sb.Append(CommandLineBuilder.WindowsQuotedArgument(argument));
+        }
+
+        return sb.ToString();
+    }
+
     /// <summary>Sets the arguments for the process, replacing any previously set arguments.</summary>
     public ProcessWrapper WithArguments(params string[] arguments)
     {

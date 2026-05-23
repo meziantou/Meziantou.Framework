@@ -34,13 +34,11 @@ static class CommandLineBuilder
     {
         for (var i = 0; i < value.Length; i++)
         {
-            var c = value[i];
             var numberBackslashes = 0;
 
-            while (i < value.Length && c == '\\')
+            while (i < value.Length && value[i] == '\\')
             {
                 i++;
-                c = value[i];
                 numberBackslashes++;
             }
 
@@ -49,7 +47,9 @@ static class CommandLineBuilder
                 sb.Append(new string('\\', numberBackslashes * 2));
                 break;
             }
-            else if (c == '"')
+
+            var c = value[i];
+            if (c == '"')
             {
                 sb.Append(new string('\\', (numberBackslashes * 2) + 1));
                 sb.Append(c);

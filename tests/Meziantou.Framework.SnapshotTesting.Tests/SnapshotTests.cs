@@ -471,6 +471,26 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public void AddGifSerializer_StaticFixture_Snapshot()
+    {
+        var payload = ImageTestData.ReadImageFixture("serializer-two-frame.gif");
+        var settings = SnapshotSettings.Default with { };
+        settings.Serializers.AddGifSerializer();
+
+        Snapshot.Validate(payload, SnapshotType.Gif, settings);
+    }
+
+    [Fact]
+    public void AddIcoSerializer_StaticFixture_Snapshot()
+    {
+        var payload = ImageTestData.ReadImageFixture("serializer-multi-entry.ico");
+        var settings = SnapshotSettings.Default with { };
+        settings.Serializers.AddIcoSerializer();
+
+        Snapshot.Validate(payload, SnapshotType.Ico, settings);
+    }
+
+    [Fact]
     public void AddImageComparer_ComparesBmpSnapshotsByPixels()
     {
         var expectedData = ImageTestData.CreateBmp24(

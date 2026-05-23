@@ -349,6 +349,8 @@ public sealed class SnapshotTests
         Assert.Equal("SVG image", SnapshotType.Svg.DisplayName);
         Assert.Equal("image/gif", SnapshotType.Gif.MimeType);
         Assert.Equal("GIF image", SnapshotType.Gif.DisplayName);
+        Assert.Equal("image/tiff", SnapshotType.Tiff.MimeType);
+        Assert.Equal("TIFF image", SnapshotType.Tiff.DisplayName);
         Assert.Equal("image/x-icon", SnapshotType.Ico.MimeType);
         Assert.Equal("ICO image", SnapshotType.Ico.DisplayName);
     }
@@ -626,6 +628,42 @@ public sealed class SnapshotTests
         settings.Comparers.AddImageComparer();
         var comparer = settings.Comparers.Get(SnapshotType.Jpeg);
         Assert.False(comparer.Equals(new SnapshotData("jpeg", expectedData), new SnapshotData("jpeg", actualData)));
+    }
+
+    [Fact]
+    public void AddImageComparer_ComparesTiffSnapshotsByPixels()
+    {
+        var expectedData = ImageTestData.ReadImageFixture("tiff-rgb24-none.tiff");
+        var actualData = ImageTestData.ReadImageFixture("tiff-rgb24-lzw.tiff");
+
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Tiff);
+        Assert.True(comparer.Equals(new SnapshotData("tiff", expectedData), new SnapshotData("tiff", actualData)));
+    }
+
+    [Fact]
+    public void AddImageComparer_RegistersTifAlias()
+    {
+        var expectedData = ImageTestData.ReadImageFixture("tiff-rgb24-none.tiff");
+        var actualData = ImageTestData.ReadImageFixture("tiff-rgb24-packbits.tiff");
+
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Create("tif"));
+        Assert.True(comparer.Equals(new SnapshotData("tif", expectedData), new SnapshotData("tif", actualData)));
+    }
+
+    [Fact]
+    public void AddImageComparer_DetectsTiffPixelDifferences()
+    {
+        var expectedData = ImageTestData.ReadImageFixture("tiff-rgb24-none.tiff");
+        var actualData = ImageTestData.ReadImageFixture("tiff-rgb24-different.tiff");
+
+        var settings = new SnapshotSettings();
+        settings.Comparers.AddImageComparer();
+        var comparer = settings.Comparers.Get(SnapshotType.Tiff);
+        Assert.False(comparer.Equals(new SnapshotData("tiff", expectedData), new SnapshotData("tiff", actualData)));
     }
 
     [Fact]

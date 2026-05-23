@@ -44,7 +44,10 @@ internal sealed class Image : IEquatable<Image>
         if (JpegImageLoader.IsJpeg(data))
             return JpegImageLoader.Load(data);
 
-        throw new NotSupportedException("Unsupported image format. Only BMP, PNG, and JPEG are currently supported.");
+        if (TiffImageLoader.IsTiff(data))
+            return TiffImageLoader.Load(data);
+
+        throw new NotSupportedException("Unsupported image format. Only BMP, PNG, JPEG, and TIFF are currently supported.");
     }
 
     internal static Image Create(int width, int height, Argb[] pixels)

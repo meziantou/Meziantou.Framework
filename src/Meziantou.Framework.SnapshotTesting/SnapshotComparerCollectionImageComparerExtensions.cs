@@ -12,6 +12,7 @@ public static class SnapshotComparerCollectionImageComparerExtensions
             comparers.Set(SnapshotType.Bmp, comparer);
             comparers.Set(SnapshotType.Png, comparer);
             comparers.Set(SnapshotType.Jpeg, comparer);
+            comparers.Set(SnapshotType.Tiff, comparer);
             comparers.Set(SnapshotType.Create("jpg"), comparer);
         }
     }

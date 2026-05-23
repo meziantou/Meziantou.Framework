@@ -290,7 +290,6 @@ dotCover.Output.xml
 **/BenchmarkDotNet.Artifacts/
 *.binlog
 
-src/Meziantou.AspNetCore.Components/wwwroot/**/*.js
 *_wpftmp.csproj
 
 artifacts/

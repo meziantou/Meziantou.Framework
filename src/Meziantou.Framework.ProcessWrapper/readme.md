@@ -326,6 +326,14 @@ bool isSuccess = result.ExitCode.IsSuccess;
 await ProcessWrapper.Create("my-command")
     .WithValidation(ProcessValidationMode.FailIfNonZeroExitCode | ProcessValidationMode.FailIfStdError)
     .ExecuteAsync();
+
+// Control command details included in exception messages and ProcessResult.ToString()
+ProcessWrapper.DefaultLogVerbosity = ProcessLogVerbosity.IncludeProcessPath;
+
+await ProcessWrapper.Create("my-command")
+    .WithArguments("--token", "secret")
+    .WithLogVerbosity(ProcessLogVerbosity.IncludeProcessPath | ProcessLogVerbosity.IncludeArguments)
+    .ExecuteAsync();
 ````
 
 ## Cancellation

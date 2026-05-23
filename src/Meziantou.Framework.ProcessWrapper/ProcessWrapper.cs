@@ -16,6 +16,7 @@ namespace Meziantou.Framework;
 public sealed class ProcessWrapper
 {
     private static IProcessFactory s_defaultProcessFactory = SystemProcessFactory.Instance;
+    private static int s_defaultLogVerbosity = (int)ProcessLogVerbosity.IncludeProcessPath;
     private static readonly Lock DefaultInterceptorsLock = new();
     private static ImmutableArray<IProcessWrapperInterceptor> s_defaultProcessWrapperInterceptors = [];
     private static ImmutableArray<IProcessStartInfoInterceptor> s_defaultProcessStartInfoInterceptors = [];
@@ -24,6 +25,7 @@ public sealed class ProcessWrapper
     private ImmutableArray<IProcessStartInfoInterceptor> _processStartInfoInterceptors;
     private readonly ProcessStartInfo _startInfo;
     private ProcessValidationMode _validationMode;
+    private ProcessLogVerbosity _logVerbosity;
     private ImmutableArray<OutputTarget> _outputTargets;
     private ImmutableArray<OutputTarget> _errorTargets;
     private InputSource? _inputSource;
@@ -36,6 +38,7 @@ public sealed class ProcessWrapper
         ArgumentNullException.ThrowIfNull(fileName);
         _startInfo = CreateStartInfo(fileName);
         _validationMode = ProcessValidationMode.FailIfNonZeroExitCode;
+        _logVerbosity = DefaultLogVerbosity;
         _outputTargets = [];
         _errorTargets = [];
         _processWrapperInterceptors = [];
@@ -48,6 +51,7 @@ public sealed class ProcessWrapper
 
         _startInfo = CloneStartInfo(other._startInfo);
         _validationMode = other._validationMode;
+        _logVerbosity = other._logVerbosity;
         _outputTargets = other._outputTargets;
         _errorTargets = other._errorTargets;
         _inputSource = other._inputSource;
@@ -64,6 +68,13 @@ public sealed class ProcessWrapper
     {
         get => Volatile.Read(ref s_defaultProcessFactory);
         set => s_defaultProcessFactory = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
+    /// <summary>Gets or sets the default verbosity used in process validation messages and process result string formatting.</summary>
+    public static ProcessLogVerbosity DefaultLogVerbosity
+    {
+        get => (ProcessLogVerbosity)Volatile.Read(ref s_defaultLogVerbosity);
+        set => Volatile.Write(ref s_defaultLogVerbosity, (int)value);
     }
 
     /// <summary>Adds a global process-wrapper interceptor.</summary>
@@ -135,19 +146,7 @@ public sealed class ProcessWrapper
     /// <summary>Returns the command line representation of this process configuration.</summary>
     public override string ToString()
     {
-        var fileName = CommandLineBuilder.WindowsQuotedArgument(_startInfo.FileName);
-        if (_startInfo.ArgumentList.Count == 0)
-            return fileName;
-
-        var sb = new StringBuilder(fileName);
-
-        foreach (var argument in _startInfo.ArgumentList)
-        {
-            sb.Append(' ');
-            sb.Append(CommandLineBuilder.WindowsQuotedArgument(argument));
-        }
-
-        return sb.ToString();
+        return ProcessCommandLineFormatter.Format(_startInfo.FileName, _startInfo.ArgumentList);
     }
 
     /// <summary>Sets the arguments for the process, replacing any previously set arguments.</summary>
@@ -225,6 +224,13 @@ public sealed class ProcessWrapper
     public ProcessWrapper WithValidation(ProcessValidationMode mode)
     {
         _validationMode = mode;
+        return this;
+    }
+
+    /// <summary>Sets the verbosity used in process validation messages and process result string formatting.</summary>
+    public ProcessWrapper WithLogVerbosity(ProcessLogVerbosity verbosity)
+    {
+        _logVerbosity = verbosity;
         return this;
     }
 
@@ -355,7 +361,7 @@ public sealed class ProcessWrapper
     {
         ApplyProcessWrapperInterceptors();
         return StartProcess(_outputTargets, _errorTargets,
-            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, processFileName, arguments, ct) => new ProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, hasStandardErrorOutput, activity, processFileName, arguments, ct),
+            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, processFileName, arguments, logVerbosity, ct) => new ProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, hasStandardErrorOutput, activity, processFileName, arguments, logVerbosity, ct),
             cancellationToken);
     }
 
@@ -373,12 +379,12 @@ public sealed class ProcessWrapper
         var errorTargets = _errorTargets.Add(OutputTarget.ToProcessOutputCollection(output).ForOutputType(ProcessOutputType.StandardError));
 
         return StartProcess(outputTargets, errorTargets,
-            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, processFileName, arguments, ct) => new BufferedProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, output, hasStandardErrorOutput, activity, processFileName, arguments, ct),
+            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, processFileName, arguments, logVerbosity, ct) => new BufferedProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, output, hasStandardErrorOutput, activity, processFileName, arguments, logVerbosity, ct),
             cancellationToken);
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ProcessInstance will dispose it")]
-    private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<IProcessHandle, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, Activity?, string, IReadOnlyList<string>, CancellationToken, T> factory, CancellationToken cancellationToken)
+    private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<IProcessHandle, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, Activity?, string, IReadOnlyList<string>, ProcessLogVerbosity, CancellationToken, T> factory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -477,7 +483,7 @@ public sealed class ProcessWrapper
         var activity = ProcessWrapperTelemetry.ActivitySource.StartActivity("process.execute");
         activity?.SetTag("process.executable.path", resolvedFileName);
 
-        return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, processFileName, arguments, cancellationToken);
+        return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, processFileName, arguments, _logVerbosity, cancellationToken);
     }
 
     private void ApplyProcessWrapperInterceptors()

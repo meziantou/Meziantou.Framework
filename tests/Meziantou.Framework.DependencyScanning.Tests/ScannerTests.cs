@@ -1,7 +1,6 @@
 #pragma warning disable MA0101
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
-using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
 using Meziantou.Xunit;
@@ -562,7 +561,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         AssertFileContentEqual("global.json", Expected, ignoreNewLines: true);
     }
 
-    [Fact, RunIf(TestOperatingSystems.Windows)]
+    [Fact]
     public async Task GitSubmodulesFromDependencies()
     {
         // Initialize remote repository
@@ -575,13 +574,8 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         await ExecuteProcess("git", "add .", remote.FullPath);
         await ExecuteProcess("git", "commit -m commit-message", remote.FullPath);
 
-        // Get remote head
-        string head;
-        using (var repository = new Repository(remote.FullPath))
-        {
-            head = repository.Head.Tip.Sha;
-            testOutputHelper.WriteLine("Head: " + head);
-        }
+        var head = (await ExecuteProcess("git", "rev-parse HEAD", remote.FullPath)).Trim();
+        testOutputHelper.WriteLine("Head: " + head);
 
         // Initialize current directory
         await ExecuteProcess("git", "init", _directory.FullPath);
@@ -610,7 +604,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 
         Assert.All(result, item => Assert.False(item.VersionLocation!.IsUpdatable));
 
-        async Task ExecuteProcess(string process, string args, string workingDirectory)
+        async Task<string> ExecuteProcess(string process, string args, string workingDirectory)
         {
             testOutputHelper.WriteLine($"Executing: '{process}' {args} ({workingDirectory})");
             var processInstance = ProcessWrapper.Create(process)
@@ -621,6 +615,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 
             var processResult = await processInstance;
             AssertProcessResult(processResult.ExitCode, string.Join('\n', processResult.Output));
+            return string.Join('\n', processResult.Output);
         }
 
         async Task ExecuteProcess2(string process, string[] args, string workingDirectory)

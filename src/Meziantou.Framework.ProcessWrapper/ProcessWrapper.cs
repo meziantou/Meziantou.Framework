@@ -134,7 +134,7 @@ public sealed class ProcessWrapper
     /// <summary>Returns the command line representation of this process configuration.</summary>
     public override string ToString()
     {
-        var fileName = CommandLineBuilder.WindowsQuotedArgument(_startInfo.FileName)!;
+        var fileName = CommandLineBuilder.WindowsQuotedArgument(_startInfo.FileName);
         if (_startInfo.ArgumentList.Count == 0)
             return fileName;
 

@@ -103,6 +103,7 @@ public sealed class PostgreSqlServerProtocolTests
     public async Task Npgsql_ScramAuthentication_UsesCallbackValidation()
     {
         const string Password = "Password123!";
+        var authenticationContextTask = new TaskCompletionSource<PostgreSqlAuthenticationContext>(TaskCreationOptions.RunContinuationsAsynchronously);
         var options = new PostgreSqlServerOptions
         {
             AuthenticationMethod = PostgreSqlAuthenticationMethod.ScramSha256,
@@ -114,6 +115,7 @@ public sealed class PostgreSqlServerProtocolTests
             (context, cancellationToken) =>
             {
                 _ = cancellationToken;
+                authenticationContextTask.TrySetResult(context);
                 return ValueTask.FromResult(context.ValidatePassword(Password)
                     ? PostgreSqlAuthenticationResult.Success()
                     : PostgreSqlAuthenticationResult.Fail("invalid password"));
@@ -125,6 +127,9 @@ public sealed class PostgreSqlServerProtocolTests
 
         await using var connection = new NpgsqlConnection(CreateConnectionString(port, password: Password));
         await connection.OpenAsync();
+
+        var capturedContext = await authenticationContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(PostgreSqlAuthenticationMethod.ScramSha256, capturedContext.Method);
     }
 
     [Fact]

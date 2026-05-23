@@ -10,7 +10,23 @@ public readonly struct ProcessExitCode(int value) : IEquatable<ProcessExitCode>
     public int Value { get; } = value;
 
     /// <summary>Gets a value indicating whether the process exited successfully.</summary>
-    public bool IsSuccess => Value == 0;
+    public bool IsSuccess => Value is 0;
+
+    /// <summary>
+    /// Determines whether the exit code matches any of the expected values.
+    /// </summary>
+    /// <param name="expectedValues">The expected exit code values.</param>
+    /// <returns><see langword="true"/> if the exit code matches any of the expected values; otherwise, <see langword="false"/>.</returns>
+    public bool IsAnyOf(params ReadOnlySpan<int> expectedValues)
+    {
+        foreach (var expectedValue in expectedValues)
+        {
+            if (Value == expectedValue)
+                return true;
+        }
+
+        return false;
+    }
 
     /// <inheritdoc />
     public bool Equals(ProcessExitCode other) => Value == other.Value;

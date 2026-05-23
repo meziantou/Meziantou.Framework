@@ -10,9 +10,6 @@ namespace GlobbingBenchmarks;
 public class GlobIsMatchBenchmark
 {
     private Glob _meziantouGlob;
-    private GlobExpressions.Glob _globExpressions;
-    private GlobExpressions.Glob _globExpressionsCompiled;
-    private DotNet.Globbing.Glob _dotnetGlob;
 
     [Params([
         "*.txt",
@@ -36,20 +33,8 @@ public class GlobIsMatchBenchmark
     public void Initialize()
     {
         _meziantouGlob = Glob.Parse(Pattern, GlobOptions.None);
-        _globExpressions = new GlobExpressions.Glob(Pattern, GlobExpressions.GlobOptions.MatchFullPath);
-        _globExpressionsCompiled = new GlobExpressions.Glob(Pattern, GlobExpressions.GlobOptions.MatchFullPath | GlobExpressions.GlobOptions.Compiled);
-        _dotnetGlob = DotNet.Globbing.Glob.Parse(Pattern);
     }
 
     [Benchmark]
     public bool Meziantou_Globbing() => _meziantouGlob.IsMatch(Path);
-
-    [Benchmark]
-    public bool GlobExpressions_None() => _globExpressions.IsMatch(Path);
-
-    [Benchmark]
-    public bool GlobExpressions_Compiled() => _globExpressionsCompiled.IsMatch(Path);
-
-    [Benchmark]
-    public bool DotNetGlobbing() => _dotnetGlob.IsMatch(Path);
 }

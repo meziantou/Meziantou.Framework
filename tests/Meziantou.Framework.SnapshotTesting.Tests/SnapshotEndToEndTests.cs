@@ -520,11 +520,40 @@ public sealed class SnapshotEndToEndTests
 
         Assert.Equal(
         [
-            "__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.gif",
-            "__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.gif",
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.png",
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.png",
         ], snapshotFiles.Select(static item => item.RelativePath));
-        Assert.Equal(CreateSingleFrameGif(), snapshotFiles[0].Content);
-        Assert.Equal(CreateSingleFrameGif(), snapshotFiles[1].Content);
+        Assert.Equal(CreateSingleFramePng(), snapshotFiles[0].Content);
+        Assert.Equal(CreateSingleFramePng(), snapshotFiles[1].Content);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_SerializesIcoEntries_WhenIcoSerializerIsEnabled()
+    {
+        var payload = CreateTwoEntryIco();
+        var sourcePayload = ToByteArraySource(payload);
+        var snapshotFiles = await AssertSnapshot(
+            $$"""
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    var payload = new byte[] { {{sourcePayload}} };
+                    var settings = SnapshotTestUtilities.CreateSuccessSettings();
+                    settings.Serializers.AddIcoSerializer();
+                    Snapshot.Validate(payload, SnapshotType.Ico, settings);
+                }
+            }
+            """);
+
+        Assert.Equal(
+        [
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.png",
+            "__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.png",
+        ], snapshotFiles.Select(static item => item.RelativePath));
+        Assert.Equal(CreateSingleFramePng(), snapshotFiles[0].Content);
+        Assert.Equal(CreateSingleFramePng(color: 0xFF000000u), snapshotFiles[1].Content);
     }
 
     [Fact]
@@ -1052,26 +1081,6 @@ public sealed class SnapshotEndToEndTests
         BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(offset, 2), value);
     }
 
-    private static byte[] CreateSingleFrameGif()
-    {
-        return
-        [
-            0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
-            0x01, 0x00, 0x01, 0x00,
-            0x80, 0x01, 0x00,
-            0xFF, 0xFF, 0xFF,
-            0x00, 0x00, 0x00,
-            0x2C,
-            0x00, 0x00, 0x00, 0x00,
-            0x01, 0x00, 0x01, 0x00,
-            0x00,
-            0x02,
-            0x02, 0x44, 0x01,
-            0x00,
-            0x3B,
-        ];
-    }
-
     private static byte[] CreateTwoFrameGif()
     {
         return
@@ -1097,6 +1106,16 @@ public sealed class SnapshotEndToEndTests
             0x00,
             0x3B,
         ];
+    }
+
+    private static byte[] CreateSingleFramePng(uint color = 0xFFFFFFFFu)
+    {
+        return ImageTestData.CreatePngRgba32(width: 1, height: 1, pixels: [color]);
+    }
+
+    private static byte[] CreateTwoEntryIco()
+    {
+        return ImageTestData.CreateIcoWithPngEntries(CreateSingleFramePng(), CreateSingleFramePng(color: 0xFF000000u));
     }
 
     private static async Task<SnapshotFile[]> AssertSnapshot(

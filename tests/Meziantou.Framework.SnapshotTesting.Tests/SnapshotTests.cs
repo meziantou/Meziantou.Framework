@@ -349,6 +349,8 @@ public sealed class SnapshotTests
         Assert.Equal("SVG image", SnapshotType.Svg.DisplayName);
         Assert.Equal("image/gif", SnapshotType.Gif.MimeType);
         Assert.Equal("GIF image", SnapshotType.Gif.DisplayName);
+        Assert.Equal("image/x-icon", SnapshotType.Ico.MimeType);
+        Assert.Equal("ICO image", SnapshotType.Ico.DisplayName);
     }
 
     [Fact]
@@ -421,9 +423,9 @@ public sealed class SnapshotTests
         var data = settings.Serializers.Serialize(snapshotType, CreateTwoFrameGif());
 
         Assert.Equal(2, data.Data.Count);
-        Assert.All(data.Data, snapshot => Assert.Equal(snapshotType.FileExtension, snapshot.Extension));
-        Assert.Equal(CreateSingleFrameGif(), data.Data[0].Data);
-        Assert.Equal(CreateSingleFrameGif(), data.Data[1].Data);
+        Assert.All(data.Data, snapshot => Assert.Equal(SnapshotType.Png.FileExtension, snapshot.Extension));
+        Assert.Equal(CreateSingleFramePng(), data.Data[0].Data);
+        Assert.Equal(CreateSingleFramePng(), data.Data[1].Data);
     }
 
     [Fact]
@@ -438,6 +440,54 @@ public sealed class SnapshotTests
         var snapshot = Assert.Single(data.Data);
         Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
         Assert.Equal(payload, snapshot.Data);
+    }
+
+    [Fact]
+    public void AddIcoSerializer_SerializesIcoByteArrayAsOneSnapshotPerEntry()
+    {
+        var snapshotType = SnapshotType.Ico;
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddIcoSerializer();
+        var data = settings.Serializers.Serialize(snapshotType, CreateTwoEntryIco());
+
+        Assert.Equal(2, data.Data.Count);
+        Assert.All(data.Data, snapshot => Assert.Equal(SnapshotType.Png.FileExtension, snapshot.Extension));
+        Assert.Equal(CreateSingleFramePng(), data.Data[0].Data);
+        Assert.Equal(CreateSingleFramePng(color: 0xFF000000u), data.Data[1].Data);
+    }
+
+    [Fact]
+    public void AddIcoSerializer_FallsBackToBinarySerializerWhenPayloadIsNotIco()
+    {
+        var snapshotType = SnapshotType.Ico;
+        var payload = "not-an-ico"u8.ToArray();
+        var settings = new SnapshotSettings();
+        settings.Serializers.AddIcoSerializer();
+        var data = settings.Serializers.Serialize(snapshotType, payload);
+
+        var snapshot = Assert.Single(data.Data);
+        Assert.Equal(snapshotType.FileExtension, snapshot.Extension);
+        Assert.Equal(payload, snapshot.Data);
+    }
+
+    [Fact]
+    public void AddGifSerializer_StaticFixture_Snapshot()
+    {
+        var payload = ImageTestData.ReadImageFixture("serializer-two-frame.gif");
+        var settings = SnapshotSettings.Default with { };
+        settings.Serializers.AddGifSerializer();
+
+        Snapshot.Validate(payload, SnapshotType.Gif, settings);
+    }
+
+    [Fact]
+    public void AddIcoSerializer_StaticFixture_Snapshot()
+    {
+        var payload = ImageTestData.ReadImageFixture("serializer-multi-entry.ico");
+        var settings = SnapshotSettings.Default with { };
+        settings.Serializers.AddIcoSerializer();
+
+        Snapshot.Validate(payload, SnapshotType.Ico, settings);
     }
 
     [Fact]
@@ -977,26 +1027,6 @@ public sealed class SnapshotTests
         };
     }
 
-    private static byte[] CreateSingleFrameGif()
-    {
-        return
-        [
-            0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
-            0x01, 0x00, 0x01, 0x00,
-            0x80, 0x01, 0x00,
-            0xFF, 0xFF, 0xFF,
-            0x00, 0x00, 0x00,
-            0x2C,
-            0x00, 0x00, 0x00, 0x00,
-            0x01, 0x00, 0x01, 0x00,
-            0x00,
-            0x02,
-            0x02, 0x44, 0x01,
-            0x00,
-            0x3B,
-        ];
-    }
-
     private static byte[] CreateTwoFrameGif()
     {
         return
@@ -1022,6 +1052,16 @@ public sealed class SnapshotTests
             0x00,
             0x3B,
         ];
+    }
+
+    private static byte[] CreateSingleFramePng(uint color = 0xFFFFFFFFu)
+    {
+        return ImageTestData.CreatePngRgba32(width: 1, height: 1, pixels: [color]);
+    }
+
+    private static byte[] CreateTwoEntryIco()
+    {
+        return ImageTestData.CreateIcoWithPngEntries(CreateSingleFramePng(), CreateSingleFramePng(color: 0xFF000000u));
     }
 
     private sealed class SnapshotTypeSerializer : ISnapshotSerializer

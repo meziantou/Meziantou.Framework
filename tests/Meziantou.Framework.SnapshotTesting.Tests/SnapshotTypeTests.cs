@@ -17,6 +17,7 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("jpeg"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("jpg"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create("gif"));
+        Assert.Equal(SnapshotType.Ico, SnapshotType.Create("ico"));
     }
 
     [Fact]
@@ -27,6 +28,7 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("JPEG"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create("JPG"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create("GIF"));
+        Assert.Equal(SnapshotType.Ico, SnapshotType.Create("ICO"));
     }
 
     [Fact]
@@ -37,6 +39,7 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create(".jpeg"));
         Assert.Equal(SnapshotType.Jpeg, SnapshotType.Create(".jpg"));
         Assert.Equal(SnapshotType.Gif, SnapshotType.Create(".gif"));
+        Assert.Equal(SnapshotType.Ico, SnapshotType.Create(".ico"));
     }
 
     [Fact]

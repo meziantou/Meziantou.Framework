@@ -23,13 +23,15 @@ Snapshot.Validate(imageBytes, SnapshotType.Png);
 Snapshot.Validate(svgText, SnapshotType.Svg);
 ```
 
-For GIF frame snapshots (opt-in):
+For GIF/ICO frame snapshots (opt-in, emitted as PNG snapshots):
 
 ```csharp
 var settings = SnapshotSettings.Default with { };
 settings.Serializers.AddGifSerializer();
+settings.Serializers.AddIcoSerializer();
 
 Snapshot.Validate(gifBytes, SnapshotType.Gif, settings);
+Snapshot.Validate(icoBytes, SnapshotType.Ico, settings);
 ```
 
 ## File naming convention
@@ -102,7 +104,8 @@ Snapshot.Validate(value, SnapshotType.Default, settings);
 ```
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
-GIF frame extraction is opt-in via `Serializers.AddGifSerializer()`: when enabled and `SnapshotType.Gif` is used with a valid GIF `byte[]`, each frame is serialized as a separate `.gif` snapshot.
+GIF frame extraction is opt-in via `Serializers.AddGifSerializer()`: when enabled and `SnapshotType.Gif` is used with a valid GIF `byte[]`, each frame is serialized as a separate `.png` snapshot.
+ICO image extraction is opt-in via `Serializers.AddIcoSerializer()`: when enabled and `SnapshotType.Ico` is used with a valid ICO `byte[]`, each icon image is serialized as a separate `.png` snapshot.
 BMP/PNG/JPEG image comparison is opt-in via `Comparers.AddImageComparer()`. When enabled, `SnapshotType.Bmp`, `SnapshotType.Png`, and `SnapshotType.Jpeg` (including `.jpg` aliases) snapshots are compared by decoded pixel content (ARGB), so format metadata differences do not trigger snapshot mismatches.
 To allow small visual differences, configure the image comparer with an SSIM threshold:
 

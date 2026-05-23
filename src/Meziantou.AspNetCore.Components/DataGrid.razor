@@ -29,7 +29,7 @@
                 foreach (var item in Items)
                 {
                     @* Use @key to help the diff algorithm when updating the collection *@
-                    <tr @key="item.GetHashCode()" class="@(RowClass?.Invoke(item, index++))">
+                    <tr @key="item?.GetHashCode()" class="@(RowClass?.Invoke(item, index++))">
                         @foreach (var column in columns)
                         {
                             @column.CellTemplate(item)

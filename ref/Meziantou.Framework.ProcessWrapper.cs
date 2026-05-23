@@ -108,6 +108,7 @@ namespace Meziantou.Framework
         public ProcessExecutionException(string message) { }
         public ProcessExecutionException(string message, System.Exception innerException) { }
         public ProcessExecutionException(Meziantou.Framework.ProcessExitCode exitCode) { }
+        public ProcessExecutionException(Meziantou.Framework.ProcessExitCode exitCode, string message) { }
     }
 
     public readonly struct ProcessExitCode : System.IEquatable<Meziantou.Framework.ProcessExitCode>
@@ -142,6 +143,14 @@ namespace Meziantou.Framework
         public int? CpuPercentage { get => throw null; set { } }
         public long? MemoryLimitInBytes { get => throw null; set { } }
         public int? ProcessCountLimit { get => throw null; set { } }
+    }
+
+    [System.Flags]
+    public enum ProcessLogVerbosity
+    {
+        None = 0,
+        IncludeProcessPath = 1,
+        IncludeArguments = 2
     }
 
     public sealed class ProcessOutput
@@ -204,6 +213,7 @@ namespace Meziantou.Framework
     public sealed class ProcessWrapper
     {
         public static Meziantou.Framework.IProcessFactory DefaultProcessFactory { get => throw null; set { } }
+        public static Meziantou.Framework.ProcessLogVerbosity DefaultLogVerbosity { get => throw null; set { } }
         public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
         public static System.IDisposable AddInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;
         public static Meziantou.Framework.ProcessWrapper Create(string fileName) => throw null;
@@ -217,6 +227,7 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Action<Meziantou.Framework.ProcessWrapperEnvironmentVariables> configure) => throw null;
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Collections.Generic.IReadOnlyDictionary<string, string?> variables) => throw null;
         public Meziantou.Framework.ProcessWrapper WithValidation(Meziantou.Framework.ProcessValidationMode mode) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithLogVerbosity(Meziantou.Framework.ProcessLogVerbosity verbosity) => throw null;
         public Meziantou.Framework.ProcessWrapper WithProcessFactory(Meziantou.Framework.IProcessFactory processFactory) => throw null;
         public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessWrapperInterceptor interceptor) => throw null;
         public Meziantou.Framework.ProcessWrapper WithInterceptor(Meziantou.Framework.IProcessStartInfoInterceptor interceptor) => throw null;

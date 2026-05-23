@@ -18,6 +18,10 @@ inputs:
       Each entry is passed as --full-rebuild-trigger.
     required: false
     default: ""
+  base-commit:
+    description: Optional base commit SHA to pass as --base-commit
+    required: false
+    default: ""
   run-generate:
     description: Whether to run DeltaBuild generation
     required: false
@@ -66,6 +70,7 @@ runs:
         OUTPUT_PROJECT: ${{ inputs.output-project }}
         TRAVERSAL_AFTER_IMPORT: ${{ inputs.traversal-after-import }}
         FULL_REBUILD_TRIGGERS: ${{ inputs.full-rebuild-triggers }}
+        BASE_COMMIT: ${{ inputs.base-commit }}
         TEST_PROJECTS_ONLY: ${{ inputs.test-projects-only }}
         SHARD: ${{ inputs.shard }}
         TOTAL_SHARDS: ${{ inputs.total-shards }}
@@ -81,6 +86,12 @@ runs:
 
         if ($env:TEST_PROJECTS_ONLY -eq "true") {
           $arguments += "--test-projects-only"
+        }
+
+        # All-zero SHAs can appear in some push edge cases (for example branch creation),
+        # and are not valid git commits for DeltaBuild base selection.
+        if ($env:BASE_COMMIT -and $env:BASE_COMMIT -notmatch '^0+$') {
+          $arguments += @("--base-commit", $env:BASE_COMMIT)
         }
 
         if ($env:SHARD) {

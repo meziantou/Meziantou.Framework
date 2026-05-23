@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>A replacement for CodeDom to generate C# files</Description>
-    <Version>5.0.0</Version>
+    <Version>5.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

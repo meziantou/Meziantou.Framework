@@ -1,4 +1,4 @@
-﻿/// <reference types="blazor__javascript-interop" />
+﻿/// <reference path="./types/blazor.dts" />
 
 export function initialize(lastIndicator : HTMLElement, instance : DotNet.DotNetObject) {
   const options = {

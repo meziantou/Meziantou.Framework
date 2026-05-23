@@ -198,7 +198,9 @@ internal static class ImageTestData
         for (var i = 0; i < pngImages.Length; i++)
         {
             var image = pngImages[i];
-            ArgumentNullException.ThrowIfNull(image);
+            if (image is null)
+                throw new ArgumentException("PNG image cannot be null.", nameof(pngImages));
+
             if (image.Length == 0)
                 throw new ArgumentException("PNG image cannot be empty.", nameof(pngImages));
 

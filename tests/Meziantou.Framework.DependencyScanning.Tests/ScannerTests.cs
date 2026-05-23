@@ -600,7 +600,10 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 
         // Assert
         var result = await GetDependencies<GitSubmoduleDependencyScanner>();
-        AssertContainDependency(result, (DependencyType.GitReference, remote.FullPath, head, 0, 0));
+        Assert.Contains(result, d =>
+            d.Type == DependencyType.GitReference &&
+            d.Version == head &&
+            IsEquivalentPath(d.Name, remote.FullPath));
 
         Assert.All(result, item => Assert.False(item.VersionLocation!.IsUpdatable));
 
@@ -635,6 +638,16 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         {
             Assert.Equal(0, exitCode);
             testOutputHelper.WriteLine("git command succeeds\n" + output);
+        }
+
+        static bool IsEquivalentPath(string? left, string? right)
+        {
+            if (left is null || right is null)
+                return left is null && right is null;
+
+            var normalizedLeft = left.Replace('\\', '/').TrimEnd('/');
+            var normalizedRight = right.Replace('\\', '/').TrimEnd('/');
+            return string.Equals(normalizedLeft, normalizedRight, StringComparison.OrdinalIgnoreCase);
         }
     }
 

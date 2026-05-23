@@ -102,7 +102,8 @@ jobs:
         with:
           input-project: eng/packages.proj
           output-project: eng/packages.delta.proj
-          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
+          base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
+          run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
@@ -194,7 +195,8 @@ jobs:
         with:
           input-project: eng/build.proj
           output-project: eng/delta.proj
-          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
+          base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
+          run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
           test-projects-only: "true"
           shard: ${{ matrix.shard }}
           total-shards: 2

@@ -157,7 +157,7 @@ jobs:
         run: dotnet run ./eng/validate-nuget.cs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_VALIDATION_IS_DELTA: ${{ case(github.event_name == 'pull_request' && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
+          NUGET_VALIDATION_IS_DELTA: ${{ case((github.event_name == 'pull_request' || github.event_name == 'push') && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
 
   build_and_test:
     runs-on: ${{ matrix.runs-on }}

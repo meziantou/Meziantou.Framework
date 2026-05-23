@@ -341,7 +341,7 @@ public sealed class ProcessWrapper
     {
         ApplyProcessWrapperInterceptors();
         return StartProcess(_outputTargets, _errorTargets,
-            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, ct) => new ProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, hasStandardErrorOutput, activity, ct),
+            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, processFileName, arguments, ct) => new ProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, hasStandardErrorOutput, activity, processFileName, arguments, ct),
             cancellationToken);
     }
 
@@ -359,12 +359,12 @@ public sealed class ProcessWrapper
         var errorTargets = _errorTargets.Add(OutputTarget.ToProcessOutputCollection(output).ForOutputType(ProcessOutputType.StandardError));
 
         return StartProcess(outputTargets, errorTargets,
-            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, ct) => new BufferedProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, output, hasStandardErrorOutput, activity, ct),
+            (processHandle, inputTask, outputTask, registration, limiter, hasStandardErrorOutput, activity, processFileName, arguments, ct) => new BufferedProcessInstance(processHandle, inputTask, outputTask, registration, limiter, _validationMode, output, hasStandardErrorOutput, activity, processFileName, arguments, ct),
             cancellationToken);
     }
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ProcessInstance will dispose it")]
-    private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<IProcessHandle, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, Activity?, CancellationToken, T> factory, CancellationToken cancellationToken)
+    private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<IProcessHandle, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, Activity?, string, IReadOnlyList<string>, CancellationToken, T> factory, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -381,6 +381,8 @@ public sealed class ProcessWrapper
         startInfo.RedirectStandardInput = hasInputStream;
         startInfo.FileName = resolvedFileName;
         ApplyProcessStartInfoInterceptors(startInfo);
+        var processFileName = startInfo.FileName;
+        var arguments = (IReadOnlyList<string>)[.. startInfo.ArgumentList];
 
         var processFactory = _processFactory ?? DefaultProcessFactory;
         var processHandle = processFactory.Create(startInfo);
@@ -461,7 +463,7 @@ public sealed class ProcessWrapper
         var activity = ProcessWrapperTelemetry.ActivitySource.StartActivity("process.execute");
         activity?.SetTag("process.executable.path", resolvedFileName);
 
-        return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, cancellationToken);
+        return factory(processHandle, inputStreamTask, Task.WhenAll(outputStreamTask, errorStreamTask), registration, processLimiter, () => Volatile.Read(ref hasStandardErrorOutput) != 0, activity, processFileName, arguments, cancellationToken);
     }
 
     private void ApplyProcessWrapperInterceptors()

@@ -190,6 +190,7 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessExitCode ExitCode { get => throw null; }
         public System.DateTimeOffset StartDate { get => throw null; }
         public System.DateTimeOffset ExitDate { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     [System.Flags]

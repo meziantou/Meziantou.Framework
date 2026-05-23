@@ -424,6 +424,30 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ProcessResult_ToString_ReturnsCommandAndExitCode()
+    {
+        using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
+        var createdProcesses = new List<CreatedProcessInfo>();
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            createdProcesses.Add(new CreatedProcessInfo(startInfo.FileName, startInfo.WorkingDirectory, [.. startInfo.ArgumentList]));
+            return fakeProcess;
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            var processResult = await CreateEchoCommand("ignored")
+                .ExecuteAsync();
+
+            Assert.Single(createdProcesses);
+            var expectedCommandLine = ProcessWrapper.Create(createdProcesses[0].FileName)
+                .WithArguments([.. createdProcesses[0].Arguments])
+                .ToString();
+            Assert.Equal($"{expectedCommandLine} (ExitCode: {processResult.ExitCode})", processResult.ToString());
+        });
+    }
+
+    [Fact]
     public async Task WithWorkingDirectory_SetsWorkingDirectory()
     {
         ProcessWrapper command;
@@ -1231,6 +1255,10 @@ public class ProcessWrapperTests
             Assert.Equal("intercepted output", processResult.Output.StandardOutput.First().Text);
             Assert.Single(createdProcesses);
             Assert.False(string.IsNullOrEmpty(createdProcesses[0].FileName));
+            var expectedCommandLine = ProcessWrapper.Create(createdProcesses[0].FileName)
+                .WithArguments([.. createdProcesses[0].Arguments])
+                .ToString();
+            Assert.Equal($"{expectedCommandLine} (ExitCode: {processResult.ExitCode})", processResult.ToString());
         });
     }
 

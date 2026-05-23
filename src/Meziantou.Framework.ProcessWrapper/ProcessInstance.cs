@@ -22,10 +22,12 @@ public class ProcessInstance
     private readonly Func<bool> _hasStandardErrorOutput;
     private readonly Activity? _activity;
     private readonly Task<ProcessCompletion> _processCompletionTask;
+    private protected readonly string _processFileName;
+    private protected readonly IReadOnlyList<string> _arguments;
     private protected readonly Lock WaitTaskLock = new();
     private Task<ProcessResult>? _waitTask;
 
-    internal ProcessInstance(IProcessHandle process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, CancellationToken cancellationToken)
+    internal ProcessInstance(IProcessHandle process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, CancellationToken cancellationToken, string processFileName, IReadOnlyList<string> arguments)
     {
         _process = process;
         _inputStreamTask = inputStreamTask;
@@ -36,6 +38,8 @@ public class ProcessInstance
         _cancellationToken = cancellationToken;
         _hasStandardErrorOutput = hasStandardErrorOutput;
         _activity = activity;
+        _processFileName = processFileName ?? throw new ArgumentNullException(nameof(processFileName));
+        _arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
 
         ProcessId = process.Id;
         StartDate = DateTimeOffset.UtcNow;
@@ -215,7 +219,7 @@ public class ProcessInstance
 
     private protected virtual ProcessResult CreateProcessResult(ProcessExitCode exitCode, DateTimeOffset exitDate)
     {
-        return new ProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate);
+        return new ProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate, processFileName: _processFileName, arguments: _arguments);
     }
 
     private sealed class ProcessCompletion

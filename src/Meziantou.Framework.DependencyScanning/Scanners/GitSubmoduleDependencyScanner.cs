@@ -136,12 +136,59 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 
     private static string Unquote(string value)
     {
+        string unquotedValue;
         if (value.Length >= 2 && value[0] is '"' && value[^1] is '"')
         {
-            return value[1..^1];
+            unquotedValue = value[1..^1];
+        }
+        else
+        {
+            unquotedValue = value;
         }
 
-        return value;
+        return UnescapeGitConfigValue(unquotedValue);
+    }
+
+    private static string UnescapeGitConfigValue(string value)
+    {
+        if (value.AsSpan().IndexOf('\\') < 0)
+            return value;
+
+        var builder = new System.Text.StringBuilder(value.Length);
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (value[i] is not '\\' || i == value.Length - 1)
+            {
+                builder.Append(value[i]);
+                continue;
+            }
+
+            i++;
+            switch (value[i])
+            {
+                case '\\':
+                    builder.Append('\\');
+                    break;
+                case '"':
+                    builder.Append('"');
+                    break;
+                case 'n':
+                    builder.Append('\n');
+                    break;
+                case 't':
+                    builder.Append('\t');
+                    break;
+                case 'b':
+                    builder.Append('\b');
+                    break;
+                default:
+                    builder.Append('\\');
+                    builder.Append(value[i]);
+                    break;
+            }
+        }
+
+        return builder.ToString();
     }
 
     private static string NormalizeGitPath(string path)

@@ -313,17 +313,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 
     private static bool TryReadExactly(Stream stream, Span<byte> buffer)
     {
-        var totalRead = 0;
-        while (totalRead < buffer.Length)
-        {
-            var read = stream.Read(buffer[totalRead..]);
-            if (read <= 0)
-                return false;
-
-            totalRead += read;
-        }
-
-        return true;
+        return stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false) == buffer.Length;
     }
 
     private readonly record struct SubmoduleEntry(string Path, string Url);

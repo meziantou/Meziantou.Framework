@@ -22,12 +22,14 @@ public class ProcessInstance
     private readonly Func<bool> _hasStandardErrorOutput;
     private readonly Activity? _activity;
     private readonly Task<ProcessCompletion> _processCompletionTask;
-    private protected readonly string _processFileName;
-    private protected readonly IReadOnlyList<string> _arguments;
+    private readonly string _processFileName;
+    private readonly IReadOnlyList<string> _arguments;
+    private protected string ProcessFileName => _processFileName;
+    private protected IReadOnlyList<string> Arguments => _arguments;
     private protected readonly Lock WaitTaskLock = new();
     private Task<ProcessResult>? _waitTask;
 
-    internal ProcessInstance(IProcessHandle process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, CancellationToken cancellationToken, string processFileName, IReadOnlyList<string> arguments)
+    internal ProcessInstance(IProcessHandle process, Task inputStreamTask, Task outputStreamTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, Func<bool> hasStandardErrorOutput, Activity? activity, string processFileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         _process = process;
         _inputStreamTask = inputStreamTask;

@@ -9,8 +9,8 @@ public sealed class BufferedProcessInstance : ProcessInstance
     private readonly ProcessOutputCollection _output;
     private Task<BufferedProcessResult>? _waitTask;
 
-    internal BufferedProcessInstance(IProcessHandle process, Task inputTask, Task outputTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, ProcessOutputCollection output, Func<bool> hasStandardErrorOutput, Activity? activity, CancellationToken cancellationToken, string processFileName, IReadOnlyList<string> arguments)
-        : base(process, inputTask, outputTask, cancellationRegistration, processLimiter, validationMode, hasStandardErrorOutput, activity, cancellationToken, processFileName, arguments)
+    internal BufferedProcessInstance(IProcessHandle process, Task inputTask, Task outputTask, CancellationTokenRegistration cancellationRegistration, IDisposable? processLimiter, ProcessValidationMode validationMode, ProcessOutputCollection output, Func<bool> hasStandardErrorOutput, Activity? activity, string processFileName, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+        : base(process, inputTask, outputTask, cancellationRegistration, processLimiter, validationMode, hasStandardErrorOutput, activity, processFileName, arguments, cancellationToken)
     {
         _output = output;
     }
@@ -44,6 +44,6 @@ public sealed class BufferedProcessInstance : ProcessInstance
 
     private protected override ProcessResult CreateProcessResult(ProcessExitCode exitCode, DateTimeOffset exitDate)
     {
-        return new BufferedProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate, output: _output, processFileName: _processFileName, arguments: _arguments);
+        return new BufferedProcessResult(processId: ProcessId, exitCode: exitCode, startDate: StartDate, exitDate: exitDate, output: _output, processFileName: ProcessFileName, arguments: Arguments);
     }
 }

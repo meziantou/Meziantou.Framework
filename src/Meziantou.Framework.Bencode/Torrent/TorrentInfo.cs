@@ -2,6 +2,14 @@ namespace Meziantou.Framework.Bencode.Torrent;
 
 public sealed class TorrentInfo
 {
+    private static readonly BencodeString NameKey = CreateKey("name");
+    private static readonly BencodeString PieceLengthKey = CreateKey("piece length");
+    private static readonly BencodeString PiecesKey = CreateKey("pieces");
+    private static readonly BencodeString PrivateKey = CreateKey("private");
+    private static readonly BencodeString LengthKey = CreateKey("length");
+    private static readonly BencodeString FilesKey = CreateKey("files");
+    private static readonly BencodeString PathKey = CreateKey("path");
+
     public string Name { get; set; } = "";
 
     public long PieceLength { get; set; }
@@ -18,9 +26,9 @@ public sealed class TorrentInfo
     {
         ArgumentNullException.ThrowIfNull(dictionary);
 
-        var name = GetRequiredString(dictionary, "name");
-        var pieceLength = GetRequiredInteger(dictionary, "piece length");
-        var pieces = GetRequiredByteString(dictionary, "pieces").Value;
+        var name = GetRequiredString(dictionary, NameKey, "name");
+        var pieceLength = GetRequiredInteger(dictionary, PieceLengthKey, "piece length");
+        var pieces = GetRequiredByteString(dictionary, PiecesKey, "pieces").Value;
 
         var info = new TorrentInfo
         {
@@ -29,7 +37,7 @@ public sealed class TorrentInfo
             Pieces = pieces,
         };
 
-        if (dictionary.TryGetValue("private", out var privateValue))
+        if (dictionary.TryGetValue(PrivateKey, out var privateValue))
         {
             if (privateValue is not BencodeInteger privateInteger)
                 throw new FormatException("The 'private' field must be an integer.");
@@ -37,7 +45,7 @@ public sealed class TorrentInfo
             info.IsPrivate = privateInteger.Value != 0;
         }
 
-        if (dictionary.TryGetValue("length", out var lengthValue))
+        if (dictionary.TryGetValue(LengthKey, out var lengthValue))
         {
             if (lengthValue is not BencodeInteger lengthInteger)
                 throw new FormatException("The 'length' field must be an integer.");
@@ -45,7 +53,7 @@ public sealed class TorrentInfo
             info.Length = lengthInteger.Value;
         }
 
-        if (dictionary.TryGetValue("files", out var filesValue))
+        if (dictionary.TryGetValue(FilesKey, out var filesValue))
         {
             if (filesValue is not BencodeList filesList)
                 throw new FormatException("The 'files' field must be a list.");
@@ -56,8 +64,8 @@ public sealed class TorrentInfo
                 if (fileValue is not BencodeDictionary fileDictionary)
                     throw new FormatException("Each torrent file entry must be a dictionary.");
 
-                var fileLength = GetRequiredInteger(fileDictionary, "length");
-                if (!fileDictionary.TryGetValue("path", out var pathValue) || pathValue is not BencodeList pathList)
+                var fileLength = GetRequiredInteger(fileDictionary, LengthKey, "length");
+                if (!fileDictionary.TryGetValue(PathKey, out var pathValue) || pathValue is not BencodeList pathList)
                     throw new FormatException("Each torrent file entry must contain a 'path' list.");
 
                 var path = new List<string>();
@@ -89,19 +97,19 @@ public sealed class TorrentInfo
 
         var dictionary = new BencodeDictionary
         {
-            { "name", new BencodeString(Encoding.UTF8.GetBytes(Name)) },
-            { "piece length", new BencodeInteger(PieceLength) },
-            { "pieces", new BencodeString(Pieces.ToArray()) },
+            { NameKey, new BencodeString(Encoding.UTF8.GetBytes(Name)) },
+            { PieceLengthKey, new BencodeInteger(PieceLength) },
+            { PiecesKey, new BencodeString(Pieces.ToArray()) },
         };
 
         if (IsPrivate)
         {
-            dictionary.Add("private", new BencodeInteger(1));
+            dictionary.Add(PrivateKey, new BencodeInteger(1));
         }
 
         if (Length.HasValue)
         {
-            dictionary.Add("length", new BencodeInteger(Length.Value));
+            dictionary.Add(LengthKey, new BencodeInteger(Length.Value));
         }
         else if (Files is not null)
         {
@@ -114,12 +122,12 @@ public sealed class TorrentInfo
                 var path = new BencodeList(file.Path.Select(segment => (BencodeValue)new BencodeString(Encoding.UTF8.GetBytes(segment))));
                 files.Add(new BencodeDictionary
                 {
-                    { "length", new BencodeInteger(file.Length) },
-                    { "path", path },
+                    { LengthKey, new BencodeInteger(file.Length) },
+                    { PathKey, path },
                 });
             }
 
-            dictionary.Add("files", files);
+            dictionary.Add(FilesKey, files);
         }
 
         return dictionary;
@@ -172,27 +180,29 @@ public sealed class TorrentInfo
         }
     }
 
-    private static long GetRequiredInteger(BencodeDictionary dictionary, string key)
+    private static long GetRequiredInteger(BencodeDictionary dictionary, BencodeString key, string fieldName)
     {
         if (!dictionary.TryGetValue(key, out var value) || value is not BencodeInteger integer)
-            throw new FormatException($"The required '{key}' field is missing or not an integer.");
+            throw new FormatException($"The required '{fieldName}' field is missing or not an integer.");
 
         return integer.Value;
     }
 
-    private static string GetRequiredString(BencodeDictionary dictionary, string key)
+    private static string GetRequiredString(BencodeDictionary dictionary, BencodeString key, string fieldName)
     {
         if (!dictionary.TryGetValue(key, out var value) || value is not BencodeString text)
-            throw new FormatException($"The required '{key}' field is missing or not a string.");
+            throw new FormatException($"The required '{fieldName}' field is missing or not a string.");
 
         return text.ToUtf8String();
     }
 
-    private static BencodeString GetRequiredByteString(BencodeDictionary dictionary, string key)
+    private static BencodeString GetRequiredByteString(BencodeDictionary dictionary, BencodeString key, string fieldName)
     {
         if (!dictionary.TryGetValue(key, out var value) || value is not BencodeString text)
-            throw new FormatException($"The required '{key}' field is missing or not a string.");
+            throw new FormatException($"The required '{fieldName}' field is missing or not a string.");
 
         return text;
     }
+
+    private static BencodeString CreateKey(string value) => new(Encoding.UTF8.GetBytes(value));
 }

@@ -45,7 +45,7 @@ public sealed class BencodeWriter
         }
     }
 
-    public void WriteString(string value)
+    public void WriteUtf8String(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
         WriteString(Encoding.UTF8.GetBytes(value));
@@ -72,10 +72,14 @@ public sealed class BencodeWriter
         _containers.Add(new ContainerState(ContainerKind.Dictionary, ExpectingDictionaryKey: true));
     }
 
-    public void WriteKey(string key)
+    public void WriteUtf8Key(string key)
     {
         ArgumentNullException.ThrowIfNull(key);
+        WriteKey(Encoding.UTF8.GetBytes(key));
+    }
 
+    public void WriteKey(ReadOnlySpan<byte> key)
+    {
         var state = GetCurrentContainer();
         if (state.Kind != ContainerKind.Dictionary)
             throw new InvalidOperationException("Dictionary keys can only be written while inside a dictionary.");
@@ -83,7 +87,7 @@ public sealed class BencodeWriter
         if (!state.ExpectingDictionaryKey)
             throw new InvalidOperationException("Cannot write a dictionary key while expecting a value.");
 
-        WriteStringCore(Encoding.UTF8.GetBytes(key));
+        WriteStringCore(key);
         _containers[^1] = state with { ExpectingDictionaryKey = false };
     }
 

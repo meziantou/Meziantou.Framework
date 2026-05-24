@@ -14,8 +14,20 @@ public sealed class BencodeDocumentTests
         var document = BencodeDocument.Parse(data);
 
         var dictionary = Assert.IsType<BencodeDictionary>(document.Root);
-        Assert.Equal("moo", Assert.IsType<BencodeString>(dictionary["cow"]).ToUtf8String());
-        Assert.Equal("eggs", Assert.IsType<BencodeString>(dictionary["spam"]).ToUtf8String());
+        Assert.Equal("moo", Assert.IsType<BencodeString>(dictionary[Utf8Key("cow")]).ToUtf8String());
+        Assert.Equal("eggs", Assert.IsType<BencodeString>(dictionary[Utf8Key("spam")]).ToUtf8String());
+    }
+
+    [Fact]
+    public void Parse_Dictionary_WithNonUtf8Key()
+    {
+        var data = new byte[] { (byte)'d', (byte)'1', (byte)':', 0xFF, (byte)'3', (byte)':', (byte)'a', (byte)'b', (byte)'c', (byte)'e' };
+
+        var document = BencodeDocument.Parse(data);
+
+        var dictionary = Assert.IsType<BencodeDictionary>(document.Root);
+        Assert.True(dictionary.TryGetValue(new BencodeString(new byte[] { 0xFF }), out var value));
+        Assert.Equal("abc", Assert.IsType<BencodeString>(value).ToUtf8String());
     }
 
     [Fact]
@@ -80,8 +92,8 @@ public sealed class BencodeDocumentTests
     {
         var value = new BencodeDictionary
         {
-            { "b", new BencodeInteger(1) },
-            { "a", new BencodeInteger(2) },
+            { Utf8Key("b"), new BencodeInteger(1) },
+            { Utf8Key("a"), new BencodeInteger(2) },
         };
 
         var document = new BencodeDocument(value);
@@ -95,8 +107,8 @@ public sealed class BencodeDocumentTests
     {
         BencodeValue value = new BencodeDictionary
         {
-            { "b", new BencodeInteger(1) },
-            { "a", new BencodeInteger(2) },
+            { Utf8Key("b"), new BencodeInteger(1) },
+            { Utf8Key("a"), new BencodeInteger(2) },
         };
 
         var content = Encoding.ASCII.GetString(value.ToUtf8ByteArray(canonical: false));
@@ -124,18 +136,62 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void BencodeInteger_ImplementsValueEqualityAndToString()
+    {
+        var left = new BencodeInteger(42);
+        var equal = new BencodeInteger(42);
+        var different = new BencodeInteger(-1);
+
+        Assert.True(left.Equals(equal));
+        Assert.True(left.Equals((object)equal));
+        Assert.False(left.Equals(different));
+        Assert.Equal(left.GetHashCode(), equal.GetHashCode());
+        Assert.Equal("42", left.ToString());
+        Assert.Equal("-1", different.ToString());
+    }
+
+    [Fact]
     public void BencodeWriter_WriteDictionary()
     {
         var buffer = new ArrayBufferWriter<byte>();
         var writer = new BencodeWriter(buffer);
 
         writer.WriteStartDictionary();
-        writer.WriteKey("cow");
-        writer.WriteString("moo");
-        writer.WriteKey("spam");
+        writer.WriteUtf8Key("cow");
+        writer.WriteUtf8String("moo");
+        writer.WriteUtf8Key("spam");
         writer.WriteStartList();
         writer.WriteInteger(1);
-        writer.WriteString("abc");
+        writer.WriteUtf8String("abc");
+        writer.WriteEndList();
+        writer.WriteEndDictionary();
+        writer.Complete();
+
+        Assert.Equal("d3:cow3:moo4:spamli1e3:abcee", Encoding.ASCII.GetString(buffer.WrittenSpan));
+    }
+
+    [Fact]
+    public void BencodeDictionary_DuplicateBinaryKey_Throws()
+    {
+        var dictionary = new BencodeDictionary();
+        dictionary.Add(new BencodeString(new byte[] { 0xFF }), new BencodeInteger(1));
+
+        Assert.Throws<ArgumentException>(() => dictionary.Add(new BencodeString(new byte[] { 0xFF }), new BencodeInteger(2)));
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteDictionary_UsingSpanKeysAndValues()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+
+        writer.WriteStartDictionary();
+        writer.WriteKey("cow"u8);
+        writer.WriteString("moo"u8);
+        writer.WriteKey("spam"u8);
+        writer.WriteStartList();
+        writer.WriteInteger(1);
+        writer.WriteString("abc"u8);
         writer.WriteEndList();
         writer.WriteEndDictionary();
         writer.Complete();
@@ -157,7 +213,7 @@ public sealed class BencodeDocumentTests
     {
         var writer = new BencodeWriter(new ArrayBufferWriter<byte>());
         writer.WriteStartDictionary();
-        writer.WriteKey("a");
+        writer.WriteUtf8Key("a");
 
         Assert.Throws<InvalidOperationException>(() => writer.WriteEndDictionary());
     }
@@ -189,4 +245,6 @@ public sealed class BencodeDocumentTests
         Assert.Null(typeof(BencodeValue).GetMethod(nameof(BencodeValueExtensions.ToUtf8ByteArray), [typeof(bool)]));
         Assert.Null(typeof(BencodeValue).GetMethod(nameof(BencodeValueExtensions.WriteToAsync), [typeof(Stream), typeof(bool), typeof(CancellationToken)]));
     }
+
+    private static BencodeString Utf8Key(string value) => new(Encoding.UTF8.GetBytes(value));
 }

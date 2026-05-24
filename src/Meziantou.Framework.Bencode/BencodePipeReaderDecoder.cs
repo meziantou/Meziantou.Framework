@@ -150,17 +150,7 @@ internal sealed class BencodePipeReaderDecoder
                 return result;
             }
 
-            var keyBytes = await ParseStringAsync(cancellationToken).ConfigureAwait(false);
-            string key;
-            try
-            {
-                key = keyBytes.ToUtf8String();
-            }
-            catch (DecoderFallbackException ex)
-            {
-                throw new FormatException("Bencode dictionary keys must be valid UTF-8 strings.", ex);
-            }
-
+            var key = await ParseStringAsync(cancellationToken).ConfigureAwait(false);
             var value = await ParseValueAsync(cancellationToken).ConfigureAwait(false);
             try
             {
@@ -168,7 +158,7 @@ internal sealed class BencodePipeReaderDecoder
             }
             catch (ArgumentException ex)
             {
-                throw new FormatException($"Duplicate bencode dictionary key '{key}'.", ex);
+                throw new FormatException("Duplicate bencode dictionary key.", ex);
             }
         }
     }

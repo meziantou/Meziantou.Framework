@@ -1,18 +1,17 @@
 using System.Collections;
-using System.Text;
 
 namespace Meziantou.Framework.Bencode;
 
-public sealed class BencodeDictionary : BencodeValue, IReadOnlyDictionary<string, BencodeValue>
+public sealed class BencodeDictionary : BencodeValue, IReadOnlyDictionary<BencodeString, BencodeValue>
 {
-    private readonly List<KeyValuePair<string, BencodeValue>> _entries = [];
-    private readonly Dictionary<string, BencodeValue> _lookup = new(StringComparer.Ordinal);
+    private readonly List<KeyValuePair<BencodeString, BencodeValue>> _entries = [];
+    private readonly Dictionary<BencodeString, BencodeValue> _lookup = [];
 
     public BencodeDictionary()
     {
     }
 
-    public BencodeDictionary(IEnumerable<KeyValuePair<string, BencodeValue>> entries)
+    public BencodeDictionary(IEnumerable<KeyValuePair<BencodeString, BencodeValue>> entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
@@ -26,31 +25,42 @@ public sealed class BencodeDictionary : BencodeValue, IReadOnlyDictionary<string
 
     public int Count => _entries.Count;
 
-    public IEnumerable<string> Keys => _entries.Select(entry => entry.Key);
+    public IEnumerable<BencodeString> Keys => _entries.Select(entry => entry.Key);
 
     public IEnumerable<BencodeValue> Values => _entries.Select(entry => entry.Value);
 
-    public BencodeValue this[string key] => _lookup[key];
+    public BencodeValue this[BencodeString key]
+    {
+        get
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            return _lookup[key];
+        }
+    }
 
-    public void Add(string key, BencodeValue value)
+    public void Add(BencodeString key, BencodeValue value)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
 
-        if (_lookup.ContainsKey(key))
-            throw new ArgumentException($"An entry with key '{key}' already exists.", nameof(key));
+        var normalizedKey = new BencodeString(key.Value.ToArray());
 
-        _lookup.Add(key, value);
-        _entries.Add(new KeyValuePair<string, BencodeValue>(key, value));
+        if (_lookup.ContainsKey(normalizedKey))
+            throw new ArgumentException("An entry with the same key already exists.", nameof(key));
+
+        _lookup.Add(normalizedKey, value);
+        _entries.Add(new KeyValuePair<BencodeString, BencodeValue>(normalizedKey, value));
     }
 
-    public bool ContainsKey(string key)
+    public bool ContainsKey(BencodeString key)
     {
+        ArgumentNullException.ThrowIfNull(key);
         return _lookup.ContainsKey(key);
     }
 
-    public bool TryGetValue(string key, out BencodeValue value)
+    public bool TryGetValue(BencodeString key, out BencodeValue value)
     {
+        ArgumentNullException.ThrowIfNull(key);
         return _lookup.TryGetValue(key, out value!);
     }
 
@@ -61,31 +71,29 @@ public sealed class BencodeDictionary : BencodeValue, IReadOnlyDictionary<string
         writer.WriteStartDictionary();
         foreach (var entry in GetEntries(canonical))
         {
-            writer.WriteKey(entry.Key);
+            writer.WriteKey(entry.Key.Value.Span);
             entry.Value.WriteTo(writer, canonical);
         }
 
         writer.WriteEndDictionary();
     }
 
-    public IEnumerator<KeyValuePair<string, BencodeValue>> GetEnumerator() => _entries.GetEnumerator();
+    public IEnumerator<KeyValuePair<BencodeString, BencodeValue>> GetEnumerator() => _entries.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    private IEnumerable<KeyValuePair<string, BencodeValue>> GetEntries(bool canonical)
+    private IEnumerable<KeyValuePair<BencodeString, BencodeValue>> GetEntries(bool canonical)
     {
         if (!canonical)
             return _entries;
 
         var entries = _entries.ToArray();
-        Array.Sort(entries, CompareByUtf8Key);
+        Array.Sort(entries, CompareByKeyBytes);
         return entries;
     }
 
-    private static int CompareByUtf8Key(KeyValuePair<string, BencodeValue> left, KeyValuePair<string, BencodeValue> right)
+    private static int CompareByKeyBytes(KeyValuePair<BencodeString, BencodeValue> left, KeyValuePair<BencodeString, BencodeValue> right)
     {
-        var leftBytes = Encoding.UTF8.GetBytes(left.Key);
-        var rightBytes = Encoding.UTF8.GetBytes(right.Key);
-        return leftBytes.AsSpan().SequenceCompareTo(rightBytes);
+        return left.Key.Value.Span.SequenceCompareTo(right.Key.Value.Span);
     }
 }

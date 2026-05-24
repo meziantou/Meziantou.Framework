@@ -7,7 +7,7 @@ public static class BencodeValueExtensions
     /// <summary>Encodes a bencode value to a UTF-8 byte array.</summary>
     /// <param name="value">The value to encode.</param>
     /// <param name="canonical">
-    /// <see langword="true"/> to sort dictionary keys by their UTF-8 byte order (canonical bencode);
+    /// <see langword="true"/> to sort dictionary keys by their byte order (canonical bencode);
     /// <see langword="false"/> to keep dictionary insertion order.
     /// </param>
     /// <remarks>

@@ -115,17 +115,7 @@ internal static class BencodeDecoder
                 return result;
             }
 
-            var keyBytes = ParseString(data, ref index);
-            string key;
-            try
-            {
-                key = keyBytes.ToUtf8String();
-            }
-            catch (DecoderFallbackException ex)
-            {
-                throw new FormatException("Bencode dictionary keys must be valid UTF-8 strings.", ex);
-            }
-
+            var key = ParseString(data, ref index);
             var value = ParseValue(data, ref index);
             try
             {
@@ -133,7 +123,7 @@ internal static class BencodeDecoder
             }
             catch (ArgumentException ex)
             {
-                throw new FormatException($"Duplicate bencode dictionary key '{key}'.", ex);
+                throw new FormatException("Duplicate bencode dictionary key.", ex);
             }
         }
     }

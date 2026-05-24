@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.Bencode.Torrent;
 
 public sealed class TorrentInfo

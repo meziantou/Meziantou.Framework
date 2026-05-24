@@ -1,6 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace Meziantou.Framework.Bencode.Torrent;
 
@@ -46,30 +44,30 @@ public sealed class TorrentFile
         }
     }
 
-    public byte[] ToArray(bool canonical = true)
+    public byte[] ToUtf8ByteArray(bool canonical = true)
     {
         var root = ToBencodeDictionary();
-        return BencodeEncoder.Encode(root, canonical);
+        return root.ToUtf8ByteArray(canonical);
     }
 
     public async ValueTask WriteToAsync(Stream stream, bool canonical = true, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        var data = ToArray(canonical);
+        var data = ToUtf8ByteArray(canonical);
         await stream.WriteAsync(data.AsMemory(), cancellationToken).ConfigureAwait(false);
     }
 
     [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash requires SHA-1.")]
     public byte[] GetInfoHashSha1()
     {
-        var data = BencodeEncoder.Encode(Info.ToBencodeDictionary(), canonical: true);
+        var data = Info.ToBencodeDictionary().ToUtf8ByteArray(canonical: true);
         return SHA1.HashData(data);
     }
 
     public byte[] GetInfoHashSha256()
     {
-        var data = BencodeEncoder.Encode(Info.ToBencodeDictionary(), canonical: true);
+        var data = Info.ToBencodeDictionary().ToUtf8ByteArray(canonical: true);
         return SHA256.HashData(data);
     }
 

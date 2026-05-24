@@ -26,13 +26,11 @@ public sealed class BencodeDocument
 
     public byte[] ToArray()
     {
-        return BencodeEncoder.Encode(Root, canonical: true);
+        return Root.ToUtf8ByteArray(canonical: true);
     }
 
-    public async ValueTask WriteToAsync(Stream stream, CancellationToken cancellationToken = default)
+    public ValueTask WriteToAsync(Stream stream, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-        var data = ToArray();
-        await stream.WriteAsync(data.AsMemory(), cancellationToken).ConfigureAwait(false);
+        return Root.WriteToAsync(stream, canonical: true, cancellationToken);
     }
 }

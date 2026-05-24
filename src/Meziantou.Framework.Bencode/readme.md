@@ -17,8 +17,28 @@ var dictionary = (BencodeDictionary)document.Root;
 var cow = (BencodeString)dictionary["cow"];
 Console.WriteLine(cow.ToUtf8String()); // moo
 
+var encoded = dictionary.ToArray();
+
 await using var stream = File.Create("output.bencode");
-await document.WriteToAsync(stream);
+await dictionary.WriteToAsync(stream);
+```
+
+You can also write bencode directly:
+
+```csharp
+using System.Buffers;
+using Meziantou.Framework.Bencode;
+
+var buffer = new ArrayBufferWriter<byte>();
+var writer = new BencodeWriter(buffer);
+
+writer.WriteStartDictionary();
+writer.WriteKey("cow");
+writer.WriteString("moo");
+writer.WriteEndDictionary();
+writer.Complete();
+
+var data = buffer.WrittenSpan.ToArray(); // d3:cow3:mooe
 ```
 
 ## Parse and write torrent files

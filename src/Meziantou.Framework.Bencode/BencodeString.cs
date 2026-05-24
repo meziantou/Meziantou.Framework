@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.Bencode;
 
 public sealed class BencodeString : BencodeValue
@@ -19,4 +17,12 @@ public sealed class BencodeString : BencodeValue
     {
         return Utf8Encoding.GetString(Value.Span);
     }
+
+    public override void WriteTo(BencodeWriter writer, bool canonical)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.WriteString(Value.Span);
+    }
+
+    public override string ToString() => ToUtf8String();
 }

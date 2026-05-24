@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NodaTime" Version="3.3.2" />
     <PackageReference Include="System.Net.Http.Json" Version="10.0.8" />
   </ItemGroup>
 

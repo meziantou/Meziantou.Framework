@@ -1,73 +1,106 @@
-using Bunit;
+using Meziantou.Framework.InlineSnapshotTesting;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Meziantou.AspNetCore.Components.Tests;
 
 public sealed class RepeaterTests
 {
     [Fact]
-    public void NullDataShowLoadingIndicator()
+    public async Task NullDataShowLoadingIndicator()
     {
-        using var ctx = new BunitContext();
-        var cut = ctx.Render<Repeater<string>>(parameter => parameter
-            .Add(p => p.Items, value: null)
-            .Add(p => p.LoadingTemplate, "<p>Loading...</p>")
-            .Add(p => p.EmptyTemplate, "<p>empty</p>"));
+        var html = await RenderRepeaterAsync(
+            items: null,
+            loadingTemplate: MarkupTemplate("<p>Loading...</p>"),
+            emptyTemplate: MarkupTemplate("<p>empty</p>"));
 
-        cut.MarkupMatches("<p>Loading...</p>");
+        InlineSnapshot.Validate(html, """<p>Loading...</p>""");
     }
 
     [Fact]
-    public void EmptyTemplate()
+    public async Task EmptyTemplate()
     {
-        using var ctx = new BunitContext();
-        var cut = ctx.Render<Repeater<string>>(parameter => parameter
-            .Add(p => p.Items, value: new List<string>())
-            .Add(p => p.LoadingTemplate, "<p>loading...</p>")
-            .Add(p => p.EmptyTemplate, "<p>empty</p>"));
+        var html = await RenderRepeaterAsync(
+            items: [],
+            loadingTemplate: MarkupTemplate("<p>loading...</p>"),
+            emptyTemplate: MarkupTemplate("<p>empty</p>"));
 
-        cut.MarkupMatches("<p>empty</p>");
+        InlineSnapshot.Validate(html, """<p>empty</p>""");
     }
 
     [Fact]
-    public void ItemTemplate()
+    public async Task ItemTemplate()
     {
-        using var ctx = new BunitContext();
-        var cut = ctx.Render<Repeater<string>>(parameter => parameter
-            .Add(p => p.Items, value: new List<string>() { "a", "b" })
-            .Add(p => p.EmptyTemplate, "<p>empty</p>")
-            .Add(p => p.ItemTemplate, item => $"{item}"));
+        var html = await RenderRepeaterAsync(
+            items: ["a", "b"],
+            emptyTemplate: MarkupTemplate("<p>empty</p>"),
+            itemTemplate: item => TextTemplate(item));
 
-        cut.MarkupMatches("ab");
+        InlineSnapshot.Validate(html, """ab""");
     }
 
     [Fact]
-    public void ItemTemplateAndSeparatorTemplate()
+    public async Task ItemTemplateAndSeparatorTemplate()
     {
-        using var ctx = new BunitContext();
-        var cut = ctx.Render<Repeater<string>>(parameter => parameter
-            .Add(p => p.Items, value: new List<string>() { "a", "b" })
-            .Add(p => p.EmptyTemplate, "<p>empty</p>")
-            .Add(p => p.ItemTemplate, item => $"{item}")
-            .Add(p => p.ItemSeparatorTemplate, ","));
+        var html = await RenderRepeaterAsync(
+            items: ["a", "b"],
+            emptyTemplate: MarkupTemplate("<p>empty</p>"),
+            itemTemplate: item => TextTemplate(item),
+            itemSeparatorTemplate: TextTemplate(","));
 
-        cut.MarkupMatches("a,b");
+        InlineSnapshot.Validate(html, """a,b""");
     }
 
     [Fact]
-    public void ContainerTemplate()
+    public async Task ContainerTemplate()
     {
-        using var ctx = new BunitContext();
-        var cut = ctx.Render<Repeater<string>>(parameter => parameter
-            .Add(p => p.Items, value: new List<string>() { "a", "b" })
-            .Add(p => p.EmptyTemplate, "<p>empty</p>")
-            .Add(p => p.ItemTemplate, item => $"{item}")
-            .Add(p => p.RepeaterContainerTemplate, itemsTemplate => builder =>
+        var html = await RenderRepeaterAsync(
+            items: ["a", "b"],
+            emptyTemplate: MarkupTemplate("<p>empty</p>"),
+            itemTemplate: item => TextTemplate(item),
+            repeaterContainerTemplate: itemsTemplate => builder =>
             {
                 builder.OpenElement(0, "div");
                 builder.AddContent(1, itemsTemplate);
                 builder.CloseElement();
-            }));
+            });
 
-        cut.MarkupMatches("<div>ab</div>");
+        InlineSnapshot.Validate(html, """<div>ab</div>""");
+    }
+
+    private static RenderFragment MarkupTemplate(string html)
+        => builder => builder.AddMarkupContent(0, html);
+
+    private static RenderFragment TextTemplate(string text)
+        => builder => builder.AddContent(0, text);
+
+    private static async Task<string> RenderRepeaterAsync(
+        IEnumerable<string>? items,
+        RenderFragment? loadingTemplate = null,
+        RenderFragment? emptyTemplate = null,
+        RenderFragment<string>? itemTemplate = null,
+        RenderFragment? itemSeparatorTemplate = null,
+        RenderFragment<RenderFragment>? repeaterContainerTemplate = null)
+    {
+        var parameters = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            [nameof(Repeater<string>.Items)] = items,
+            [nameof(Repeater<string>.LoadingTemplate)] = loadingTemplate,
+            [nameof(Repeater<string>.EmptyTemplate)] = emptyTemplate,
+            [nameof(Repeater<string>.ItemTemplate)] = itemTemplate,
+            [nameof(Repeater<string>.ItemSeparatorTemplate)] = itemSeparatorTemplate,
+            [nameof(Repeater<string>.RepeaterContainerTemplate)] = repeaterContainerTemplate,
+        };
+
+        using var serviceProvider = new ServiceCollection().BuildServiceProvider();
+        await using var renderer = new HtmlRenderer(serviceProvider, NullLoggerFactory.Instance);
+
+        return await renderer.Dispatcher.InvokeAsync(async () =>
+        {
+            var component = await renderer.RenderComponentAsync<Repeater<string>>(ParameterView.FromDictionary(parameters));
+            return component.ToHtmlString();
+        });
     }
 }

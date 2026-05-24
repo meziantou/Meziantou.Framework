@@ -4,6 +4,13 @@ namespace Meziantou.Framework.Bencode.Torrent;
 
 public sealed class TorrentFile
 {
+    private static readonly BencodeString InfoKey = CreateKey("info");
+    private static readonly BencodeString AnnounceKey = CreateKey("announce");
+    private static readonly BencodeString AnnounceListKey = CreateKey("announce-list");
+    private static readonly BencodeString CommentKey = CreateKey("comment");
+    private static readonly BencodeString CreatedByKey = CreateKey("created by");
+    private static readonly BencodeString CreationDateKey = CreateKey("creation date");
+
     public string? Announce { get; set; }
 
     public IReadOnlyList<IReadOnlyList<string>>? AnnounceList { get; set; }
@@ -76,7 +83,7 @@ public sealed class TorrentFile
         if (root is not BencodeDictionary dictionary)
             throw new FormatException("Torrent metainfo root must be a bencode dictionary.");
 
-        if (!dictionary.TryGetValue("info", out var infoValue) || infoValue is not BencodeDictionary infoDictionary)
+        if (!dictionary.TryGetValue(InfoKey, out var infoValue) || infoValue is not BencodeDictionary infoDictionary)
             throw new FormatException("Torrent metainfo must contain an 'info' dictionary.");
 
         var result = new TorrentFile
@@ -84,7 +91,7 @@ public sealed class TorrentFile
             Info = TorrentInfo.Parse(infoDictionary),
         };
 
-        if (dictionary.TryGetValue("announce", out var announceValue))
+        if (dictionary.TryGetValue(AnnounceKey, out var announceValue))
         {
             if (announceValue is not BencodeString announceText)
                 throw new FormatException("The 'announce' field must be a string.");
@@ -92,7 +99,7 @@ public sealed class TorrentFile
             result.Announce = announceText.ToUtf8String();
         }
 
-        if (dictionary.TryGetValue("announce-list", out var announceListValue))
+        if (dictionary.TryGetValue(AnnounceListKey, out var announceListValue))
         {
             if (announceListValue is not BencodeList announceTiers)
                 throw new FormatException("The 'announce-list' field must be a list.");
@@ -118,7 +125,7 @@ public sealed class TorrentFile
             result.AnnounceList = tiers;
         }
 
-        if (dictionary.TryGetValue("comment", out var commentValue))
+        if (dictionary.TryGetValue(CommentKey, out var commentValue))
         {
             if (commentValue is not BencodeString commentText)
                 throw new FormatException("The 'comment' field must be a string.");
@@ -126,7 +133,7 @@ public sealed class TorrentFile
             result.Comment = commentText.ToUtf8String();
         }
 
-        if (dictionary.TryGetValue("created by", out var createdByValue))
+        if (dictionary.TryGetValue(CreatedByKey, out var createdByValue))
         {
             if (createdByValue is not BencodeString createdByText)
                 throw new FormatException("The 'created by' field must be a string.");
@@ -134,7 +141,7 @@ public sealed class TorrentFile
             result.CreatedBy = createdByText.ToUtf8String();
         }
 
-        if (dictionary.TryGetValue("creation date", out var creationDateValue))
+        if (dictionary.TryGetValue(CreationDateKey, out var creationDateValue))
         {
             if (creationDateValue is not BencodeInteger creationDateInteger)
                 throw new FormatException("The 'creation date' field must be an integer.");
@@ -159,12 +166,12 @@ public sealed class TorrentFile
 
         var dictionary = new BencodeDictionary
         {
-            { "info", Info.ToBencodeDictionary() },
+            { InfoKey, Info.ToBencodeDictionary() },
         };
 
         if (Announce is not null)
         {
-            dictionary.Add("announce", new BencodeString(Encoding.UTF8.GetBytes(Announce)));
+            dictionary.Add(AnnounceKey, new BencodeString(Encoding.UTF8.GetBytes(Announce)));
         }
 
         if (AnnounceList is not null)
@@ -187,24 +194,26 @@ public sealed class TorrentFile
                 tiers.Add(tierValues);
             }
 
-            dictionary.Add("announce-list", tiers);
+            dictionary.Add(AnnounceListKey, tiers);
         }
 
         if (Comment is not null)
         {
-            dictionary.Add("comment", new BencodeString(Encoding.UTF8.GetBytes(Comment)));
+            dictionary.Add(CommentKey, new BencodeString(Encoding.UTF8.GetBytes(Comment)));
         }
 
         if (CreatedBy is not null)
         {
-            dictionary.Add("created by", new BencodeString(Encoding.UTF8.GetBytes(CreatedBy)));
+            dictionary.Add(CreatedByKey, new BencodeString(Encoding.UTF8.GetBytes(CreatedBy)));
         }
 
         if (CreationDate.HasValue)
         {
-            dictionary.Add("creation date", new BencodeInteger(CreationDate.Value.ToUnixTimeSeconds()));
+            dictionary.Add(CreationDateKey, new BencodeInteger(CreationDate.Value.ToUnixTimeSeconds()));
         }
 
         return dictionary;
     }
+
+    private static BencodeString CreateKey(string value) => new(Encoding.UTF8.GetBytes(value));
 }

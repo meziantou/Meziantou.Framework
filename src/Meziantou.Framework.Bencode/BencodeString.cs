@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Bencode;
 
-public sealed class BencodeString : BencodeValue
+public sealed class BencodeString : BencodeValue, IEquatable<BencodeString>
 {
     private static readonly Encoding Utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -16,6 +16,27 @@ public sealed class BencodeString : BencodeValue
     public string ToUtf8String()
     {
         return Utf8Encoding.GetString(Value.Span);
+    }
+
+    public bool Equals(BencodeString? other)
+    {
+        if (other is null)
+            return false;
+
+        return Value.Span.SequenceEqual(other.Value.Span);
+    }
+
+    public override bool Equals(object? obj) => obj is BencodeString other && Equals(other);
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        foreach (var item in Value.Span)
+        {
+            hash.Add(item);
+        }
+
+        return hash.ToHashCode();
     }
 
     public override void WriteTo(BencodeWriter writer, bool canonical)

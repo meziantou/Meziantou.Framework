@@ -4,19 +4,19 @@
 
 namespace Meziantou.Framework.Bencode
 {
-    public sealed class BencodeDictionary : Meziantou.Framework.Bencode.BencodeValue, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Bencode.BencodeValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Bencode.BencodeValue>>, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Bencode.BencodeValue>, System.Collections.IEnumerable
+    public sealed class BencodeDictionary : Meziantou.Framework.Bencode.BencodeValue, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>>, System.Collections.Generic.IReadOnlyDictionary<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>, System.Collections.IEnumerable
     {
         public Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public int Count { get => throw null; }
-        public System.Collections.Generic.IEnumerable<string> Keys { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Bencode.BencodeString> Keys { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Bencode.BencodeValue> Values { get => throw null; }
-        public Meziantou.Framework.Bencode.BencodeValue this[string key] { get => throw null; }
-        public BencodeDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Bencode.BencodeValue>> entries) { }
-        public void Add(string key, Meziantou.Framework.Bencode.BencodeValue value) { }
-        public bool ContainsKey(string key) => throw null;
-        public bool TryGetValue(string key, out Meziantou.Framework.Bencode.BencodeValue value) => throw null;
+        public Meziantou.Framework.Bencode.BencodeValue this[Meziantou.Framework.Bencode.BencodeString key] { get => throw null; }
+        public BencodeDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>> entries) { }
+        public void Add(Meziantou.Framework.Bencode.BencodeString key, Meziantou.Framework.Bencode.BencodeValue value) { }
+        public bool ContainsKey(Meziantou.Framework.Bencode.BencodeString key) => throw null;
+        public bool TryGetValue(Meziantou.Framework.Bencode.BencodeString key, out Meziantou.Framework.Bencode.BencodeValue value) => throw null;
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Bencode.BencodeValue>> GetEnumerator() => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
@@ -31,11 +31,15 @@ namespace Meziantou.Framework.Bencode
         public System.Threading.Tasks.ValueTask WriteToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 
-    public sealed class BencodeInteger : Meziantou.Framework.Bencode.BencodeValue
+    public sealed class BencodeInteger : Meziantou.Framework.Bencode.BencodeValue, System.IEquatable<Meziantou.Framework.Bencode.BencodeInteger>
     {
         public Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public long Value { get => throw null; }
         public BencodeInteger(long value) { }
+        public bool Equals(Meziantou.Framework.Bencode.BencodeInteger? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
     }
 
@@ -51,12 +55,15 @@ namespace Meziantou.Framework.Bencode
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
-    public sealed class BencodeString : Meziantou.Framework.Bencode.BencodeValue
+    public sealed class BencodeString : Meziantou.Framework.Bencode.BencodeValue, System.IEquatable<Meziantou.Framework.Bencode.BencodeString>
     {
         public Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public System.ReadOnlyMemory<byte> Value { get => throw null; }
         public BencodeString(System.ReadOnlyMemory<byte> value) { }
         public string ToUtf8String() => throw null;
+        public bool Equals(Meziantou.Framework.Bencode.BencodeString? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
         public override string ToString() => throw null;
     }
@@ -87,11 +94,12 @@ namespace Meziantou.Framework.Bencode
         public void WriteInteger(long value) { }
         public void WriteString(System.ReadOnlyMemory<byte> value) { }
         public void WriteString(System.ReadOnlySpan<byte> value) { }
-        public void WriteString(string value) { }
+        public void WriteUtf8String(string value) { }
         public void WriteStartList() { }
         public void WriteEndList() { }
         public void WriteStartDictionary() { }
-        public void WriteKey(string key) { }
+        public void WriteUtf8Key(string key) { }
+        public void WriteKey(System.ReadOnlySpan<byte> key) { }
         public void WriteEndDictionary() { }
         public void Complete() { }
     }

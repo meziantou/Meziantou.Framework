@@ -20,7 +20,7 @@ var streamedDocument = await BencodeDocument.ParseAsync(pipeReader);
 await pipeReader.CompleteAsync();
 
 var dictionary = (BencodeDictionary)document.Root;
-var cow = (BencodeString)dictionary["cow"];
+var cow = (BencodeString)dictionary[new BencodeString("cow"u8.ToArray())];
 Console.WriteLine(cow.ToUtf8String()); // moo
 
 var encoded = dictionary.ToArray();
@@ -39,8 +39,8 @@ var buffer = new ArrayBufferWriter<byte>();
 var writer = new BencodeWriter(buffer);
 
 writer.WriteStartDictionary();
-writer.WriteKey("cow");
-writer.WriteString("moo");
+writer.WriteUtf8Key("cow");
+writer.WriteUtf8String("moo");
 writer.WriteEndDictionary();
 writer.Complete();
 

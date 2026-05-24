@@ -22,6 +22,7 @@
 | Meziantou.Framework | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.svg)](https://www.nuget.org/packages/Meziantou.Framework/) | |
 | Meziantou.Framework.Avatar | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Avatar.svg)](https://www.nuget.org/packages/Meziantou.Framework.Avatar/) | [readme](src/Meziantou.Framework.Avatar/readme.md) |
 | Meziantou.Framework.Bcrypt | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Bcrypt.svg)](https://www.nuget.org/packages/Meziantou.Framework.Bcrypt/) | [readme](src/Meziantou.Framework.Bcrypt/readme.md) |
+| Meziantou.Framework.Bencode | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Bencode.svg)](https://www.nuget.org/packages/Meziantou.Framework.Bencode/) | [readme](src/Meziantou.Framework.Bencode/readme.md) |
 | Meziantou.Framework.ByteSize | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ByteSize.svg)](https://www.nuget.org/packages/Meziantou.Framework.ByteSize/) | [readme](src/Meziantou.Framework.ByteSize/readme.md) |
 | Meziantou.Framework.ChromiumTracing | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ChromiumTracing.svg)](https://www.nuget.org/packages/Meziantou.Framework.ChromiumTracing/) | [readme](src/Meziantou.Framework.ChromiumTracing/readme.md) |
 | Meziantou.Framework.CodeDom | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.CodeDom.svg)](https://www.nuget.org/packages/Meziantou.Framework.CodeDom/) | [readme](src/Meziantou.Framework.CodeDom/readme.md) |

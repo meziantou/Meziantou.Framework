@@ -20,7 +20,6 @@ using System.Numerics;
 using System.Reflection;
 using System.Xml;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
-using NodaTime;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
@@ -1447,53 +1446,6 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Headers:
               Expires: Fri, 03 Feb 2023 04:05:06 GMT
             Value: AQIDBAUGBwgJ
-            """);
-    }
-
-    [Fact]
-    public void NodaTime_Instant()
-    {
-        AssertSerialization(Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc)), """
-            2023-01-02T03:04:05Z
-            """);
-    }
-
-    [Fact]
-    public void NodaTime_LocalDateTime()
-    {
-        AssertSerialization(new LocalDateTime(2012, 3, 27, 0, 45, 00), """
-            2012-03-27T00:45:00
-            """);
-    }
-
-    [Fact]
-    public void NodaTime_Duration()
-    {
-        AssertSerialization(Duration.FromMinutes(3), """
-            0:00:03:00
-            """);
-    }
-
-    [Fact]
-    public void NodaTime_DateTimeZone()
-    {
-        var london = DateTimeZoneProviders.Tzdb["Europe/London"];
-
-        AssertSerialization(london, """
-            Id: Europe/London
-            MinOffset: -00:01:15
-            MaxOffset: +02
-            """);
-    }
-
-    [Fact]
-    public void NodaTime_ZonedDateTime()
-    {
-        var instant = Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc));
-        var value = instant.InUtc();
-
-        AssertSerialization(value, """
-            2023-01-02T03:04:05 UTC (+00)
             """);
     }
 

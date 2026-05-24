@@ -92,7 +92,7 @@ public sealed class TorrentFileTests
             },
         };
 
-        Assert.Throws<FormatException>(() => torrent.ToArray());
+        Assert.Throws<FormatException>(() => torrent.ToUtf8ByteArray());
     }
 
     [Fact]

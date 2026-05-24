@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 
 namespace Meziantou.Framework.Bencode.Tests;
@@ -57,6 +58,31 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void BencodeValueToArray_CanonicalFalse_PreservesInsertionOrder()
+    {
+        BencodeValue value = new BencodeDictionary
+        {
+            { "b", new BencodeInteger(1) },
+            { "a", new BencodeInteger(2) },
+        };
+
+        var content = Encoding.ASCII.GetString(value.ToUtf8ByteArray(canonical: false));
+
+        Assert.Equal("d1:bi1e1:ai2ee", content);
+    }
+
+    [Fact]
+    public async Task BencodeValueWriteToAsync_Stream()
+    {
+        BencodeValue value = new BencodeList([new BencodeInteger(1), new BencodeString("abc"u8.ToArray())]);
+
+        await using var stream = new MemoryStream();
+        await value.WriteToAsync(stream);
+
+        Assert.Equal("li1e3:abce", Encoding.ASCII.GetString(stream.ToArray()));
+    }
+
+    [Fact]
     public void Parse_InvalidData_Throws()
     {
         var data = Encoding.ASCII.GetBytes("i-0e");
@@ -65,9 +91,69 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void BencodeWriter_WriteDictionary()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+
+        writer.WriteStartDictionary();
+        writer.WriteKey("cow");
+        writer.WriteString("moo");
+        writer.WriteKey("spam");
+        writer.WriteStartList();
+        writer.WriteInteger(1);
+        writer.WriteString("abc");
+        writer.WriteEndList();
+        writer.WriteEndDictionary();
+        writer.Complete();
+
+        Assert.Equal("d3:cow3:moo4:spamli1e3:abcee", Encoding.ASCII.GetString(buffer.WrittenSpan));
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteValueInDictionaryWithoutKey_Throws()
+    {
+        var writer = new BencodeWriter(new ArrayBufferWriter<byte>());
+        writer.WriteStartDictionary();
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteInteger(1));
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteEndDictionaryWhileExpectingValue_Throws()
+    {
+        var writer = new BencodeWriter(new ArrayBufferWriter<byte>());
+        writer.WriteStartDictionary();
+        writer.WriteKey("a");
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteEndDictionary());
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteMultipleRootValues_Throws()
+    {
+        var writer = new BencodeWriter(new ArrayBufferWriter<byte>());
+        writer.WriteInteger(1);
+
+        Assert.Throws<InvalidOperationException>(() => writer.WriteInteger(2));
+    }
+
+    [Fact]
+    public void BencodeWriter_CompleteWithOpenContainer_Throws()
+    {
+        var writer = new BencodeWriter(new ArrayBufferWriter<byte>());
+        writer.WriteStartList();
+        writer.WriteInteger(1);
+
+        Assert.Throws<InvalidOperationException>(() => writer.Complete());
+    }
+
+    [Fact]
     public void PublicApi_DoesNotExposeSyncStreamMethods()
     {
         Assert.Null(typeof(BencodeDocument).GetMethod(nameof(BencodeDocument.Parse), [typeof(Stream)]));
         Assert.Null(typeof(BencodeDocument).GetMethod("WriteTo", [typeof(Stream)]));
+        Assert.Null(typeof(BencodeValue).GetMethod(nameof(BencodeValueExtensions.ToUtf8ByteArray), [typeof(bool)]));
+        Assert.Null(typeof(BencodeValue).GetMethod(nameof(BencodeValueExtensions.WriteToAsync), [typeof(Stream), typeof(bool), typeof(CancellationToken)]));
     }
 }

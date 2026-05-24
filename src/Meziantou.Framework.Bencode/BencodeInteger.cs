@@ -10,4 +10,10 @@ public sealed class BencodeInteger : BencodeValue
     public override BencodeValueKind Kind => BencodeValueKind.Integer;
 
     public long Value { get; }
+
+    public override void WriteTo(BencodeWriter writer, bool canonical)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.WriteInteger(Value);
+    }
 }

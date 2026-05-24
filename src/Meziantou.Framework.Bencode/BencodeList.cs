@@ -32,6 +32,19 @@ public sealed class BencodeList : BencodeValue, IReadOnlyList<BencodeValue>
         _values.Add(value);
     }
 
+    public override void WriteTo(BencodeWriter writer, bool canonical)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+
+        writer.WriteStartList();
+        foreach (var value in _values)
+        {
+            value.WriteTo(writer, canonical);
+        }
+
+        writer.WriteEndList();
+    }
+
     public IEnumerator<BencodeValue> GetEnumerator() => _values.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

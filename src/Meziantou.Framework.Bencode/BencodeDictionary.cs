@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text;
 
 namespace Meziantou.Framework.Bencode;
 
@@ -53,7 +54,38 @@ public sealed class BencodeDictionary : BencodeValue, IReadOnlyDictionary<string
         return _lookup.TryGetValue(key, out value!);
     }
 
+    public override void WriteTo(BencodeWriter writer, bool canonical)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+
+        writer.WriteStartDictionary();
+        foreach (var entry in GetEntries(canonical))
+        {
+            writer.WriteKey(entry.Key);
+            entry.Value.WriteTo(writer, canonical);
+        }
+
+        writer.WriteEndDictionary();
+    }
+
     public IEnumerator<KeyValuePair<string, BencodeValue>> GetEnumerator() => _entries.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    private IEnumerable<KeyValuePair<string, BencodeValue>> GetEntries(bool canonical)
+    {
+        if (!canonical)
+            return _entries;
+
+        var entries = _entries.ToArray();
+        Array.Sort(entries, CompareByUtf8Key);
+        return entries;
+    }
+
+    private static int CompareByUtf8Key(KeyValuePair<string, BencodeValue> left, KeyValuePair<string, BencodeValue> right)
+    {
+        var leftBytes = Encoding.UTF8.GetBytes(left.Key);
+        var rightBytes = Encoding.UTF8.GetBytes(right.Key);
+        return leftBytes.AsSpan().SequenceCompareTo(rightBytes);
+    }
 }

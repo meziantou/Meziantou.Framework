@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.IO.Pipelines;
 using System.Text;
 
 namespace Meziantou.Framework.Bencode.Tests;
@@ -28,6 +29,38 @@ public sealed class BencodeDocumentTests
         Assert.Equal(2, list.Count);
         Assert.Equal(1, Assert.IsType<BencodeInteger>(list[0]).Value);
         Assert.Equal("abc", Assert.IsType<BencodeString>(list[1]).ToUtf8String());
+    }
+
+    [Fact]
+    public async Task ParseAsync_FromPipeReader()
+    {
+        var pipe = new Pipe();
+        var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
+
+        await pipe.Writer.WriteAsync("li1e3:a"u8.ToArray());
+        await pipe.Writer.WriteAsync("bce"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        var document = await parseTask;
+
+        var list = Assert.IsType<BencodeList>(document.Root);
+        Assert.Equal(2, list.Count);
+        Assert.Equal(1, Assert.IsType<BencodeInteger>(list[0]).Value);
+        Assert.Equal("abc", Assert.IsType<BencodeString>(list[1]).ToUtf8String());
+
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task ParseAsync_FromPipeReader_WithTrailingData_Throws()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("i1ee"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        await Assert.ThrowsAsync<FormatException>(() => BencodeDocument.ParseAsync(pipe.Reader).AsTask());
+
+        await pipe.Reader.CompleteAsync();
     }
 
     [Fact]

@@ -1,3 +1,5 @@
+using System.IO.Pipelines;
+
 namespace Meziantou.Framework.Bencode;
 
 public sealed class BencodeDocument
@@ -15,13 +17,27 @@ public sealed class BencodeDocument
         return new BencodeDocument(value);
     }
 
+    public static async ValueTask<BencodeDocument> ParseAsync(PipeReader reader, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+
+        var value = await BencodePipeReaderDecoder.ParseAsync(reader, cancellationToken).ConfigureAwait(false);
+        return new BencodeDocument(value);
+    }
+
     public static async ValueTask<BencodeDocument> ParseAsync(Stream stream, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        var buffer = new MemoryStream();
-        await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-        return Parse(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
+        var reader = PipeReader.Create(stream, new StreamPipeReaderOptions(leaveOpen: true));
+        try
+        {
+            return await ParseAsync(reader, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await reader.CompleteAsync().ConfigureAwait(false);
+        }
     }
 
     public byte[] ToArray()

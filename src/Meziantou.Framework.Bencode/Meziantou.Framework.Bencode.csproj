@@ -2,9 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Bencode parser/writer and torrent file model</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Pipelines" Version="10.0.8" />
+  </ItemGroup>
 
 </Project>

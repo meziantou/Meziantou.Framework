@@ -25,6 +25,7 @@ namespace Meziantou.Framework.Bencode
         public Meziantou.Framework.Bencode.BencodeValue Root { get => throw null; }
         public BencodeDocument(Meziantou.Framework.Bencode.BencodeValue root) { }
         public static Meziantou.Framework.Bencode.BencodeDocument Parse(System.ReadOnlySpan<byte> data) => throw null;
+        public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.BencodeDocument> ParseAsync(System.IO.Pipelines.PipeReader reader, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.BencodeDocument> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public byte[] ToArray() => throw null;
         public System.Threading.Tasks.ValueTask WriteToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = null) => throw null;

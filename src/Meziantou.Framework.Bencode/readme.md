@@ -8,10 +8,16 @@
 ## Parse and write bencode data
 
 ```csharp
+using System.IO.Pipelines;
 using Meziantou.Framework.Bencode;
 
 var data = "d3:cow3:moo4:spam4:eggse"u8.ToArray();
 var document = BencodeDocument.Parse(data);
+
+await using var input = File.OpenRead("input.bencode");
+var pipeReader = PipeReader.Create(input);
+var streamedDocument = await BencodeDocument.ParseAsync(pipeReader);
+await pipeReader.CompleteAsync();
 
 var dictionary = (BencodeDictionary)document.Root;
 var cow = (BencodeString)dictionary["cow"];

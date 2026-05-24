@@ -110,10 +110,4 @@ public class EnumerateFilesBenchmark
         var glob = Glob.Parse(Pattern, GlobOptions.IgnoreCase);
         return glob.EnumerateFiles(GetPath()).Count();
     }
-
-    [Benchmark]
-    public int GlobExpressions() => global::GlobExpressions.Glob.Files(GetPath(), Pattern).Count();
-
-    [Benchmark]
-    public int GlobExpressions_Compiled() => global::GlobExpressions.Glob.Files(GetPath(), Pattern, global::GlobExpressions.GlobOptions.Compiled).Count();
 }

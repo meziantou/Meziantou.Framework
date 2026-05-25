@@ -516,6 +516,7 @@ public sealed class DnsServerIntegrationTests
             var app = builder.Build();
             app.MapDnsHandler(async (context, ct) =>
             {
+                await Task.Yield();
                 var response = context.CreateResponse();
                 if (context.Query.Questions.Count > 0)
                 {

@@ -23,6 +23,7 @@ using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
+
 public sealed partial class SerializerTests : SerializerTestsBase
 {
     [Fact]
@@ -372,14 +373,14 @@ public sealed partial class SerializerTests : SerializerTestsBase
                 """,
         });
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         static async IAsyncEnumerable<int> TypedYield()
         {
+            await Task.Yield();
+
             yield return 1;
             yield return 2;
             yield return 3;
         }
-#pragma warning restore CS1998
     }
 
     [Fact]

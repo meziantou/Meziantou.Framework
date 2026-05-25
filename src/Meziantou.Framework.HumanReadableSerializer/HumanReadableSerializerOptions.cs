@@ -552,6 +552,7 @@ public sealed record HumanReadableSerializerOptions
             new EnumerableKeyValuePairConverterFactory(),
             new EnumerableConverterFactory(),
             new EnumerableConverter(),
+            new CSharpUnionConverterFactory(),
             new FSharpOptionConverterFactory(),
             new FSharpValueOptionConverterFactory(),
             new FSharpDiscriminatedUnionConverter(),

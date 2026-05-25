@@ -45,6 +45,30 @@ public sealed partial class SerializerTests : SerializerTestsBase
             """);
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void CSharp_Union()
+    {
+        CSharpPet value = new CSharpDog("Rex");
+
+        AssertSerialization(value, "Name: Rex");
+    }
+
+    [Fact]
+    public void CSharp_Union_Cat()
+    {
+        CSharpPet value = new CSharpCat("Misty");
+
+        AssertSerialization(value, "Name: Misty");
+    }
+
+    [Fact]
+    public void CSharp_Union_Default()
+    {
+        AssertSerialization(default(CSharpPet), "<null>");
+    }
+#endif
+
     [Fact]
     public void CultureInfo_Invariant()
         => AssertSerialization(CultureInfo.InvariantCulture, "Invariant Language (Invariant Country)");
@@ -2418,6 +2442,14 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         static ClassWithStaticCtor() { Console.WriteLine(); }
     }
+
+#if NET11_0_OR_GREATER
+    private sealed record CSharpCat(string Name);
+
+    private sealed record CSharpDog(string Name);
+
+    private union CSharpPet(CSharpCat, CSharpDog);
+#endif
 
     private interface ICovariantContravariantInterface<in T1, out T2> { }
 

@@ -1118,6 +1118,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 <Nullable>disable</Nullable>
                 <DebugType>portable</DebugType>
                 <DefineConstants>{{string.Join(';', preprocessorSymbols ?? [])}}</DefineConstants>
+                <EnablePreviewFeatures>true</EnablePreviewFeatures>
               </PropertyGroup>
               <ItemGroup>
                 <Reference Include="{{typeof(HumanReadableSerializer).Assembly.Location}}" />

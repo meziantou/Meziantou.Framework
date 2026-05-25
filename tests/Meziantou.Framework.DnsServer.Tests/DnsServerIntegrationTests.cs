@@ -281,6 +281,7 @@ public sealed class DnsServerIntegrationTests
         await using var app = builder.Build();
         app.MapDnsHandler(async (context, ct) =>
         {
+            await Task.Yield();
             capturedProtocol = context.Protocol;
 
             return context.CreateResponse();
@@ -317,6 +318,7 @@ public sealed class DnsServerIntegrationTests
         await using var app = builder.Build();
         app.MapDnsHandler(async (context, ct) =>
         {
+            await Task.Yield();
             capturedProtocol = context.Protocol;
 
             return context.CreateResponse();

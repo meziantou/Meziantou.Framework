@@ -239,6 +239,19 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task UpdateSnapshotUsingVerbatimWhenCSharpLanguageIs10()
     {
+        var expected = string.Join('\n',
+        [
+            "var data = new",
+            "{",
+            "    FirstName = \"Gérald\",",
+            "    LastName = \"Barré\",",
+            "    NickName = \"meziantou\",",
+            "};",
+            "InlineSnapshot.Validate(data, @\"FirstName: Gérald",
+            "LastName: Barré",
+            "NickName: meziantou\");",
+        ]);
+
         await AssertSnapshot(
             """"
             var data = new
@@ -249,17 +262,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             };
             InlineSnapshot.Validate(data, "");
             """",
-            """"
-            var data = new
-            {
-                FirstName = "Gérald",
-                LastName = "Barré",
-                NickName = "meziantou",
-            };
-            InlineSnapshot.Validate(data, @"FirstName: Gérald
-            LastName: Barré
-            NickName: meziantou");
-            """",
+            expected,
             languageVersion: "10", forceUpdateSnapshots: true);
     }
 
@@ -1171,13 +1174,13 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(dotnetPath);
 
         testOutputHelper.WriteLine("Restoring project");
-        await ExecuteDotNet("restore --disable-build-servers", expectedExitCode: 0);
+        await ExecuteDotNet($"restore --disable-build-servers -p:LangVersion={languageVersion}", expectedExitCode: 0);
 
         testOutputHelper.WriteLine("Building project");
-        await ExecuteDotNet("build --no-restore --disable-build-servers", expectedExitCode: 0);
+        await ExecuteDotNet($"build --no-restore --disable-build-servers -p:LangVersion={languageVersion}", expectedExitCode: 0);
 
         testOutputHelper.WriteLine("Running project");
-        await ExecuteDotNet("run --no-build --disable-build-servers");
+        await ExecuteDotNet($"run --no-build --disable-build-servers -p:LangVersion={languageVersion}");
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;

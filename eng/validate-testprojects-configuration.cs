@@ -21,7 +21,7 @@ var testProjects = Directory.GetFiles(testsRootPath, "*.csproj", SearchOption.Al
 var errors = new ConcurrentBag<string>();
 
 var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 5 };
-await Parallel.ForEachAsync(testProjects, parallelOptions, async (proj, ct) =>
+Parallel.ForEach(testProjects, parallelOptions, proj =>
 {
     var testProjectTfms = GetProjectTargetFrameworksWithRetry(proj)
         .Select(SimplifyTfm)

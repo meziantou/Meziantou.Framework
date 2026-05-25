@@ -73,7 +73,7 @@ internal static class NpmPackageSourceResolver
             if (key.EndsWith(":registry", StringComparison.OrdinalIgnoreCase))
             {
                 var scope = key[..^":registry".Length];
-                if (!scope.StartsWith('@'))
+                if (!scope.StartsWith('@', StringComparison.Ordinal))
                 {
                     scope = "@" + scope;
                 }
@@ -88,7 +88,7 @@ internal static class NpmPackageSourceResolver
 
     private static string? TryGetScope(string packageName)
     {
-        if (!packageName.StartsWith('@'))
+        if (!packageName.StartsWith('@', StringComparison.Ordinal))
             return null;
 
         var index = packageName.IndexOf('/', StringComparison.Ordinal);
@@ -100,7 +100,7 @@ internal static class NpmPackageSourceResolver
 
     private static Uri NormalizeRegistry(string registry)
     {
-        if (!registry.EndsWith('/'))
+        if (!registry.EndsWith('/', StringComparison.Ordinal))
         {
             registry += "/";
         }

@@ -1490,7 +1490,7 @@ internal static class PublicApiModelReader
 
     private static string BuildExplicitInterfaceMethodName(string methodName)
     {
-        var separatorIndex = methodName.LastIndexOf('.');
+        var separatorIndex = methodName.LastIndexOf('.', StringComparison.Ordinal);
         if (separatorIndex < 0)
             return methodName;
 
@@ -2469,7 +2469,7 @@ internal static class PublicApiModelReader
 
     private static bool TryResolveTypeDefinitionHandle(MetadataReader metadataReader, string fullTypeName, out TypeDefinitionHandle typeDefinitionHandle)
     {
-        var separator = fullTypeName.LastIndexOf('.');
+        var separator = fullTypeName.LastIndexOf('.', StringComparison.Ordinal);
         var namespaceName = separator < 0 ? string.Empty : fullTypeName[..separator];
         var typeName = separator < 0 ? fullTypeName : fullTypeName[(separator + 1)..];
         foreach (var candidateHandle in metadataReader.TypeDefinitions)
@@ -2862,7 +2862,7 @@ internal static class PublicApiModelReader
                 return trimmedTypeName.Replace('+', '.');
             }
 
-            var genericArgumentsStart = trimmedTypeName.IndexOf('[', backtickIndex);
+            var genericArgumentsStart = trimmedTypeName.IndexOf('[', backtickIndex, StringComparison.Ordinal);
             if (genericArgumentsStart < 0)
             {
                 return trimmedTypeName[..backtickIndex].Replace('+', '.');

@@ -21,7 +21,7 @@ internal abstract class GitTool : MergeTool
 
         if (value[0] is '"')
         {
-            var end = value.IndexOf('"', 1);
+            var end = value.IndexOf('"', 1, StringComparison.Ordinal);
             if (end < 0)
                 return (value, "");
 

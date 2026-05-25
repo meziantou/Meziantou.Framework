@@ -699,7 +699,7 @@ internal static class PublicApiMultiTargetModelMerger
             {
                 sb.Append(line.AsSpan(Indentation.Length));
             }
-            else if (line.StartsWith('\t'))
+            else if (line.StartsWith('\t', StringComparison.Ordinal))
             {
                 sb.Append(line.AsSpan(1));
             }

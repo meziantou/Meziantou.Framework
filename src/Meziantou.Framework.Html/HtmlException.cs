@@ -49,7 +49,7 @@ sealed class HtmlException : Exception
         if (!message.StartsWith(Prefix, StringComparison.Ordinal))
             return -1;
 
-        var pos = message.IndexOf(':', Prefix.Length);
+        var pos = message.IndexOf(':', Prefix.Length, StringComparison.Ordinal);
         if (pos < 0)
             return -1;
 

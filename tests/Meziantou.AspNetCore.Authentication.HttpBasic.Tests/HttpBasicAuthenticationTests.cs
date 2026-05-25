@@ -29,7 +29,7 @@ public sealed class HttpBasicAuthenticationTests
             options.ValidateCredentials = (_, username, password) => ValidateCredentials("custom", "secret", username, password);
         });
 
-        await application.SendAndAssert("/", "custom", "secret", async response =>
+        await application.SendAndAssert("/", "custom", "secret", response =>
         {
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         });
@@ -44,7 +44,7 @@ public sealed class HttpBasicAuthenticationTests
             options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
         });
 
-        await application.SendAndAssert("/", "myName", "invalid", async response =>
+        await application.SendAndAssert("/", "myName", "invalid", response =>
         {
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             Assert.Contains(response.Headers.WwwAuthenticate, static value =>
@@ -62,12 +62,12 @@ public sealed class HttpBasicAuthenticationTests
             options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
         });
 
-        await application.SendAndAssert("/", "myName", "invalid", async response =>
+        await application.SendAndAssert("/", "myName", "invalid", response =>
         {
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-            Assert.Contains(response.Headers.WwwAuthenticate, static value =>
-            string.Equals(value.Scheme, HttpBasicAuthenticationDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(value.Parameter, "charset=\"UTF-8\"", StringComparison.Ordinal));
+            Assert.Contains(response.Headers.WwwAuthenticate, value =>
+                string.Equals(value.Scheme, HttpBasicAuthenticationDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(value.Parameter, "charset=\"UTF-8\"", StringComparison.Ordinal));
         });
     }
 
@@ -96,7 +96,7 @@ public sealed class HttpBasicAuthenticationTests
             options.ValidateCredentials = (_, username, password) => ValidateCredentials("myName", "myPassword", username, password);
         });
 
-        await application.SendAndAssert("/", "myName", "myPassword", async response =>
+        await application.SendAndAssert("/", "myName", "myPassword", response =>
         {
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         });
@@ -121,7 +121,7 @@ public sealed class HttpBasicAuthenticationTests
         var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
         await using var application = await TestApplication.CreateWithIdentityAsync([user], _ => { });
 
-        await application.SendAndAssert("/", "myName", "invalid", async response =>
+        await application.SendAndAssert("/", "myName", "invalid", response =>
         {
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         });
@@ -240,6 +240,18 @@ public sealed class HttpBasicAuthenticationTests
 
             using var response = await Client.SendAsync(request);
             await assert(response);
+        }
+
+        public async Task SendAndAssert(string url, string? username, string? password, Action<HttpResponseMessage> assert)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (username is not null && password is not null)
+            {
+                request.Headers.Authorization = CreateAuthorizationHeader(username, password);
+            }
+
+            using var response = await Client.SendAsync(request);
+            assert(response);
         }
 
         public async ValueTask DisposeAsync()

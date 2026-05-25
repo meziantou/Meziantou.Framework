@@ -416,7 +416,7 @@ public static class HtmlToMarkdown
         if (string.IsNullOrEmpty(content))
             return "";
 
-        var needSpace = content.StartsWith('`') || content.EndsWith('`');
+        var needSpace = content.StartsWith('`', StringComparison.Ordinal) || content.EndsWith('`', StringComparison.Ordinal);
         var openCount = CountMaxConsecutiveChars(content, '`') + 1;
 
         var sb = new StringBuilder();
@@ -562,7 +562,7 @@ public static class HtmlToMarkdown
                 // Normalize !important
                 if (value.EndsWith("important", StringComparison.OrdinalIgnoreCase))
                 {
-                    var bangIndex = value.LastIndexOf('!');
+                    var bangIndex = value.LastIndexOf('!', StringComparison.Ordinal);
                     if (bangIndex >= 0)
                         value = value[..bangIndex].Trim();
                 }

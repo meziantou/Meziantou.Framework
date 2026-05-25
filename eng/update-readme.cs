@@ -98,7 +98,7 @@ int UpdateNuGetReadme()
         }
         else
         {
-            if (line.StartsWith('#'))
+            if (line.StartsWith('#', StringComparison.Ordinal))
             {
                 isInPackages = false;
             }

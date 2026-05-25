@@ -67,7 +67,7 @@ static class MarkdownBuilder
     // https://spec.commonmark.org/0.30/#code-spans
     public static string CreateCodeSpan(string content)
     {
-        var needSpace = content.StartsWith('`') || content.EndsWith('`');
+        var needSpace = content.StartsWith('`', StringComparison.Ordinal) || content.EndsWith('`', StringComparison.Ordinal);
         var openCount = CountMaximumConsecutiveCharacters(content, '`') + 1;
 
         var sb = new StringBuilder();

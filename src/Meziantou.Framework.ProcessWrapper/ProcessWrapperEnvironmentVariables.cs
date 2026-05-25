@@ -16,9 +16,17 @@ public sealed class ProcessWrapperEnvironmentVariables
     }
 
     /// <summary>Sets the specified environment variable to the given value.</summary>
-    public ProcessWrapperEnvironmentVariables Set(string name, string value)
+    public ProcessWrapperEnvironmentVariables Set(string name, string? value)
     {
-        _environment[name] = value;
+        if(value is null)
+        {
+            _environment.Remove(name);
+        }
+        else
+        {
+            _environment[name] = value;
+        }
+
         return this;
     }
 

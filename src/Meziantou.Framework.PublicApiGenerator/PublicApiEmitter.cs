@@ -134,7 +134,7 @@ internal static class PublicApiEmitter
         if (string.IsNullOrEmpty(namespaceName))
             return [];
 
-        var lastSeparatorIndex = namespaceName.LastIndexOf('.');
+        var lastSeparatorIndex = namespaceName.LastIndexOf('.', StringComparison.Ordinal);
         var lastSegment = lastSeparatorIndex < 0
             ? namespaceName
             : namespaceName[(lastSeparatorIndex + 1)..];

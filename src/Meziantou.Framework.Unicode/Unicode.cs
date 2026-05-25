@@ -34,7 +34,7 @@ public static partial class Unicode
             }
             else
             {
-                sb.Append(rune.ToString());
+                sb.Append(rune);
             }
 
             index += rune.Utf16SequenceLength;

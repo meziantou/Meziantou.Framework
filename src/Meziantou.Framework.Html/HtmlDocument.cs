@@ -724,7 +724,7 @@ sealed class HtmlDocument : HtmlNode
                     var stateValue = htmlReader.State.Value ?? string.Empty;
                     string elementName;
                     bool processingInstruction;
-                    if (stateValue.StartsWith('?'))
+                    if (stateValue.StartsWith('?', StringComparison.Ordinal))
                     {
                         elementName = stateValue[1..];
                         processingInstruction = true;
@@ -768,7 +768,7 @@ sealed class HtmlDocument : HtmlNode
                     if (!DetectEncoding(htmlReader, element, firstPass))
                         return false;
 
-                    if (element is not null && (element.Name.StartsWith('!') || element.IsProcessingInstruction))
+                    if (element is not null && (element.Name.StartsWith('!', StringComparison.Ordinal) || element.IsProcessingInstruction))
                     {
                         element.IsEmpty = true;
                         if ((current?.ParentNode) is not null)

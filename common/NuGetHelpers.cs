@@ -30,7 +30,21 @@ public static class NuGetHelpers
                 var tempFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
 
                 Directory.CreateDirectory(tempFolder);
-                using var stream = await SharedHttpClient.Instance.GetStreamAsync(new Uri($"https://www.nuget.org/api/v2/package/{packageName}/{version}")).ConfigureAwait(false);
+
+                async Task<Stream> GetStream()
+                {
+                    try
+                    {
+                        TestContext.Current.TestOutputHelper?.WriteLine("Downloading NuGet package {0}@{1} to {2}", packageName, version, tempFolder);
+                        return await Retry(() => SharedHttpClient.Instance.GetStreamAsync(new Uri($"https://www.nuget.org/api/v2/package/{packageName}/{version}"), XunitCancellationToken)).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Cannot download NuGet package {packageName}@{version}", ex);
+                    }
+                }
+
+                await using var stream = await GetStream().ConfigureAwait(false);
                 using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
 
                 foreach (var entry in zip.Entries.Where(file => paths.Any(path => file.FullName.StartsWith(path, StringComparison.Ordinal))))
@@ -68,7 +82,7 @@ public static class NuGetHelpers
 
                 try
                 {
-                    using var stream = File.OpenRead(dll);
+                    await using var stream = File.OpenRead(dll);
                     using var peFile = new PEReader(stream);
                     var metadataReader = peFile.GetMetadataReader();
                     result.Add(dll);

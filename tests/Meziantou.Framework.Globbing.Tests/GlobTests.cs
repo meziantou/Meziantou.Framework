@@ -160,7 +160,7 @@ public class GlobTests
     [InlineData("**/test/", "a/test/")]
     public void Match(string pattern, string path)
     {
-        var isDirectory = path.EndsWith('/');
+        var isDirectory = path.EndsWith('/', StringComparison.Ordinal);
         var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
         var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
@@ -288,7 +288,7 @@ public class GlobTests
     [InlineData("a/**/b/c", "a/x/y/b/d")]
     public void DoesNotMatch(string pattern, string path)
     {
-        var isDirectory = path.EndsWith('/');
+        var isDirectory = path.EndsWith('/', StringComparison.Ordinal);
         var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
         var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
@@ -317,7 +317,7 @@ public class GlobTests
     [InlineData("**/*X*/**/*i", "ab/cXd/efXg/hi")]
     public void Match_FromGitWildMatchCorpus(string pattern, string path)
     {
-        var isDirectory = path.EndsWith('/');
+        var isDirectory = path.EndsWith('/', StringComparison.Ordinal);
         var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
         var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
@@ -345,7 +345,7 @@ public class GlobTests
     [InlineData("*X*i", "ab/cXd/efXg/hi")]
     public void DoesNotMatch_FromGitWildMatchCorpus(string pattern, string path)
     {
-        var isDirectory = path.EndsWith('/');
+        var isDirectory = path.EndsWith('/', StringComparison.Ordinal);
         var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
         var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
@@ -585,7 +585,7 @@ public class GlobTests
     [InlineData("/doc/frotz", "doc/frotz")]
     public void MatchGit_FromGitIgnoreDocumentationExamples(string pattern, string path)
     {
-        var isDirectory = path.EndsWith('/');
+        var isDirectory = path.EndsWith('/', StringComparison.Ordinal);
         var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
         var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
@@ -606,7 +606,7 @@ public class GlobTests
     [InlineData("/doc/frotz", "a/doc/frotz")]
     public void DoesNotMatchGit_FromGitIgnoreDocumentationExamples(string pattern, string path)
     {
-        var isDirectory = path.EndsWith('/');
+        var isDirectory = path.EndsWith('/', StringComparison.Ordinal);
         var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
         var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
         var fileName = Path.GetFileName(pathWithoutEndingSlash);

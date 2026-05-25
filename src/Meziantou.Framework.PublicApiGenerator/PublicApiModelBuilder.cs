@@ -1265,7 +1265,7 @@ internal static class PublicApiModelBuilder
 
     private static string BuildExplicitInterfaceMethodName(string methodName)
     {
-        var separatorIndex = methodName.LastIndexOf('.');
+        var separatorIndex = methodName.LastIndexOf('.', StringComparison.Ordinal);
         if (separatorIndex < 0)
             return EscapeIdentifier(methodName);
 

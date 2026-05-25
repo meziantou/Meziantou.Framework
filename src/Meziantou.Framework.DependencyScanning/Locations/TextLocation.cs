@@ -57,7 +57,7 @@ internal sealed class TextLocation : Location, ILocationLineInfo
                 {
                     while (currentLine < line && currentIndex < content.Length)
                     {
-                        var newIndex = content.IndexOf('\n', currentIndex);
+                        var newIndex = content.IndexOf('\n', currentIndex, StringComparison.Ordinal);
                         if (newIndex == -1)
                             throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 
@@ -66,7 +66,7 @@ internal sealed class TextLocation : Location, ILocationLineInfo
                     }
                 }
 
-                endOfLine = content.IndexOf('\n', currentIndex);
+                endOfLine = content.IndexOf('\n', currentIndex, StringComparison.Ordinal);
                 if (currentIndex + column + Length > (endOfLine == -1 ? content.Length : endOfLine))
                     throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 

@@ -353,7 +353,7 @@ public static class QueryStringUtilities
 
         while (scanIndex < textLength)
         {
-            var delimiterIndex = queryString.IndexOf('&', scanIndex);
+            var delimiterIndex = queryString.IndexOf('&', scanIndex, StringComparison.Ordinal);
             if (delimiterIndex == -1)
             {
                 delimiterIndex = textLength;
@@ -371,7 +371,7 @@ public static class QueryStringUtilities
                 result.Append(
                     Uri.UnescapeDataString(name.Replace('+', ' ')),
                     Uri.UnescapeDataString(value.Replace('+', ' ')));
-                equalIndex = queryString.IndexOf('=', delimiterIndex);
+                equalIndex = queryString.IndexOf('=', delimiterIndex, StringComparison.Ordinal);
                 if (equalIndex == -1)
                 {
                     equalIndex = textLength;

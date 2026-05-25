@@ -377,18 +377,18 @@ public sealed class DnsFilterEngine
         var after = originalText[(idx + BadfilterStr.Length)..];
 
         // Remove trailing/leading comma
-        if (before.EndsWith(','))
+        if (before.EndsWith(',', StringComparison.Ordinal))
         {
             before = before[..^1];
         }
-        else if (after.StartsWith(','))
+        else if (after.StartsWith(',', StringComparison.Ordinal))
         {
             after = after[1..];
         }
 
         // If the $ sign is now trailing with nothing after, remove it
         var result = before + after;
-        if (result.EndsWith('$'))
+        if (result.EndsWith('$', StringComparison.Ordinal))
         {
             result = result[..^1];
         }

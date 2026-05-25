@@ -33,6 +33,7 @@ public sealed class DnsServerIntegrationTests
         await using var app = builder.Build();
         app.MapDnsHandler(async (context, ct) =>
         {
+            await Task.Yield();
             var response = context.CreateResponse();
             if (context.Query.Questions.Count > 0 && context.Query.Questions[0].Type == DnsQueryType.A)
             {
@@ -84,6 +85,7 @@ public sealed class DnsServerIntegrationTests
         await using var app = builder.Build();
         app.MapDnsHandler(async (context, ct) =>
         {
+            await Task.Yield();
             var response = context.CreateResponse();
             if (context.Query.Questions.Count > 0 && context.Query.Questions[0].Type == DnsQueryType.AAAA)
             {
@@ -130,6 +132,7 @@ public sealed class DnsServerIntegrationTests
         await using var app = builder.Build();
         app.MapDnsHandler(async (context, ct) =>
         {
+            await Task.Yield();
             var response = context.CreateResponse();
             response.Answers.Add(new DnsResourceRecord
             {
@@ -184,6 +187,7 @@ public sealed class DnsServerIntegrationTests
         await using var app = builder.Build();
         app.MapDnsHandler(async (context, ct) =>
         {
+            await Task.Yield();
             var response = context.CreateResponse();
             response.Answers.Add(new DnsResourceRecord
             {
@@ -250,7 +254,7 @@ public sealed class DnsServerIntegrationTests
         try
         {
             using var client = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp);
-            var response = await XUnitStaticHelpers.Retry(() => client.QueryAsync("test.example.com", ClientDns.Query.DnsQueryType.A, XUnitStaticHelpers.XunitCancellationToken));
+            var response = await Retry(() => client.QueryAsync("test.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken));
 
             Assert.True(response.Header.IsResponse);
             Assert.Equal(ClientDns.Response.DnsResponseCode.ServerFailure, response.Header.ResponseCode);
@@ -277,6 +281,7 @@ public sealed class DnsServerIntegrationTests
         await using var app = builder.Build();
         app.MapDnsHandler(async (context, ct) =>
         {
+            await Task.Yield();
             capturedProtocol = context.Protocol;
 
             return context.CreateResponse();
@@ -287,7 +292,7 @@ public sealed class DnsServerIntegrationTests
         try
         {
             using var client = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp);
-            await XUnitStaticHelpers.Retry(() => client.QueryAsync("test.example.com", ClientDns.Query.DnsQueryType.A, XUnitStaticHelpers.XunitCancellationToken));
+            await Retry(() => client.QueryAsync("test.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken));
 
             Assert.Equal(DnsServerProtocol.Udp, capturedProtocol);
         }
@@ -313,6 +318,7 @@ public sealed class DnsServerIntegrationTests
         await using var app = builder.Build();
         app.MapDnsHandler(async (context, ct) =>
         {
+            await Task.Yield();
             capturedProtocol = context.Protocol;
 
             return context.CreateResponse();
@@ -516,6 +522,7 @@ public sealed class DnsServerIntegrationTests
             var app = builder.Build();
             app.MapDnsHandler(async (context, ct) =>
             {
+                await Task.Yield();
                 var response = context.CreateResponse();
                 if (context.Query.Questions.Count > 0)
                 {
@@ -579,11 +586,11 @@ public sealed class DnsServerIntegrationTests
         var queryBytes = CreateQueryBytes("tls.example.com", DnsQueryType.A);
         var lengthPrefix = new byte[2];
         BinaryPrimitives.WriteUInt16BigEndian(lengthPrefix, (ushort)queryBytes.Length);
-        await sslStream.WriteAsync(lengthPrefix);
-        await sslStream.WriteAsync(queryBytes);
-        await sslStream.FlushAsync();
+        await sslStream.WriteAsync(lengthPrefix, XunitCancellationToken);
+        await sslStream.WriteAsync(queryBytes, XunitCancellationToken);
+        await sslStream.FlushAsync(XunitCancellationToken);
 
-        await sslStream.ReadExactlyAsync(lengthPrefix);
+        await sslStream.ReadExactlyAsync(lengthPrefix, XunitCancellationToken);
         var responseLength = BinaryPrimitives.ReadUInt16BigEndian(lengthPrefix);
         var responseBytes = new byte[responseLength];
         await sslStream.ReadExactlyAsync(responseBytes);

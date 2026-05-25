@@ -233,7 +233,7 @@ public class AvatarGeneratorTests
         Assert.True(startIndex >= 0);
 
         startIndex += Fill.Length;
-        var endIndex = svg.IndexOf('"', startIndex);
+        var endIndex = svg.IndexOf('"', startIndex, StringComparison.Ordinal);
         Assert.True(endIndex > startIndex);
 
         return svg[startIndex..endIndex];
@@ -244,7 +244,7 @@ public class AvatarGeneratorTests
         var textStart = svg.IndexOf("<text ", StringComparison.Ordinal);
         Assert.True(textStart >= 0);
 
-        textStart = svg.IndexOf('>', textStart);
+        textStart = svg.IndexOf('>', textStart, StringComparison.Ordinal);
         Assert.True(textStart >= 0);
 
         var textEnd = svg.IndexOf("</text>", textStart, StringComparison.Ordinal);

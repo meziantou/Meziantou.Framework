@@ -152,7 +152,7 @@ internal static class Utilities
             if (startIndex == (header.Length - 1))
                 return null;
 
-            index = header.IndexOf('"', startIndex + 1);
+            index = header.IndexOf('"', startIndex + 1, StringComparison.Ordinal);
             if (index < 0 || index == (startIndex + 1))
                 return null;
 
@@ -284,14 +284,14 @@ internal static class Utilities
         if (path[2] == Path.DirectorySeparatorChar)
             return null;
 
-        var pos = path.IndexOf(Path.DirectorySeparatorChar, 3); // \\\ is invalid
+        var pos = path.IndexOf(Path.DirectorySeparatorChar, 3, StringComparison.Ordinal); // \\\ is invalid
         if (pos < 0)
         {
             serverName = path[2..];
             return path;
         }
 
-        var pos2 = path.IndexOf(Path.DirectorySeparatorChar, pos + 2); // \\server\\ is invalid
+        var pos2 = path.IndexOf(Path.DirectorySeparatorChar, pos + 2, StringComparison.Ordinal); // \\server\\ is invalid
         if (pos2 < 0)
         {
             serverName = path[2..pos];

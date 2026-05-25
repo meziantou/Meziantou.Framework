@@ -321,7 +321,7 @@ internal static class SnapshotEngine
     {
         if (actualFileCount > 1)
         {
-            var separatorIndex = snapshotName.LastIndexOf('_');
+            var separatorIndex = snapshotName.LastIndexOf('_', StringComparison.Ordinal);
             if (separatorIndex >= 0)
             {
                 var suffix = snapshotName[(separatorIndex + 1)..];

@@ -136,7 +136,7 @@ internal static class QueryHelpers
 
         while (scanIndex < textLength)
         {
-            var delimiterIndex = queryString.IndexOf('&', scanIndex);
+            var delimiterIndex = queryString.IndexOf('&', scanIndex, StringComparison.Ordinal);
             if (delimiterIndex == -1)
             {
                 delimiterIndex = textLength;
@@ -154,7 +154,7 @@ internal static class QueryHelpers
                 accumulator.Append(
                     Uri.UnescapeDataString(name.Replace('+', ' ')),
                     Uri.UnescapeDataString(value.Replace('+', ' ')));
-                equalIndex = queryString.IndexOf('=', delimiterIndex);
+                equalIndex = queryString.IndexOf('=', delimiterIndex, StringComparison.Ordinal);
                 if (equalIndex == -1)
                 {
                     equalIndex = textLength;

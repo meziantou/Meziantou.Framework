@@ -262,7 +262,17 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             };
             InlineSnapshot.Validate(data, "");
             """",
-            expected,
+            """"
+            var data = new
+            {
+                FirstName = "Gérald",
+                LastName = "Barré",
+                NickName = "meziantou",
+            };
+            InlineSnapshot.Validate(data, @"FirstName: Gérald
+            LastName: Barré
+            NickName: meziantou");
+            """",
             languageVersion: "10", forceUpdateSnapshots: true);
     }
 

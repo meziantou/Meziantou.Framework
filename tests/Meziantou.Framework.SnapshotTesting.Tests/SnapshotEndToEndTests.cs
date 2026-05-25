@@ -1140,6 +1140,7 @@ public sealed class SnapshotEndToEndTests
                 <TargetFramework>{{targetFramework ?? TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <Nullable>disable</Nullable>
                 <IsPackable>false</IsPackable>
+                <EnablePreviewFeatures>true</EnablePreviewFeatures>
                 {{GetAdditionalProjectProperties(testFramework)}}
               </PropertyGroup>
               <ItemGroup>

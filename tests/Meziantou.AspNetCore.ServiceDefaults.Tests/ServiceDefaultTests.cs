@@ -41,7 +41,7 @@ public sealed class ServiceDefaultTests
         await using var app = builder.Build();
         app.MapMeziantouDefaultEndpoints();
         app.MapGet("/", () => TypedResults.Ok(new { Sample = Sample.Value1 }));
-        var t = app.RunAsync();
+        _ = app.RunAsync();
 
         var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
@@ -52,7 +52,7 @@ public sealed class ServiceDefaultTests
     }
 
     [Fact]
-    public async Task ValidateContainerOnStartup_MissingServices()
+    public void ValidateContainerOnStartup_MissingServices()
     {
         var builder = WebApplication.CreateBuilder();
         builder.UseMeziantouConventions();
@@ -62,7 +62,7 @@ public sealed class ServiceDefaultTests
     }
 
     [Fact]
-    public async Task ValidateContainerOnStartup_InvalidLifeCycle()
+    public void ValidateContainerOnStartup_InvalidLifeCycle()
     {
         var builder = WebApplication.CreateBuilder();
         builder.UseMeziantouConventions();
@@ -82,7 +82,7 @@ public sealed class ServiceDefaultTests
         await using var app = builder.Build();
         app.MapMeziantouDefaultEndpoints();
         app.MapGet("/test", () => TypedResults.Ok(new { Value = "test" }));
-        var t = app.RunAsync();
+        _ = app.RunAsync();
 
         var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
@@ -108,7 +108,7 @@ public sealed class ServiceDefaultTests
             context.Response.Headers.CacheControl = "public, max-age=3600";
             return TypedResults.Ok(new { Value = "test" });
         });
-        var t = app.RunAsync();
+        _ = app.RunAsync();
 
         var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
@@ -133,7 +133,7 @@ public sealed class ServiceDefaultTests
         await using var app = builder.Build();
         app.MapMeziantouDefaultEndpoints();
         app.MapGet("/test", () => TypedResults.Ok(new { Value = "test" }));
-        var t = app.RunAsync();
+        _ = app.RunAsync();
 
         var address = GetServerAddress(app);
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };

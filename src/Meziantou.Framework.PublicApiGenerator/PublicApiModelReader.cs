@@ -1490,7 +1490,7 @@ internal static class PublicApiModelReader
 
     private static string BuildExplicitInterfaceMethodName(string methodName)
     {
-        var separatorIndex = methodName.LastIndexOf('.');
+        var separatorIndex = methodName.LastIndexOf('.', StringComparison.Ordinal);
         if (separatorIndex < 0)
             return methodName;
 
@@ -2862,7 +2862,7 @@ internal static class PublicApiModelReader
                 return trimmedTypeName.Replace('+', '.');
             }
 
-            var genericArgumentsStart = trimmedTypeName.IndexOf('[', backtickIndex);
+            var genericArgumentsStart = trimmedTypeName.IndexOf('[', backtickIndex, StringComparison.Ordinal);
             if (genericArgumentsStart < 0)
             {
                 return trimmedTypeName[..backtickIndex].Replace('+', '.');

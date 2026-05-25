@@ -643,7 +643,7 @@ public sealed class UrlPattern
             {
                 // Resolve relative pathname
                 var basePath = baseUri.AbsolutePath;
-                var slashIndex = basePath.LastIndexOf('/');
+                var slashIndex = basePath.LastIndexOf('/', StringComparison.Ordinal);
                 if (slashIndex >= 0)
                 {
                     result.Pathname = basePath[..(slashIndex + 1)] + result.Pathname;

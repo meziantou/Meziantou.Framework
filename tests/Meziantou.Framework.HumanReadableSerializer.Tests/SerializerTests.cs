@@ -55,6 +55,14 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void CSharp_Union_Cat()
+    {
+        CSharpPet value = new CSharpCat("Misty");
+
+        AssertSerialization(value, "Name: Misty");
+    }
+
+    [Fact]
     public void CSharp_Union_Default()
     {
         AssertSerialization(default(CSharpPet), "<null>");

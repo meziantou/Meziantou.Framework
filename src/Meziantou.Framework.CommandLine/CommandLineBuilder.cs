@@ -44,19 +44,19 @@ static class CommandLineBuilder
 
             if (i == value.Length)
             {
-                sb.Append(new string('\\', numberBackslashes * 2));
+                sb.Append('\\', numberBackslashes * 2);
                 break;
             }
 
             var c = value[i];
             if (c == '"')
             {
-                sb.Append(new string('\\', (numberBackslashes * 2) + 1));
+                sb.Append('\\', (numberBackslashes * 2) + 1);
                 sb.Append(c);
             }
             else
             {
-                sb.Append(new string('\\', numberBackslashes));
+                sb.Append('\\', numberBackslashes);
                 sb.Append(c);
             }
         }

@@ -57,7 +57,7 @@ internal sealed class FileLogger(FileLoggerProvider provider, string categoryNam
 
     private static string GetShortCategoryName(string categoryName)
     {
-        var lastDotIndex = categoryName.LastIndexOf('.');
+        var lastDotIndex = categoryName.LastIndexOf('.', StringComparison.Ordinal);
         return lastDotIndex >= 0 ? categoryName.Substring(lastDotIndex + 1) : categoryName;
     }
 }

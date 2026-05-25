@@ -76,20 +76,20 @@ public static class DnsFilterListReader
                 continue;
 
             // AdBlock-style comment header
-            if (trimmed.StartsWith('[') || trimmed.StartsWith("! ", StringComparison.Ordinal) || trimmed.StartsWith("!--", StringComparison.Ordinal))
+            if (trimmed.StartsWith('[', StringComparison.Ordinal) || trimmed.StartsWith("! ", StringComparison.Ordinal) || trimmed.StartsWith("!--", StringComparison.Ordinal))
             {
                 hasAdBlockMarkers = true;
                 continue;
             }
 
             // Standard comment
-            if (trimmed.StartsWith('#'))
+            if (trimmed.StartsWith('#', StringComparison.Ordinal))
                 continue;
 
             // AdBlock-style rule patterns
             if (trimmed.StartsWith("||", StringComparison.Ordinal) ||
                 trimmed.StartsWith("@@", StringComparison.Ordinal) ||
-                (trimmed.StartsWith('/') && trimmed.EndsWith('/') && trimmed.Length > 2) ||
+                (trimmed.StartsWith('/', StringComparison.Ordinal) && trimmed.EndsWith('/', StringComparison.Ordinal) && trimmed.Length > 2) ||
                 trimmed.Contains('$', StringComparison.Ordinal))
             {
                 hasAdBlockMarkers = true;
@@ -134,7 +134,7 @@ public static class DnsFilterListReader
         foreach (var line in lines)
         {
             var trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed.StartsWith('#'))
+            if (trimmed.Length == 0 || trimmed.StartsWith('#', StringComparison.Ordinal))
                 continue;
 
             // Remove inline comments
@@ -175,7 +175,7 @@ public static class DnsFilterListReader
         foreach (var line in lines)
         {
             var trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed.StartsWith('#'))
+            if (trimmed.Length == 0 || trimmed.StartsWith('#', StringComparison.Ordinal))
                 continue;
 
             // Remove inline comments
@@ -210,7 +210,7 @@ public static class DnsFilterListReader
         foreach (var line in lines)
         {
             var trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed.StartsWith('!') || trimmed.StartsWith('#') || trimmed.StartsWith('['))
+            if (trimmed.Length == 0 || trimmed.StartsWith('!', StringComparison.Ordinal) || trimmed.StartsWith('#', StringComparison.Ordinal) || trimmed.StartsWith('[', StringComparison.Ordinal))
                 continue;
 
             if (TryParseAdBlockRule(trimmed, out var rule))
@@ -343,7 +343,7 @@ public static class DnsFilterListReader
             if (patternStr.StartsWith("||", StringComparison.Ordinal))
             {
                 var domain = patternStr[2..];
-                if (domain.EndsWith('^'))
+                if (domain.EndsWith('^', StringComparison.Ordinal))
                 {
                     domain = domain[..^1];
                 }
@@ -355,7 +355,7 @@ public static class DnsFilterListReader
                 domainSuffix = domain;
             }
             // |domain| — exact match with anchors
-            else if (patternStr.StartsWith('|') && patternStr.EndsWith('|'))
+            else if (patternStr.StartsWith('|', StringComparison.Ordinal) && patternStr.EndsWith('|', StringComparison.Ordinal))
             {
                 var domain = NormalizeDomain(patternStr[1..^1]);
                 if (domain.Length == 0)
@@ -468,7 +468,7 @@ public static class DnsFilterListReader
         foreach (var part in parts)
         {
             var trimmed = part.Trim();
-            var isExclusion = trimmed.StartsWith('~');
+            var isExclusion = trimmed.StartsWith('~', StringComparison.Ordinal);
             if (isExclusion)
             {
                 trimmed = trimmed[1..];
@@ -574,7 +574,7 @@ public static class DnsFilterListReader
             var trimmed = part.Trim();
             var isExclusion = false;
 
-            if (trimmed.StartsWith('~'))
+            if (trimmed.StartsWith('~', StringComparison.Ordinal))
             {
                 isExclusion = true;
                 trimmed = trimmed[1..];
@@ -610,7 +610,7 @@ public static class DnsFilterListReader
 
     private static string UnquoteClientName(string name)
     {
-        if (name.Length >= 2 && ((name.StartsWith('\'') && name.EndsWith('\'')) || (name.StartsWith('"') && name.EndsWith('"'))))
+        if (name.Length >= 2 && ((name.StartsWith('\'', StringComparison.Ordinal) && name.EndsWith('\'', StringComparison.Ordinal)) || (name.StartsWith('"', StringComparison.Ordinal) && name.EndsWith('"', StringComparison.Ordinal))))
         {
             var inner = name[1..^1];
             // Unescape
@@ -629,7 +629,7 @@ public static class DnsFilterListReader
         foreach (var part in parts)
         {
             var trimmed = part.Trim();
-            if (trimmed.StartsWith('~'))
+            if (trimmed.StartsWith('~', StringComparison.Ordinal))
             {
                 excluded.Add(trimmed[1..]);
             }

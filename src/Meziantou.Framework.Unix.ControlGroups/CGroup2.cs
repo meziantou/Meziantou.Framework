@@ -31,7 +31,7 @@ public sealed partial class CGroup2
         if (parent is null)
         {
             // Root level cgroup or absolute path
-            _path = name.StartsWith('/') ? name : System.IO.Path.Combine(CGroupV2MountPoint, name);
+            _path = name.StartsWith('/', StringComparison.Ordinal) ? name : System.IO.Path.Combine(CGroupV2MountPoint, name);
         }
         else
         {
@@ -163,7 +163,7 @@ public sealed partial class CGroup2
             if (sb.Length > 0)
                 sb.Append(' ');
 
-            if (!controller.StartsWith('+') && !controller.StartsWith('-'))
+            if (!controller.StartsWith('+', StringComparison.Ordinal) && !controller.StartsWith('-', StringComparison.Ordinal))
             {
                 sb.Append('+');
             }

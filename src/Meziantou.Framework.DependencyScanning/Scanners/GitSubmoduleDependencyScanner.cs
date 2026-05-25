@@ -106,7 +106,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
     private static bool TryGetSection(string line, out bool isSubmoduleSection)
     {
         isSubmoduleSection = false;
-        if (!line.StartsWith('[') || !line.EndsWith(']'))
+        if (!line.StartsWith('[', StringComparison.Ordinal) || !line.EndsWith(']', StringComparison.Ordinal))
             return false;
 
         var section = line[1..^1].Trim();

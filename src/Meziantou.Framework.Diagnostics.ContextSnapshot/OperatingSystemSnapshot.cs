@@ -84,8 +84,8 @@ public sealed class OperatingSystemSnapshot
 
                     // remove quotes if value is quoted
                     if (value.Length >= 2 &&
-                        ((value.StartsWith('"') && value.EndsWith('"')) ||
-                         (value.StartsWith('\'') && value.EndsWith('\''))))
+                        ((value.StartsWith('"', StringComparison.Ordinal) && value.EndsWith('"', StringComparison.Ordinal)) ||
+                         (value.StartsWith('\'', StringComparison.Ordinal) && value.EndsWith('\'', StringComparison.Ordinal))))
                     {
                         value = value[1..^1];
                     }

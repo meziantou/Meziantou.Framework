@@ -718,7 +718,7 @@ public sealed class UrlPattern
             return value;
 
         // Remove trailing colon if present
-        if (value.EndsWith(':'))
+        if (value.EndsWith(':', StringComparison.Ordinal))
         {
             value = value[..^1];
         }
@@ -773,7 +773,7 @@ public sealed class UrlPattern
             return value;
 
         // Ensure starts with /
-        if (!value.StartsWith('/'))
+        if (!value.StartsWith('/', StringComparison.Ordinal))
         {
             value = "/" + value;
         }

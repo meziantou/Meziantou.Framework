@@ -2469,7 +2469,7 @@ internal static class PublicApiModelReader
 
     private static bool TryResolveTypeDefinitionHandle(MetadataReader metadataReader, string fullTypeName, out TypeDefinitionHandle typeDefinitionHandle)
     {
-        var separator = fullTypeName.LastIndexOf('.');
+        var separator = fullTypeName.LastIndexOf('.', StringComparison.Ordinal);
         var namespaceName = separator < 0 ? string.Empty : fullTypeName[..separator];
         var typeName = separator < 0 ? fullTypeName : fullTypeName[(separator + 1)..];
         foreach (var candidateHandle in metadataReader.TypeDefinitions)

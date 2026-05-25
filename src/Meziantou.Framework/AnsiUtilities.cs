@@ -23,7 +23,7 @@ public static class AnsiUtilities
             var i = startIndex;
             while (i < value.Length)
             {
-                var escapeIndex = value.IndexOf('\x1b', i);
+                var escapeIndex = value.IndexOf('\x1b', i, StringComparison.Ordinal);
                 if (escapeIndex < 0)
                 {
                     result.Append(value.AsSpan(i));

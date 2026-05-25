@@ -35,7 +35,7 @@ sealed class HtmlReaderState
     {
         get
         {
-            if (RawParserState == HtmlParserState.TagOpen && RawValue is not null && RawValue.StartsWith('/'))
+            if (RawParserState == HtmlParserState.TagOpen && RawValue is not null && RawValue.StartsWith('/', StringComparison.Ordinal))
                 return HtmlParserState.TagClose;
 
             return RawParserState;
@@ -46,12 +46,12 @@ sealed class HtmlReaderState
     {
         get
         {
-            if (RawParserState == HtmlParserState.TagOpen && RawValue is not null && RawValue.StartsWith('/'))
+            if (RawParserState == HtmlParserState.TagOpen && RawValue is not null && RawValue.StartsWith('/', StringComparison.Ordinal))
                 return RawValue[1..];
 
             if (RawValue is not null && (RawParserState == HtmlParserState.AttValue || RawParserState == HtmlParserState.AttName) &&
-                ((RawValue.StartsWith('\'') && RawValue.EndsWith('\'')) ||
-                (RawValue.StartsWith('"') && RawValue.EndsWith('"'))))
+                ((RawValue.StartsWith('\'', StringComparison.Ordinal) && RawValue.EndsWith('\'', StringComparison.Ordinal)) ||
+                (RawValue.StartsWith('"', StringComparison.Ordinal) && RawValue.EndsWith('"', StringComparison.Ordinal))))
             {
                 var quote = RawValue[0];
                 return RawValue[1..^1].Replace(new string(quote, 2), new string(quote, 1), StringComparison.Ordinal);

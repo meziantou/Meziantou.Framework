@@ -27,4 +27,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0-preview.4.26230.115" />
+  </ItemGroup>
+
 </Project>

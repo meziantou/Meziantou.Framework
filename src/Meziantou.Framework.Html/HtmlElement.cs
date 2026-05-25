@@ -251,7 +251,7 @@ sealed class HtmlElement : HtmlNode
             {
                 writer.Write(" ?>");
             }
-            else if (Name.StartsWith('!'))
+            else if (Name.StartsWith('!', StringComparison.Ordinal))
             {
                 // suc as !DOCTYPE
                 writer.Write('>');

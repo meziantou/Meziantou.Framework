@@ -110,7 +110,7 @@ internal static class ResxGeneratorCommon
     private static string GetResourceName(string path)
     {
         var pathWithoutExtension = Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileNameWithoutExtension(path));
-        var indexOf = pathWithoutExtension.LastIndexOf('.');
+        var indexOf = pathWithoutExtension.LastIndexOf('.', StringComparison.Ordinal);
         if (indexOf < 0)
             return pathWithoutExtension;
 

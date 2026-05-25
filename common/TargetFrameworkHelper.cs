@@ -9,6 +9,8 @@ internal static class TargetFrameworkHelper
         9
 #elif NET10_0
         10
+#elif NET11_0
+        11
 #else
 #error Version not supported
 #endif

@@ -212,7 +212,7 @@ public sealed class DnsClient : IDisposable
             return new IPEndPoint(address, defaultPort);
 
         // Try host:port format
-        var colonIndex = server.LastIndexOf(':');
+        var colonIndex = server.LastIndexOf(':', StringComparison.Ordinal);
         if (colonIndex > 0 && int.TryParse(server.AsSpan(colonIndex + 1), System.Globalization.CultureInfo.InvariantCulture, out var port))
         {
             var host = server[..colonIndex];
@@ -239,7 +239,7 @@ public sealed class DnsClient : IDisposable
         if (IPAddress.TryParse(server, out var address))
             return (server, new IPEndPoint(address, defaultPort));
 
-        var colonIndex = server.LastIndexOf(':');
+        var colonIndex = server.LastIndexOf(':', StringComparison.Ordinal);
         if (colonIndex > 0 && int.TryParse(server.AsSpan(colonIndex + 1), System.Globalization.CultureInfo.InvariantCulture, out var port))
         {
             var host = server[..colonIndex];

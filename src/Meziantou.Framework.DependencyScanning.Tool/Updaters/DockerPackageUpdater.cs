@@ -62,7 +62,7 @@ internal sealed class DockerPackageUpdater : PackageUpdater
             packageName = packageName[DockerPrefix.Length..];
         }
 
-        var atIndex = packageName.LastIndexOf('@');
+        var atIndex = packageName.LastIndexOf('@', StringComparison.Ordinal);
         if (atIndex > 0)
             return packageName[..atIndex];
 

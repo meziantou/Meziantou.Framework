@@ -108,7 +108,7 @@ static async Task<(List<Entry> entries, string lastModified)> LoadConfusablesEnt
     {
         lineCount++;
         var line = rawLine.Trim();
-        if (line.Length == 0 || line.StartsWith('#'))
+        if (line.Length == 0 || line.StartsWith('#', StringComparison.Ordinal))
             continue;
 
         var commentIndex = line.IndexOf('#', StringComparison.Ordinal);
@@ -264,7 +264,7 @@ static async Task<List<(int Start, int End, string Name)>> LoadBlocksRanges()
     {
         lineCount++;
         var line = rawLine.Trim();
-        if (line.Length == 0 || line.StartsWith('#'))
+        if (line.Length == 0 || line.StartsWith('#', StringComparison.Ordinal))
             continue;
 
         var parts = line.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -309,7 +309,7 @@ static async Task<Dictionary<int, EmojiProperties>> LoadEmojiProperties()
     {
         lineCount++;
         var line = rawLine.Trim();
-        if (line.Length == 0 || line.StartsWith('#'))
+        if (line.Length == 0 || line.StartsWith('#', StringComparison.Ordinal))
             continue;
 
         var commentIndex = line.IndexOf('#', StringComparison.Ordinal);

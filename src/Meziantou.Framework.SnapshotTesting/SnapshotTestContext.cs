@@ -215,7 +215,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
         if (displayName is null)
             return null;
 
-        var typeSeparatorIndex = displayName.LastIndexOf('.');
+        var typeSeparatorIndex = displayName.LastIndexOf('.', StringComparison.Ordinal);
         if (typeSeparatorIndex >= 0)
         {
             displayName = displayName[(typeSeparatorIndex + 1)..];

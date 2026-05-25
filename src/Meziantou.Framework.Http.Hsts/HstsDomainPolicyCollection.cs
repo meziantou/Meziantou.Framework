@@ -162,7 +162,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         var count = 1;
 
         var index = -1;
-        while (host.IndexOf('.', index + 1) is >= 0 and var newIndex)
+        while (host.IndexOf('.', index + 1, StringComparison.Ordinal) is >= 0 and var newIndex)
         {
             index = newIndex;
             count++;

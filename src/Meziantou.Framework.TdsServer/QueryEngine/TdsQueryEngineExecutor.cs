@@ -2362,7 +2362,7 @@ internal sealed class TdsQueryEngineExecutor
         }
 
         var startIndex = invocation.IndexOf('(', StringComparison.Ordinal);
-        var endIndex = invocation.LastIndexOf(')');
+        var endIndex = invocation.LastIndexOf(')', StringComparison.Ordinal);
         if (startIndex <= 0 || endIndex <= startIndex)
         {
             return false;

@@ -73,7 +73,7 @@ internal sealed class UrlEncodedFormFormatter : ValueFormatter
 
         while (scanIndex < textLength)
         {
-            var delimiterIndex = urlEncodedValue.IndexOf('&', scanIndex);
+            var delimiterIndex = urlEncodedValue.IndexOf('&', scanIndex, StringComparison.Ordinal);
             if (delimiterIndex == -1)
             {
                 delimiterIndex = textLength;
@@ -89,7 +89,7 @@ internal sealed class UrlEncodedFormFormatter : ValueFormatter
                 var name = urlEncodedValue[scanIndex..equalIndex];
                 var value = urlEncodedValue.Substring(equalIndex + 1, delimiterIndex - equalIndex - 1);
                 result.Add((name, value));
-                equalIndex = urlEncodedValue.IndexOf('=', delimiterIndex);
+                equalIndex = urlEncodedValue.IndexOf('=', delimiterIndex, StringComparison.Ordinal);
                 if (equalIndex == -1)
                 {
                     equalIndex = textLength;

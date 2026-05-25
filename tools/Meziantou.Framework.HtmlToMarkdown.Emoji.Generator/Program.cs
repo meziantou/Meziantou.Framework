@@ -70,7 +70,7 @@ static async Task<Dictionary<string, string>> LoadUnicodeMappings()
     foreach (var rawLine in content.Split('\n'))
     {
         var line = rawLine.Trim();
-        if (line.Length == 0 || line.StartsWith('#'))
+        if (line.Length == 0 || line.StartsWith('#', StringComparison.Ordinal))
             continue;
 
         var semicolonIndex = line.IndexOf(';', StringComparison.Ordinal);
@@ -88,7 +88,7 @@ static async Task<Dictionary<string, string>> LoadUnicodeMappings()
 
         var metadata = line[(hashIndex + 1)..].Trim();
         var metadataParts = metadata.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
-        if (metadataParts.Length < 3 || !metadataParts[1].StartsWith('E'))
+        if (metadataParts.Length < 3 || !metadataParts[1].StartsWith('E', StringComparison.Ordinal))
             continue;
 
         var name = metadataParts[2].Trim();

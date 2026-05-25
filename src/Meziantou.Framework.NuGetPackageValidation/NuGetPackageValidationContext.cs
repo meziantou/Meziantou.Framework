@@ -49,7 +49,7 @@ public sealed class NuGetPackageValidationContext : IDisposable
 
                 static string EnsureTrailingSlash(string url)
                 {
-                    if (url.EndsWith('/'))
+                    if (url.EndsWith('/', StringComparison.Ordinal))
                         return url;
 
                     return url + "/";

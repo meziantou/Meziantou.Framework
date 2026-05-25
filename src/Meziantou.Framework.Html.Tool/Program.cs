@@ -129,7 +129,7 @@ internal static class Program
             {
                 if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
                 {
-                    await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid");
+                    await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid".AsMemory(), cancellationToken);
                     return -1;
                 }
 
@@ -221,7 +221,7 @@ internal static class Program
 
                         if (index >= 0)
                         {
-                            var endIndex = uriQuery.IndexOf('&', index + 1);
+                            var endIndex = uriQuery.IndexOf('&', index + 1, StringComparison.Ordinal);
                             if (endIndex < 0)
                             {
                                 uriQuery = uriQuery[0..index] + (index == 0 ? '?' : '&') + "v=" + hash;
@@ -284,7 +284,7 @@ internal static class Program
             {
                 if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
                 {
-                    await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid");
+                    await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid".AsMemory(), cancellationToken);
                     return -1;
                 }
 

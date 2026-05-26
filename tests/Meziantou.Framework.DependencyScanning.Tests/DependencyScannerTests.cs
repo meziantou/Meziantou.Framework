@@ -1,6 +1,7 @@
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
+using Meziantou.Framework;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 
@@ -180,6 +181,21 @@ public sealed class DependencyScannerTests
         await location.UpdateAsync("e", "a", XunitCancellationToken);
 
         await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("e", "b", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task GetEncodingAsync_ReadUntilCountOrEndAsync_ReadsBufferUsingSlices()
+    {
+        await using var stream = new RestrictedStream(new MemoryStream([0xEF, 0xBB, 0xBF, (byte)'a']), new RestrictedStreamOptions
+        {
+            AllowAsynchronousCalls = true,
+            AllowReading = true,
+            MaxReadLength = 1,
+        });
+
+        var encoding = await StreamUtilities.GetEncodingAsync(stream, XunitCancellationToken);
+
+        Assert.Equal(Encoding.UTF8.WebName, encoding.WebName);
     }
 
     [Fact]

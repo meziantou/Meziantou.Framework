@@ -239,19 +239,6 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task UpdateSnapshotUsingVerbatimWhenCSharpLanguageIs10()
     {
-        var expected = string.Join('\n',
-        [
-            "var data = new",
-            "{",
-            "    FirstName = \"Gérald\",",
-            "    LastName = \"Barré\",",
-            "    NickName = \"meziantou\",",
-            "};",
-            "InlineSnapshot.Validate(data, @\"FirstName: Gérald",
-            "LastName: Barré",
-            "NickName: meziantou\");",
-        ]);
-
         await AssertSnapshot(
             """"
             var data = new
@@ -1183,6 +1170,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
         Assert.NotNull(dotnetPath);
 
+        // force language-version with preview versions
         testOutputHelper.WriteLine("Restoring project");
         await ExecuteDotNet($"restore --disable-build-servers -p:LangVersion={languageVersion}", expectedExitCode: 0);
 

@@ -1,6 +1,7 @@
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
+using Meziantou.Framework;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 
@@ -185,7 +186,12 @@ public sealed class DependencyScannerTests
     [Fact]
     public async Task GetEncodingAsync_ReadUntilCountOrEndAsync_ReadsBufferUsingSlices()
     {
-        await using var stream = new PartialReadMemoryStream([0xEF, 0xBB, 0xBF, (byte)'a'], maxBytesPerRead: 1);
+        await using var stream = new RestrictedStream(new MemoryStream([0xEF, 0xBB, 0xBF, (byte)'a']), new RestrictedStreamOptions
+        {
+            AllowAsynchronousCalls = true,
+            AllowReading = true,
+            MaxReadLength = 1,
+        });
 
         var encoding = await StreamUtilities.GetEncodingAsync(stream, XunitCancellationToken);
 
@@ -364,16 +370,5 @@ public sealed class DependencyScannerTests
 
         public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions) => throw new NotSupportedException();
         public Stream OpenReadWrite(string path) => throw new NotSupportedException();
-    }
-
-    private sealed class PartialReadMemoryStream(byte[] buffer, int maxBytesPerRead) : MemoryStream(buffer)
-    {
-        private readonly int _maxBytesPerRead = maxBytesPerRead;
-
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
-        {
-            var bytesToRead = Math.Min(_maxBytesPerRead, destination.Length);
-            return base.ReadAsync(destination[..bytesToRead], cancellationToken);
-        }
     }
 }

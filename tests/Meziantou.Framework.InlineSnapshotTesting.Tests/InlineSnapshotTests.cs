@@ -1170,14 +1170,15 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
         Assert.NotNull(dotnetPath);
 
+        // force language-version because otherwise it may be "preview" instead of a numeric value, so autodection won't work.
         testOutputHelper.WriteLine("Restoring project");
-        await ExecuteDotNet("restore --disable-build-servers", expectedExitCode: 0);
+        await ExecuteDotNet($"restore --disable-build-servers -p:LangVersion={languageVersion}", expectedExitCode: 0);
 
         testOutputHelper.WriteLine("Building project");
-        await ExecuteDotNet("build --no-restore --disable-build-servers", expectedExitCode: 0);
+        await ExecuteDotNet($"build --no-restore --disable-build-servers -p:LangVersion={languageVersion}", expectedExitCode: 0);
 
         testOutputHelper.WriteLine("Running project");
-        await ExecuteDotNet("run --no-build --disable-build-servers");
+        await ExecuteDotNet($"run --no-build --disable-build-servers -p:LangVersion={languageVersion}");
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;

@@ -252,8 +252,10 @@ public class ProcessWrapperTests
 
         await process;
 
-        Assert.Single(output.StandardOutput);
-        Assert.Equal("test", output.StandardOutput.First().Text);
+        var line = Assert.Single(output.StandardOutput);
+        Assert.Equal("test", line.Text);
+        Assert.Equal(DateTimeKind.Utc, line.TimestampUtc.Kind);
+        Assert.NotEqual(default, line.TimestampUtc);
     }
 
     [Fact]

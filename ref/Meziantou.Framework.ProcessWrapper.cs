@@ -157,7 +157,9 @@ namespace Meziantou.Framework
     {
         public Meziantou.Framework.ProcessOutputType Type { get => throw null; }
         public string Text { get => throw null; }
+        public System.DateTime TimestampUtc { get => throw null; }
         public void Deconstruct(out Meziantou.Framework.ProcessOutputType type, out string text) => throw null;
+        public void Deconstruct(out Meziantou.Framework.ProcessOutputType type, out string text, out System.DateTime timestampUtc) => throw null;
         public override string ToString() => throw null;
     }
 

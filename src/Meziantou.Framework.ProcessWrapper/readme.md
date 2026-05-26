@@ -207,7 +207,7 @@ await ProcessWrapper.Create("dotnet")
 
 foreach (var line in output.StandardError)
 {
-    Console.Error.WriteLine(line.Text);
+    Console.Error.WriteLine($"[{line.TimestampUtc:O}] {line.Text}");
 }
 
 // Capture raw bytes from stdout/stderr

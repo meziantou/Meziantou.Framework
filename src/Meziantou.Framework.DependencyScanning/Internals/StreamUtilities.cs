@@ -50,15 +50,13 @@ internal static class StreamUtilities
     private static async ValueTask<int> ReadUntilCountOrEndAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         var totalRead = 0;
-        var count = buffer.Length;
-        while (count > 0)
+        while (totalRead < buffer.Length)
         {
-            var read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            var read = await stream.ReadAsync(buffer.Slice(totalRead), cancellationToken).ConfigureAwait(false);
             if (read == 0)
                 return totalRead;
 
             totalRead += read;
-            count -= read;
         }
 
         return totalRead;

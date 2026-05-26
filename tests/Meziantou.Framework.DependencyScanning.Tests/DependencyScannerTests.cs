@@ -183,6 +183,16 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task GetEncodingAsync_ReadUntilCountOrEndAsync_ReadsBufferUsingSlices()
+    {
+        await using var stream = new PartialReadMemoryStream([0xEF, 0xBB, 0xBF, (byte)'a'], maxBytesPerRead: 1);
+
+        var encoding = await StreamUtilities.GetEncodingAsync(stream, XunitCancellationToken);
+
+        Assert.Equal(Encoding.UTF8.WebName, encoding.WebName);
+    }
+
+    [Fact]
     public async Task DetectUnsupportedType()
     {
         await using var directory = TemporaryDirectory.Create();
@@ -354,5 +364,16 @@ public sealed class DependencyScannerTests
 
         public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions) => throw new NotSupportedException();
         public Stream OpenReadWrite(string path) => throw new NotSupportedException();
+    }
+
+    private sealed class PartialReadMemoryStream(byte[] buffer, int maxBytesPerRead) : MemoryStream(buffer)
+    {
+        private readonly int _maxBytesPerRead = maxBytesPerRead;
+
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        {
+            var bytesToRead = Math.Min(_maxBytesPerRead, destination.Length);
+            return base.ReadAsync(destination[..bytesToRead], cancellationToken);
+        }
     }
 }

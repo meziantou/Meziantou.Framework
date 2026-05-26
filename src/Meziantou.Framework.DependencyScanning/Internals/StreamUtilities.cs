@@ -30,21 +30,21 @@ internal static class StreamUtilities
         var buffer = bom.AsSpan(0, readCount);
 
         // Analyze the BOM
-        if (buffer.Length >= 3 && buffer[0] == 0x2b && buffer[1] == 0x2f && buffer[2] == 0x76)
+        if (buffer is [0x2b, 0x2f, 0x76, ..])
 #pragma warning disable SYSLIB0001 // Type or member is obsolete
             return Encoding.UTF7;
 #pragma warning restore SYSLIB0001
 
-        if (buffer.Length >= 3 && buffer[0] == 0xef && buffer[1] == 0xbb && buffer[2] == 0xbf)
+        if (buffer is [0xef, 0xbb, 0xbf, ..])
             return Encoding.UTF8;
 
-        if (buffer.Length >= 2 && buffer[0] == 0xff && buffer[1] == 0xfe)
+        if (buffer is [0xff, 0xfe, ..])
             return Encoding.Unicode; //UTF-16LE
 
-        if (buffer.Length >= 2 && buffer[0] == 0xfe && buffer[1] == 0xff)
+        if (buffer is [0xfe, 0xff, ..])
             return Encoding.BigEndianUnicode; //UTF-16BE
 
-        if (buffer.Length >= 4 && buffer[0] == 0 && buffer[1] == 0 && buffer[2] == 0xfe && buffer[3] == 0xff)
+        if (buffer is [0x00, 0x00, 0xfe, 0xff, ..])
             return Encoding.UTF32;
 
         return Encoding.Default;

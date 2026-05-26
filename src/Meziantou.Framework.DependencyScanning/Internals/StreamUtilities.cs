@@ -26,7 +26,7 @@ internal static class StreamUtilities
 
         // Read the BOM
         var bom = new byte[4];
-        var readCount = await ReadUntilCountOrEndAsync(stream, bom.AsMemory(), cancellationToken).ConfigureAwait(false);
+        var readCount = await ReadUntilCountOrEndAsync(stream, bom, cancellationToken).ConfigureAwait(false);
         var buffer = bom.AsSpan(0, readCount);
 
         // Analyze the BOM

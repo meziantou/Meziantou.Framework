@@ -218,11 +218,16 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
                             blobReader.ReadByte();
 
                             nullIndex = blobReader.IndexOf(0);
-
-                            if (key == "language-version")
+                            if (key is "language-version")
                             {
                                 if (Version.TryParse(value, out var version))
                                     return version;
+
+                                if (value is "preview")
+                                {
+                                    // We don't know the exact version, but we know it's at least 12.0 as the minimum supported TFM version is .NET 8 which requires C# 12.
+                                    return new Version(12, 0);
+                                }
 
                                 return default;
                             }

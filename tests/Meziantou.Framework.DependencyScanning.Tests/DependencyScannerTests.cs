@@ -199,6 +199,23 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task CreateReaderAsync_DetectsUtf8Bom_WhenStreamReadsOneByteAtATime()
+    {
+        await using var stream = new RestrictedStream(new MemoryStream([0xEF, 0xBB, 0xBF, (byte)'a']), new RestrictedStreamOptions
+        {
+            AllowAsynchronousCalls = true,
+            AllowReading = true,
+            AllowSeeking = true,
+            MaxReadLength = 1,
+        });
+
+        using var reader = await StreamUtilities.CreateReaderAsync(stream, XunitCancellationToken);
+        var text = await reader.ReadToEndAsync(XunitCancellationToken);
+
+        Assert.Equal("a", text);
+    }
+
+    [Fact]
     public async Task DetectUnsupportedType()
     {
         await using var directory = TemporaryDirectory.Create();

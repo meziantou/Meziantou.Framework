@@ -22,26 +22,29 @@ internal static class StreamUtilities
 
     internal static async ValueTask<Encoding> GetEncodingAsync(Stream stream, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+
         // Read the BOM
         var bom = new byte[4];
         var readCount = await ReadUntilCountOrEndAsync(stream, bom, cancellationToken).ConfigureAwait(false);
+        var buffer = bom.AsSpan(0, readCount);
 
         // Analyze the BOM
-        if (readCount >= 3 && bom[0] == 0x2b && bom[1] == 0x2f && bom[2] == 0x76)
+        if (buffer is [0x2b, 0x2f, 0x76, ..])
 #pragma warning disable SYSLIB0001 // Type or member is obsolete
             return Encoding.UTF7;
 #pragma warning restore SYSLIB0001
 
-        if (readCount >= 3 && bom[0] == 0xef && bom[1] == 0xbb && bom[2] == 0xbf)
+        if (buffer is [0xef, 0xbb, 0xbf, ..])
             return Encoding.UTF8;
 
-        if (readCount >= 2 && bom[0] == 0xff && bom[1] == 0xfe)
+        if (buffer is [0xff, 0xfe, ..])
             return Encoding.Unicode; //UTF-16LE
 
-        if (readCount >= 2 && bom[0] == 0xfe && bom[1] == 0xff)
+        if (buffer is [0xfe, 0xff, ..])
             return Encoding.BigEndianUnicode; //UTF-16BE
 
-        if (readCount >= 4 && bom[0] == 0 && bom[1] == 0 && bom[2] == 0xfe && bom[3] == 0xff)
+        if (buffer is [0x00, 0x00, 0xfe, 0xff, ..])
             return Encoding.UTF32;
 
         return Encoding.Default;

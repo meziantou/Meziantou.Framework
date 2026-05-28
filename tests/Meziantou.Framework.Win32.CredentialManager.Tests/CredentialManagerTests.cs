@@ -161,14 +161,14 @@ public sealed class CredentialManagerTests
         var credType = CredentialType.DomainPassword;
 
         using var context = new IsolatedContext();
-        var credentialName1 = context.GetCredentialName();
-        var credentialName2 = context.GetCredentialName();
+        var credentialName1 = context.GetCredentialName("1");
+        var credentialName2 = context.GetCredentialName("2");
 
         CredentialManager.WriteCredential(credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, credType);
         CredentialManager.WriteCredential(credentialName2, "John", "Doe", "Test", CredentialPersistence.Session, credType);
         try
         {
-            var creds = CredentialManager.EnumerateCredentials(context.ScopeName + "*");
+            var creds = CredentialManager.EnumerateCredentials(context.GetCredentialName("*"));
             Assert.Equal(2, creds.Count);
             Assert.True(creds.All(cred => cred.CredentialType == credType));
         }

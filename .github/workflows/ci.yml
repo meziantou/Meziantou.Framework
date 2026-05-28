@@ -175,6 +175,7 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
       MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY: ${{ github.workspace}}/.cache/public-api-generator-tests
       EnableCodeCoverage: ${{ case(github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage, 'true', 'false') }}
+      RunAnalyzers: false
     steps:
       - id: compute-artifact-name
         name: Compute artifact name

@@ -2038,4 +2038,130 @@ ls !(README).md
 <span class="hljs-built_in">ls</span> !(README).md
 """);
     }
+
+    [Fact]
+    public void Export_AtStart()
+    {
+        AssertHighlighter("bash",
+"""
+export sample
+""",
+"""
+<span class="hljs-built_in">export</span> sample
+""");
+    }
+
+    [Fact]
+    public void Export_NotHighlightedAfterEcho()
+    {
+        AssertHighlighter("bash",
+"""
+echo export
+""",
+"""
+<span class="hljs-built_in">echo</span> export
+""");
+    }
+
+    [Fact]
+    public void Export_NotHighlightedAsArgument()
+    {
+        AssertHighlighter("bash",
+"""
+echo foo export bar
+""",
+"""
+<span class="hljs-built_in">echo</span> foo export bar
+""");
+    }
+
+    [Fact]
+    public void Export_AfterSemicolon()
+    {
+        AssertHighlighter("bash",
+"""
+echo hi; export FOO=bar
+""",
+"""
+<span class="hljs-built_in">echo</span> hi; <span class="hljs-built_in">export</span> FOO=bar
+""");
+    }
+
+    [Fact]
+    public void Export_AfterAndAnd()
+    {
+        AssertHighlighter("bash",
+"""
+true && export FOO=bar
+""",
+"""
+<span class="hljs-literal">true</span> &amp;&amp; <span class="hljs-built_in">export</span> FOO=bar
+""");
+    }
+
+    [Fact]
+    public void Export_AfterPipe()
+    {
+        AssertHighlighter("bash",
+"""
+echo hi | export FOO=bar
+""",
+"""
+<span class="hljs-built_in">echo</span> hi | <span class="hljs-built_in">export</span> FOO=bar
+""");
+    }
+
+    [Fact]
+    public void Export_InsideSubshell()
+    {
+        AssertHighlighter("bash",
+"""
+(export FOO=bar)
+""",
+"""
+(<span class="hljs-built_in">export</span> FOO=bar)
+""");
+    }
+
+    [Fact]
+    public void Export_InsideBraceGroup()
+    {
+        AssertHighlighter("bash",
+"""
+{ export FOO=bar; }
+""",
+"""
+{ <span class="hljs-built_in">export</span> FOO=bar; }
+""");
+    }
+
+    [Fact]
+    public void Export_OnNewLine()
+    {
+        AssertHighlighter("bash",
+"""
+echo hi
+export FOO=bar
+""",
+"""
+<span class="hljs-built_in">echo</span> hi
+<span class="hljs-built_in">export</span> FOO=bar
+""");
+    }
+
+    [Fact]
+    public void Export_IndentedAtLineStart()
+    {
+        AssertHighlighter("bash",
+"""
+if true; then
+    export FOO=bar
+fi
+""",
+"""
+<span class="hljs-keyword">if</span> <span class="hljs-literal">true</span>; <span class="hljs-keyword">then</span>
+    <span class="hljs-built_in">export</span> FOO=bar
+<span class="hljs-keyword">fi</span>
+""");
+    }
 }

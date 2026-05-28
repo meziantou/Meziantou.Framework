@@ -8,6 +8,7 @@
     <LatestTargetFrameworksWindows>net11.0-windows;net10.0-windows;net9.0-windows;net8.0-windows</LatestTargetFrameworksWindows>
 
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <NoWarn>$(NoWarn);NU5104</NoWarn> <!-- Allow prerelease dependencies -->
   </PropertyGroup>
 
   <PropertyGroup>

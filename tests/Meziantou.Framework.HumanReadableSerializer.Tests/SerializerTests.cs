@@ -492,7 +492,9 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
+#pragma warning disable RS0030 // Do not use banned APIs
             Subject = new ArrayList() { 1, 2, 3 },
+#pragma warning restore RS0030 // Do not use banned APIs
             Expected = """
                 - 1
                 - 2

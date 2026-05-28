@@ -182,7 +182,8 @@ public sealed class CredentialManagerTests
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void CredentialManager_CredentialType_Invalid()
     {
-        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainCertificate));
+        using var context = new IsolatedContext();
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainCertificate));
         Assert.StartsWith("Only CredentialType.Generic and CredentialType.DomainPassword is supported", ex.Message, StringComparison.Ordinal);
     }
 

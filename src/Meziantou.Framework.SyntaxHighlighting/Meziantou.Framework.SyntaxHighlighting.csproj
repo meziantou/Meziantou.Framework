@@ -1,0 +1,8 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Description>Syntax highlighting engine for .NET</Description>
+  </PropertyGroup>
+
+</Project>

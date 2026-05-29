@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Net.Http.Headers;
 
 namespace Meziantou.Framework.Http;
@@ -19,7 +20,17 @@ public sealed class LinkHeaderValue
     /// <summary>Gets the value of a parameter by name.</summary>
     /// <param name="parameterName">The name of the parameter.</param>
     /// <returns>The parameter value, or <see langword="null"/> if the parameter is not found.</returns>
-    public string? GetParameterValue(string parameterName) => Parameters.FirstOrDefault(p => p.Key == parameterName).Value;
+    public string? GetParameterValue(string parameterName)
+    {
+        var parameters = Parameters;
+        for (var i = 0; i < parameters.Count; i++)
+        {
+            if (parameters[i].Key == parameterName)
+                return parameters[i].Value;
+        }
+
+        return null;
+    }
 
     /// <summary>Gets the list of parameters associated with the link.</summary>
     public IReadOnlyList<KeyValuePair<string, string>> Parameters { get; }
@@ -95,16 +106,16 @@ public sealed class LinkHeaderValue
                 value = ConsumeOptionalWhiteSpaces(value);
                 index = value.IndexOfAny(ParameterSeparators);
 
-                string parameterName;
+                ReadOnlySpan<char> parameterName;
                 var parameterValue = "";
                 if (index == -1)
                 {
-                    parameterName = value.ToString();
+                    parameterName = value;
                     value = [];
                 }
                 else
                 {
-                    parameterName = value[0..index].ToString();
+                    parameterName = value[0..index];
                     value = value[index..];
                 }
 
@@ -116,36 +127,65 @@ public sealed class LinkHeaderValue
                     if (value.Length > 0 && value[0] is '"')
                     {
                         value = value[1..];
-                        var sb = new StringBuilder();
-                        while (!value.IsEmpty)
+                        var specialIndex = value.IndexOfAny('"', '\\');
+                        if (specialIndex == -1)
                         {
-                            var c = value[0];
-                            if (c == '"')
+                            // Unterminated quoted string: take the remaining characters
+                            parameterValue = value.ToString();
+                            value = [];
+                        }
+                        else if (value[specialIndex] is '"')
+                        {
+                            // No escape sequence: slice the value directly without a StringBuilder
+                            parameterValue = value[..specialIndex].ToString();
+                            value = value[(specialIndex + 1)..];
+                        }
+                        else
+                        {
+                            // Contains at least one escape sequence
+                            var sb = new StringBuilder();
+                            sb.Append(value[..specialIndex]);
+                            value = value[specialIndex..];
+                            while (!value.IsEmpty)
                             {
-                                value = value[1..];
-                                break;
-                            }
-                            else if (c == '\\')
-                            {
-                                if (value.Length > 0)
-                                {
-                                    sb.Append(value[1]);
-                                    value = value[2..];
-                                }
-                                else
+                                var c = value[0];
+                                if (c == '"')
                                 {
                                     value = value[1..];
                                     break;
                                 }
+                                else if (c == '\\')
+                                {
+                                    if (value.Length > 1)
+                                    {
+                                        sb.Append(value[1]);
+                                        value = value[2..];
+                                    }
+                                    else
+                                    {
+                                        value = value[1..];
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    // Append the whole run of regular characters at once
+                                    var next = value.IndexOfAny('"', '\\');
+                                    if (next == -1)
+                                    {
+                                        sb.Append(value);
+                                        value = [];
+                                    }
+                                    else
+                                    {
+                                        sb.Append(value[..next]);
+                                        value = value[next..];
+                                    }
+                                }
                             }
-                            else
-                            {
-                                sb.Append(c);
-                                value = value[1..];
-                            }
-                        }
 
-                        parameterValue = sb.ToString();
+                            parameterValue = sb.ToString();
+                        }
                     }
                     else
                     {
@@ -163,9 +203,7 @@ public sealed class LinkHeaderValue
                     }
                 }
 
-#pragma warning disable CA1308 // Normalize strings to uppercase
-                parameters.Add(KeyValuePair.Create(parameterName.ToLowerInvariant(), parameterValue));
-#pragma warning restore CA1308
+                parameters.Add(KeyValuePair.Create(ToLowerInvariantString(parameterName), parameterValue));
 
                 value = ConsumeOptionalWhiteSpaces(value);
             }
@@ -182,13 +220,43 @@ public sealed class LinkHeaderValue
 
         static ReadOnlySpan<char> ConsumeOptionalWhiteSpaces(ReadOnlySpan<char> value)
         {
-            for (var i = 0; i < value.Length; i++)
-            {
-                if (value[i] is not ' ' and not '\t')
-                    return value[i..];
-            }
+            var index = value.IndexOfAnyExcept(' ', '\t');
+            return index == -1 ? [] : value[index..];
+        }
+    }
 
-            return [];
+    // Lowercases the span using the invariant culture, allocating a single string and avoiding
+    // any work when the value is already lowercase (the common case for header parameter names).
+    private static string ToLowerInvariantString(ReadOnlySpan<char> value)
+    {
+        foreach (var rune in value.EnumerateRunes())
+        {
+            if (Rune.ToLowerInvariant(rune) != rune)
+                return ToLowerInvariantSlow(value);
+        }
+
+        return value.ToString();
+
+        static string ToLowerInvariantSlow(ReadOnlySpan<char> value)
+        {
+            char[]? rented = null;
+            Span<char> buffer = value.Length <= 256
+                ? stackalloc char[256]
+                : (rented = ArrayPool<char>.Shared.Rent(value.Length));
+
+            var written = value.ToLowerInvariant(buffer);
+
+            // ToLowerInvariant returns -1 when the destination is too small. We size the buffer to the
+            // source length, which is enough today, but don't assume the lowercased form has the same
+            // length: fall back to allocating a string when it doesn't fit.
+            var result = written < 0
+                ? value.ToString().ToLowerInvariant()
+                : new string(buffer[..written]);
+
+            if (rented is not null)
+                ArrayPool<char>.Shared.Return(rented);
+
+            return result;
         }
     }
 }

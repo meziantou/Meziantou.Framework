@@ -1,5 +1,6 @@
 using Meziantou.Framework.Globbing.Internals;
 
+using System.Buffers;
 using System.IO.Enumeration;
 
 namespace Meziantou.Framework.Globbing;
@@ -79,6 +80,11 @@ public sealed class Glob : IGlobEvaluatable
     private readonly GlobMatchType _matchType;
     internal readonly Segment[] _segments;
 
+    // Anchors are precomputed once per pattern. Only segments that immediately follow a
+    // RecursiveMatchAllSegment ('**') can be tested as an anchor during matching, so we only
+    // build (and allocate) anchors for those to avoid per-path allocations in the hot loop.
+    private readonly SegmentAnchor?[] _segmentAnchors;
+
     /// <summary>Gets the glob mode indicating whether this pattern includes or excludes matches.</summary>
     public GlobMode Mode { get; }
 
@@ -91,6 +97,15 @@ public sealed class Glob : IGlobEvaluatable
         _segments = segments;
         _matchType = matchType;
         Mode = mode;
+
+        _segmentAnchors = new SegmentAnchor?[segments.Length];
+        for (var i = 1; i < segments.Length; i++)
+        {
+            if (segments[i - 1] is RecursiveMatchAllSegment && TryGetSegmentAnchor(segments[i], out var anchor))
+            {
+                _segmentAnchors[i] = anchor;
+            }
+        }
     }
 
     /// <summary>Parses a glob pattern string.</summary>
@@ -153,12 +168,8 @@ public sealed class Glob : IGlobEvaluatable
 
     internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
-        var pathEnumerator = new PathReader(directory, filename, itemType);
-        return IsMatchCore(pathEnumerator, _segments);
-    }
+        var pathReader = new PathReader(directory, filename, itemType);
 
-    private bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
-    {
         if (_matchType is not GlobMatchType.Any)
         {
             if (_matchType is GlobMatchType.File && pathReader.IsDirectory)
@@ -168,6 +179,11 @@ public sealed class Glob : IGlobEvaluatable
                 return false;
         }
 
+        return IsMatchCore(pathReader, _segments, _segmentAnchors);
+    }
+
+    private static bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments, ReadOnlySpan<SegmentAnchor?> anchors)
+    {
         for (var i = 0; i < patternSegments.Length; i++)
         {
             var patternSegment = patternSegments[i];
@@ -177,20 +193,21 @@ public sealed class Glob : IGlobEvaluatable
                 if (remainingPatternSegments.IsEmpty) // Last segment
                     return false; // Match only files
 
-                if (IsMatchCore(pathReader, remainingPatternSegments))
+                var remainingAnchors = anchors[(i + 1)..];
+                if (IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors))
                     return true;
 
-                var hasAnchor = TryGetSegmentAnchor(remainingPatternSegments[0], out var segmentAnchor);
+                var segmentAnchor = remainingAnchors[0];
                 pathReader.ConsumeSegment();
                 while (!pathReader.IsEndOfPath)
                 {
-                    if (hasAnchor && !segmentAnchor.Contains(pathReader.CurrentText))
+                    if (segmentAnchor.HasValue && !segmentAnchor.GetValueOrDefault().Contains(pathReader.CurrentText))
                     {
                         pathReader.ConsumeSegment();
                         continue;
                     }
 
-                    if (IsMatchCore(pathReader, remainingPatternSegments))
+                    if (IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors))
                         return true;
 
                     pathReader.ConsumeSegment();
@@ -280,7 +297,7 @@ public sealed class Glob : IGlobEvaluatable
                     index++;
                 }
 
-                anchor = new SegmentAnchor(characters);
+                anchor = new SegmentAnchor(SearchValues.Create(characters));
                 return true;
             }
 
@@ -306,10 +323,10 @@ public sealed class Glob : IGlobEvaluatable
         anchor = default;
         return false;
 
-        static char[] CreateCharacterSet(ReadOnlySpan<char> characters, bool ignoreCase)
+        static SearchValues<char> CreateCharacterSet(ReadOnlySpan<char> characters, bool ignoreCase)
         {
             if (!ignoreCase)
-                return characters.ToArray();
+                return SearchValues.Create(characters);
 
             var result = new HashSet<char>();
             foreach (var character in characters)
@@ -319,22 +336,22 @@ public sealed class Glob : IGlobEvaluatable
                 result.Add(char.ToUpperInvariant(character));
             }
 
-            return [.. result];
+            return SearchValues.Create([.. result]);
         }
     }
 
     private readonly struct SegmentAnchor
     {
-        private readonly char[] _characters;
+        private readonly SearchValues<char> _characters;
 
-        public SegmentAnchor(char[] characters)
+        public SegmentAnchor(SearchValues<char> characters)
         {
             _characters = characters;
         }
 
         public bool Contains(ReadOnlySpan<char> currentText)
         {
-            return !currentText.IsEmpty && Array.IndexOf(_characters, currentText[0]) >= 0;
+            return !currentText.IsEmpty && _characters.Contains(currentText[0]);
         }
     }
 

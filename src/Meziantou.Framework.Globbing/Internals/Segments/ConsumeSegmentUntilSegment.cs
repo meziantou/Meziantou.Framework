@@ -1,14 +1,16 @@
+using System.Buffers;
+
 namespace Meziantou.Framework.Globbing.Internals.Segments;
 
 internal sealed class ConsumeSegmentUntilSegment : Segment
 {
-    private readonly char[] _characters;
+    private readonly SearchValues<char> _characters;
 
     public ConsumeSegmentUntilSegment(char[] characters, bool ignoreCase)
     {
         if (!ignoreCase)
         {
-            _characters = characters;
+            _characters = SearchValues.Create(characters);
             return;
         }
 
@@ -20,7 +22,7 @@ internal sealed class ConsumeSegmentUntilSegment : Segment
             expandedCharacters.Add(char.ToUpperInvariant(character));
         }
 
-        _characters = [.. expandedCharacters];
+        _characters = SearchValues.Create([.. expandedCharacters]);
     }
 
     public override bool IsMatch(ref PathReader pathReader)

@@ -1,0 +1,13 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- Avoid a namespace segment 'PooledMemoryStream' that would collide with the PooledMemoryStream type. -->
+    <RootNamespace>Meziantou.Framework.PooledMemoryStreamTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.PooledMemoryStream/Meziantou.Framework.PooledMemoryStream.csproj" />
+  </ItemGroup>
+
+</Project>

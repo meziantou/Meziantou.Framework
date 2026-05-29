@@ -163,7 +163,7 @@ public static partial class StringSearchUtilities
             return 0;
         }
 
-        var commonPrefixLength = CommonPrefixLength(word1, word2);
+        var commonPrefixLength = GetCommonPrefixLength(word1, word2);
         word1 = word1[commonPrefixLength..];
         word2 = word2[commonPrefixLength..];
 
@@ -215,7 +215,7 @@ public static partial class StringSearchUtilities
         return LevenshteinPooled(word1, word2);
     }
 
-    private static int CommonPrefixLength(ReadOnlySpan<char> word1, ReadOnlySpan<char> word2)
+    internal static int GetCommonPrefixLength(ReadOnlySpan<char> word1, ReadOnlySpan<char> word2)
     {
         var minLength = Math.Min(word1.Length, word2.Length);
         if (minLength is 0)

@@ -72,7 +72,7 @@ public sealed class PruningRadixTreeTests
     {
         var tree = new PruningRadixTree();
 
-        Assert.Throws<ArgumentNullException>(() => tree.AddRange([new KeyValuePair<string, long>(null!, 1)]));
+        Assert.Throws<ArgumentException>(() => tree.AddRange([new KeyValuePair<string, long>(null!, 1)]));
     }
 
     [Fact]

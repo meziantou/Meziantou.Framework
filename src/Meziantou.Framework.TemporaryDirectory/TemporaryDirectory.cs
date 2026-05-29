@@ -29,26 +29,18 @@ namespace Meziantou.Framework;
 /// </example>
 /// <remarks>
 /// This class creates a unique temporary directory that is automatically cleaned up when disposed.
-/// It uses a lock file mechanism to prevent race conditions when multiple instances are created concurrently.
+/// Uniqueness is guaranteed by including a GUID in the directory name.
 /// </remarks>
 [DebuggerDisplay("{FullPath}")]
 public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 {
-    private const string LockFileName = "lock";
-    private const string DirectoryName = "a";
-
-    private readonly FullPath _path;
-    private readonly Stream _lockFile;
-
     /// <summary>Gets the full path to the temporary directory.</summary>
     /// <value>The absolute path to the temporary directory where files and subdirectories can be created.</value>
     public FullPath FullPath { get; }
 
-    private TemporaryDirectory(FullPath path, FullPath innerPath, Stream lockFile)
+    private TemporaryDirectory(FullPath path)
     {
-        _path = path;
-        FullPath = innerPath;
-        _lockFile = lockFile;
+        FullPath = path;
     }
 
     /// <summary>Creates a new temporary directory in the system's default temp location.</summary>
@@ -67,13 +59,12 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <returns>A new <see cref="TemporaryDirectory"/> instance.</returns>
     /// <remarks>
     /// The directory name includes a timestamp (yyyyMMdd_HHmmss) and GUID to ensure uniqueness.
-    /// A lock file mechanism prevents race conditions during concurrent creation.
     /// </remarks>
     public static TemporaryDirectory Create(FullPath rootDirectory)
     {
         var folderName = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N");
-        var (path, innerPath, lockFile) = CreateUniqueDirectory(rootDirectory / folderName);
-        return new TemporaryDirectory(path, innerPath, lockFile);
+        var path = CreateUniqueDirectory(rootDirectory / folderName);
+        return new TemporaryDirectory(path);
     }
 
     /// <summary>Gets the full path for a relative path within the temporary directory.</summary>
@@ -164,95 +155,24 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         return path;
     }
 
-    private static (FullPath path, FullPath innerPath, Stream lockFile) CreateUniqueDirectory(FullPath folderPath)
+    private static FullPath CreateUniqueDirectory(FullPath folderPath)
     {
-        /*
-         * Structure
-         * - temp/<folder>/lock => allows to detect concurrency
-         * - temp/<folder>/<returned_value>/
-         */
-
-        var count = 1;
-        while (true)
-        {
-            Stream? lockFileStream = null;
-            try
-            {
-                var tempPath = folderPath.Value + "_";
-                while (Directory.Exists(folderPath))
-                {
-                    folderPath = FullPath.FromPath(tempPath + count.ToString(CultureInfo.InvariantCulture));
-
-                    if (count == int.MaxValue)
-                        throw new InvalidOperationException("Cannot create a temporary directory");
-
-                    count++;
-                }
-
-                Directory.CreateDirectory(folderPath);
-                var lockFilePath = folderPath / LockFileName;
-                lockFileStream = new FileStream(lockFilePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
-                var innerFolderPath = folderPath / DirectoryName;
-                if (Directory.Exists(innerFolderPath))
-                {
-                    lockFileStream.Dispose();
-                    continue;
-                }
-
-                Directory.CreateDirectory(innerFolderPath);
-
-                // Assert folder is empty
-                if (Directory.EnumerateFileSystemEntries(innerFolderPath).Any())
-                {
-                    lockFileStream.Dispose();
-                    continue;
-                }
-
-                return (folderPath, innerFolderPath, lockFileStream);
-            }
-            catch (IOException)
-            {
-                // The folder may already in use
-            }
-            catch
-            {
-                lockFileStream?.Dispose();
-                throw;
-            }
-
-            lockFileStream?.Dispose();
-        }
+        // The folder name includes a GUID, so it is unique and cannot collide with an existing directory.
+        Directory.CreateDirectory(folderPath);
+        return folderPath;
     }
 
     /// <summary>Deletes the temporary directory and all its contents.</summary>
-    /// <remarks>
-    /// This method first deletes all files and subdirectories within the temporary directory,
-    /// then releases the lock file and deletes the parent directory.
-    /// </remarks>
     public void Dispose()
     {
-        // First delete the temporary folder content
         IOUtilities.Delete(new DirectoryInfo(FullPath));
-
-        // Release the lock file and delete the parent directory
-        _lockFile.Dispose();
-        IOUtilities.Delete(new DirectoryInfo(_path));
     }
 
     /// <summary>Asynchronously deletes the temporary directory and all its contents.</summary>
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
-    /// <remarks>
-    /// This method first deletes all files and subdirectories within the temporary directory,
-    /// then releases the lock file and deletes the parent directory.
-    /// </remarks>
     public async ValueTask DisposeAsync()
     {
-        // First delete the temporary folder content
         await IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None).ConfigureAwait(false);
-
-        // Release the lock file and delete the parent directory
-        await _lockFile.DisposeAsync().ConfigureAwait(false);
-        await IOUtilities.DeleteAsync(new DirectoryInfo(_path), CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>Combines the temporary directory path with a relative path using the / operator.</summary>

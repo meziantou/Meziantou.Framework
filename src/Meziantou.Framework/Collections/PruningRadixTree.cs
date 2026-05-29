@@ -58,22 +58,6 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
     }
 
     /// <summary>
-    /// Adds a term and its frequency to the tree.
-    /// </summary>
-    /// <param name="term">The term to add.</param>
-    /// <param name="frequency">The positive frequency value to add to the term.</param>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="frequency"/> is less than or equal to 0.</exception>
-    /// <remarks>
-    /// If the term already exists, <paramref name="frequency"/> is added to the existing value.
-    /// </remarks>
-    public void Add(ReadOnlySpan<char> term, long frequency)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(frequency);
-
-        AddCore(_root, term, term.ToString(), frequency);
-    }
-
-    /// <summary>
     /// Adds a sequence of terms and frequencies to the tree.
     /// </summary>
     /// <param name="terms">The terms to add.</param>

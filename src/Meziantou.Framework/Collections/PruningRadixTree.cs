@@ -62,18 +62,6 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
     /// </summary>
     /// <param name="term">The term to remove.</param>
     /// <returns><see langword="true"/> when the term existed and was removed; otherwise, <see langword="false"/>.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="term"/> is <see langword="null"/>.</exception>
-    public bool Remove(string term)
-    {
-        ArgumentNullException.ThrowIfNull(term);
-        return Remove(term.AsSpan());
-    }
-
-    /// <summary>
-    /// Removes a term from the tree.
-    /// </summary>
-    /// <param name="term">The term to remove.</param>
-    /// <returns><see langword="true"/> when the term existed and was removed; otherwise, <see langword="false"/>.</returns>
     public bool Remove(ReadOnlySpan<char> term)
     {
         if (!RemoveCore(_root, term))
@@ -81,19 +69,6 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
 
         Count--;
         return true;
-    }
-
-    /// <summary>
-    /// Gets the frequency associated with a term.
-    /// </summary>
-    /// <param name="term">The term to find.</param>
-    /// <param name="frequency">When this method returns, contains the associated frequency if found; otherwise, 0.</param>
-    /// <returns><see langword="true"/> if the term exists; otherwise, <see langword="false"/>.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="term"/> is <see langword="null"/>.</exception>
-    public bool TryGetValue(string term, out long frequency)
-    {
-        ArgumentNullException.ThrowIfNull(term);
-        return TryGetValue(term.AsSpan(), out frequency);
     }
 
     /// <summary>
@@ -434,19 +409,31 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
         }
     }
 
-    private static IEnumerable<KeyValuePair<string, long>> EnumerateFrom(Node node)
+    private static IEnumerable<KeyValuePair<string, long>> EnumerateFrom(Node root)
     {
-        if (node.TermFrequency > 0 && node.Term is not null)
-            yield return new KeyValuePair<string, long>(node.Term, node.TermFrequency);
+        if (root.TermFrequency > 0 && root.Term is not null)
+            yield return new KeyValuePair<string, long>(root.Term, root.TermFrequency);
 
-        if (node.Children is null)
+        if (root.Children is null)
             yield break;
 
-        foreach (var edge in node.Children)
+        var stack = new Stack<Node>();
+        for (var i = root.Children.Count - 1; i >= 0; i--)
         {
-            foreach (var item in EnumerateFrom(edge.Child))
+            stack.Push(root.Children[i].Child);
+        }
+
+        while (stack.TryPop(out var node))
+        {
+            if (node.TermFrequency > 0 && node.Term is not null)
+                yield return new KeyValuePair<string, long>(node.Term, node.TermFrequency);
+
+            if (node.Children is null)
+                continue;
+
+            for (var i = node.Children.Count - 1; i >= 0; i--)
             {
-                yield return item;
+                stack.Push(node.Children[i].Child);
             }
         }
     }

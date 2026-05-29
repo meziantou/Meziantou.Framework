@@ -120,8 +120,8 @@ public sealed class PruningRadixTreeTests
     public void SpanOverloadsWork()
     {
         var tree = new PruningRadixTree();
-        tree.Add("car".AsSpan(), 4);
-        tree.Add("cart".AsSpan(), 9);
+        tree.Add("car", 4);
+        tree.Add("cart", 9);
 
         Assert.True(tree.TryGetValue("car".AsSpan(), out var carFrequency));
         Assert.Equal(4, carFrequency);

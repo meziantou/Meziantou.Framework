@@ -80,8 +80,6 @@ internal static class HistogramDiff
     private static Anchor? FindBestAnchor(string[] left, int leftStart, int leftEnd, string[] right, int rightStart, int rightEnd, IEqualityComparer<string> comparer)
     {
         var leftFrequency = CountOccurrences(left, leftStart, leftEnd, comparer);
-        var rightFrequency = CountOccurrences(right, rightStart, rightEnd, comparer);
-
         var rightPositions = BuildPositions(right, rightStart, rightEnd, comparer);
 
         Anchor? best = null;
@@ -92,15 +90,15 @@ internal static class HistogramDiff
             if (!rightPositions.TryGetValue(token, out var positions))
                 continue;
 
-            var score = leftFrequency[token] + rightFrequency[token];
-            for (var i = 0; i < positions.Count; i++)
+            // positions is sorted ascending, so positions[0] is the only candidate that can win the
+            // tie-break for this leftIndex (smaller rightIndex wins). The right occurrence count equals
+            // positions.Count, so there is no need for a separate frequency dictionary.
+            var score = leftFrequency[token] + positions.Count;
+            var rightIndex = positions[0];
+            if (best is null || score < bestScore || (score == bestScore && IsBetterTieBreak(leftIndex, rightIndex, best.Value)))
             {
-                var rightIndex = positions[i];
-                if (best is null || score < bestScore || (score == bestScore && IsBetterTieBreak(leftIndex, rightIndex, best.Value)))
-                {
-                    best = new Anchor(leftIndex, rightIndex);
-                    bestScore = score;
-                }
+                best = new Anchor(leftIndex, rightIndex);
+                bestScore = score;
             }
         }
 

@@ -10,7 +10,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     private readonly ConcurrentObservableCollection<T> _collection;
     private readonly Dispatcher _dispatcher;
 
-    private bool _isDispatcherPending;
+    private volatile bool _isDispatcherPending;
 
     public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, Dispatcher dispatcher)
         : base(collection)

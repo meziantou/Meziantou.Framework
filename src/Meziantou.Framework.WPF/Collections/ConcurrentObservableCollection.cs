@@ -148,9 +148,9 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
             {
                 if (_observableCollection is not null)
                 {
-                    for (var i = count; i < _items.Count; i++)
+                    foreach (var item in _items.GetRange(count, _items.Count - count))
                     {
-                        _observableCollection.EnqueueAdd(_items[i]);
+                        _observableCollection.EnqueueAdd(item);
                     }
                 }
             }
@@ -175,9 +175,11 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
             {
                 if (_observableCollection is not null)
                 {
-                    for (var i = index; i < index + addedItemsCount; i++)
+                    var i = index;
+                    foreach (var item in _items.GetRange(index, addedItemsCount))
                     {
-                        _observableCollection.EnqueueInsert(i, _items[i]);
+                        _observableCollection.EnqueueInsert(i, item);
+                        i++;
                     }
                 }
             }

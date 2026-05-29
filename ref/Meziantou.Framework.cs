@@ -984,6 +984,23 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
+    public sealed class PruningRadixTree : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, long>>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public void Add(string term, long frequency) { }
+        public void Add(System.ReadOnlySpan<char> term, long frequency) { }
+        public bool Remove(string term) => throw null;
+        public bool Remove(System.ReadOnlySpan<char> term) => throw null;
+        public bool TryGetValue(string term, out long frequency) => throw null;
+        public bool TryGetValue(System.ReadOnlySpan<char> term, out long frequency) => throw null;
+        public bool ContainsKey(string term) => throw null;
+        public bool ContainsKey(System.ReadOnlySpan<char> term) => throw null;
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, long>> GetTopTermsByPrefix(string prefix, int topK, out long prefixFrequency, bool pruning = true) => throw null;
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, long>> GetTopTermsByPrefix(System.ReadOnlySpan<char> prefix, int topK, out long prefixFrequency, bool pruning = true) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, long>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
     public sealed class SkipList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }

@@ -244,7 +244,7 @@ jobs:
 
       - name: Cleanup test results
         if: steps.build-project.outputs.has-project == 'true'
-        run: Remove-Item -Recurse -Force "${{ env.TestResultsDirectory }}/" -Filter "*.{dmp,trx}" -ErrorAction SilentlyContinue
+        run: Get-ChildItem -Recurse -Force "${{ env.TestResultsDirectory }}/" -Filter "*.dmp" | Remove-Item -ErrorAction SilentlyContinue
 
       - uses: actions/upload-artifact@v7
         if: always() && steps.build-project.outputs.has-project == 'true'

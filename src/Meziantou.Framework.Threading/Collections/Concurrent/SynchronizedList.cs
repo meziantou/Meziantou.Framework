@@ -86,6 +86,8 @@ public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
         }
     }
 
+    /// <summary>Returns an enumerator that iterates over a point-in-time snapshot of the list.</summary>
+    /// <remarks>A full copy of the list is taken on each call so enumeration is safe while other threads mutate the list. Avoid enumerating in hot paths where the allocation matters.</remarks>
     public IEnumerator<T> GetEnumerator()
     {
         lock (_list)

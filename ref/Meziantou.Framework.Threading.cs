@@ -95,7 +95,11 @@ namespace Meziantou.Framework.Threading
     public sealed class KeyedAsyncLock<TKey>
     {
         public KeyedAsyncLock(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
-        public System.Threading.Tasks.ValueTask<AsyncLockLease> LockAsync(TKey key, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public System.Threading.Tasks.ValueTask<KeyedAsyncLockLease<TKey>> LockAsync(TKey key, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public readonly struct KeyedAsyncLockLease<TKey> : System.IDisposable
+        {
+            public void Dispose() { }
+        }
     }
 
     public sealed class KeyedLock<TKey>

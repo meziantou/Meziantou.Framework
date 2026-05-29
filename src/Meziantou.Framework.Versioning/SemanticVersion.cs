@@ -39,6 +39,17 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         Patch = patch;
     }
 
+    // Internal constructor used by the parser. The labels are already validated and frozen,
+    // so this bypasses the per-label validation and list rebuilding done by the public constructors.
+    private SemanticVersion(int major, int minor, int patch, IReadOnlyList<string> prereleaseLabels, IReadOnlyList<string> metadata)
+    {
+        Major = major;
+        Minor = minor;
+        Patch = patch;
+        PrereleaseLabels = prereleaseLabels;
+        Metadata = metadata;
+    }
+
     /// <summary>Creates a new semantic version with the specified major, minor, patch numbers and prerelease label.</summary>
     public SemanticVersion(int major, int minor, int patch, string? prereleaseLabel)
         : this(major, minor, patch, prereleaseLabel, metadata: null)
@@ -78,7 +89,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 if (label is null || !IsPrereleaseIdentifier(label.AsSpan()))
                     throw new ArgumentException($"Label '{label}' is not valid", nameof(prereleaseLabel));
 
-                labels ??= [];
+                labels ??= prereleaseLabel.TryGetNonEnumeratedCount(out var count) ? new ReadOnlyList<string>(count) : [];
                 labels.Add(label);
             }
 
@@ -97,7 +108,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 if (label is null || !IsMetadataIdentifier(label.AsSpan()))
                     throw new ArgumentException($"Label '{label}' is not valid", nameof(metadata));
 
-                labels ??= [];
+                labels ??= metadata.TryGetNonEnumeratedCount(out var count) ? new ReadOnlyList<string>(count) : [];
                 labels.Add(label);
             }
 
@@ -142,32 +153,30 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         if (IsPrerelease)
         {
             sb.Append('-');
-            var first = true;
-            foreach (var label in PrereleaseLabels)
+            var labels = PrereleaseLabels;
+            for (var i = 0; i < labels.Count; i++)
             {
-                if (!first)
+                if (i != 0)
                 {
                     sb.Append('.');
                 }
 
-                sb.Append(label);
-                first = false;
+                sb.Append(labels[i]);
             }
         }
 
         if (HasMetadata)
         {
             sb.Append('+');
-            var first = true;
-            foreach (var label in Metadata)
+            var labels = Metadata;
+            for (var i = 0; i < labels.Count; i++)
             {
-                if (!first)
+                if (i != 0)
                 {
                     sb.Append('.');
                 }
 
-                sb.Append(label);
-                first = false;
+                sb.Append(labels[i]);
             }
         }
 
@@ -292,7 +301,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         if (index != versionString.Length)
             return false;
 
-        version = new SemanticVersion(major, minor, patch, prereleaseLabels, metadata);
+        version = new SemanticVersion(major, minor, patch, prereleaseLabels ?? EmptyArray, metadata ?? EmptyArray);
         return true;
     }
 
@@ -335,11 +344,12 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
     private static IReadOnlyList<string> ReadPrereleaseIdentifiers(ReadOnlySpan<char> versionString, ref int index)
     {
-        var result = new List<string>();
+        ReadOnlyList<string>? result = null;
         while (true)
         {
             if (TryReadPrereleaseIdentifier(versionString, ref index, out var label))
             {
+                result ??= [];
                 result.Add(label);
             }
 
@@ -347,7 +357,11 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 break;
         }
 
-        return result.Count == 0 ? EmptyArray : ReadOnlyList.From(result);
+        if (result is null)
+            return EmptyArray;
+
+        result.Freeze();
+        return result;
     }
 
     private static bool TryReadMetadata(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
@@ -366,7 +380,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
     private static IReadOnlyList<string> TryReadMetadataIdentifiers(ReadOnlySpan<char> versionString, ref int index)
     {
-        List<string>? result = null;
+        ReadOnlyList<string>? result = null;
         while (true)
         {
             if (TryReadMetadataIdentifier(versionString, ref index, out var label))
@@ -379,7 +393,11 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 break;
         }
 
-        return result is null ? EmptyArray : ReadOnlyList.From(result);
+        if (result is null)
+            return EmptyArray;
+
+        result.Freeze();
+        return result;
     }
 
     private static bool IsPrereleaseIdentifier(ReadOnlySpan<char> label)
@@ -404,9 +422,13 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
         if (last > index)
         {
-            value = versionString[index..last].ToString();
-            if (value[0] != '0' || value.Any(c => !IsDigit(c)))
+            var span = versionString[index..last];
+
+            // A numeric identifier must not have a leading zero. Identifiers that contain at
+            // least one non-digit, or that do not start with '0', are always valid.
+            if (span[0] != '0' || ContainsNonDigit(span))
             {
+                value = span.ToString();
                 index = last;
                 return true;
             }
@@ -415,6 +437,16 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         value = default;
         return false;
 
+        static bool ContainsNonDigit(ReadOnlySpan<char> span)
+        {
+            foreach (var c in span)
+            {
+                if (!IsDigit(c))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     private static bool IsValidLabelCharacter(char c)

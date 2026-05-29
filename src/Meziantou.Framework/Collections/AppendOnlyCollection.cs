@@ -42,11 +42,19 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
             {
                 var newCapacity = Math.Min(MaxSegmentSize, _lastSegment.Items.Length * 2);
                 var newSegment = new AppendOnlyCollectionSegment<T>(newCapacity);
+
+                // Add the item before publishing the link. The volatile write to Next
+                // release-publishes the item store, so a lock-free reader that observes
+                // the new segment via Next always sees a segment with Count >= 1.
+                newSegment.AddItem(item);
                 _lastSegment.Next = newSegment;
                 _lastSegment = newSegment;
             }
+            else
+            {
+                _lastSegment.AddItem(item);
+            }
 
-            _lastSegment.AddItem(item);
             _count++;
         }
     }
@@ -86,10 +94,15 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
 
     public bool Contains(Func<T, bool> predicate)
     {
-        return Find(predicate) is not null;
+        return TryFind(predicate, out _);
     }
 
     public T? Find(Func<T, bool> predicate)
+    {
+        return TryFind(predicate, out var result) ? result : default;
+    }
+
+    public bool TryFind(Func<T, bool> predicate, out T result)
     {
         var segment = _firstSegment;
         while (segment is not null)
@@ -99,17 +112,21 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
             {
                 var item = items[i];
                 if (predicate(item))
-                    return item;
+                {
+                    result = item;
+                    return true;
+                }
             }
 
             segment = segment.Next;
         }
 
-        return default;
+        result = default!;
+        return false;
     }
 
     void ICollection<T>.Clear() => throw new NotSupportedException();
-    bool ICollection<T>.Contains(T item) => Contains(x => Equals(x, item));
+    bool ICollection<T>.Contains(T item) => Contains(x => EqualityComparer<T>.Default.Equals(x, item));
     bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
     void ICollection<T>.CopyTo(T[] array, int arrayIndex)
     {
@@ -164,14 +181,28 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
                 return false;
 
             _index++;
-            if (_index >= _segment.Count)
+            while (true)
             {
-                _segment = _segment.Next;
-                _index = 0;
-                return _segment is not null;
-            }
+                var segment = _segment;
+                Debug.Assert(segment is not null);
 
-            return true;
+                var count = segment.Count;
+                if (_index < count)
+                    return true;
+
+                // Segment.Next is volatile. If we can observe it, re-read Count so this
+                // transition decision is not made using a potentially stale count read.
+                var nextSegment = segment.Next;
+                if (nextSegment is null)
+                    return false;
+
+                count = segment.Count;
+                if (_index < count)
+                    return true;
+
+                _segment = nextSegment;
+                _index = 0;
+            }
         }
 
         public readonly void Dispose()

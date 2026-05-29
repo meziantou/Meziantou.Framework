@@ -99,4 +99,106 @@ public sealed class AppendOnlyCollectionTests
         collection.Add(0);
         Assert.Throws<ArgumentException>(() => collection.CopyTo([], 0));
     }
+
+    [Fact]
+    public void Contains_ValueType_ReturnsFalseWhenNoMatch()
+    {
+        var collection = new AppendOnlyCollection<int>();
+        collection.Add(1);
+        collection.Add(2);
+
+        // 0 is default(int): a buggy implementation that relies on `Find(...) is not null`
+        // returns true here because default(int) boxes to a non-null value.
+        Assert.False(collection.Contains(x => x == 0));
+        Assert.True(collection.Contains(x => x == 1));
+    }
+
+    [Fact]
+    public void Contains_ValueType_DefaultValuePresent_ReturnsTrue()
+    {
+        var collection = new AppendOnlyCollection<int>();
+        collection.Add(0);
+
+        Assert.True(collection.Contains(x => x == 0));
+    }
+
+    [Fact]
+    public void ICollectionContains_ValueType()
+    {
+        ICollection<int> collection = new AppendOnlyCollection<int>();
+        collection.Add(1);
+        collection.Add(2);
+
+        Assert.False(collection.Contains(0));
+        Assert.True(collection.Contains(1));
+        Assert.True(collection.Contains(2));
+    }
+
+    [Fact]
+    public void TryFind_ValueType()
+    {
+        var collection = new AppendOnlyCollection<int>();
+        collection.Add(1);
+        collection.Add(2);
+
+        Assert.True(collection.TryFind(x => x == 2, out var found));
+        Assert.Equal(2, found);
+
+        Assert.False(collection.TryFind(x => x == 0, out var notFound));
+        Assert.Equal(0, notFound);
+    }
+
+    [Fact]
+    public void Find_ReferenceType()
+    {
+        var collection = new AppendOnlyCollection<string>();
+        collection.Add("a");
+        collection.Add("b");
+
+        Assert.Equal("b", collection.Find(x => x == "b"));
+        Assert.Null(collection.Find(x => x == "c"));
+    }
+
+    [Fact]
+    public async Task ConcurrentEnumerationWhileAppending_NeverThrowsAndSeesConsistentPrefix()
+    {
+        // Small initial capacity forces many segments to be created while reading,
+        // exercising the segment-linking/enumeration race.
+        var collection = new AppendOnlyCollection<int>(1);
+        const int Count = 50_000;
+
+        using var cts = new CancellationTokenSource();
+        var writer = Task.Run(() =>
+        {
+            for (var i = 0; i < Count; i++)
+            {
+                collection.Add(i);
+            }
+        });
+
+        var readers = new Task[4];
+        for (var r = 0; r < readers.Length; r++)
+        {
+            readers[r] = Task.Run(() =>
+            {
+                while (!cts.Token.IsCancellationRequested)
+                {
+                    var index = 0;
+                    foreach (var item in collection)
+                    {
+                        // Items are added in order (0, 1, 2, ...). Any concurrent snapshot
+                        // must therefore be a prefix of that sequence.
+                        Assert.Equal(index, item);
+                        index++;
+                    }
+                }
+            });
+        }
+
+        await writer;
+        cts.Cancel();
+        await Task.WhenAll(readers);
+
+        Assert.Equal(Count, collection.Count);
+    }
 }

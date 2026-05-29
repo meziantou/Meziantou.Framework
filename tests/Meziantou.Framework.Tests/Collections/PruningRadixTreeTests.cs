@@ -18,6 +18,64 @@ public sealed class PruningRadixTreeTests
     }
 
     [Fact]
+    public void AddRangeBuildsTreeAndAggregatesDuplicates()
+    {
+        var tree = new PruningRadixTree();
+        tree.AddRange(
+        [
+            KeyValuePair.Create("car", 10L),
+            KeyValuePair.Create("cat", 5L),
+            KeyValuePair.Create("car", 2L),
+            KeyValuePair.Create("", 3L),
+        ]);
+
+        Assert.Equal(3, tree.Count);
+        Assert.True(tree.TryGetValue("car", out var carFrequency));
+        Assert.Equal(12, carFrequency);
+        Assert.True(tree.TryGetValue("", out var emptyFrequency));
+        Assert.Equal(3, emptyFrequency);
+    }
+
+    [Fact]
+    public void AddRangeMergesWithExistingTerms()
+    {
+        var tree = new PruningRadixTree();
+        tree.Add("car", 2);
+        tree.Add("dog", 1);
+
+        tree.AddRange(
+        [
+            KeyValuePair.Create("car", 3L),
+            KeyValuePair.Create("cart", 5L),
+            KeyValuePair.Create("dog", 4L),
+        ]);
+
+        Assert.Equal(3, tree.Count);
+        Assert.True(tree.TryGetValue("car", out var carFrequency));
+        Assert.Equal(5, carFrequency);
+        Assert.True(tree.TryGetValue("dog", out var dogFrequency));
+        Assert.Equal(5, dogFrequency);
+        Assert.True(tree.TryGetValue("cart", out var cartFrequency));
+        Assert.Equal(5, cartFrequency);
+    }
+
+    [Fact]
+    public void AddRangeThrowsForInvalidFrequency()
+    {
+        var tree = new PruningRadixTree();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => tree.AddRange([KeyValuePair.Create("car", 0L)]));
+    }
+
+    [Fact]
+    public void AddRangeThrowsForNullKey()
+    {
+        var tree = new PruningRadixTree();
+
+        Assert.Throws<ArgumentNullException>(() => tree.AddRange([new KeyValuePair<string, long>(null!, 1)]));
+    }
+
+    [Fact]
     public void GetTopTermsByPrefixReturnsRankedResults()
     {
         var tree = new PruningRadixTree();

@@ -988,6 +988,7 @@ namespace Meziantou.Framework.Collections
     {
         public int Count { get => throw null; }
         public void Add(string term, long frequency) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, long>> terms) { }
         public bool Remove(System.ReadOnlySpan<char> term) => throw null;
         public bool TryGetValue(System.ReadOnlySpan<char> term, out long frequency) => throw null;
         public bool ContainsKey(System.ReadOnlySpan<char> term) => throw null;

@@ -14,4 +14,10 @@ public class LogEntry
 
     /// <summary>Gets or sets additional data associated with the log entry.</summary>
     public object? Data { get; set; }
+
+    /// <summary>Gets or sets the child log entries nested under this entry.</summary>
+    public IReadOnlyList<LogEntry>? Children { get; set; }
+
+    /// <summary>Gets or sets whether this entry starts expanded (children and data shown). Default is <c>false</c> (collapsed).</summary>
+    public bool Expanded { get; set; }
 }

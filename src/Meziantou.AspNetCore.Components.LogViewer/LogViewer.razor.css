@@ -69,9 +69,13 @@
         transform: rotate(90deg);
     }
 
+.log-content {
+    margin-left: calc(var(--log-depth, 0) * 1.5em);
+}
+
 .log-details {
     color: var(--color-log-information);
-    padding-left: 68px;
+    padding-left: calc(68px + var(--log-depth, 0) * 1.5em);
 }
 
 .log-message {

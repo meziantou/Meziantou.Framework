@@ -94,12 +94,27 @@ public class TextChunker
 
     private sealed class CharacterChunker : TextChunker
     {
+        // Cache single-character strings for the ASCII range to avoid allocating a new string per character.
+        private static readonly string[] AsciiCache = CreateAsciiCache();
+
+        private static string[] CreateAsciiCache()
+        {
+            var cache = new string[128];
+            for (var i = 0; i < cache.Length; i++)
+            {
+                cache[i] = ((char)i).ToString();
+            }
+
+            return cache;
+        }
+
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
             var chars = new List<string>(value.Length);
             for (var i = 0; i < value.Length; i++)
             {
-                chars.Add(value[i].ToString());
+                var c = value[i];
+                chars.Add(c < AsciiCache.Length ? AsciiCache[c] : c.ToString());
             }
 
             return chars;

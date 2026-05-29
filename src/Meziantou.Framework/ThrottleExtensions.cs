@@ -15,14 +15,37 @@ using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {
+    /// <summary>
+    /// Provides extension methods to throttle <see cref="Action"/> delegates so that they are invoked at most
+    /// once per specified interval, regardless of how many times the returned delegate is called.
+    /// </summary>
     public static class ThrottleExtensions
     {
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action Throttle(this Action action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action Throttle(this Action action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -52,11 +75,32 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0> Throttle<T0>(this Action<T0> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0> Throttle<T0>(this Action<T0> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -90,11 +134,34 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1> Throttle<T0, T1>(this Action<T0, T1> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1> Throttle<T0, T1>(this Action<T0, T1> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -128,11 +195,36 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2> Throttle<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2> Throttle<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -166,11 +258,38 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -204,11 +323,40 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -242,11 +390,42 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -280,11 +459,44 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -318,11 +530,46 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -356,11 +603,48 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+        /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+        /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -394,11 +678,50 @@ namespace Meziantou.Framework
             };
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+        /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+        /// <typeparam name="T9">The type of the parameter 9 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, TimeSpan interval)
         {
             return Throttle(action, interval, TimeProvider.System);
         }
 
+        /// <summary>
+        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+        /// an invocation is pending are ignored except for updating the arguments.
+        /// </summary>
+        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+        /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+        /// <typeparam name="T9">The type of the parameter 9 of the action.</typeparam>
+        /// <param name="action">The action to throttle.</param>
+        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
         public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, TimeSpan interval, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(action);

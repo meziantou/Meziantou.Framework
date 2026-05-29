@@ -181,15 +181,28 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
                 return false;
 
             _index++;
-            while (_index >= _segment.Count)
+            while (true)
             {
-                _segment = _segment.Next;
-                _index = 0;
-                if (_segment is null)
-                    return false;
-            }
+                var segment = _segment;
+                Debug.Assert(segment is not null);
 
-            return true;
+                var count = segment.Count;
+                if (_index < count)
+                    return true;
+
+                // Segment.Next is volatile. If we can observe it, re-read Count so this
+                // transition decision is not made using a potentially stale count read.
+                var nextSegment = segment.Next;
+                if (nextSegment is null)
+                    return false;
+
+                count = segment.Count;
+                if (_index < count)
+                    return true;
+
+                _segment = nextSegment;
+                _index = 0;
+            }
         }
 
         public readonly void Dispose()

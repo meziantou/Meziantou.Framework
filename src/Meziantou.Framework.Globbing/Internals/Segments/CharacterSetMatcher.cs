@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Globbing.Internals;
 
@@ -152,7 +151,7 @@ internal abstract class CharacterSetMatcher
                 value = ToLowerAscii(value);
             }
 
-            return MemoryMarshal.CreateReadOnlySpan(ref value, 1).ContainsAny(_searchValues);
+            return _searchValues.Contains(value);
         }
     }
 }

@@ -68,6 +68,7 @@ public sealed class AsyncLock
                 if (cancellationToken.IsCancellationRequested)
                 {
                     waiter.TrySetCanceled(cancellationToken);
+                    waiter.Registration.Dispose();
                 }
                 else
                 {
@@ -140,6 +141,7 @@ public sealed class AsyncLock
         if (removed)
         {
             tcs.TrySetCanceled(tcs.CancellationToken);
+            tcs.Registration.Dispose();
         }
     }
 

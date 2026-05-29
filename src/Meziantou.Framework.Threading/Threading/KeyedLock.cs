@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace Meziantou.Framework.Threading;
 
 /// <summary>Provides a synchronous lock mechanism that locks based on a key, allowing concurrent operations on different keys.</summary>
@@ -21,7 +19,11 @@ namespace Meziantou.Framework.Threading;
 /// </example>
 public sealed class KeyedLock<TKey> where TKey : notnull
 {
-    private readonly ConcurrentDictionary<TKey, Lock> _locks;
+    // Entries are reference-counted and removed once no one holds or waits for a key's lock, so the
+    // dictionary doesn't grow without bound when used with high-cardinality keys. The dictionary
+    // bookkeeping (add/remove + ref count) is guarded by locking on the dictionary itself; the
+    // per-key Lock provides the actual mutual exclusion.
+    private readonly Dictionary<TKey, Entry> _locks;
 
     /// <summary>Initializes a new instance of the <see cref="KeyedLock{TKey}"/> class.</summary>
     public KeyedLock()
@@ -33,7 +35,7 @@ public sealed class KeyedLock<TKey> where TKey : notnull
     /// <param name="comparer">The equality comparer to use when comparing keys.</param>
     public KeyedLock(IEqualityComparer<TKey>? comparer)
     {
-        _locks = new ConcurrentDictionary<TKey, Lock>(comparer);
+        _locks = new Dictionary<TKey, Entry>(comparer);
     }
 
     /// <summary>Acquires the lock for the specified key.</summary>
@@ -41,27 +43,62 @@ public sealed class KeyedLock<TKey> where TKey : notnull
     /// <returns>A disposable object. Disposing the object releases the lock.</returns>
     public IDisposable Lock(TKey key)
     {
-        var instance = _locks.GetOrAdd(key, _ => new Lock());
-        instance.Enter();
-        return new LockLease(instance);
+        Entry entry;
+        lock (_locks)
+        {
+            if (!_locks.TryGetValue(key, out entry!))
+            {
+                entry = new Entry();
+                _locks.Add(key, entry);
+            }
+
+            // Reserve the entry before releasing the bookkeeping lock so a concurrent release
+            // cannot remove it from under us while we wait to enter the per-key lock.
+            entry.ReferenceCount++;
+        }
+
+        entry.Lock.Enter();
+        return new LockLease(this, key, entry);
+    }
+
+    private void Release(TKey key, Entry entry)
+    {
+        entry.Lock.Exit();
+        lock (_locks)
+        {
+            if (--entry.ReferenceCount == 0)
+            {
+                _locks.Remove(key);
+            }
+        }
+    }
+
+    private sealed class Entry
+    {
+        public Lock Lock { get; } = new();
+        public int ReferenceCount { get; set; }
     }
 
     private sealed class LockLease : IDisposable
     {
-        private readonly Lock _lockedInstance;
+        private readonly KeyedLock<TKey> _owner;
+        private readonly TKey _key;
+        private readonly Entry _entry;
         private bool _disposed;
 
-        public LockLease(Lock lockedInstance)
+        public LockLease(KeyedLock<TKey> owner, TKey key, Entry entry)
         {
-            _lockedInstance = lockedInstance;
+            _owner = owner;
+            _key = key;
+            _entry = entry;
         }
 
         public void Dispose()
         {
             if (!_disposed)
             {
-                _lockedInstance.Exit();
                 _disposed = true;
+                _owner.Release(_key, _entry);
             }
         }
     }

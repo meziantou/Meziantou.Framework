@@ -15,6 +15,7 @@ namespace Meziantou.Framework.Threading;
 public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposable
 {
     private readonly CancellationTokenSource _cts;
+    private readonly CancellationTokenSource _disposeCts = new();
     private readonly CancellationTokenRegistration _cancelRegistration;
 
     /// <summary>Initializes a new instance of the <see cref="DelayedCancellationTokenSource"/> class that will be cancelled after the specified delay when the source token is cancelled.</summary>
@@ -30,11 +31,15 @@ public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposab
         {
             try
             {
-#pragma warning disable MA0040 // Flow the cancellation token
-                await Task.Delay(delay).ConfigureAwait(false);
-#pragma warning restore MA0040
+                // Flow a token tied to disposal so the underlying timer is released promptly when
+                // this instance is disposed before the delay elapses, instead of staying alive for
+                // the full delay.
+                await Task.Delay(delay, _disposeCts.Token).ConfigureAwait(false);
 
                 _cts.Cancel();
+            }
+            catch (OperationCanceledException)
+            {
             }
             catch (ObjectDisposedException)
             {
@@ -49,12 +54,16 @@ public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposab
     public void Dispose()
     {
         _cancelRegistration.Dispose();
+        _disposeCts.Cancel();
+        _disposeCts.Dispose();
         _cts.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
         await _cancelRegistration.DisposeAsync().ConfigureAwait(false);
+        await _disposeCts.CancelAsync().ConfigureAwait(false);
+        _disposeCts.Dispose();
         _cts.Dispose();
     }
 }

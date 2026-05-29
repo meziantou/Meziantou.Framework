@@ -19,6 +19,9 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
     private readonly ConcurrentQueue<Task> _tasks = new();
     private readonly AutoResetEvent _stop = new(initialState: false);
     private readonly AutoResetEvent _dequeue = new(initialState: false);
+    // note: Stop must be first in the array (in case both events happen at the same exact time)
+    private readonly WaitHandle[] _waitHandles;
+    private int _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="MonoThreadedTaskScheduler"/> class.</summary>
     public MonoThreadedTaskScheduler()
@@ -30,6 +33,8 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
     /// <param name="threadName">The name of the worker thread.</param>
     public MonoThreadedTaskScheduler(string? threadName)
     {
+        _waitHandles = [_stop, _dequeue];
+
         Thread = new Thread(SafeThreadExecute)
         {
             IsBackground = true,
@@ -61,25 +66,32 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 
     public void Dispose()
     {
-        if (_stop is not null)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
+        // Signal the worker thread to stop, then wait for it to exit before disposing the wait
+        // handles it relies on. Disposing a wait handle while another thread is blocked on it (in
+        // ThreadExecute's WaitAny) is a race condition that can throw or corrupt the wait, so the
+        // join must happen first.
+        _stop.Set();
+
+        var thread = Thread;
+        if (thread is not null && thread.IsAlive)
         {
-            _stop.Set();
-            _stop.Dispose();
+            thread.Join(DisposeThreadJoinTimeout);
         }
 
-        _dequeue?.Dispose();
+        Thread = null;
 
+        // The worker thread has stopped, so draining the remaining tasks on the current thread no
+        // longer races with the worker and preserves the single-threaded execution guarantee.
         if (DequeueOnDispose)
         {
             Dequeue();
         }
 
-        if (Thread is not null && Thread.IsAlive)
-        {
-            Thread.Join(DisposeThreadJoinTimeout);
-        }
-
-        Thread = null;
+        _stop.Dispose();
+        _dequeue.Dispose();
     }
 
     private bool ExecuteTask(Task task)
@@ -114,8 +126,7 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
     {
         do
         {
-            // note: Stop must be first in array (in case both events happen at the same exact time)
-            var i = WaitHandle.WaitAny([_stop, _dequeue], WaitTimeout);
+            var i = WaitHandle.WaitAny(_waitHandles, WaitTimeout);
             if (i == 0)
                 break;
 

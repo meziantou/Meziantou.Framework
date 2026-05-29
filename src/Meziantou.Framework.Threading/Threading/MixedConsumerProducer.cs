@@ -52,6 +52,7 @@ public static class MixedConsumerProducer
         var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
         var tasks = new List<Task>(degreeOfParallelism);
         var remainingConcurrency = degreeOfParallelism;
+        List<Exception>? exceptions = null;
         while (await pendingItems.Reader.WaitToReadAsync(options.CancellationToken).ConfigureAwait(false))
         {
             while (TryGetItem(out var item))
@@ -104,6 +105,14 @@ public static class MixedConsumerProducer
                     if (!tasks.Remove(completedTask))
                         throw new InvalidOperationException("An unexpected error occurred");
 
+                    // Observe the task's exception so it doesn't resurface as an UnobservedTaskException,
+                    // and record it so it can be reported to the caller once processing completes.
+                    if (completedTask.Exception is { } exception)
+                    {
+                        exceptions ??= [];
+                        exceptions.AddRange(exception.InnerExceptions);
+                    }
+
                     remainingConcurrency++;
 
                     // There is no active tasks, so we are sure we are at the end
@@ -112,5 +121,10 @@ public static class MixedConsumerProducer
                 }
             }
         }
+
+        // All work has completed (the writer is only completed once no task is running and the
+        // channel is empty), so no continuation can still be mutating the list at this point.
+        if (exceptions is not null)
+            throw new AggregateException(exceptions);
     }
 }

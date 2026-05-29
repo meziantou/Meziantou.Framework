@@ -68,6 +68,7 @@ public sealed class AsyncAutoResetEvent
                 if (cancellationToken.IsCancellationRequested)
                 {
                     waiter.TrySetCanceled(cancellationToken);
+                    waiter.Registration.Dispose();
                 }
                 else
                 {
@@ -119,6 +120,7 @@ public sealed class AsyncAutoResetEvent
         if (removed)
         {
             tcs.TrySetCanceled(tcs.CancellationToken);
+            tcs.Registration.Dispose();
         }
     }
 

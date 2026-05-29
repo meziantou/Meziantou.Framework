@@ -1,4 +1,4 @@
-﻿<#@ template debug="true" hostspecific="false" language="C#" #>
+<#@ template debug="true" hostspecific="false" language="C#" #>
 <#@ output extension=".cs" #>
 <# var count = 11; #>
 //------------------------------------------------------------------------------

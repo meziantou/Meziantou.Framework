@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.PooledMemoryStream/Meziantou.Framework.PooledMemoryStream.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.PooledMemoryStream.Tests/Meziantou.Framework.PooledMemoryStream.Tests.csproj" />
+  </Folder>
+</Solution>

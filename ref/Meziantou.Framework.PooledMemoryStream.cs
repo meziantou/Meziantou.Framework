@@ -41,9 +41,8 @@ namespace Meziantou.Framework
     public sealed class PooledMemoryStreamOptions
     {
         public static Meziantou.Framework.PooledMemoryStreamOptions Default { get => throw null; }
-        public int SmallBufferSize { get => throw null; set { } }
-        public int MediumBufferSize { get => throw null; set { } }
-        public int LargeBufferSize { get => throw null; set { } }
+        public bool IsFrozen { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<int> BufferSizes { get => throw null; set { } }
         public long MaxRetainedBytesPerBucket { get => throw null; set { } }
         public bool ClearOnReturn { get => throw null; set { } }
     }

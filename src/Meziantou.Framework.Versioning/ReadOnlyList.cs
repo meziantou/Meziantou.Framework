@@ -2,113 +2,64 @@ using System.Collections;
 
 namespace Meziantou.Framework.Versioning;
 
-internal static class ReadOnlyList
+// A small append-then-freeze builder backed directly by an array.
+// Prerelease/metadata label collections typically hold 1-2 items, so the backing
+// array grows from 2 (instead of List<T>'s default of 4) and avoids the extra
+// List<T> object allocation. Only IReadOnlyList<T> is exposed; the mutating
+// members are non-interface methods used while building the collection.
+internal sealed class ReadOnlyList<T> : IReadOnlyList<T>
 {
-    public static ReadOnlyList<T> From<T>(IEnumerable<T> items)
-    {
-        var list = new ReadOnlyList<T>(items);
-        list.Freeze();
-        return list;
-    }
-}
-
-internal sealed class ReadOnlyList<T> : IList<T>, IReadOnlyList<T>
-{
-    private readonly List<T> _items;
+    private T[] _items = [];
+    private int _count;
     private bool _frozen;
 
     public ReadOnlyList()
     {
-        _items = [];
     }
 
     public ReadOnlyList(int capacity)
     {
-        _items = new List<T>(capacity);
-    }
-
-    public ReadOnlyList(IEnumerable<T> items)
-    {
-        _items = new List<T>(items);
+        if (capacity > 0)
+        {
+            _items = new T[capacity];
+        }
     }
 
     public T this[int index]
     {
-        get => _items[index];
-        set
+        get
         {
-            CheckFrozen();
-            _items[index] = value;
+            if ((uint)index >= (uint)_count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            return _items[index];
         }
     }
 
-    public int Count => _items.Count;
-
-    public bool IsReadOnly => _frozen || ((ICollection<T>)_items).IsReadOnly;
+    public int Count => _count;
 
     public void Add(T item)
     {
-        CheckFrozen();
-        _items.Add(item);
+        if (_frozen)
+            throw new InvalidOperationException("The collection is frozen");
+
+        if (_count == _items.Length)
+        {
+            Array.Resize(ref _items, _items.Length == 0 ? 2 : _items.Length * 2);
+        }
+
+        _items[_count++] = item;
     }
 
-    public void Clear()
-    {
-        CheckFrozen();
-        _items.Clear();
-    }
-
-    public bool Contains(T item)
-    {
-        return _items.Contains(item);
-    }
-
-    public void CopyTo(T[] array, int arrayIndex)
-    {
-        _items.CopyTo(array, arrayIndex);
-    }
-
-    public void Freeze()
-    {
-        _frozen = true;
-    }
-
-    public int IndexOf(T item)
-    {
-        return _items.IndexOf(item);
-    }
-
-    public void Insert(int index, T item)
-    {
-        CheckFrozen();
-        _items.Insert(index, item);
-    }
-
-    public bool Remove(T item)
-    {
-        CheckFrozen();
-        return _items.Remove(item);
-    }
-
-    public void RemoveAt(int index)
-    {
-        CheckFrozen();
-        _items.RemoveAt(index);
-    }
+    public void Freeze() => _frozen = true;
 
     public IEnumerator<T> GetEnumerator()
     {
-        return _items.GetEnumerator();
+        for (var i = 0; i < _count; i++)
+        {
+            yield return _items[i];
+        }
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return _items.GetEnumerator();
-    }
-
-    private void CheckFrozen()
-    {
-        if (_frozen)
-            throw new InvalidOperationException("The collection is frozen");
-    }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

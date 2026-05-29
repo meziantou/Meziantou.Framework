@@ -44,6 +44,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.PooledMemoryStream\Meziantou.Framework.PooledMemoryStream.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.QRCode\Meziantou.Framework.QRCode.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj" />
@@ -93,6 +94,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.PooledMemoryStream" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ProcessWrapper" />
     <TrimmerRootAssembly Include="Meziantou.Framework.QRCode" />
     <TrimmerRootAssembly Include="Meziantou.Framework.RelativeDate" />

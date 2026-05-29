@@ -841,6 +841,7 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public bool Contains(System.Func<T, bool> predicate) => throw null;
         public T Find(System.Func<T, bool> predicate) => throw null;
+        public bool TryFind(System.Func<T, bool> predicate, out T result) => throw null;
         public struct Enumerator<T> : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public T Current { get => throw null; }

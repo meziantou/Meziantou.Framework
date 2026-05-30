@@ -68,7 +68,7 @@ public class HtmlEmailCodeBlock : CodeBlock
             return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.WriteContentIdentifier)}(@\"{EscapeVerbatimString(cid)}\");";
         }
 
-        if (text.StartsWith("#", StringComparison.Ordinal))
+        if (text.StartsWith('#', StringComparison.Ordinal))
         {
             return Template.OutputParameterName + ".Write(\"{0}\", " + text[1..].TrimStart() + ");";
         }

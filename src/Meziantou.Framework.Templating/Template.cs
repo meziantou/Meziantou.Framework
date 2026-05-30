@@ -282,8 +282,6 @@ public class Template
             {
                 foreach (var @using in Usings)
                 {
-                    if (string.IsNullOrEmpty(@using))
-                        continue;
                     tw.WriteLine("using " + @using + ";");
                 }
 
@@ -295,9 +293,6 @@ public class Template
 
                 foreach (var @interface in ImplementedInterfaces)
                 {
-                    if (string.IsNullOrEmpty(@interface))
-                        continue;
-
                     inheritanceTypes.Add(@interface);
                 }
 
@@ -450,7 +445,6 @@ public class Template
         }
 
         var result = references.Where(_ => _ is not null).Distinct(StringComparer.Ordinal);
-        //var str = string.Join("\r\n", result);
         return result.Select(path => MetadataReference.CreateFromFile(path)).ToArray();
     }
 
@@ -569,7 +563,6 @@ public class Template
         }
 
         var p = CreateMethodParameters(writer, parameters);
-
         InvokeRunMethod(p);
     }
 

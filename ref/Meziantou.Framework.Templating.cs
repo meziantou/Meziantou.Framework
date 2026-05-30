@@ -43,10 +43,16 @@ namespace Meziantou.Framework.Templating
         protected override void ValidateItem(Meziantou.Framework.Templating.TemplateBlock item) { }
     }
 
+    public class ClassMemberBlock : Meziantou.Framework.Templating.TemplateBlock
+    {
+        public ClassMemberBlock(Meziantou.Framework.Templating.Template template, string text, int index) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
+        public override string BuildCode() => throw null;
+    }
+
     public class CodeBlock : Meziantou.Framework.Templating.TemplateBlock
     {
-        protected string EvalPrefixString { get => throw null; set { } }
-        public CodeBlock(Meziantou.Framework.Templating.Template template, string text, int index) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
+        public bool IsExpression { get => throw null; }
+        public CodeBlock(Meziantou.Framework.Templating.Template template, string text, int index, bool isExpression = false) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
         public override string BuildCode() => throw null;
     }
 
@@ -175,6 +181,8 @@ namespace Meziantou.Framework.Templating
         public void Build(System.Threading.CancellationToken cancellationToken) { }
         protected virtual Meziantou.Framework.Templating.TextBlock CreateTextBlock(string text, int index) => throw null;
         protected virtual Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
+        protected virtual Meziantou.Framework.Templating.CodeBlock CreateCodeExpressionBlock(string text, int index) => throw null;
+        protected virtual Meziantou.Framework.Templating.ClassMemberBlock CreateClassMemberBlock(string text, int index) => throw null;
         protected virtual Meziantou.Framework.Templating.DirectiveBlock CreateDirectiveBlock(string text, string name, string value, int index) => throw null;
         protected virtual Microsoft.CodeAnalysis.CSharp.CSharpParseOptions CreateParseOptions() => throw null;
         protected virtual Microsoft.CodeAnalysis.SyntaxTree CreateSyntaxTree(string source, System.Threading.CancellationToken cancellationToken) => throw null;

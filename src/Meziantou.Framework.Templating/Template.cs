@@ -207,9 +207,20 @@ public class Template
     private TemplateBlock? CreateBlock(bool codeBlock, string text, int index, TextPosition start, TextPosition end)
     {
         TemplateBlock block;
-        if (codeBlock && TryParseDirective(text, out var name, out var value))
+        if (codeBlock && TryParseDirective(text, out var blockText, out var name, out var value))
         {
-            block = CreateDirectiveBlock(text, name, value, index);
+            block = CreateDirectiveBlock(blockText, name, value, index);
+            start = MoveForward(start);
+        }
+        else if (codeBlock && TryRemovePrefix(text, '+', out blockText))
+        {
+            block = CreateClassMemberBlock(blockText, index);
+            start = MoveForward(start);
+        }
+        else if (codeBlock && TryRemovePrefix(text, '=', out blockText))
+        {
+            block = CreateCodeExpressionBlock(blockText, index);
+            start = MoveForward(start);
         }
         else
         {
@@ -220,19 +231,20 @@ public class Template
         return block;
     }
 
-    private static bool TryParseDirective(string text, [NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? value)
+    private static bool TryParseDirective(string text, [NotNullWhen(true)] out string? blockText, [NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? value)
     {
-        var trimmedText = text.Trim();
-        if (!trimmedText.StartsWith('@', StringComparison.Ordinal))
+        if (!TryRemovePrefix(text, '@', out var directiveBlockText))
         {
+            blockText = null;
             name = null;
             value = null;
             return false;
         }
 
-        var directiveText = trimmedText[1..].TrimStart();
+        var directiveText = directiveBlockText.TrimStart();
         if (directiveText.Length == 0)
         {
+            blockText = null;
             name = null;
             value = null;
             return false;
@@ -240,6 +252,7 @@ public class Template
 
         if (!char.IsLetter(directiveText[0]))
         {
+            blockText = null;
             name = null;
             value = null;
             return false;
@@ -259,12 +272,33 @@ public class Template
 
         if (name.Length == 0)
         {
+            blockText = null;
             name = null;
             value = null;
             return false;
         }
 
+        blockText = directiveBlockText;
         return true;
+    }
+
+    private static bool TryRemovePrefix(string text, char prefix, [NotNullWhen(true)] out string? value)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        if (text.Length > 0 && text[0] == prefix)
+        {
+            value = text[1..];
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    private static TextPosition MoveForward(TextPosition position)
+    {
+        return new TextPosition(position.Line, position.Column + 1, position.Index + 1);
     }
 
     /// <summary>Compiles the template into executable code.</summary>
@@ -333,11 +367,23 @@ public class Template
 
                 foreach (var block in Blocks)
                 {
+                    if (block is ClassMemberBlock)
+                        continue;
+
                     tw.WriteLine(block.BuildCode());
                 }
 
                 tw.Indent--;
                 tw.WriteLine("}");
+
+                foreach (var block in Blocks)
+                {
+                    if (block is not ClassMemberBlock)
+                        continue;
+
+                    tw.WriteLine(block.BuildCode());
+                }
+
                 tw.Indent--;
                 tw.WriteLine("}");
             }
@@ -381,8 +427,26 @@ public class Template
         return new CodeBlock(this, text, index);
     }
 
+    /// <summary>Creates a code block for an evaluation expression.</summary>
+    /// <param name="text">The expression content.</param>
+    /// <param name="index">The block index.</param>
+    /// <returns>A new <see cref="CodeBlock"/> instance.</returns>
+    protected virtual CodeBlock CreateCodeExpressionBlock(string text, int index)
+    {
+        return new CodeBlock(this, text, index, isExpression: true);
+    }
+
+    /// <summary>Creates a class member block for class-level members.</summary>
+    /// <param name="text">The member content.</param>
+    /// <param name="index">The block index.</param>
+    /// <returns>A new <see cref="ClassMemberBlock"/> instance.</returns>
+    protected virtual ClassMemberBlock CreateClassMemberBlock(string text, int index)
+    {
+        return new ClassMemberBlock(this, text, index);
+    }
+
     /// <summary>Creates a directive block.</summary>
-    /// <param name="text">The original directive text.</param>
+    /// <param name="text">The directive content without the directive marker.</param>
     /// <param name="name">The directive name.</param>
     /// <param name="value">The directive value.</param>
     /// <param name="index">The block index.</param>

@@ -96,6 +96,75 @@ public class TemplateTest
     }
 
     [Fact]
+    public void Template_ClassMemberBlock_IsParsed()
+    {
+        var template = new Template();
+        template.Load("<%+ private static string Sample() => \"Sample\"; %>");
+
+        var block = Assert.Single(template.Blocks.OfType<ClassMemberBlock>());
+        Assert.StartsWith(" private static string Sample()", block.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Template_CodeEvalBlock_IsParsedWithoutPrefix()
+    {
+        var template = new Template();
+        template.Load("<%= 1 %>");
+
+        var block = Assert.Single(template.Blocks.OfType<CodeBlock>(), codeBlock => codeBlock.IsExpression);
+        Assert.StartsWith(" 1", block.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Template_DirectiveBlock_IsParsedWithoutPrefix()
+    {
+        var template = new Template();
+        template.Load("<%@ outputextension .cs %>");
+
+        var block = Assert.Single(template.Blocks.OfType<DirectiveBlock>());
+        Assert.StartsWith(" outputextension .cs", block.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlock_CanBeInvokedFromTemplate()
+    {
+        var template = new Template();
+        template.Load("""
+            <%+ private static string Sample() => "Sample"; %>
+            <%= Sample() %>
+            """);
+
+        var result = template.Run();
+
+        Assert.Equal("Sample", result.Trim());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlock_StrictSyntaxOnly()
+    {
+        var template = new Template();
+        template.Load("<% + private static string Sample() => \"Sample\"; %>");
+
+        Assert.Empty(template.Blocks.OfType<ClassMemberBlock>());
+        Assert.Single(template.Blocks.OfType<CodeBlock>());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlock_IsGeneratedAtClassScope()
+    {
+        var template = new TemplateWithoutCompilation();
+        template.Load("""
+            <%+private static string Sample() => "Sample"; %>
+            <%= Sample() %>
+            """);
+
+        template.Build(CancellationToken.None);
+
+        Assert.Contains("private static string Sample() => \"Sample\";", template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("}" + Environment.NewLine + "    private static string Sample() => \"Sample\";", template.SourceCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Template_UntypedArgument()
     {
         // Arrange
@@ -258,7 +327,7 @@ public class TemplateTest
 
         var directive = Assert.Single(template.Blocks!.OfType<DirectiveBlock>());
         Assert.Equal(2, directive.Start.Line);
-        Assert.Equal(3, directive.Start.Column);
+        Assert.Equal(4, directive.Start.Column);
         Assert.Equal(Source.IndexOf(directive.Text, StringComparison.Ordinal), directive.Start.Index);
         Assert.Equal(2, directive.End.Line);
         Assert.True(directive.End.Column > directive.Start.Column);
@@ -299,9 +368,9 @@ public class TemplateTest
         var template = new Template();
         template.Load(Source);
 
-        var codeBlock = Assert.Single(template.Blocks!.OfType<CodeBlock>());
+        var codeBlock = Assert.Single(template.Blocks!.OfType<CodeBlock>(), codeBlock => codeBlock.IsExpression);
         Assert.Equal(2, codeBlock.Start.Line);
-        Assert.Equal(3, codeBlock.Start.Column);
+        Assert.Equal(4, codeBlock.Start.Column);
         Assert.Equal(codeBlock.Text.Length, codeBlock.Span.Length);
         Assert.Equal(codeBlock.Text, Source.AsSpan(codeBlock.Start.Index, codeBlock.Span.Length).ToString());
     }

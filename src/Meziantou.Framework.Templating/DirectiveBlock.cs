@@ -5,7 +5,7 @@ public class DirectiveBlock : TemplateBlock
 {
     /// <summary>Initializes a new instance of the <see cref="DirectiveBlock"/> class.</summary>
     /// <param name="template">The template that contains this block.</param>
-    /// <param name="text">The original directive text.</param>
+    /// <param name="text">The directive content without the directive marker.</param>
     /// <param name="index">The index of this block in the template.</param>
     /// <param name="name">The directive name.</param>
     /// <param name="value">The directive value.</param>

@@ -112,7 +112,7 @@ jobs:
         if: steps.package-project.outputs.has-project == 'true'
       - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
         if: steps.package-project.outputs.has-project == 'true'
-      - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.Templating.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.templating.binlog
+      - run: dotnet build src/Meziantou.Framework.Templating.Tool/Meziantou.Framework.Templating.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.templating.binlog
         if: steps.package-project.outputs.has-project == 'true'
       - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /bl:build.binlog
         if: steps.package-project.outputs.has-project == 'true'

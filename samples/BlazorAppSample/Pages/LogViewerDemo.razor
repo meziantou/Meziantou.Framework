@@ -24,9 +24,10 @@
         new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(5), Message = "test", LogLevel = LogLevel.Error },
 		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(6), Message = "test", LogLevel = LogLevel.Critical },
 		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(10), Message = "test test    test test test\n\ttest test test test test test test", LogLevel = LogLevel.Information },
-		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(14), Message = "test data", LogLevel = LogLevel.Information,
-			Data = new
+		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(14), LogLevel = LogLevel.Information,
+			Message = new
 			{
+				Text = "test data",
 				Null = (object?)null,
 				A = "test",
 				B = 10,
@@ -55,9 +56,13 @@
 						new LogEntry
 						{
 							Timestamp = DateTime.UtcNow.AddSeconds(22),
-							Message = "Executing query",
 							LogLevel = LogLevel.Information,
-							Data = new { Sql = "SELECT * FROM Users", Duration = TimeSpan.FromMilliseconds(12) },
+							Message = new
+							{
+								Text = "Executing query",
+								Sql = "SELECT * FROM Users",
+								Duration = TimeSpan.FromMilliseconds(12),
+							},
 							Children = new List<LogEntry>
 							{
 								new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(22), Message = "Row read", LogLevel = LogLevel.Trace },

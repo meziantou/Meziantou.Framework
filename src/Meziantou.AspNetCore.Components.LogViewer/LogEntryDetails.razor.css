@@ -1,6 +1,11 @@
 ﻿.format-selector-group {
     color: var(--color-log-debug);
     font-size: smaller;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    white-space: normal;
+    margin: 0 0 4px;
 }
 
 .format-selector {
@@ -14,6 +19,10 @@
 
 pre {
     color: var(--color-log-information);
+    margin: 0;
+}
+
+table {
     margin: 0;
 }
 

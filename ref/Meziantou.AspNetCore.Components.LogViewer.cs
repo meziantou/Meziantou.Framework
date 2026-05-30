@@ -19,8 +19,7 @@ namespace Meziantou.AspNetCore.Components
     {
         public System.DateTimeOffset Timestamp { get => throw null; set { } }
         public Meziantou.AspNetCore.Components.LogLevel LogLevel { get => throw null; set { } }
-        public string? Message { get => throw null; set { } }
-        public object? Data { get => throw null; set { } }
+        public object? Message { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Components.LogEntry>? Children { get => throw null; set { } }
         public bool Expanded { get => throw null; set { } }
     }

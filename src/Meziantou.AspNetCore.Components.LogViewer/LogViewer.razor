@@ -11,63 +11,66 @@
         }
         @foreach (var entry in Entries)
         {
-            @RenderEntry((entry, 0))
+            @RenderEntry(entry)
         }
     </div>
 }
 
 @code {
-    private RenderFragment<(LogEntry Entry, int Depth)> RenderEntry => context =>
+    private RenderFragment<LogEntry> RenderEntry => context =>
     @<text>
-        <div class="log-entry @(IsSelected(context.Entry) ? "selected" : "")">
+        <div class="log-entry @(IsSelected(context) ? "selected" : "")">
             @if (ShowLineNumbers)
             {
-                <a class="log-linenumber" @onclick="(e) => SelectLine(context.Entry, e.CtrlKey)" @onclick:preventDefault="true">@GetLineNumber(context.Entry)</a>
+                <a class="log-linenumber" @onclick="(e) => SelectLine(context, e.CtrlKey)" @onclick:preventDefault="true">@GetLineNumber(context)</a>
             }
 
             @if (TimestampDisplayFormat is TimestampDisplayFormat.FullDateTime)
             {
-                <span class="log-timestamp">@FormatDateTime(context.Entry.Timestamp)</span>
+                <span class="log-timestamp">@FormatDateTime(context.Timestamp)</span>
             }
             else if (TimestampDisplayFormat is TimestampDisplayFormat.DateTimeThenRelativeTime)
             {
-                <span class="log-timestamp">@FormatTimeSpan(context.Entry.Timestamp - _startTime)</span>
+                <span class="log-timestamp">@FormatTimeSpan(context.Timestamp - _startTime)</span>
             }
             else if (TimestampDisplayFormat is TimestampDisplayFormat.RelativeTimeStartingAtZero)
             {
-                if (ReferenceEquals(context.Entry, _firstEntry))
+                if (ReferenceEquals(context, _firstEntry))
                 {
                     <span class="log-timestamp">@TimeSpan.Zero</span>
                 }
                 else
                 {
-                    <span class="log-timestamp">@FormatTimeSpan(context.Entry.Timestamp - _startTime)</span>
+                    <span class="log-timestamp">@FormatTimeSpan(context.Timestamp - _startTime)</span>
                 }
             }
 
-            <span class="log-content" style="--log-depth: @context.Depth">
-                @if (IsExpandable(context.Entry))
+            <span class="log-content">
+                @if (IsExpandable(context))
                 {
-                    <span class="log-toggle-details @(IsOpened(context.Entry) ? "opened" : "")" @onclick="() => ToggleDetails(context.Entry)">▶</span>
+                    <span class="log-toggle-details @(IsOpened(context) ? "opened" : "")" @onclick="() => ToggleDetails(context)">▶</span>
                 }
 
-                <span class="log-message log-@GetLogLevelClassName(context.Entry.LogLevel)">@LogHighlighter.Highlight(context.Entry.Message, LogHighlighters, "mez-logviewer")</span>
+                @if (context.Message is string text)
+                {
+                    <span class="log-message log-@GetLogLevelClassName(context.LogLevel)">@LogHighlighter.Highlight(text, LogHighlighters, "mez-logviewer")</span>
+                }
+                else if (context.Message is not null)
+                {
+                    <div class="log-message log-@GetLogLevelClassName(context.LogLevel)">
+                        <LogEntryDetails Data="context.Message" />
+                    </div>
+                }
             </span>
         </div>
-        @if (IsOpened(context.Entry))
+        @if (IsOpened(context))
         {
-            if (context.Entry.Children is { Count: > 0 } children)
+            if (context.Children is { Count: > 0 } children)
             {
                 foreach (var child in children)
                 {
-                    @RenderEntry((child, context.Depth + 1))
+                    @RenderEntry(child)
                 }
-            }
-            if (context.Entry.Data is not null)
-            {
-                <div class="log-details" style="--log-depth: @context.Depth">
-                    <LogEntryDetails Data="context.Entry.Data" />
-                </div>
             }
         }
     </text>;
@@ -169,7 +172,7 @@
 
     private int GetLineNumber(LogEntry entry) => _lineNumbers.TryGetValue(entry, out var value) ? value : 0;
 
-    private static bool IsExpandable(LogEntry entry) => entry.Children is { Count: > 0 } || entry.Data is not null;
+    private static bool IsExpandable(LogEntry entry) => entry.Children is { Count: > 0 };
 
     private void SelectLine(LogEntry entry, bool append)
     {

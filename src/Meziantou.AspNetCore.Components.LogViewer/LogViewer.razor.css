@@ -59,9 +59,8 @@
     cursor: pointer;
     user-select: none;
     color: var(--color-log-information);
-    align-self: center;
+    align-self: flex-start;
     font-size: smaller;
-    margin-right: 5px;
     display: inline-block;
 }
 
@@ -70,16 +69,15 @@
     }
 
 .log-content {
-    margin-left: calc(var(--log-depth, 0) * 1.5em);
-}
-
-.log-details {
-    color: var(--color-log-information);
-    padding-left: calc(68px + var(--log-depth, 0) * 1.5em);
+    display: flex;
+    align-items: flex-start;
+    column-gap: 5px;
+    min-width: 0;
 }
 
 .log-message {
     overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .log-trace {
@@ -114,4 +112,3 @@
     color: inherit;
     text-decoration: underline;
 }
-

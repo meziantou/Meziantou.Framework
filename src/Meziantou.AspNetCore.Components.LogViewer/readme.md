@@ -12,6 +12,7 @@ A Blazor component for displaying and analyzing log entries with support for fil
 - **Log level styling** with distinct visual indicators
 - **Clickable URLs** in log messages
 - **Multi-line log support** with expandable details
+- **ANSI color and style rendering** (16-color, 256-color, and truecolor SGR sequences)
 
 ## Usage
 
@@ -113,6 +114,19 @@ A Blazor component for displaying and analyzing log entries with support for fil
 ```
 
 When `Message` is a string, it is displayed as highlighted text. For non-string `Message` values, the structured payload is rendered inline and can be viewed as either a table or JSON.
+
+### ANSI-formatted Messages
+
+`LogViewer` parses ANSI SGR escape sequences embedded in string messages and renders the corresponding foreground/background colors and text styles.
+
+```csharp
+new LogEntry
+{
+    Timestamp = DateTimeOffset.UtcNow,
+    LogLevel = LogLevel.Information,
+    Message = "\u001b[1;33mwarning\u001b[0m \u001b[38;2;100;200;50mcustom color\u001b[0m",
+}
+```
 
 ### Hierarchical / Nested Logs
 

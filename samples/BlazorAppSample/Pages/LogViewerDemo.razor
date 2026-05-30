@@ -36,6 +36,10 @@
 			}
 		},
 		new LogEntry{ Timestamp = DateTime.UtcNow, Message = "test http://example.com 'value' \"value\" test", LogLevel = LogLevel.Information },
+		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(16), Message = "ansi 16-color: \u001b[31mred\u001b[0m \u001b[1;33mbold yellow\u001b[0m \u001b[4;36munderline cyan\u001b[0m", LogLevel = LogLevel.Information },
+		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(17), Message = "ansi 256-color: \u001b[38;5;208morange\u001b[0m \u001b[38;5;45mcyan\u001b[0m", LogLevel = LogLevel.Information },
+		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(18), Message = "ansi truecolor: \u001b[38;2;100;200;50mgreen tint\u001b[0m and \u001b[48;2;20;20;120;38;2;240;240;255mbackground + foreground\u001b[0m", LogLevel = LogLevel.Information },
+		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(19), Message = "ansi + highlighter: \u001b[35mhttp://example.com/path\u001b[0m and 'quoted text'", LogLevel = LogLevel.Information },
 		new LogEntry
 		{
 			Timestamp = DateTime.UtcNow.AddSeconds(20),

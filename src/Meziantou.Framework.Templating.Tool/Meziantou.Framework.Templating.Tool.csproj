@@ -1,0 +1,22 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+
+    <ToolCommandName>meziantou.template</ToolCommandName>
+    <Version>1.0.0</Version>
+    <Description>CLI to render templates using Meziantou.Framework.Templating</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />
+  </ItemGroup>
+
+</Project>

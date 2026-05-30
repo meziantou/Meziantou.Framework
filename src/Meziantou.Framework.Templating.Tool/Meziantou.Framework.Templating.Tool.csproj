@@ -5,7 +5,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
 
-    <ToolCommandName>meziantou.template</ToolCommandName>
     <Version>1.0.0</Version>
     <Description>CLI to render templates using Meziantou.Framework.Templating</Description>
   </PropertyGroup>

@@ -64,20 +64,18 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
     public async Task RenderToOutputFile_FromOutputDirectiveExtension()
     {
         await using var temp = TemporaryDirectory.Create();
-        var inputPath = await temp.CreateTextFileAsync("template.tt", "<#@ output extension=\".cs\" #>Hello", XunitCancellationToken);
+        var inputPath = await temp.CreateTextFileAsync("template.tt", "<#@ output extension=\".cs\" #>Hello <#= \"World\" #>!", XunitCancellationToken);
         var expectedOutputPath = inputPath.ChangeExtension(".cs");
 
         var console = new ConsoleHelper(testOutputHelper);
         var result = await Program.MainImpl(
             [
                 "--input", inputPath.ToString(),
-                "--start-code-block-delimiter", "<#",
-                "--end-code-block-delimiter", "#>",
             ],
             console.ConfigureConsole);
 
         Assert.Equal(0, result);
-        Assert.Equal("Hello", await File.ReadAllTextAsync(expectedOutputPath, XunitCancellationToken));
+        Assert.Equal("Hello World!", await File.ReadAllTextAsync(expectedOutputPath, XunitCancellationToken));
         Assert.True(File.Exists(inputPath));
         Assert.Equal(string.Empty, console.Output);
         Assert.Equal(string.Empty, console.Error);

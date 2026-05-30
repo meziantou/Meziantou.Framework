@@ -126,6 +126,13 @@ public class Template
         var delimiterStartLine = 0;
         var delimiterStartColumn = 0;
         var delimiterStartIndex = 0;
+        var skipOptionalLfAfterCr = false;
+        var trimLineOnlyBlockTrailingNewline = false;
+        var trimPreviousTextBlockTrailingWhitespaceLength = 0;
+        var pendingPostBlockWhitespace = new StringBuilder();
+        var pendingPostBlockStartLine = 0;
+        var pendingPostBlockStartColumn = 0;
+        var pendingPostBlockStartIndex = 0;
 
         int n;
         while ((n = reader.Read()) >= 0)
@@ -134,6 +141,61 @@ public class Template
             var line = reader.PreviousLine;
             var column = reader.PreviousColumn;
             var index = reader.PreviousIndex;
+
+            if (skipOptionalLfAfterCr)
+            {
+                skipOptionalLfAfterCr = false;
+                if (c == '\n')
+                {
+                    continue;
+                }
+            }
+
+            if (!isInBlock && trimLineOnlyBlockTrailingNewline)
+            {
+                if (c is ' ' or '\t')
+                {
+                    if (pendingPostBlockWhitespace.Length == 0)
+                    {
+                        pendingPostBlockStartLine = line;
+                        pendingPostBlockStartColumn = column;
+                        pendingPostBlockStartIndex = index;
+                    }
+
+                    pendingPostBlockWhitespace.Append(c);
+                    continue;
+                }
+
+                if (c is '\r' or '\n')
+                {
+                    TrimTrailingWhitespaceFromLastTextBlock(blocks, trimPreviousTextBlockTrailingWhitespaceLength);
+
+                    trimLineOnlyBlockTrailingNewline = false;
+                    trimPreviousTextBlockTrailingWhitespaceLength = 0;
+                    pendingPostBlockWhitespace.Clear();
+                    if (c == '\r')
+                    {
+                        skipOptionalLfAfterCr = true;
+                    }
+
+                    continue;
+                }
+
+                trimLineOnlyBlockTrailingNewline = false;
+                trimPreviousTextBlockTrailingWhitespaceLength = 0;
+                if (pendingPostBlockWhitespace.Length > 0)
+                {
+                    if (currentBlock.Length == 0)
+                    {
+                        startLine = pendingPostBlockStartLine;
+                        startColumn = pendingPostBlockStartColumn;
+                        startIndex = pendingPostBlockStartIndex;
+                    }
+
+                    currentBlock.Append(pendingPostBlockWhitespace);
+                    pendingPostBlockWhitespace.Clear();
+                }
+            }
 
             if (blockDelimiterIndex < nextDelimiter.Length && c == nextDelimiter[blockDelimiterIndex])
             {
@@ -147,6 +209,13 @@ public class Template
                 blockDelimiterIndex++;
                 if (blockDelimiterIndex >= nextDelimiter.Length) // end of delimiter
                 {
+                    var canTrimLeadingWhitespaceForLineOnlyBlock = false;
+                    var trailingWhitespaceLength = 0;
+                    if (isInBlock)
+                    {
+                        canTrimLeadingWhitespaceForLineOnlyBlock = TryGetTrailingLineWhitespaceLengthFromLastTextBlock(blocks, out trailingWhitespaceLength);
+                    }
+
                     var text = currentBlock.ToString(0, currentBlock.Length - (blockDelimiterIndex - 1));
                     var start = new TextPosition(startLine, startColumn, startIndex);
                     var end = new TextPosition(delimiterStartLine, delimiterStartColumn, delimiterStartIndex);
@@ -154,6 +223,19 @@ public class Template
                     if (block is not null)
                     {
                         blocks.Add(block);
+
+                        if (isInBlock && canTrimLeadingWhitespaceForLineOnlyBlock && IsLineOnlyTrimmableBlock(block))
+                        {
+                            trimLineOnlyBlockTrailingNewline = true;
+                            trimPreviousTextBlockTrailingWhitespaceLength = trailingWhitespaceLength;
+                            pendingPostBlockWhitespace.Clear();
+                        }
+                        else if (isInBlock)
+                        {
+                            trimLineOnlyBlockTrailingNewline = false;
+                            trimPreviousTextBlockTrailingWhitespaceLength = 0;
+                            pendingPostBlockWhitespace.Clear();
+                        }
                     }
 
                     currentBlock.Clear();
@@ -197,6 +279,11 @@ public class Template
             currentBlock.Append(c);
         }
 
+        if (trimLineOnlyBlockTrailingNewline)
+        {
+            TrimTrailingWhitespaceFromLastTextBlock(blocks, trimPreviousTextBlockTrailingWhitespaceLength);
+        }
+
         // Create final parsed block if needed
         if (currentBlock.Length > 0)
         {
@@ -212,6 +299,68 @@ public class Template
         blocks.Sort(TemplateBlockComparer.IndexComparer);
         Blocks.Clear();
         Blocks.AddRange(blocks);
+    }
+
+    private static bool IsLineOnlyTrimmableBlock(TemplateBlock block)
+    {
+        return block is DirectiveBlock or ClassMemberBlock || block is CodeBlock { IsExpression: false };
+    }
+
+    private static bool TryGetTrailingLineWhitespaceLengthFromLastTextBlock(List<TemplateBlock> blocks, out int trailingWhitespaceLength)
+    {
+        trailingWhitespaceLength = 0;
+
+        if (blocks.Count == 0)
+        {
+            return true;
+        }
+
+        if (blocks[^1] is not TextBlock textBlock)
+        {
+            return false;
+        }
+
+        var text = textBlock.Text;
+        var lastCarriageReturnIndex = text.LastIndexOf('\r');
+        var lastLineFeedIndex = text.LastIndexOf('\n');
+        var lastNewLineIndex = Math.Max(lastCarriageReturnIndex, lastLineFeedIndex);
+        var trailingText = text.AsSpan(lastNewLineIndex + 1);
+        foreach (var character in trailingText)
+        {
+            if (!char.IsWhiteSpace(character))
+            {
+                return false;
+            }
+        }
+
+        trailingWhitespaceLength = trailingText.Length;
+        return true;
+    }
+
+    private void TrimTrailingWhitespaceFromLastTextBlock(List<TemplateBlock> blocks, int trailingWhitespaceLength)
+    {
+        if (trailingWhitespaceLength <= 0)
+        {
+            return;
+        }
+
+        if (blocks.Count == 0 || blocks[^1] is not TextBlock textBlock)
+        {
+            return;
+        }
+
+        var newLength = textBlock.Text.Length - trailingWhitespaceLength;
+        if (newLength <= 0)
+        {
+            blocks.RemoveAt(blocks.Count - 1);
+            return;
+        }
+
+        var newText = textBlock.Text[..newLength];
+        var end = new TextPosition(textBlock.End.Line, textBlock.End.Column - trailingWhitespaceLength, textBlock.End.Index - trailingWhitespaceLength);
+        var newBlock = CreateTextBlock(newText, textBlock.Index);
+        newBlock.Span = new TextSpan(textBlock.Start, end);
+        blocks[^1] = newBlock;
     }
 
     private TemplateBlock? CreateBlock(bool codeBlock, string text, int index, TextPosition start, TextPosition end)

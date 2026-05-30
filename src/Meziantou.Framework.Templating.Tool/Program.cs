@@ -9,6 +9,8 @@ internal static partial class Program
 {
     private const string DefaultStartCodeBlockDelimiter = "<%";
     private const string DefaultEndCodeBlockDelimiter = "%>";
+    private const string T4StartCodeBlockDelimiter = "<#";
+    private const string T4EndCodeBlockDelimiter = "#>";
 
     public static Task<int> Main(string[] args)
     {
@@ -28,16 +30,14 @@ internal static partial class Program
             Description = "Path to the output file. If omitted, writes to stdout",
             Required = false,
         };
-        var startCodeBlockDelimiterOption = new Option<string>("--start-code-block-delimiter")
+        var startCodeBlockDelimiterOption = new Option<string?>("--start-code-block-delimiter")
         {
             Description = "Delimiter that marks the start of a code block",
-            DefaultValueFactory = _ => DefaultStartCodeBlockDelimiter,
             Required = false,
         };
-        var endCodeBlockDelimiterOption = new Option<string>("--end-code-block-delimiter")
+        var endCodeBlockDelimiterOption = new Option<string?>("--end-code-block-delimiter")
         {
             Description = "Delimiter that marks the end of a code block",
-            DefaultValueFactory = _ => DefaultEndCodeBlockDelimiter,
             Required = false,
         };
 
@@ -51,8 +51,8 @@ internal static partial class Program
             return RenderTemplateAsync(
                 parseResult.GetRequiredValue(inputOption),
                 parseResult.GetValue(outputOption),
-                parseResult.GetValue(startCodeBlockDelimiterOption) ?? string.Empty,
-                parseResult.GetValue(endCodeBlockDelimiterOption) ?? string.Empty,
+                parseResult.GetValue(startCodeBlockDelimiterOption),
+                parseResult.GetValue(endCodeBlockDelimiterOption),
                 parseResult.InvocationConfiguration.Output,
                 parseResult.InvocationConfiguration.Error,
                 cancellationToken);
@@ -66,24 +66,12 @@ internal static partial class Program
     private static async Task<int> RenderTemplateAsync(
         string inputFile,
         string? outputFile,
-        string startCodeBlockDelimiter,
-        string endCodeBlockDelimiter,
+        string? startCodeBlockDelimiter,
+        string? endCodeBlockDelimiter,
         TextWriter output,
         TextWriter error,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(startCodeBlockDelimiter))
-        {
-            await error.WriteLineAsync("The start code block delimiter cannot be empty".AsMemory(), cancellationToken);
-            return 1;
-        }
-
-        if (string.IsNullOrEmpty(endCodeBlockDelimiter))
-        {
-            await error.WriteLineAsync("The end code block delimiter cannot be empty".AsMemory(), cancellationToken);
-            return 1;
-        }
-
         var inputPath = FullPath.FromPath(inputFile);
         if (!File.Exists(inputPath))
         {
@@ -92,11 +80,23 @@ internal static partial class Program
         }
 
         var templateContent = await File.ReadAllTextAsync(inputPath, cancellationToken).ConfigureAwait(false);
+        var (resolvedStartCodeBlockDelimiter, resolvedEndCodeBlockDelimiter) = ResolveCodeBlockDelimiters(templateContent, startCodeBlockDelimiter, endCodeBlockDelimiter);
+        if (string.IsNullOrEmpty(resolvedStartCodeBlockDelimiter))
+        {
+            await error.WriteLineAsync("The start code block delimiter cannot be empty".AsMemory(), cancellationToken);
+            return 1;
+        }
+
+        if (string.IsNullOrEmpty(resolvedEndCodeBlockDelimiter))
+        {
+            await error.WriteLineAsync("The end code block delimiter cannot be empty".AsMemory(), cancellationToken);
+            return 1;
+        }
 
         var template = new Template
         {
-            StartCodeBlockDelimiter = startCodeBlockDelimiter,
-            EndCodeBlockDelimiter = endCodeBlockDelimiter,
+            StartCodeBlockDelimiter = resolvedStartCodeBlockDelimiter,
+            EndCodeBlockDelimiter = resolvedEndCodeBlockDelimiter,
         };
         template.Load(templateContent);
         var resolvedOutputPath = ResolveOutputPath(outputFile, inputPath, template);
@@ -138,6 +138,43 @@ internal static partial class Program
         }
 
         return inputPath.ChangeExtension(directiveOutputExtension);
+    }
+
+    private static (string StartCodeBlockDelimiter, string EndCodeBlockDelimiter) ResolveCodeBlockDelimiters(string templateContent, string? startCodeBlockDelimiter, string? endCodeBlockDelimiter)
+    {
+        if (startCodeBlockDelimiter is null && endCodeBlockDelimiter is null)
+        {
+            if (templateContent.Contains(T4StartCodeBlockDelimiter, StringComparison.Ordinal))
+            {
+                return (T4StartCodeBlockDelimiter, T4EndCodeBlockDelimiter);
+            }
+
+            return (DefaultStartCodeBlockDelimiter, DefaultEndCodeBlockDelimiter);
+        }
+
+        return (
+            startCodeBlockDelimiter ?? GetDefaultStartCodeBlockDelimiter(endCodeBlockDelimiter),
+            endCodeBlockDelimiter ?? GetDefaultEndCodeBlockDelimiter(startCodeBlockDelimiter));
+    }
+
+    private static string GetDefaultStartCodeBlockDelimiter(string? endCodeBlockDelimiter)
+    {
+        return endCodeBlockDelimiter switch
+        {
+            T4EndCodeBlockDelimiter => T4StartCodeBlockDelimiter,
+            DefaultEndCodeBlockDelimiter => DefaultStartCodeBlockDelimiter,
+            _ => DefaultStartCodeBlockDelimiter,
+        };
+    }
+
+    private static string GetDefaultEndCodeBlockDelimiter(string? startCodeBlockDelimiter)
+    {
+        return startCodeBlockDelimiter switch
+        {
+            T4StartCodeBlockDelimiter => T4EndCodeBlockDelimiter,
+            DefaultStartCodeBlockDelimiter => DefaultEndCodeBlockDelimiter,
+            _ => DefaultEndCodeBlockDelimiter,
+        };
     }
 
     private static string? GetDirectiveOutputExtension(Template template)

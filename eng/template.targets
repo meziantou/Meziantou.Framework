@@ -30,6 +30,8 @@
           Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''"
           Inputs="$(_TemplateToolAssemblyPath);@(TemplateFile)"
           Outputs="@(TemplateFile->'%(RootDir)%(Directory)%(Filename).cs')">
+    <Message Importance="High"
+             Text="Transforming template '%(TemplateFile.Identity)' to '%(TemplateFile.RootDir)%(TemplateFile.Directory)%(TemplateFile.Filename).cs'" />
     <Exec Command="dotnet &quot;$(_TemplateToolAssemblyPath)&quot; --input &quot;%(TemplateFile.FullPath)&quot; --start-code-block-delimiter &quot;&lt;#&quot; --end-code-block-delimiter &quot;#&gt;&quot;" />
   </Target>
 </Project>

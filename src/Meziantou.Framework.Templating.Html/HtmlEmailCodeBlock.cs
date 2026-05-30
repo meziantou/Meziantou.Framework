@@ -22,7 +22,6 @@ public class HtmlEmailCodeBlock : CodeBlock
     public HtmlEmailCodeBlock(Template template, string text, int index)
         : base(template, text, index)
     {
-        EvalPrefixString = "#"; // Visual Studio colorizes "{{# Name }}" in HTML file in html file :)
     }
 
     /// <summary>Decodes HTML-encoded text.</summary>
@@ -67,6 +66,11 @@ public class HtmlEmailCodeBlock : CodeBlock
         {
             var cid = Nullify(text[CidPrefixString.Length..]);
             return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.WriteContentIdentifier)}(@\"{EscapeVerbatimString(cid)}\");";
+        }
+
+        if (text.StartsWith("#", StringComparison.Ordinal))
+        {
+            return Template.OutputParameterName + ".Write(\"{0}\", " + text[1..].TrimStart() + ");";
         }
 
         return base.BuildCode();

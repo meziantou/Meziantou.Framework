@@ -174,7 +174,17 @@ public class Template
             }
             else
             {
-                blockDelimiterIndex = 0;
+                if (c == nextDelimiter[0])
+                {
+                    delimiterStartLine = line;
+                    delimiterStartColumn = column;
+                    delimiterStartIndex = index;
+                    blockDelimiterIndex = 1;
+                }
+                else
+                {
+                    blockDelimiterIndex = 0;
+                }
             }
 
             if (currentBlock.Length == 0)

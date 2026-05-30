@@ -165,6 +165,21 @@ public class TemplateTest
     }
 
     [Fact]
+    public void Template_OverlappingStartDelimiter_ExpressionBlockIsParsed()
+    {
+        var template = new Template
+        {
+            StartCodeBlockDelimiter = "<#",
+            EndCodeBlockDelimiter = "#>",
+        };
+        template.Load("ValueTuple<<#= 1 #>>");
+
+        var result = template.Run();
+
+        Assert.Equal("ValueTuple<1>", result);
+    }
+
+    [Fact]
     public void Template_UntypedArgument()
     {
         // Arrange

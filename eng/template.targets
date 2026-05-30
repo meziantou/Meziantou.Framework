@@ -1,0 +1,35 @@
+<Project>
+  <PropertyGroup>
+    <TemplateTransformationEnabled Condition="'$(TemplateTransformationEnabled)' == ''">true</TemplateTransformationEnabled>
+    <_TemplateToolTargetFramework Condition="'$(_TemplateToolTargetFramework)' == ''">$(LatestTargetFramework)</_TemplateToolTargetFramework>
+    <_TemplateToolProjectPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating.Tool', 'Meziantou.Framework.Templating.Tool.csproj'))</_TemplateToolProjectPath>
+    <_TemplateToolAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsPath)', 'bin', 'Meziantou.Framework.Templating.Tool', '$(Configuration.ToLowerInvariant())_$(_TemplateToolTargetFramework)', 'Meziantou.Framework.Templating.Tool.dll'))</_TemplateToolAssemblyPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''">
+    <_TemplateToolBuildInput Include="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating.Tool', '**', '*.*'))"
+                             Exclude="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating.Tool', 'bin', '**'));$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating.Tool', 'obj', '**'))" />
+    <_TemplateToolBuildInput Include="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating', '**', '*.*'))"
+                             Exclude="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating', 'bin', '**'));$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating', 'obj', '**'))" />
+  </ItemGroup>
+
+  <Target Name="_BuildTemplatingTool"
+          Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''"
+          Inputs="@(_TemplateToolBuildInput)"
+          Outputs="$(_TemplateToolAssemblyPath)">
+    <MSBuild Projects="$(_TemplateToolProjectPath)"
+             Targets="Build"
+             BuildInParallel="false"
+             RemoveProperties="TargetFrameworks;TargetFramework"
+             Properties="TargetFramework=$(_TemplateToolTargetFramework);TemplateTransformationEnabled=false;PublicApiGeneratorGenerateOnBuild=false;PublicApiGeneratorVerifyNoChangeOnBuild=false" />
+  </Target>
+
+  <Target Name="TransformTemplates"
+          BeforeTargets="BeforeBuild"
+          DependsOnTargets="_BuildTemplatingTool"
+          Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''"
+          Inputs="$(_TemplateToolAssemblyPath);@(TemplateFile)"
+          Outputs="@(TemplateFile->'%(RootDir)%(Directory)%(Filename).cs')">
+    <Exec Command="dotnet &quot;$(_TemplateToolAssemblyPath)&quot; --input &quot;%(TemplateFile.FullPath)&quot; --start-code-block-delimiter &quot;&lt;#&quot; --end-code-block-delimiter &quot;#&gt;&quot;" />
+  </Target>
+</Project>

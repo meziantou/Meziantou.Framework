@@ -1,0 +1,6 @@
+<Project>
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <TemplateFile Include="**/*.tt"
+                  Exclude="$(BaseIntermediateOutputPath)**;$(BaseOutputPath)**;bin/**;obj/**" />
+  </ItemGroup>
+</Project>

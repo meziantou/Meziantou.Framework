@@ -159,12 +159,12 @@ public static partial class TaskExtensions
 <# } #>
 }
 <#+
-    string GetTemplateString(int count)
+    static string GetTemplateString(int count)
     {
         return Join(", ", count, i => "T" + i);
     }
 
-    string Join(string separator, int count, Func<int, string> selector)
+    static string Join(string separator, int count, Func<int, string> selector)
     {
         var str = "";
         for (var i = 1; i <= count; i++)

@@ -1,4 +1,5 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)eng/template.props" Condition="Exists('$(MSBuildThisFileDirectory)eng/template.props')" />
 
   <!-- Build options -->
   <PropertyGroup>

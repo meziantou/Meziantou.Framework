@@ -8,7 +8,7 @@ Description:
   Render a template file using Meziantou.Framework.Templating
 
 Usage:
-  meziantou.template [options]
+  Meziantou.Framework.Templating.Tool [options]
 
 Options:
   --input <input> (REQUIRED)                                 Path to the input template file

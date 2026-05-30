@@ -18,10 +18,10 @@
           Inputs="@(_TemplateToolBuildInput)"
           Outputs="$(_TemplateToolAssemblyPath)">
     <MSBuild Projects="$(_TemplateToolProjectPath)"
-             Targets="Build"
+             Targets="Restore;Build"
              BuildInParallel="false"
              RemoveProperties="TargetFrameworks;TargetFramework"
-             Properties="TargetFramework=$(_TemplateToolTargetFramework);TemplateTransformationEnabled=false;PublicApiGeneratorGenerateOnBuild=false;PublicApiGeneratorVerifyNoChangeOnBuild=false" />
+             Properties="TargetFramework=$(_TemplateToolTargetFramework);Restore=true;TemplateTransformationEnabled=false;PublicApiGeneratorGenerateOnBuild=false;PublicApiGeneratorVerifyNoChangeOnBuild=false" />
   </Target>
 
   <Target Name="TransformTemplates"

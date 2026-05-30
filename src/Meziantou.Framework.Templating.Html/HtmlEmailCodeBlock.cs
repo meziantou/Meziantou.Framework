@@ -9,13 +9,10 @@ namespace Meziantou.Framework.Templating;
 /// // URL encoding: {{#url value}}
 /// // Attribute encoding: {{#attr value}}
 /// // Content identifier: {{cid image.png}}
-/// // Section: {{@begin section title}}...{{@end section}}
 /// </code>
 /// </example>
 public class HtmlEmailCodeBlock : CodeBlock
 {
-    private const string BeginSectionPrefixString = "@begin section";
-    private const string EndSectionPrefixString = "@end section";
     private const string HtmlEncodePrefixString = "#html ";
     private const string HtmlAttributeEncodePrefixString = "#attr ";
     private const string UrlEncodePrefixString = "#url ";
@@ -46,18 +43,6 @@ public class HtmlEmailCodeBlock : CodeBlock
         {
             var html = text[HtmlEncodedCodePrefixString.Length..];
             return HtmlDecode(html);
-        }
-
-        if (text.StartsWith(BeginSectionPrefixString, StringComparison.Ordinal))
-        {
-            var sectionName = Nullify(text[BeginSectionPrefixString.Length..]);
-            return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.BeginSection)}(@\"{EscapeVerbatimString(sectionName)}\");";
-        }
-
-        if (text.StartsWith(EndSectionPrefixString, StringComparison.Ordinal))
-        {
-            var sectionName = Nullify(text[EndSectionPrefixString.Length..]);
-            return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.EndSection)}(@\"{EscapeVerbatimString(sectionName)}\");";
         }
 
         if (text.StartsWith(HtmlEncodePrefixString, StringComparison.Ordinal))

@@ -34,7 +34,7 @@ Add parameters to make your templates dynamic:
 ```csharp
 var template = new Template();
 template.Load("Hello <%=Name%>!");
-template.AddArgument("Name", typeof(string));
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 var result = template.Run("Meziantou");
 // result: "Hello Meziantou!"
 ```
@@ -50,7 +50,10 @@ var arguments = new Dictionary<string, object>
 {
     { "Name", "Meziantou" }
 };
-template.AddArguments(arguments);
+foreach (var argument in arguments)
+{
+    template.Arguments.Add(new TemplateArgument(argument.Key, argument.Value?.GetType()));
+}
 var result = template.Run(arguments);
 // result: "Hello Meziantou!"
 ```
@@ -99,6 +102,19 @@ var result = template.Run();
 //   Item 3: 30
 ```
 
+### Directives
+
+Templates support directives using the `@` prefix inside a code block (for example `<%@ using System.Linq %>` or `{{@ outputextension .cs }}` when using custom delimiters).
+
+Directives are parsed as `DirectiveBlock` instances. You can enumerate them by filtering `Template.Blocks` (for example `template.Blocks.OfType<DirectiveBlock>()`), and the following built-in directives are handled case-insensitively by default:
+
+- `using` - Adds a using directive
+- `inherits` - Sets `BaseClassFullTypeName`
+- `implements` - Adds one or more interfaces to the generated class declaration
+- `reference` - Adds an assembly reference path
+
+Directives that are not built in (such as `outputextension`) are still available in `Template.Blocks` and can be handled by overriding `DirectiveBlock.ApplyDirective()`.
+
 ## Advanced Usage
 
 ### Custom Delimiters
@@ -112,7 +128,7 @@ var template = new Template
     EndCodeBlockDelimiter = "}}"
 };
 template.Load("Hello {{=Name}}!");
-template.AddArgument("Name", typeof(string));
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 var result = template.Run("World");
 // result: "Hello World!"
 ```
@@ -123,7 +139,7 @@ Import namespaces to use types without fully-qualified names:
 
 ```csharp
 var template = new Template();
-template.AddUsing("System.Linq");
+template.Usings.Add("System.Linq");
 template.Load("<%= Enumerable.Range(1, 5).Sum() %>");
 var result = template.Run();
 // result: "15"
@@ -133,7 +149,7 @@ You can also import types with aliases:
 
 ```csharp
 var template = new Template();
-template.AddUsing(typeof(System.Text.StringBuilder), "SB");
+template.Usings.Add("SB = System.Text.StringBuilder");
 template.Load("<% var sb = new SB(); sb.Append(\"Hello\"); %><%= sb.ToString() %>");
 var result = template.Run();
 // result: "Hello"
@@ -158,7 +174,7 @@ Use dynamic parameters when types are not known at compile time:
 ```csharp
 var template = new Template();
 template.Load("Value: <%=Value%>");
-template.AddArgument("Value"); // No type specified = dynamic
+template.Arguments.Add(new TemplateArgument("Value", type: null)); // No type specified = dynamic
 var result = template.Run(42);
 // result: "Value: 42"
 ```
@@ -170,7 +186,7 @@ Templates can be built (compiled) separately from execution:
 ```csharp
 var template = new Template();
 template.Load("Hello <%=Name%>");
-template.AddArgument("Name", typeof(string));
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 
 // Compile the template
 template.Build(CancellationToken.None);
@@ -190,7 +206,7 @@ var template = new Template
     Debug = true
 };
 template.Load("<%=Value%>");
-template.AddArgument("Value", typeof(int));
+template.Arguments.Add(new TemplateArgument("Value", typeof(int)));
 var result = template.Run(42);
 ```
 
@@ -201,7 +217,7 @@ After building a template, you can inspect the generated C# source code:
 ```csharp
 var template = new Template();
 template.Load("Hello <%=Name%>");
-template.AddArgument("Name", typeof(string));
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 template.Build(CancellationToken.None);
 
 Console.WriteLine(template.SourceCode);

@@ -4,11 +4,50 @@
 
 namespace Meziantou.Framework.Templating
 {
-    public class CodeBlock : Meziantou.Framework.Templating.ParsedBlock
+    public sealed class ArgumentCollection : Meziantou.Framework.Templating.FreezableCollection<Meziantou.Framework.Templating.TemplateArgument>
+    {
+        protected override void ValidateItem(Meziantou.Framework.Templating.TemplateArgument item) { }
+    }
+
+    public sealed class BlockCollection : Meziantou.Framework.Templating.FreezableCollection<Meziantou.Framework.Templating.TemplateBlock>
+    {
+        protected override void ValidateItem(Meziantou.Framework.Templating.TemplateBlock item) { }
+    }
+
+    public class CodeBlock : Meziantou.Framework.Templating.TemplateBlock
     {
         protected string EvalPrefixString { get => throw null; set { } }
         public CodeBlock(Meziantou.Framework.Templating.Template template, string text, int index) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
         public override string BuildCode() => throw null;
+    }
+
+    public class DirectiveBlock : Meziantou.Framework.Templating.TemplateBlock
+    {
+        public string Name { get => throw null; }
+        public string Value { get => throw null; }
+        public DirectiveBlock(Meziantou.Framework.Templating.Template template, string text, int index, string name, string value) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
+        public override string BuildCode() => throw null;
+        public virtual void ApplyDirective() { }
+    }
+
+    public abstract class FreezableCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
+    {
+        public bool IsFrozen { get => throw null; }
+        public int Count { get => throw null; }
+        public bool IsReadOnly { get => throw null; }
+        public T this[int index] { get => throw null; set { } }
+        public void Add(T item) { }
+        public void Clear() { }
+        public bool Contains(T item) => throw null;
+        public void CopyTo(T[] array, int arrayIndex) { }
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
+        public int IndexOf(T item) => throw null;
+        public void Insert(int index, T item) { }
+        public bool Remove(T item) => throw null;
+        public void RemoveAt(int index) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        protected virtual void ValidateItem(T item) { }
+        protected void ThrowIfFrozen() { }
     }
 
     public sealed class IndentedTextWriter : System.IO.TextWriter
@@ -53,6 +92,11 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(uint value) { }
     }
 
+    public sealed class InterfaceCollection : Meziantou.Framework.Templating.FreezableCollection<string>
+    {
+        protected override void ValidateItem(string item) { }
+    }
+
     public class Output
     {
         public Meziantou.Framework.Templating.Template Template { get => throw null; }
@@ -63,18 +107,9 @@ namespace Meziantou.Framework.Templating
         public virtual void Write(string format, params object?[] args) { }
     }
 
-    public class ParsedBlock
+    public sealed class ReferenceCollection : Meziantou.Framework.Templating.FreezableCollection<string>
     {
-        public Meziantou.Framework.Templating.Template Template { get => throw null; }
-        public string Text { get => throw null; }
-        public int Index { get => throw null; }
-        public int StartLine { get => throw null; }
-        public int EndLine { get => throw null; }
-        public int StartColumn { get => throw null; }
-        public int EndColumn { get => throw null; }
-        public ParsedBlock(Meziantou.Framework.Templating.Template template, string text, int index) { }
-        public virtual string BuildCode() => throw null;
-        protected static string? EscapeVerbatimString(string? s) => throw null;
+        protected override void ValidateItem(string item) { }
     }
 
     public class Template
@@ -84,28 +119,20 @@ namespace Meziantou.Framework.Templating
         public string? BaseClassFullTypeName { get => throw null; set { } }
         public string StartCodeBlockDelimiter { get => throw null; set { } }
         public string EndCodeBlockDelimiter { get => throw null; set { } }
-        public System.Collections.Generic.IList<Meziantou.Framework.Templating.ParsedBlock>? Blocks { get => throw null; }
+        public Meziantou.Framework.Templating.BlockCollection Blocks { get => throw null; }
         public bool IsBuilt { get => throw null; }
         public string? SourceCode { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Templating.TemplateArgument> Arguments { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<string> Usings { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<string> ReferencePaths { get => throw null; }
+        public Meziantou.Framework.Templating.ArgumentCollection Arguments { get => throw null; }
+        public Meziantou.Framework.Templating.UsingCollection Usings { get => throw null; }
+        public Meziantou.Framework.Templating.InterfaceCollection ImplementedInterfaces { get => throw null; }
+        public Meziantou.Framework.Templating.ReferenceCollection ReferencePaths { get => throw null; }
         public bool Debug { get => throw null; set { } }
-        public void AddReference(System.Type type) { }
-        public void AddUsing(string namespace) { }
-        public void AddUsing(string namespace, string? alias) { }
-        public void AddUsing(System.Type type) { }
-        public void AddUsing(System.Type type, string? alias) { }
-        public void AddArgument(string name) { }
-        public void AddArgument<T>(string name) { }
-        public void AddArgument(string name, System.Type? type) { }
-        public void AddArguments(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments) { }
-        public void AddArguments(params string[] arguments) { }
         public void Load(string text) { }
         public void Load(System.IO.TextReader reader) { }
         public void Build(System.Threading.CancellationToken cancellationToken) { }
-        protected virtual Meziantou.Framework.Templating.ParsedBlock CreateParsedBlock(string text, int index) => throw null;
+        protected virtual Meziantou.Framework.Templating.TextBlock CreateTextBlock(string text, int index) => throw null;
         protected virtual Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
+        protected virtual Meziantou.Framework.Templating.DirectiveBlock CreateDirectiveBlock(string text, string name, string value, int index) => throw null;
         protected virtual Microsoft.CodeAnalysis.SyntaxTree CreateSyntaxTree(string source, System.Threading.CancellationToken cancellationToken) => throw null;
         protected virtual Microsoft.CodeAnalysis.MetadataReference[] CreateReferences() => throw null;
         protected virtual Microsoft.CodeAnalysis.CSharp.CSharpCompilation CreateCompilation(Microsoft.CodeAnalysis.SyntaxTree syntaxTree) => throw null;
@@ -131,9 +158,73 @@ namespace Meziantou.Framework.Templating
         public TemplateArgument(string name, System.Type? type) { }
     }
 
+    public abstract class TemplateBlock
+    {
+        public Meziantou.Framework.Templating.Template Template { get => throw null; }
+        public string Text { get => throw null; }
+        public int Index { get => throw null; }
+        public Meziantou.Framework.Templating.TextPosition Start { get => throw null; }
+        public Meziantou.Framework.Templating.TextPosition End { get => throw null; }
+        public Meziantou.Framework.Templating.TextSpan Span { get => throw null; }
+        protected TemplateBlock(Meziantou.Framework.Templating.Template template, string text, int index) { }
+        public abstract string BuildCode();
+        protected static string? EscapeVerbatimString(string? s) => throw null;
+    }
+
     public class TemplateException : System.Exception
     {
         public TemplateException(string message) { }
         public TemplateException(string message, System.Exception innerException) { }
+    }
+
+    public class TextBlock : Meziantou.Framework.Templating.TemplateBlock
+    {
+        public TextBlock(Meziantou.Framework.Templating.Template template, string text, int index) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
+        public override string BuildCode() => throw null;
+    }
+
+    public readonly struct TextPosition : System.IComparable, System.IComparable<Meziantou.Framework.Templating.TextPosition>, System.IEquatable<Meziantou.Framework.Templating.TextPosition>
+    {
+        public int Line { get => throw null; }
+        public int Column { get => throw null; }
+        public int Index { get => throw null; }
+        public TextPosition(int line, int column, int index) { }
+        public bool Equals(Meziantou.Framework.Templating.TextPosition other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public int CompareTo(Meziantou.Framework.Templating.TextPosition other) => throw null;
+        public int CompareTo(object? obj) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Templating.TextPosition left, Meziantou.Framework.Templating.TextPosition right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Templating.TextPosition left, Meziantou.Framework.Templating.TextPosition right) => throw null;
+        public static bool operator <(Meziantou.Framework.Templating.TextPosition left, Meziantou.Framework.Templating.TextPosition right) => throw null;
+        public static bool operator <=(Meziantou.Framework.Templating.TextPosition left, Meziantou.Framework.Templating.TextPosition right) => throw null;
+        public static bool operator >(Meziantou.Framework.Templating.TextPosition left, Meziantou.Framework.Templating.TextPosition right) => throw null;
+        public static bool operator >=(Meziantou.Framework.Templating.TextPosition left, Meziantou.Framework.Templating.TextPosition right) => throw null;
+    }
+
+    public readonly struct TextSpan : System.IComparable, System.IComparable<Meziantou.Framework.Templating.TextSpan>, System.IEquatable<Meziantou.Framework.Templating.TextSpan>
+    {
+        public Meziantou.Framework.Templating.TextPosition Start { get => throw null; }
+        public Meziantou.Framework.Templating.TextPosition End { get => throw null; }
+        public int Length { get => throw null; }
+        public TextSpan(Meziantou.Framework.Templating.TextPosition start, Meziantou.Framework.Templating.TextPosition end) { }
+        public bool Equals(Meziantou.Framework.Templating.TextSpan other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public int CompareTo(Meziantou.Framework.Templating.TextSpan other) => throw null;
+        public int CompareTo(object? obj) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Templating.TextSpan left, Meziantou.Framework.Templating.TextSpan right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Templating.TextSpan left, Meziantou.Framework.Templating.TextSpan right) => throw null;
+        public static bool operator <(Meziantou.Framework.Templating.TextSpan left, Meziantou.Framework.Templating.TextSpan right) => throw null;
+        public static bool operator <=(Meziantou.Framework.Templating.TextSpan left, Meziantou.Framework.Templating.TextSpan right) => throw null;
+        public static bool operator >(Meziantou.Framework.Templating.TextSpan left, Meziantou.Framework.Templating.TextSpan right) => throw null;
+        public static bool operator >=(Meziantou.Framework.Templating.TextSpan left, Meziantou.Framework.Templating.TextSpan right) => throw null;
+    }
+
+    public sealed class UsingCollection : Meziantou.Framework.Templating.FreezableCollection<string>
+    {
+        protected override void ValidateItem(string item) { }
     }
 }

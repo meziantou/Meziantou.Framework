@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Templating;
 /// <example>
 /// <code>
 /// var template = new HtmlEmailTemplate();
-/// template.Load("{{@begin section title}}Welcome{{@end section}}&lt;h1&gt;Hello {{#html userName}}!&lt;/h1&gt;");
+/// template.Load("{{@begin_section title}}Welcome{{@end_section}}&lt;h1&gt;Hello {{#html userName}}!&lt;/h1&gt;");
 /// var result = template.Run(out var metadata, new Dictionary&lt;string, object?&gt; { ["userName"] = "John" });
 /// // result: &lt;h1&gt;Hello John!&lt;/h1&gt;
 /// // metadata.Title: "Welcome"
@@ -22,6 +22,17 @@ public class HtmlEmailTemplate : Template
     protected override CodeBlock CreateCodeBlock(string text, int index)
     {
         return new HtmlEmailCodeBlock(this, text, index);
+    }
+
+    protected override DirectiveBlock CreateDirectiveBlock(string text, string name, string value, int index)
+    {
+        if (string.Equals(name, "begin_section", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(name, "end_section", StringComparison.OrdinalIgnoreCase))
+        {
+            return new HtmlEmailDirectiveBlock(this, text, index, name, value);
+        }
+
+        return base.CreateDirectiveBlock(text, name, value, index);
     }
 
     /// <summary>Creates an HTML email output writer with encoding capabilities and section support.</summary>

@@ -11,6 +11,12 @@ namespace Meziantou.Framework.Templating
         public override string BuildCode() => throw null;
     }
 
+    public sealed class HtmlEmailDirectiveBlock : Meziantou.Framework.Templating.DirectiveBlock
+    {
+        public HtmlEmailDirectiveBlock(Meziantou.Framework.Templating.Template template, string text, int index, string name, string value) { }
+        public override string BuildCode() => throw null;
+    }
+
     public class HtmlEmailMetadata
     {
         public string? Title { get => throw null; set { } }
@@ -42,6 +48,7 @@ namespace Meziantou.Framework.Templating
     public class HtmlEmailTemplate : Meziantou.Framework.Templating.Template
     {
         protected override Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
+        protected override Meziantou.Framework.Templating.DirectiveBlock CreateDirectiveBlock(string text, string name, string value, int index) => throw null;
         protected override object CreateOutput(System.IO.TextWriter writer) => throw null;
         public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IDictionary<string, object?> parameters) => throw null;
         public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;

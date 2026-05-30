@@ -21,7 +21,7 @@ public class EmailTemplateTest
     {
         // Arrange
         var template = new HtmlEmailTemplate();
-        template.Load("Hello {{@begin section title}}{{# \"Meziantou\" }}{{@end section}}!");
+        template.Load("Hello {{@begin_section title}}{{# \"Meziantou\" }}{{@end_section}}!");
 
         // Act 
         var result = template.Run(out var metadata);

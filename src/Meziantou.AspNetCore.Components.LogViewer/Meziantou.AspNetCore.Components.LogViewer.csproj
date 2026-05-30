@@ -39,4 +39,8 @@
     <None Update="LogViewer.razor.css" CssScope="mez-logviewer" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.AnsiFormatting\Meziantou.Framework.AnsiFormatting.csproj" />
+  </ItemGroup>
+
 </Project>

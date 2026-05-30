@@ -112,3 +112,15 @@
     color: inherit;
     text-decoration: underline;
 }
+
+.log-ansi-bold {
+    font-weight: bold;
+}
+
+.log-ansi-italic {
+    font-style: italic;
+}
+
+.log-ansi-underline {
+    text-decoration: underline;
+}

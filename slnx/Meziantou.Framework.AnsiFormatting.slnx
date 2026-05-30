@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.AnsiFormatting/Meziantou.Framework.AnsiFormatting.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.AnsiFormatting.Tests/Meziantou.Framework.AnsiFormatting.Tests.csproj" />
+  </Folder>
+</Solution>

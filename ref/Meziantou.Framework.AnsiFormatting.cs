@@ -10,7 +10,7 @@ namespace Meziantou.Framework
         public static string RemoveAnsiSequences(System.ReadOnlySpan<char> value) => throw null;
         public static bool ContainsAnsiSequences(string value) => throw null;
         public static bool ContainsAnsiSequences(System.ReadOnlySpan<char> value) => throw null;
-        public static ParsedText ParseTextWithAnsiStyles(string text) => throw null;
+        public static AnsiText ParseTextWithAnsiStyles(string text) => throw null;
         public sealed class AnsiColor : System.IEquatable<AnsiColor>
         {
             public AnsiColorKind Kind { get => throw null; init { } }
@@ -52,31 +52,31 @@ namespace Meziantou.Framework
             public bool Equals(AnsiStyle? other) => throw null;
             public void Deconstruct(out AnsiColor? Foreground, out AnsiColor? Background, out bool Bold, out bool Italic, out bool Underline, out bool Inverse) => throw null;
         }
-        public sealed class ParsedText : System.IEquatable<ParsedText>
+        public sealed class AnsiText : System.IEquatable<AnsiText>
         {
             public string Text { get => throw null; init { } }
-            public System.Collections.Generic.IReadOnlyList<TextRun> Runs { get => throw null; init { } }
-            public ParsedText(string Text, System.Collections.Generic.IReadOnlyList<TextRun> Runs) { }
+            public System.Collections.Generic.IReadOnlyList<AnsiTextRun> Runs { get => throw null; init { } }
+            public AnsiText(string Text, System.Collections.Generic.IReadOnlyList<AnsiTextRun> Runs) { }
             public override string ToString() => throw null;
-            public static bool operator !=(ParsedText? left, ParsedText? right) => throw null;
-            public static bool operator ==(ParsedText? left, ParsedText? right) => throw null;
+            public static bool operator !=(AnsiText? left, AnsiText? right) => throw null;
+            public static bool operator ==(AnsiText? left, AnsiText? right) => throw null;
             public override int GetHashCode() => throw null;
             public override bool Equals(object? obj) => throw null;
-            public bool Equals(ParsedText? other) => throw null;
-            public void Deconstruct(out string Text, out System.Collections.Generic.IReadOnlyList<TextRun> Runs) => throw null;
+            public bool Equals(AnsiText? other) => throw null;
+            public void Deconstruct(out string Text, out System.Collections.Generic.IReadOnlyList<AnsiTextRun> Runs) => throw null;
         }
-        public sealed class TextRun : System.IEquatable<TextRun>
+        public sealed class AnsiTextRun : System.IEquatable<AnsiTextRun>
         {
             public int Start { get => throw null; init { } }
             public int End { get => throw null; init { } }
             public AnsiStyle Style { get => throw null; init { } }
-            public TextRun(int Start, int End, AnsiStyle Style) { }
+            public AnsiTextRun(int Start, int End, AnsiStyle Style) { }
             public override string ToString() => throw null;
-            public static bool operator !=(TextRun? left, TextRun? right) => throw null;
-            public static bool operator ==(TextRun? left, TextRun? right) => throw null;
+            public static bool operator !=(AnsiTextRun? left, AnsiTextRun? right) => throw null;
+            public static bool operator ==(AnsiTextRun? left, AnsiTextRun? right) => throw null;
             public override int GetHashCode() => throw null;
             public override bool Equals(object? obj) => throw null;
-            public bool Equals(TextRun? other) => throw null;
+            public bool Equals(AnsiTextRun? other) => throw null;
             public void Deconstruct(out int Start, out int End, out AnsiStyle Style) => throw null;
         }
     }

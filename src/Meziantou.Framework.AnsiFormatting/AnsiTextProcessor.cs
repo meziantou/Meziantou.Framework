@@ -56,12 +56,12 @@ public static class AnsiTextProcessor
         return false;
     }
 
-    public static ParsedText ParseTextWithAnsiStyles(string text)
+    public static AnsiText ParseTextWithAnsiStyles(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
         var builder = new StringBuilder(text.Length);
-        var runs = new List<TextRun>();
+        var runs = new List<AnsiTextRun>();
         var currentStyle = AnsiStyle.None;
         var currentRunStart = 0;
         var index = 0;
@@ -92,10 +92,10 @@ public static class AnsiTextProcessor
 
         if (runs.Count is 0 && builder.Length > 0)
         {
-            runs.Add(new TextRun(0, builder.Length, AnsiStyle.None));
+            runs.Add(new AnsiTextRun(0, builder.Length, AnsiStyle.None));
         }
 
-        return new ParsedText(builder.ToString(), runs);
+        return new AnsiText(builder.ToString(), runs);
     }
 
     private static string RemoveAnsiSequencesCore(ReadOnlySpan<char> value, int firstEscapeIndex, string? originalIfUnchanged)
@@ -360,17 +360,17 @@ public static class AnsiTextProcessor
         return -1;
     }
 
-    private static void AddRun(List<TextRun> runs, AnsiStyle style, int start, int end)
+    private static void AddRun(List<AnsiTextRun> runs, AnsiStyle style, int start, int end)
     {
         if (end > start)
         {
-            runs.Add(new TextRun(start, end, style));
+            runs.Add(new AnsiTextRun(start, end, style));
         }
     }
 
-    public sealed record ParsedText(string Text, IReadOnlyList<TextRun> Runs);
+    public sealed record AnsiText(string Text, IReadOnlyList<AnsiTextRun> Runs);
 
-    public sealed record TextRun(int Start, int End, AnsiStyle Style);
+    public sealed record AnsiTextRun(int Start, int End, AnsiStyle Style);
 
     public sealed record AnsiStyle(AnsiColor? Foreground, AnsiColor? Background, bool Bold, bool Italic, bool Underline, bool Inverse)
     {

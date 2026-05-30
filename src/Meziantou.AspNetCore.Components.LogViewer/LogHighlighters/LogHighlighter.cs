@@ -104,7 +104,7 @@ internal static class LogHighlighter
         return new MarkupString(result.ToString());
     }
 
-    private static void AppendStyledText(StringBuilder sb, string text, IReadOnlyList<Meziantou.Framework.AnsiTextProcessor.TextRun> ansiRuns, int start, int end, string? attributeName)
+    private static void AppendStyledText(StringBuilder sb, string text, IReadOnlyList<Meziantou.Framework.AnsiTextProcessor.AnsiTextRun> ansiRuns, int start, int end, string? attributeName)
     {
         if (start >= end)
             return;

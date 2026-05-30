@@ -4,9 +4,12 @@
     <_TemplateToolTargetFramework Condition="'$(_TemplateToolTargetFramework)' == ''">$(LatestTargetFramework)</_TemplateToolTargetFramework>
     <_TemplateToolProjectPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating.Tool', 'Meziantou.Framework.Templating.Tool.csproj'))</_TemplateToolProjectPath>
     <_TemplateToolAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsPath)', 'bin', 'Meziantou.Framework.Templating.Tool', '$(Configuration.ToLowerInvariant())_$(_TemplateToolTargetFramework)', 'Meziantou.Framework.Templating.Tool.dll'))</_TemplateToolAssemblyPath>
+    <_RunTemplateTransformation Condition="'$(_RunTemplateTransformation)' == '' and '$(TargetFrameworks)' == ''">true</_RunTemplateTransformation>
+    <_RunTemplateTransformation Condition="'$(_RunTemplateTransformation)' == '' and '$(IsCrossTargetingBuild)' == 'true'">true</_RunTemplateTransformation>
+    <_RunTemplateTransformation Condition="'$(_RunTemplateTransformation)' == ''">false</_RunTemplateTransformation>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''">
+  <ItemGroup Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(_RunTemplateTransformation)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''">
     <_TemplateToolBuildInput Include="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating.Tool', '**', '*.*'))"
                              Exclude="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating.Tool', 'bin', '**'));$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating.Tool', 'obj', '**'))" />
     <_TemplateToolBuildInput Include="$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'src', 'Meziantou.Framework.Templating', '**', '*.*'))"
@@ -14,7 +17,7 @@
   </ItemGroup>
 
   <Target Name="_BuildTemplatingTool"
-          Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''"
+          Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(_RunTemplateTransformation)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''"
           Inputs="@(_TemplateToolBuildInput)"
           Outputs="$(_TemplateToolAssemblyPath)">
     <MSBuild Projects="$(_TemplateToolProjectPath)"
@@ -25,9 +28,9 @@
   </Target>
 
   <Target Name="TransformTemplates"
-          BeforeTargets="BeforeBuild"
+          BeforeTargets="DispatchToInnerBuilds;BeforeBuild"
           DependsOnTargets="_BuildTemplatingTool"
-          Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''"
+          Condition="'$(TemplateTransformationEnabled)' == 'true' and '$(_RunTemplateTransformation)' == 'true' and '$(DesignTimeBuild)' != 'true' and '@(TemplateFile)' != ''"
           Inputs="$(_TemplateToolAssemblyPath);@(TemplateFile)"
           Outputs="@(TemplateFile->'%(RootDir)%(Directory)%(Filename).cs')">
     <Message Importance="High"

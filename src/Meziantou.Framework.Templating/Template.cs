@@ -72,7 +72,7 @@ public class Template
     public ArgumentCollection Arguments { get; } = [];
 
     /// <summary>Gets the list of using directives.</summary>
-    public UsingCollection Usings { get; } = [];
+    public UsingCollection Usings { get; } = ["System", "System.Collections.Generic", "System.Linq", "System.Text", "System.Threading.Tasks"];
 
     /// <summary>Gets the list of interfaces implemented by the generated template class.</summary>
     public InterfaceCollection ImplementedInterfaces { get; } = [];

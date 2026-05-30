@@ -8,19 +8,4 @@
     <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Update="ByteSize.Generated.cs">
-      <DependentUpon>ByteSize.Generated.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="ByteSize.Generated.tt">
-      <LastGenOutput>ByteSize.Generated.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-  </ItemGroup>
-
 </Project>

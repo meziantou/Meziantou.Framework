@@ -111,9 +111,28 @@ Directives are parsed as `DirectiveBlock` instances. You can enumerate them by f
 - `using` - Adds a using directive
 - `inherits` - Sets `BaseClassFullTypeName`
 - `implements` - Adds one or more interfaces to the generated class declaration
-- `reference` - Adds an assembly reference path
+- `reference` - Adds an assembly reference (`path` and optional `alias=...` for `extern alias`)
+- `include` - Adds a C# source file reference to include in the compilation
 
 Directives that are not built in (such as `outputextension`) are still available in `Template.Blocks` and can be handled by overriding `DirectiveBlock.ApplyDirective()`.
+
+```csharp
+var template = new Template();
+template.Load("""
+    <%@ reference alias=MyAlias c:\libs\my-library.dll %>
+    <%@ include c:\templates\shared-helpers.cs %>
+    """);
+```
+
+You can also add references programmatically:
+
+```csharp
+template.AssemblyReferences.Add(typeof(string));
+template.AssemblyReferences.Add(typeof(Template).Assembly, "TemplatingAlias");
+template.AssemblyReferences.Add(typeof(Template).Module);
+template.AssemblyReferences.Add(@"c:\libs\other-library.dll");
+template.IncludedSourceFiles.Add(@"c:\templates\shared-helpers.cs");
+```
 
 ## Advanced Usage
 

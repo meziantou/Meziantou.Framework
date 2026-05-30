@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.Templating;
 
@@ -77,8 +78,11 @@ public class Template
     /// <summary>Gets the list of interfaces implemented by the generated template class.</summary>
     public InterfaceCollection ImplementedInterfaces { get; } = [];
 
-    /// <summary>Gets the list of assembly reference paths.</summary>
-    public ReferenceCollection ReferencePaths { get; } = [];
+    /// <summary>Gets the list of assembly references used for template compilation.</summary>
+    public AssemblyReferenceCollection AssemblyReferences { get; } = [];
+
+    /// <summary>Gets the list of C# source files included in the template compilation.</summary>
+    public FileReferenceCollection IncludedSourceFiles { get; } = [];
 
     /// <summary>Gets or sets a value indicating whether to compile the template in debug mode.</summary>
     public bool Debug { get; set; }
@@ -393,8 +397,16 @@ public class Template
         Arguments.Freeze();
         Usings.Freeze();
         ImplementedInterfaces.Freeze();
-        ReferencePaths.Freeze();
+        AssemblyReferences.Freeze();
+        IncludedSourceFiles.Freeze();
         Blocks.Freeze();
+    }
+
+    protected virtual CSharpParseOptions CreateParseOptions()
+    {
+        return CSharpParseOptions.Default
+            .WithLanguageVersion(LanguageVersion.Latest)
+            .WithPreprocessorSymbols(Debug ? "DEBUG" : "RELEASE");
     }
 
     /// <summary>Creates a syntax tree from the generated source code.</summary>
@@ -405,47 +417,64 @@ public class Template
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var options = CSharpParseOptions.Default
-            .WithLanguageVersion(LanguageVersion.Latest)
-            .WithPreprocessorSymbols(Debug ? "DEBUG" : "RELEASE");
+        return CSharpSyntaxTree.ParseText(source, CreateParseOptions(), cancellationToken: cancellationToken);
+    }
 
-        return CSharpSyntaxTree.ParseText(source, options, cancellationToken: cancellationToken);
+    /// <summary>Creates a syntax tree from an included source file.</summary>
+    /// <param name="sourcePath">The path to the C# source file.</param>
+    /// <param name="cancellationToken">A cancellation token to observe.</param>
+    /// <returns>A syntax tree for compilation.</returns>
+    protected virtual SyntaxTree CreateIncludedSyntaxTree(string sourcePath, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
+
+        var source = SourceText.From(File.ReadAllText(sourcePath), Encoding.UTF8);
+        return CSharpSyntaxTree.ParseText(source, CreateParseOptions(), sourcePath, cancellationToken: cancellationToken);
     }
 
     /// <summary>Creates the list of assembly references for compilation.</summary>
     /// <returns>An array of metadata references.</returns>
     protected virtual MetadataReference[] CreateReferences()
     {
-        var references = new List<string>
+        var references = new List<AssemblyReference>
         {
-            typeof(object).Assembly.Location,
-            typeof(Template).Assembly.Location,
+            new AssemblyReference(typeof(object).Assembly.Location),
+            new AssemblyReference(typeof(Template).Assembly.Location),
             // Require to use dynamic keyword
-            typeof(System.Runtime.CompilerServices.DynamicAttribute).Assembly.Location,
-            typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).Assembly.Location,
-            typeof(System.Dynamic.DynamicObject).Assembly.Location,
-            typeof(System.Linq.Expressions.ExpressionType).Assembly.Location,
-            Assembly.Load(new AssemblyName("mscorlib")).Location,
-            Assembly.Load(new AssemblyName("System.Runtime")).Location,
-            Assembly.Load(new AssemblyName("System.Dynamic.Runtime")).Location,
-            Assembly.Load(new AssemblyName("netstandard")).Location,
+            new AssemblyReference(typeof(System.Runtime.CompilerServices.DynamicAttribute).Assembly.Location),
+            new AssemblyReference(typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).Assembly.Location),
+            new AssemblyReference(typeof(System.Dynamic.DynamicObject).Assembly.Location),
+            new AssemblyReference(typeof(System.Linq.Expressions.ExpressionType).Assembly.Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("mscorlib")).Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("System.Runtime")).Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("System.Dynamic.Runtime")).Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("netstandard")).Location),
         };
 
         if (OutputType != null)
         {
-            references.Add(OutputType.Assembly.Location);
+            references.Add(new AssemblyReference(OutputType.Assembly.Location));
         }
 
-        foreach (var reference in ReferencePaths)
+        references.AddRange(AssemblyReferences);
+
+        return references
+            .DistinctBy(reference => (reference.Path, reference.Alias))
+            .Select(CreateMetadataReference)
+            .ToArray();
+    }
+
+    private static MetadataReference CreateMetadataReference(AssemblyReference reference)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+
+        var properties = MetadataReferenceProperties.Assembly;
+        if (!string.IsNullOrEmpty(reference.Alias))
         {
-            if (string.IsNullOrEmpty(reference))
-                continue;
-
-            references.Add(reference);
+            properties = properties.WithAliases([reference.Alias]);
         }
 
-        var result = references.Where(_ => _ is not null).Distinct(StringComparer.Ordinal);
-        return result.Select(path => MetadataReference.CreateFromFile(path)).ToArray();
+        return MetadataReference.CreateFromFile(reference.Path, properties);
     }
 
     /// <summary>Creates a C# compilation from the syntax tree.</summary>
@@ -484,6 +513,12 @@ public class Template
     {
         var syntaxTree = CreateSyntaxTree(source, cancellationToken);
         var compilation = CreateCompilation(syntaxTree);
+        if (IncludedSourceFiles.Count > 0)
+        {
+            var includedSyntaxTrees = IncludedSourceFiles
+                .Select(file => CreateIncludedSyntaxTree(file.Path, cancellationToken));
+            compilation = compilation.AddSyntaxTrees(includedSyntaxTrees);
+        }
 
         using var dllStream = new MemoryStream();
         using var pdbStream = new MemoryStream();

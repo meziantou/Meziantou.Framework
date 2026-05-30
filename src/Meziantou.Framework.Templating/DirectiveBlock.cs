@@ -49,7 +49,31 @@ public class DirectiveBlock : TemplateBlock
         }
         else if (string.Equals(Name, "reference", StringComparison.OrdinalIgnoreCase))
         {
-            Template.ReferencePaths.Add(Value);
+            Template.AssemblyReferences.Add(ParseAssemblyReference(Value));
         }
+        else if (string.Equals(Name, "include", StringComparison.OrdinalIgnoreCase))
+        {
+            Template.IncludedSourceFiles.Add(Value);
+        }
+    }
+
+    private static AssemblyReference ParseAssemblyReference(string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+
+        var trimmedValue = value.Trim();
+        const string AliasPrefix = "alias=";
+        if (trimmedValue.StartsWith(AliasPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var aliasSeparatorIndex = trimmedValue.IndexOfAny([' ', '\t']);
+            if (aliasSeparatorIndex <= AliasPrefix.Length)
+                throw new ArgumentException("The reference directive alias must contain a value.", nameof(value));
+
+            var alias = trimmedValue[AliasPrefix.Length..aliasSeparatorIndex];
+            var path = trimmedValue[(aliasSeparatorIndex + 1)..].TrimStart();
+            return new AssemblyReference(path, alias);
+        }
+
+        return new AssemblyReference(trimmedValue);
     }
 }

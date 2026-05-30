@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Tests;
 
-public class AnsiUtilitiesTests
+public class AnsiTextProcessorTests
 {
     [Theory]
     [InlineData("", "")]
@@ -16,7 +16,7 @@ public class AnsiUtilitiesTests
     [InlineData("Text with\x1b[A cursor up", "Text with cursor up")]
     public void RemoveAnsiSequences_String(string input, string expected)
     {
-        var actual = AnsiUtilities.RemoveAnsiSequences(input);
+        var actual = AnsiTextProcessor.RemoveAnsiSequences(input);
         Assert.Equal(expected, actual);
     }
 
@@ -24,7 +24,7 @@ public class AnsiUtilitiesTests
     public void RemoveAnsiSequences_String_ReturnsOriginalWhenNoSequences()
     {
         var input = "Hello World";
-        var actual = AnsiUtilities.RemoveAnsiSequences(input);
+        var actual = AnsiTextProcessor.RemoveAnsiSequences(input);
         Assert.Same(input, actual);
     }
 
@@ -34,8 +34,8 @@ public class AnsiUtilitiesTests
     [InlineData("No escape sequences here")]
     public void ContainsAnsiSequences_NoSequences(string input)
     {
-        Assert.False(AnsiUtilities.ContainsAnsiSequences(input));
-        Assert.False(AnsiUtilities.ContainsAnsiSequences(input.AsSpan()));
+        Assert.False(AnsiTextProcessor.ContainsAnsiSequences(input));
+        Assert.False(AnsiTextProcessor.ContainsAnsiSequences(input.AsSpan()));
     }
 
     [Theory]
@@ -45,8 +45,8 @@ public class AnsiUtilitiesTests
     [InlineData("\x1b[38;5;208mOrange\x1b[0m")]
     public void ContainsAnsiSequences_HasSequences(string input)
     {
-        Assert.True(AnsiUtilities.ContainsAnsiSequences(input));
-        Assert.True(AnsiUtilities.ContainsAnsiSequences(input.AsSpan()));
+        Assert.True(AnsiTextProcessor.ContainsAnsiSequences(input));
+        Assert.True(AnsiTextProcessor.ContainsAnsiSequences(input.AsSpan()));
     }
 
     [Theory]
@@ -55,7 +55,7 @@ public class AnsiUtilitiesTests
     [InlineData("Text\x1b", "Text\x1b")]
     public void RemoveAnsiSequences_IncompleteSequences(string input, string expected)
     {
-        var actual = AnsiUtilities.RemoveAnsiSequences(input);
+        var actual = AnsiTextProcessor.RemoveAnsiSequences(input);
         Assert.Equal(expected, actual);
     }
 
@@ -64,7 +64,7 @@ public class AnsiUtilitiesTests
     {
         var input = "\x1b[1m\x1b[31m\x1b[4mBold Red Underlined\x1b[0m";
         var expected = "Bold Red Underlined";
-        var actual = AnsiUtilities.RemoveAnsiSequences(input);
+        var actual = AnsiTextProcessor.RemoveAnsiSequences(input);
         Assert.Equal(expected, actual);
     }
 
@@ -73,7 +73,7 @@ public class AnsiUtilitiesTests
     {
         var input = "\x1b[31m日本語\x1b[0m テキスト";
         var expected = "日本語 テキスト";
-        var actual = AnsiUtilities.RemoveAnsiSequences(input);
+        var actual = AnsiTextProcessor.RemoveAnsiSequences(input);
         Assert.Equal(expected, actual);
     }
 }

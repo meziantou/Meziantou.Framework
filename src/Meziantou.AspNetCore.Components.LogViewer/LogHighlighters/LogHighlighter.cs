@@ -10,7 +10,7 @@ internal static class LogHighlighter
         if (text is null)
             return new MarkupString();
 
-        var parsedText = AnsiTextParser.Parse(text);
+        var parsedText = Meziantou.Framework.AnsiTextProcessor.ParseTextWithAnsiStyles(text);
         var visibleText = parsedText.Text;
         var ansiRuns = parsedText.Runs;
 
@@ -104,7 +104,7 @@ internal static class LogHighlighter
         return new MarkupString(result.ToString());
     }
 
-    private static void AppendStyledText(StringBuilder sb, string text, IReadOnlyList<AnsiTextParser.TextRun> ansiRuns, int start, int end, string? attributeName)
+    private static void AppendStyledText(StringBuilder sb, string text, IReadOnlyList<Meziantou.Framework.AnsiTextProcessor.TextRun> ansiRuns, int start, int end, string? attributeName)
     {
         if (start >= end)
             return;
@@ -132,9 +132,9 @@ internal static class LogHighlighter
         }
     }
 
-    private static void AppendStyledSegment(StringBuilder sb, string text, AnsiTextParser.AnsiStyle style, string? attributeName)
+    private static void AppendStyledSegment(StringBuilder sb, string text, Meziantou.Framework.AnsiTextProcessor.AnsiStyle style, string? attributeName)
     {
-        if (style == AnsiTextParser.AnsiStyle.None)
+        if (style == Meziantou.Framework.AnsiTextProcessor.AnsiStyle.None)
         {
             sb.Append(HtmlEncoder.Default.Encode(text));
             return;
@@ -175,7 +175,7 @@ internal static class LogHighlighter
         sb.Append("</span>");
     }
 
-    private static string BuildInlineStyle(AnsiTextParser.AnsiStyle style)
+    private static string BuildInlineStyle(Meziantou.Framework.AnsiTextProcessor.AnsiStyle style)
     {
         var sb = new StringBuilder();
         var foregroundColor = style.Foreground;
@@ -208,9 +208,9 @@ internal static class LogHighlighter
         return sb.ToString();
     }
 
-    private static string ConvertToCssColor(AnsiTextParser.AnsiColor color)
+    private static string ConvertToCssColor(Meziantou.Framework.AnsiTextProcessor.AnsiColor color)
     {
-        if (color.Kind is AnsiTextParser.AnsiColorKind.Rgb)
+        if (color.Kind is Meziantou.Framework.AnsiTextProcessor.AnsiColorKind.Rgb)
             return $"rgb({color.Red}, {color.Green}, {color.Blue})";
 
         return color.IndexedValue switch

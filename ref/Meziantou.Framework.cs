@@ -4,14 +4,6 @@
 
 namespace Meziantou.Framework
 {
-    public static class AnsiUtilities
-    {
-        public static string RemoveAnsiSequences(string value) => throw null;
-        public static string RemoveAnsiSequences(System.ReadOnlySpan<char> value) => throw null;
-        public static bool ContainsAnsiSequences(string value) => throw null;
-        public static bool ContainsAnsiSequences(System.ReadOnlySpan<char> value) => throw null;
-    }
-
     public static class AssemblyUtilities
     {
         public static string? GetInformationalVersion(this System.Reflection.Assembly assembly) => throw null;

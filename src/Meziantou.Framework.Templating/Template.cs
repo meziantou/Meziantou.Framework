@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Templating;
 /// <code><![CDATA[
 /// var template = new Template();
 /// template.Load("Hello <%=Name%>!");
-/// template.AddArgument("Name", typeof(string));
+/// template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 /// var result = template.Run("Meziantou");
 /// // result: "Hello Meziantou!"
 /// ]]></code>
@@ -24,10 +24,6 @@ public class Template
     private static readonly Lock BuildLock = new();
 
     private MethodInfo? _runMethodInfo;
-    private readonly List<TemplateArgument> _arguments = [];
-    private readonly List<string> _implementedInterfaces = [];
-    private readonly List<string> _usings = [];
-    private readonly List<string> _referencePaths = [];
 
     [NotNull]
     private string? ClassName
@@ -64,7 +60,7 @@ public class Template
     public string EndCodeBlockDelimiter { get; set; } = "%>";
 
     /// <summary>Gets the list of parsed blocks after loading a template.</summary>
-    public IList<TemplateBlock> Blocks { get; private set; } = [];
+    public BlockCollection Blocks { get; } = [];
 
     /// <summary>Gets a value indicating whether the template has been built.</summary>
     public bool IsBuilt => _runMethodInfo != null;
@@ -73,182 +69,22 @@ public class Template
     public string? SourceCode { get; private set; }
 
     /// <summary>Gets the list of template arguments.</summary>
-    public IReadOnlyList<TemplateArgument> Arguments => _arguments;
+    public ArgumentCollection Arguments { get; } = [];
 
     /// <summary>Gets the list of using directives.</summary>
-    public IReadOnlyList<string> Usings => _usings;
+    public UsingCollection Usings { get; } = [];
 
     /// <summary>Gets the list of interfaces implemented by the generated template class.</summary>
-    public IReadOnlyList<string> ImplementedInterfaces => _implementedInterfaces;
+    public InterfaceCollection ImplementedInterfaces { get; } = [];
 
     /// <summary>Gets the list of assembly reference paths.</summary>
-    public IReadOnlyList<string> ReferencePaths => _referencePaths;
+    public ReferenceCollection ReferencePaths { get; } = [];
 
     /// <summary>Gets or sets a value indicating whether to compile the template in debug mode.</summary>
     public bool Debug { get; set; }
 
-    /// <summary>Adds a reference to the assembly containing the specified type.</summary>
-    /// <param name="type">The type whose assembly should be referenced.</param>
-    public void AddReference(Type type)
-    {
-        ArgumentNullException.ThrowIfNull(type);
-
-        if (type.Assembly.Location is null)
-            throw new ArgumentException("Assembly has no location.", nameof(type));
-
-        _referencePaths.Add(type.Assembly.Location);
-    }
-
-    /// <summary>Adds an assembly reference path.</summary>
-    /// <param name="assemblyPath">The assembly path to reference.</param>
-    public void AddReference(string assemblyPath)
-    {
-        ArgumentNullException.ThrowIfNull(assemblyPath);
-        _referencePaths.Add(assemblyPath);
-    }
-
-    /// <summary>Adds a using directive for the specified namespace.</summary>
-    /// <param name="namespace">The namespace to import.</param>
-    public void AddUsing(string @namespace)
-    {
-        AddUsing(@namespace, alias: null);
-    }
-
-    /// <summary>Adds a using directive for the specified namespace with an optional alias.</summary>
-    /// <param name="namespace">The namespace to import.</param>
-    /// <param name="alias">The alias for the namespace, or <see langword="null"/> for no alias.</param>
-    public void AddUsing(string @namespace, string? alias)
-    {
-        ArgumentNullException.ThrowIfNull(@namespace);
-
-        if (!string.IsNullOrEmpty(alias))
-        {
-            _usings.Add(alias + " = " + @namespace);
-        }
-        else
-        {
-            _usings.Add(@namespace);
-        }
-    }
-
-    /// <summary>Adds a using directive for the namespace of the specified type and a reference to its assembly.</summary>
-    /// <param name="type">The type whose namespace should be imported.</param>
-    public void AddUsing(Type type)
-    {
-        AddUsing(type, alias: null);
-    }
-
-    /// <summary>Adds a using directive for the specified type with an optional alias, and a reference to its assembly.</summary>
-    /// <param name="type">The type to import.</param>
-    /// <param name="alias">The alias for the type, or <see langword="null"/> for no alias.</param>
-    public void AddUsing(Type type, string? alias)
-    {
-        ArgumentNullException.ThrowIfNull(type);
-
-        if (!string.IsNullOrEmpty(alias))
-        {
-            _usings.Add(alias + " = " + GetFriendlyTypeName(type));
-        }
-        else
-        {
-            if (type.Namespace is not null)
-            {
-                _usings.Add(type.Namespace);
-            }
-        }
-
-        AddReference(type);
-    }
-
-    private static string GetFriendlyTypeName(Type type)
-    {
-        ArgumentNullException.ThrowIfNull(type);
-
-        var friendlyName = type.Name;
-        if (type.IsGenericType)
-        {
-            var iBacktick = friendlyName.IndexOf('`', StringComparison.Ordinal);
-            if (iBacktick > 0)
-            {
-                friendlyName = friendlyName[..iBacktick];
-            }
-
-            friendlyName += "<";
-            var typeParameters = type.GetGenericArguments();
-            for (var i = 0; i < typeParameters.Length; ++i)
-            {
-                var typeParamName = GetFriendlyTypeName(typeParameters[i]);
-                friendlyName += i == 0 ? typeParamName : "," + typeParamName;
-            }
-
-            friendlyName += ">";
-            friendlyName = type.Namespace + "." + friendlyName;
-        }
-        else
-        {
-            if (type.FullName is null)
-                throw new ArgumentException("type has no FullName", nameof(type));
-
-            friendlyName = type.FullName;
-        }
-
-        return friendlyName.Replace('+', '.');
-    }
-
-    /// <summary>Adds a template argument with dynamic type.</summary>
-    /// <param name="name">The name of the argument.</param>
-    public void AddArgument(string name)
-    {
-        AddArgument(name, type: null);
-    }
-
-    /// <summary>Adds a template argument with the specified type.</summary>
-    /// <typeparam name="T">The type of the argument.</typeparam>
-    /// <param name="name">The name of the argument.</param>
-    public void AddArgument<T>(string name)
-    {
-        AddArgument(name, typeof(T));
-    }
-
-    /// <summary>Adds a template argument with the specified type.</summary>
-    /// <param name="name">The name of the argument.</param>
-    /// <param name="type">The type of the argument, or <see langword="null"/> for dynamic type.</param>
-    public void AddArgument(string name, Type? type)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-
-        _arguments.Add(new TemplateArgument(name, type));
-        if (type != null)
-        {
-            AddReference(type);
-        }
-    }
-
-    /// <summary>Adds multiple template arguments from a dictionary, inferring types from the values.</summary>
-    /// <param name="arguments">A dictionary of argument names and values.</param>
-    public void AddArguments(IReadOnlyDictionary<string, object?> arguments)
-    {
-        ArgumentNullException.ThrowIfNull(arguments);
-
-        foreach (var argument in arguments)
-        {
-            AddArgument(argument.Key, argument.Value?.GetType());
-        }
-    }
-
-    /// <summary>Adds multiple template arguments with dynamic types.</summary>
-    /// <param name="arguments">The names of the arguments.</param>
-    public void AddArguments(params string[] arguments)
-    {
-        foreach (var argument in arguments)
-        {
-            AddArgument(argument);
-        }
-    }
-
     /// <summary>Loads the template from a string.</summary>
     /// <param name="text">The template text containing code blocks.</param>
-    [MemberNotNull(nameof(Blocks))]
     public void Load(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -273,8 +109,6 @@ public class Template
 
         if (IsBuilt)
             throw new InvalidOperationException("Template is already built.");
-
-        _implementedInterfaces.Clear();
 
         var blocks = new List<TemplateBlock>();
         var isInBlock = false;
@@ -362,7 +196,8 @@ public class Template
         }
 
         blocks.Sort(TemplateBlockComparer.IndexComparer);
-        Blocks = blocks;
+        Blocks.Clear();
+        Blocks.AddRange(blocks);
     }
 
     private TemplateBlock? CreateBlock(bool codeBlock, string text, int index, TextPosition start, TextPosition end)
@@ -432,9 +267,6 @@ public class Template
     /// <param name="cancellationToken">A cancellation token to observe.</param>
     public void Build(CancellationToken cancellationToken)
     {
-        if (Blocks is null)
-            throw new InvalidOperationException("Template is not loaded.");
-
         if (IsBuilt)
             return;
 
@@ -514,16 +346,15 @@ public class Template
             var source = sw.ToString();
             SourceCode = source;
             Compile(source, cancellationToken);
+            if (IsBuilt)
+            {
+                FreezeCollections();
+            }
         }
     }
 
     private void ApplyDirectives()
     {
-        if (Blocks is null)
-            throw new InvalidOperationException("Template is not loaded.");
-
-        _implementedInterfaces.Clear();
-
         foreach (var block in Blocks)
         {
             if (block is DirectiveBlock directive)
@@ -562,10 +393,13 @@ public class Template
         return new DirectiveBlock(this, text, index, name, value);
     }
 
-    internal void AddImplementedInterface(string interfaceName)
+    private void FreezeCollections()
     {
-        ArgumentNullException.ThrowIfNull(interfaceName);
-        _implementedInterfaces.Add(interfaceName);
+        Arguments.Freeze();
+        Usings.Freeze();
+        ImplementedInterfaces.Freeze();
+        ReferencePaths.Freeze();
+        Blocks.Freeze();
     }
 
     /// <summary>Creates a syntax tree from the generated source code.</summary>

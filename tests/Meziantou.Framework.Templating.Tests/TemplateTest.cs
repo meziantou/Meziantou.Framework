@@ -56,7 +56,7 @@ public class TemplateTest
         // Arrange
         var template = new Template();
         template.Load("Hello <%=Name%>!");
-        template.AddArgument("Name", typeof(string));
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 
         // Act
         var result = template.Run("Meziantou");
@@ -73,7 +73,10 @@ public class TemplateTest
         {
             { "Name", "Meziantou" },
         };
-        template.AddArguments(arguments);
+        foreach (var argument in arguments)
+        {
+            template.Arguments.Add(new TemplateArgument(argument.Key, argument.Value?.GetType()));
+        }
 
         // Act
         var result = template.Run(arguments);
@@ -97,7 +100,7 @@ public class TemplateTest
     {
         // Arrange
         var template = new Template();
-        template.AddArgument("Name");
+        template.Arguments.Add(new TemplateArgument("Name", type: null));
         template.Load("Hello <%= Name %>!");
 
         // Act
@@ -202,22 +205,22 @@ public class TemplateTest
     [Fact]
     public void Template_Directives_HavePositionMetadata()
     {
-        const string source = """
+        const string Source = """
             line1
             <%@ outputextension .cs %>
             line3
             """;
         var template = new Template();
-        template.Load(source);
+        template.Load(Source);
 
         var directive = Assert.Single(template.Blocks!.OfType<DirectiveBlock>());
         Assert.Equal(2, directive.Start.Line);
         Assert.Equal(3, directive.Start.Column);
-        Assert.Equal(source.IndexOf(directive.Text, StringComparison.Ordinal), directive.Start.Index);
+        Assert.Equal(Source.IndexOf(directive.Text, StringComparison.Ordinal), directive.Start.Index);
         Assert.Equal(2, directive.End.Line);
         Assert.True(directive.End.Column > directive.Start.Column);
         Assert.Equal(directive.Text.Length, directive.Span.Length);
-        Assert.Equal(directive.Text, source.AsSpan(directive.Start.Index, directive.Span.Length).ToString());
+        Assert.Equal(directive.Text, Source.AsSpan(directive.Start.Index, directive.Span.Length).ToString());
     }
 
     [Fact]
@@ -235,29 +238,29 @@ public class TemplateTest
     [Fact]
     public void Template_Blocks_HaveSpanMatchingOriginalText()
     {
-        const string source = "A<%= 1 %>B";
+        const string Source = "A<%= 1 %>B";
         var template = new Template();
-        template.Load(source);
+        template.Load(Source);
 
         foreach (var block in template.Blocks!)
         {
             Assert.Equal(block.Text.Length, block.Span.Length);
-            Assert.Equal(block.Text, source.AsSpan(block.Start.Index, block.Span.Length).ToString());
+            Assert.Equal(block.Text, Source.AsSpan(block.Start.Index, block.Span.Length).ToString());
         }
     }
 
     [Fact]
     public void Template_Blocks_HaveCorrectSpanWithCRLF()
     {
-        const string source = "line1\r\n<%= 1 %>\r\nline3";
+        const string Source = "line1\r\n<%= 1 %>\r\nline3";
         var template = new Template();
-        template.Load(source);
+        template.Load(Source);
 
         var codeBlock = Assert.Single(template.Blocks!.OfType<CodeBlock>());
         Assert.Equal(2, codeBlock.Start.Line);
         Assert.Equal(3, codeBlock.Start.Column);
         Assert.Equal(codeBlock.Text.Length, codeBlock.Span.Length);
-        Assert.Equal(codeBlock.Text, source.AsSpan(codeBlock.Start.Index, codeBlock.Span.Length).ToString());
+        Assert.Equal(codeBlock.Text, Source.AsSpan(codeBlock.Start.Index, codeBlock.Span.Length).ToString());
     }
 
     [Fact]
@@ -293,6 +296,94 @@ public class TemplateTest
         Assert.True(span3 > span1);
         Assert.Equal(2, span1.Length);
         Assert.Contains("..", span1.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Template_Collections_CanBeModifiedBeforeBuild()
+    {
+        var template = new Template();
+        var argument = new TemplateArgument("Value", typeof(int));
+        template.Arguments.Add(argument);
+        template.Usings.Add("System");
+        template.ReferencePaths.Add("path/to/assembly.dll");
+        template.ImplementedInterfaces.Add("IFoo");
+        template.Load("Hello");
+
+        var customBlock = new TextBlock(template, "!", index: 10);
+        template.Blocks.Add(customBlock);
+
+        Assert.Contains(argument, template.Arguments);
+        Assert.Contains("System", template.Usings);
+        Assert.Contains("path/to/assembly.dll", template.ReferencePaths);
+        Assert.Contains("IFoo", template.ImplementedInterfaces);
+        Assert.Contains(customBlock, template.Blocks);
+
+        Assert.True(template.Arguments.Remove(argument));
+        Assert.True(template.Usings.Remove("System"));
+        Assert.True(template.ReferencePaths.Remove("path/to/assembly.dll"));
+        Assert.True(template.ImplementedInterfaces.Remove("IFoo"));
+        Assert.True(template.Blocks.Remove(customBlock));
+    }
+
+    [Fact]
+    public void Template_Load_ThrowsOnceBuilt()
+    {
+        var template = new Template();
+        template.Load("text");
+        template.Build(CancellationToken.None);
+
+        Assert.Throws<InvalidOperationException>(() => template.Load("another text"));
+    }
+
+    [Fact]
+    public void Template_Collections_ValidateNullAndEmptyItems()
+    {
+        var template = new Template();
+
+        Assert.Throws<ArgumentNullException>(() => template.Arguments.Add(null!));
+        Assert.Throws<ArgumentNullException>(() => template.Usings.Add(null!));
+        Assert.Throws<ArgumentNullException>(() => template.ReferencePaths.Add(null!));
+        Assert.Throws<ArgumentNullException>(() => template.ImplementedInterfaces.Add(null!));
+        Assert.Throws<ArgumentNullException>(() => template.Blocks.Add(null!));
+
+        Assert.Throws<ArgumentException>(() => template.Arguments.Add(new TemplateArgument(string.Empty, typeof(int))));
+        Assert.Throws<ArgumentException>(() => template.Usings.Add(string.Empty));
+        Assert.Throws<ArgumentException>(() => template.ReferencePaths.Add(string.Empty));
+        Assert.Throws<ArgumentException>(() => template.ImplementedInterfaces.Add(string.Empty));
+    }
+
+    [Fact]
+    public void Template_Collections_AreFrozenAfterBuild()
+    {
+        var template = new Template();
+        template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+        template.Load("Hello <%= Name %>!");
+
+        template.Build(CancellationToken.None);
+
+        Assert.True(template.Arguments.IsFrozen);
+        Assert.True(template.Usings.IsFrozen);
+        Assert.True(template.ReferencePaths.IsFrozen);
+        Assert.True(template.ImplementedInterfaces.IsFrozen);
+        Assert.True(template.Blocks.IsFrozen);
+
+        Assert.Throws<InvalidOperationException>(() => template.Arguments.Add(new TemplateArgument("Other", typeof(string))));
+        Assert.Throws<InvalidOperationException>(() => template.Usings.Add("System"));
+        Assert.Throws<InvalidOperationException>(() => template.ReferencePaths.Add("path/to/assembly.dll"));
+        Assert.Throws<InvalidOperationException>(() => template.ImplementedInterfaces.Add("IFoo"));
+        Assert.Throws<InvalidOperationException>(() => template.Blocks.Add(new TextBlock(template, "!", index: 10)));
+    }
+
+    [Fact]
+    public void Template_ManualInterfaces_AreNotClearedByDirectiveApplication()
+    {
+        var template = new TemplateWithoutCompilation();
+        template.ImplementedInterfaces.Add("IManual");
+        template.Load("<%@implements IDirective %>");
+
+        template.Build(CancellationToken.None);
+
+        Assert.Equal(["IManual", "IDirective"], template.ImplementedInterfaces);
     }
 
     [Fact]

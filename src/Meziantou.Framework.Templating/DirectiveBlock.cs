@@ -34,7 +34,7 @@ public class DirectiveBlock : TemplateBlock
     {
         if (string.Equals(Name, "using", StringComparison.OrdinalIgnoreCase))
         {
-            Template.AddUsing(Value);
+            Template.Usings.Add(Value);
         }
         else if (string.Equals(Name, "inherits", StringComparison.OrdinalIgnoreCase))
         {
@@ -44,12 +44,12 @@ public class DirectiveBlock : TemplateBlock
         {
             foreach (var @interface in Value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             {
-                Template.AddImplementedInterface(@interface);
+                Template.ImplementedInterfaces.Add(@interface);
             }
         }
         else if (string.Equals(Name, "reference", StringComparison.OrdinalIgnoreCase))
         {
-            Template.AddReference(Value);
+            Template.ReferencePaths.Add(Value);
         }
     }
 }

@@ -34,7 +34,7 @@ Add parameters to make your templates dynamic:
 ```csharp
 var template = new Template();
 template.Load("Hello <%=Name%>!");
-template.AddArgument("Name", typeof(string));
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 var result = template.Run("Meziantou");
 // result: "Hello Meziantou!"
 ```
@@ -50,7 +50,10 @@ var arguments = new Dictionary<string, object>
 {
     { "Name", "Meziantou" }
 };
-template.AddArguments(arguments);
+foreach (var argument in arguments)
+{
+    template.Arguments.Add(new TemplateArgument(argument.Key, argument.Value?.GetType()));
+}
 var result = template.Run(arguments);
 // result: "Hello Meziantou!"
 ```
@@ -125,7 +128,7 @@ var template = new Template
     EndCodeBlockDelimiter = "}}"
 };
 template.Load("Hello {{=Name}}!");
-template.AddArgument("Name", typeof(string));
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 var result = template.Run("World");
 // result: "Hello World!"
 ```
@@ -136,7 +139,7 @@ Import namespaces to use types without fully-qualified names:
 
 ```csharp
 var template = new Template();
-template.AddUsing("System.Linq");
+template.Usings.Add("System.Linq");
 template.Load("<%= Enumerable.Range(1, 5).Sum() %>");
 var result = template.Run();
 // result: "15"
@@ -146,7 +149,7 @@ You can also import types with aliases:
 
 ```csharp
 var template = new Template();
-template.AddUsing(typeof(System.Text.StringBuilder), "SB");
+template.Usings.Add("SB = System.Text.StringBuilder");
 template.Load("<% var sb = new SB(); sb.Append(\"Hello\"); %><%= sb.ToString() %>");
 var result = template.Run();
 // result: "Hello"
@@ -171,7 +174,7 @@ Use dynamic parameters when types are not known at compile time:
 ```csharp
 var template = new Template();
 template.Load("Value: <%=Value%>");
-template.AddArgument("Value"); // No type specified = dynamic
+template.Arguments.Add(new TemplateArgument("Value", type: null)); // No type specified = dynamic
 var result = template.Run(42);
 // result: "Value: 42"
 ```
@@ -183,7 +186,7 @@ Templates can be built (compiled) separately from execution:
 ```csharp
 var template = new Template();
 template.Load("Hello <%=Name%>");
-template.AddArgument("Name", typeof(string));
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 
 // Compile the template
 template.Build(CancellationToken.None);
@@ -203,7 +206,7 @@ var template = new Template
     Debug = true
 };
 template.Load("<%=Value%>");
-template.AddArgument("Value", typeof(int));
+template.Arguments.Add(new TemplateArgument("Value", typeof(int)));
 var result = template.Run(42);
 ```
 
@@ -214,7 +217,7 @@ After building a template, you can inspect the generated C# source code:
 ```csharp
 var template = new Template();
 template.Load("Hello <%=Name%>");
-template.AddArgument("Name", typeof(string));
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 template.Build(CancellationToken.None);
 
 Console.WriteLine(template.SourceCode);

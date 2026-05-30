@@ -1,6 +1,9 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Templating;
 
 /// <summary>Represents a span in text, from a start position to an end position (exclusive).</summary>
+[StructLayout(LayoutKind.Auto)]
 public readonly struct TextSpan : IEquatable<TextSpan>, IComparable<TextSpan>, IComparable
 {
     public TextSpan(TextPosition start, TextPosition end)
@@ -26,7 +29,7 @@ public readonly struct TextSpan : IEquatable<TextSpan>, IComparable<TextSpan>, I
         return Start.Equals(other.Start) && End.Equals(other.End);
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         return obj is TextSpan other && Equals(other);
     }

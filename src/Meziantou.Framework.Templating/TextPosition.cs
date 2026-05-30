@@ -1,6 +1,9 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Templating;
 
 /// <summary>Represents a position in text using line, column, and absolute character index.</summary>
+[StructLayout(LayoutKind.Auto)]
 public readonly struct TextPosition : IEquatable<TextPosition>, IComparable<TextPosition>, IComparable
 {
     public TextPosition(int line, int column, int index)
@@ -28,7 +31,7 @@ public readonly struct TextPosition : IEquatable<TextPosition>, IComparable<Text
         return Line == other.Line && Column == other.Column && Index == other.Index;
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         return obj is TextPosition other && Equals(other);
     }
@@ -40,15 +43,7 @@ public readonly struct TextPosition : IEquatable<TextPosition>, IComparable<Text
 
     public int CompareTo(TextPosition other)
     {
-        var result = Index.CompareTo(other.Index);
-        if (result != 0)
-            return result;
-
-        result = Line.CompareTo(other.Line);
-        if (result != 0)
-            return result;
-
-        return Column.CompareTo(other.Column);
+        return Index.CompareTo(other.Index);
     }
 
     public int CompareTo(object? obj)

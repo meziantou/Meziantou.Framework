@@ -303,7 +303,7 @@ public class Template
 
     private static bool IsLineOnlyTrimmableBlock(TemplateBlock block)
     {
-        return block is DirectiveBlock or ClassMemberBlock || block is CodeBlock { IsExpression: false };
+        return block is DirectiveBlock or ClassMemberBlock or CodeBlock { IsExpression: false };
     }
 
     private static bool TryGetTrailingLineWhitespaceLengthFromLastTextBlock(List<TemplateBlock> blocks, out int trailingWhitespaceLength)
@@ -321,8 +321,8 @@ public class Template
         }
 
         var text = textBlock.Text;
-        var lastCarriageReturnIndex = text.LastIndexOf('\r');
-        var lastLineFeedIndex = text.LastIndexOf('\n');
+        var lastCarriageReturnIndex = text.LastIndexOf('\r', StringComparison.Ordinal);
+        var lastLineFeedIndex = text.LastIndexOf('\n', StringComparison.Ordinal);
         var lastNewLineIndex = Math.Max(lastCarriageReturnIndex, lastLineFeedIndex);
         var trailingText = text.AsSpan(lastNewLineIndex + 1);
         foreach (var character in trailingText)

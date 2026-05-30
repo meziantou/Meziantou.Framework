@@ -24,9 +24,10 @@
         new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(5), Message = "test", LogLevel = LogLevel.Error },
 		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(6), Message = "test", LogLevel = LogLevel.Critical },
 		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(10), Message = "test test    test test test\n\ttest test test test test test test", LogLevel = LogLevel.Information },
-		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(14), Message = "test data", LogLevel = LogLevel.Information,
-			Data = new
+		new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(14), LogLevel = LogLevel.Information,
+			Message = new
 			{
+				Text = "test data",
 				Null = (object?)null,
 				A = "test",
 				B = 10,
@@ -35,6 +36,43 @@
 			}
 		},
 		new LogEntry{ Timestamp = DateTime.UtcNow, Message = "test http://example.com 'value' \"value\" test", LogLevel = LogLevel.Information },
+		new LogEntry
+		{
+			Timestamp = DateTime.UtcNow.AddSeconds(20),
+			Message = "Handling request (expanded by default)",
+			LogLevel = LogLevel.Information,
+			Expanded = true,
+			Children = new List<LogEntry>
+			{
+				new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(20), Message = "Validating input", LogLevel = LogLevel.Debug },
+				new LogEntry
+				{
+					Timestamp = DateTime.UtcNow.AddSeconds(21),
+					Message = "Querying database",
+					LogLevel = LogLevel.Information,
+					Children = new List<LogEntry>
+					{
+						new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(21), Message = "Opening connection", LogLevel = LogLevel.Trace },
+						new LogEntry
+						{
+							Timestamp = DateTime.UtcNow.AddSeconds(22),
+							LogLevel = LogLevel.Information,
+							Message = new
+							{
+								Text = "Executing query",
+								Sql = "SELECT * FROM Users",
+								Duration = TimeSpan.FromMilliseconds(12),
+							},
+							Children = new List<LogEntry>
+							{
+								new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(22), Message = "Row read", LogLevel = LogLevel.Trace },
+							},
+						},
+					},
+				},
+				new LogEntry{ Timestamp = DateTime.UtcNow.AddSeconds(23), Message = "Request completed", LogLevel = LogLevel.Information },
+			},
+		},
 	};
 
     protected override void OnInitialized()

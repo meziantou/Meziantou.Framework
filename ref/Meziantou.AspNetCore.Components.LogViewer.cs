@@ -19,8 +19,9 @@ namespace Meziantou.AspNetCore.Components
     {
         public System.DateTimeOffset Timestamp { get => throw null; set { } }
         public Meziantou.AspNetCore.Components.LogLevel LogLevel { get => throw null; set { } }
-        public string? Message { get => throw null; set { } }
-        public object? Data { get => throw null; set { } }
+        public object? Message { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Components.LogEntry>? Children { get => throw null; set { } }
+        public bool Expanded { get => throw null; set { } }
     }
 
     public class LogEntryDetails : Microsoft.AspNetCore.Components.ComponentBase
@@ -71,6 +72,7 @@ namespace Meziantou.AspNetCore.Components
         public bool ShowLineNumbers { get => throw null; set { } }
         public System.Collections.Generic.IEnumerable<Meziantou.AspNetCore.Components.ILogHighlighter> LogHighlighters { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) { }
+        protected override void OnParametersSet() { }
     }
 
     public sealed class QuoteLogHighlighter : Meziantou.AspNetCore.Components.ILogHighlighter

@@ -59,9 +59,8 @@
     cursor: pointer;
     user-select: none;
     color: var(--color-log-information);
-    align-self: center;
+    align-self: flex-start;
     font-size: smaller;
-    margin-right: 5px;
     display: inline-block;
 }
 
@@ -69,13 +68,16 @@
         transform: rotate(90deg);
     }
 
-.log-details {
-    color: var(--color-log-information);
-    padding-left: 68px;
+.log-content {
+    display: flex;
+    align-items: flex-start;
+    column-gap: 5px;
+    min-width: 0;
 }
 
 .log-message {
     overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .log-trace {
@@ -110,4 +112,3 @@
     color: inherit;
     text-decoration: underline;
 }
-

@@ -85,7 +85,7 @@ A Blazor component for displaying and analyzing log entries with support for fil
 }
 ```
 
-### Log Entries with Structured Data
+### Log Entries with Structured Messages
 
 ```razor
 @code {
@@ -94,10 +94,10 @@ A Blazor component for displaying and analyzing log entries with support for fil
         new LogEntry
         {
             Timestamp = DateTimeOffset.UtcNow,
-            Message = "Request completed with details",
             LogLevel = LogLevel.Information,
-            Data = new
+            Message = new
             {
+                Text = "Request completed with details",
                 UserId = 123,
                 Endpoint = "/api/users",
                 Duration = TimeSpan.FromMilliseconds(245),
@@ -112,4 +112,46 @@ A Blazor component for displaying and analyzing log entries with support for fil
 }
 ```
 
-When log entries have `Data` attached, users can click to expand and view the details in either table or JSON format.
+When `Message` is a string, it is displayed as highlighted text. For non-string `Message` values, the structured payload is rendered inline and can be viewed as either a table or JSON.
+
+### Hierarchical / Nested Logs
+
+A `LogEntry` can contain child entries via the `Children` property, with an unlimited number of levels.
+Each entry is independently collapsible. Set `Expanded = true` on an entry to make it start expanded
+(the default is collapsed). The toggle controls nested children.
+
+```razor
+@code {
+    private List<LogEntry> logEntries = new()
+    {
+        new LogEntry
+        {
+            Timestamp = DateTimeOffset.UtcNow,
+            Message = "Handling request",
+            LogLevel = LogLevel.Information,
+            Expanded = true,
+            Children = new List<LogEntry>
+            {
+                new LogEntry
+                {
+                    Timestamp = DateTimeOffset.UtcNow,
+                    Message = "Querying database",
+                    LogLevel = LogLevel.Debug,
+                    Children = new List<LogEntry>
+                    {
+                        new LogEntry
+                        {
+                            Timestamp = DateTimeOffset.UtcNow,
+                            Message = "Executing query",
+                            LogLevel = LogLevel.Trace,
+                        },
+                    },
+                },
+            },
+        },
+    };
+}
+```
+
+Line numbers count every entry in the tree (including collapsed children), so the numbers stay stable
+when you expand or collapse nodes.

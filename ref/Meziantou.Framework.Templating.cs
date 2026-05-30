@@ -9,15 +9,50 @@ namespace Meziantou.Framework.Templating
         protected override void ValidateItem(Meziantou.Framework.Templating.TemplateArgument item) { }
     }
 
+    public sealed class AssemblyReference : System.IEquatable<Meziantou.Framework.Templating.AssemblyReference>
+    {
+        public string Path { get => throw null; }
+        public string? Alias { get => throw null; }
+        public AssemblyReference(string path, string? alias = null) { }
+        public static Meziantou.Framework.Templating.AssemblyReference From(System.Type type) => throw null;
+        public static Meziantou.Framework.Templating.AssemblyReference From(System.Reflection.Assembly assembly) => throw null;
+        public static Meziantou.Framework.Templating.AssemblyReference From(System.Reflection.Module module) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator !=(Meziantou.Framework.Templating.AssemblyReference? left, Meziantou.Framework.Templating.AssemblyReference? right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Templating.AssemblyReference? left, Meziantou.Framework.Templating.AssemblyReference? right) => throw null;
+        public override int GetHashCode() => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.Templating.AssemblyReference? other) => throw null;
+    }
+
+    public sealed class AssemblyReferenceCollection : Meziantou.Framework.Templating.FreezableCollection<Meziantou.Framework.Templating.AssemblyReference>
+    {
+        public void Add(System.Type type) { }
+        public void Add(System.Type type, string alias) { }
+        public void Add(System.Reflection.Assembly assembly) { }
+        public void Add(System.Reflection.Assembly assembly, string alias) { }
+        public void Add(System.Reflection.Module module) { }
+        public void Add(System.Reflection.Module module, string alias) { }
+        public void Add(string path) { }
+        public void Add(string path, string alias) { }
+        protected override void ValidateItem(Meziantou.Framework.Templating.AssemblyReference item) { }
+    }
+
     public sealed class BlockCollection : Meziantou.Framework.Templating.FreezableCollection<Meziantou.Framework.Templating.TemplateBlock>
     {
         protected override void ValidateItem(Meziantou.Framework.Templating.TemplateBlock item) { }
     }
 
+    public class ClassMemberBlock : Meziantou.Framework.Templating.TemplateBlock
+    {
+        public ClassMemberBlock(Meziantou.Framework.Templating.Template template, string text, int index) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
+        public override string BuildCode() => throw null;
+    }
+
     public class CodeBlock : Meziantou.Framework.Templating.TemplateBlock
     {
-        protected string EvalPrefixString { get => throw null; set { } }
-        public CodeBlock(Meziantou.Framework.Templating.Template template, string text, int index) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
+        public bool IsExpression { get => throw null; }
+        public CodeBlock(Meziantou.Framework.Templating.Template template, string text, int index, bool isExpression = false) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
         public override string BuildCode() => throw null;
     }
 
@@ -28,6 +63,24 @@ namespace Meziantou.Framework.Templating
         public DirectiveBlock(Meziantou.Framework.Templating.Template template, string text, int index, string name, string value) : base(default(Meziantou.Framework.Templating.Template), default(string), default(int)) { }
         public override string BuildCode() => throw null;
         public virtual void ApplyDirective() { }
+    }
+
+    public sealed class FileReference : System.IEquatable<Meziantou.Framework.Templating.FileReference>
+    {
+        public string Path { get => throw null; }
+        public FileReference(string path) { }
+        public override string ToString() => throw null;
+        public static bool operator !=(Meziantou.Framework.Templating.FileReference? left, Meziantou.Framework.Templating.FileReference? right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Templating.FileReference? left, Meziantou.Framework.Templating.FileReference? right) => throw null;
+        public override int GetHashCode() => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.Templating.FileReference? other) => throw null;
+    }
+
+    public sealed class FileReferenceCollection : Meziantou.Framework.Templating.FreezableCollection<Meziantou.Framework.Templating.FileReference>
+    {
+        public void Add(string path) { }
+        protected override void ValidateItem(Meziantou.Framework.Templating.FileReference item) { }
     }
 
     public abstract class FreezableCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
@@ -107,11 +160,6 @@ namespace Meziantou.Framework.Templating
         public virtual void Write(string format, params object?[] args) { }
     }
 
-    public sealed class ReferenceCollection : Meziantou.Framework.Templating.FreezableCollection<string>
-    {
-        protected override void ValidateItem(string item) { }
-    }
-
     public class Template
     {
         public string? OutputParameterName { get => throw null; set { } }
@@ -125,15 +173,20 @@ namespace Meziantou.Framework.Templating
         public Meziantou.Framework.Templating.ArgumentCollection Arguments { get => throw null; }
         public Meziantou.Framework.Templating.UsingCollection Usings { get => throw null; }
         public Meziantou.Framework.Templating.InterfaceCollection ImplementedInterfaces { get => throw null; }
-        public Meziantou.Framework.Templating.ReferenceCollection ReferencePaths { get => throw null; }
+        public Meziantou.Framework.Templating.AssemblyReferenceCollection AssemblyReferences { get => throw null; }
+        public Meziantou.Framework.Templating.FileReferenceCollection IncludedSourceFiles { get => throw null; }
         public bool Debug { get => throw null; set { } }
         public void Load(string text) { }
         public void Load(System.IO.TextReader reader) { }
         public void Build(System.Threading.CancellationToken cancellationToken) { }
         protected virtual Meziantou.Framework.Templating.TextBlock CreateTextBlock(string text, int index) => throw null;
         protected virtual Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
+        protected virtual Meziantou.Framework.Templating.CodeBlock CreateCodeExpressionBlock(string text, int index) => throw null;
+        protected virtual Meziantou.Framework.Templating.ClassMemberBlock CreateClassMemberBlock(string text, int index) => throw null;
         protected virtual Meziantou.Framework.Templating.DirectiveBlock CreateDirectiveBlock(string text, string name, string value, int index) => throw null;
+        protected virtual Microsoft.CodeAnalysis.CSharp.CSharpParseOptions CreateParseOptions() => throw null;
         protected virtual Microsoft.CodeAnalysis.SyntaxTree CreateSyntaxTree(string source, System.Threading.CancellationToken cancellationToken) => throw null;
+        protected virtual Microsoft.CodeAnalysis.SyntaxTree CreateIncludedSyntaxTree(string sourcePath, System.Threading.CancellationToken cancellationToken) => throw null;
         protected virtual Microsoft.CodeAnalysis.MetadataReference[] CreateReferences() => throw null;
         protected virtual Microsoft.CodeAnalysis.CSharp.CSharpCompilation CreateCompilation(Microsoft.CodeAnalysis.SyntaxTree syntaxTree) => throw null;
         protected virtual Microsoft.CodeAnalysis.Emit.EmitOptions CreateEmitOptions() => throw null;

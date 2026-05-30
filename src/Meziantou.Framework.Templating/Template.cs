@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.Templating;
 
@@ -77,8 +78,11 @@ public class Template
     /// <summary>Gets the list of interfaces implemented by the generated template class.</summary>
     public InterfaceCollection ImplementedInterfaces { get; } = [];
 
-    /// <summary>Gets the list of assembly reference paths.</summary>
-    public ReferenceCollection ReferencePaths { get; } = [];
+    /// <summary>Gets the list of assembly references used for template compilation.</summary>
+    public AssemblyReferenceCollection AssemblyReferences { get; } = [];
+
+    /// <summary>Gets the list of C# source files included in the template compilation.</summary>
+    public FileReferenceCollection IncludedSourceFiles { get; } = [];
 
     /// <summary>Gets or sets a value indicating whether to compile the template in debug mode.</summary>
     public bool Debug { get; set; }
@@ -203,9 +207,20 @@ public class Template
     private TemplateBlock? CreateBlock(bool codeBlock, string text, int index, TextPosition start, TextPosition end)
     {
         TemplateBlock block;
-        if (codeBlock && TryParseDirective(text, out var name, out var value))
+        if (codeBlock && TryParseDirective(text, out var blockText, out var name, out var value))
         {
-            block = CreateDirectiveBlock(text, name, value, index);
+            block = CreateDirectiveBlock(blockText, name, value, index);
+            start = MoveForward(start);
+        }
+        else if (codeBlock && TryRemovePrefix(text, '+', out blockText))
+        {
+            block = CreateClassMemberBlock(blockText, index);
+            start = MoveForward(start);
+        }
+        else if (codeBlock && TryRemovePrefix(text, '=', out blockText))
+        {
+            block = CreateCodeExpressionBlock(blockText, index);
+            start = MoveForward(start);
         }
         else
         {
@@ -216,19 +231,20 @@ public class Template
         return block;
     }
 
-    private static bool TryParseDirective(string text, [NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? value)
+    private static bool TryParseDirective(string text, [NotNullWhen(true)] out string? blockText, [NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? value)
     {
-        var trimmedText = text.Trim();
-        if (!trimmedText.StartsWith('@', StringComparison.Ordinal))
+        if (!TryRemovePrefix(text, '@', out var directiveBlockText))
         {
+            blockText = null;
             name = null;
             value = null;
             return false;
         }
 
-        var directiveText = trimmedText[1..].TrimStart();
+        var directiveText = directiveBlockText.TrimStart();
         if (directiveText.Length == 0)
         {
+            blockText = null;
             name = null;
             value = null;
             return false;
@@ -236,6 +252,7 @@ public class Template
 
         if (!char.IsLetter(directiveText[0]))
         {
+            blockText = null;
             name = null;
             value = null;
             return false;
@@ -255,12 +272,33 @@ public class Template
 
         if (name.Length == 0)
         {
+            blockText = null;
             name = null;
             value = null;
             return false;
         }
 
+        blockText = directiveBlockText;
         return true;
+    }
+
+    private static bool TryRemovePrefix(string text, char prefix, [NotNullWhen(true)] out string? value)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        if (text.Length > 0 && text[0] == prefix)
+        {
+            value = text[1..];
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    private static TextPosition MoveForward(TextPosition position)
+    {
+        return new TextPosition(position.Line, position.Column + 1, position.Index + 1);
     }
 
     /// <summary>Compiles the template into executable code.</summary>
@@ -329,11 +367,23 @@ public class Template
 
                 foreach (var block in Blocks)
                 {
+                    if (block is ClassMemberBlock)
+                        continue;
+
                     tw.WriteLine(block.BuildCode());
                 }
 
                 tw.Indent--;
                 tw.WriteLine("}");
+
+                foreach (var block in Blocks)
+                {
+                    if (block is not ClassMemberBlock)
+                        continue;
+
+                    tw.WriteLine(block.BuildCode());
+                }
+
                 tw.Indent--;
                 tw.WriteLine("}");
             }
@@ -377,8 +427,26 @@ public class Template
         return new CodeBlock(this, text, index);
     }
 
+    /// <summary>Creates a code block for an evaluation expression.</summary>
+    /// <param name="text">The expression content.</param>
+    /// <param name="index">The block index.</param>
+    /// <returns>A new <see cref="CodeBlock"/> instance.</returns>
+    protected virtual CodeBlock CreateCodeExpressionBlock(string text, int index)
+    {
+        return new CodeBlock(this, text, index, isExpression: true);
+    }
+
+    /// <summary>Creates a class member block for class-level members.</summary>
+    /// <param name="text">The member content.</param>
+    /// <param name="index">The block index.</param>
+    /// <returns>A new <see cref="ClassMemberBlock"/> instance.</returns>
+    protected virtual ClassMemberBlock CreateClassMemberBlock(string text, int index)
+    {
+        return new ClassMemberBlock(this, text, index);
+    }
+
     /// <summary>Creates a directive block.</summary>
-    /// <param name="text">The original directive text.</param>
+    /// <param name="text">The directive content without the directive marker.</param>
     /// <param name="name">The directive name.</param>
     /// <param name="value">The directive value.</param>
     /// <param name="index">The block index.</param>
@@ -393,8 +461,16 @@ public class Template
         Arguments.Freeze();
         Usings.Freeze();
         ImplementedInterfaces.Freeze();
-        ReferencePaths.Freeze();
+        AssemblyReferences.Freeze();
+        IncludedSourceFiles.Freeze();
         Blocks.Freeze();
+    }
+
+    protected virtual CSharpParseOptions CreateParseOptions()
+    {
+        return CSharpParseOptions.Default
+            .WithLanguageVersion(LanguageVersion.Latest)
+            .WithPreprocessorSymbols(Debug ? "DEBUG" : "RELEASE");
     }
 
     /// <summary>Creates a syntax tree from the generated source code.</summary>
@@ -405,47 +481,64 @@ public class Template
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var options = CSharpParseOptions.Default
-            .WithLanguageVersion(LanguageVersion.Latest)
-            .WithPreprocessorSymbols(Debug ? "DEBUG" : "RELEASE");
+        return CSharpSyntaxTree.ParseText(source, CreateParseOptions(), cancellationToken: cancellationToken);
+    }
 
-        return CSharpSyntaxTree.ParseText(source, options, cancellationToken: cancellationToken);
+    /// <summary>Creates a syntax tree from an included source file.</summary>
+    /// <param name="sourcePath">The path to the C# source file.</param>
+    /// <param name="cancellationToken">A cancellation token to observe.</param>
+    /// <returns>A syntax tree for compilation.</returns>
+    protected virtual SyntaxTree CreateIncludedSyntaxTree(string sourcePath, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
+
+        var source = SourceText.From(File.ReadAllText(sourcePath), Encoding.UTF8);
+        return CSharpSyntaxTree.ParseText(source, CreateParseOptions(), sourcePath, cancellationToken: cancellationToken);
     }
 
     /// <summary>Creates the list of assembly references for compilation.</summary>
     /// <returns>An array of metadata references.</returns>
     protected virtual MetadataReference[] CreateReferences()
     {
-        var references = new List<string>
+        var references = new List<AssemblyReference>
         {
-            typeof(object).Assembly.Location,
-            typeof(Template).Assembly.Location,
+            new AssemblyReference(typeof(object).Assembly.Location),
+            new AssemblyReference(typeof(Template).Assembly.Location),
             // Require to use dynamic keyword
-            typeof(System.Runtime.CompilerServices.DynamicAttribute).Assembly.Location,
-            typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).Assembly.Location,
-            typeof(System.Dynamic.DynamicObject).Assembly.Location,
-            typeof(System.Linq.Expressions.ExpressionType).Assembly.Location,
-            Assembly.Load(new AssemblyName("mscorlib")).Location,
-            Assembly.Load(new AssemblyName("System.Runtime")).Location,
-            Assembly.Load(new AssemblyName("System.Dynamic.Runtime")).Location,
-            Assembly.Load(new AssemblyName("netstandard")).Location,
+            new AssemblyReference(typeof(System.Runtime.CompilerServices.DynamicAttribute).Assembly.Location),
+            new AssemblyReference(typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).Assembly.Location),
+            new AssemblyReference(typeof(System.Dynamic.DynamicObject).Assembly.Location),
+            new AssemblyReference(typeof(System.Linq.Expressions.ExpressionType).Assembly.Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("mscorlib")).Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("System.Runtime")).Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("System.Dynamic.Runtime")).Location),
+            new AssemblyReference(Assembly.Load(new AssemblyName("netstandard")).Location),
         };
 
         if (OutputType != null)
         {
-            references.Add(OutputType.Assembly.Location);
+            references.Add(new AssemblyReference(OutputType.Assembly.Location));
         }
 
-        foreach (var reference in ReferencePaths)
+        references.AddRange(AssemblyReferences);
+
+        return references
+            .DistinctBy(reference => (reference.Path, reference.Alias))
+            .Select(CreateMetadataReference)
+            .ToArray();
+    }
+
+    private static MetadataReference CreateMetadataReference(AssemblyReference reference)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+
+        var properties = MetadataReferenceProperties.Assembly;
+        if (!string.IsNullOrEmpty(reference.Alias))
         {
-            if (string.IsNullOrEmpty(reference))
-                continue;
-
-            references.Add(reference);
+            properties = properties.WithAliases([reference.Alias]);
         }
 
-        var result = references.Where(_ => _ is not null).Distinct(StringComparer.Ordinal);
-        return result.Select(path => MetadataReference.CreateFromFile(path)).ToArray();
+        return MetadataReference.CreateFromFile(reference.Path, properties);
     }
 
     /// <summary>Creates a C# compilation from the syntax tree.</summary>
@@ -484,6 +577,12 @@ public class Template
     {
         var syntaxTree = CreateSyntaxTree(source, cancellationToken);
         var compilation = CreateCompilation(syntaxTree);
+        if (IncludedSourceFiles.Count > 0)
+        {
+            var includedSyntaxTrees = IncludedSourceFiles
+                .Select(file => CreateIncludedSyntaxTree(file.Path, cancellationToken));
+            compilation = compilation.AddSyntaxTrees(includedSyntaxTrees);
+        }
 
         using var dllStream = new MemoryStream();
         using var pdbStream = new MemoryStream();

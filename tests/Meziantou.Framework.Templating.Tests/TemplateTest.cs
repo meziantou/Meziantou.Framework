@@ -96,6 +96,75 @@ public class TemplateTest
     }
 
     [Fact]
+    public void Template_ClassMemberBlock_IsParsed()
+    {
+        var template = new Template();
+        template.Load("<%+ private static string Sample() => \"Sample\"; %>");
+
+        var block = Assert.Single(template.Blocks.OfType<ClassMemberBlock>());
+        Assert.StartsWith(" private static string Sample()", block.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Template_CodeEvalBlock_IsParsedWithoutPrefix()
+    {
+        var template = new Template();
+        template.Load("<%= 1 %>");
+
+        var block = Assert.Single(template.Blocks.OfType<CodeBlock>(), codeBlock => codeBlock.IsExpression);
+        Assert.StartsWith(" 1", block.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Template_DirectiveBlock_IsParsedWithoutPrefix()
+    {
+        var template = new Template();
+        template.Load("<%@ outputextension .cs %>");
+
+        var block = Assert.Single(template.Blocks.OfType<DirectiveBlock>());
+        Assert.StartsWith(" outputextension .cs", block.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlock_CanBeInvokedFromTemplate()
+    {
+        var template = new Template();
+        template.Load("""
+            <%+ private static string Sample() => "Sample"; %>
+            <%= Sample() %>
+            """);
+
+        var result = template.Run();
+
+        Assert.Equal("Sample", result.Trim());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlock_StrictSyntaxOnly()
+    {
+        var template = new Template();
+        template.Load("<% + private static string Sample() => \"Sample\"; %>");
+
+        Assert.Empty(template.Blocks.OfType<ClassMemberBlock>());
+        Assert.Single(template.Blocks.OfType<CodeBlock>());
+    }
+
+    [Fact]
+    public void Template_ClassMemberBlock_IsGeneratedAtClassScope()
+    {
+        var template = new TemplateWithoutCompilation();
+        template.Load("""
+            <%+private static string Sample() => "Sample"; %>
+            <%= Sample() %>
+            """);
+
+        template.Build(CancellationToken.None);
+
+        Assert.Contains("private static string Sample() => \"Sample\";", template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("}" + Environment.NewLine + "    private static string Sample() => \"Sample\";", template.SourceCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Template_UntypedArgument()
     {
         // Arrange
@@ -163,6 +232,8 @@ public class TemplateTest
             <%@ InHeRiTs CustomBase %>
             <%@implements IFoo, IBar %>
             <%@ ReFeReNcE /tmp/folder/assembly with spaces.dll %>
+            <%@ reference alias=MyAlias /tmp/folder/assembly.dll %>
+            <%@ Include /tmp/folder/Included.cs %>
             <%@ outputextension .cs %>
             """);
 
@@ -190,6 +261,16 @@ public class TemplateTest
             },
             directive =>
             {
+                Assert.Equal("reference", directive.Name);
+                Assert.Equal("alias=MyAlias /tmp/folder/assembly.dll", directive.Value);
+            },
+            directive =>
+            {
+                Assert.Equal("Include", directive.Name);
+                Assert.Equal("/tmp/folder/Included.cs", directive.Value);
+            },
+            directive =>
+            {
                 Assert.Equal("outputextension", directive.Name);
                 Assert.Equal(".cs", directive.Value);
             });
@@ -199,7 +280,38 @@ public class TemplateTest
         Assert.Equal("CustomBase", template.BaseClassFullTypeName);
         Assert.Contains("System.Linq", template.Usings);
         Assert.Equal(["IFoo", "IBar"], template.ImplementedInterfaces);
-        Assert.Contains("/tmp/folder/assembly with spaces.dll", template.ReferencePaths);
+        Assert.Contains(template.AssemblyReferences, reference => string.Equals(reference.Path, "/tmp/folder/assembly with spaces.dll", StringComparison.Ordinal));
+        Assert.Contains(template.AssemblyReferences, reference => string.Equals(reference.Path, "/tmp/folder/assembly.dll", StringComparison.Ordinal) && string.Equals(reference.Alias, "MyAlias", StringComparison.Ordinal));
+        Assert.Contains(template.IncludedSourceFiles, fileReference => string.Equals(fileReference.Path, "/tmp/folder/Included.cs", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Template_IncludeDirective_IncludesSourceFileInCompilation()
+    {
+        var sourceFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cs");
+        File.WriteAllText(sourceFilePath, """
+            public static class IncludedHelper
+            {
+                public static string GetValue() => "included";
+            }
+            """);
+
+        try
+        {
+            var template = new Template();
+            template.Load($"""
+                <%@ include {sourceFilePath} %>
+                <%= IncludedHelper.GetValue() %>
+                """);
+
+            var result = template.Run();
+
+            Assert.Equal("included", result.Trim());
+        }
+        finally
+        {
+            File.Delete(sourceFilePath);
+        }
     }
 
     [Fact]
@@ -215,7 +327,7 @@ public class TemplateTest
 
         var directive = Assert.Single(template.Blocks!.OfType<DirectiveBlock>());
         Assert.Equal(2, directive.Start.Line);
-        Assert.Equal(3, directive.Start.Column);
+        Assert.Equal(4, directive.Start.Column);
         Assert.Equal(Source.IndexOf(directive.Text, StringComparison.Ordinal), directive.Start.Index);
         Assert.Equal(2, directive.End.Line);
         Assert.True(directive.End.Column > directive.Start.Column);
@@ -256,9 +368,9 @@ public class TemplateTest
         var template = new Template();
         template.Load(Source);
 
-        var codeBlock = Assert.Single(template.Blocks!.OfType<CodeBlock>());
+        var codeBlock = Assert.Single(template.Blocks!.OfType<CodeBlock>(), codeBlock => codeBlock.IsExpression);
         Assert.Equal(2, codeBlock.Start.Line);
-        Assert.Equal(3, codeBlock.Start.Column);
+        Assert.Equal(4, codeBlock.Start.Column);
         Assert.Equal(codeBlock.Text.Length, codeBlock.Span.Length);
         Assert.Equal(codeBlock.Text, Source.AsSpan(codeBlock.Start.Index, codeBlock.Span.Length).ToString());
     }
@@ -305,7 +417,8 @@ public class TemplateTest
         var argument = new TemplateArgument("Value", typeof(int));
         template.Arguments.Add(argument);
         template.Usings.Add("System");
-        template.ReferencePaths.Add("path/to/assembly.dll");
+        template.AssemblyReferences.Add("path/to/assembly.dll");
+        template.IncludedSourceFiles.Add("path/to/include.cs");
         template.ImplementedInterfaces.Add("IFoo");
         template.Load("Hello");
 
@@ -314,15 +427,35 @@ public class TemplateTest
 
         Assert.Contains(argument, template.Arguments);
         Assert.Contains("System", template.Usings);
-        Assert.Contains("path/to/assembly.dll", template.ReferencePaths);
+        Assert.Contains(template.AssemblyReferences, reference => string.Equals(reference.Path, "path/to/assembly.dll", StringComparison.Ordinal));
+        Assert.Contains(template.IncludedSourceFiles, fileReference => string.Equals(fileReference.Path, "path/to/include.cs", StringComparison.Ordinal));
         Assert.Contains("IFoo", template.ImplementedInterfaces);
         Assert.Contains(customBlock, template.Blocks);
 
         Assert.True(template.Arguments.Remove(argument));
         Assert.True(template.Usings.Remove("System"));
-        Assert.True(template.ReferencePaths.Remove("path/to/assembly.dll"));
+        Assert.True(template.AssemblyReferences.Remove(new AssemblyReference("path/to/assembly.dll")));
+        Assert.True(template.IncludedSourceFiles.Remove(new FileReference("path/to/include.cs")));
         Assert.True(template.ImplementedInterfaces.Remove("IFoo"));
         Assert.True(template.Blocks.Remove(customBlock));
+    }
+
+    [Fact]
+    public void AssemblyReferenceCollection_AddHelpers_CreateReferences()
+    {
+        var templateAssemblyPath = typeof(Template).Assembly.Location;
+        var modulePath = typeof(Template).Module.Assembly.Location;
+        var collection = new AssemblyReferenceCollection();
+        collection.Add(typeof(Template));
+        collection.Add(typeof(Template).Assembly);
+        collection.Add(typeof(Template).Module);
+        collection.Add("path/to/assembly.dll");
+        collection.Add("path/to/aliased.dll", "AliasedReference");
+
+        Assert.Contains(collection, reference => string.Equals(reference.Path, templateAssemblyPath, StringComparison.Ordinal) && reference.Alias is null);
+        Assert.Contains(collection, reference => string.Equals(reference.Path, modulePath, StringComparison.Ordinal) && reference.Alias is null);
+        Assert.Contains(collection, reference => string.Equals(reference.Path, "path/to/assembly.dll", StringComparison.Ordinal) && reference.Alias is null);
+        Assert.Contains(collection, reference => string.Equals(reference.Path, "path/to/aliased.dll", StringComparison.Ordinal) && string.Equals(reference.Alias, "AliasedReference", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -342,14 +475,17 @@ public class TemplateTest
 
         Assert.Throws<ArgumentNullException>(() => template.Arguments.Add(null!));
         Assert.Throws<ArgumentNullException>(() => template.Usings.Add(null!));
-        Assert.Throws<ArgumentNullException>(() => template.ReferencePaths.Add(null!));
+        Assert.Throws<ArgumentNullException>(() => template.AssemblyReferences.Add((AssemblyReference)null!));
+        Assert.Throws<ArgumentNullException>(() => template.IncludedSourceFiles.Add((FileReference)null!));
         Assert.Throws<ArgumentNullException>(() => template.ImplementedInterfaces.Add(null!));
         Assert.Throws<ArgumentNullException>(() => template.Blocks.Add(null!));
 
         Assert.Throws<ArgumentException>(() => template.Arguments.Add(new TemplateArgument(string.Empty, typeof(int))));
         Assert.Throws<ArgumentException>(() => template.Usings.Add(string.Empty));
-        Assert.Throws<ArgumentException>(() => template.ReferencePaths.Add(string.Empty));
+        Assert.Throws<ArgumentException>(() => template.AssemblyReferences.Add(string.Empty));
+        Assert.Throws<ArgumentException>(() => template.IncludedSourceFiles.Add(string.Empty));
         Assert.Throws<ArgumentException>(() => template.ImplementedInterfaces.Add(string.Empty));
+        Assert.Throws<ArgumentException>(() => new AssemblyReference("path/to/assembly.dll", " "));
     }
 
     [Fact]
@@ -363,13 +499,15 @@ public class TemplateTest
 
         Assert.True(template.Arguments.IsFrozen);
         Assert.True(template.Usings.IsFrozen);
-        Assert.True(template.ReferencePaths.IsFrozen);
+        Assert.True(template.AssemblyReferences.IsFrozen);
+        Assert.True(template.IncludedSourceFiles.IsFrozen);
         Assert.True(template.ImplementedInterfaces.IsFrozen);
         Assert.True(template.Blocks.IsFrozen);
 
         Assert.Throws<InvalidOperationException>(() => template.Arguments.Add(new TemplateArgument("Other", typeof(string))));
         Assert.Throws<InvalidOperationException>(() => template.Usings.Add("System"));
-        Assert.Throws<InvalidOperationException>(() => template.ReferencePaths.Add("path/to/assembly.dll"));
+        Assert.Throws<InvalidOperationException>(() => template.AssemblyReferences.Add("path/to/assembly.dll"));
+        Assert.Throws<InvalidOperationException>(() => template.IncludedSourceFiles.Add("path/to/include.cs"));
         Assert.Throws<InvalidOperationException>(() => template.ImplementedInterfaces.Add("IFoo"));
         Assert.Throws<InvalidOperationException>(() => template.Blocks.Add(new TextBlock(template, "!", index: 10)));
     }

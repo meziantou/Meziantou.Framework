@@ -10,6 +10,7 @@ A powerful and flexible .NET template engine that allows you to create text temp
 - **Type-safe parameters** - Add strongly-typed or dynamic parameters to your templates
 - **Custom output types** - Use any output writer type for your templates
 - **Using directives** - Import namespaces and types for use in templates
+- **Class member blocks** - Add methods, fields, and properties to the generated template class
 - **Debug support** - Generate debug symbols for template debugging
 
 ## Usage
@@ -60,7 +61,7 @@ var result = template.Run(arguments);
 
 ### Code Blocks
 
-Templates support three types of code blocks:
+Templates support four types of code blocks:
 
 #### 1. Evaluation blocks (`<%=...%>`)
 
@@ -84,7 +85,21 @@ var result = template.Run();
 // result: "Numbers: 12345"
 ```
 
-#### 3. Mixed content
+#### 3. Class member blocks (`<%+...%>`)
+
+Add members to the generated template class:
+
+```csharp
+var template = new Template();
+template.Load("""
+<%+private static string Prefix() => "Item"; %>
+<%= Prefix() %> 1
+""");
+var result = template.Run();
+// result: "Item 1"
+```
+
+#### 4. Mixed content
 
 Combine text, evaluation blocks, and statement blocks:
 
@@ -111,9 +126,28 @@ Directives are parsed as `DirectiveBlock` instances. You can enumerate them by f
 - `using` - Adds a using directive
 - `inherits` - Sets `BaseClassFullTypeName`
 - `implements` - Adds one or more interfaces to the generated class declaration
-- `reference` - Adds an assembly reference path
+- `reference` - Adds an assembly reference (`path` and optional `alias=...` for `extern alias`)
+- `include` - Adds a C# source file reference to include in the compilation
 
 Directives that are not built in (such as `outputextension`) are still available in `Template.Blocks` and can be handled by overriding `DirectiveBlock.ApplyDirective()`.
+
+```csharp
+var template = new Template();
+template.Load("""
+    <%@ reference alias=MyAlias c:\libs\my-library.dll %>
+    <%@ include c:\templates\shared-helpers.cs %>
+    """);
+```
+
+You can also add references programmatically:
+
+```csharp
+template.AssemblyReferences.Add(typeof(string));
+template.AssemblyReferences.Add(typeof(Template).Assembly, "TemplatingAlias");
+template.AssemblyReferences.Add(typeof(Template).Module);
+template.AssemblyReferences.Add(@"c:\libs\other-library.dll");
+template.IncludedSourceFiles.Add(@"c:\templates\shared-helpers.cs");
+```
 
 ## Advanced Usage
 
@@ -232,6 +266,7 @@ The default template syntax uses `<%` and `%>` delimiters:
 |--------|-------------|---------|
 | `<%= expression %>` | Evaluates an expression and writes it to output | `<%= 2 + 2 %>` |
 | `<% statement %>` | Executes a C# statement | `<% var x = 10; %>` |
+| `<%+ member %>` | Declares a class member in the generated template class | `<%+private static int Get() => 42; %>` |
 | Text | Any text outside code blocks is written as-is | `Hello World` |
 
 ## Error Handling

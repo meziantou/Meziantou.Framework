@@ -26,9 +26,20 @@ jobs:
           WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           $run = gh run view "$env:WORKFLOW_RUN_ID" --repo "$env:REPOSITORY" --json jobs | ConvertFrom-Json -AsHashtable
+          $cancelledJobs = @(
+            $run.jobs
+            | Where-Object { $_.conclusion -eq 'cancelled' }
+          )
+
+          if ($cancelledJobs.Count -gt 0) {
+            $cancelledJobNames = $cancelledJobs.name | Sort-Object
+            Write-Host "Skipping retry because workflow contains cancelled jobs: $($cancelledJobNames -join ', ')"
+            exit 0
+          }
+
           $failedJobs = @(
             $run.jobs
-            | Where-Object { $_.conclusion -notin @('success', 'skipped') }
+            | Where-Object { $_.conclusion -eq 'failure' }
           )
           $retriableFailedJobs = @(
             $failedJobs

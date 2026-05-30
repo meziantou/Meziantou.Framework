@@ -9,13 +9,13 @@ namespace Meziantou.Framework.Templating;
 /// // URL encoding: {{#url value}}
 /// // Attribute encoding: {{#attr value}}
 /// // Content identifier: {{cid image.png}}
-/// // Section: {{@begin section title}}...{{@end section}}
+/// // Section: {{@begin_section title}}...{{@end_section}}
 /// </code>
 /// </example>
 public class HtmlEmailCodeBlock : CodeBlock
 {
-    private const string BeginSectionPrefixString = "@begin section";
-    private const string EndSectionPrefixString = "@end section";
+    private const string BeginSectionPrefixString = "@begin_section";
+    private const string EndSectionPrefixString = "@end_section";
     private const string HtmlEncodePrefixString = "#html ";
     private const string HtmlAttributeEncodePrefixString = "#attr ";
     private const string UrlEncodePrefixString = "#url ";

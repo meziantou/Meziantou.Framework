@@ -101,7 +101,7 @@ Sections allow you to capture parts of the template output for use as metadata (
 
 ```csharp
 var template = new HtmlEmailTemplate();
-template.Load("Hello {{@begin section title}}{{# \"Meziantou\" }}{{@end section}}!");
+template.Load("Hello {{@begin_section title}}{{# \"Meziantou\" }}{{@end_section}}!");
 
 var result = template.Run(out var metadata);
 // Output: Hello Meziantou!
@@ -118,7 +118,7 @@ The `HtmlEmailMetadata` class contains extracted information from the template:
 ```csharp
 var template = new HtmlEmailTemplate();
 template.Load(@"
-{{@begin section title}}Welcome Email{{@end section}}
+{{@begin_section title}}Welcome Email{{@end_section}}
 <html>
   <body>
     <img src=""{{cid logo.png}}"" />

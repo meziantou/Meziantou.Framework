@@ -1,13 +1,13 @@
 namespace Meziantou.Framework.Templating;
 
 /// <summary>Represents a text block in a template that will be written to the output.</summary>
-public class ParsedBlock
+public class TextBlock
 {
-    /// <summary>Initializes a new instance of the <see cref="ParsedBlock"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="TextBlock"/> class.</summary>
     /// <param name="template">The template that contains this block.</param>
     /// <param name="text">The text content of the block.</param>
     /// <param name="index">The index of this block in the template.</param>
-    public ParsedBlock(Template template, string text, int index)
+    public TextBlock(Template template, string text, int index)
     {
         Template = template ?? throw new ArgumentNullException(nameof(template));
         Text = text ?? throw new ArgumentNullException(nameof(text));

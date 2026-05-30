@@ -25,6 +25,8 @@ public class Template
 
     private MethodInfo? _runMethodInfo;
     private readonly List<TemplateArgument> _arguments = [];
+    private readonly List<TemplateDirective> _directives = [];
+    private readonly List<string> _implementedInterfaces = [];
     private readonly List<string> _usings = [];
     private readonly List<string> _referencePaths = [];
 
@@ -63,7 +65,7 @@ public class Template
     public string EndCodeBlockDelimiter { get; set; } = "%>";
 
     /// <summary>Gets the list of parsed blocks after loading a template.</summary>
-    public IList<ParsedBlock>? Blocks { get; private set; }
+    public IList<TextBlock>? Blocks { get; private set; }
 
     /// <summary>Gets a value indicating whether the template has been built.</summary>
     public bool IsBuilt => _runMethodInfo != null;
@@ -76,6 +78,12 @@ public class Template
 
     /// <summary>Gets the list of using directives.</summary>
     public IReadOnlyList<string> Usings => _usings;
+
+    /// <summary>Gets the list of parsed directives.</summary>
+    public IReadOnlyList<TemplateDirective> Directives => _directives;
+
+    /// <summary>Gets the list of interfaces implemented by the generated template class.</summary>
+    public IReadOnlyList<string> ImplementedInterfaces => _implementedInterfaces;
 
     /// <summary>Gets the list of assembly reference paths.</summary>
     public IReadOnlyList<string> ReferencePaths => _referencePaths;
@@ -93,6 +101,14 @@ public class Template
             throw new ArgumentException("Assembly has no location.", nameof(type));
 
         _referencePaths.Add(type.Assembly.Location);
+    }
+
+    /// <summary>Adds an assembly reference path.</summary>
+    /// <param name="assemblyPath">The assembly path to reference.</param>
+    public void AddReference(string assemblyPath)
+    {
+        ArgumentNullException.ThrowIfNull(assemblyPath);
+        _referencePaths.Add(assemblyPath);
     }
 
     /// <summary>Adds a using directive for the specified namespace.</summary>
@@ -261,7 +277,10 @@ public class Template
         if (IsBuilt)
             throw new InvalidOperationException("Template is already built.");
 
-        var blocks = new List<ParsedBlock>();
+        _directives.Clear();
+        _implementedInterfaces.Clear();
+
+        var blocks = new List<TextBlock>();
         var isInBlock = false;
         var currentBlock = new StringBuilder();
         var nextDelimiter = StartCodeBlockDelimiter;
@@ -282,7 +301,10 @@ public class Template
                 {
                     var text = currentBlock.ToString(0, currentBlock.Length - (blockDelimiterIndex - 1));
                     var block = CreateBlock(isInBlock, text, blockIndex++, startLine, startColumn, reader.Line, reader.Column);
-                    blocks.Add(block);
+                    if (block is not null)
+                    {
+                        blocks.Add(block);
+                    }
 
                     currentBlock.Clear();
                     blockDelimiterIndex = 0;
@@ -318,21 +340,112 @@ public class Template
         if (currentBlock.Length > 0)
         {
             var block = CreateBlock(codeBlock: false, currentBlock.ToString(), blockIndex, startLine, startColumn, reader.Line, reader.Column);
-            blocks.Add(block);
+            if (block is not null)
+            {
+                blocks.Add(block);
+            }
         }
 
-        blocks.Sort(ParsedBlockComparer.IndexComparer);
+        blocks.Sort(TextBlockComparer.IndexComparer);
         Blocks = blocks;
     }
 
-    private ParsedBlock CreateBlock(bool codeBlock, string text, int index, int startLine, int startColumn, int endLine, int endColumn)
+    private TextBlock? CreateBlock(bool codeBlock, string text, int index, int startLine, int startColumn, int endLine, int endColumn)
     {
-        var block = codeBlock ? CreateCodeBlock(text, index) : CreateParsedBlock(text, index);
+        if (codeBlock && TryParseDirective(text, out var directive))
+        {
+            _directives.Add(directive);
+            ApplyWellKnownDirective(directive);
+            if (ShouldSkipDirectiveBlock(directive))
+            {
+                return null;
+            }
+        }
+
+        var block = codeBlock ? CreateCodeBlock(text, index) : CreateTextBlock(text, index);
         block.StartLine = startLine;
         block.StartColumn = startColumn;
         block.EndLine = endLine;
         block.EndColumn = endColumn;
         return block;
+    }
+
+    /// <summary>Indicates whether a parsed directive block should be skipped from generated code.</summary>
+    /// <param name="directive">The parsed directive.</param>
+    /// <returns><see langword="true"/> to skip the block; otherwise, <see langword="false"/>.</returns>
+    protected virtual bool ShouldSkipDirectiveBlock(TemplateDirective directive)
+    {
+        ArgumentNullException.ThrowIfNull(directive);
+        return true;
+    }
+
+    private static bool TryParseDirective(string text, [NotNullWhen(true)] out TemplateDirective? directive)
+    {
+        var trimmedText = text.Trim();
+        if (!trimmedText.StartsWith('@', StringComparison.Ordinal))
+        {
+            directive = null;
+            return false;
+        }
+
+        var directiveText = trimmedText[1..].TrimStart();
+        if (directiveText.Length == 0)
+        {
+            directive = null;
+            return false;
+        }
+
+        if (!char.IsLetter(directiveText[0]))
+        {
+            directive = null;
+            return false;
+        }
+
+        var nameLength = directiveText.AsSpan().IndexOfAny([' ', '\t', '\r', '\n']);
+        string name;
+        string value;
+        if (nameLength < 0)
+        {
+            name = directiveText;
+            value = string.Empty;
+        }
+        else
+        {
+            name = directiveText[..nameLength];
+            value = directiveText[nameLength..].Trim();
+        }
+
+        if (name.Length == 0)
+        {
+            directive = null;
+            return false;
+        }
+
+        directive = new TemplateDirective(name, value);
+        return true;
+    }
+
+    private void ApplyWellKnownDirective(TemplateDirective directive)
+    {
+        if (string.Equals(directive.Name, "using", StringComparison.OrdinalIgnoreCase))
+        {
+            AddUsing(directive.Value);
+        }
+        else if (string.Equals(directive.Name, "inherits", StringComparison.OrdinalIgnoreCase))
+        {
+            BaseClassFullTypeName = directive.Value;
+        }
+        else if (string.Equals(directive.Name, "implements", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var @interface in directive.Value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                _implementedInterfaces.Add(@interface);
+            }
+        }
+        else if (string.Equals(directive.Name, "reference", StringComparison.OrdinalIgnoreCase))
+        {
+            AddReference(directive.Value);
+        }
     }
 
     /// <summary>Compiles the template into executable code.</summary>
@@ -360,10 +473,24 @@ public class Template
                     tw.WriteLine("using " + @using + ";");
                 }
 
-                tw.Write("public class " + ClassName);
+                var inheritanceTypes = new List<string>();
                 if (!string.IsNullOrEmpty(BaseClassFullTypeName))
                 {
-                    tw.Write(" : " + BaseClassFullTypeName);
+                    inheritanceTypes.Add(BaseClassFullTypeName);
+                }
+
+                foreach (var @interface in ImplementedInterfaces)
+                {
+                    if (string.IsNullOrEmpty(@interface))
+                        continue;
+
+                    inheritanceTypes.Add(@interface);
+                }
+
+                tw.Write("public class " + ClassName);
+                if (inheritanceTypes.Count > 0)
+                {
+                    tw.Write(" : " + string.Join(", ", inheritanceTypes));
                 }
 
                 tw.WriteLine();
@@ -408,13 +535,13 @@ public class Template
         }
     }
 
-    /// <summary>Creates a parsed block for text content.</summary>
+    /// <summary>Creates a text block for text content.</summary>
     /// <param name="text">The text content.</param>
     /// <param name="index">The block index.</param>
-    /// <returns>A new <see cref="ParsedBlock"/> instance.</returns>
-    protected virtual ParsedBlock CreateParsedBlock(string text, int index)
+    /// <returns>A new <see cref="TextBlock"/> instance.</returns>
+    protected virtual TextBlock CreateTextBlock(string text, int index)
     {
-        return new ParsedBlock(this, text, index);
+        return new TextBlock(this, text, index);
     }
 
     /// <summary>Creates a code block for executable code.</summary>
@@ -449,7 +576,7 @@ public class Template
         {
             typeof(object).Assembly.Location,
             typeof(Template).Assembly.Location,
-            // Require to use dynamic keyword                
+            // Require to use dynamic keyword
             typeof(System.Runtime.CompilerServices.DynamicAttribute).Assembly.Location,
             typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).Assembly.Location,
             typeof(System.Dynamic.DynamicObject).Assembly.Location,
@@ -474,7 +601,7 @@ public class Template
         }
 
         var result = references.Where(_ => _ is not null).Distinct(StringComparer.Ordinal);
-        //var str = string.Join("\r\n", result);            
+        //var str = string.Join("\r\n", result);
         return result.Select(path => MetadataReference.CreateFromFile(path)).ToArray();
     }
 

@@ -1,12 +1,12 @@
 namespace Meziantou.Framework.Templating;
 
-internal static class ParsedBlockComparer
+internal static class TextBlockComparer
 {
-    public static IComparer<ParsedBlock> IndexComparer { get; } = new ParsedBlockIndexComparer();
+    public static IComparer<TextBlock> IndexComparer { get; } = new TextBlockIndexComparer();
 
-    private sealed class ParsedBlockIndexComparer : IComparer<ParsedBlock>
+    private sealed class TextBlockIndexComparer : IComparer<TextBlock>
     {
-        public int Compare(ParsedBlock? x, ParsedBlock? y)
+        public int Compare(TextBlock? x, TextBlock? y)
         {
             if (x is null && y is null)
                 return 0;

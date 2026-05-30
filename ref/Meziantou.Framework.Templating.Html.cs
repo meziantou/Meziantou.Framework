@@ -42,6 +42,7 @@ namespace Meziantou.Framework.Templating
     public class HtmlEmailTemplate : Meziantou.Framework.Templating.Template
     {
         protected override Meziantou.Framework.Templating.CodeBlock CreateCodeBlock(string text, int index) => throw null;
+        protected override bool ShouldSkipDirectiveBlock(Meziantou.Framework.Templating.TemplateDirective directive) => throw null;
         protected override object CreateOutput(System.IO.TextWriter writer) => throw null;
         public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, System.Collections.Generic.IDictionary<string, object?> parameters) => throw null;
         public virtual string Run(out Meziantou.Framework.Templating.HtmlEmailMetadata? metadata, params object?[] parameters) => throw null;

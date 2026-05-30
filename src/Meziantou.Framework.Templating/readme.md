@@ -99,6 +99,19 @@ var result = template.Run();
 //   Item 3: 30
 ```
 
+### Directives
+
+Templates support directives using the `@` prefix inside a code block (for example `<%@ using System.Linq %>` or `{{@ outputextension .cs }}` when using custom delimiters).
+
+Directives are parsed and exposed through `Template.Directives`, and the following built-in directives are handled case-insensitively by `Template`:
+
+- `using` - Adds a using directive
+- `inherits` - Sets `BaseClassFullTypeName`
+- `implements` - Adds one or more interfaces to the generated class declaration
+- `reference` - Adds an assembly reference path
+
+Directives that are not built in (such as `outputextension`) are still captured in `Template.Directives`.
+
 ## Advanced Usage
 
 ### Custom Delimiters

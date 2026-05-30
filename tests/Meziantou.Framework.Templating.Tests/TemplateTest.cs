@@ -10,7 +10,7 @@ public class TemplateTest
         template.Load("Sample");
         template.OutputType = typeof(Output);
 
-        // Act 
+        // Act
         var result = template.Run();
         Assert.Equal("Sample", result);
     }
@@ -22,7 +22,7 @@ public class TemplateTest
         var template = new Template();
         template.Load("<% " + template.OutputParameterName + ".Write(\"Sample\"); %>");
 
-        // Act 
+        // Act
         var result = template.Run();
         Assert.Equal("Sample", result);
     }
@@ -34,7 +34,7 @@ public class TemplateTest
         var template = new Template();
         template.Load("<%= \"Sample\" %>");
 
-        // Act 
+        // Act
         var result = template.Run();
         Assert.Equal("Sample", result);
     }
@@ -58,7 +58,7 @@ public class TemplateTest
         template.Load("Hello <%=Name%>!");
         template.AddArgument("Name", typeof(string));
 
-        // Act 
+        // Act
         var result = template.Run("Meziantou");
         Assert.Equal("Hello Meziantou!", result);
     }
@@ -75,7 +75,7 @@ public class TemplateTest
         };
         template.AddArguments(arguments);
 
-        // Act 
+        // Act
         var result = template.Run(arguments);
         Assert.Equal("Hello Meziantou!", result);
     }
@@ -87,7 +87,7 @@ public class TemplateTest
         var template = new Template();
         template.Load("Hello <% for(int i = 1; i <= 5; i++ ) { %><%= i %><% } %>!");
 
-        // Act 
+        // Act
         var result = template.Run();
         Assert.Equal("Hello 12345!", result);
     }
@@ -100,7 +100,7 @@ public class TemplateTest
         template.AddArgument("Name");
         template.Load("Hello <%= Name %>!");
 
-        // Act 
+        // Act
         var result = template.Run("John");
         Assert.Equal("Hello John!", result);
     }
@@ -123,7 +123,7 @@ public class TemplateTest
                       "#endif\n" +
                       "%>!");
 
-        // Act 
+        // Act
         var result = template.Run();
         Assert.Equal("Hello debug!", result);
     }
@@ -146,7 +146,7 @@ public class TemplateTest
                       "#endif\n" +
                       "%>!");
 
-        // Act 
+        // Act
         var result = template.Run();
         Assert.Equal("Hello release!", result);
     }
@@ -154,7 +154,7 @@ public class TemplateTest
     [Fact]
     public void Template_Directives_AreParsed_AndWellKnownDirectivesAreApplied()
     {
-        var template = new Template();
+        var template = new TemplateWithoutCompilation();
         template.Load("""
             <%@ USING System.Linq %>
             <%@ InHeRiTs CustomBase %>
@@ -163,7 +163,8 @@ public class TemplateTest
             <%@ outputextension .cs %>
             """);
 
-        Assert.Collection(template.Directives,
+        var directives = template.Blocks.OfType<DirectiveBlock>().ToList();
+        Assert.Collection(directives,
             directive =>
             {
                 Assert.Equal("USING", directive.Name);
@@ -190,10 +191,33 @@ public class TemplateTest
                 Assert.Equal(".cs", directive.Value);
             });
 
+        template.Build(CancellationToken.None);
+
         Assert.Equal("CustomBase", template.BaseClassFullTypeName);
         Assert.Contains("System.Linq", template.Usings);
         Assert.Equal(["IFoo", "IBar"], template.ImplementedInterfaces);
         Assert.Contains("/tmp/folder/assembly with spaces.dll", template.ReferencePaths);
+    }
+
+    [Fact]
+    public void Template_Directives_HavePositionMetadata()
+    {
+        const string source = """
+            line1
+            <%@ outputextension .cs %>
+            line3
+            """;
+        var template = new Template();
+        template.Load(source);
+
+        var directive = Assert.Single(template.Blocks!.OfType<DirectiveBlock>());
+        Assert.Equal(2, directive.Start.Line);
+        Assert.Equal(3, directive.Start.Column);
+        Assert.Equal(source.IndexOf(directive.Text, StringComparison.Ordinal), directive.Start.Index);
+        Assert.Equal(2, directive.End.Line);
+        Assert.True(directive.End.Column > directive.Start.Column);
+        Assert.Equal(directive.Text.Length, directive.Span.Length);
+        Assert.Equal(directive.Text, source.AsSpan(directive.Start.Index, directive.Span.Length).ToString());
     }
 
     [Fact]
@@ -205,7 +229,70 @@ public class TemplateTest
         var result = template.Run();
 
         Assert.Equal("Hello  World", result);
-        Assert.Contains(template.Directives, directive => string.Equals(directive.Name, "outputextension", StringComparison.Ordinal));
+        Assert.Contains(template.Blocks!.OfType<DirectiveBlock>(), directive => string.Equals(directive.Name, "outputextension", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Template_Blocks_HaveSpanMatchingOriginalText()
+    {
+        const string source = "A<%= 1 %>B";
+        var template = new Template();
+        template.Load(source);
+
+        foreach (var block in template.Blocks!)
+        {
+            Assert.Equal(block.Text.Length, block.Span.Length);
+            Assert.Equal(block.Text, source.AsSpan(block.Start.Index, block.Span.Length).ToString());
+        }
+    }
+
+    [Fact]
+    public void Template_Blocks_HaveCorrectSpanWithCRLF()
+    {
+        const string source = "line1\r\n<%= 1 %>\r\nline3";
+        var template = new Template();
+        template.Load(source);
+
+        var codeBlock = Assert.Single(template.Blocks!.OfType<CodeBlock>());
+        Assert.Equal(2, codeBlock.Start.Line);
+        Assert.Equal(3, codeBlock.Start.Column);
+        Assert.Equal(codeBlock.Text.Length, codeBlock.Span.Length);
+        Assert.Equal(codeBlock.Text, source.AsSpan(codeBlock.Start.Index, codeBlock.Span.Length).ToString());
+    }
+
+    [Fact]
+    public void TextPosition_HasValueSemantics()
+    {
+        var position1 = new TextPosition(1, 1, 0);
+        var position2 = new TextPosition(1, 1, 0);
+        var position3 = new TextPosition(1, 2, 1);
+
+        Assert.Equal(position1, position2);
+        Assert.True(position1 == position2);
+        Assert.True(position1 != position3);
+        Assert.True(position1 < position3);
+        Assert.True(position3 > position1);
+        Assert.Equal(0, position1.CompareTo((object)position2));
+        Assert.Contains("L1", position1.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextSpan_HasValueSemantics()
+    {
+        var start = new TextPosition(1, 1, 0);
+        var middle = new TextPosition(1, 3, 2);
+        var end = new TextPosition(1, 5, 4);
+        var span1 = new TextSpan(start, middle);
+        var span2 = new TextSpan(start, middle);
+        var span3 = new TextSpan(start, end);
+
+        Assert.Equal(span1, span2);
+        Assert.True(span1 == span2);
+        Assert.True(span1 != span3);
+        Assert.True(span1 < span3);
+        Assert.True(span3 > span1);
+        Assert.Equal(2, span1.Length);
+        Assert.Contains("..", span1.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

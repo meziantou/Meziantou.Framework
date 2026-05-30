@@ -103,14 +103,14 @@ var result = template.Run();
 
 Templates support directives using the `@` prefix inside a code block (for example `<%@ using System.Linq %>` or `{{@ outputextension .cs }}` when using custom delimiters).
 
-Directives are parsed and exposed through `Template.Directives`, and the following built-in directives are handled case-insensitively by `Template`:
+Directives are parsed as `DirectiveBlock` instances. You can enumerate them by filtering `Template.Blocks` (for example `template.Blocks.OfType<DirectiveBlock>()`), and the following built-in directives are handled case-insensitively by default:
 
 - `using` - Adds a using directive
 - `inherits` - Sets `BaseClassFullTypeName`
 - `implements` - Adds one or more interfaces to the generated class declaration
 - `reference` - Adds an assembly reference path
 
-Directives that are not built in (such as `outputextension`) are still captured in `Template.Directives`.
+Directives that are not built in (such as `outputextension`) are still available in `Template.Blocks` and can be handled by overriding `DirectiveBlock.ApplyDirective()`.
 
 ## Advanced Usage
 

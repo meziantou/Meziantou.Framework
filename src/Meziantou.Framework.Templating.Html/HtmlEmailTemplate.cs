@@ -24,21 +24,15 @@ public class HtmlEmailTemplate : Template
         return new HtmlEmailCodeBlock(this, text, index);
     }
 
-    protected override bool ShouldSkipDirectiveBlock(TemplateDirective directive)
+    protected override DirectiveBlock CreateDirectiveBlock(string text, string name, string value, int index)
     {
-        ArgumentNullException.ThrowIfNull(directive);
-
-        if (string.Equals(directive.Name, "begin_section", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(name, "begin_section", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(name, "end_section", StringComparison.OrdinalIgnoreCase))
         {
-            return false;
+            return new HtmlEmailDirectiveBlock(this, text, index, name, value);
         }
 
-        if (string.Equals(directive.Name, "end_section", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return base.ShouldSkipDirectiveBlock(directive);
+        return base.CreateDirectiveBlock(text, name, value, index);
     }
 
     /// <summary>Creates an HTML email output writer with encoding capabilities and section support.</summary>

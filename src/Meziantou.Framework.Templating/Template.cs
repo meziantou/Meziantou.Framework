@@ -25,7 +25,6 @@ public class Template
 
     private MethodInfo? _runMethodInfo;
     private readonly List<TemplateArgument> _arguments = [];
-    private readonly List<TemplateDirective> _directives = [];
     private readonly List<string> _implementedInterfaces = [];
     private readonly List<string> _usings = [];
     private readonly List<string> _referencePaths = [];
@@ -65,7 +64,7 @@ public class Template
     public string EndCodeBlockDelimiter { get; set; } = "%>";
 
     /// <summary>Gets the list of parsed blocks after loading a template.</summary>
-    public IList<TextBlock>? Blocks { get; private set; }
+    public IList<TemplateBlock> Blocks { get; private set; } = [];
 
     /// <summary>Gets a value indicating whether the template has been built.</summary>
     public bool IsBuilt => _runMethodInfo != null;
@@ -78,9 +77,6 @@ public class Template
 
     /// <summary>Gets the list of using directives.</summary>
     public IReadOnlyList<string> Usings => _usings;
-
-    /// <summary>Gets the list of parsed directives.</summary>
-    public IReadOnlyList<TemplateDirective> Directives => _directives;
 
     /// <summary>Gets the list of interfaces implemented by the generated template class.</summary>
     public IReadOnlyList<string> ImplementedInterfaces => _implementedInterfaces;
@@ -252,6 +248,7 @@ public class Template
 
     /// <summary>Loads the template from a string.</summary>
     /// <param name="text">The template text containing code blocks.</param>
+    [MemberNotNull(nameof(Blocks))]
     public void Load(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -277,10 +274,9 @@ public class Template
         if (IsBuilt)
             throw new InvalidOperationException("Template is already built.");
 
-        _directives.Clear();
         _implementedInterfaces.Clear();
 
-        var blocks = new List<TextBlock>();
+        var blocks = new List<TemplateBlock>();
         var isInBlock = false;
         var currentBlock = new StringBuilder();
         var nextDelimiter = StartCodeBlockDelimiter;
@@ -288,19 +284,35 @@ public class Template
         var blockIndex = 0;
         var startLine = reader.Line;
         var startColumn = reader.Column;
+        var startIndex = reader.Index;
+        var delimiterStartLine = 0;
+        var delimiterStartColumn = 0;
+        var delimiterStartIndex = 0;
 
         int n;
         while ((n = reader.Read()) >= 0)
         {
             var c = (char)n;
+            var line = reader.PreviousLine;
+            var column = reader.PreviousColumn;
+            var index = reader.PreviousIndex;
 
             if (blockDelimiterIndex < nextDelimiter.Length && c == nextDelimiter[blockDelimiterIndex])
             {
+                if (blockDelimiterIndex == 0)
+                {
+                    delimiterStartLine = line;
+                    delimiterStartColumn = column;
+                    delimiterStartIndex = index;
+                }
+
                 blockDelimiterIndex++;
                 if (blockDelimiterIndex >= nextDelimiter.Length) // end of delimiter
                 {
                     var text = currentBlock.ToString(0, currentBlock.Length - (blockDelimiterIndex - 1));
-                    var block = CreateBlock(isInBlock, text, blockIndex++, startLine, startColumn, reader.Line, reader.Column);
+                    var start = new TextPosition(startLine, startColumn, startIndex);
+                    var end = new TextPosition(delimiterStartLine, delimiterStartColumn, delimiterStartIndex);
+                    var block = CreateBlock(isInBlock, text, blockIndex++, start, end);
                     if (block is not null)
                     {
                         blocks.Add(block);
@@ -329,8 +341,9 @@ public class Template
 
             if (currentBlock.Length == 0)
             {
-                startLine = reader.Line;
-                startColumn = reader.Column;
+                startLine = line;
+                startColumn = column;
+                startIndex = index;
             }
 
             currentBlock.Append(c);
@@ -339,71 +352,61 @@ public class Template
         // Create final parsed block if needed
         if (currentBlock.Length > 0)
         {
-            var block = CreateBlock(codeBlock: false, currentBlock.ToString(), blockIndex, startLine, startColumn, reader.Line, reader.Column);
+            var start = new TextPosition(startLine, startColumn, startIndex);
+            var end = new TextPosition(reader.Line, reader.Column, reader.Index);
+            var block = CreateBlock(codeBlock: false, currentBlock.ToString(), blockIndex, start, end);
             if (block is not null)
             {
                 blocks.Add(block);
             }
         }
 
-        blocks.Sort(TextBlockComparer.IndexComparer);
+        blocks.Sort(TemplateBlockComparer.IndexComparer);
         Blocks = blocks;
     }
 
-    private TextBlock? CreateBlock(bool codeBlock, string text, int index, int startLine, int startColumn, int endLine, int endColumn)
+    private TemplateBlock? CreateBlock(bool codeBlock, string text, int index, TextPosition start, TextPosition end)
     {
-        if (codeBlock && TryParseDirective(text, out var directive))
+        TemplateBlock block;
+        if (codeBlock && TryParseDirective(text, out var name, out var value))
         {
-            _directives.Add(directive);
-            ApplyWellKnownDirective(directive);
-            if (ShouldSkipDirectiveBlock(directive))
-            {
-                return null;
-            }
+            block = CreateDirectiveBlock(text, name, value, index);
+        }
+        else
+        {
+            block = codeBlock ? CreateCodeBlock(text, index) : CreateTextBlock(text, index);
         }
 
-        var block = codeBlock ? CreateCodeBlock(text, index) : CreateTextBlock(text, index);
-        block.StartLine = startLine;
-        block.StartColumn = startColumn;
-        block.EndLine = endLine;
-        block.EndColumn = endColumn;
+        block.Span = new TextSpan(start, end);
         return block;
     }
 
-    /// <summary>Indicates whether a parsed directive block should be skipped from generated code.</summary>
-    /// <param name="directive">The parsed directive.</param>
-    /// <returns><see langword="true"/> to skip the block; otherwise, <see langword="false"/>.</returns>
-    protected virtual bool ShouldSkipDirectiveBlock(TemplateDirective directive)
-    {
-        ArgumentNullException.ThrowIfNull(directive);
-        return true;
-    }
-
-    private static bool TryParseDirective(string text, [NotNullWhen(true)] out TemplateDirective? directive)
+    private static bool TryParseDirective(string text, [NotNullWhen(true)] out string? name, [NotNullWhen(true)] out string? value)
     {
         var trimmedText = text.Trim();
         if (!trimmedText.StartsWith('@', StringComparison.Ordinal))
         {
-            directive = null;
+            name = null;
+            value = null;
             return false;
         }
 
         var directiveText = trimmedText[1..].TrimStart();
         if (directiveText.Length == 0)
         {
-            directive = null;
+            name = null;
+            value = null;
             return false;
         }
 
         if (!char.IsLetter(directiveText[0]))
         {
-            directive = null;
+            name = null;
+            value = null;
             return false;
         }
 
         var nameLength = directiveText.AsSpan().IndexOfAny([' ', '\t', '\r', '\n']);
-        string name;
-        string value;
         if (nameLength < 0)
         {
             name = directiveText;
@@ -417,35 +420,12 @@ public class Template
 
         if (name.Length == 0)
         {
-            directive = null;
+            name = null;
+            value = null;
             return false;
         }
 
-        directive = new TemplateDirective(name, value);
         return true;
-    }
-
-    private void ApplyWellKnownDirective(TemplateDirective directive)
-    {
-        if (string.Equals(directive.Name, "using", StringComparison.OrdinalIgnoreCase))
-        {
-            AddUsing(directive.Value);
-        }
-        else if (string.Equals(directive.Name, "inherits", StringComparison.OrdinalIgnoreCase))
-        {
-            BaseClassFullTypeName = directive.Value;
-        }
-        else if (string.Equals(directive.Name, "implements", StringComparison.OrdinalIgnoreCase))
-        {
-            foreach (var @interface in directive.Value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
-            {
-                _implementedInterfaces.Add(@interface);
-            }
-        }
-        else if (string.Equals(directive.Name, "reference", StringComparison.OrdinalIgnoreCase))
-        {
-            AddReference(directive.Value);
-        }
     }
 
     /// <summary>Compiles the template into executable code.</summary>
@@ -462,6 +442,8 @@ public class Template
         {
             if (IsBuilt)
                 return;
+
+            ApplyDirectives();
 
             using var sw = new StringWriter();
             using (var tw = new IndentedTextWriter(sw))
@@ -535,6 +517,22 @@ public class Template
         }
     }
 
+    private void ApplyDirectives()
+    {
+        if (Blocks is null)
+            throw new InvalidOperationException("Template is not loaded.");
+
+        _implementedInterfaces.Clear();
+
+        foreach (var block in Blocks)
+        {
+            if (block is DirectiveBlock directive)
+            {
+                directive.ApplyDirective();
+            }
+        }
+    }
+
     /// <summary>Creates a text block for text content.</summary>
     /// <param name="text">The text content.</param>
     /// <param name="index">The block index.</param>
@@ -551,6 +549,23 @@ public class Template
     protected virtual CodeBlock CreateCodeBlock(string text, int index)
     {
         return new CodeBlock(this, text, index);
+    }
+
+    /// <summary>Creates a directive block.</summary>
+    /// <param name="text">The original directive text.</param>
+    /// <param name="name">The directive name.</param>
+    /// <param name="value">The directive value.</param>
+    /// <param name="index">The block index.</param>
+    /// <returns>A new <see cref="DirectiveBlock"/> instance.</returns>
+    protected virtual DirectiveBlock CreateDirectiveBlock(string text, string name, string value, int index)
+    {
+        return new DirectiveBlock(this, text, index, name, value);
+    }
+
+    internal void AddImplementedInterface(string interfaceName)
+    {
+        ArgumentNullException.ThrowIfNull(interfaceName);
+        _implementedInterfaces.Add(interfaceName);
     }
 
     /// <summary>Creates a syntax tree from the generated source code.</summary>

@@ -7,6 +7,11 @@ internal sealed class TextReaderWithPosition : TextReader
 
     public int Line { get; private set; } = 1;
     public int Column { get; private set; } = 1;
+    public int Index { get; private set; }
+
+    public int PreviousLine { get; private set; } = 1;
+    public int PreviousColumn { get; private set; } = 1;
+    public int PreviousIndex { get; private set; }
 
     public TextReaderWithPosition(TextReader reader)
     {
@@ -20,9 +25,15 @@ internal sealed class TextReaderWithPosition : TextReader
 
     public override int Read()
     {
+        PreviousLine = Line;
+        PreviousColumn = Column;
+        PreviousIndex = Index;
+
         var read = _reader.Read();
         if (read >= 0)
         {
+            Index++;
+
             var c = (char)read;
             if (c == '\r')
             {

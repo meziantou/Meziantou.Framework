@@ -1,4 +1,11 @@
 <Project>
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <TemplateFile Include="**/*.tt"
+                  Exclude="$(BaseIntermediateOutputPath)**;$(BaseOutputPath)**;bin/**;obj/**" />
+    <Compile Update="@(TemplateFile -> '%(RelativeDir)%(Filename).cs')">
+      <DependentUpon>%(Filename).tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
 
   <!-- Build options -->
   <PropertyGroup>

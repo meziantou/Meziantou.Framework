@@ -44,45 +44,15 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Failed to build $_" }
           }
 
-  validate_bom:
+  validate_generated_files:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
-      - name: Validate Code
-        run: dotnet run ./eng/update-bom.cs
-
-  validate_readme:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - name: Validate Readme
-        run: dotnet run ./eng/update-readme.cs
-
-  validate_test_projects:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - name: Validate
-        run: dotnet run ./eng/validate-testprojects-configuration.cs
-
-  validate_trimmable_projects:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - name: Validate
-        run: dotnet run ./eng/update-trimmable.cs
+      - name: Validate generated files and test project TFMs
+        run: dotnet run ./eng/update-all.cs
 
   create_nuget:
     runs-on: ubuntu-24.04
@@ -328,7 +298,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-24.04
-    needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
+    needs: [ build_eng_scripts, validate_generated_files, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
     permissions:
       contents: read
       id-token: write
@@ -429,7 +399,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_bom, validate_readme, validate_test_projects, validate_trimmable_projects, create_nuget, validate_nuget, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
+    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, build_and_test, test_trimming, test_trimming_wpf, merge_coverage, deploy ]
     steps:
       - name: Check previous jobs status
         env:

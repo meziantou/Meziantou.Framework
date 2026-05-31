@@ -165,6 +165,57 @@ public class TemplateTest
     }
 
     [Fact]
+    public void Template_OverlappingStartDelimiter_ExpressionBlockIsParsed()
+    {
+        var template = new Template
+        {
+            StartCodeBlockDelimiter = "<#",
+            EndCodeBlockDelimiter = "#>",
+        };
+        template.Load("ValueTuple<<#= 1 #>>");
+
+        var result = template.Run();
+
+        Assert.Equal("ValueTuple<1>", result);
+    }
+
+    [Fact]
+    public void Template_LineOnlyCodeBlock_DoesNotCreateTrailingTextNewLineBlock()
+    {
+        var template = new Template
+        {
+            StartCodeBlockDelimiter = "<#",
+            EndCodeBlockDelimiter = "#>",
+        };
+        template.Load("a\n<# var x = 0; #>\nb");
+
+        var textBlocks = template.Blocks.OfType<TextBlock>().ToArray();
+
+        Assert.Equal("a\nb", template.Run());
+        Assert.Equal(2, textBlocks.Length);
+        Assert.Equal("a\n", textBlocks[0].Text);
+        Assert.Equal("b", textBlocks[1].Text);
+    }
+
+    [Fact]
+    public void Template_LineOnlyDirective_DoesNotCreateTrailingTextNewLineBlock()
+    {
+        var template = new Template
+        {
+            StartCodeBlockDelimiter = "<#",
+            EndCodeBlockDelimiter = "#>",
+        };
+        template.Load("a\n<#@ using System.Text #>\nb");
+
+        var textBlocks = template.Blocks.OfType<TextBlock>().ToArray();
+
+        Assert.Equal("a\nb", template.Run());
+        Assert.Equal(2, textBlocks.Length);
+        Assert.Equal("a\n", textBlocks[0].Text);
+        Assert.Equal("b", textBlocks[1].Text);
+    }
+
+    [Fact]
     public void Template_UntypedArgument()
     {
         // Arrange

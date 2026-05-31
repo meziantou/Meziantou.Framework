@@ -24,23 +24,4 @@
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.27" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="HttpClientMock.MapMethods.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>HttpClientMock.MapMethods.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="HttpClientMock.MapMethods.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>HttpClientMock.MapMethods.tt</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
 </Project>

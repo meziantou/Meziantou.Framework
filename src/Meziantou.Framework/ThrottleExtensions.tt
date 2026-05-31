@@ -106,7 +106,7 @@ namespace Meziantou.Framework
     }
 }
 <#+
-    string GetTemplateString(int count)
+    static string GetTemplateString(int count)
     {
         if (count == 0)
             return "";
@@ -124,7 +124,7 @@ namespace Meziantou.Framework
         return str + ">";
     }
 
-    string GetTypeParamDocs(int count)
+    static string GetTypeParamDocs(int count)
     {
         var str = "";
         for (var i = 0; i < count; i++)
@@ -134,7 +134,7 @@ namespace Meziantou.Framework
         return str;
     }
 
-    string GetArgsString(int count, string name)
+    static string GetArgsString(int count, string name)
     {
         if (count == 0)
             return "";
@@ -152,7 +152,7 @@ namespace Meziantou.Framework
         return str;
     }
 
-    string GetTypedArgsString(int count, string name)
+    static string GetTypedArgsString(int count, string name)
     {
         if (count == 0)
             return "";

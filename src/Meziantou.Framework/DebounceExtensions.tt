@@ -66,11 +66,12 @@ namespace Meziantou.Framework
                 }, TaskScheduler.Default);
             };
         }
+
 <# } #>
     }
 }
 <#+
-    string GetTemplateString(int count)
+    static string GetTemplateString(int count)
     {
         if (count == 0)
             return "";
@@ -88,7 +89,7 @@ namespace Meziantou.Framework
         return str + ">";
     }
 
-    string GetTypeParamDocs(int count)
+    static string GetTypeParamDocs(int count)
     {
         var str = "";
         for (var i = 0; i < count; i++)
@@ -98,7 +99,7 @@ namespace Meziantou.Framework
         return str;
     }
 
-    string GetArgsString(int count)
+    static string GetArgsString(int count)
     {
         if (count == 0)
             return "";

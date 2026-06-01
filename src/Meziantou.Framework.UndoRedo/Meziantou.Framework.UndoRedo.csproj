@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <RootNamespace>Meziantou.Framework.UndoRedo</RootNamespace>
     <Version>1.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Async-first undo/redo framework based on the command pattern, with transactions and action merging.</Description>

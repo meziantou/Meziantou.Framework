@@ -56,6 +56,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TextDiff\Meziantou.Framework.TextDiff.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Threading\Meziantou.Framework.Threading.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.UndoRedo\Meziantou.Framework.UndoRedo.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
@@ -107,6 +108,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryDirectory" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TextDiff" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Threading" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.UndoRedo" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Unicode" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Uri" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStopwatch" />

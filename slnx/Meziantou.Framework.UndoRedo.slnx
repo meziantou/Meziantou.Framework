@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.UndoRedo/Meziantou.Framework.UndoRedo.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.UndoRedo.Tests/Meziantou.Framework.UndoRedo.Tests.csproj" />
+  </Folder>
+</Solution>

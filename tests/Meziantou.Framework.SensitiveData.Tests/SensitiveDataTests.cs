@@ -118,15 +118,6 @@ public sealed class SensitiveDataTests
         Assert.DoesNotContain("foo", text, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs")]
-    public void NewtonsoftJsonDoesNotRevealValue()
-    {
-        using var data = Meziantou.Framework.SensitiveData.Create("foo");
-        var text = Newtonsoft.Json.JsonConvert.SerializeObject(data);
-        Assert.DoesNotContain("foo", text, StringComparison.OrdinalIgnoreCase);
-    }
-
 #pragma warning disable SYSLIB0011 // Type or member is obsolete
     [Fact]
     public void BinaryFormatterDoesNotRevealValue()

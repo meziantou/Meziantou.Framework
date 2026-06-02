@@ -164,6 +164,18 @@ namespace Meziantou.Framework.Threading
             public void Dispose() { }
         }
     }
+
+    public static class SynchronizationContextExtensions
+    {
+        public static SynchronizationContextAwaiter GetAwaiter(this System.Threading.SynchronizationContext synchronizationContext) => throw null;
+        public readonly struct SynchronizationContextAwaiter : System.Runtime.CompilerServices.INotifyCompletion
+        {
+            public bool IsCompleted { get => throw null; }
+            public SynchronizationContextAwaiter(System.Threading.SynchronizationContext synchronizationContext) { }
+            public void GetResult() { }
+            public void OnCompleted(System.Action continuation) { }
+        }
+    }
 }
 namespace Meziantou.Framework.Threading.Tasks
 {

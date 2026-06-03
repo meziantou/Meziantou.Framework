@@ -615,7 +615,6 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     public bool RemoveAttribute(string localName, string namespaceURI)
     {
         ArgumentNullException.ThrowIfNull(localName);
-
         ArgumentNullException.ThrowIfNull(namespaceURI);
 
         if (_attributes is null)
@@ -627,7 +626,6 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     public bool RemoveAttributeByPrefix(string prefix, string localName)
     {
         ArgumentNullException.ThrowIfNull(prefix);
-
         ArgumentNullException.ThrowIfNull(localName);
 
         if (_attributes is null)

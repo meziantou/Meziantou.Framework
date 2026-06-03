@@ -222,7 +222,6 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     public bool Remove(string localName, string namespaceURI)
     {
         ArgumentNullException.ThrowIfNull(localName);
-
         ArgumentNullException.ThrowIfNull(namespaceURI);
 
         var att = this[localName, namespaceURI];
@@ -293,7 +292,6 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         get
         {
             ArgumentNullException.ThrowIfNull(localName);
-
             ArgumentNullException.ThrowIfNull(namespaceURI);
 
             return _attributes.Find(a =>

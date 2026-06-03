@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.4.0" />
+    <Compile Include="../Meziantou.Framework.Html/*.cs" LinkBase="Html" Exclude="../Meziantou.Framework.Html/HtmlXmlWriter.cs;../Meziantou.Framework.Html/HtmlNodeExtensions.cs;../Meziantou.Framework.Html/HtmlMicroDataExtensions.cs" />
   </ItemGroup>
 
 </Project>

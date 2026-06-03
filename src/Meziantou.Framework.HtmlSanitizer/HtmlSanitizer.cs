@@ -1,6 +1,4 @@
-using System.Diagnostics;
-using AngleSharp.Dom;
-using AngleSharp.Html.Parser;
+using Meziantou.Framework.Html;
 
 namespace Meziantou.Framework.Sanitizers;
 
@@ -85,10 +83,14 @@ public sealed class HtmlSanitizer
     /// <summary>Sanitizes an HTML fragment by removing dangerous elements, attributes, and URLs while preserving safe HTML structure.</summary>
     /// <param name="html">The HTML fragment to sanitize.</param>
     /// <returns>A sanitized HTML fragment safe for rendering.</returns>
-    public string SanitizeHtmlFragment(string html)
+    [return: NotNullIfNotNull(nameof(html))]
+    public string? SanitizeHtmlFragment(string? html)
     {
+        if (html is null)
+            return null;
+
         var element = ParseHtmlFragment(html);
-        for (var i = element.ChildNodes.Length - 1; i >= 0; i--)
+        for (var i = element.ChildNodes.Count - 1; i >= 0; i--)
         {
             Sanitize(element.ChildNodes[i]);
         }
@@ -96,17 +98,17 @@ public sealed class HtmlSanitizer
         return element.InnerHtml;
     }
 
-    private void Sanitize(INode node)
+    private void Sanitize(HtmlNode node)
     {
-        if (node is IElement htmlElement)
+        if (node is HtmlElement htmlElement)
         {
-            if (!IsValidNode(htmlElement.TagName))
+            if (!IsValidNode(htmlElement.Name))
             {
                 htmlElement.Remove();
                 return;
             }
 
-            for (var i = htmlElement.Attributes.Length - 1; i >= 0; i--)
+            for (var i = htmlElement.Attributes.Count - 1; i >= 0; i--)
             {
                 var attribute = htmlElement.Attributes[i];
                 if (attribute is null)
@@ -114,7 +116,7 @@ public sealed class HtmlSanitizer
 
                 if (!IsValidAttribute(attribute.Name))
                 {
-                    htmlElement.RemoveAttribute(attribute.NamespaceUri, attribute.Name);
+                    htmlElement.RemoveAttribute(attribute.Name, attribute.NamespaceURI);
                 }
                 else if (UriAttributes.Contains(attribute.Name))
                 {
@@ -133,20 +135,16 @@ public sealed class HtmlSanitizer
             }
         }
 
-        for (var i = node.ChildNodes.Length - 1; i >= 0; i--)
+        for (var i = node.ChildNodes.Count - 1; i >= 0; i--)
         {
             Sanitize(node.ChildNodes[i]);
         }
     }
 
-    private static IElement ParseHtmlFragment(string content)
+    private static HtmlDocument ParseHtmlFragment(string content)
     {
-        var uniqueId = Guid.NewGuid().ToString("N");
-
-        var parser = new HtmlParser();
-        var document = parser.ParseDocument($"<div id='{uniqueId}'>{content}</div>");
-        var element = document.GetElementById(uniqueId);
-        Debug.Assert(element is not null);
-        return element;
+        var document = new HtmlDocument();
+        document.LoadHtml(content);
+        return document;
     }
 }

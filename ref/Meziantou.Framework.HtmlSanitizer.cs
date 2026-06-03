@@ -11,12 +11,12 @@ namespace Meziantou.Framework.Sanitizers
         public System.Collections.Generic.ISet<string> BlockedElements { get => throw null; }
         public System.Collections.Generic.ISet<string> UriAttributes { get => throw null; }
         public System.Collections.Generic.ISet<string> SrcsetAttributes { get => throw null; }
-        public string SanitizeHtmlFragment(string html) => throw null;
+        public string? SanitizeHtmlFragment(string? html) => throw null;
     }
 
     public static class UrlSanitizer
     {
-        public static bool IsSafeUrl(string url) => throw null;
-        public static bool IsSafeSrcset(string url) => throw null;
+        public static bool IsSafeUrl(string? url) => throw null;
+        public static bool IsSafeSrcset(string? url) => throw null;
     }
 }

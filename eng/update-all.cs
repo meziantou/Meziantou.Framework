@@ -103,6 +103,12 @@ if (selectedSteps.Count > 0)
     }
 }
 
+if(hasErrors)
+{
+    Console.WriteLine("One or more steps reported errors, you can fix them and re-run the tool to check that all steps are successful.");
+    Console.WriteLine("dotnet run ./eng/update-all.cs");
+}
+
 return hasErrors ? 1 : 0;
 
 static int RunTemplateStep(FullPath rootPath)

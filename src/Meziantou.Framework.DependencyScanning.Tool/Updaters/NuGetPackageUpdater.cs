@@ -13,7 +13,7 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.NuGet;
 
-    protected override async IAsyncEnumerable<string> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
+    protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var dependencyLocation = dependency.VersionLocation?.FilePath ?? dependency.NameLocation?.FilePath;
         if (dependencyLocation is null || dependency.Name is null)
@@ -40,18 +40,10 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
 
         foreach (var source in sources)
         {
-            await foreach (var version in GetVersionsFromSourceAsync(source, dependency.Name, cancellationToken).ConfigureAwait(false))
+            await foreach (var versionInfo in GetVersionsFromSourceWithMetadataAsync(source, dependency.Name, cancellationToken).ConfigureAwait(false))
             {
-                yield return version;
+                yield return versionInfo;
             }
-        }
-    }
-
-    public override async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        await foreach (var version in GetVersionsFromSourceAsync(NuGetOrgSource, packageName, cancellationToken).ConfigureAwait(false))
-        {
-            yield return version;
         }
     }
 
@@ -79,20 +71,57 @@ internal sealed class NuGetPackageUpdater : PackageUpdater
         }
     }
 
-    private static async IAsyncEnumerable<string> GetVersionsFromSourceAsync(string sourceUrl, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<PackageVersion> GetVersionsFromSourceWithMetadataAsync(string sourceUrl, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         using var cache = new SourceCacheContext { NoCache = true };
         var repository = Repository.Factory.GetCoreV3(sourceUrl);
-        var resource = await repository.GetResourceAsync<FindPackageByIdResource>(cancellationToken).ConfigureAwait(false);
+        var metadataResource = await repository.GetResourceAsync<PackageMetadataResource>(cancellationToken).ConfigureAwait(false);
 
-        if (resource is null)
-            yield break;
-
-        IEnumerable<NuGetVersion> versions = await resource.GetAllVersionsAsync(packageName, cache, NullLogger.Instance, cancellationToken).ConfigureAwait(false);
-
-        foreach (var version in versions)
+        if (metadataResource is null)
         {
-            yield return version.ToString();
+            // Fallback to non-metadata version retrieval
+            var findResource = await repository.GetResourceAsync<FindPackageByIdResource>(cancellationToken).ConfigureAwait(false);
+            if (findResource is not null)
+            {
+                IEnumerable<NuGetVersion> versions = await findResource.GetAllVersionsAsync(packageName, cache, NullLogger.Instance, cancellationToken).ConfigureAwait(false);
+                foreach (var version in versions)
+                {
+                    yield return new PackageVersion(version.ToString(), PublishedDate: null);
+                }
+            }
+
+            yield break;
+        }
+
+        IEnumerable<IPackageSearchMetadata>? metadata = null;
+        try
+        {
+            metadata = await metadataResource.GetMetadataAsync(packageName, includePrerelease: true, includeUnlisted: false, cache, NullLogger.Instance, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // If metadata retrieval fails, fallback to non-metadata version retrieval
+        }
+
+        if (metadata is null)
+        {
+            var findResource = await repository.GetResourceAsync<FindPackageByIdResource>(cancellationToken).ConfigureAwait(false);
+            if (findResource is not null)
+            {
+                IEnumerable<NuGetVersion> versions = await findResource.GetAllVersionsAsync(packageName, cache, NullLogger.Instance, cancellationToken).ConfigureAwait(false);
+                foreach (var version in versions)
+                {
+                    yield return new PackageVersion(version.ToString(), PublishedDate: null);
+                }
+            }
+
+            yield break;
+        }
+
+        foreach (var versionMetadata in metadata)
+        {
+            yield return new PackageVersion(versionMetadata.Identity.Version.ToString(), versionMetadata.Published?.UtcDateTime);
         }
     }
 }
+

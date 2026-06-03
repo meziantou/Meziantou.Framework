@@ -3,6 +3,8 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 internal abstract class PackageUpdater
 {
     public abstract VersioningStrategy VersioningStrategy { get; set; }
+    public int MinimumAge { get; set; }
+    public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
     public virtual async Task<string?> UpdateAsync(Dependency dependency, CancellationToken cancellationToken)
     {
@@ -13,14 +15,25 @@ internal abstract class PackageUpdater
         if (!versioningStrategy.IsSupportedVersion(dependency.Version))
             return null;
 
+        var minimumAgeTimeSpan = MinimumAge > 0 ? TimeSpan.FromDays(MinimumAge) : (TimeSpan?)null;
+        var now = TimeProvider.GetUtcNow().UtcDateTime;
+
         string? rawMaxVersion = null;
-        await foreach (var version in GetVersionsAsync(dependency, cancellationToken).ConfigureAwait(false))
+        await foreach (var (version, publishedDate) in GetVersionsAsync(dependency, cancellationToken).ConfigureAwait(false))
         {
             if (!versioningStrategy.IsSupportedVersion(version))
                 continue;
 
             if (!versioningStrategy.IsCompatibleVersion(dependency.Version, version))
                 continue;
+
+            // Filter by minimum age if enabled
+            if (minimumAgeTimeSpan.HasValue && publishedDate.HasValue)
+            {
+                var age = now - publishedDate.Value;
+                if (age < minimumAgeTimeSpan.Value)
+                    continue;
+            }
 
             if (rawMaxVersion is null || versioningStrategy.CompareVersions(version, rawMaxVersion) > 0)
             {
@@ -39,12 +52,7 @@ internal abstract class PackageUpdater
         return updatedReference;
     }
 
-    protected virtual IAsyncEnumerable<string> GetVersionsAsync(Dependency dependency, CancellationToken cancellationToken)
-    {
-        return GetVersionsAsync(dependency.Name!, cancellationToken);
-    }
-
-    public abstract IAsyncEnumerable<string> GetVersionsAsync(string packageName, CancellationToken cancellationToken);
+    protected abstract IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, CancellationToken cancellationToken);
 
     public abstract Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken);
 

@@ -13,7 +13,17 @@ internal sealed class DockerPackageUpdater : PackageUpdater
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.DockerImage;
 
-    public override async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        // Docker registry API doesn't provide simple access to published dates
+        // Return versions without metadata for now
+        await foreach (var version in GetVersionsAsync(dependency.Name ?? string.Empty, cancellationToken).ConfigureAwait(false))
+        {
+            yield return new PackageVersion(version, PublishedDate: null);
+        }
+    }
+
+    private static async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(packageName))
             yield break;

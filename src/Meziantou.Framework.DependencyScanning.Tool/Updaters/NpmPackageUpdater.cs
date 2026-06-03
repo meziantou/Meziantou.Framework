@@ -9,7 +9,6 @@ namespace Meziantou.Framework.DependencyScanning.Tool;
 internal sealed class NpmPackageUpdater : PackageUpdater
 {
     private static readonly HttpClient HttpClient = new();
-    private static readonly Uri DefaultRegistryUri = new("https://registry.npmjs.org/");
     private static readonly JsonSerializerOptions DefaultJsonOptions = new()
     {
         Converters =
@@ -21,28 +20,20 @@ internal sealed class NpmPackageUpdater : PackageUpdater
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.Npm;
 
-    protected override async IAsyncEnumerable<string> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
+    protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var dependencyLocation = dependency.VersionLocation?.FilePath ?? dependency.NameLocation?.FilePath;
         if (dependencyLocation is null || dependency.Name is null)
             yield break;
 
         var registry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(dependencyLocation), dependency.Name);
-        await foreach (var version in GetVersionsFromRegistryAsync(registry, dependency.Name, cancellationToken).ConfigureAwait(false))
+        await foreach (var versionInfo in GetVersionsFromRegistryWithMetadataAsync(registry, dependency.Name, cancellationToken).ConfigureAwait(false))
         {
-            yield return version;
+            yield return versionInfo;
         }
     }
 
-    public override async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        await foreach (var version in GetVersionsFromRegistryAsync(DefaultRegistryUri, packageName, cancellationToken).ConfigureAwait(false))
-        {
-            yield return version;
-        }
-    }
-
-    private static async IAsyncEnumerable<string> GetVersionsFromRegistryAsync(Uri registryUri, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<PackageVersion> GetVersionsFromRegistryWithMetadataAsync(Uri registryUri, string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var packageUri = new Uri(registryUri, packageName);
         using var packageResponse = await HttpClient.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
@@ -55,7 +46,12 @@ internal sealed class NpmPackageUpdater : PackageUpdater
             yield break;
 
         foreach (var version in package.Versions)
-            yield return version.Key;
+        {
+            DateTime? publishedDate = package.Time is not null && package.Time.TryGetValue(version.Key, out var date)
+                ? date
+                : null;
+            yield return new PackageVersion(version.Key, publishedDate);
+        }
     }
 
     public override async Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken)
@@ -124,6 +120,9 @@ internal sealed class NpmPackageUpdater : PackageUpdater
 
         [JsonPropertyName("versions")]
         public IReadOnlyDictionary<string, NpmPackageVersion> Versions { get; set; } = null!;
+
+        [JsonPropertyName("time")]
+        public IReadOnlyDictionary<string, DateTime>? Time { get; set; }
 
         public override string ToString()
         {

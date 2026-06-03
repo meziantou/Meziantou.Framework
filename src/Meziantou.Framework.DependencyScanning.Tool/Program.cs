@@ -46,6 +46,7 @@ internal static class Program
         var filesOption = CreateFilesOption();
         var dependencyTypesOption = CreateDependencyTypesOption();
         var updateLockFilesOption = new Option<bool>("--update-lock-files") { Description = "Update lock files when dependencies are updated" };
+        var minimumAgeOption = new Option<int>("--minimum-age") { Description = "Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Not applied to Docker images as registries don't expose publication dates.", DefaultValueFactory = _ => 7 };
 
         var updateCommand = new Command("update")
         {
@@ -55,6 +56,7 @@ internal static class Program
         updateCommand.Options.Add(filesOption);
         updateCommand.Options.Add(dependencyTypesOption);
         updateCommand.Options.Add(updateLockFilesOption);
+        updateCommand.Options.Add(minimumAgeOption);
 
         updateCommand.SetAction((parseResult, cancellationToken) =>
         {
@@ -63,6 +65,7 @@ internal static class Program
                 parseResult.GetValue(filesOption),
                 parseResult.GetValue(dependencyTypesOption),
                 parseResult.GetValue(updateLockFilesOption),
+                parseResult.GetValue(minimumAgeOption),
                 parseResult.InvocationConfiguration.Output,
                 parseResult.InvocationConfiguration.Error,
                 cancellationToken);
@@ -138,7 +141,7 @@ internal static class Program
         return [.. values.Distinct()];
     }
 
-    private static async Task<int> UpdateAsync(string? rootDirectory, string[]? filePatterns, DependencyType[]? dependencyTypes, bool updateLockFiles, TextWriter output, TextWriter error, CancellationToken cancellationToken)
+    private static async Task<int> UpdateAsync(string? rootDirectory, string[]? filePatterns, DependencyType[]? dependencyTypes, bool updateLockFiles, int minimumAge, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
         var globs = CreateGlobs(filePatterns, error);
         if (globs is null)
@@ -161,11 +164,11 @@ internal static class Program
 
         PackageUpdater[] updaters =
         [
-            new GitHubActionsUpdater(),
-            new DockerPackageUpdater(),
-            new NpmPackageUpdater(),
-            new NuGetPackageUpdater(),
-            new DotNetSdkUpdater(),
+            new GitHubActionsUpdater() { MinimumAge = minimumAge },
+            new DockerPackageUpdater() { MinimumAge = minimumAge },
+            new NpmPackageUpdater() { MinimumAge = minimumAge },
+            new NuGetPackageUpdater() { MinimumAge = minimumAge },
+            new DotNetSdkUpdater() { MinimumAge = minimumAge },
         ];
 
         var updatedDependencies = new ConcurrentBag<Dependency>();

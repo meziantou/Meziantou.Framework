@@ -11,12 +11,12 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
 
     protected override bool IsSupported(Dependency dependency) => dependency.Type is DependencyType.GitHubActions;
 
-    public override async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(packageName))
+        if (dependency.Name is null)
             yield break;
 
-        if (!TryParseRepository(packageName, out var owner, out var repository))
+        if (!TryParseRepository(dependency.Name, out var owner, out var repository))
             yield break;
 
         var tagsUri = new Uri($"https://api.github.com/repos/{owner}/{repository}/tags?per_page=100");
@@ -25,13 +25,13 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         request.Headers.UserAgent.ParseAdd("Meziantou.Framework.DependencyScanning.Tool");
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
 
-        var tags = await GetTagsAsync(request, cancellationToken).ConfigureAwait(false);
-        if (tags is null)
+        var tagsWithDates = await GetTagsWithDatesAsync(request, cancellationToken).ConfigureAwait(false);
+        if (tagsWithDates is null)
             yield break;
 
-        foreach (var tag in tags)
+        foreach (var (tag, date) in tagsWithDates)
         {
-            yield return tag;
+            yield return new PackageVersion(tag, date);
         }
     }
 
@@ -61,7 +61,7 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         return !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repository);
     }
 
-    private static async Task<string[]?> GetTagsAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    private static async Task<(string Tag, DateTime? PublishedDate)[]?> GetTagsWithDatesAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         try
         {
@@ -76,17 +76,33 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
             if (document.RootElement.ValueKind is not JsonValueKind.Array)
                 return null;
 
-            var result = new List<string>();
+            var result = new List<(string, DateTime?)>();
             foreach (var item in document.RootElement.EnumerateArray())
             {
                 if (!item.TryGetProperty("name", out var nameElement))
                     continue;
 
                 var name = nameElement.GetString();
-                if (!string.IsNullOrWhiteSpace(name))
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+
+                DateTime? publishedDate = null;
+                // Try to get published_at from release data (if available)
+                if (item.TryGetProperty("commit", out var commitElement))
                 {
-                    result.Add(name);
+                    if (commitElement.TryGetProperty("committer", out var committerElement))
+                    {
+                        if (committerElement.TryGetProperty("date", out var dateElement))
+                        {
+                            if (DateTime.TryParse(dateElement.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var date))
+                            {
+                                publishedDate = date;
+                            }
+                        }
+                    }
                 }
+
+                result.Add((name, publishedDate));
             }
 
             return [.. result];

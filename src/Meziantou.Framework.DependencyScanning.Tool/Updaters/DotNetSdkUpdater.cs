@@ -9,7 +9,7 @@ internal sealed class DotNetSdkUpdater : PackageUpdater
     private static readonly HttpClient HttpClient = new();
     public override VersioningStrategy VersioningStrategy { get; set; } = SemanticVersioningStrategy.Strict;
 
-    public override async IAsyncEnumerable<string> GetVersionsAsync(string packageName, [EnumeratorCancellation] CancellationToken cancellationToken)
+    protected override async IAsyncEnumerable<PackageVersion> GetVersionsAsync(Dependency dependency, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         // Only get latest SDK
         var index = await HttpClient.GetFromJsonAsync<DotNetReleaseIndex>("https://raw.githubusercontent.com/dotnet/core/main/release-notes/releases-index.json", cancellationToken).ConfigureAwait(false);
@@ -22,7 +22,8 @@ internal sealed class DotNetSdkUpdater : PackageUpdater
         {
             if (!string.IsNullOrEmpty(release.LatestSdk))
             {
-                yield return release.LatestSdk;
+                // latest-release-date is the publication date of latest-sdk for the channel
+                yield return new PackageVersion(release.LatestSdk, release.LatestReleaseDate);
             }
         }
     }
@@ -44,5 +45,8 @@ internal sealed class DotNetSdkUpdater : PackageUpdater
 
         [JsonPropertyName("latest-sdk")]
         public string? LatestSdk { get; set; }
+
+        [JsonPropertyName("latest-release-date")]
+        public DateTime? LatestReleaseDate { get; set; }
     }
 }

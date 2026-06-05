@@ -411,7 +411,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
             """;
 
         const string Expected = """
-            <?xml version="1.0" encoding="utf-8"?>
+            <?xml version="1.0" encoding="utf-8" ?>
             <packages>
               <package id="dummy1" version="2.0.0" targetFramework="net461" />
             </packages>
@@ -456,7 +456,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
             """;
 
         const string Expected = """
-            <?xml version="1.0" encoding="utf-8"?>
+            <?xml version="1.0" encoding="utf-8" ?>
             <packages>
               <package id="dummy1" version="3.12.0-beta00" targetFramework="net461" />
             </packages>

@@ -374,7 +374,7 @@ namespace Meziantou.Framework.Xml
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Xml.XmlDiagnostic> Diagnostics { get => throw null; }
         public Meziantou.Framework.Xml.XmlDocumentSyntax GetRoot() => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Xml.XmlDiagnostic> GetDiagnostics() => throw null;
-        public static Meziantou.Framework.Xml.XmlSyntaxTree ParseText(string text) => throw null;
+        public static Meziantou.Framework.Xml.XmlSyntaxTree ParseText([System.Diagnostics.CodeAnalysis.StringSyntax("Xml")] string text) => throw null;
         public Meziantou.Framework.Xml.XmlSyntaxTree WithChanges(params Meziantou.Framework.Xml.XmlTextChange[] changes) => throw null;
         public Meziantou.Framework.Xml.XmlSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Xml.XmlTextChange> changes) => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Xml.XmlTextChange> GetChanges(Meziantou.Framework.Xml.XmlSyntaxTree oldTree) => throw null;

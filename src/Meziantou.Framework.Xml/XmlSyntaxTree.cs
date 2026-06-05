@@ -12,7 +12,7 @@ public sealed class XmlSyntaxTree
     private XmlSyntaxTree(string text, XmlDocumentSyntax root, IReadOnlyList<XmlDiagnostic> diagnostics)
     {
         Text = text;
-        SourceText = Meziantou.Framework.Xml.SourceText.From(text);
+        SourceText = SourceText.From(text);
         Root = root;
         Diagnostics = diagnostics;
         Root.SetParentAndTree(parent: null, this);
@@ -26,7 +26,7 @@ public sealed class XmlSyntaxTree
     public XmlDocumentSyntax GetRoot() => Root;
     public IReadOnlyList<XmlDiagnostic> GetDiagnostics() => Diagnostics;
 
-    public static XmlSyntaxTree ParseText(string text)
+    public static XmlSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Xml)] string text)
     {
         var parser = new XmlParser(text ?? string.Empty);
         return parser.Parse();

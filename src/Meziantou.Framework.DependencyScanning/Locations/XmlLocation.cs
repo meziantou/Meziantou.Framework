@@ -1,6 +1,7 @@
+using System.Text;
 using System.Xml.Linq;
-using System.Xml.XPath;
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.Xml;
 
 namespace Meziantou.Framework.DependencyScanning;
 
@@ -52,25 +53,25 @@ internal class XmlLocation : Location, ILocationLineInfo
         var stream = FileSystem.OpenReadWrite(FilePath);
         try
         {
-            var doc = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(stream, LoadOptions.PreserveWhitespace, cancellationToken).ConfigureAwait(false);
-            var element = doc.XPathSelectElement(XPath);
-            if (element is null)
-                throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
+            string content;
+            Encoding encoding;
+            using (var reader = await StreamUtilities.CreateReaderAsync(stream, cancellationToken).ConfigureAwait(false))
+            {
+                content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                encoding = reader.CurrentEncoding;
+            }
 
-            if (AttributeName is not null)
-            {
-                var attributeName = XName.Get(AttributeName);
-                var value = UpdateTextValue(element.Attribute(attributeName)?.Value, oldValue, newValue);
-                element.SetAttributeValue(attributeName, value);
-            }
-            else
-            {
-                var value = UpdateTextValue(element.Value, oldValue, newValue);
-                element.SetValue(value);
-            }
+            var syntaxTree = XmlSyntaxTree.ParseText(content);
+            var locationXPath = AttributeName is null ? XPath : $"{XPath}/@{AttributeName}";
+            var updatedRoot = ReplaceValue(syntaxTree, locationXPath, oldValue, newValue);
+            var updatedContent = updatedRoot.ToFullString();
 
             stream.SetLength(0);
-            await XmlUtilities.SaveDocumentWithoutClosingStream(stream, doc, cancellationToken).ConfigureAwait(false);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            await using var writer = StreamUtilities.CreateWriter(stream, encoding);
+            await writer.WriteAsync(updatedContent.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -111,5 +112,31 @@ internal class XmlLocation : Location, ILocationLineInfo
         return currentValue
             .Remove(StartPosition, Length)
             .Insert(StartPosition, newValue);
+    }
+
+    private XmlDocumentSyntax ReplaceValue(XmlSyntaxTree syntaxTree, string locationXPath, string? oldValue, string newValue)
+    {
+        var node = syntaxTree.Root.SelectSingleSyntaxNode(locationXPath) ?? throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
+        return node switch
+        {
+            XmlAttributeSyntax attribute => ReplaceAttributeValue(syntaxTree.Root, attribute, oldValue, newValue),
+            XmlElementSyntax element => ReplaceElementValue(syntaxTree.Root, element, oldValue, newValue),
+            _ => throw new DependencyScannerException("Dependency not found. File was probably modified since last scan."),
+        };
+    }
+
+    private XmlDocumentSyntax ReplaceAttributeValue(XmlDocumentSyntax document, XmlAttributeSyntax attribute, string? oldValue, string newValue)
+    {
+        var updatedValue = UpdateTextValue(attribute.Value, oldValue, newValue);
+        return document.ReplaceNode(attribute, attribute.WithValue(updatedValue));
+    }
+
+    private XmlDocumentSyntax ReplaceElementValue(XmlDocumentSyntax document, XmlElementSyntax element, string? oldValue, string newValue)
+    {
+        if (element.IsSelfClosing)
+            throw new DependencyScannerException("Cannot update value of a self-closing XML element.");
+
+        var updatedValue = UpdateTextValue(element.GetInnerText(), oldValue, newValue);
+        return document.ReplaceNode(element, element.WithInnerText(updatedValue));
     }
 }

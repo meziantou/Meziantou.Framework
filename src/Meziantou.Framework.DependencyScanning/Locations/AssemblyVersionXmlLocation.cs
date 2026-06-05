@@ -11,27 +11,33 @@ internal sealed class AssemblyVersionXmlLocation : XmlLocation
 
     protected internal override Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
-        if (!Version.TryParse(newValue, out _))
+        var normalizedValue = NormalizeAssemblyVersion(newValue);
+        return base.UpdateCoreAsync(oldValue, normalizedValue, cancellationToken);
+    }
+
+    private static string NormalizeAssemblyVersion(string value)
+    {
+        if (!Version.TryParse(value, out _))
         {
             // Version may be a semantic version which is not valid as an assembly version
             // Remove the prerelease and metadata parts
-            var indexOfAny = newValue.IndexOfAny(['+', '-']);
+            var indexOfAny = value.IndexOfAny(['+', '-']);
             if (indexOfAny > 0)
             {
-                newValue = newValue[..indexOfAny];
+                value = value[..indexOfAny];
             }
         }
 
         // An assembly version must have 4 components
-        var components = newValue.Count(c => c == '.') + 1;
+        var components = value.Count(c => c == '.') + 1;
         if (components < 4)
         {
             for (var i = 0; i < 4 - components; i++)
             {
-                newValue += ".0";
+                value += ".0";
             }
         }
 
-        return base.UpdateCoreAsync(oldValue, newValue, cancellationToken);
+        return value;
     }
 }

@@ -131,6 +131,7 @@
     <Project Path="src/Meziantou.Framework.Win32.RecentDocuments/Meziantou.Framework.Win32.RecentDocuments.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.RestartManager/Meziantou.Framework.Win32.RestartManager.csproj" />
     <Project Path="src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
+    <Project Path="src/Meziantou.Framework.Xml/Meziantou.Framework.Xml.csproj" />
     <Project Path="src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Project Path="src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
   </Folder>
@@ -238,6 +239,7 @@
     <Project Path="tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.RestartManager.Tests/Meziantou.Framework.Win32.RestartManager.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Xml.Tests/Meziantou.Framework.Xml.Tests.csproj" />
     <Project Path="tests/Trimmable.Wpf/Trimmable.Wpf.csproj" />
     <Project Path="tests/Trimmable/Trimmable.csproj" />
   </Folder>

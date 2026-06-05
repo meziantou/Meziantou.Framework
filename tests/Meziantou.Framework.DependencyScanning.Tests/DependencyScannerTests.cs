@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
@@ -181,6 +182,60 @@ public sealed class DependencyScannerTests
         await location.UpdateAsync("e", "a", XunitCancellationToken);
 
         await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("e", "b", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task XmlLocation_UpdateAttribute_PreservesFormatting()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.xml");
+        const string original = """
+            <root>
+              <package   id = 'A'    version =  '1.2.3'  />
+            </root>
+            """;
+        await File.WriteAllTextAsync(filePath, original, XunitCancellationToken);
+
+        var document = XDocument.Parse(original, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
+        var package = Assert.Single(document.Root!.Elements("package"));
+        var versionAttribute = package.Attribute("version");
+        Assert.NotNull(versionAttribute);
+
+        var location = new XmlLocation(FileSystem.Instance, filePath, package, versionAttribute);
+        await location.UpdateAsync("1.2.3", "2.0.0", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal(original.Replace("1.2.3", "2.0.0", StringComparison.Ordinal), updatedContent);
+    }
+
+    [Fact]
+    public async Task AssemblyVersionXmlLocation_UpdateAttribute_PreservesFormatting()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        const string original = """
+            <Project>
+              <ItemGroup>
+                <Reference Include = 'nunit.framework, Version = 3.11.0.0, Culture = neutral, PublicKeyToken = 2638cd05610744eb' />
+              </ItemGroup>
+            </Project>
+            """;
+        await File.WriteAllTextAsync(filePath, original, XunitCancellationToken);
+
+        var document = XDocument.Parse(original, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
+        var reference = Assert.Single(document.Root!.Descendants("Reference"));
+        var includeAttribute = reference.Attribute("Include");
+        Assert.NotNull(includeAttribute);
+
+        const string version = "3.11.0.0";
+        var index = includeAttribute.Value.IndexOf(version, StringComparison.Ordinal);
+        Assert.NotEqual(-1, index);
+
+        var location = new AssemblyVersionXmlLocation(FileSystem.Instance, filePath, reference, includeAttribute, index, version.Length);
+        await location.UpdateAsync(version, "3.12.0-beta00", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal(original.Replace(version, "3.12.0.0", StringComparison.Ordinal), updatedContent);
     }
 
     [Fact]

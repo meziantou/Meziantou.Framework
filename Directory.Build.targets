@@ -11,6 +11,14 @@
              Visible="false" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' and '@(ProjectReference->WithMetadataValue(`Filename`, `Meziantou.Framework.FullPath`))' != '' and '@(ProjectReference->WithMetadataValue(`Filename`, `Meziantou.Framework.FullPath.Analyzer`))' == ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
   <Target Name="ConfigurePolyfill" AfterTargets="ResolveLockFileAnalyzers" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <MeziantouPolyfill_ExcludedPolyfills Condition="@(Analyzer->AnyHaveMetadataValue('NuGetPackageId', 'Microsoft.Windows.CsWin32'))">T:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute|T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>

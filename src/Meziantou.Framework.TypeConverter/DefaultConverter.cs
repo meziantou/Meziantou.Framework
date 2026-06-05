@@ -27,7 +27,6 @@ namespace Meziantou.Framework;
 /// </summary>
 public class DefaultConverter : IConverter
 {
-    private const string HexaChars = "0123456789ABCDEF";
     private static readonly MethodInfo EnumTryParseMethodInfo = GetEnumTryParseMethodInfo();
 
     /// <summary>Gets or sets the format to use when converting byte arrays to strings.</summary>
@@ -150,55 +149,27 @@ public class DefaultConverter : IConverter
         if (bytes is null)
             return "";
 
-        ArgumentOutOfRangeException.ThrowIfNegative(offset, nameof(offset));
-        ArgumentOutOfRangeException.ThrowIfNegative(count, nameof(count));
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, bytes.Length);
 
         if (offset >= bytes.Length)
             return "";
 
-        count = Math.Min(count, bytes.Length - offset);
-
-        var sb = new StringBuilder(count * 2);
-        for (var i = offset; i < offset + count; i++)
-        {
-            sb.Append(HexaChars[bytes[i] / 16]);
-            sb.Append(HexaChars[bytes[i] % 16]);
-        }
-
-        return sb.ToString();
+        return Convert.ToHexString(bytes, offset, count);
     }
 
     private static byte[]? FromHexa(string hex)
     {
-        var list = new List<byte>();
-        var lo = false;
-        byte prev = 0;
         var offset = IsHexPrefix(hex) ? 2 : 0; // handle 0x or 0X notation
-
-        for (var i = 0; i < hex.Length - offset; i++)
+        try
         {
-            var c = hex[i + offset];
-            if (c == '-')
-                continue;
-
-            var b = GetHexaByte(c);
-            if (b == 0xFF)
-                return null;
-
-            if (lo)
-            {
-                list.Add((byte)((prev * 16) + b));
-            }
-            else
-            {
-                prev = b;
-            }
-
-            lo = !lo;
+            return Convert.FromHexString(hex.AsSpan(offset));
         }
-
-        return list.ToArray();
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>Converts a byte array to a string using the configured <see cref="ByteArrayToStringFormat"/>.</summary>
@@ -363,10 +334,7 @@ public class DefaultConverter : IConverter
         return false;
     }
 
-    private static bool IsHexPrefix(string text)
-    {
-        return text.Length >= 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
-    }
+    private static bool IsHexPrefix(string text) => text is ['0', ('x' or 'X'), ..];
 
     /// <summary>Converts a string or integer to a CultureInfo instance.</summary>
     /// <param name="input">The value to convert (culture name or LCID).</param>

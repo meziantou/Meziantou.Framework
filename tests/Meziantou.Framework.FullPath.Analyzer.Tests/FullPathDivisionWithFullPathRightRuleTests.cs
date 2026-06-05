@@ -6,49 +6,7 @@ namespace Meziantou.Framework.Tests;
 public sealed class FullPathDivisionWithFullPathRightRuleTests : FullPathAnalyzerTestBase
 {
     [Fact]
-    public async Task Analyzer_ReportDiagnostic_ForFullPathDivisionWithFullPathRight()
-    {
-        var source = """
-            using Meziantou.Framework;
-
-            namespace Sample
-            {
-                public static class TestClass
-                {
-                    public static FullPath M(FullPath left, FullPath right)
-                    {
-                        return {|MFFP0002:left / right|};
-                    }
-                }
-            }
-            """;
-
-        await CreateAnalyzerTest<FullPathDivisionWithFullPathRightAnalyzerType>(source).RunAsync(XunitCancellationToken);
-    }
-
-    [Fact]
-    public async Task Analyzer_DoesNotReportDiagnostic_ForFullPathDivisionWithStringRight()
-    {
-        var source = """
-            using Meziantou.Framework;
-
-            namespace Sample
-            {
-                public static class TestClass
-                {
-                    public static FullPath M(FullPath left)
-                    {
-                        return left / "child";
-                    }
-                }
-            }
-            """;
-
-        await CreateAnalyzerTest<FullPathDivisionWithFullPathRightAnalyzerType>(source).RunAsync(XunitCancellationToken);
-    }
-
-    [Fact]
-    public async Task CodeFix_ReplacesFullPathDivisionWithRightOperand()
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForFullPathDivisionWithFullPathRight()
     {
         var source = """
             using Meziantou.Framework;
@@ -81,5 +39,26 @@ public sealed class FullPathDivisionWithFullPathRightRuleTests : FullPathAnalyze
             """;
 
         await CreateCodeFixTest<FullPathDivisionWithFullPathRightAnalyzerType, FullPathDivisionWithFullPathRightCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForFullPathDivisionWithStringRight()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static FullPath M(FullPath left)
+                    {
+                        return left / "child";
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<FullPathDivisionWithFullPathRightAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
 }

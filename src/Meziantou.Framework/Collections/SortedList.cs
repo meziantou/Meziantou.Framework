@@ -55,7 +55,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         get => _items.Length;
         set
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, Count);
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, Count);
 
             if (value != _items.Length)
             {

@@ -16,6 +16,8 @@
         "src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj",
         "src/Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj",
         "src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj",
+        "src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj",
+        "src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj",
         "src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj",
         "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj"
       ],

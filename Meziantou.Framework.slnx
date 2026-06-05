@@ -54,6 +54,8 @@
     <Project Path="src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder/Meziantou.Framework.FixedStringBuilder.csproj" />
+    <Project Path="src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
+    <Project Path="src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
@@ -169,6 +171,7 @@
     <Project Path="tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Tests/Meziantou.Framework.FixedStringBuilder.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.FullPath.Analyzer.Tests/Meziantou.Framework.FullPath.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tests/Meziantou.Framework.Html.Tests.csproj" />

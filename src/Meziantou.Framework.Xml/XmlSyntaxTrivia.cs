@@ -3,11 +3,6 @@ using System.Diagnostics;
 namespace Meziantou.Framework.Xml;
 
 /// <summary>Represents trivia (for example whitespace or line breaks) attached to a token.</summary>
-/// <example>
-/// <code>
-/// var trivia = token.LeadingTrivia.FirstOrDefault();
-/// </code>
-/// </example>
 [DebuggerDisplay("{Kind}: '{Text}'")]
 public sealed class XmlSyntaxTrivia
 {

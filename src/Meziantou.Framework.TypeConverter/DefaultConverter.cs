@@ -162,8 +162,14 @@ public class DefaultConverter : IConverter
     private static byte[]? FromHexa(string hex)
     {
         var offset = IsHexPrefix(hex) ? 2 : 0; // handle 0x or 0X notation
-
-        return Convert.FromHexString(hex.AsSpan(offset));
+        try
+        {
+            return Convert.FromHexString(hex.AsSpan(offset));
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>Converts a byte array to a string using the configured <see cref="ByteArrayToStringFormat"/>.</summary>

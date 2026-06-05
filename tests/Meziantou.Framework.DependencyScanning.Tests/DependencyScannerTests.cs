@@ -227,15 +227,15 @@ public sealed class DependencyScannerTests
         var includeAttribute = reference.Attribute("Include");
         Assert.NotNull(includeAttribute);
 
-        const string version = "3.11.0.0";
-        var index = includeAttribute.Value.IndexOf(version, StringComparison.Ordinal);
+        const string Version = "3.11.0.0";
+        var index = includeAttribute.Value.IndexOf(Version, StringComparison.Ordinal);
         Assert.NotEqual(-1, index);
 
-        var location = new AssemblyVersionXmlLocation(FileSystem.Instance, filePath, reference, includeAttribute, index, version.Length);
-        await location.UpdateAsync(version, "3.12.0-beta00", XunitCancellationToken);
+        var location = new AssemblyVersionXmlLocation(FileSystem.Instance, filePath, reference, includeAttribute, index, Version.Length);
+        await location.UpdateAsync(Version, "3.12.0-beta00", XunitCancellationToken);
 
         var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
-        Assert.Equal(Original.Replace(version, "3.12.0.0", StringComparison.Ordinal), updatedContent);
+        Assert.Equal(Original.Replace(Version, "3.12.0.0", StringComparison.Ordinal), updatedContent);
     }
 
     [Fact]

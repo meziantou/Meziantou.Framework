@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics;
 
 namespace Meziantou.Framework.Collections;
 
@@ -54,8 +55,8 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
     {
         get
         {
-            if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
             var i = 0;
             foreach (var item in _list)
@@ -66,12 +67,13 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
                 i++;
             }
 
-            throw new ArgumentOutOfRangeException(nameof(index));
+            throw new UnreachableException();
         }
         set
         {
-            if (index < 0 || index >= Capacity || index > Count)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Capacity);
 
             if (index == Count)
             {
@@ -93,7 +95,7 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
                 i++;
             }
 
-            throw new ArgumentOutOfRangeException(nameof(index));
+            throw new UnreachableException();
         }
     }
 
@@ -134,8 +136,8 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
 
     public void RemoveAt(int index)
     {
-        if (index < 0 || index >= Count)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
         var node = _list.First;
         var i = 0;
@@ -150,6 +152,8 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
             node = node.Next;
             i++;
         }
+
+        throw new UnreachableException();
     }
 
     void ICollection<T>.Add(T item)

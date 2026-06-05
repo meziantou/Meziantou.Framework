@@ -150,11 +150,9 @@ public class DefaultConverter : IConverter
         if (bytes is null)
             return "";
 
-        if (offset < 0)
-            throw new ArgumentOutOfRangeException(nameof(offset), offset, message: null);
-
-        if (count < 0)
-            throw new ArgumentOutOfRangeException(nameof(count), count, message: null);
+        ArgumentOutOfRangeException.ThrowIfNegative(offset, nameof(offset));
+        ArgumentOutOfRangeException.ThrowIfNegative(count, nameof(count));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, bytes.Length);
 
         if (offset >= bytes.Length)
             return "";

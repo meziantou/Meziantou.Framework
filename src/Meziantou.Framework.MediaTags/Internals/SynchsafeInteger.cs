@@ -26,8 +26,8 @@ internal static class SynchsafeInteger
         if (destination.Length < 4)
             throw new ArgumentException("Need at least 4 bytes to encode a synchsafe integer.", nameof(destination));
 
-        if (value < 0 || value > 0x0FFFFFFF)
-            throw new ArgumentOutOfRangeException(nameof(value), "Value must be between 0 and 0x0FFFFFFF (268435455).");
+        ArgumentOutOfRangeException.ThrowIfNegative(value);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x0FFFFFFF);
 
         destination[0] = (byte)((value >> 21) & 0x7F);
         destination[1] = (byte)((value >> 14) & 0x7F);

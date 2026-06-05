@@ -56,9 +56,7 @@ public static class BarcodePngRenderer
     {
         var value = ((long)size + (2L * quietZoneModules)) * moduleSize;
         if (value > int.MaxValue)
-        {
             throw new ArgumentOutOfRangeException(parameterName, "The output image dimensions are too large.");
-        }
 
         return (int)value;
     }
@@ -67,9 +65,7 @@ public static class BarcodePngRenderer
     {
         var value = (long)size * moduleSize;
         if (value > int.MaxValue)
-        {
             throw new ArgumentOutOfRangeException(parameterName, "The output image dimensions are too large.");
-        }
 
         return (int)value;
     }
@@ -79,9 +75,7 @@ public static class BarcodePngRenderer
         var stride = (width * 4) + 1;
         var dataLength = (long)stride * height;
         if (dataLength > int.MaxValue)
-        {
             throw new ArgumentOutOfRangeException(nameof(options), "The output image is too large.");
-        }
 
         var result = new byte[(int)dataLength];
         for (var row = 0; row < height; row++)

@@ -41,9 +41,7 @@ internal static class RMQRFormatInfo
     private static int GetPatternIndex(ErrorCorrectionLevel ecLevel, int version)
     {
         if (version < 1 || version > 32)
-        {
             throw new ArgumentOutOfRangeException(nameof(version), "rMQR version must be in the range 1-32.");
-        }
 
         var versionIndex = version - 1;
         return ecLevel switch

@@ -29,9 +29,8 @@ internal sealed class ReadOnlyList<T> : IReadOnlyList<T>
     {
         get
         {
-            if ((uint)index >= (uint)_count)
-                throw new ArgumentOutOfRangeException(nameof(index));
-
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _count);
             return _items[index];
         }
     }

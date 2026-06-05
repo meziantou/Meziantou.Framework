@@ -18,12 +18,8 @@ public static class AvatarGenerator
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(options);
-
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("The name cannot be empty or whitespace.", nameof(name));
-
-        if (options.Size <= 0)
-            throw new ArgumentOutOfRangeException(nameof(options), "The option Size must be greater than 0.");
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Size);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         if (options.Palette.Count == 0)
             throw new ArgumentException("The palette cannot be empty.", nameof(options));

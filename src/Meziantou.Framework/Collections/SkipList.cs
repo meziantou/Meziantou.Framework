@@ -210,9 +210,10 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
     public void CopyTo(T[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
-
-        if ((uint)arrayIndex > (uint)array.Length)
-            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
+        if (array.Rank is not 1)
+            throw new ArgumentException("Array must be single-dimensional", nameof(array));
 
         if (array.Length - arrayIndex < Count)
             throw new ArgumentException("Destination array is not long enough to copy all the items in the collection.", nameof(array));
@@ -228,6 +229,7 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
     void ICollection.CopyTo(Array array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
 
         if (array.Rank != 1)
             throw new ArgumentException("Only single dimensional arrays are supported for the requested action.", nameof(array));
@@ -235,8 +237,7 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
         if (array.GetLowerBound(0) != 0)
             throw new ArgumentException("The lower bound of target array must be zero.", nameof(array));
 
-        if ((uint)arrayIndex > (uint)array.Length)
-            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
 
         if (array.Length - arrayIndex < Count)
             throw new ArgumentException("Destination array is not long enough to copy all the items in the collection.", nameof(array));

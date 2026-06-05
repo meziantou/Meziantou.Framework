@@ -20,12 +20,10 @@ public readonly struct UnicodeRange : IEquatable<UnicodeRange>
     /// <param name="end">The last code point in the range (inclusive).</param>
     public UnicodeRange(int start, int end)
     {
-        if (start is < 0 or > 0x10FFFF)
-            throw new ArgumentOutOfRangeException(nameof(start));
-
-        if (end is < 0 or > 0x10FFFF)
-            throw new ArgumentOutOfRangeException(nameof(end));
-
+        ArgumentOutOfRangeException.ThrowIfNegative(start, nameof(start));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(start, 0x10FFFF, nameof(start));
+        ArgumentOutOfRangeException.ThrowIfNegative(end, nameof(end));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(end, 0x10FFFF, nameof(end));
         if (start > end)
             throw new ArgumentException("Start must be less than or equal to end.", nameof(end));
 

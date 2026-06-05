@@ -9,7 +9,7 @@ namespace Meziantou.Framework;
 /// <remarks>
 /// <para>
 /// This class creates optimized delegates for method invocation, avoiding repeated reflection overhead.
-/// It supports both synchronous and asynchronous methods, including those returning Task, ValueTask, 
+/// It supports both synchronous and asynchronous methods, including those returning Task, ValueTask,
 /// or any custom awaitable type that implements the awaitable pattern.
 /// </para>
 /// </remarks>
@@ -18,7 +18,7 @@ namespace Meziantou.Framework;
 /// <code>
 /// var methodInfo = typeof(MyClass).GetMethod("MyMethod");
 /// var executor = ObjectMethodExecutor.Create(methodInfo);
-/// 
+///
 /// var instance = new MyClass();
 /// var parameters = new object?[] { param1, param2 };
 /// if (executor.IsMethodAsync)
@@ -163,14 +163,10 @@ public sealed class ObjectMethodExecutor
     private object? GetDefaultValueForParameter(int index)
     {
         if (_parameterDefaultValues is null)
-        {
             throw new InvalidOperationException($"Cannot call {nameof(GetDefaultValueForParameter)}, because no parameter default values were supplied.");
-        }
 
-        if (index < 0 || index > MethodParameters.Length - 1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(index));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, MethodParameters.Length);
 
         return _parameterDefaultValues[index];
     }

@@ -182,9 +182,8 @@ public sealed partial class CGroup2
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
     public void SetCpuWeight(int weight)
     {
-        if (weight is < 1 or > 10000)
-            throw new ArgumentOutOfRangeException(nameof(weight), "CPU weight must be between 1 and 10000.");
-
+        ArgumentOutOfRangeException.ThrowIfLessThan(weight, 1, nameof(weight));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(weight, 10000, nameof(weight));
         WriteFile("cpu.weight", weight.ToString(CultureInfo.InvariantCulture));
     }
 
@@ -206,8 +205,7 @@ public sealed partial class CGroup2
     /// <param name="periodMicroseconds">Period in microseconds (default is 100000 = 100ms).</param>
     public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000)
     {
-        if (periodMicroseconds <= 0)
-            throw new ArgumentOutOfRangeException(nameof(periodMicroseconds), "Period must be positive.");
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(periodMicroseconds, nameof(periodMicroseconds));
 
         var maxStr = maxMicroseconds.HasValue ? maxMicroseconds.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("cpu.max", $"{maxStr} {periodMicroseconds.ToString(CultureInfo.InvariantCulture)}");
@@ -227,8 +225,10 @@ public sealed partial class CGroup2
     /// <param name="bytes">Maximum memory in bytes, or null for no limit.</param>
     public void SetMemoryMax(long? bytes)
     {
-        if (bytes.HasValue && bytes.Value < 0)
-            throw new ArgumentOutOfRangeException(nameof(bytes), "Memory limit must be non-negative.");
+        if (bytes.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes.Value, nameof(bytes));
+        }
 
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("memory.max", value);
@@ -255,8 +255,10 @@ public sealed partial class CGroup2
     /// <param name="bytes">High memory limit in bytes, or null for no limit.</param>
     public void SetMemoryHigh(long? bytes)
     {
-        if (bytes.HasValue && bytes.Value < 0)
-            throw new ArgumentOutOfRangeException(nameof(bytes), "Memory limit must be non-negative.");
+        if (bytes.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes.Value, nameof(bytes));
+        }
 
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("memory.high", value);
@@ -266,8 +268,10 @@ public sealed partial class CGroup2
     /// <param name="bytes">Low memory limit in bytes, or null for no protection.</param>
     public void SetMemoryLow(long? bytes)
     {
-        if (bytes.HasValue && bytes.Value < 0)
-            throw new ArgumentOutOfRangeException(nameof(bytes), "Memory limit must be non-negative.");
+        if (bytes.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes.Value, nameof(bytes));
+        }
 
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "0";
         WriteFile("memory.low", value);
@@ -277,8 +281,10 @@ public sealed partial class CGroup2
     /// <param name="bytes">Min memory limit in bytes, or null for no protection.</param>
     public void SetMemoryMin(long? bytes)
     {
-        if (bytes.HasValue && bytes.Value < 0)
-            throw new ArgumentOutOfRangeException(nameof(bytes), "Memory limit must be non-negative.");
+        if (bytes.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes.Value, nameof(bytes));
+        }
 
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "0";
         WriteFile("memory.min", value);
@@ -301,8 +307,10 @@ public sealed partial class CGroup2
     /// <param name="bytes">Maximum swap in bytes, or null for no limit.</param>
     public void SetSwapMax(long? bytes)
     {
-        if (bytes.HasValue && bytes.Value < 0)
-            throw new ArgumentOutOfRangeException(nameof(bytes), "Swap limit must be non-negative.");
+        if (bytes.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes.Value, nameof(bytes));
+        }
 
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("memory.swap.max", value);
@@ -318,9 +326,8 @@ public sealed partial class CGroup2
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
     public void SetIoWeight(int major, int minor, int weight)
     {
-        if (weight is < 1 or > 10000)
-            throw new ArgumentOutOfRangeException(nameof(weight), "IO weight must be between 1 and 10000.");
-
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(weight);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(weight, 10000);
         WriteFile("io.weight", $"{major.ToString(CultureInfo.InvariantCulture)}:{minor.ToString(CultureInfo.InvariantCulture)} {weight.ToString(CultureInfo.InvariantCulture)}");
     }
 
@@ -328,9 +335,8 @@ public sealed partial class CGroup2
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
     public void SetDefaultIoWeight(int weight)
     {
-        if (weight is < 1 or > 10000)
-            throw new ArgumentOutOfRangeException(nameof(weight), "IO weight must be between 1 and 10000.");
-
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(weight);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(weight, 10000);
         WriteFile("io.weight", $"default {weight.ToString(CultureInfo.InvariantCulture)}");
     }
 
@@ -385,8 +391,10 @@ public sealed partial class CGroup2
     /// <param name="max">Maximum number of processes, or null for no limit.</param>
     public void SetPidsMax(long? max)
     {
-        if (max.HasValue && max.Value < 0)
-            throw new ArgumentOutOfRangeException(nameof(max), "PIDs limit must be non-negative.");
+        if (max.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(max.Value, nameof(max));
+        }
 
         var value = max.HasValue ? max.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("pids.max", value);

@@ -58,8 +58,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         : base(Array.Empty<byte>())
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (initialCapacity < 0)
-            throw new ArgumentOutOfRangeException(nameof(initialCapacity), initialCapacity, "The capacity must be greater than or equal to 0.");
+        ArgumentOutOfRangeException.ThrowIfNegative(initialCapacity);
 
         options.Freeze();
         _options = options;
@@ -100,8 +99,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         set
         {
             EnsureOpen();
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), value, "The position must be greater than or equal to 0.");
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             _position = value;
         }
@@ -118,8 +116,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         set
         {
             EnsureOpen();
-            if (value < _length)
-                throw new ArgumentOutOfRangeException(nameof(value), value, "The capacity cannot be smaller than the current length.");
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, _length);
 
             if (value > _capacity)
             {
@@ -165,8 +163,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     public override void SetLength(long value)
     {
         EnsureOpen();
-        if (value < 0 || value > Array.MaxLength)
-            throw new ArgumentOutOfRangeException(nameof(value), value, "The length is out of range.");
+        ArgumentOutOfRangeException.ThrowIfNegative(value);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Array.MaxLength);
 
         if (value > _length)
         {
@@ -179,7 +177,9 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
         // MemoryStream clamps the position to the new length when it would otherwise be past the end.
         if (_position > value)
+        {
             _position = value;
+        }
     }
 
     /// <inheritdoc />
@@ -399,8 +399,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     void IBufferWriter<byte>.Advance(int count)
     {
         EnsureOpen();
-        if (count < 0)
-            throw new ArgumentOutOfRangeException(nameof(count), count, "The count must be greater than or equal to 0.");
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (count == 0)
             return;

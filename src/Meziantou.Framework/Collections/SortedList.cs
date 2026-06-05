@@ -18,8 +18,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     public SortedList(int capacity)
     {
-        if (capacity < 0)
-            throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Non-negative number required.");
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         _items = capacity is 0 ? [] : new T[capacity];
         _comparer = Comparer<T>.Default;
@@ -34,8 +33,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     public SortedList(int capacity, IComparer<T>? comparer)
     {
-        if (capacity < 0)
-            throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Non-negative number required.");
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         _items = capacity is 0 ? [] : new T[capacity];
         Count = 0;
@@ -57,10 +55,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         get => _items.Length;
         set
         {
-            if (value < Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), "Capacity was less than the current size.");
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, Count);
 
             if (value != _items.Length)
             {

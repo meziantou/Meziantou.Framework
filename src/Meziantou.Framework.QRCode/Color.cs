@@ -279,9 +279,7 @@ public readonly partial struct Color : IEquatable<Color>
     private static byte ToByte(int value, string parameterName)
     {
         if (value < 0 || value > 255)
-        {
             throw new ArgumentOutOfRangeException(parameterName, "The color channel value must be between 0 and 255.");
-        }
 
         return (byte)value;
     }

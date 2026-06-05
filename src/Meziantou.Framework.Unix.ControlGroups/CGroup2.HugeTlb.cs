@@ -9,9 +9,10 @@ public partial class CGroup2
     public void SetHugeTlbMax(string pageSize, long? bytes)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
-
-        if (bytes.HasValue && bytes.Value < 0)
-            throw new ArgumentOutOfRangeException(nameof(bytes), "Limit must be non-negative.");
+        if (bytes.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes.Value, nameof(bytes));
+        }
 
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
         var fileName = $"hugetlb.{pageSize}.max";

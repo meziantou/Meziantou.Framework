@@ -63,8 +63,8 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
     {
         get
         {
-            if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
             var segment = _firstSegment;
 
@@ -134,8 +134,8 @@ sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollection<T>, I
         if (array.Rank is not 1)
             throw new ArgumentException("Array must be single-dimensional", nameof(array));
 
-        if (arrayIndex < 0 || arrayIndex > array.Length)
-            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
 
         var count = Count;
         if (array.Length - arrayIndex < count)

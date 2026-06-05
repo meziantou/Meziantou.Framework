@@ -30,11 +30,8 @@ sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         get => _items.Length;
         set
         {
-            if (value <= 0)
-                throw new ArgumentException("Maximum count must be greater than 0.", nameof(value));
-
-            if (value < Count)
-                throw new ArgumentOutOfRangeException(nameof(value), "Capacity was less than the current size.");
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, Count);
 
             if (value != _items.Length)
             {
@@ -169,8 +166,8 @@ sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
     {
         get
         {
-            if (index < 0 || index >= Count)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
 
             return _items[(_startIndex + index) % Capacity];
         }
@@ -200,6 +197,11 @@ sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
 
     public void CopyTo(T[] array, int arrayIndex)
     {
+        ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+        if (array.Rank is not 1)
+            throw new ArgumentException("Array must be single-dimensional", nameof(array));
+
         var length = Math.Min(Count, _items.Length - _startIndex);
         Array.Copy(_items, _startIndex, array, arrayIndex, length);
         if (_startIndex + Count > _items.Length)

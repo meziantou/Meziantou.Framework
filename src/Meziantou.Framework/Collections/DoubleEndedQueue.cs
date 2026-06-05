@@ -157,12 +157,11 @@ public sealed class DoubleEndedQueue<T> : ICollection<T>, IReadOnlyList<T>
     public void CopyTo(T[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
 
         if (array.Rank is not 1)
             throw new ArgumentException("Array must be single-dimensional", nameof(array));
-
-        if (arrayIndex < 0 || arrayIndex > array.Length)
-            throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
         if (array.Length - arrayIndex < Count)
             throw new ArgumentException("The number of elements in the source collection is greater than the available space from arrayIndex to the end of the destination array.", nameof(array));

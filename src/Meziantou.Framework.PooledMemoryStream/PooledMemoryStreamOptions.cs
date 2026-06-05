@@ -60,8 +60,7 @@ public sealed class PooledMemoryStreamOptions
         set
         {
             ThrowIfFrozen();
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value), value, "The value must be greater than or equal to 0.");
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
             _maxRetainedBytesPerBucket = value;
         }
     }

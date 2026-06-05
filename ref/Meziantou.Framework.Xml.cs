@@ -101,9 +101,13 @@ namespace Meziantou.Framework.Xml
 
     public sealed class XmlDeclarationSyntax : Meziantou.Framework.Xml.XmlSyntaxNode
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Xml.XmlSyntaxNode> ChildNodes { get => throw null; }
         public string Version { get => throw null; }
         public string? Encoding { get => throw null; }
         public string? Standalone { get => throw null; }
+        public Meziantou.Framework.Xml.XmlAttributeSyntax? VersionAttribute { get => throw null; }
+        public Meziantou.Framework.Xml.XmlAttributeSyntax? EncodingAttribute { get => throw null; }
+        public Meziantou.Framework.Xml.XmlAttributeSyntax? StandaloneAttribute { get => throw null; }
         public XmlDeclarationSyntax(string version, string? encoding, string? standalone, string fullText) : base(default(Meziantou.Framework.Xml.XmlSyntaxKind), default(string), default(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Xml.XmlSyntaxToken>)) { }
         public Meziantou.Framework.Xml.XmlDeclarationSyntax WithVersion(string version) => throw null;
         public Meziantou.Framework.Xml.XmlDeclarationSyntax WithEncoding(string? encoding) => throw null;
@@ -193,12 +197,12 @@ namespace Meziantou.Framework.Xml
         public Meziantou.Framework.Xml.XmlAttributeSyntax? GetAttribute(string name) => throw null;
         public string GetInnerText() => throw null;
         public Meziantou.Framework.Xml.XmlElementSyntax WithName(string name) => throw null;
-        public Meziantou.Framework.Xml.XmlElementSyntax WithAttributes(System.Collections.Generic.IEnumerable<Meziantou.Framework.Xml.XmlAttributeSyntax> attributes) => throw null;
-        public Meziantou.Framework.Xml.XmlElementSyntax WithContent(System.Collections.Generic.IEnumerable<Meziantou.Framework.Xml.XmlSyntaxNode> content) => throw null;
+        public Meziantou.Framework.Xml.XmlElementSyntax WithAttributes(System.Collections.Generic.IEnumerable<Meziantou.Framework.Xml.XmlAttributeSyntax>? attributes) => throw null;
+        public Meziantou.Framework.Xml.XmlElementSyntax WithContent(System.Collections.Generic.IEnumerable<Meziantou.Framework.Xml.XmlSyntaxNode>? content) => throw null;
         public Meziantou.Framework.Xml.XmlElementSyntax WithEndTag(Meziantou.Framework.Xml.XmlEndTagSyntax? endTag) => throw null;
         public Meziantou.Framework.Xml.XmlElementSyntax WithInnerText(string text) => throw null;
-        public Meziantou.Framework.Xml.XmlElementSyntax WithLeadingTrivia(System.Collections.Generic.IEnumerable<Meziantou.Framework.Xml.XmlSyntaxTrivia>? leadingTrivia) => throw null;
-        public Meziantou.Framework.Xml.XmlElementSyntax WithTrailingTrivia(System.Collections.Generic.IEnumerable<Meziantou.Framework.Xml.XmlSyntaxTrivia>? trailingTrivia) => throw null;
+        public Meziantou.Framework.Xml.XmlElementSyntax WithLeadingTrivia(params System.ReadOnlySpan<Meziantou.Framework.Xml.XmlSyntaxTrivia> leadingTrivia) => throw null;
+        public Meziantou.Framework.Xml.XmlElementSyntax WithTrailingTrivia(params System.ReadOnlySpan<Meziantou.Framework.Xml.XmlSyntaxTrivia> trailingTrivia) => throw null;
         public override void Accept(Meziantou.Framework.Xml.XmlSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Xml.XmlSyntaxVisitor<TResult> visitor) => throw null;
     }

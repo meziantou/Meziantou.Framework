@@ -189,14 +189,14 @@ public sealed class DependencyScannerTests
     {
         await using var directory = TemporaryDirectory.Create();
         var filePath = directory.GetFullPath("test.xml");
-        const string original = """
+        const string Original = """
             <root>
               <package   id = 'A'    version =  '1.2.3'  />
             </root>
             """;
-        await File.WriteAllTextAsync(filePath, original, XunitCancellationToken);
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
 
-        var document = XDocument.Parse(original, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
+        var document = XDocument.Parse(Original, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
         var package = Assert.Single(document.Root!.Elements("package"));
         var versionAttribute = package.Attribute("version");
         Assert.NotNull(versionAttribute);
@@ -205,7 +205,7 @@ public sealed class DependencyScannerTests
         await location.UpdateAsync("1.2.3", "2.0.0", XunitCancellationToken);
 
         var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
-        Assert.Equal(original.Replace("1.2.3", "2.0.0", StringComparison.Ordinal), updatedContent);
+        Assert.Equal(Original.Replace("1.2.3", "2.0.0", StringComparison.Ordinal), updatedContent);
     }
 
     [Fact]
@@ -213,16 +213,16 @@ public sealed class DependencyScannerTests
     {
         await using var directory = TemporaryDirectory.Create();
         var filePath = directory.GetFullPath("test.csproj");
-        const string original = """
+        const string Original = """
             <Project>
               <ItemGroup>
                 <Reference Include = 'nunit.framework, Version = 3.11.0.0, Culture = neutral, PublicKeyToken = 2638cd05610744eb' />
               </ItemGroup>
             </Project>
             """;
-        await File.WriteAllTextAsync(filePath, original, XunitCancellationToken);
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
 
-        var document = XDocument.Parse(original, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
+        var document = XDocument.Parse(Original, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
         var reference = Assert.Single(document.Root!.Descendants("Reference"));
         var includeAttribute = reference.Attribute("Include");
         Assert.NotNull(includeAttribute);
@@ -235,7 +235,7 @@ public sealed class DependencyScannerTests
         await location.UpdateAsync(version, "3.12.0-beta00", XunitCancellationToken);
 
         var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
-        Assert.Equal(original.Replace(version, "3.12.0.0", StringComparison.Ordinal), updatedContent);
+        Assert.Equal(Original.Replace(version, "3.12.0.0", StringComparison.Ordinal), updatedContent);
     }
 
     [Fact]

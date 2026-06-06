@@ -1125,8 +1125,10 @@ public sealed class SnapshotEndToEndTests
         bool expectFailure = false,
         IReadOnlyList<SnapshotFile>? existingFiles = null,
         string? testFilter = null,
-        string? directoryBuildPropsContent = null)
+        string? directoryBuildPropsContent = null,
+        int buildRetryCount = 0)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(buildRetryCount);
         await using var directory = TemporaryDirectory.Create();
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
         Assert.NotNull(dotnetPath);
@@ -1178,8 +1180,8 @@ public sealed class SnapshotEndToEndTests
             CreateTextFile("Directory.Build.props", directoryBuildPropsContent);
         }
 
-        await ExecuteDotNet(directory.FullPath, dotnetPath, ["restore", "--disable-build-servers"], expectedExitCode: 0);
-        await ExecuteDotNet(directory.FullPath, dotnetPath, ["build", "--no-restore", "--disable-build-servers"], expectedExitCode: 0);
+        await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, ["build", "--no-restore", "--disable-build-servers"], expectedExitCode: 0);
         await ExecuteDotNet(directory.FullPath, dotnetPath, GetDotNetTestArguments(testFramework, testFilter), expectedExitCode: expectFailure ? 1 : 0);
 
         return GetGeneratedSnapshotFiles(directory.FullPath);
@@ -1347,6 +1349,36 @@ public sealed class SnapshotEndToEndTests
         };
 
         return string.Join(Environment.NewLine, references);
+    }
+
+    private static async Task ExecuteDotNetWithRetry(FullPath workingDirectory, string dotnetPath, IReadOnlyList<string> arguments, int expectedExitCode, int retryCount = 3)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(retryCount);
+
+        var maxAttempts = retryCount + 1;
+        var output = new StringBuilder();
+        var result = default(DotNetExecutionResult);
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            result = await ExecuteDotNet(workingDirectory, dotnetPath, arguments);
+            if (result.ExitCode == expectedExitCode)
+            {
+                return;
+            }
+
+            output.AppendLine(CultureInfo.InvariantCulture, $"Attempt {attempt} of {maxAttempts} returned exit code {result.ExitCode}.");
+            output.AppendLine(result.Output);
+
+            if (attempt < maxAttempts)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), XunitCancellationToken);
+            }
+        }
+
+        Assert.True(
+            result.ExitCode == expectedExitCode,
+            $"dotnet {string.Join(' ', arguments)} returned exit code {result.ExitCode} after {maxAttempts} attempts but {expectedExitCode} was expected.{Environment.NewLine}{output}");
     }
 
     private static async Task<DotNetExecutionResult> ExecuteDotNet(FullPath workingDirectory, string dotnetPath, IReadOnlyList<string> arguments, int? expectedExitCode = null)

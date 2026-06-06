@@ -65,6 +65,11 @@ else
     Console.WriteLine("Skipping source generator package TFM validation for delta build output.");
 }
 
+if (!ValidateFullPathPackageContents(rootPath, nugetDirectory, isDeltaBuild))
+{
+    return 1;
+}
+
 // General validation
 Console.WriteLine("Validating NuGet packages");
 if (nupkgFiles.Length == 0)
@@ -150,6 +155,58 @@ static int RunProcessWithExitCode(string fileName, string[] arguments)
     process.WaitForExit();
 
     return process.ExitCode;
+}
+
+static bool ValidateFullPathPackageContents(FullPath rootPath, FullPath nugetDirectory, bool isDeltaBuild)
+{
+    var packagePattern = new Regex(@"^Meziantou\.Framework\.FullPath\.[0-9][0-9a-zA-Z.\-]*\.nupkg$", RegexOptions.NonBacktracking);
+    var packagePath = Directory.EnumerateFiles(nugetDirectory).FirstOrDefault(file => packagePattern.IsMatch(Path.GetFileName(file)));
+    if (packagePath is null)
+    {
+        if (isDeltaBuild)
+        {
+            Console.WriteLine("Meziantou.Framework.FullPath package was not produced by delta build. Skipping package-content checks.");
+            return true;
+        }
+
+        Console.Error.WriteLine("ERROR: Package not found for Meziantou.Framework.FullPath");
+        return false;
+    }
+
+    Console.WriteLine("Checking Meziantou.Framework.FullPath package content");
+
+    var fullPathProjectPath = rootPath / "src" / "Meziantou.Framework.FullPath";
+    var tfms = RunAndCapture("dotnet", ["build", "--getProperty:TargetFrameworks", fullPathProjectPath]).Trim().Split(';');
+    using var zipFile = ZipFile.OpenRead(packagePath);
+    var entries = zipFile.Entries.Select(entry => entry.FullName).ToList();
+
+    foreach (var tfm in tfms)
+    {
+        var hasLibEntry = entries.Any(entry => entry.StartsWith($"lib/{tfm}/", StringComparison.Ordinal));
+        if (!hasLibEntry)
+        {
+            Console.Error.WriteLine($"ERROR: Meziantou.Framework.FullPath package does not contain a lib/{tfm}/ entry");
+            return false;
+        }
+    }
+
+    var requiredAnalyzerEntries = new[]
+    {
+        "analyzers/dotnet/cs/Meziantou.Framework.FullPath.Analyzer.dll",
+        "analyzers/dotnet/cs/Meziantou.Framework.FullPath.CodeFix.dll",
+    };
+
+    foreach (var requiredAnalyzerEntry in requiredAnalyzerEntries)
+    {
+        var hasAnalyzerEntry = entries.Contains(requiredAnalyzerEntry, StringComparer.Ordinal);
+        if (!hasAnalyzerEntry)
+        {
+            Console.Error.WriteLine($"ERROR: Meziantou.Framework.FullPath package does not contain '{requiredAnalyzerEntry}'");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 static FullPath GetRepositoryRoot() => FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();

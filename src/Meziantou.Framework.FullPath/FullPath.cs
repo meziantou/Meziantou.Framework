@@ -298,11 +298,11 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <example>
     /// <code>
     /// var path = new FullPath("file.tar.gz");
-    /// var newPath = path.ChangeMultipleExtensions(".zip", 1); // file.tar.zip
-    /// var newPath2 = path.ChangeMultipleExtensions(".zip");   // file.zip
+    /// var newPath = path.ChangeExtensions(".zip", 1); // file.tar.zip
+    /// var newPath2 = path.ChangeExtensions(".zip");   // file.zip
     /// </code>
     /// </example>
-    public FullPath ChangeMultipleExtensions(string? extension, int? count = null)
+    public FullPath ChangeExtensions(string? extension, int? count = null)
     {
         if (IsEmpty)
             return Empty;

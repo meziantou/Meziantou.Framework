@@ -52,7 +52,7 @@ public sealed class FullPathTests
     public void ChangeMultipleExtensions()
     {
         var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
-        var newPath = path.WithExtensions(".zip");
+        var newPath = path.WithExtension(".zip", replaceAllTrailingExtensions: true);
         Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
     }
 
@@ -60,7 +60,7 @@ public sealed class FullPathTests
     public void ChangeExtensionWithMultipleDots()
     {
         var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
-        var newPath = path.WithExtensions(".zip", 2);
+        var newPath = path.WithExtension(".zip", extensionCount: 2);
         Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
     }
 
@@ -68,7 +68,7 @@ public sealed class FullPathTests
     public void ChangeMultipleExtensions_WithCount()
     {
         var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
-        var newPath = path.WithExtensions(".zip", 1);
+        var newPath = path.WithExtension(".zip", extensionCount: 1);
         Assert.Equal(FullPath.FromPath("test") / "a" / "b.tar.zip", newPath);
     }
 
@@ -76,8 +76,15 @@ public sealed class FullPathTests
     public void ChangeMultipleExtensions_NoExtension()
     {
         var path = FullPath.FromPath("test") / "a" / "b";
-        var newPath = path.WithExtensions(".zip");
+        var newPath = path.WithExtension(".zip", replaceAllTrailingExtensions: true);
         Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_InvalidCount()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
+        Assert.Throws<ArgumentOutOfRangeException>(() => path.WithExtension(".zip", extensionCount: 0));
     }
 
     [Fact]

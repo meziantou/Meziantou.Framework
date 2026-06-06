@@ -105,7 +105,7 @@ if (selectedSteps.Count > 0)
     }
 }
 
-if(hasErrors)
+if (hasErrors)
 {
     Console.WriteLine("One or more steps reported errors, you can fix them and re-run the tool to check that all steps are successful.");
     Console.WriteLine("dotnet run ./eng/update-all.cs");
@@ -1104,7 +1104,8 @@ static int UpdateAnalyzerDocumentation(FullPath srcRootPath)
     foreach (var csproj in candidateProjects)
     {
         var projectName = csproj.NameWithoutExtension;
-        var rules = GetAnalyzerRulesFromProjectSource(csproj.Parent);
+        var analyzerSourceDirectories = GetAnalyzerSourceDirectories(csproj);
+        var rules = GetAnalyzerRulesFromProjectSource(analyzerSourceDirectories);
         if (rules.Count is 0)
         {
             Console.WriteLine($"[update-analyzer-docs] Project '{projectName}' does not expose DiagnosticAnalyzer rules, skipping");
@@ -1146,7 +1147,59 @@ static bool IsAnalyzerPackageProject(FullPath csprojPath)
         .Any(node => node.Attribute("PackagePath")?.Value?.Contains("analyzers/dotnet/cs", StringComparison.OrdinalIgnoreCase) is true);
 }
 
-static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectSource(FullPath projectDirectory)
+static IReadOnlyList<FullPath> GetAnalyzerSourceDirectories(FullPath packageProjectPath)
+{
+    var packageProjectDirectory = packageProjectPath.Parent;
+    var sourceDirectories = new HashSet<FullPath> { packageProjectDirectory };
+
+    var doc = XDocument.Load(packageProjectPath);
+    var packagedAnalyzerAssemblyNames = doc.Descendants()
+        .Where(node => node.Attribute("PackagePath")?.Value?.Contains("analyzers/dotnet/cs", StringComparison.OrdinalIgnoreCase) is true)
+        .Select(node => node.Attribute("Include")?.Value)
+        .Where(include => !string.IsNullOrWhiteSpace(include))
+        .Select(include => Path.GetFileNameWithoutExtension(include))
+        .Where(assemblyName => !string.IsNullOrWhiteSpace(assemblyName))
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    foreach (var projectReference in doc.Descendants("ProjectReference"))
+    {
+        var include = projectReference.Attribute("Include")?.Value;
+        if (string.IsNullOrWhiteSpace(include))
+            continue;
+
+        var normalizedInclude = include.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+        var referencedProjectPath = FullPath.Combine(packageProjectDirectory, normalizedInclude);
+        if (!File.Exists(referencedProjectPath))
+            continue;
+
+        if (packagedAnalyzerAssemblyNames.Contains(referencedProjectPath.NameWithoutExtension))
+        {
+            sourceDirectories.Add(referencedProjectPath.Parent);
+        }
+    }
+
+    return sourceDirectories
+        .OrderBy(path => path.Value, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+}
+
+static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectSource(IReadOnlyList<FullPath> projectDirectories)
+{
+    var rules = new Dictionary<string, AnalyzerRule>(StringComparer.Ordinal);
+    foreach (var projectDirectory in projectDirectories)
+    {
+        foreach (var rule in GetAnalyzerRulesFromProjectDirectory(projectDirectory))
+        {
+            rules.TryAdd(rule.Id, rule);
+        }
+    }
+
+    return rules.Values
+        .OrderBy(rule => rule.Id, StringComparer.Ordinal)
+        .ToArray();
+}
+
+static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectDirectory(FullPath projectDirectory)
 {
     var analyzerFiles = Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories)
         .Where(file =>
@@ -1161,10 +1214,11 @@ static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectSource(FullPath pr
         return [];
     }
 
+    var stringConstantsByName = GetStringConstantsByName(projectDirectory);
     var descriptorPattern = new Regex(
         """
         DiagnosticDescriptor\s+\w+\s*=\s*new\(
-            \s*id:\s*"(?<id>[^"]+)"\s*,
+            \s*id:\s*(?<id>"[^"]+"|[\w\.]+)\s*,
             \s*title:\s*"(?<title>[^"]+)"\s*,
             \s*messageFormat:\s*"(?<message>[^"]+)"\s*,
             \s*category:\s*"(?<category>[^"]+)"\s*,
@@ -1181,7 +1235,12 @@ static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectSource(FullPath pr
         var content = File.ReadAllText(analyzerFile);
         foreach (Match match in descriptorPattern.Matches(content))
         {
-            var id = match.Groups["id"].Value;
+            var idExpression = match.Groups["id"].Value;
+            if (!TryResolveDiagnosticId(idExpression, stringConstantsByName, out var id))
+            {
+                throw new InvalidOperationException($"Cannot resolve analyzer diagnostic id '{idExpression}' from '{analyzerFile}'.");
+            }
+
             var title = match.Groups["title"].Value;
             var category = match.Groups["category"].Value;
             var severity = match.Groups["severity"].Value;
@@ -1193,6 +1252,57 @@ static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectSource(FullPath pr
     return rules.Values
         .OrderBy(rule => rule.Id, StringComparer.Ordinal)
         .ToArray();
+}
+
+static Dictionary<string, string> GetStringConstantsByName(FullPath projectDirectory)
+{
+    var constants = new Dictionary<string, string>(StringComparer.Ordinal);
+    var constantPattern = new Regex(
+        """
+        \bconst\s+string\s+(?<name>\w+)\s*=\s*"(?<value>[^"]+)"\s*;
+        """,
+        RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
+        Timeout.InfiniteTimeSpan);
+
+    foreach (var sourceFile in Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories))
+    {
+        var content = File.ReadAllText(sourceFile);
+        foreach (Match match in constantPattern.Matches(content))
+        {
+            var constantName = match.Groups["name"].Value;
+            var constantValue = match.Groups["value"].Value;
+            constants.TryAdd(constantName, constantValue);
+        }
+    }
+
+    return constants;
+}
+
+static bool TryResolveDiagnosticId(string idExpression, IReadOnlyDictionary<string, string> stringConstantsByName, [NotNullWhen(true)] out string? diagnosticId)
+{
+    if (idExpression.StartsWith('"', StringComparison.Ordinal) && idExpression.EndsWith('"', StringComparison.Ordinal))
+    {
+        diagnosticId = idExpression.Trim('"');
+        return true;
+    }
+
+    if (stringConstantsByName.TryGetValue(idExpression, out diagnosticId))
+    {
+        return true;
+    }
+
+    var separatorIndex = idExpression.LastIndexOf('.', StringComparison.Ordinal);
+    if (separatorIndex >= 0 && separatorIndex < idExpression.Length - 1)
+    {
+        var constantName = idExpression[(separatorIndex + 1)..];
+        if (stringConstantsByName.TryGetValue(constantName, out diagnosticId))
+        {
+            return true;
+        }
+    }
+
+    diagnosticId = string.Empty;
+    return false;
 }
 
 static string UpdateAnalyzerRulesSectionInReadme(string readmeContent, IReadOnlyList<AnalyzerRule> rules)

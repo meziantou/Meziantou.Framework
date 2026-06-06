@@ -38,7 +38,8 @@ namespace Meziantou.Framework
         public void CreateParentDirectory() { }
         public Meziantou.Framework.FullPath ChangeExtension(string? extension) => throw null;
         public Meziantou.Framework.FullPath WithExtension(string? extension) => throw null;
-        public Meziantou.Framework.FullPath WithExtensions(string? extension, int? count = null) => throw null;
+        public Meziantou.Framework.FullPath WithExtension(string? extension, bool replaceAllTrailingExtensions) => throw null;
+        public Meziantou.Framework.FullPath WithExtension(string? extension, int extensionCount) => throw null;
         public Meziantou.Framework.FullPath WithName(string name) => throw null;
         public Meziantou.Framework.FullPath WithNameWithoutExtension(string nameWithoutExtension) => throw null;
         public static Meziantou.Framework.FullPath GetTempPath() => throw null;

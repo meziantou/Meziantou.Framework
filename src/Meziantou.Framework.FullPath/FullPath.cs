@@ -295,19 +295,27 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         return new FullPath(Path.ChangeExtension(Value, extension));
     }
 
-    /// <summary>Returns a new path with the specified file extension, optionally changing multiple extensions.</summary>
+    /// <summary>Returns a new path with the specified file extension, optionally replacing all trailing extensions.</summary>
     /// <param name="extension">The new extension (with or without the leading dot), or <see langword="null"/> to remove the extension.</param>
-    /// <param name="count">The number of extensions to change. If <see langword="null"/>, all extensions are changed.</param>
-    /// <returns>A new <see cref="FullPath"/> instance with the specified extensions.</returns>
-    /// <example>
-    /// <code>
-    /// var path = new FullPath("file.tar.gz");
-    /// var newPath = path.WithExtensions(".zip", 1); // file.tar.zip
-    /// var newPath2 = path.WithExtensions(".zip");   // file.zip
-    /// </code>
-    /// </example>
-    public FullPath WithExtensions(string? extension, int? count = null)
+    /// <param name="replaceAllTrailingExtensions"><see langword="true"/> to replace all trailing extensions; <see langword="false"/> to replace only the last extension.</param>
+    /// <returns>A new <see cref="FullPath"/> instance with the specified extension changes.</returns>
+    public FullPath WithExtension(string? extension, bool replaceAllTrailingExtensions)
     {
+        return replaceAllTrailingExtensions ? WithExtension(extension, int.MaxValue) : WithExtension(extension);
+    }
+
+    /// <summary>Returns a new path with the specified file extension, replacing a specific number of trailing extensions.</summary>
+    /// <param name="extension">The new extension (with or without the leading dot), or <see langword="null"/> to remove the extension.</param>
+    /// <param name="extensionCount">The number of trailing extensions to replace. Must be greater than 0.</param>
+    /// <returns>A new <see cref="FullPath"/> instance with the specified extension changes.</returns>
+    public FullPath WithExtension(string? extension, int extensionCount)
+    {
+        if (extensionCount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(extensionCount), extensionCount, "Value must be greater than 0.");
+
+        if (extensionCount is 1)
+            return WithExtension(extension);
+
         if (IsEmpty)
             return Empty;
 
@@ -322,7 +330,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
             current = current[..^ext.Length];
             extensionsRemoved++;
 
-            if (count.HasValue && extensionsRemoved >= count.Value)
+            if (extensionsRemoved >= extensionCount)
                 break;
         }
 

@@ -11,6 +11,8 @@ FullPath cwd = FullPath.GetCurrentDirectory(); // equivalent of Environment.Curr
 
 // Combine path: you can use the / operator to join path
 FullPath filePath1 = rootPath / "temp" / "meziantou.txt";
+// Or use the + operator to append a suffix to the current path
+FullPath backupFilePath = filePath1 + ".bak";
 
 // Compare path
 // Comparisons are case-insensitive on Windows and case-sensitive on other operating systems by default
@@ -23,6 +25,10 @@ FullPath parent = filePath.Parent;
 // Get file/directory name - extension
 var name = filePath.Name;
 var ext = filePath.Extension;
+FullPath pathWithExtension = filePath.WithExtension(".log");
+FullPath pathWithAllExtensionsChanged = FullPath.FromPath("archive.tar.gz").WithExtensions(".zip");
+FullPath pathWithNewName = filePath.WithName("other.txt");
+FullPath pathWithNewNameWithoutExtension = filePath.WithNameWithoutExtension("other");
 
 // Make relative path
 string relativePath = filePath.MakeRelativeTo(rootPath); // temp\meziantou.txt

@@ -9,13 +9,15 @@ namespace Meziantou.Framework.Tests;
 
 public abstract class FullPathAnalyzerTestBase
 {
+    private static readonly ReferenceAssemblies Net11 = new ReferenceAssemblies("net11.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "11.0.0-preview.4.26230.115"), Path.Combine("ref", "net11.0"));
+
     protected static CSharpAnalyzerTest<TAnalyzer, DefaultVerifier> CreateAnalyzerTest<TAnalyzer>(string source)
         where TAnalyzer : DiagnosticAnalyzer, new()
     {
         var test = new CSharpAnalyzerTest<TAnalyzer, DefaultVerifier>
         {
             TestCode = source,
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net80,
+            ReferenceAssemblies = Net11,
         };
         test.TestState.AdditionalReferences.Add(GetFullPathMetadataReference());
         return test;
@@ -29,7 +31,7 @@ public abstract class FullPathAnalyzerTestBase
         {
             TestCode = source,
             FixedCode = fixedSource,
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net80,
+            ReferenceAssemblies = Net11,
         };
         test.TestState.AdditionalReferences.Add(GetFullPathMetadataReference());
         return test;

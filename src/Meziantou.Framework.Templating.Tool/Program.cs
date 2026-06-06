@@ -137,7 +137,7 @@ internal static partial class Program
             return null;
         }
 
-        return inputPath.ChangeExtension(directiveOutputExtension);
+        return inputPath.WithExtension(directiveOutputExtension);
     }
 
     private static (string StartCodeBlockDelimiter, string EndCodeBlockDelimiter) ResolveCodeBlockDelimiters(string templateContent, string? startCodeBlockDelimiter, string? endCodeBlockDelimiter)

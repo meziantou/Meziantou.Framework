@@ -16,7 +16,7 @@ public sealed class NuGetPackageValidationContext : IDisposable
         CancellationToken = cancellationToken;
         Package = new PackageArchiveReader(file);
 
-        var symbolPackagePath = file.ChangeExtension(".snupkg");
+        var symbolPackagePath = file.WithExtension(".snupkg");
         if (File.Exists(symbolPackagePath))
         {
             SymbolPackage = new PackageArchiveReader(symbolPackagePath);

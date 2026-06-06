@@ -4,12 +4,22 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.0.1</Version>
+    <Version>2.1.0</Version>
     <Description>FullPath makes it easier to deal with paths</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <AdditionalFiles Include="NativeMethods.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)/../../Meziantou.Framework.FullPath.Analyzer/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.FullPath.Analyzer.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)/../../Meziantou.Framework.FullPath.CodeFix/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.FullPath.CodeFix.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="../Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

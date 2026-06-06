@@ -24,6 +24,61 @@ public sealed class FullPathTests
         Assert.Equal(FullPath.FromPath("test") / "a", path.Parent);
     }
 
+    [Fact]
+    public void AddOperator()
+    {
+        var actual = FullPath.FromPath("test") + "a" + "b.txt";
+        var expected = FullPath.FromPath("testab.txt");
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ChangeName()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+        var newPath = path.WithName("c.txt");
+        Assert.Equal(FullPath.FromPath("test") / "a" / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeNameWithoutExtension()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+        var newPath = path.WithNameWithoutExtension("c");
+        Assert.Equal(FullPath.FromPath("test") / "a" / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
+        var newPath = path.WithExtensions(".zip");
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
+    }
+
+    [Fact]
+    public void ChangeExtensionWithMultipleDots()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
+        var newPath = path.WithExtensions(".zip", 2);
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_WithCount()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
+        var newPath = path.WithExtensions(".zip", 1);
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.tar.zip", newPath);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_NoExtension()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b";
+        var newPath = path.WithExtensions(".zip");
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
+    }
 
     [Fact]
     public void CombinePath()
@@ -284,7 +339,7 @@ public sealed class FullPathTests
     [Fact]
     public void ChangeExtension()
     {
-        var actual = FullPath.FromPath("test.a.txt").ChangeExtension(".avi");
+        var actual = FullPath.FromPath("test.a.txt").WithExtension(".avi");
         var expected = FullPath.FromPath("test.a.avi");
         Assert.Equal(expected, actual);
     }
@@ -292,7 +347,7 @@ public sealed class FullPathTests
     [Fact]
     public void ChangeExtension_NoExtension()
     {
-        var actual = FullPath.FromPath("test").ChangeExtension(".avi");
+        var actual = FullPath.FromPath("test").WithExtension(".avi");
         var expected = FullPath.FromPath("test.avi");
         Assert.Equal(expected, actual);
     }
@@ -300,7 +355,7 @@ public sealed class FullPathTests
     [Fact]
     public void ChangeExtension_Empty()
     {
-        var actual = FullPath.Empty.ChangeExtension(".avi");
+        var actual = FullPath.Empty.WithExtension(".avi");
         var expected = FullPath.Empty;
         Assert.Equal(expected, actual);
     }
@@ -308,7 +363,7 @@ public sealed class FullPathTests
     [Fact]
     public void ChangeExtension_Null()
     {
-        var actual = FullPath.FromPath("test").ChangeExtension(null);
+        var actual = FullPath.FromPath("test").WithExtension(null);
         var expected = FullPath.FromPath("test");
         Assert.Equal(expected, actual);
     }
@@ -316,7 +371,7 @@ public sealed class FullPathTests
     [Fact]
     public void ChangeExtension_NoDot()
     {
-        var actual = FullPath.FromPath("test.txt").ChangeExtension("avi");
+        var actual = FullPath.FromPath("test.txt").WithExtension("avi");
         var expected = FullPath.FromPath("test.avi");
         Assert.Equal(expected, actual);
     }

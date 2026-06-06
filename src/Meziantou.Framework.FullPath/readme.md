@@ -40,6 +40,24 @@ if (filePath.TryGetCanonicalPath(out var canonicalPath))
 System.IO.File.WriteAllText(filePath, content);
 ````
 
+## Analyzer rules
+
+<!-- analyzer-rules -->
+| Id | Category | Description | Severity | Enabled |
+| -- | -- | -- | :--: | :--: |
+| `MFFP0001` | FullPath | Path.GetFullPath is redundant on FullPath | Info | ✔️ |
+| `MFFP0002` | FullPath | Combining with a FullPath right operand is redundant | Info | ✔️ |
+| `MFFP0003` | FullPath | Path.GetFullPath with FullPath base is redundant | Info | ✔️ |
+| `MFFP0004` | FullPath | Path.Combine is redundant with FullPath arguments | Info | ✔️ |
+| `MFFP0005` | FullPath | Path.GetFileName is redundant on FullPath | Info | ✔️ |
+| `MFFP0006` | FullPath | Path.GetFileNameWithoutExtension is redundant on FullPath | Info | ✔️ |
+| `MFFP0007` | FullPath | Path.GetExtension is redundant on FullPath | Info | ✔️ |
+| `MFFP0008` | FullPath | Path.GetDirectoryName is redundant on FullPath | Info | ✔️ |
+| `MFFP0009` | FullPath | Path.ChangeExtension is redundant on FullPath | Info | ✔️ |
+| `MFFP0010` | FullPath | Path.GetRelativePath is redundant on FullPath | Info | ✔️ |
+| `MFFP0011` | FullPath | Method should return FullPath | Info | ✔️ |
+<!-- analyzer-rules -->
+
 # Additional resources
 
 - [Simplifying paths handling in .NET code with the FullPath type](https://www.meziantou.net/simplifying-path-manipulations-with-the-fullpath-type.htm)

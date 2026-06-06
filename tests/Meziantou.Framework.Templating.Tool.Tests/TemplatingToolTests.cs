@@ -65,7 +65,7 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
     {
         await using var temp = TemporaryDirectory.Create();
         var inputPath = await temp.CreateTextFileAsync("template.tt", "<#@ output extension=\".cs\" #>Hello <#= \"World\" #>!", XunitCancellationToken);
-        var expectedOutputPath = inputPath.ChangeExtension(".cs");
+        var expectedOutputPath = inputPath.WithExtension(".cs");
 
         var console = new ConsoleHelper(testOutputHelper);
         var result = await Program.MainImpl(
@@ -86,7 +86,7 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
     {
         await using var temp = TemporaryDirectory.Create();
         var inputPath = await temp.CreateTextFileAsync("template.tt", "<#@ output extension=\".cs\" #>Hello", XunitCancellationToken);
-        var directiveOutputPath = inputPath.ChangeExtension(".cs");
+        var directiveOutputPath = inputPath.WithExtension(".cs");
         var expectedOutputPath = temp.GetFullPath("out/result.generated");
 
         var console = new ConsoleHelper(testOutputHelper);

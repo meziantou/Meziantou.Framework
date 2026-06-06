@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -15,6 +16,7 @@ const string StepSlnx = "slnx";
 const string StepTemplates = "templates";
 const string StepBom = "bom";
 const string StepValidateTestProjects = "validate-testprojects";
+const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
 string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom];
 string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom, StepValidateTestProjects];
 
@@ -882,13 +884,15 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
 
     var nugetReadmeTask = Task.Run(UpdateNuGetReadme);
     var toolReadmeTask = Task.Run(UpdateToolReadmes);
+    var analyzerDocumentationTask = Task.Run(() => UpdateAnalyzerDocumentation(srcRootPath));
 
-    await Task.WhenAll(nugetReadmeTask, toolReadmeTask);
+    await Task.WhenAll(nugetReadmeTask, toolReadmeTask, analyzerDocumentationTask);
 
     var nugetReadmeResult = nugetReadmeTask.Result;
     var toolReadmeResult = toolReadmeTask.Result;
+    var analyzerDocumentationResult = analyzerDocumentationTask.Result;
 
-    if (nugetReadmeResult != 0 || toolReadmeResult != 0)
+    if (nugetReadmeResult != 0 || toolReadmeResult != 0 || analyzerDocumentationResult != 0)
     {
         _ = RunProcessAndReturnExitCode(rootPath, "git", ["--no-pager", "diff"]);
         return 1;
@@ -1080,6 +1084,200 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
 
         return 0;
     }
+}
+
+static int UpdateAnalyzerDocumentation(FullPath srcRootPath)
+{
+    Console.WriteLine("[update-analyzer-docs] Starting analyzer documentation update");
+    var analyzerDocumentationStopwatch = Stopwatch.StartNew();
+
+    var candidateProjects = Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories)
+        .Select(FullPath.FromPath)
+        .Where(IsAnalyzerPackageProject)
+        .OrderBy(path => path.Value, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    Console.WriteLine($"[update-analyzer-docs] Discovery metrics: candidates={candidateProjects.Length}");
+
+    var editedFiles = 0;
+    var projectsWithRules = 0;
+    foreach (var csproj in candidateProjects)
+    {
+        var projectName = Path.GetFileNameWithoutExtension(csproj);
+        var rules = GetAnalyzerRulesFromProjectSource(csproj.Parent);
+        if (rules.Count is 0)
+        {
+            Console.WriteLine($"[update-analyzer-docs] Project '{projectName}' does not expose DiagnosticAnalyzer rules, skipping");
+            continue;
+        }
+
+        projectsWithRules++;
+        var projectDirectory = csproj.Parent;
+        var readmePath = projectDirectory / "readme.md";
+        if (!File.Exists(readmePath))
+        {
+            throw new InvalidOperationException($"Project '{csproj}' exposes analyzer rules but has no readme.md file.");
+        }
+
+        var existingReadmeContent = File.ReadAllText(readmePath);
+        var updatedReadmeContent = UpdateAnalyzerRulesSectionInReadme(existingReadmeContent, rules);
+        if (WriteFileIfChanged(readmePath, updatedReadmeContent))
+        {
+            Console.WriteLine($"WARNING: {readmePath} was not up-to-date");
+            editedFiles++;
+        }
+    }
+
+    analyzerDocumentationStopwatch.Stop();
+    Console.WriteLine($"[update-analyzer-docs] Generation metrics: projects-with-rules={projectsWithRules}, edited-files={editedFiles}, elapsed={analyzerDocumentationStopwatch.Elapsed.TotalSeconds:F2}s");
+    if (editedFiles > 0)
+    {
+        Console.Error.WriteLine("ERROR: Analyzer documentation files were not up-to-date");
+        return 1;
+    }
+
+    return 0;
+}
+
+static bool IsAnalyzerPackageProject(FullPath csprojPath)
+{
+    var doc = XDocument.Load(csprojPath);
+    return doc.Descendants()
+        .Any(node => node.Attribute("PackagePath")?.Value?.Contains("analyzers/dotnet/cs", StringComparison.OrdinalIgnoreCase) is true);
+}
+
+static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectSource(FullPath projectDirectory)
+{
+    var analyzerFiles = Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories)
+        .Where(file =>
+        {
+            var content = File.ReadAllText(file);
+            return content.Contains("[DiagnosticAnalyzer", StringComparison.Ordinal) && content.Contains("DiagnosticDescriptor", StringComparison.Ordinal);
+        })
+        .ToArray();
+
+    if (analyzerFiles.Length is 0)
+    {
+        return [];
+    }
+
+    var descriptorPattern = new Regex(
+        """
+        DiagnosticDescriptor\s+\w+\s*=\s*new\(
+            \s*id:\s*"(?<id>[^"]+)"\s*,
+            \s*title:\s*"(?<title>[^"]+)"\s*,
+            \s*messageFormat:\s*"(?<message>[^"]+)"\s*,
+            \s*category:\s*"(?<category>[^"]+)"\s*,
+            \s*(?:defaultSeverity:\s*)?DiagnosticSeverity\.(?<severity>\w+)\s*,
+            \s*isEnabledByDefault:\s*(?<enabled>true|false)\s*
+        \)
+        """,
+        RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
+        Timeout.InfiniteTimeSpan);
+
+    var rules = new Dictionary<string, AnalyzerRule>(StringComparer.Ordinal);
+    foreach (var analyzerFile in analyzerFiles)
+    {
+        var content = File.ReadAllText(analyzerFile);
+        foreach (Match match in descriptorPattern.Matches(content))
+        {
+            var id = match.Groups["id"].Value;
+            var title = match.Groups["title"].Value;
+            var category = match.Groups["category"].Value;
+            var severity = match.Groups["severity"].Value;
+            var isEnabledByDefault = bool.Parse(match.Groups["enabled"].Value);
+            rules.TryAdd(id, new AnalyzerRule(id, category, title, severity, isEnabledByDefault));
+        }
+    }
+
+    return rules.Values
+        .OrderBy(rule => rule.Id, StringComparer.Ordinal)
+        .ToArray();
+}
+
+static string UpdateAnalyzerRulesSectionInReadme(string readmeContent, IReadOnlyList<AnalyzerRule> rules)
+{
+    var rulesTable = GenerateAnalyzerRulesTable(rules);
+    var markerContentPattern = new Regex(
+        $"(?<={Regex.Escape(AnalyzerRulesSectionMarker)})(.*?)(?={Regex.Escape(AnalyzerRulesSectionMarker)})",
+        RegexOptions.Singleline | RegexOptions.ExplicitCapture,
+        Timeout.InfiniteTimeSpan);
+
+    if (markerContentPattern.IsMatch(readmeContent))
+    {
+        return markerContentPattern.Replace(readmeContent, $"\n{rulesTable}\n");
+    }
+
+    if (readmeContent.Contains("## Analyzer rules", StringComparison.OrdinalIgnoreCase) ||
+        readmeContent.Contains("## Analyzer diagnostics", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException("The README contains an analyzer section but does not use the analyzer-rules markers.");
+    }
+
+    var sb = new StringBuilder();
+    sb.AppendLine(readmeContent.TrimEnd('\r', '\n'));
+    sb.AppendLine();
+    sb.AppendLine("## Analyzer rules");
+    sb.AppendLine();
+    sb.AppendLine(AnalyzerRulesSectionMarker);
+    sb.AppendLine(rulesTable);
+    sb.AppendLine(AnalyzerRulesSectionMarker);
+    return sb.ToString().TrimEnd('\r', '\n');
+}
+
+static string GenerateAnalyzerRulesTable(IReadOnlyList<AnalyzerRule> rules)
+{
+    var sb = new StringBuilder();
+    sb.AppendLine("| Id | Category | Description | Severity | Enabled |");
+    sb.AppendLine("| -- | -- | -- | :--: | :--: |");
+    foreach (var rule in rules)
+    {
+        sb.Append("| `")
+            .Append(rule.Id)
+            .Append("` | ")
+            .Append(EscapeMarkdownTableCell(rule.Category))
+            .Append(" | ")
+            .Append(EscapeMarkdownTableCell(rule.Title))
+            .Append(" | ")
+            .Append(rule.DefaultSeverity)
+            .Append(" | ")
+            .Append(rule.IsEnabledByDefault ? "✔️" : "❌")
+            .AppendLine(" |");
+    }
+
+    return sb.ToString().TrimEnd('\r', '\n');
+}
+
+static bool WriteFileIfChanged(FullPath filePath, string content)
+{
+    var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+    var normalizedContent = content.ReplaceLineEndings("\n").TrimEnd('\r', '\n') + "\n";
+
+    if (File.Exists(filePath))
+    {
+        var existingContent = File.ReadAllText(filePath).ReplaceLineEndings("\n");
+        if (string.Equals(existingContent, normalizedContent, StringComparison.Ordinal))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        filePath.CreateParentDirectory();
+    }
+
+    File.WriteAllText(filePath, normalizedContent, encoding);
+    return true;
+}
+
+static string EscapeMarkdownTableCell(string value)
+{
+    return value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("|", "\\|", StringComparison.Ordinal)
+        .Replace("\r\n", "<br />", StringComparison.Ordinal)
+        .Replace("\n", "<br />", StringComparison.Ordinal)
+        .Replace("\r", "<br />", StringComparison.Ordinal);
 }
 
 static int GetUpdateReadmeMaxDegreeOfParallelism()
@@ -1396,6 +1594,13 @@ static FullPath GetRepositoryRoot()
 {
     return FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
 }
+
+internal readonly record struct AnalyzerRule(
+    string Id,
+    string Category,
+    string Title,
+    string DefaultSeverity,
+    bool IsEnabledByDefault);
 
 internal readonly record struct ToolProject(string Csproj, string? ToolName, string ToolReadme);
 

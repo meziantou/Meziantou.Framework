@@ -56,3 +56,13 @@ dotnet package add Meziantou.Framework.ResxSourceGenerator
 
 </Project>
 ````
+
+## Analyzer rules
+
+<!-- analyzer-rules -->
+| Id | Category | Description | Severity | Enabled |
+| -- | -- | -- | :--: | :--: |
+| `MFRG0001` | ResxGenerator | Couldn't parse Resx file | Warning | ✔️ |
+| `MFRG0003` | ResxGenerator | Couldn't compute resource name | Warning | ✔️ |
+| `MFRG0004` | ResxGenerator | Inconsistent properties | Warning | ✔️ |
+<!-- analyzer-rules -->

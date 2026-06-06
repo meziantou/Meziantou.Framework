@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -28,52 +29,98 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
             if (!analyzerContext.IsValid)
                 return;
 
-            context.RegisterOperationBlockStartAction(context => Analyze(context, analyzerContext));
+            context.RegisterOperationBlockAction(context => AnalyzeOperationBlock(context, analyzerContext));
+            context.RegisterOperationAction(context => AnalyzeLocalFunction(context, analyzerContext), OperationKind.LocalFunction);
         });
     }
 
-    private static void Analyze(OperationBlockStartAnalysisContext context, FullPathContext analyzerContext)
+    private static void AnalyzeOperationBlock(OperationBlockAnalysisContext context, FullPathContext analyzerContext)
     {
         if (context.OwningSymbol is not IMethodSymbol methodSymbol)
             return;
 
+        if (methodSymbol.MethodKind is MethodKind.LocalFunction)
+            return;
+
         if (methodSymbol.ReturnType.SpecialType != SpecialType.System_String)
+            return;
+        var hasReturnValue = false;
+        var allReturnsAreFullPath = true;
+        foreach (var operationBlock in context.OperationBlocks)
+        {
+            AnalyzeReturnOperations(operationBlock, analyzerContext, ref hasReturnValue, ref allReturnsAreFullPath);
+        }
+
+        if (!hasReturnValue && context.OperationBlocks.Length == 1 && context.OperationBlocks[0] is not IBlockOperation)
+        {
+            hasReturnValue = true;
+            allReturnsAreFullPath &= analyzerContext.IsFullPathType(context.OperationBlocks[0]);
+        }
+
+        if (!hasReturnValue || !allReturnsAreFullPath)
+            return;
+
+        ReportDiagnostic(context.ReportDiagnostic, methodSymbol);
+    }
+
+    private static void AnalyzeLocalFunction(OperationAnalysisContext context, FullPathContext analyzerContext)
+    {
+        var localFunctionOperation = (ILocalFunctionOperation)context.Operation;
+        if (localFunctionOperation.Symbol.ReturnType.SpecialType != SpecialType.System_String)
             return;
 
         var hasReturnValue = false;
         var allReturnsAreFullPath = true;
-        context.RegisterOperationAction(context =>
+        if (localFunctionOperation.Body is not null)
         {
-            var returnOperation = (IReturnOperation)context.Operation;
-            if (returnOperation.ReturnedValue is null)
-                return;
+            AnalyzeReturnOperations(localFunctionOperation.Body, analyzerContext, ref hasReturnValue, ref allReturnsAreFullPath);
+        }
 
-            Volatile.Write(ref hasReturnValue, true);
+        if (!hasReturnValue || !allReturnsAreFullPath)
+            return;
+
+        ReportDiagnostic(context.ReportDiagnostic, localFunctionOperation.Symbol);
+    }
+
+    private static void AnalyzeReturnOperations(IOperation operation, FullPathContext analyzerContext, ref bool hasReturnValue, ref bool allReturnsAreFullPath)
+    {
+        if (!allReturnsAreFullPath)
+            return;
+
+        if (operation is ILocalFunctionOperation)
+            return;
+
+        if (operation is IReturnOperation returnOperation && returnOperation.ReturnedValue is not null)
+        {
+            hasReturnValue = true;
             if (!analyzerContext.IsFullPathType(returnOperation.ReturnedValue))
             {
-                Volatile.Write(ref allReturnsAreFullPath, false);
+                allReturnsAreFullPath = false;
+                return;
             }
-        }, OperationKind.Return);
+        }
 
-        context.RegisterOperationBlockEndAction(context =>
+        foreach (var childOperation in operation.ChildOperations)
         {
-            if (!Volatile.Read(ref hasReturnValue) || !Volatile.Read(ref allReturnsAreFullPath))
-                return;
+            AnalyzeReturnOperations(childOperation, analyzerContext, ref hasReturnValue, ref allReturnsAreFullPath);
+        }
+    }
 
-            Location? location = null;
-            foreach (var candidateLocation in methodSymbol.Locations)
-            {
-                if (!candidateLocation.IsInSource)
-                    continue;
+    private static void ReportDiagnostic(Action<Diagnostic> reportDiagnostic, IMethodSymbol methodSymbol)
+    {
+        Location? location = null;
+        foreach (var candidateLocation in methodSymbol.Locations)
+        {
+            if (!candidateLocation.IsInSource)
+                continue;
 
-                location = candidateLocation;
-                break;
-            }
+            location = candidateLocation;
+            break;
+        }
 
-            if (location is null)
-                return;
+        if (location is null)
+            return;
 
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, location, methodSymbol.Name));
-        });
+        reportDiagnostic(Diagnostic.Create(Descriptor, location, methodSymbol.Name));
     }
 }

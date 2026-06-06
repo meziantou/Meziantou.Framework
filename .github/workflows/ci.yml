@@ -297,6 +297,7 @@ jobs:
             test-result.cobertura.xml
 
   deploy:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     runs-on: ubuntu-24.04
     needs: [ build_eng_scripts, validate_generated_files, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
     permissions:

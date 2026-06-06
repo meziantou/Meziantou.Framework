@@ -21,6 +21,10 @@ Generated fixed strings enforce capacity and throw `ArgumentException` when data
 
 ## Analyzer diagnostics
 
-- `MFFSG0001`: `FixedStringBuilderAttribute` must have exactly one constructor argument.
-- `MFFSG0002`: the constructor argument must be an `int` constant.
-- `MFFSG0003`: the length must be greater than `0`.
+<!-- analyzer-rules -->
+| Id | Category | Description | Severity | Enabled |
+| -- | -- | -- | :--: | :--: |
+| `MFFSG0001` | FixedStringBuilderGenerator | FixedStringBuilderAttribute requires one argument | Error | ✔️ |
+| `MFFSG0002` | FixedStringBuilderGenerator | FixedStringBuilderAttribute argument type is invalid | Error | ✔️ |
+| `MFFSG0003` | FixedStringBuilderGenerator | FixedStringBuilderAttribute length must be positive | Error | ✔️ |
+<!-- analyzer-rules -->

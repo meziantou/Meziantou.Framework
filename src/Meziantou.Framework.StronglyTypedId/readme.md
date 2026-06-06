@@ -153,3 +153,11 @@ public partial struct ProjectId : IComparable<ProjectId>
 # Additional resources
 
 - [Strongly-typed Ids using C# Source Generators](https://www.meziantou.net/strongly-typed-ids-with-csharp-source-generators.htm)
+
+## Analyzer rules
+
+<!-- analyzer-rules -->
+| Id | Category | Description | Severity | Enabled |
+| -- | -- | -- | :--: | :--: |
+| `MFSTID0001` | StronglyTypedId | Not supported type | Error | ✔️ |
+<!-- analyzer-rules -->

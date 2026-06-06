@@ -2422,18 +2422,32 @@ public sealed class PublicApiGeneratorTests
 
         static async Task RunDotNetAsync(FullPath workingDirectory, IReadOnlyList<string> arguments)
         {
-            var processResult = await ProcessWrapper.Create("dotnet")
-                .WithArguments(arguments)
-                .WithWorkingDirectory(workingDirectory)
-                .WithEnvironmentVariables(env => env.Set("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1"))
-                .WithValidation(ProcessValidationMode.None)
-                .ExecuteBufferedAsync(XunitCancellationToken);
+            const int MaxRetries = 5;
 
-            if (!processResult.ExitCode.IsSuccess)
+            for (var retryCount = 0; retryCount <= MaxRetries; retryCount++)
             {
-                var standardOutput = string.Join('\n', processResult.Output.StandardOutput.Select(line => line.Text));
-                var standardError = string.Join('\n', processResult.Output.StandardError.Select(line => line.Text));
-                throw new XunitException($"Command failed: dotnet {string.Join(' ', arguments)}\nstdout:\n{standardOutput}\nstderr:\n{standardError}");
+                try
+                {
+                    var processResult = await ProcessWrapper.Create("dotnet")
+                        .WithArguments(arguments)
+                        .WithWorkingDirectory(workingDirectory)
+                        .WithEnvironmentVariables(env => env.Set("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1"))
+                        .WithValidation(ProcessValidationMode.None)
+                        .ExecuteBufferedAsync(XunitCancellationToken);
+
+                    if (!processResult.ExitCode.IsSuccess)
+                    {
+                        var standardOutput = string.Join('\n', processResult.Output.StandardOutput.Select(line => line.Text));
+                        var standardError = string.Join('\n', processResult.Output.StandardError.Select(line => line.Text));
+                        throw new XunitException($"Command failed: dotnet {string.Join(' ', arguments)}\nstdout:\n{standardOutput}\nstderr:\n{standardError}");
+                    }
+
+                    return;
+                }
+                catch when (retryCount < MaxRetries)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1), XunitCancellationToken);
+                }
             }
         }
     }

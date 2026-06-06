@@ -1103,7 +1103,7 @@ static int UpdateAnalyzerDocumentation(FullPath srcRootPath)
     var projectsWithRules = 0;
     foreach (var csproj in candidateProjects)
     {
-        var projectName = Path.GetFileNameWithoutExtension(csproj);
+        var projectName = csproj.NameWithoutExtension;
         var rules = GetAnalyzerRulesFromProjectSource(csproj.Parent);
         if (rules.Count is 0)
         {

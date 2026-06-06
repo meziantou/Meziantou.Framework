@@ -52,17 +52,17 @@ System.IO.File.WriteAllText(filePath, content);
 <!-- analyzer-rules -->
 | Id | Category | Description | Severity | Enabled |
 | -- | -- | -- | :--: | :--: |
-| `MFFP0001` | FullPath | Path.GetFullPath is redundant on FullPath | Info | ✔️ |
-| `MFFP0002` | FullPath | Combining with a FullPath right operand is redundant | Info | ✔️ |
-| `MFFP0003` | FullPath | Path.GetFullPath with FullPath base is redundant | Info | ✔️ |
-| `MFFP0004` | FullPath | Path.Combine is redundant with FullPath arguments | Info | ✔️ |
-| `MFFP0005` | FullPath | Path.GetFileName is redundant on FullPath | Info | ✔️ |
-| `MFFP0006` | FullPath | Path.GetFileNameWithoutExtension is redundant on FullPath | Info | ✔️ |
-| `MFFP0007` | FullPath | Path.GetExtension is redundant on FullPath | Info | ✔️ |
-| `MFFP0008` | FullPath | Path.GetDirectoryName is redundant on FullPath | Info | ✔️ |
-| `MFFP0009` | FullPath | Path.ChangeExtension is redundant on FullPath | Info | ✔️ |
-| `MFFP0010` | FullPath | Path.GetRelativePath is redundant on FullPath | Info | ✔️ |
-| `MFFP0011` | FullPath | Method should return FullPath | Info | ✔️ |
+| `MFFP0001` | FullPath | Use FullPath directly instead of Path.GetFullPath | Info | ✔️ |
+| `MFFP0002` | FullPath | Use the right FullPath operand directly | Info | ✔️ |
+| `MFFP0003` | FullPath | Use '/' with a FullPath base instead of Path.GetFullPath | Info | ✔️ |
+| `MFFP0004` | FullPath | Use '/' operator instead of Path.Combine | Info | ✔️ |
+| `MFFP0005` | FullPath | Use FullPath.Name instead of Path.GetFileName | Info | ✔️ |
+| `MFFP0006` | FullPath | Use FullPath.NameWithoutExtension instead of Path.GetFileNameWithoutExtension | Info | ✔️ |
+| `MFFP0007` | FullPath | Use FullPath.Extension instead of Path.GetExtension | Info | ✔️ |
+| `MFFP0008` | FullPath | Use FullPath.Parent instead of Path.GetDirectoryName | Info | ✔️ |
+| `MFFP0009` | FullPath | Use FullPath.ChangeExtension instead of Path.ChangeExtension | Info | ✔️ |
+| `MFFP0010` | FullPath | Use FullPath.MakePathRelativeTo instead of Path.GetRelativePath | Info | ✔️ |
+| `MFFP0011` | FullPath | Return FullPath instead of string | Info | ✔️ |
 <!-- analyzer-rules -->
 
 # Additional resources

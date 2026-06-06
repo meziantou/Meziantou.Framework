@@ -11,7 +11,7 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.MethodShouldReturnFullPathDiagnosticId,
-        title: "Method should return FullPath",
+        title: "Return FullPath instead of string",
         messageFormat: "Method '{0}' returns FullPath values and should return FullPath instead of string",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,

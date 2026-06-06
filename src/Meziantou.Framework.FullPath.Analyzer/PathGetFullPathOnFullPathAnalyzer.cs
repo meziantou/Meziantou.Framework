@@ -10,7 +10,7 @@ public sealed class PathGetFullPathOnFullPathAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathGetFullPathDiagnosticId,
-        title: "Path.GetFullPath is redundant on FullPath",
+        title: "Use FullPath directly instead of Path.GetFullPath",
         messageFormat: "Use the FullPath value directly instead of calling Path.GetFullPath",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,

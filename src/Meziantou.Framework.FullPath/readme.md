@@ -26,7 +26,8 @@ FullPath parent = filePath.Parent;
 var name = filePath.Name;
 var ext = filePath.Extension;
 FullPath pathWithExtension = filePath.WithExtension(".log");
-FullPath pathWithAllExtensionsChanged = FullPath.FromPath("archive.tar.gz").WithExtensions(".zip");
+FullPath pathWithAllExtensionsChanged = FullPath.FromPath("archive.tar.gz").WithExtension(".zip", replaceAllTrailingExtensions: true);
+FullPath pathWithTwoExtensionsChanged = FullPath.FromPath("archive.tar.gz").WithExtension(".zip", extensionCount: 2);
 FullPath pathWithNewName = filePath.WithName("other.txt");
 FullPath pathWithNewNameWithoutExtension = filePath.WithNameWithoutExtension("other");
 

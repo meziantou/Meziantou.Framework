@@ -140,6 +140,9 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <summary>Combines a root path with a relative path using the / operator.</summary>
     public static FullPath operator /(FullPath rootPath, string relativePath) => Combine(rootPath, relativePath);
 
+    /// <summary>Combines a root path with a relative path using the + operator, ensuring that string concatenation occurs before FullPath concatenation.</summary>
+    public static FullPath operator +(FullPath rootPath, string relativePath) => FromPath(rootPath.Value + relativePath);
+
     /// <summary>Gets the parent directory of this path, or <see cref="Empty"/> if there is no parent.</summary>
     public FullPath Parent
     {
@@ -286,6 +289,80 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
             return Empty;
 
         return new FullPath(Path.ChangeExtension(Value, extension));
+    }
+
+    /// <summary>Returns a new path with the specified file extension, optionally changing multiple extensions.</summary>
+    /// <param name="extension">The new extension (with or without the leading dot), or <see langword="null"/> to remove the extension.</param>
+    /// <param name="count">The number of extensions to change. If <see langword="null"/>, all extensions are changed.</param>
+    /// <returns>A new <see cref="FullPath"/> instance with the specified extensions.</returns>
+    /// <example>
+    /// <code>
+    /// var path = new FullPath("file.tar.gz");
+    /// var newPath = path.ChangeMultipleExtensions(".zip", 1); // file.tar.zip
+    /// var newPath2 = path.ChangeMultipleExtensions(".zip");   // file.zip
+    /// </code>
+    /// </example>
+    public FullPath ChangeMultipleExtensions(string? extension, int? count = null)
+    {
+        if (IsEmpty)
+            return Empty;
+
+        var current = Value;
+        var extensionsRemoved = 0;
+        while (true)
+        {
+            var ext = Path.GetExtension(current);
+            if (string.IsNullOrEmpty(ext))
+                break;
+
+            current = current[..^ext.Length];
+            extensionsRemoved++;
+
+            if (count.HasValue && extensionsRemoved >= count.Value)
+                break;
+        }
+
+        if (string.IsNullOrEmpty(extension))
+            return new FullPath(current);
+
+        if (!extension.StartsWith('.', StringComparison.Ordinal))
+            extension = "." + extension;
+
+        return new FullPath(current + extension);
+    }
+
+    /// <summary>Returns a new path with the specified name, keeping the same parent directory.</summary>
+    /// <param name="name">The new name for the path.</param>
+    /// <returns>A new <see cref="FullPath"/> instance with the specified name.</returns>
+    /// <remarks>If the current path is empty, the returned path will also be empty.</remarks>
+    public FullPath ChangeName(string name)
+    {
+        if (IsEmpty)
+            return Empty;
+
+        var parent = Path.GetDirectoryName(Value);
+        if (parent is null)
+            return new FullPath(name);
+
+        return new FullPath(Path.Combine(parent, name));
+    }
+
+    /// <summary>Returns a new path with the specified name, keeping the same parent directory but without changing the extension.</summary>
+    /// <param name="nameWithoutExtension">The new name for the path, without the extension.</param>
+    /// <returns>A new <see cref="FullPath"/> instance with the specified name.</returns>
+    /// <remarks>If the current path is empty, the returned path will also be empty.</remarks>
+    public FullPath ChangeNameWithoutExtension(string nameWithoutExtension)
+    {
+        if (IsEmpty)
+            return Empty;
+
+        var parent = Path.GetDirectoryName(Value);
+        var extension = Path.GetExtension(Value);
+        var newName = nameWithoutExtension + extension;
+        if (parent is null)
+            return new FullPath(newName);
+
+        return new FullPath(Path.Combine(parent, newName));
     }
 
     /// <summary>Gets the path of the system's temporary folder.</summary>

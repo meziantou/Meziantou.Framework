@@ -24,6 +24,61 @@ public sealed class FullPathTests
         Assert.Equal(FullPath.FromPath("test") / "a", path.Parent);
     }
 
+    [Fact]
+    public void AddOperator()
+    {
+        var actual = FullPath.FromPath("test") + "a" + "b.txt";
+        var expected = FullPath.FromPath("testab.txt");
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ChangeName()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+        var newPath = path.ChangeName("c.txt");
+        Assert.Equal(FullPath.FromPath("test") / "a" / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeNameWithoutExtension()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+        var newPath = path.ChangeNameWithoutExtension("c");
+        Assert.Equal(FullPath.FromPath("test") / "a" / "c.txt", newPath);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
+        var newPath = path.ChangeMultipleExtensions(".zip");
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
+    }
+
+    [Fact]
+    public void ChangeExtensionWithMultipleDots()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
+        var newPath = path.ChangeMultipleExtensions(".zip", 2);
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_WithCount()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.tar.gz";
+        var newPath = path.ChangeMultipleExtensions(".zip", 1);
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.tar.zip", newPath);
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_NoExtension()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b";
+        var newPath = path.ChangeMultipleExtensions(".zip");
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", newPath);
+    }
 
     [Fact]
     public void CombinePath()

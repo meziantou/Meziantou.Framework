@@ -12,5 +12,6 @@ internal static class FullPathAnalyzerCommon
     internal const string PathGetDirectoryNameWithFullPathDiagnosticId = "MFFP0008";
     internal const string PathChangeExtensionWithFullPathDiagnosticId = "MFFP0009";
     internal const string PathGetRelativePathWithFullPathDiagnosticId = "MFFP0010";
+    internal const string MethodShouldReturnFullPathDiagnosticId = "MFFP0011";
 
 }

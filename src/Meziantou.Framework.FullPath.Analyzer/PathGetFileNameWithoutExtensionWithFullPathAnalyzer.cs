@@ -13,7 +13,7 @@ public sealed class PathGetFileNameWithoutExtensionWithFullPathAnalyzer : Diagno
         title: "Path.GetFileNameWithoutExtension is redundant on FullPath",
         messageFormat: "Use FullPath.NameWithoutExtension instead of calling Path.GetFileNameWithoutExtension",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

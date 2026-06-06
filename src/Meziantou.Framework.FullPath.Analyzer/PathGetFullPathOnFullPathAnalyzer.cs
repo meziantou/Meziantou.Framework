@@ -13,7 +13,7 @@ public sealed class PathGetFullPathOnFullPathAnalyzer : DiagnosticAnalyzer
         title: "Path.GetFullPath is redundant on FullPath",
         messageFormat: "Use the FullPath value directly instead of calling Path.GetFullPath",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

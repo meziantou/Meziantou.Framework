@@ -13,7 +13,7 @@ public sealed class PathGetDirectoryNameWithFullPathAnalyzer : DiagnosticAnalyze
         title: "Path.GetDirectoryName is redundant on FullPath",
         messageFormat: "Use FullPath.Parent instead of calling Path.GetDirectoryName",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

@@ -13,7 +13,7 @@ public sealed class FullPathDivisionWithFullPathRightAnalyzer : DiagnosticAnalyz
         title: "Combining with a FullPath right operand is redundant",
         messageFormat: "Use the right FullPath operand directly instead of combining with '/'",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

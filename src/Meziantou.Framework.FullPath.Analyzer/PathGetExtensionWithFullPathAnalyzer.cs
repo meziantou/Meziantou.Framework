@@ -13,7 +13,7 @@ public sealed class PathGetExtensionWithFullPathAnalyzer : DiagnosticAnalyzer
         title: "Path.GetExtension is redundant on FullPath",
         messageFormat: "Use FullPath.Extension instead of calling Path.GetExtension",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

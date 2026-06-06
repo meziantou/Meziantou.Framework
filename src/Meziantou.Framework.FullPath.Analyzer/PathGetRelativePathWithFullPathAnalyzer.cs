@@ -13,7 +13,7 @@ public sealed class PathGetRelativePathWithFullPathAnalyzer : DiagnosticAnalyzer
         title: "Path.GetRelativePath is redundant on FullPath",
         messageFormat: "Use FullPath.MakePathRelativeTo instead of calling Path.GetRelativePath",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

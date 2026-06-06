@@ -14,7 +14,7 @@ public sealed class MethodShouldReturnFullPathAnalyzer : DiagnosticAnalyzer
         title: "Method should return FullPath",
         messageFormat: "Method '{0}' returns FullPath values and should return FullPath instead of string",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

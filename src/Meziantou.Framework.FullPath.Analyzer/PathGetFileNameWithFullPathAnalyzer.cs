@@ -13,7 +13,7 @@ public sealed class PathGetFileNameWithFullPathAnalyzer : DiagnosticAnalyzer
         title: "Path.GetFileName is redundant on FullPath",
         messageFormat: "Use FullPath.Name instead of calling Path.GetFileName",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

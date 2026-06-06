@@ -13,7 +13,7 @@ public sealed class PathChangeExtensionWithFullPathAnalyzer : DiagnosticAnalyzer
         title: "Path.ChangeExtension is redundant on FullPath",
         messageFormat: "Use FullPath.ChangeExtension instead of calling Path.ChangeExtension",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

@@ -13,7 +13,7 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
         title: "Path.Combine is redundant with FullPath arguments",
         messageFormat: "Use FullPath '/' operations instead of calling Path.Combine",
         category: "FullPath",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];

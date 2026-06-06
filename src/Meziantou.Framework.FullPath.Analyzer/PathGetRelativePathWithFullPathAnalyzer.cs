@@ -10,7 +10,7 @@ public sealed class PathGetRelativePathWithFullPathAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathGetRelativePathWithFullPathDiagnosticId,
-        title: "Path.GetRelativePath is redundant on FullPath",
+        title: "Use FullPath.MakePathRelativeTo instead of Path.GetRelativePath",
         messageFormat: "Use FullPath.MakePathRelativeTo instead of calling Path.GetRelativePath",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,

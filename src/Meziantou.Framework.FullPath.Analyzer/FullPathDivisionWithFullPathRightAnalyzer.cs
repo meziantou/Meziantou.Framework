@@ -10,7 +10,7 @@ public sealed class FullPathDivisionWithFullPathRightAnalyzer : DiagnosticAnalyz
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.DivisionWithFullPathRightDiagnosticId,
-        title: "Combining with a FullPath right operand is redundant",
+        title: "Use the right FullPath operand directly",
         messageFormat: "Use the right FullPath operand directly instead of combining with '/'",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,

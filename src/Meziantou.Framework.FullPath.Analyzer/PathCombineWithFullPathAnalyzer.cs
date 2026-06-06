@@ -10,7 +10,7 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathCombineWithFullPathDiagnosticId,
-        title: "Path.Combine is redundant with FullPath arguments",
+        title: "Use '/' operator instead of Path.Combine",
         messageFormat: "Use FullPath '/' operations instead of calling Path.Combine",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,

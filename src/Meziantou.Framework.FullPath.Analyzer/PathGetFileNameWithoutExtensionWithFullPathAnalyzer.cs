@@ -10,7 +10,7 @@ public sealed class PathGetFileNameWithoutExtensionWithFullPathAnalyzer : Diagno
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathGetFileNameWithoutExtensionWithFullPathDiagnosticId,
-        title: "Path.GetFileNameWithoutExtension is redundant on FullPath",
+        title: "Use FullPath.NameWithoutExtension instead of Path.GetFileNameWithoutExtension",
         messageFormat: "Use FullPath.NameWithoutExtension instead of calling Path.GetFileNameWithoutExtension",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,

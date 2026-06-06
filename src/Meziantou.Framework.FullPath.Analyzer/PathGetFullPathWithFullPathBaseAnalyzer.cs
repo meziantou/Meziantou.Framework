@@ -10,7 +10,7 @@ public sealed class PathGetFullPathWithFullPathBaseAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathGetFullPathWithFullPathBaseDiagnosticId,
-        title: "Path.GetFullPath with FullPath base is redundant",
+        title: "Use '/' with a FullPath base instead of Path.GetFullPath",
         messageFormat: "Use the FullPath base value with '/' instead of calling Path.GetFullPath",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,

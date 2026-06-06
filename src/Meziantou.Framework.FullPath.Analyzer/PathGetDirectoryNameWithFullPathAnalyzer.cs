@@ -10,7 +10,7 @@ public sealed class PathGetDirectoryNameWithFullPathAnalyzer : DiagnosticAnalyze
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathGetDirectoryNameWithFullPathDiagnosticId,
-        title: "Path.GetDirectoryName is redundant on FullPath",
+        title: "Use FullPath.Parent instead of Path.GetDirectoryName",
         messageFormat: "Use FullPath.Parent instead of calling Path.GetDirectoryName",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,

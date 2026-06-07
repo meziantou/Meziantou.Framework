@@ -8,7 +8,7 @@ public class YamlValue : YamlElement
 {
     private Scalar _scalar;
 
-    private YamlValue(Scalar scalar)
+    internal YamlValue(Scalar scalar)
     {
         Scalar = scalar ?? throw new ArgumentNullException(nameof(scalar));
     }

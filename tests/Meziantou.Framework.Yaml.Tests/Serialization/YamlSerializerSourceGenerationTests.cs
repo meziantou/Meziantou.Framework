@@ -779,6 +779,18 @@ public class YamlSerializerSourceGenerationTests
     }
 
     [Fact]
+    public void GeneratedContext_YamlNodeRoot_PreservesOriginalNodeLocations()
+    {
+        var yaml = "foo: bar\n\nbaz:\n  bla: bloo\n";
+
+        var node = YamlSerializer.Deserialize(yaml, TestYamlSerializerContext.Default.YamlNode);
+
+        var root = (YamlMapping)node!;
+        var baz = (YamlMapping)root["baz"]!;
+        Assert.Equal(3, baz.MappingStart.Start.Line);
+    }
+
+    [Fact]
     public void GeneratedContext_YamlNodeMember_RoundTripsDynamicContent()
     {
         var yaml = """
@@ -802,6 +814,25 @@ public class YamlSerializerSourceGenerationTests
         Assert.Contains("Content:", serialized);
         Assert.Contains("script:", serialized);
         Assert.Contains("values:", serialized);
+    }
+
+    [Fact]
+    public void GeneratedContext_YamlNodeMember_PreservesOriginalNodeLocations()
+    {
+        var yaml = """
+            Name: dynamic
+            Content:
+              foo: bar
+
+              baz:
+                bla: bloo
+            """;
+
+        var payload = (GeneratedYamlNodePayload)YamlSerializer.Deserialize(yaml, TestYamlSerializerContext.Default.GeneratedYamlNodePayload)!;
+
+        var content = (YamlMapping)payload.Content!;
+        var baz = (YamlMapping)content["baz"]!;
+        Assert.Equal(5, baz.MappingStart.Start.Line);
     }
 
     [Fact]

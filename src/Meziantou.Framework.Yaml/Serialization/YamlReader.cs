@@ -101,6 +101,8 @@ public sealed class YamlReader : YamlReaderWriterBase
     /// <summary>Gets the end location of the current token.</summary>
     public Mark End => _state.End;
 
+    internal ParsingEvent? CurrentEvent => _state.CurrentEvent;
+
     internal YamlReferenceReader? ReferenceReader => _state.ReferenceReader;
 
     /// <summary>Attempts to resolve the current alias token into an anchored object value.</summary>
@@ -331,6 +333,7 @@ public sealed class YamlReader : YamlReaderWriterBase
         public string? Alias { get; private set; }
         public Mark Start { get; private set; } = Mark.Empty;
         public Mark End { get; private set; } = Mark.Empty;
+        public ParsingEvent? CurrentEvent { get; private set; }
         public YamlReferenceReader? ReferenceReader { get; }
         public string? SourceName { get; }
 
@@ -353,6 +356,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     continue;
                 }
 
+                CurrentEvent = current;
                 ScalarValue = null;
                 ScalarStyle = ScalarStyle.Any;
                 Tag = null;
@@ -414,6 +418,7 @@ public sealed class YamlReader : YamlReaderWriterBase
             Alias = null;
             Start = Mark.Empty;
             End = Mark.Empty;
+            CurrentEvent = null;
             return false;
         }
 

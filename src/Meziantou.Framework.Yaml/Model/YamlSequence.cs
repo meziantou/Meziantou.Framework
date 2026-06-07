@@ -17,7 +17,7 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
         _contents = new List<YamlElement>();
     }
 
-    private YamlSequence(SequenceStart sequenceStart, SequenceEnd sequenceEnd, List<YamlElement> contents)
+    internal YamlSequence(SequenceStart sequenceStart, SequenceEnd sequenceEnd, List<YamlElement> contents)
     {
         _contents = contents;
         SequenceStart = sequenceStart;

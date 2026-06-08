@@ -4,14 +4,14 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class BloomFilterTests
 {
-    public static TheoryData<Type, object> AllAlgorithmsAndValues()
+    public static TheoryData<string, object> AllAlgorithmsAndValues()
     {
-        var data = new TheoryData<Type, object>();
-        foreach (var algorithm in typeof(BloomFilter).Assembly.GetTypes().Where(t => typeof(IBloomFilter).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract))
+        var data = new TheoryData<string, object>();
+        foreach (var method in typeof(BloomFilter).GetMethods().Where(m => m.Name.StartsWith("Create", StringComparison.Ordinal) && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(BloomFilterSize)))
         {
             foreach (var value in GetValues())
             {
-                data.Add(algorithm, value);
+                data.Add(method.Name, value);
             }
         }
 
@@ -20,9 +20,10 @@ public sealed class BloomFilterTests
 
     [Theory]
     [MemberData(nameof(AllAlgorithmsAndValues))]
-    public void Add_ThenMayContain_ReturnsTrue_ForAllAlgorithmsAndTypes(Type algorithm, object value)
+    public void Add_ThenMayContain_ReturnsTrue_ForAllAlgorithmsAndTypes(string createMethodName, object value)
     {
-        var filter = (IBloomFilter)Activator.CreateInstance(algorithm);
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var filter = typeof(BloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size]) as IBloomFilter;
         AddValue(filter, value);
         Assert.True(MayContainValue(filter, value));
     }

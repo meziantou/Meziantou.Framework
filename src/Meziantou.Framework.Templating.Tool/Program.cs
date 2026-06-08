@@ -97,6 +97,7 @@ internal static partial class Program
         {
             StartCodeBlockDelimiter = resolvedStartCodeBlockDelimiter,
             EndCodeBlockDelimiter = resolvedEndCodeBlockDelimiter,
+            SourceFileName = inputPath,
         };
         template.Load(templateContent);
         var resolvedOutputPath = ResolveOutputPath(outputFile, inputPath, template);

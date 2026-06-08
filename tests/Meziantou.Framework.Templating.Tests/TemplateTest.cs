@@ -161,7 +161,7 @@ public class TemplateTest
         template.Build(CancellationToken.None);
 
         Assert.Contains("private static string Sample() => \"Sample\";", template.SourceCode, StringComparison.Ordinal);
-        Assert.Contains("}" + Environment.NewLine + "    private static string Sample() => \"Sample\";", template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("}" + Environment.NewLine + "#line ", template.SourceCode, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -424,6 +424,56 @@ public class TemplateTest
         Assert.Equal(4, codeBlock.Start.Column);
         Assert.Equal(codeBlock.Text.Length, codeBlock.Span.Length);
         Assert.Equal(codeBlock.Text, Source.AsSpan(codeBlock.Start.Index, codeBlock.Span.Length).ToString());
+    }
+
+    [Fact]
+    public void Template_CodeBlocks_EmitLineDirectivesWithoutFileName()
+    {
+        var template = new TemplateWithoutCompilation();
+        template.Load("<% var value = 0; %>");
+
+        template.Build(CancellationToken.None);
+
+        Assert.Contains("#line (1, 3) - (1, 19) 8 \"\"" + Environment.NewLine, template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("#line default", template.SourceCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Template_ExpressionAndClassMemberBlocks_EmitLineDirectivesWithFileName()
+    {
+        var template = new TemplateWithoutCompilation
+        {
+            SourceFileName = "template.cs",
+        };
+        template.Load("<%= value %><%+ private int value; %>");
+
+        template.Build(CancellationToken.None);
+
+        Assert.Contains("#line (1, 4) - (1, 11) 32 \"template.cs\"", template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("#line (1, 16) - (1, 36) 4 \"template.cs\"", template.SourceCode, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("line1\n    <% Missing(); %>")]
+    [InlineData("line1\n    <%= Missing %>")]
+    [InlineData("line1\n    <%+ private static string Value => Missing; %>")]
+    [InlineData("line1\n<%\nvar value = 0;\nMissing();\n%>")]
+    public void Template_LineDirectives_MapCompilerDiagnosticToTemplate(string source)
+    {
+        const string SourceFileName = "template.cs";
+        var template = new Template
+        {
+            SourceFileName = SourceFileName,
+        };
+        template.Load(source);
+        var missingIndex = source.IndexOf("Missing", StringComparison.Ordinal);
+        var lineStartIndex = source.LastIndexOf('\n', missingIndex, StringComparison.Ordinal) + 1;
+        var expectedLine = source.AsSpan(0, missingIndex).Count('\n') + 1;
+        var expectedColumn = missingIndex - lineStartIndex + 1;
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+
+        Assert.Contains($"{SourceFileName}({expectedLine},{expectedColumn}", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

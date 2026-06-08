@@ -170,6 +170,7 @@ namespace Meziantou.Framework.Templating
         public Meziantou.Framework.Templating.BlockCollection Blocks { get => throw null; }
         public bool IsBuilt { get => throw null; }
         public string? SourceCode { get => throw null; }
+        public string? SourceFileName { get => throw null; set { } }
         public Meziantou.Framework.Templating.ArgumentCollection Arguments { get => throw null; }
         public Meziantou.Framework.Templating.UsingCollection Usings { get => throw null; }
         public Meziantou.Framework.Templating.InterfaceCollection ImplementedInterfaces { get => throw null; }

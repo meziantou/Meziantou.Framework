@@ -134,6 +134,6 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
         var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
 
         Assert.Equal(1, result);
-        Assert.Contains($"{inputPath}(2,4)", console.Error, StringComparison.Ordinal);
+        Assert.Contains("template.txt(2,4)", console.Error, StringComparison.Ordinal);
     }
 }

@@ -2,10 +2,12 @@
 <#@ output extension=".cs" #>
 <#
     var types = new [] { typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(Guid), typeof(string), typeof(UInt128), typeof(Int128) };
-    var hashAlgorithms = new [] { "XXHash128", "XXHash64", "XXHash32" };
+    var hashAlgorithms = new [] { "XXHash128", "XXHash64", "XXHash32", "XXHash3" };
 #>
 
 namespace Meziantou.Framework.BloomFilters;
+
+#pragma warning disable MA0048 // File name must match type name
 
 partial class BloomFilter
 {

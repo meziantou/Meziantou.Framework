@@ -30,6 +30,8 @@ partial class BloomFilter
     public static BloomFilterXXHash64 CreateXXHash64(BloomFilterSize size) => new(size.BitCount, size.HashCount);
     public static BloomFilterXXHash32 CreateXXHash32(BloomFilterSize size) => new(size.BitCount, size.HashCount);
     public static BloomFilterXXHash3 CreateXXHash3(BloomFilterSize size) => new(size.BitCount, size.HashCount);
+    public static BloomFilterCrc64 CreateCrc64(BloomFilterSize size) => new(size.BitCount, size.HashCount);
+    public static BloomFilterCrc32 CreateCrc32(BloomFilterSize size) => new(size.BitCount, size.HashCount);
 }
 
 partial class BloomFilterXXHash128 : IBloomFilter
@@ -37,6 +39,21 @@ partial class BloomFilterXXHash128 : IBloomFilter
     internal BloomFilterXXHash128(long bitCount, int hashCount)
         : base(bitCount, hashCount)
     {
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash128 Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash128 Hash(string value)
+    {
+        var chars = value.AsSpan();
+        var bytes = MemoryMarshal.AsBytes(chars);
+        return Hash(bytes);
     }
 
     public void Add(int value) => AddHash(Hash(value));
@@ -64,6 +81,21 @@ partial class BloomFilterXXHash64 : IBloomFilter
     {
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash64 Hash(string value)
+    {
+        var chars = value.AsSpan();
+        var bytes = MemoryMarshal.AsBytes(chars);
+        return Hash(bytes);
+    }
+
     public void Add(int value) => AddHash(Hash(value));
     public bool MayContain(int value) => MayContainHash(Hash(value));
     public void Add(uint value) => AddHash(Hash(value));
@@ -89,6 +121,21 @@ partial class BloomFilterXXHash32 : IBloomFilter
     {
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash32 Hash(string value)
+    {
+        var chars = value.AsSpan();
+        var bytes = MemoryMarshal.AsBytes(chars);
+        return Hash(bytes);
+    }
+
     public void Add(int value) => AddHash(Hash(value));
     public bool MayContain(int value) => MayContainHash(Hash(value));
     public void Add(uint value) => AddHash(Hash(value));
@@ -112,6 +159,101 @@ partial class BloomFilterXXHash3 : IBloomFilter
     internal BloomFilterXXHash3(long bitCount, int hashCount)
         : base(bitCount, hashCount)
     {
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash64 Hash(string value)
+    {
+        var chars = value.AsSpan();
+        var bytes = MemoryMarshal.AsBytes(chars);
+        return Hash(bytes);
+    }
+
+    public void Add(int value) => AddHash(Hash(value));
+    public bool MayContain(int value) => MayContainHash(Hash(value));
+    public void Add(uint value) => AddHash(Hash(value));
+    public bool MayContain(uint value) => MayContainHash(Hash(value));
+    public void Add(long value) => AddHash(Hash(value));
+    public bool MayContain(long value) => MayContainHash(Hash(value));
+    public void Add(ulong value) => AddHash(Hash(value));
+    public bool MayContain(ulong value) => MayContainHash(Hash(value));
+    public void Add(global::System.Guid value) => AddHash(Hash(value));
+    public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value));
+    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(global::System.UInt128 value) => AddHash(Hash(value));
+    public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
+    public void Add(global::System.Int128 value) => AddHash(Hash(value));
+    public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+}
+
+partial class BloomFilterCrc64 : IBloomFilter
+{
+    internal BloomFilterCrc64(long bitCount, int hashCount)
+        : base(bitCount, hashCount)
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash64 Hash(string value)
+    {
+        var chars = value.AsSpan();
+        var bytes = MemoryMarshal.AsBytes(chars);
+        return Hash(bytes);
+    }
+
+    public void Add(int value) => AddHash(Hash(value));
+    public bool MayContain(int value) => MayContainHash(Hash(value));
+    public void Add(uint value) => AddHash(Hash(value));
+    public bool MayContain(uint value) => MayContainHash(Hash(value));
+    public void Add(long value) => AddHash(Hash(value));
+    public bool MayContain(long value) => MayContainHash(Hash(value));
+    public void Add(ulong value) => AddHash(Hash(value));
+    public bool MayContain(ulong value) => MayContainHash(Hash(value));
+    public void Add(global::System.Guid value) => AddHash(Hash(value));
+    public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value));
+    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(global::System.UInt128 value) => AddHash(Hash(value));
+    public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
+    public void Add(global::System.Int128 value) => AddHash(Hash(value));
+    public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+}
+
+partial class BloomFilterCrc32 : IBloomFilter
+{
+    internal BloomFilterCrc32(long bitCount, int hashCount)
+        : base(bitCount, hashCount)
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash32 Hash(string value)
+    {
+        var chars = value.AsSpan();
+        var bytes = MemoryMarshal.AsBytes(chars);
+        return Hash(bytes);
     }
 
     public void Add(int value) => AddHash(Hash(value));

@@ -123,4 +123,17 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(1, result);
         Assert.Contains("cannot be empty", console.Error, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public async Task InvalidTemplate_ReturnsDiagnosticWithInputPathAndPosition()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "line1\n<% Missing(); %>", XunitCancellationToken);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        Assert.Contains($"{inputPath}(2,4)", console.Error, StringComparison.Ordinal);
+    }
 }

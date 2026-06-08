@@ -4,12 +4,10 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class BloomFilterTests
 {
-    private static readonly BloomFilterSize FilterSize = BloomFilterSize.CreateExact(bitCount: 257, hashCount: 7);
-
-    public static TheoryData<BloomFilterAlgorithm, object> AllAlgorithmsAndValues()
+    public static TheoryData<Type, object> AllAlgorithmsAndValues()
     {
-        var data = new TheoryData<BloomFilterAlgorithm, object>();
-        foreach (var algorithm in Enum.GetValues<BloomFilterAlgorithm>())
+        var data = new TheoryData<Type, object>();
+        foreach (var algorithm in typeof(BloomFilter).Assembly.GetTypes().Where(t => typeof(IBloomFilter).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract))
         {
             foreach (var value in GetValues())
             {
@@ -22,9 +20,9 @@ public sealed class BloomFilterTests
 
     [Theory]
     [MemberData(nameof(AllAlgorithmsAndValues))]
-    public void Add_ThenMayContain_ReturnsTrue_ForAllAlgorithmsAndTypes(BloomFilterAlgorithm algorithm, object value)
+    public void Add_ThenMayContain_ReturnsTrue_ForAllAlgorithmsAndTypes(Type algorithm, object value)
     {
-        var filter = CreateFilter(algorithm);
+        var filter = (IBloomFilter)Activator.CreateInstance(algorithm);
         AddValue(filter, value);
         Assert.True(MayContainValue(filter, value));
     }
@@ -75,18 +73,6 @@ public sealed class BloomFilterTests
         ];
     }
 
-    private static IBloomFilter CreateFilter(BloomFilterAlgorithm algorithm)
-    {
-        return algorithm switch
-        {
-            BloomFilterAlgorithm.XXHash128 => BloomFilter.CreateXXHash128(FilterSize),
-            BloomFilterAlgorithm.XXHash64 => BloomFilter.CreateXXHash64(FilterSize),
-            BloomFilterAlgorithm.XXHash32 => BloomFilter.CreateXXHash32(FilterSize),
-            BloomFilterAlgorithm.XXHash3 => BloomFilter.CreateXXHash3(FilterSize),
-            _ => throw new ArgumentOutOfRangeException(nameof(algorithm)),
-        };
-    }
-
     private static void AddValue(IBloomFilter filter, object value)
     {
         switch (value)
@@ -134,13 +120,5 @@ public sealed class BloomFilterTests
             Int128 v => filter.MayContain(v),
             _ => throw new ArgumentOutOfRangeException(nameof(value)),
         };
-    }
-
-    public enum BloomFilterAlgorithm
-    {
-        XXHash128,
-        XXHash64,
-        XXHash32,
-        XXHash3,
     }
 }

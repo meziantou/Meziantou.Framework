@@ -1,0 +1,31 @@
+<#@ template debug="true" hostspecific="false" language="C#" #>
+<#@ output extension=".cs" #>
+<#
+    var types = new [] { typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(Guid), typeof(string), typeof(UInt128), typeof(Int128) };
+    var hashAlgorithms = new [] { "XXHash128", "XXHash64", "XXHash32" };
+#>
+
+namespace Meziantou.Framework.BloomFilters;
+
+partial class BloomFilter
+{
+<# foreach (var algorithm in hashAlgorithms) { #>
+    public static BloomFilter<#= algorithm #> Create<#= algorithm #>(BloomFilterSize size) => new(size.BitCount, size.HashCount);
+<# } #>
+}
+
+<# foreach (var algorithm in hashAlgorithms) { #>
+partial class BloomFilter<#= algorithm #>
+{
+    internal BloomFilter<#= algorithm #>(long bitCount, int hashCount)
+        : base(bitCount, hashCount)
+    {
+    }
+
+<# foreach (var type in types) { #>
+    public void Add(<#= type.Name #> value) => AddHash(Hash(value));
+    public bool MayContain(<#= type.Name #> value) => MayContainHash(Hash(value));
+<# } #>
+}
+
+<# } #>

@@ -4,6 +4,26 @@ namespace Meziantou.Framework.BloomFilters;
 
 #pragma warning disable MA0048 // File name must match type name
 
+public partial interface IBloomFilter
+{
+    void Add(int value);
+    bool MayContain(int value);
+    void Add(uint value);
+    bool MayContain(uint value);
+    void Add(long value);
+    bool MayContain(long value);
+    void Add(ulong value);
+    bool MayContain(ulong value);
+    void Add(global::System.Guid value);
+    bool MayContain(global::System.Guid value);
+    void Add(string value);
+    bool MayContain(string value);
+    void Add(global::System.UInt128 value);
+    bool MayContain(global::System.UInt128 value);
+    void Add(global::System.Int128 value);
+    bool MayContain(global::System.Int128 value);
+}
+
 partial class BloomFilter
 {
     public static BloomFilterXXHash128 CreateXXHash128(BloomFilterSize size) => new(size.BitCount, size.HashCount);
@@ -12,7 +32,7 @@ partial class BloomFilter
     public static BloomFilterXXHash3 CreateXXHash3(BloomFilterSize size) => new(size.BitCount, size.HashCount);
 }
 
-partial class BloomFilterXXHash128
+partial class BloomFilterXXHash128 : IBloomFilter
 {
     internal BloomFilterXXHash128(long bitCount, int hashCount)
         : base(bitCount, hashCount)
@@ -37,7 +57,7 @@ partial class BloomFilterXXHash128
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
 }
 
-partial class BloomFilterXXHash64
+partial class BloomFilterXXHash64 : IBloomFilter
 {
     internal BloomFilterXXHash64(long bitCount, int hashCount)
         : base(bitCount, hashCount)
@@ -62,7 +82,7 @@ partial class BloomFilterXXHash64
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
 }
 
-partial class BloomFilterXXHash32
+partial class BloomFilterXXHash32 : IBloomFilter
 {
     internal BloomFilterXXHash32(long bitCount, int hashCount)
         : base(bitCount, hashCount)
@@ -87,7 +107,7 @@ partial class BloomFilterXXHash32
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
 }
 
-partial class BloomFilterXXHash3
+partial class BloomFilterXXHash3 : IBloomFilter
 {
     internal BloomFilterXXHash3(long bitCount, int hashCount)
         : base(bitCount, hashCount)

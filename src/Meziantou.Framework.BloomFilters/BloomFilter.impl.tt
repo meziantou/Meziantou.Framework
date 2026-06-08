@@ -10,6 +10,14 @@ namespace Meziantou.Framework.BloomFilters;
 
 #pragma warning disable MA0048 // File name must match type name
 
+public partial interface IBloomFilter
+{
+<# foreach (var type in types) { #>
+    void Add(<#= ToCsharpTypeName(type) #> value);
+    bool MayContain(<#= ToCsharpTypeName(type) #> value);
+<# } #>
+}
+
 partial class BloomFilter
 {
 <# foreach (var algorithm in hashAlgorithms) { #>
@@ -18,7 +26,7 @@ partial class BloomFilter
 }
 
 <# foreach (var algorithm in hashAlgorithms) { #>
-partial class BloomFilter<#= algorithm #>
+partial class BloomFilter<#= algorithm #> : IBloomFilter
 {
     internal BloomFilter<#= algorithm #>(long bitCount, int hashCount)
         : base(bitCount, hashCount)

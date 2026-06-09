@@ -44,11 +44,14 @@ public abstract partial class BloomFilter
     private protected void AddHash(Hash64 hash)
     {
         var bitCount = (ulong)Bits.BitCount;
+        var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            var combined = unchecked(hash.Hash1 + ((uint)i * hash.Hash2));
-            var index = Reduce(combined, bitCount);
-            Bits.Set(index);
+            Bits.Set(Reduce(combined, bitCount));
+            unchecked
+            {
+                combined += hash.Hash2;
+            }
         }
     }
 
@@ -56,12 +59,16 @@ public abstract partial class BloomFilter
     private protected bool MayContainHash(Hash64 hash)
     {
         var bitCount = (ulong)Bits.BitCount;
+        var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            var combined = unchecked(hash.Hash1 + ((uint)i * hash.Hash2));
-            var index = Reduce(combined, bitCount);
-            if (!Bits.IsSet(index))
+            if (!Bits.IsSet(Reduce(combined, bitCount)))
                 return false;
+
+            unchecked
+            {
+                combined += hash.Hash2;
+            }
         }
 
         return true;
@@ -71,11 +78,14 @@ public abstract partial class BloomFilter
     private protected void AddHash(Hash32 hash)
     {
         var bitCount = (ulong)Bits.BitCount;
+        var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            var combined = unchecked((ushort)(hash.Hash1 + ((ushort)i * hash.Hash2)));
-            var index = Reduce(combined, bitCount);
-            Bits.Set(index);
+            Bits.Set(Reduce(combined, bitCount));
+            unchecked
+            {
+                combined += hash.Hash2;
+            }
         }
     }
 
@@ -83,12 +93,16 @@ public abstract partial class BloomFilter
     private protected bool MayContainHash(Hash32 hash)
     {
         var bitCount = (ulong)Bits.BitCount;
+        var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            var combined = unchecked((ushort)(hash.Hash1 + ((ushort)i * hash.Hash2)));
-            var index = Reduce(combined, bitCount);
-            if (!Bits.IsSet(index))
+            if (!Bits.IsSet(Reduce(combined, bitCount)))
                 return false;
+
+            unchecked
+            {
+                combined += hash.Hash2;
+            }
         }
 
         return true;

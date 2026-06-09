@@ -1,4 +1,3 @@
-
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.BloomFilters;
@@ -18,11 +17,11 @@ public abstract partial class BloomFilter
     private protected void AddHash(Hash128 hash)
     {
         var bitCount = (ulong)Bits.BitCount;
+        var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            var combined = unchecked(hash.Hash1 + ((ulong)i * hash.Hash2));
-            var index = Reduce(combined, bitCount);
-            Bits.Set(index);
+            Bits.Set(Reduce(combined, bitCount));
+            combined += hash.Hash2;
         }
     }
 
@@ -30,12 +29,12 @@ public abstract partial class BloomFilter
     private protected bool MayContainHash(Hash128 hash)
     {
         var bitCount = (ulong)Bits.BitCount;
+        var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            var combined = unchecked(hash.Hash1 + ((ulong)i * hash.Hash2));
-            var index = Reduce(combined, bitCount);
-            if (!Bits.IsSet(index))
+            if (!Bits.IsSet(Reduce(combined, bitCount)))
                 return false;
+            combined += hash.Hash2;
         }
 
         return true;

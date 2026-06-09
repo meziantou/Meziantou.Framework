@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Avatar\Meziantou.Framework.Avatar.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Bcrypt\Meziantou.Framework.Bcrypt.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Bencode\Meziantou.Framework.Bencode.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.BloomFilters\Meziantou.Framework.BloomFilters.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.CodeDom\Meziantou.Framework.CodeDom.csproj" />
@@ -74,6 +75,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Avatar" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Bcrypt" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Bencode" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.BloomFilters" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ByteSize" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ChromiumTracing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.CodeDom" />

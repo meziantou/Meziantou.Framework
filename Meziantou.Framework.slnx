@@ -37,6 +37,7 @@
     <Project Path="src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
     <Project Path="src/Meziantou.Framework.Bencode/Meziantou.Framework.Bencode.csproj" />
+    <Project Path="src/Meziantou.Framework.BloomFilters/Meziantou.Framework.BloomFilters.csproj" />
     <Project Path="src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
     <Project Path="src/Meziantou.Framework.ChromiumTracing/Meziantou.Framework.ChromiumTracing.csproj" />
     <Project Path="src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
@@ -154,6 +155,7 @@
     <Project Path="tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bcrypt.Tests/Meziantou.Framework.Bcrypt.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bencode.Tests/Meziantou.Framework.Bencode.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.BloomFilters.Tests/Meziantou.Framework.BloomFilters.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ByteSize.Tests/Meziantou.Framework.ByteSize.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ChromiumTracing.Tests/Meziantou.Framework.ChromiumTracing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />

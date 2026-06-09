@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.BloomFilters/Meziantou.Framework.BloomFilters.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.BloomFilters.Tests/Meziantou.Framework.BloomFilters.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -15,7 +15,7 @@ internal sealed class SegmentedBitStorage
 
     public SegmentedBitStorage(long bitCount)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(bitCount, 0);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bitCount);
 
         BitCount = bitCount;
         WordCount = checked(((bitCount - 1) / 64) + 1);

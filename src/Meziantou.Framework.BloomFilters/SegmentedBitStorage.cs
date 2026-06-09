@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -80,6 +81,7 @@ internal sealed class SegmentedBitStorage
         return (word & mask) != 0;
     }
 
+    [Conditional("DEBUG")]
     private void ValidateBitIndex(long bitIndex)
     {
         if ((ulong)bitIndex >= (ulong)BitCount)

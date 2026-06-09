@@ -23,7 +23,7 @@ public sealed class BloomFilterTests
     public void Add_ThenMayContain_ReturnsTrue_ForAllAlgorithmsAndTypes(string createMethodName, object value)
     {
         var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
-        var filter = typeof(BloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size]) as IBloomFilter;
+        var filter = (IBloomFilter)typeof(BloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
         AddValue(filter, value);
         Assert.True(MayContainValue(filter, value));
     }

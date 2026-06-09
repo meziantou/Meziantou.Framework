@@ -6,11 +6,52 @@ namespace Meziantou.Framework.BloomFilters
 {
     public abstract class BloomFilter
     {
-        protected BloomFilter(long bitCount, int hashCount) { }
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash128 CreateXXHash128(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash3 CreateXXHash3(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilterCrc64 CreateCrc64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilterCrc32 CreateCrc32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
+    }
+
+    public sealed class BloomFilterCrc32 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(int value) { }
+        public bool MayContain(int value) => throw null;
+        public void Add(uint value) { }
+        public bool MayContain(uint value) => throw null;
+        public void Add(long value) { }
+        public bool MayContain(long value) => throw null;
+        public void Add(ulong value) { }
+        public bool MayContain(ulong value) => throw null;
+        public void Add(System.Guid value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public void Add(string value) { }
+        public bool MayContain(string value) => throw null;
+        public void Add(System.UInt128 value) { }
+        public bool MayContain(System.UInt128 value) => throw null;
+        public void Add(System.Int128 value) { }
+        public bool MayContain(System.Int128 value) => throw null;
+    }
+
+    public sealed class BloomFilterCrc64 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(int value) { }
+        public bool MayContain(int value) => throw null;
+        public void Add(uint value) { }
+        public bool MayContain(uint value) => throw null;
+        public void Add(long value) { }
+        public bool MayContain(long value) => throw null;
+        public void Add(ulong value) { }
+        public bool MayContain(ulong value) => throw null;
+        public void Add(System.Guid value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public void Add(string value) { }
+        public bool MayContain(string value) => throw null;
+        public void Add(System.UInt128 value) { }
+        public bool MayContain(System.UInt128 value) => throw null;
+        public void Add(System.Int128 value) { }
+        public bool MayContain(System.Int128 value) => throw null;
     }
 
     public readonly struct BloomFilterSize
@@ -21,7 +62,7 @@ namespace Meziantou.Framework.BloomFilters
         public static Meziantou.Framework.BloomFilters.BloomFilterSize CreateExact(long bitCount, int hashCount) => throw null;
     }
 
-    public sealed class BloomFilterXXHash128 : Meziantou.Framework.BloomFilters.BloomFilter
+    public sealed class BloomFilterXXHash128 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
         public void Add(int value) { }
         public bool MayContain(int value) => throw null;
@@ -41,7 +82,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Int128 value) => throw null;
     }
 
-    public sealed class BloomFilterXXHash3 : Meziantou.Framework.BloomFilters.BloomFilter
+    public sealed class BloomFilterXXHash3 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
         public void Add(int value) { }
         public bool MayContain(int value) => throw null;
@@ -61,7 +102,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Int128 value) => throw null;
     }
 
-    public sealed class BloomFilterXXHash32 : Meziantou.Framework.BloomFilters.BloomFilter
+    public sealed class BloomFilterXXHash32 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
         public void Add(int value) { }
         public bool MayContain(int value) => throw null;
@@ -81,7 +122,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Int128 value) => throw null;
     }
 
-    public sealed class BloomFilterXXHash64 : Meziantou.Framework.BloomFilters.BloomFilter
+    public sealed class BloomFilterXXHash64 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
     {
         public void Add(int value) { }
         public bool MayContain(int value) => throw null;
@@ -99,5 +140,25 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
         public bool MayContain(System.Int128 value) => throw null;
+    }
+
+    public interface IBloomFilter
+    {
+        void Add(int value);
+        bool MayContain(int value);
+        void Add(uint value);
+        bool MayContain(uint value);
+        void Add(long value);
+        bool MayContain(long value);
+        void Add(ulong value);
+        bool MayContain(ulong value);
+        void Add(System.Guid value);
+        bool MayContain(System.Guid value);
+        void Add(string value);
+        bool MayContain(string value);
+        void Add(System.UInt128 value);
+        bool MayContain(System.UInt128 value);
+        void Add(System.Int128 value);
+        bool MayContain(System.Int128 value);
     }
 }

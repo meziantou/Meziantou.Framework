@@ -11,6 +11,7 @@
         typeof(string),
         typeof(UInt128),
         typeof(Int128),
+        typeof(ReadOnlySpan<byte>),
     };
     var hashAlgorithms = new HashAlgorithm[]
     {
@@ -96,6 +97,7 @@ static string ToCsharpTypeName(Type type)
     if (type == typeof(bool)) return "bool";
     if (type == typeof(char)) return "char";
     if (type == typeof(string)) return "string";
+    if (type == typeof(ReadOnlySpan<byte>)) return "System.ReadOnlySpan<byte>";
 
     return "global::" + type.FullName;
 }

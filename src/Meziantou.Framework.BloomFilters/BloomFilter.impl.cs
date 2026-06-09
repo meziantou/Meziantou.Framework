@@ -26,6 +26,8 @@ public partial interface IBloomFilter
     bool MayContain(global::System.UInt128 value);
     void Add(global::System.Int128 value);
     bool MayContain(global::System.Int128 value);
+    void Add(System.ReadOnlySpan<byte> value);
+    bool MayContain(System.ReadOnlySpan<byte> value);
 }
 
 partial class BloomFilter
@@ -76,6 +78,8 @@ partial class BloomFilterXXHash128 : IBloomFilter
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
 }
 
 partial class BloomFilterXXHash64 : IBloomFilter
@@ -116,6 +120,8 @@ partial class BloomFilterXXHash64 : IBloomFilter
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
 }
 
 partial class BloomFilterXXHash32 : IBloomFilter
@@ -156,6 +162,8 @@ partial class BloomFilterXXHash32 : IBloomFilter
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
 }
 
 partial class BloomFilterXXHash3 : IBloomFilter
@@ -196,6 +204,8 @@ partial class BloomFilterXXHash3 : IBloomFilter
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
 }
 
 partial class BloomFilterCrc64 : IBloomFilter
@@ -236,6 +246,8 @@ partial class BloomFilterCrc64 : IBloomFilter
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
 }
 
 partial class BloomFilterCrc32 : IBloomFilter
@@ -276,5 +288,7 @@ partial class BloomFilterCrc32 : IBloomFilter
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
 }
 

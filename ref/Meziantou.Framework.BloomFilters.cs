@@ -32,6 +32,8 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
         public bool MayContain(System.Int128 value) => throw null;
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
     }
 
     public sealed class BloomFilterCrc64 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
@@ -52,6 +54,8 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
         public bool MayContain(System.Int128 value) => throw null;
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
     }
 
     public readonly struct BloomFilterSize
@@ -80,6 +84,8 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
         public bool MayContain(System.Int128 value) => throw null;
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
     }
 
     public sealed class BloomFilterXXHash3 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
@@ -100,6 +106,8 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
         public bool MayContain(System.Int128 value) => throw null;
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
     }
 
     public sealed class BloomFilterXXHash32 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
@@ -120,6 +128,8 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
         public bool MayContain(System.Int128 value) => throw null;
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
     }
 
     public sealed class BloomFilterXXHash64 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
@@ -140,6 +150,8 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.UInt128 value) => throw null;
         public void Add(System.Int128 value) { }
         public bool MayContain(System.Int128 value) => throw null;
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
     }
 
     public interface IBloomFilter
@@ -160,5 +172,7 @@ namespace Meziantou.Framework.BloomFilters
         bool MayContain(System.UInt128 value);
         void Add(System.Int128 value);
         bool MayContain(System.Int128 value);
+        void Add(System.ReadOnlySpan<byte> value);
+        bool MayContain(System.ReadOnlySpan<byte> value);
     }
 }

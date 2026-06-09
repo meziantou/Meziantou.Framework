@@ -123,7 +123,7 @@ static int RunTemplateStep(FullPath rootPath)
         .ToArray();
 
     var hasTemplateErrors = false;
-    foreach (var templateFile in templateFiles)
+    Parallel.ForEach(templateFiles, templateFile =>
     {
         var relativeTemplatePath = templateFile.MakePathRelativeTo(rootPath);
         Console.WriteLine($"[update-all] Transforming {relativeTemplatePath}");
@@ -145,10 +145,13 @@ static int RunTemplateStep(FullPath rootPath)
                 "#>",
             ]);
 
-        hasTemplateErrors |= exitCode != 0;
-    }
+        if (exitCode != 0)
+        {
+            Volatile.Write(ref hasTemplateErrors, true);
+        }
+    });
 
-    return hasTemplateErrors ? 1 : 0;
+    return Volatile.Read(ref hasTemplateErrors) ? 1 : 0;
 }
 
 static int RunUpdateBomStep(FullPath rootPath)

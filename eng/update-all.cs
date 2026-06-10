@@ -14,6 +14,16 @@ const string StepReadme = "readme";
 const string StepTrimmable = "trimmable";
 const string StepSlnx = "slnx";
 const string StepTemplates = "templates";
+// ...existing code...
+using System.Xml;
+using System.Xml.Linq;
+using Meziantou.Framework;
+
+const string StepReadme = "readme";
+const string StepTrimmable = "trimmable";
+const string StepSlnx = "slnx";
+const string StepTemplates = "templates";
+// ...existing code...
 const string StepBom = "bom";
 const string StepValidateTestProjects = "validate-testprojects";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
@@ -22,6 +32,14 @@ string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepB
 
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+var updatedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // Tracks files that were modified during the run
+
+for (var i = 0; i < args.Length; i++)
+// ...existing code...
+var updatedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // Track files that were modified
+
+for (var i = 0; i < args.Length; i++)
+// ...existing code...
 
 for (var i = 0; i < args.Length; i++)
 {

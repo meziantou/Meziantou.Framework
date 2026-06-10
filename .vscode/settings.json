@@ -1,3 +1,9 @@
 {
-  "dotnet.defaultSolution": "Meziantou.Framework.slnx"
+  "dotnet.defaultSolution": "Meziantou.Framework.slnx",
+  "chat.tools.terminal.autoApprove": {
+    "/^dotnet run \\./eng/update-all\\.cs$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }

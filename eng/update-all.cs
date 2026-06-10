@@ -3,8 +3,6 @@
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -19,7 +17,7 @@ const string StepValidateTestProjects = "validate-testprojects";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
 string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom];
 string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom, StepValidateTestProjects];
-
+var updatedFiles = new ConcurrentBag<string>();
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -54,44 +52,45 @@ if (selectedSteps.Contains("all"))
 }
 
 var rootPath = GetRepositoryRoot();
-var hasErrors = false;
 
 bool ShouldRunStep(string stepName) => selectedSteps.Count is 0 ? defaultSteps.Contains(stepName, StringComparer.OrdinalIgnoreCase) : selectedSteps.Contains(stepName);
 
+var tasks = new List<Task>();
 if (ShouldRunStep(StepReadme))
 {
     Console.WriteLine("[update-all] Running readme");
-    hasErrors |= await RunUpdateReadmeStep(rootPath) != 0;
+    tasks.Add(Task.Run(() => RunUpdateReadmeStep(rootPath)));
 }
 
 if (ShouldRunStep(StepTrimmable))
 {
     Console.WriteLine("[update-all] Running trimmable");
-    hasErrors |= RunUpdateTrimmableStep(rootPath) != 0;
+    tasks.Add(Task.Run(() => RunUpdateTrimmableStep(rootPath)));
 }
 
 if (ShouldRunStep(StepSlnx))
 {
     Console.WriteLine("[update-all] Running slnx");
-    hasErrors |= RunUpdateProjectSlnxStep(rootPath, outputPath) != 0;
-}
-
-if (ShouldRunStep(StepTemplates))
-{
-    Console.WriteLine("[update-all] Running templates");
-    hasErrors |= RunTemplateStep(rootPath) != 0;
-}
-
-if (ShouldRunStep(StepBom))
-{
-    Console.WriteLine("[update-all] Running bom");
-    hasErrors |= RunUpdateBomStep(rootPath) != 0;
+    tasks.Add(Task.Run(() => RunUpdateProjectSlnxStep(rootPath, outputPath)));
 }
 
 if (ShouldRunStep(StepValidateTestProjects))
 {
     Console.WriteLine("[update-all] Running validate-testprojects");
-    hasErrors |= RunValidateTestProjectsConfigurationStep(rootPath) != 0;
+    tasks.Add(Task.Run(() => RunValidateTestProjectsConfigurationStep(rootPath)));
+}
+
+if (ShouldRunStep(StepTemplates))
+{
+    Console.WriteLine("[update-all] Running templates");
+    tasks.Add(Task.Run(() => RunTemplateStep(rootPath)));
+}
+
+await Task.WhenAll(tasks);
+if (ShouldRunStep(StepBom))
+{
+    Console.WriteLine("[update-all] Running bom");
+    RunUpdateBomStep(rootPath);
 }
 
 if (selectedSteps.Count > 0)
@@ -105,15 +104,32 @@ if (selectedSteps.Count > 0)
     }
 }
 
-if (hasErrors)
+if (!updatedFiles.IsEmpty)
 {
     Console.WriteLine("One or more steps reported errors, you can fix them and re-run the tool to check that all steps are successful.");
     Console.WriteLine("dotnet run ./eng/update-all.cs");
+
+    Console.WriteLine("Updated files:");
+    foreach (var file in updatedFiles)
+    {
+        Console.WriteLine($"- {file}");
+    }
+
+    Console.WriteLine("git diff:");
+    var psi = new ProcessStartInfo("git", ["--no-pager", "diff", "--ws-error-highlight=all"])
+    {
+        UseShellExecute = false,
+    };
+
+    using var process = Process.Start(psi)!;
+    process.WaitForExit();
+
+    return 1;
 }
 
-return hasErrors ? 1 : 0;
+return 0;
 
-static int RunTemplateStep(FullPath rootPath)
+void RunTemplateStep(FullPath rootPath)
 {
     var latestTargetFramework = GetLatestTargetFramework(rootPath);
     var templatesRootPath = rootPath / "src";
@@ -122,8 +138,7 @@ static int RunTemplateStep(FullPath rootPath)
         .OrderBy(path => path.Value, StringComparer.Ordinal)
         .ToArray();
 
-    var hasTemplateErrors = false;
-    foreach (var templateFile in templateFiles)
+    Parallel.ForEach(templateFiles, templateFile =>
     {
         var relativeTemplatePath = templateFile.MakePathRelativeTo(rootPath);
         Console.WriteLine($"[update-all] Transforming {relativeTemplatePath}");
@@ -143,18 +158,22 @@ static int RunTemplateStep(FullPath rootPath)
                 "<#",
                 "--end-code-block-delimiter",
                 "#>",
+                "--output-encoding",
+                "utf8",
+                "--line-ending",
+                "LF",
             ]);
 
-        hasTemplateErrors |= exitCode != 0;
-    }
-
-    return hasTemplateErrors ? 1 : 0;
+        if (exitCode != 0)
+        {
+            updatedFiles.Add(relativeTemplatePath);
+        }
+    });
 }
 
-static int RunUpdateBomStep(FullPath rootPath)
+void RunUpdateBomStep(FullPath rootPath)
 {
     var srcRootPath = rootPath / "src";
-    var editedFiles = 0;
 
     string[] extensions = ["*.cs", "*.csproj", "*.fsproj", "*.proj", "*.props", "*.targets", "*.save", "*.slnx", "*.ps1", "*.yml", "*.yaml", "*.md", "*.json"];
     var files = extensions.SelectMany(ext => Directory.EnumerateFiles(srcRootPath, ext, SearchOption.AllDirectories));
@@ -172,14 +191,12 @@ static int RunUpdateBomStep(FullPath rootPath)
         {
             Console.WriteLine($"WARNING: File {file} contains BOM. Removing it.");
             File.WriteAllBytes(file, content.AsSpan(3).ToArray());
-            Interlocked.Increment(ref editedFiles);
+            updatedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
         }
     });
-
-    return editedFiles;
 }
 
-static int RunUpdateTrimmableStep(FullPath rootPath)
+void RunUpdateTrimmableStep(FullPath rootPath)
 {
     var srcPath = rootPath / "src";
     var trimmableCsprojPath = rootPath / "tests" / "Trimmable" / "Trimmable.csproj";
@@ -266,7 +283,7 @@ static int RunUpdateTrimmableStep(FullPath rootPath)
     {
         var existingBytes = File.ReadAllBytes(trimmableCsprojPath);
         var offset = 0;
-        if (existingBytes.Length >= 3 && existingBytes[0] == 0xEF && existingBytes[1] == 0xBB && existingBytes[2] == 0xBF)
+        if (existingBytes is [0xEF, 0xBB, 0xBF, ..])
         {
             offset = 3;
         }
@@ -280,22 +297,11 @@ static int RunUpdateTrimmableStep(FullPath rootPath)
     {
         File.WriteAllText(trimmableCsprojPath, newContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         Console.WriteLine("WARNING: tests/Trimmable/Trimmable.csproj was not up-to-date");
-
-        var psi = new ProcessStartInfo("git", ["--no-pager", "diff", trimmableCsprojPath])
-        {
-            UseShellExecute = false,
-        };
-        using var process = Process.Start(psi)!;
-        process.WaitForExit();
-
-        return 1;
+        updatedFiles.Add("tests/Trimmable/Trimmable.csproj");
     }
-
-    Console.WriteLine("tests/Trimmable/Trimmable.csproj is up-to-date");
-    return 0;
 }
 
-static int RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
+void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
 {
     var srcRootPath = rootPath / "src";
     var testsRootPath = rootPath / "tests";
@@ -453,7 +459,6 @@ static int RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
     }
 
     UpdateMainSolution();
-    return 0;
 
     List<string> GetProjectFiles(string rootDir)
     {
@@ -601,6 +606,7 @@ static int RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
         }
 
         File.WriteAllText(path, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        updatedFiles.Add(FullPath.FromPath(path).MakePathRelativeTo(rootPath));
     }
 
     void UpdateMainSolution()
@@ -750,13 +756,12 @@ static int RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
     }
 }
 
-static int RunValidateTestProjectsConfigurationStep(FullPath rootPath)
+void RunValidateTestProjectsConfigurationStep(FullPath rootPath)
 {
     var testsRootPath = rootPath / "tests";
     var tfmCache = new ConcurrentDictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
     var testProjects = Directory.GetFiles(testsRootPath, "*.csproj", SearchOption.AllDirectories);
-    var errors = new ConcurrentBag<string>();
 
     var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 5 };
     Parallel.ForEach(testProjects, parallelOptions, proj =>
@@ -792,18 +797,11 @@ static int RunValidateTestProjectsConfigurationStep(FullPath rootPath)
                 {
                     var errorMsg = $"Project {proj} does not target {refTfm}, but it references {refProj} which does. ({string.Join(", ", testProjectTfms)}) != ({string.Join(", ", refTfms)})";
                     Console.Error.WriteLine($"ERROR: {errorMsg}");
-                    errors.Add(errorMsg);
+                    updatedFiles.Add(FullPath.FromPath(proj).MakePathRelativeTo(rootPath));
                 }
             }
         }
     });
-
-    if (!errors.IsEmpty)
-    {
-        return 1;
-    }
-
-    return 0;
 
     string[] GetProjectTargetFrameworksWithRetry(string projectPath)
     {
@@ -878,7 +876,7 @@ static int RunValidateTestProjectsConfigurationStep(FullPath rootPath)
     }
 }
 
-static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
+async Task RunUpdateReadmeStep(FullPath rootPath)
 {
     var srcRootPath = rootPath / "src";
 
@@ -888,19 +886,7 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
 
     await Task.WhenAll(nugetReadmeTask, toolReadmeTask, analyzerDocumentationTask);
 
-    var nugetReadmeResult = nugetReadmeTask.Result;
-    var toolReadmeResult = toolReadmeTask.Result;
-    var analyzerDocumentationResult = analyzerDocumentationTask.Result;
-
-    if (nugetReadmeResult != 0 || toolReadmeResult != 0 || analyzerDocumentationResult != 0)
-    {
-        _ = RunProcessAndReturnExitCode(rootPath, "git", ["--no-pager", "diff"]);
-        return 1;
-    }
-
-    return 0;
-
-    int UpdateNuGetReadme()
+    void UpdateNuGetReadme()
     {
         var readmePath = rootPath / "README.md";
         Console.WriteLine("[update-nuget-readme] Starting NuGet README update");
@@ -974,13 +960,11 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
         {
             File.WriteAllText(readmePath, newContent);
             Console.WriteLine("WARNING: README.md was not up-to-date");
-            return 1;
+            updatedFiles.Add(FullPath.FromPath(readmePath).MakePathRelativeTo(rootPath));
         }
-
-        return 0;
     }
 
-    int UpdateToolReadmes()
+    void UpdateToolReadmes()
     {
         var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
         var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
@@ -1039,7 +1023,7 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
                 Console.Error.WriteLine(error);
             }
 
-            return 1;
+            throw new InvalidOperationException($"One or more tool projects are missing a readme.md file. See errors above.");
         }
 
         Console.WriteLine("[update-tool-readme] Starting parallel --help generation");
@@ -1064,7 +1048,6 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
         generationStopwatch.Stop();
         Console.WriteLine($"[update-tool-readme] --help generation metrics: tool-projects={orderedToolProjects.Length}, elapsed={generationStopwatch.Elapsed.TotalSeconds:F2}s");
 
-        var editedFiles = 0;
         for (var i = 0; i < orderedToolProjects.Length; i++)
         {
             var update = readmeUpdates[i] ?? throw new InvalidOperationException($"Internal error: missing README update result for index {i}.");
@@ -1072,21 +1055,13 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
             {
                 File.WriteAllText(update.ToolReadme, update.NewContent);
                 Console.WriteLine($"WARNING: {update.ToolReadme} was not up-to-date");
-                editedFiles++;
+                updatedFiles.Add(FullPath.FromPath(update.ToolReadme).MakePathRelativeTo(rootPath));
             }
         }
-
-        if (editedFiles > 0)
-        {
-            Console.Error.WriteLine("ERROR: Some tool README files were not up-to-date");
-            return 1;
-        }
-
-        return 0;
     }
 }
 
-static int UpdateAnalyzerDocumentation(FullPath srcRootPath)
+void UpdateAnalyzerDocumentation(FullPath srcRootPath)
 {
     Console.WriteLine("[update-analyzer-docs] Starting analyzer documentation update");
     var analyzerDocumentationStopwatch = Stopwatch.StartNew();
@@ -1099,7 +1074,6 @@ static int UpdateAnalyzerDocumentation(FullPath srcRootPath)
 
     Console.WriteLine($"[update-analyzer-docs] Discovery metrics: candidates={candidateProjects.Length}");
 
-    var editedFiles = 0;
     var projectsWithRules = 0;
     foreach (var csproj in candidateProjects)
     {
@@ -1125,19 +1099,11 @@ static int UpdateAnalyzerDocumentation(FullPath srcRootPath)
         if (WriteFileIfChanged(readmePath, updatedReadmeContent))
         {
             Console.WriteLine($"WARNING: {readmePath} was not up-to-date");
-            editedFiles++;
         }
     }
 
     analyzerDocumentationStopwatch.Stop();
-    Console.WriteLine($"[update-analyzer-docs] Generation metrics: projects-with-rules={projectsWithRules}, edited-files={editedFiles}, elapsed={analyzerDocumentationStopwatch.Elapsed.TotalSeconds:F2}s");
-    if (editedFiles > 0)
-    {
-        Console.Error.WriteLine("ERROR: Analyzer documentation files were not up-to-date");
-        return 1;
-    }
-
-    return 0;
+    Console.WriteLine($"[update-analyzer-docs] Generation metrics: projects-with-rules={projectsWithRules}, elapsed={analyzerDocumentationStopwatch.Elapsed.TotalSeconds:F2}s");
 }
 
 static bool IsAnalyzerPackageProject(FullPath csprojPath)
@@ -1358,7 +1324,7 @@ static string GenerateAnalyzerRulesTable(IReadOnlyList<AnalyzerRule> rules)
     return sb.ToString().TrimEnd('\r', '\n');
 }
 
-static bool WriteFileIfChanged(FullPath filePath, string content)
+bool WriteFileIfChanged(FullPath filePath, string content)
 {
     var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
     var normalizedContent = content.ReplaceLineEndings("\n").TrimEnd('\r', '\n') + "\n";
@@ -1377,6 +1343,7 @@ static bool WriteFileIfChanged(FullPath filePath, string content)
     }
 
     File.WriteAllText(filePath, normalizedContent, encoding);
+    updatedFiles.Add(filePath.MakePathRelativeTo(rootPath));
     return true;
 }
 

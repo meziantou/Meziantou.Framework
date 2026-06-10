@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -14,7 +15,7 @@ internal sealed class SegmentedBitStorage
 
     public SegmentedBitStorage(long bitCount)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(bitCount, 0);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bitCount);
 
         BitCount = bitCount;
         WordCount = checked(((bitCount - 1) / 64) + 1);
@@ -80,6 +81,7 @@ internal sealed class SegmentedBitStorage
         return (word & mask) != 0;
     }
 
+    [Conditional("DEBUG")]
     private void ValidateBitIndex(long bitIndex)
     {
         if ((ulong)bitIndex >= (ulong)BitCount)

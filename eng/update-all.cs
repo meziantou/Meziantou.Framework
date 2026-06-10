@@ -55,40 +55,42 @@ var rootPath = GetRepositoryRoot();
 
 bool ShouldRunStep(string stepName) => selectedSteps.Count is 0 ? defaultSteps.Contains(stepName, StringComparer.OrdinalIgnoreCase) : selectedSteps.Contains(stepName);
 
+var tasks = new List<Task>();
 if (ShouldRunStep(StepReadme))
 {
     Console.WriteLine("[update-all] Running readme");
-    await RunUpdateReadmeStep(rootPath);
+    tasks.Add(Task.Run(() => RunUpdateReadmeStep(rootPath)));
 }
 
 if (ShouldRunStep(StepTrimmable))
 {
     Console.WriteLine("[update-all] Running trimmable");
-    RunUpdateTrimmableStep(rootPath);
+    tasks.Add(Task.Run(() => RunUpdateTrimmableStep(rootPath)));
 }
 
 if (ShouldRunStep(StepSlnx))
 {
     Console.WriteLine("[update-all] Running slnx");
-    RunUpdateProjectSlnxStep(rootPath, outputPath);
-}
-
-if (ShouldRunStep(StepTemplates))
-{
-    Console.WriteLine("[update-all] Running templates");
-    RunTemplateStep(rootPath);
-}
-
-if (ShouldRunStep(StepBom))
-{
-    Console.WriteLine("[update-all] Running bom");
-    RunUpdateBomStep(rootPath);
+    tasks.Add(Task.Run(() => RunUpdateProjectSlnxStep(rootPath, outputPath)));
 }
 
 if (ShouldRunStep(StepValidateTestProjects))
 {
     Console.WriteLine("[update-all] Running validate-testprojects");
-    RunValidateTestProjectsConfigurationStep(rootPath);
+    tasks.Add(Task.Run(() => RunValidateTestProjectsConfigurationStep(rootPath)));
+}
+
+if (ShouldRunStep(StepTemplates))
+{
+    Console.WriteLine("[update-all] Running templates");
+    tasks.Add(Task.Run(() => RunTemplateStep(rootPath)));
+}
+
+await Task.WhenAll(tasks);
+if (ShouldRunStep(StepBom))
+{
+    Console.WriteLine("[update-all] Running bom");
+    RunUpdateBomStep(rootPath);
 }
 
 if (selectedSteps.Count > 0)

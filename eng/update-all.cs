@@ -115,6 +115,15 @@ if (!updatedFiles.IsEmpty)
         Console.WriteLine($"- {file}");
     }
 
+    Console.WriteLine("git diff:");
+    var psi = new ProcessStartInfo("git", ["--no-pager", "diff"])
+    {
+        UseShellExecute = false,
+    };
+
+    using var process = Process.Start(psi)!;
+    process.WaitForExit();
+
     return 1;
 }
 
@@ -284,14 +293,6 @@ void RunUpdateTrimmableStep(FullPath rootPath)
     {
         File.WriteAllText(trimmableCsprojPath, newContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         Console.WriteLine("WARNING: tests/Trimmable/Trimmable.csproj was not up-to-date");
-
-        var psi = new ProcessStartInfo("git", ["--no-pager", "diff", trimmableCsprojPath])
-        {
-            UseShellExecute = false,
-        };
-        using var process = Process.Start(psi)!;
-        process.WaitForExit();
-
         updatedFiles.Add("tests/Trimmable/Trimmable.csproj");
     }
 }

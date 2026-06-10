@@ -1,5 +1,5 @@
 <#@ template debug="true" hostspecific="false" language="C#" #>
-<#@ output extension=".cs" #>
+<#@ output extension=".g.cs" #>
 <#
     var types = new[]
     {

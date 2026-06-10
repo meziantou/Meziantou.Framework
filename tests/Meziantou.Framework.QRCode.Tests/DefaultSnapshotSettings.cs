@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.SnapshotTesting;
-using Meziantou.Framework.SnapshotTesting.ImageSharp;
 
 namespace Meziantou.Framework.Tests;
 
@@ -13,6 +12,6 @@ internal static class DefaultSnapshotSettings
         {
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
         };
-        SnapshotSettings.Default.AddImageSharp();
+        SnapshotSettings.Default.Comparers.AddImageComparer();
     }
 }

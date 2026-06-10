@@ -1,5 +1,6 @@
 using Meziantou.Framework;
 using Meziantou.Framework.Templating.Tool;
+using System.Text;
 
 namespace Meziantou.Framework.Templating.Tool.Tests;
 
@@ -58,6 +59,92 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
         Assert.Equal("Hello World!", await File.ReadAllTextAsync(outputPath, XunitCancellationToken));
         Assert.Equal(string.Empty, console.Output);
         Assert.Equal(string.Empty, console.Error);
+    }
+
+    [Fact]
+    public async Task RenderToOutputFile_WithUtf8BomEncoding()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "Hello", XunitCancellationToken);
+        var outputPath = temp.GetFullPath("out/result.txt");
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(
+            [
+                "--input", inputPath.ToString(),
+                "--output", outputPath.ToString(),
+                "--output-encoding", "utf8-bom",
+            ],
+            console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        var bytes = await File.ReadAllBytesAsync(outputPath, XunitCancellationToken);
+        var preamble = Encoding.UTF8.GetPreamble();
+        Assert.True(bytes.AsSpan().StartsWith(preamble));
+        Assert.Equal(string.Empty, console.Output);
+        Assert.Equal(string.Empty, console.Error);
+    }
+
+    [Fact]
+    public async Task RenderToOutputFile_WithLineEndingCrlf()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "A\nB\n", XunitCancellationToken);
+        var outputPath = temp.GetFullPath("out/result.txt");
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(
+            [
+                "--input", inputPath.ToString(),
+                "--output", outputPath.ToString(),
+                "--line-ending", "CRLF",
+            ],
+            console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal("A\r\nB\r\n", await File.ReadAllTextAsync(outputPath, XunitCancellationToken));
+        Assert.Equal(string.Empty, console.Output);
+        Assert.Equal(string.Empty, console.Error);
+    }
+
+    [Fact]
+    public async Task RenderToOutputFile_InvalidLineEnding_ReturnsError()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "Hello", XunitCancellationToken);
+        var outputPath = temp.GetFullPath("out/result.txt");
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(
+            [
+                "--input", inputPath.ToString(),
+                "--output", outputPath.ToString(),
+                "--line-ending", "INVALID",
+            ],
+            console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        Assert.Contains("Invalid line ending", console.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RenderToOutputFile_InvalidEncoding_ReturnsError()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = await temp.CreateTextFileAsync("template.txt", "Hello", XunitCancellationToken);
+        var outputPath = temp.GetFullPath("out/result.txt");
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(
+            [
+                "--input", inputPath.ToString(),
+                "--output", outputPath.ToString(),
+                "--output-encoding", "INVALID-ENCODING",
+            ],
+            console.ConfigureConsole);
+
+        Assert.Equal(1, result);
+        Assert.Contains("Invalid output encoding", console.Error, StringComparison.Ordinal);
     }
 
     [Fact]

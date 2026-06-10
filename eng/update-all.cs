@@ -158,6 +158,10 @@ void RunTemplateStep(FullPath rootPath)
                 "<#",
                 "--end-code-block-delimiter",
                 "#>",
+                "--output-encoding",
+                "utf8",
+                "--line-ending",
+                "LF",
             ]);
 
         if (exitCode != 0)

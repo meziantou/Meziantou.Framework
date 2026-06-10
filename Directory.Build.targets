@@ -11,6 +11,12 @@
              Visible="false" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="SixLabors.ImageSharp">
+      <IncludeAssets>compile;runtime</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' and '@(ProjectReference->WithMetadataValue(`Filename`, `Meziantou.Framework.FullPath`))' != '' and '@(ProjectReference->WithMetadataValue(`Filename`, `Meziantou.Framework.FullPath.Analyzer`))' == ''">
     <ProjectReference Include="$(MSBuildThisFileDirectory)src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj"
                       OutputItemType="Analyzer"

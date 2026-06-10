@@ -116,7 +116,7 @@ if (!updatedFiles.IsEmpty)
     }
 
     Console.WriteLine("git diff:");
-    var psi = new ProcessStartInfo("git", ["--no-pager", "diff"])
+    var psi = new ProcessStartInfo("git", ["--no-pager", "diff", "--ws-error-highlight=all"])
     {
         UseShellExecute = false,
     };

@@ -160,6 +160,36 @@ public sealed class FunctionalTests
         Assert.True(dependency.GetProperty("isUpdatable").GetBoolean());
     }
 
+    [Fact]
+    public async Task ListUpgradableDependenciesAsJson()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        var projectPath = tempDir.CreateEmptyFile("a.csproj");
+        var projectContent = """
+            <Project>
+                <PropertyGroup>
+                    <TargetFramework>net10.0</TargetFramework>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Meziantou.Framework" Version="1.0.0" />
+                </ItemGroup>
+            </Project>
+            """;
+        await File.WriteAllTextAsync(projectPath, projectContent, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["list", "--directory", tempDir.FullPath, "--upgradable", "--format", "json"], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        using var json = JsonDocument.Parse(console.Output);
+        var dependency = Assert.Single(json.RootElement.EnumerateArray());
+        Assert.Equal("NuGet", dependency.GetProperty("type").GetString());
+        Assert.Equal("Meziantou.Framework", dependency.GetProperty("name").GetString());
+        Assert.Equal("1.0.0", dependency.GetProperty("version").GetString());
+        Assert.Equal(projectContent, await File.ReadAllTextAsync(projectPath, XunitCancellationToken));
+    }
+
     [Theory]
     [InlineData("nuget.config")]
     [InlineData("NuGet.config")]

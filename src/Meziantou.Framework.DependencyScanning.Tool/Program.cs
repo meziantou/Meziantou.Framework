@@ -79,6 +79,7 @@ internal static class Program
         var rootDirectoryOption = CreateRootDirectoryOption();
         var filesOption = CreateFilesOption();
         var dependencyTypesOption = CreateDependencyTypesOption();
+        var upgradableOption = new Option<bool>("--upgradable") { Description = "Only list dependencies that can be upgraded" };
         var formatOption = new Option<OutputFormat>("--format")
         {
             Description = $"Output format. Available values: {nameof(OutputFormat.Text)}, {nameof(OutputFormat.Json)}",
@@ -91,6 +92,7 @@ internal static class Program
         listCommand.Options.Add(rootDirectoryOption);
         listCommand.Options.Add(filesOption);
         listCommand.Options.Add(dependencyTypesOption);
+        listCommand.Options.Add(upgradableOption);
         listCommand.Options.Add(formatOption);
 
         listCommand.SetAction((parseResult, cancellationToken) =>
@@ -99,6 +101,7 @@ internal static class Program
                 parseResult.GetValue(rootDirectoryOption),
                 parseResult.GetValue(filesOption),
                 parseResult.GetValue(dependencyTypesOption),
+                parseResult.GetValue(upgradableOption),
                 parseResult.GetValue(formatOption),
                 parseResult.InvocationConfiguration.Output,
                 parseResult.InvocationConfiguration.Error,
@@ -162,14 +165,7 @@ internal static class Program
         WriteDependenciesAsText(output, dependencies);
         var filteredDependencies = FilterDependencies(dependencies, dependencyTypeSet);
 
-        PackageUpdater[] updaters =
-        [
-            new GitHubActionsUpdater() { MinimumAge = minimumAge },
-            new DockerPackageUpdater() { MinimumAge = minimumAge },
-            new NpmPackageUpdater() { MinimumAge = minimumAge },
-            new NuGetPackageUpdater() { MinimumAge = minimumAge },
-            new DotNetSdkUpdater() { MinimumAge = minimumAge },
-        ];
+        var updaters = CreatePackageUpdaters(minimumAge);
 
         var updatedDependencies = new ConcurrentBag<Dependency>();
         var updatableDependencies = filteredDependencies.Where(static dependency => dependency.VersionLocation?.IsUpdatable is true);
@@ -207,7 +203,7 @@ internal static class Program
         return 0;
     }
 
-    private static async Task<int> ListAsync(string? rootDirectory, string[]? filePatterns, DependencyType[]? dependencyTypes, OutputFormat format, TextWriter output, TextWriter error, CancellationToken cancellationToken)
+    private static async Task<int> ListAsync(string? rootDirectory, string[]? filePatterns, DependencyType[]? dependencyTypes, bool upgradable, OutputFormat format, TextWriter output, TextWriter error, CancellationToken cancellationToken)
     {
         var globs = CreateGlobs(filePatterns, error);
         if (globs is null)
@@ -219,6 +215,10 @@ internal static class Program
         var dependencyTypeSet = dependencyTypes is { Length: > 0 } ? dependencyTypes.ToHashSet() : null;
         var dependencies = await ScanDependenciesAsync(rootPath, globs, cancellationToken).ConfigureAwait(false);
         var filteredDependencies = FilterDependencies(dependencies, dependencyTypeSet);
+        if (upgradable)
+        {
+            filteredDependencies = await FilterUpgradableDependenciesAsync(filteredDependencies, cancellationToken).ConfigureAwait(false);
+        }
 
         if (format is OutputFormat.Json)
         {
@@ -231,6 +231,40 @@ internal static class Program
         }
 
         return 0;
+    }
+
+    private static PackageUpdater[] CreatePackageUpdaters(int minimumAge = 0)
+    {
+        return
+        [
+            new GitHubActionsUpdater() { MinimumAge = minimumAge },
+            new DockerPackageUpdater() { MinimumAge = minimumAge },
+            new NpmPackageUpdater() { MinimumAge = minimumAge },
+            new NuGetPackageUpdater() { MinimumAge = minimumAge },
+            new DotNetSdkUpdater() { MinimumAge = minimumAge },
+        ];
+    }
+
+    private static async Task<Dependency[]> FilterUpgradableDependenciesAsync(Dependency[] dependencies, CancellationToken cancellationToken)
+    {
+        var updaters = CreatePackageUpdaters();
+        var upgradableDependencies = new ConcurrentBag<Dependency>();
+        await Parallel.ForEachAsync(
+            dependencies.Where(static dependency => dependency.VersionLocation?.IsUpdatable is true),
+            new ParallelOptions { CancellationToken = cancellationToken, MaxDegreeOfParallelism = 1 },
+            async (dependency, localCancellationToken) =>
+            {
+                foreach (var updater in updaters)
+                {
+                    if (await updater.GetUpdatedVersionAsync(dependency, localCancellationToken).ConfigureAwait(false) is not null)
+                    {
+                        upgradableDependencies.Add(dependency);
+                        break;
+                    }
+                }
+            }).ConfigureAwait(false);
+
+        return dependencies.Where(upgradableDependencies.Contains).ToArray();
     }
 
     private static Dependency[] FilterDependencies(Dependency[] dependencies, HashSet<DependencyType>? dependencyTypeSet)

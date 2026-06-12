@@ -1,4 +1,4 @@
 using BenchmarkDotNet.Running;
 using BloomFiltersBenchmarks;
 
-BenchmarkRunner.Run<BloomFilterBenchmark>();
+BenchmarkSwitcher.FromAssembly(typeof(BloomFilterBenchmark).Assembly).Run(args);

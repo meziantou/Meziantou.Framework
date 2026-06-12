@@ -3,14 +3,14 @@
 One-way serializer to an invariant human-readable format. You can use `HumanReadableSerializer.Serialize` to convert an object to a string:
 
 ````c#
-var obj = new { Name = "Gérald Barré", Nickname = "meziantou", Age = 32, MultiLineString = "line1\nline2" };
+var obj = new { Name = "GÃ©rald BarrÃ©", Nickname = "meziantou", Age = 32, MultiLineString = "line1\nline2" };
 var output = HumanReadableSerializer.Serialize(obj);
 ````
 
 `output` contains the following value:
 
 ````
-Name: Gérald Barré
+Name: GÃ©rald BarrÃ©
 Nickname: meziantou
 Age: 32
 MultiLineString:

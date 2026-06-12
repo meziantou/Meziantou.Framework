@@ -180,21 +180,29 @@ void RunUpdateBomStep(FullPath rootPath)
 
     Parallel.ForEach(files, file =>
     {
-        Console.WriteLine($"Processing {file}");
-        var content = File.ReadAllBytes(file);
-        using var stream = new MemoryStream(content);
-        using var reader = new StreamReader(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
-        var text = reader.ReadToEnd();
-
-        var normalizedContent = Encoding.UTF8.GetBytes(text.ReplaceLineEndings("\n"));
-        if (content.AsSpan().SequenceEqual(normalizedContent))
+        try
         {
-            return;
-        }
+            Console.WriteLine($"Processing {file}");
+            var content = File.ReadAllBytes(file);
+            using var stream = new MemoryStream(content);
+            using var reader = new StreamReader(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
+            var text = reader.ReadToEnd();
 
-        Console.WriteLine($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
-        File.WriteAllBytes(file, normalizedContent);
-        updatedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
+            var normalizedContent = Encoding.UTF8.GetBytes(text.ReplaceLineEndings("\n"));
+            if (content.AsSpan().SequenceEqual(normalizedContent))
+            {
+                return;
+            }
+
+            Console.WriteLine($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
+            File.WriteAllBytes(file, normalizedContent);
+            updatedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR: Failed to process {file}: {ex.Message}");
+            throw;
+        }
     });
 }
 

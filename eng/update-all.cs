@@ -142,7 +142,7 @@ void RunTemplateStep(FullPath rootPath)
     {
         var relativeTemplatePath = templateFile.MakePathRelativeTo(rootPath);
         Console.WriteLine($"[update-all] Transforming {relativeTemplatePath}");
-        var exitCode = RunProcessAndReturnExitCode(
+        var exitCode = RunProcessAndReturnExitCodeWithRetry(
             rootPath,
             "dotnet",
             [
@@ -162,7 +162,8 @@ void RunTemplateStep(FullPath rootPath)
                 "utf8",
                 "--line-ending",
                 "LF",
-            ]);
+            ],
+            retryDelays: [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)]);
 
         if (exitCode != 0)
         {
@@ -1646,6 +1647,20 @@ static string GetLatestTargetFramework(FullPath rootPath)
 {
     var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
     return directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
+}
+
+static int RunProcessAndReturnExitCodeWithRetry(FullPath workingDirectory, string fileName, string[] arguments, IReadOnlyList<TimeSpan> retryDelays)
+{
+    for (var attempt = 0; ; attempt++)
+    {
+        var exitCode = RunProcessAndReturnExitCode(workingDirectory, fileName, arguments);
+        if (exitCode is 0 || attempt >= retryDelays.Count)
+            return exitCode;
+
+        var retryDelay = retryDelays[attempt];
+        Console.Error.WriteLine($"WARNING: Process '{fileName} {string.Join(' ', arguments)}' failed on attempt {attempt + 1}/{retryDelays.Count + 1} with exit code {exitCode}. Retrying in {retryDelay.TotalSeconds:F0}s...");
+        Thread.Sleep(retryDelay);
+    }
 }
 
 static int RunProcessAndReturnExitCode(FullPath workingDirectory, string fileName, string[] arguments)

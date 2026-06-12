@@ -8,12 +8,15 @@ public class BloomFilterBenchmark
 {
     private const long ExpectedItemCount = 100_000;
     private const double FalsePositiveProbability = 0.01;
+    private const int OperationsPerInvoke = 1000;
 
     private static readonly BloomFilterSize FilterSize = BloomFilterSize.CreateOptimalSize(ExpectedItemCount, FalsePositiveProbability);
 
     private BloomFilterXXHash128 _filter = null!;
 
+    private byte[] _bytes = null!;
     private string[] _items = null!;
+    private string[] _newItems = null!;
     private string _existingItem = null!;
     private string _newItem = null!;
 
@@ -29,6 +32,13 @@ public class BloomFilterBenchmark
             _filter.Add(_items[i]);
         }
 
+        _bytes = [1, 2, 3, 4, 5, 6, 7, 8];
+        _newItems = new string[OperationsPerInvoke];
+        for (var i = 0; i < _newItems.Length; i++)
+        {
+            _newItems[i] = $"nonexistent_{i}";
+        }
+
         _existingItem = _items[ExpectedItemCount / 2];
         _newItem = $"nonexistent_item_{Guid.NewGuid()}";
     }
@@ -36,7 +46,7 @@ public class BloomFilterBenchmark
     [Benchmark]
     public void Add_Int()
     {
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < OperationsPerInvoke; i++)
         {
             _filter.Add(i);
         }
@@ -45,19 +55,18 @@ public class BloomFilterBenchmark
     [Benchmark]
     public void Add_String()
     {
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < OperationsPerInvoke; i++)
         {
-            _filter.Add($"value_{i}");
+            _filter.Add(_newItems[i]);
         }
     }
 
     [Benchmark]
     public void Add_ReadOnlySpanByte()
     {
-        var bytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < OperationsPerInvoke; i++)
         {
-            _filter.Add(bytes.AsSpan());
+            _filter.Add(_bytes.AsSpan());
         }
     }
 
@@ -74,24 +83,28 @@ public class BloomFilterBenchmark
     }
 
     [Benchmark]
-    public void MayContain_ExistingItems()
+    public int MayContain_ExistingItems()
     {
         var count = 0;
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < OperationsPerInvoke; i++)
         {
             if (_filter.MayContain(_items[i]))
                 count++;
         }
+
+        return count;
     }
 
     [Benchmark]
-    public void MayContain_NewItems()
+    public int MayContain_NewItems()
     {
         var count = 0;
-        for (var i = 0; i < 1000; i++)
+        for (var i = 0; i < OperationsPerInvoke; i++)
         {
-            if (_filter.MayContain($"nonexistent_{i}"))
+            if (_filter.MayContain(_newItems[i]))
                 count++;
         }
+
+        return count;
     }
 }

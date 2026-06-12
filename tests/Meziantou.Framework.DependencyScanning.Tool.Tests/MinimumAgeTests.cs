@@ -67,6 +67,19 @@ public sealed class MinimumAgeTests
         Assert.Equal("2.0.0", location.UpdatedValue);
     }
 
+    [Fact]
+    public async Task GetUpdatedVersionDoesNotUpdateDependency()
+    {
+        var location = new RecordingLocation();
+        var dependency = new Dependency("Sample.Package", "1.0.0", DependencyType.NuGet, nameLocation: null, versionLocation: location);
+        var updater = new FakePackageUpdater([new PackageVersion("2.0.0", PublishedDate: null)]);
+
+        var result = await updater.GetUpdatedVersionAsync(dependency, XunitCancellationToken);
+
+        Assert.Equal("2.0.0", result);
+        Assert.Null(location.UpdatedValue);
+    }
+
     private static async Task<(string? Result, Dependency Dependency, RecordingLocation Location)> RunUpdateAsync(PackageVersion[] versions, int minimumAge)
     {
         var location = new RecordingLocation();

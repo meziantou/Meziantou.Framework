@@ -216,6 +216,45 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_FullJoin_ReturnsRowsFromBothSources()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+#if NET11_0_OR_GREATER
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id AS CustomerId, o.Id AS OrderId, c.Name, o.Region
+                    FROM customers c
+                    FULL JOIN orders o ON c.Id = o.Id
+                    """;
+            },
+            """
+            CustomerId OrderId Name Region
+            1 1 Alice North
+            2 2 Bob North
+            4 NULL David NULL
+            NULL 3 NULL South
+            """,
+            expectedMaterializedQueries: "Customer[].FullJoin(Order[], customer => customer.Id, order => order.Id, (customer2, order2) => new TdsCarrier() {c = customer2, o = order2}, null).Select(carrier => new TdsProjection() {CustomerId = IIF((carrier.c == null), null, Convert(carrier.c.Id, Nullable`1)), OrderId = IIF((carrier.o == null), null, Convert(carrier.o.Id, Nullable`1)), Name = IIF((carrier.c == null), null, carrier.c.Name), Region = IIF((carrier.o == null), null, carrier.o.Region)})");
+#else
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT c.Id AS CustomerId, o.Id AS OrderId, c.Name, o.Region
+                    FROM customers c
+                    FULL JOIN orders o ON c.Id = o.Id
+                    """;
+            },
+            expectedMessageContains: "FULL JOIN requires .NET 11 or later.");
+#endif
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_ParameterNames_AreTypeBasedInCorrelatedSubquery()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

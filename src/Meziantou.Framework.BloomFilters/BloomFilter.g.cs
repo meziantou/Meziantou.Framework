@@ -10,6 +10,7 @@ namespace Meziantou.Framework.BloomFilters;
 
 public partial interface IBloomFilter
 {
+    double GetEstimateCount();
     void Add(int value);
     bool MayContain(int value);
     void Add(uint value);

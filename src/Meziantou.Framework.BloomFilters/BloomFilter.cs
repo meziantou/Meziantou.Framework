@@ -13,6 +13,16 @@ public abstract partial class BloomFilter
         HashCount = hashCount;
     }
 
+    public double GetEstimateCount()
+    {
+        var setBitCount = Bits.CountSetBits();
+        if (setBitCount == Bits.BitCount)
+            return double.PositiveInfinity;
+
+        var setBitRatio = (double)setBitCount / Bits.BitCount;
+        return -Bits.BitCount / (double)HashCount * Math.Log(1 - setBitRatio);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void AddHash(Hash128 hash)
     {

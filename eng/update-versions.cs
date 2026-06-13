@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using Meziantou.Framework;
 
 var createPullRequest = false;
+var forceBumpAll = false;
 var numberOfCommits = 50;
 
 for (var i = 0; i < args.Length; i++)
@@ -15,14 +16,18 @@ for (var i = 0; i < args.Length; i++)
     switch (args[i])
     {
         case "--help" or "-h":
-            Console.WriteLine("Usage: dotnet run update-versions.cs [-- --create-pull-request --number-of-commits <N>]");
+            Console.WriteLine("Usage: dotnet run update-versions.cs [-- --create-pull-request --force-bump-all --number-of-commits <N>]");
             Console.WriteLine("Bumps package versions based on git commit history.");
             Console.WriteLine("Options:");
             Console.WriteLine("  --create-pull-request      Create or update a GitHub pull request");
+            Console.WriteLine("  --force-bump-all           Bump all package versions");
             Console.WriteLine("  --number-of-commits <N>    Number of commits to analyze (default: 50)");
             return 0;
         case "--create-pull-request":
             createPullRequest = true;
+            break;
+        case "--force-bump-all":
+            forceBumpAll = true;
             break;
         case "--number-of-commits" when i + 1 < args.Length:
             numberOfCommits = int.Parse(args[++i], CultureInfo.InvariantCulture);
@@ -169,8 +174,19 @@ foreach (var commit in commits)
     }
 }
 
-// First pass: identify projects with direct changes
 var projectsToUpdate = new Dictionary<string, ProjectUpdateInfo>(StringComparer.OrdinalIgnoreCase);
+
+// Mark all projects for update if --force-bump-all is specified
+// The data can be overridden by direct changes to get better descriptions, but it ensures that all projects are included in the PR and transitive dependencies are correctly updated
+if (forceBumpAll)
+{
+    foreach (var csproj in allCsprojFiles)
+    {
+        projectsToUpdate[csproj] = new ProjectUpdateInfo { ForceUpdated = true };
+    }
+}
+
+// First pass: identify projects with direct changes
 foreach (var (csproj, info) in changesPerCsproj.OrderBy(kv => kv.Key, StringComparer.Ordinal))
 {
     if (info.Commits.Count > 0)
@@ -185,7 +201,7 @@ foreach (var csproj in projectsToUpdate.Keys.ToList())
     var dependents = GetTransitiveDependents(csproj);
     foreach (var dependent in dependents)
     {
-        if (!projectsToUpdate.ContainsKey(dependent))
+        if (!projectsToUpdate.TryGetValue(dependent, out var existingInfo) || existingInfo.ForceUpdated)
         {
             Console.WriteLine($"Project {dependent} will be updated due to dependency on {csproj}");
             var packageName = Path.GetFileNameWithoutExtension(csproj);
@@ -215,7 +231,11 @@ foreach (var (csproj, info) in projectsToUpdate.OrderBy(kv => kv.Key, StringComp
         var packageName = Path.GetFileNameWithoutExtension(csproj);
         prMessage.Append($"## {packageName}\n");
 
-        if (info.UpdatedDueToDependency)
+        if (info.ForceUpdated)
+        {
+            prMessage.Append("- Forced version update\n");
+        }
+        else if (info.UpdatedDueToDependency)
         {
             prMessage.Append($"- Updated due to dependency on {info.DependencySource}\n");
         }
@@ -444,6 +464,7 @@ internal sealed class CsprojInfo
 internal sealed class ProjectUpdateInfo
 {
     public List<string> Commits { get; init; } = [];
+    public bool ForceUpdated { get; init; }
     public bool UpdatedDueToDependency { get; init; }
     public string? DependencySource { get; init; }
 }

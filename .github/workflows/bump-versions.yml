@@ -1,5 +1,10 @@
 on:
   workflow_dispatch:
+    inputs:
+      force_bump_all:
+        description: Force bumping all package versions
+        type: boolean
+        default: false
   schedule:
   - cron: '0 0 * * 0' # once a week
 
@@ -23,6 +28,6 @@ jobs:
           fetch-depth: 0
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
-      - run: dotnet run ./eng/update-versions.cs -- --create-pull-request
+      - run: dotnet run ./eng/update-versions.cs -- --create-pull-request ${{ inputs.force_bump_all && '--force-bump-all' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

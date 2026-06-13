@@ -6,7 +6,7 @@ namespace Meziantou.Framework.BloomFilters;
 
 internal sealed class SegmentedBitStorage
 {
-    private const int SegmentShift = 23;
+    private const int SegmentShift = 30;
     private const int WordsPerSegment = 1 << SegmentShift;
     private const int SegmentMask = WordsPerSegment - 1;
 

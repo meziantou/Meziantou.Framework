@@ -10,6 +10,7 @@ namespace Meziantou.Framework.PublicApiGenerator;
 internal static class PublicApiModelReader
 {
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
+    private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
     private static readonly Lock EnumMetadataCacheLock = new();
     private static readonly Dictionary<string, EnumMetadata?> EnumMetadataCache = new(StringComparer.Ordinal);
@@ -65,6 +66,7 @@ internal static class PublicApiModelReader
 
         var metadataReader = peReader.GetMetadataReader();
         var assemblyName = metadataReader.IsAssembly ? metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name) : string.Empty;
+        var assemblyAttributesSource = metadataReader.IsAssembly ? BuildAssemblyAttributesSource(metadataReader, metadataReader.GetAssemblyDefinition().GetCustomAttributes()) : string.Empty;
         var types = new List<PublicApiTypeModel>();
         foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
         {
@@ -84,6 +86,7 @@ internal static class PublicApiModelReader
 
         return new PublicApiModel(
             assemblyName,
+            assemblyAttributesSource,
             [.. types.OrderBy(type => type.Namespace, StringComparer.Ordinal)
                       .ThenBy(type => type.QualifiedName, StringComparer.Ordinal)]);
     }
@@ -94,7 +97,7 @@ internal static class PublicApiModelReader
 
         var assemblyName = assembly.GetName().Name ?? string.Empty;
         var types = assembly.GetExportedTypes().Where(type => type.DeclaringType is null);
-        return PublicApiModelBuilder.Build(assemblyName, types);
+        return PublicApiModelBuilder.Build(assemblyName, assembly.CustomAttributes, types);
     }
 
     private static PublicApiTypeModel BuildTypeModel(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
@@ -666,7 +669,7 @@ internal static class PublicApiModelReader
         var parameters = BuildParameterDeclarations(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType, isExtensionMethod: false);
         var requiresNullableDisableDirective = RequiresNullableDisableDirectiveForParameters(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType);
         var initializer = BuildConstructorInitializer(metadataReader, declaringType);
-        if (signature.Signature.ParameterTypes.Length == 0 && string.IsNullOrEmpty(initializer))
+        if (signature.Signature.ParameterTypes.Length == 0 && string.IsNullOrEmpty(initializer) && !HasAttribute(metadataReader, method.GetCustomAttributes(), RequiresPreviewFeaturesAttributeFullName))
             return null;
 
         var methodBody = method.Attributes.HasFlag(MethodAttributes.Abstract) ? ";" : " { }";
@@ -2057,6 +2060,25 @@ internal static class PublicApiModelReader
         }
 
         return result;
+    }
+
+    private static string BuildAssemblyAttributesSource(MetadataReader metadataReader, CustomAttributeHandleCollection attributes)
+    {
+        var sb = new StringBuilder();
+        foreach (var attributeHandle in attributes)
+        {
+            var attribute = metadataReader.GetCustomAttribute(attributeHandle);
+            var attributeTypeFullName = GetAttributeTypeFullName(metadataReader, attribute);
+            if (!string.Equals(attributeTypeFullName, RequiresPreviewFeaturesAttributeFullName, StringComparison.Ordinal))
+                continue;
+
+            sb.Append("[assembly: ");
+            sb.Append(BuildAttributeName(attributeTypeFullName));
+            sb.Append(BuildAttributeArguments(metadataReader, attribute));
+            sb.AppendLine("]");
+        }
+
+        return sb.ToString();
     }
 
     private static bool ShouldIncludeAttribute(string? attributeTypeFullName)

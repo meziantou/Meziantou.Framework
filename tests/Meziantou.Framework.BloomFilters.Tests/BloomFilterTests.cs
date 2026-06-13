@@ -28,6 +28,48 @@ public sealed class BloomFilterTests
         Assert.True(MayContainValue(filter, value));
     }
 
+    [Fact]
+    public void XXHash32_AddRange_ThenMayContain_ReturnsTrue()
+    {
+        var filter = BloomFilter.CreateXXHash32(BloomFilterSize.CreateOptimalSize(1000, 0.01));
+        var signedValues = Enumerable.Range(-50, 100).Append(int.MinValue).Append(int.MaxValue).ToArray();
+        var unsignedValues = Enumerable.Range(0, 100).Select(value => (uint)value).Append(uint.MaxValue).ToArray();
+
+        filter.AddRange(signedValues);
+        filter.AddRange(unsignedValues);
+
+        Assert.All(signedValues, value => Assert.True(filter.MayContain(value)));
+        Assert.All(unsignedValues, value => Assert.True(filter.MayContain(value)));
+    }
+
+    [Fact]
+    public void XXHash64_AddRange_ThenMayContain_ReturnsTrue()
+    {
+        var filter = BloomFilter.CreateXXHash64(BloomFilterSize.CreateOptimalSize(1000, 0.01));
+        var signedValues = Enumerable.Range(-50, 100).Select(value => (long)value).Append(long.MinValue).Append(long.MaxValue).ToArray();
+        var unsignedValues = Enumerable.Range(0, 100).Select(value => (ulong)value).Append(ulong.MaxValue).ToArray();
+
+        filter.AddRange(signedValues);
+        filter.AddRange(unsignedValues);
+
+        Assert.All(signedValues, value => Assert.True(filter.MayContain(value)));
+        Assert.All(unsignedValues, value => Assert.True(filter.MayContain(value)));
+    }
+
+    [Fact]
+    public void XXHash128_AddRange_ThenMayContain_ReturnsTrue()
+    {
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(1000, 0.01));
+        var signedValues = Enumerable.Range(-50, 100).Select(value => (long)value).Append(long.MinValue).Append(long.MaxValue).ToArray();
+        var unsignedValues = Enumerable.Range(0, 100).Select(value => (ulong)value).Append(ulong.MaxValue).ToArray();
+
+        filter.AddRange(signedValues);
+        filter.AddRange(unsignedValues);
+
+        Assert.All(signedValues, value => Assert.True(filter.MayContain(value)));
+        Assert.All(unsignedValues, value => Assert.True(filter.MayContain(value)));
+    }
+
     private static IEnumerable<object> GetValues()
     {
         return

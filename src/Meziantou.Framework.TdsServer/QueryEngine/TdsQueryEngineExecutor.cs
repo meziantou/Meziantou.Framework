@@ -514,9 +514,10 @@ internal sealed class TdsQueryEngineExecutor
     {
         var isLeftJoin = joinExpression.JoinOperator == SqlJoinOperatorType.LeftOuterJoin;
         var isRightJoin = joinExpression.JoinOperator == SqlJoinOperatorType.RightOuterJoin;
-        if (joinExpression.JoinOperator != SqlJoinOperatorType.InnerJoin && !isLeftJoin && !isRightJoin)
+        var isFullJoin = joinExpression.JoinOperator == SqlJoinOperatorType.FullOuterJoin;
+        if (joinExpression.JoinOperator != SqlJoinOperatorType.InnerJoin && !isLeftJoin && !isRightJoin && !isFullJoin)
         {
-            throw new TdsQueryEngineException("Only INNER JOIN, LEFT JOIN, and RIGHT JOIN are supported.");
+            throw new TdsQueryEngineException("Only INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN are supported.");
         }
 
 #if !NET10_0_OR_GREATER
@@ -526,17 +527,24 @@ internal sealed class TdsQueryEngineExecutor
         }
 #endif
 
+#if !NET11_0_OR_GREATER
+        if (isFullJoin)
+        {
+            throw new TdsQueryEngineException("FULL JOIN requires .NET 11 or later.");
+        }
+#endif
+
         var left = BuildSource(joinExpression.Left, cteRoots, parameters, queryExecutionContext);
         var right = BuildSource(joinExpression.Right, cteRoots, parameters, queryExecutionContext);
         if (joinExpression.OnClause?.Expression is not SqlComparisonBooleanExpression { ComparisonOperator: SqlComparisonBooleanExpressionType.Equals } comparison)
         {
-            var joinName = isLeftJoin ? "LEFT JOIN" : isRightJoin ? "RIGHT JOIN" : "INNER JOIN";
+            var joinName = isLeftJoin ? "LEFT JOIN" : isRightJoin ? "RIGHT JOIN" : isFullJoin ? "FULL JOIN" : "INNER JOIN";
             throw new TdsQueryEngineException($"{joinName} requires a simple equality ON clause.");
         }
 
         if (!ReferencesAliases(comparison.Left, left.Aliases) && !ReferencesAliases(comparison.Right, left.Aliases))
         {
-            var joinName = isLeftJoin ? "LEFT JOIN" : isRightJoin ? "RIGHT JOIN" : "INNER JOIN";
+            var joinName = isLeftJoin ? "LEFT JOIN" : isRightJoin ? "RIGHT JOIN" : isFullJoin ? "FULL JOIN" : "INNER JOIN";
             throw new TdsQueryEngineException($"{joinName} must compare a column from the left source.");
         }
 
@@ -575,12 +583,14 @@ internal sealed class TdsQueryEngineExecutor
             ? BuildLeftJoinCall(left, right, leftKey, rightKey, leftParameter, rightParameter, carrierType, resultBody)
             : isRightJoin
                 ? BuildRightJoinCall(left, right, leftKey, rightKey, leftParameter, rightParameter, carrierType, resultBody)
-                : BuildInnerJoinCall(left, right, leftKey, rightKey, leftParameter, rightParameter, carrierType, resultBody);
+                : isFullJoin
+                    ? BuildFullJoinCall(left, right, leftKey, rightKey, leftParameter, rightParameter, carrierType, resultBody)
+                    : BuildInnerJoinCall(left, right, leftKey, rightKey, leftParameter, rightParameter, carrierType, resultBody);
 
         var aliases = new Dictionary<string, AliasBinding>(StringComparer.OrdinalIgnoreCase);
         foreach (var member in carrierMembers)
         {
-            var isNullableAlias = (isLeftJoin && right.Aliases.ContainsKey(member.Name)) || (isRightJoin && left.Aliases.ContainsKey(member.Name));
+            var isNullableAlias = isFullJoin || (isLeftJoin && right.Aliases.ContainsKey(member.Name)) || (isRightJoin && left.Aliases.ContainsKey(member.Name));
             aliases.Add(member.Name, new AliasBinding(member.Type, expression => Expression.Property(expression, member.Name), IsNullable: isNullableAlias));
         }
 
@@ -631,6 +641,24 @@ internal sealed class TdsQueryEngineExecutor
             Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)));
 #else
         throw new TdsQueryEngineException("RIGHT JOIN requires .NET 10 or later.");
+#endif
+    }
+
+    private static MethodCallExpression BuildFullJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)
+    {
+#if NET11_0_OR_GREATER
+        return Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.FullJoin),
+            [left.RowType, right.RowType, leftKey.Type, carrierType],
+            left.Query.Expression,
+            right.Query.Expression,
+            Expression.Quote(Expression.Lambda(leftKey, leftParameter)),
+            Expression.Quote(Expression.Lambda(rightKey, rightParameter)),
+            Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)),
+            Expression.Constant(null, typeof(IEqualityComparer<>).MakeGenericType(leftKey.Type)));
+#else
+        throw new TdsQueryEngineException("FULL JOIN requires .NET 11 or later.");
 #endif
     }
 

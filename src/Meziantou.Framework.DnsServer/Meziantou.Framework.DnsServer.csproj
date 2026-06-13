@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A DNS server library supporting UDP, TCP, DNS over TLS, DNS over HTTPS, and DNS over QUIC with ASP.NET Core hosting integration</Description>
   </PropertyGroup>

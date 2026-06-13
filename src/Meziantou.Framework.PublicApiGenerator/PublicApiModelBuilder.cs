@@ -7,6 +7,7 @@ internal static class PublicApiModelBuilder
 {
     private static readonly NullabilityInfoContext NullabilityInfoContext = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
+    private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
@@ -75,7 +76,7 @@ internal static class PublicApiModelBuilder
         "System.Runtime.CompilerServices.UnsafeValueTypeAttribute",
     };
 
-    public static PublicApiModel Build(string assemblyName, IEnumerable<Type> rootTypes)
+    public static PublicApiModel Build(string assemblyName, IEnumerable<CustomAttributeData> assemblyAttributes, IEnumerable<Type> rootTypes)
     {
         var types = rootTypes
             .Where(type => type.DeclaringType is null)
@@ -84,7 +85,21 @@ internal static class PublicApiModelBuilder
             .ThenBy(type => type.FullName, StringComparer.Ordinal)
             .Select(BuildTypeModel)
             .ToImmutableArray();
-        return new PublicApiModel(assemblyName, types);
+        return new PublicApiModel(assemblyName, BuildAssemblyAttributesSource(assemblyAttributes), types);
+    }
+
+    private static string BuildAssemblyAttributesSource(IEnumerable<CustomAttributeData> attributes)
+    {
+        var sb = new StringBuilder();
+        foreach (var attribute in attributes.Where(IsRequiresPreviewFeaturesAttribute))
+        {
+            sb.Append("[assembly: ");
+            sb.Append(BuildAttributeName(attribute.AttributeType));
+            sb.Append(BuildAttributeArguments(attribute));
+            sb.AppendLine("]");
+        }
+
+        return sb.ToString();
     }
 
     public static bool IsExternallyVisible(Type type)
@@ -393,7 +408,7 @@ internal static class PublicApiModelBuilder
         var parameters = parametersList.Select(static parameter => BuildParameterDeclaration(parameter, isExtensionReceiver: false)).ToArray();
         var requiresNullableDisableDirective = parametersList.Any(static parameter => RequiresNullableDisableDirective(parameter));
         var initializer = BuildConstructorInitializer(constructor);
-        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer))
+        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer) && !constructor.CustomAttributes.Any(IsRequiresPreviewFeaturesAttribute))
             return null;
 
         AppendMemberWithParameters(
@@ -1407,6 +1422,11 @@ internal static class PublicApiModelBuilder
             return true;
 
         return fullName.StartsWith("System.", StringComparison.Ordinal);
+    }
+
+    private static bool IsRequiresPreviewFeaturesAttribute(CustomAttributeData attribute)
+    {
+        return attribute.AttributeType.FullName == RequiresPreviewFeaturesAttributeFullName;
     }
 
     private static bool IsCompilerGeneratedRefStructObsoleteAttribute(CustomAttributeData attribute)

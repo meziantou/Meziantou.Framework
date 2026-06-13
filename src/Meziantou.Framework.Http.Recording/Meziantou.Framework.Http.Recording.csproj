@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>HTTP record and replay for testing, using DelegatingHandler with HAR format support</Description>
   </PropertyGroup>

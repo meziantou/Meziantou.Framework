@@ -6,6 +6,7 @@ namespace Meziantou.Framework.BloomFilters
 {
     public abstract class BloomFilter
     {
+        public double GetEstimateCount() => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash128 CreateXXHash128(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
@@ -162,6 +163,7 @@ namespace Meziantou.Framework.BloomFilters
 
     public interface IBloomFilter
     {
+        double GetEstimateCount();
         void Add(int value);
         bool MayContain(int value);
         void Add(uint value);

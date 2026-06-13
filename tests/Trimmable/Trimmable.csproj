@@ -43,6 +43,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.ServerSideRequestForgery\Meziantou.Framework.Http.ServerSideRequestForgery.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.LLMContext\Meziantou.Framework.LLMContext.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
@@ -97,6 +98,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.ServerSideRequestForgery" />
     <TrimmerRootAssembly Include="Meziantou.Framework.HttpArchive" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.LLMContext" />
     <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />

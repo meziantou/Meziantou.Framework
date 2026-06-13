@@ -181,18 +181,28 @@ void RunUpdateBomStep(FullPath rootPath)
 
     Parallel.ForEach(files, file =>
     {
-        Console.WriteLine($"Processing {file}");
-        var content = File.ReadAllBytes(file);
-        if (content.Length < 3)
+        try
         {
-            return;
-        }
+            Console.WriteLine($"Processing {file}");
+            var content = File.ReadAllBytes(file);
+            using var stream = new MemoryStream(content);
+            using var reader = new StreamReader(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
+            var text = reader.ReadToEnd();
 
-        if (content[0] == 0xEF && content[1] == 0xBB && content[2] == 0xBF)
-        {
-            Console.WriteLine($"WARNING: File {file} contains BOM. Removing it.");
-            File.WriteAllBytes(file, content.AsSpan(3).ToArray());
+            var normalizedContent = Encoding.UTF8.GetBytes(text.ReplaceLineEndings("\n"));
+            if (content.AsSpan().SequenceEqual(normalizedContent))
+            {
+                return;
+            }
+
+            Console.WriteLine($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
+            File.WriteAllBytes(file, normalizedContent);
             updatedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR: Failed to process {file}: {ex.Message}");
+            throw;
         }
     });
 }

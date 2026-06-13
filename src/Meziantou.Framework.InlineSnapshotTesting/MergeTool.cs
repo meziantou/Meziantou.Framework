@@ -77,7 +77,7 @@ public abstract class MergeTool
         return null;
     }
 
-    private protected static string CopyFileToTemp(string path)
+    private protected static FullPath CopyFileToTemp(string path)
     {
         var sourcePath = FullPath.FromPath(path);
         var tempDirectory = FullPath.GetTempPath() / Guid.NewGuid().ToString("N");

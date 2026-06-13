@@ -77,11 +77,11 @@ public abstract class MergeTool
         return null;
     }
 
-    private protected static string CopyFileToTemp(string path)
+    private protected static FullPath CopyFileToTemp(string path)
     {
-        var temp = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+        var temp = FullPath.GetTempPath() / Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(temp);
-        var filePath = Path.Combine(temp, Path.GetFileName(path));
+        var filePath = temp / Path.GetFileName(path);
         File.Copy(path, filePath, overwrite: false);
         return filePath;
     }

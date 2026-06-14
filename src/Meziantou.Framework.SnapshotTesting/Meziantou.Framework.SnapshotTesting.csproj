@@ -27,6 +27,7 @@
     <ProjectReference Include="../Meziantou.Framework.DiffEngine/Meziantou.Framework.DiffEngine.csproj" />
     <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="../Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
   </ItemGroup>
 
   <ItemGroup>

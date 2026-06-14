@@ -16,15 +16,40 @@ public sealed class ImageComparer(ImageComparisonSettings? settings = null) : IS
         {
             var expectedImage = Image.Load(expected.Data);
             var actualImage = Image.Load(actual.Data);
-            if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
-                return false;
 
-            var threshold = settings?.SimilarityThreshold;
-            if (threshold is null)
+            var similarityThreshold = settings?.SimilarityThreshold;
+            var dHashThreshold = settings?.DHashThreshold;
+            var pHashThreshold = settings?.PHashThreshold;
+            if (similarityThreshold is null && dHashThreshold is null && pHashThreshold is null)
                 return expectedImage.Equals(actualImage);
 
-            var similarity = ComputeMeanSsim(expectedImage.Pixels.Span, actualImage.Pixels.Span);
-            return similarity >= threshold.Value;
+            if (similarityThreshold is not null)
+            {
+                if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
+                    return false;
+
+                var similarity = ComputeMeanSsim(expectedImage.Pixels.Span, actualImage.Pixels.Span);
+                if (similarity < similarityThreshold.Value)
+                    return false;
+            }
+
+            if (dHashThreshold is not null)
+            {
+                var expectedHash = ImageHash.ComputeDHash(expectedImage);
+                var actualHash = ImageHash.ComputeDHash(actualImage);
+                if (ImageHash.ComputeHammingDistance(expectedHash, actualHash) > dHashThreshold.Value)
+                    return false;
+            }
+
+            if (pHashThreshold is not null)
+            {
+                var expectedHash = ImageHash.ComputePHash(expectedImage);
+                var actualHash = ImageHash.ComputePHash(actualImage);
+                if (ImageHash.ComputeHammingDistance(expectedHash, actualHash) > pHashThreshold.Value)
+                    return false;
+            }
+
+            return true;
         }
         catch (InvalidDataException)
         {

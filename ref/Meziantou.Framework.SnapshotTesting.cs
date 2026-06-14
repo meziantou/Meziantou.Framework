@@ -46,6 +46,8 @@ namespace Meziantou.Framework.SnapshotTesting
     public sealed class ImageComparisonSettings
     {
         public float? SimilarityThreshold { get => throw null; set { } }
+        public int? DHashThreshold { get => throw null; set { } }
+        public int? PHashThreshold { get => throw null; set { } }
     }
 
     public abstract class MergeTool

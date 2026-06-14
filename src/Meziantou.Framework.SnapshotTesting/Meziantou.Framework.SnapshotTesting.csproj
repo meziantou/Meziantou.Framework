@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Tests" />
+    <InternalsVisibleTo Include="SnapshotTestingBenchmarks" />
   </ItemGroup>
 
   <ItemGroup>

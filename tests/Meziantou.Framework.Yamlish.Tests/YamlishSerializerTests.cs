@@ -27,6 +27,76 @@ public sealed class YamlishSerializerTests
     }
 
     [Fact]
+    public void Serialize_DefaultIgnoreCondition_WhenWritingDefault()
+    {
+        var options = new YamlishSerializerOptions { DefaultIgnoreCondition = YamlishIgnoreCondition.WhenWritingDefault };
+
+        var result = YamlishSerializer.Serialize(new IgnoreConditions(), options);
+
+        Assert.Equal("Never: 0", result);
+    }
+
+    [Fact]
+    public void Serialize_IgnoreAttributeConditions()
+    {
+        var value = new IgnoreConditions
+        {
+            Always = "value",
+            WhenWritingDefault = 1,
+            WhenWritingNull = "value",
+        };
+
+        var result = YamlishSerializer.Serialize(value);
+
+        Assert.Equal("""
+            Never: 0
+            WhenWritingDefault: 1
+            WhenWritingNull: value
+            """, result);
+    }
+
+    [Fact]
+    public void Serialize_IgnoreAttributeConditions_Fields()
+    {
+        var options = new YamlishSerializerOptions { IncludeFields = true };
+
+        var result = YamlishSerializer.Serialize(new IgnoreConditionFields
+        {
+            Never = 0,
+            Always = "value",
+            WhenWritingDefault = 0,
+            WhenWritingNull = null,
+        }, options);
+
+        Assert.Equal("Never: 0", result);
+    }
+
+    [Fact]
+    public void Serialize_DefaultIgnoreCondition_Never_NullThrows()
+    {
+        var options = new YamlishSerializerOptions { DefaultIgnoreCondition = YamlishIgnoreCondition.Never };
+
+        Assert.Throws<InvalidOperationException>(() => YamlishSerializer.Serialize(new StringValue(), options));
+    }
+
+    [Fact]
+    public void Deserialize_AlwaysIgnoreConditionIsIgnored()
+    {
+        var result = YamlishSerializer.Deserialize<IgnoreConditions>("""
+            Never: 1
+            Always: value
+            WhenWritingDefault: 2
+            WhenWritingNull: value
+            """);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Never);
+        Assert.Null(result.Always);
+        Assert.Equal(2, result.WhenWritingDefault);
+        Assert.Equal("value", result.WhenWritingNull);
+    }
+
+    [Fact]
     public void Deserialize_ConvertsScalarsAndNestedValues()
     {
         var result = YamlishSerializer.Deserialize<Product>("""
@@ -134,4 +204,36 @@ public sealed class YamlishSerializerTests
     {
         public string? Value { get; set; }
     }
+
+    private sealed class IgnoreConditions
+    {
+        [YamlishIgnore(Condition = YamlishIgnoreCondition.Never)]
+        public int Never { get; set; }
+
+        [YamlishIgnore]
+        public string? Always { get; set; }
+
+        [YamlishIgnore(Condition = YamlishIgnoreCondition.WhenWritingDefault)]
+        public int WhenWritingDefault { get; set; }
+
+        [YamlishIgnore(Condition = YamlishIgnoreCondition.WhenWritingNull)]
+        public string? WhenWritingNull { get; set; }
+    }
+
+#pragma warning disable CA1051
+    private sealed class IgnoreConditionFields
+    {
+        [YamlishIgnore(Condition = YamlishIgnoreCondition.Never)]
+        public int Never;
+
+        [YamlishIgnore]
+        public string? Always;
+
+        [YamlishIgnore(Condition = YamlishIgnoreCondition.WhenWritingDefault)]
+        public int WhenWritingDefault;
+
+        [YamlishIgnore(Condition = YamlishIgnoreCondition.WhenWritingNull)]
+        public string? WhenWritingNull;
+    }
+#pragma warning restore CA1051
 }

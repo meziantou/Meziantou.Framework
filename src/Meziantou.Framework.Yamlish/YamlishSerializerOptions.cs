@@ -10,7 +10,7 @@ public sealed class YamlishSerializerOptions
 
     public int MaxDepth { get; set; } = 64;
 
-    public bool IgnoreNullValues { get; set; } = true;
+    public YamlishIgnoreCondition DefaultIgnoreCondition { get; set; } = YamlishIgnoreCondition.WhenWritingNull;
 
     public bool IncludeFields { get; set; }
 }

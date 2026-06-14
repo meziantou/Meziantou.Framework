@@ -48,3 +48,18 @@ var product = YamlishSerializer.Deserialize<Product>(content, options);
 Plain scalar values remain strings in the document model. During typed deserialization, they are converted to the requested .NET property type using invariant culture.
 
 Serialized documents do not end with a trailing newline. Literal block values preserve newlines between their content lines without adding a newline after the final content line.
+
+Properties and fields can be conditionally omitted using `YamlishIgnoreAttribute`. The global default is configured using `YamlishSerializerOptions.DefaultIgnoreCondition`.
+
+```csharp
+var options = new YamlishSerializerOptions
+{
+    DefaultIgnoreCondition = YamlishIgnoreCondition.WhenWritingNull,
+};
+
+public sealed class Product
+{
+    [YamlishIgnore(Condition = YamlishIgnoreCondition.WhenWritingDefault)]
+    public decimal Price { get; set; }
+}
+```

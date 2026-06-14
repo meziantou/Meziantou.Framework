@@ -1,0 +1,13 @@
+namespace Meziantou.Framework.Yamlish;
+
+public abstract class YamlishNode
+{
+    public abstract YamlishNodeKind Kind { get; }
+
+    public override string ToString()
+    {
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        YamlishWriter.Write(writer, this, indentSize: 2);
+        return writer.ToString();
+    }
+}

@@ -695,6 +695,127 @@ public sealed class SnapshotTests
     }
 
     [Fact]
+    public void ImageComparer_WithDHashThreshold_UsesInclusiveHammingDistance()
+    {
+        var expectedImage = CreatePatternImage(width: 32, height: 32, inverted: false);
+        var actualImage = CreatePatternImage(width: 32, height: 32, inverted: true);
+        var distance = ImageHash.ComputeHammingDistance(ImageHash.ComputeDHash(expectedImage), ImageHash.ComputeDHash(actualImage));
+        Assert.True(distance > 0);
+
+        var expected = CreateSnapshotData(expectedImage);
+        var actual = CreateSnapshotData(actualImage);
+        Assert.False(new ImageComparer(new ImageComparisonSettings { DHashThreshold = distance - 1 }).Equals(expected, actual));
+        Assert.True(new ImageComparer(new ImageComparisonSettings { DHashThreshold = distance }).Equals(expected, actual));
+    }
+
+    [Fact]
+    public void ImageComparer_WithPHashThreshold_UsesInclusiveHammingDistance()
+    {
+        var expectedImage = CreatePatternImage(width: 32, height: 32, inverted: false);
+        var actualImage = CreatePatternImage(width: 32, height: 32, inverted: true);
+        var distance = ImageHash.ComputeHammingDistance(ImageHash.ComputePHash(expectedImage), ImageHash.ComputePHash(actualImage));
+        Assert.True(distance > 0);
+
+        var expected = CreateSnapshotData(expectedImage);
+        var actual = CreateSnapshotData(actualImage);
+        Assert.False(new ImageComparer(new ImageComparisonSettings { PHashThreshold = distance - 1 }).Equals(expected, actual));
+        Assert.True(new ImageComparer(new ImageComparisonSettings { PHashThreshold = distance }).Equals(expected, actual));
+    }
+
+    [Fact]
+    public void ImageComparer_WithHashThresholdZero_AllowsIdenticalHashes()
+    {
+        var image = CreatePatternImage(width: 32, height: 32, inverted: false);
+        var snapshot = CreateSnapshotData(image);
+        var comparer = new ImageComparer(new ImageComparisonSettings
+        {
+            DHashThreshold = 0,
+            PHashThreshold = 0,
+        });
+
+        Assert.True(comparer.Equals(snapshot, snapshot));
+    }
+
+    [Fact]
+    public void ImageComparer_WithOnlyHashThresholds_AllowsDifferentDimensions()
+    {
+        var expected = CreateSnapshotData(Image.Create(1, 1, [new Argb(0xFFFFFFFFu)]));
+        var actual = CreateSnapshotData(Image.Create(2, 2, [new Argb(0xFFFFFFFFu), new Argb(0xFFFFFFFFu), new Argb(0xFFFFFFFFu), new Argb(0xFFFFFFFFu)]));
+        var comparer = new ImageComparer(new ImageComparisonSettings
+        {
+            DHashThreshold = 0,
+            PHashThreshold = 0,
+        });
+
+        Assert.True(comparer.Equals(expected, actual));
+    }
+
+    [Fact]
+    public void ImageComparer_WithSimilarityThreshold_RejectsDifferentDimensions()
+    {
+        var expected = CreateSnapshotData(Image.Create(1, 1, [new Argb(0xFFFFFFFFu)]));
+        var actual = CreateSnapshotData(Image.Create(2, 2, [new Argb(0xFFFFFFFFu), new Argb(0xFFFFFFFFu), new Argb(0xFFFFFFFFu), new Argb(0xFFFFFFFFu)]));
+        var comparer = new ImageComparer(new ImageComparisonSettings
+        {
+            SimilarityThreshold = 0,
+            DHashThreshold = 0,
+        });
+
+        Assert.False(comparer.Equals(expected, actual));
+    }
+
+    [Fact]
+    public void ImageComparer_WithMultipleThresholds_RequiresAllToPass()
+    {
+        var expected = CreateSnapshotData(CreatePatternImage(width: 32, height: 32, inverted: false));
+        var actual = CreateSnapshotData(CreatePatternImage(width: 32, height: 32, inverted: true));
+        var comparer = new ImageComparer(new ImageComparisonSettings
+        {
+            DHashThreshold = 64,
+            PHashThreshold = 0,
+        });
+
+        Assert.False(comparer.Equals(expected, actual));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(65)]
+    public void ImageComparisonSettings_RejectsInvalidHashThresholds(int threshold)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageComparisonSettings { DHashThreshold = threshold });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageComparisonSettings { PHashThreshold = threshold });
+    }
+
+    [Fact]
+    public void ImageHash_ComputesKnownDHash()
+    {
+        var ascendingPixels = Enumerable.Range(0, 9 * 8).Select(index => new Argb(0xFF000000u | (uint)(index % 9 * 16) * 0x00010101u)).ToArray();
+        var descendingPixels = Enumerable.Range(0, 9 * 8).Select(index => new Argb(0xFF000000u | (uint)((8 - index % 9) * 16) * 0x00010101u)).ToArray();
+
+        Assert.Equal(0UL, ImageHash.ComputeDHash(Image.Create(9, 8, ascendingPixels)));
+        Assert.Equal(ulong.MaxValue, ImageHash.ComputeDHash(Image.Create(9, 8, descendingPixels)));
+    }
+
+    [Fact]
+    public void ImageHash_ComputesKnownPHash()
+    {
+        var image = CreatePatternImage(width: 32, height: 32, inverted: false);
+
+        Assert.Equal(11580269642849678823UL, ImageHash.ComputePHash(image));
+    }
+
+    [Fact]
+    public void ImageHash_IgnoresAlpha()
+    {
+        var opaqueImage = Image.Create(2, 1, [new Argb(255, 10, 20, 30), new Argb(255, 40, 50, 60)]);
+        var transparentImage = Image.Create(2, 1, [new Argb(0, 10, 20, 30), new Argb(0, 40, 50, 60)]);
+
+        Assert.Equal(ImageHash.ComputeDHash(opaqueImage), ImageHash.ComputeDHash(transparentImage));
+        Assert.Equal(ImageHash.ComputePHash(opaqueImage), ImageHash.ComputePHash(transparentImage));
+    }
+
+    [Fact]
     public void Validate_CreatesActualFileWhenSnapshotChanged()
     {
         using var directory = TemporaryDirectory.Create();
@@ -1095,6 +1216,29 @@ public sealed class SnapshotTests
     private static byte[] CreateSingleFramePng(uint color = 0xFFFFFFFFu)
     {
         return ImageTestData.CreatePngRgba32(width: 1, height: 1, pixels: [color]);
+    }
+
+    private static Image CreatePatternImage(int width, int height, bool inverted)
+    {
+        var pixels = new Argb[checked(width * height)];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var value = (byte)((x * 17 + y * 31 + x * y * 3) % 256);
+                if (inverted)
+                    value = (byte)(255 - value);
+
+                pixels[y * width + x] = new Argb(255, value, value, value);
+            }
+        }
+
+        return Image.Create(width, height, pixels);
+    }
+
+    private static SnapshotData CreateSnapshotData(Image image)
+    {
+        return new SnapshotData("png", PngImageEncoder.Encode(image));
     }
 
     private static byte[] CreateTwoEntryIco()

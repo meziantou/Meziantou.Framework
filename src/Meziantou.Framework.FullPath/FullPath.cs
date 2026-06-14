@@ -721,24 +721,39 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         return false;
     }
 
-    /// <summary>Opens Windows Explorer and selects this file or directory.</summary>
+    /// <summary>Opens the system file manager and selects this file or directory.</summary>
     [SupportedOSPlatform("windows5.1.2600")]
+    [SupportedOSPlatform("macos")]
     public unsafe void OpenInExplorer()
     {
         if (IsEmpty)
             throw new InvalidOperationException("Path is empty");
 
-        var itemList = PInvoke.ILCreateFromPath(Value);
-        if (itemList is not null)
+        if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
         {
-            try
+            var itemList = PInvoke.ILCreateFromPath(Value);
+            if (itemList is not null)
             {
-                PInvoke.SHOpenFolderAndSelectItems(itemList, 0u, apidl: null, 0u).ThrowOnFailure();
+                try
+                {
+                    PInvoke.SHOpenFolderAndSelectItems(itemList, 0u, apidl: null, 0u).ThrowOnFailure();
+                }
+                finally
+                {
+                    PInvoke.ILFree(itemList);
+                }
             }
-            finally
-            {
-                PInvoke.ILFree(itemList);
-            }
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            var processStartInfo = new ProcessStartInfo("/usr/bin/open");
+            processStartInfo.ArgumentList.Add("-R");
+            processStartInfo.ArgumentList.Add(Value);
+            using var process = Process.Start(processStartInfo);
+        }
+        else
+        {
+            throw new PlatformNotSupportedException("Opening the system file manager is only supported on Windows 5.1.2600 and later, and macOS.");
         }
     }
 

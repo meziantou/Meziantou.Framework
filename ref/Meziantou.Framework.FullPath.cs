@@ -76,6 +76,7 @@ namespace Meziantou.Framework
         public bool TryGetSymbolicLinkTarget([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
         public bool TryGetSymbolicLinkTarget(Meziantou.Framework.SymbolicLinkResolutionMode resolutionMode, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
+        [System.Runtime.Versioning.SupportedOSPlatform("macos")]
         public void OpenInExplorer() { }
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public string ToWindowsExtendedPath() => throw null;

@@ -37,25 +37,26 @@ internal static class ImageHash
         Span<double> luminance = stackalloc double[PHashSize * PHashSize];
         ResizeToLuminance(image, PHashSize, PHashSize, luminance);
 
+        Span<double> horizontalCoefficients = stackalloc double[PHashLowFrequencySize * PHashSize];
+        for (var u = 0; u < PHashLowFrequencySize; u++)
+        {
+            var cosine = CosineTable[u];
+            var destinationOffset = u * PHashSize;
+            for (var y = 0; y < PHashSize; y++)
+            {
+                horizontalCoefficients[destinationOffset + y] = DotProduct(luminance.Slice(y * PHashSize, PHashSize), cosine);
+            }
+        }
+
         Span<double> coefficients = stackalloc double[PHashLowFrequencySize * PHashLowFrequencySize];
         var coefficientIndex = 0;
         for (var v = 0; v < PHashLowFrequencySize; v++)
         {
             for (var u = 0; u < PHashLowFrequencySize; u++)
             {
-                double coefficient = 0;
-                for (var y = 0; y < PHashSize; y++)
-                {
-                    var rowOffset = y * PHashSize;
-                    for (var x = 0; x < PHashSize; x++)
-                    {
-                        coefficient += luminance[rowOffset + x] * CosineTable[x][u] * CosineTable[y][v];
-                    }
-                }
-
                 var uScale = u == 0 ? 1 / Math.Sqrt(2) : 1;
                 var vScale = v == 0 ? 1 / Math.Sqrt(2) : 1;
-                coefficients[coefficientIndex] = coefficient * uScale * vScale;
+                coefficients[coefficientIndex] = DotProduct(horizontalCoefficients.Slice(u * PHashSize, PHashSize), CosineTable[v]) * uScale * vScale;
                 coefficientIndex++;
             }
         }
@@ -104,6 +105,24 @@ internal static class ImageHash
         }
     }
 
+    private static double DotProduct(ReadOnlySpan<double> left, ReadOnlySpan<double> right)
+    {
+        var index = 0;
+        var vectorSum = Vector<double>.Zero;
+        for (; index <= left.Length - Vector<double>.Count; index += Vector<double>.Count)
+        {
+            vectorSum += new Vector<double>(left[index..]) * new Vector<double>(right[index..]);
+        }
+
+        var sum = Vector.Sum(vectorSum);
+        for (; index < left.Length; index++)
+        {
+            sum += left[index] * right[index];
+        }
+
+        return sum;
+    }
+
     private static double GetLuminance(Argb pixel)
     {
         return 0.299 * pixel.R + 0.587 * pixel.G + 0.114 * pixel.B;
@@ -116,13 +135,13 @@ internal static class ImageHash
 
     private static double[][] CreateCosineTable()
     {
-        var result = new double[PHashSize][];
-        for (var position = 0; position < PHashSize; position++)
+        var result = new double[PHashLowFrequencySize][];
+        for (var frequency = 0; frequency < PHashLowFrequencySize; frequency++)
         {
-            result[position] = new double[PHashLowFrequencySize];
-            for (var frequency = 0; frequency < PHashLowFrequencySize; frequency++)
+            result[frequency] = new double[PHashSize];
+            for (var position = 0; position < PHashSize; position++)
             {
-                result[position][frequency] = Math.Cos((2 * position + 1) * frequency * Math.PI / (2 * PHashSize));
+                result[frequency][position] = Math.Cos((2 * position + 1) * frequency * Math.PI / (2 * PHashSize));
             }
         }
 

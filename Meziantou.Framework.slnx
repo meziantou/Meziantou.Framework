@@ -4,6 +4,7 @@
     <Project Path="benchmarks/DependencyScanningBenchmarks/DependencyScanningBenchmarks.csproj" />
     <Project Path="benchmarks/FastEnumGeneratorBenchmarks/FastEnumGeneratorBenchmarks.csproj" />
     <Project Path="benchmarks/GlobbingBenchmarks/GlobbingBenchmarks.csproj" />
+    <Project Path="benchmarks/SnapshotTestingBenchmarks/SnapshotTestingBenchmarks.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/BlazorAppSample/BlazorAppSample.csproj" />

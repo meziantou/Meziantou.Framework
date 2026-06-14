@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
-    <Description>High-performance in-memory Bloom filters with atomic concurrent writes and segmented storage</Description>
+    <Description>High-performance in-memory Bloom filters and counting Bloom filters with atomic concurrent writes and segmented storage</Description>
   </PropertyGroup>
 
   <ItemGroup>

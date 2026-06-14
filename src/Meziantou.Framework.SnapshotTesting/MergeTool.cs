@@ -1,4 +1,5 @@
 using Meziantou.Framework.DiffEngine;
+using Meziantou.Framework.LLMContext;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.SnapshotTesting;
@@ -53,7 +54,8 @@ public abstract class MergeTool
         var variable = Environment.GetEnvironmentVariable("DiffEngine_Disabled");
         return string.Equals(variable, "true", StringComparison.OrdinalIgnoreCase) ||
                BuildServerDetector.Detected ||
-               ContinuousTestingDetector.Detected;
+               ContinuousTestingDetector.Detected ||
+               LLMContextDetector.IsLLMContext();
     }
 
     internal static MergeToolResult? Launch(IEnumerable<MergeTool?>? mergeTools, string currentFilePath, string newFilePath)

@@ -29,6 +29,36 @@ public sealed class BloomFilterTests
     }
 
     [Fact]
+    public void GetEstimateCount_EmptyFilter_ReturnsZero()
+    {
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(1000, 0.01));
+
+        Assert.Equal(0, filter.GetEstimateCount());
+    }
+
+    [Fact]
+    public void GetEstimateCount_FullFilter_ReturnsPositiveInfinity()
+    {
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateExact(1, 1));
+        filter.Add(0);
+
+        Assert.Equal(double.PositiveInfinity, filter.GetEstimateCount());
+    }
+
+    [Fact]
+    public void GetEstimateCount_PopulatedFilter_ReturnsApproximateCount()
+    {
+        const int ItemCount = 1000;
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(ItemCount, 0.01));
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        Assert.InRange(filter.GetEstimateCount(), ItemCount * 0.95, ItemCount * 1.05);
+    }
+
+    [Fact]
     public void XXHash32_AddRange_ThenMayContain_ReturnsTrue()
     {
         var filter = BloomFilter.CreateXXHash32(BloomFilterSize.CreateOptimalSize(1000, 0.01));

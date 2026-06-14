@@ -35,6 +35,7 @@ namespace Meziantou.Framework.BloomFilters;
 
 public partial interface IBloomFilter
 {
+    double GetEstimateCount();
 <# foreach (var type in types) { #>
     void Add(<#= ToCsharpTypeName(type) #> value);
     bool MayContain(<#= ToCsharpTypeName(type) #> value);

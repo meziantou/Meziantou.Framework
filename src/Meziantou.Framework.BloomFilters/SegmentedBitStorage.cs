@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -38,6 +39,20 @@ internal sealed class SegmentedBitStorage
         {
             Array.Clear(segment);
         }
+    }
+
+    public long CountSetBits()
+    {
+        long count = 0;
+        foreach (var segment in _segments)
+        {
+            for (var index = 0; index < segment.Length; index++)
+            {
+                count += BitOperations.PopCount(Volatile.Read(ref segment[index]));
+            }
+        }
+
+        return count;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

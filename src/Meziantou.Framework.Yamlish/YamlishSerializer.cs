@@ -1,6 +1,5 @@
 using System.Collections;
 using System.ComponentModel;
-using System.Reflection;
 
 namespace Meziantou.Framework.Yamlish;
 
@@ -19,6 +18,7 @@ public static class YamlishSerializer
 
         options ??= new YamlishSerializerOptions();
         ValidateOptions(options);
+        options.MakeReadOnly();
         var root = ObjectBinder.Serialize(value, type, options, depth: 0);
         using var writer = new StringWriter(CultureInfo.InvariantCulture);
         YamlishWriter.Write(writer, root, options.IndentSize);
@@ -36,6 +36,7 @@ public static class YamlishSerializer
         ArgumentNullException.ThrowIfNull(type);
         options ??= new YamlishSerializerOptions();
         ValidateOptions(options);
+        options.MakeReadOnly();
         var document = YamlishDocument.Parse(content);
         return ObjectBinder.Deserialize(document.Root, type, options, depth: 0);
     }
@@ -70,7 +71,7 @@ public static class YamlishSerializer
                     if (entry.Key is not string key)
                         throw new NotSupportedException("Yamlish dictionaries must have string keys.");
 
-                    if (ShouldIgnore(entry.Value, entry.Value?.GetType() ?? typeof(object), options.DefaultIgnoreCondition))
+                    if (ShouldIgnore(entry.Value, GetDefaultValue(entry.Value?.GetType() ?? typeof(object), options.DefaultIgnoreCondition), options.DefaultIgnoreCondition))
                         continue;
 
                     result.Add(key, Serialize(entry.Value, entry.Value?.GetType() ?? typeof(object), options, depth + 1));
@@ -84,7 +85,7 @@ public static class YamlishSerializer
                 var result = new YamlishSequence();
                 foreach (var item in enumerable)
                 {
-                    if (ShouldIgnore(item, item?.GetType() ?? typeof(object), options.DefaultIgnoreCondition))
+                    if (ShouldIgnore(item, GetDefaultValue(item?.GetType() ?? typeof(object), options.DefaultIgnoreCondition), options.DefaultIgnoreCondition))
                         continue;
 
                     result.Add(Serialize(item, item?.GetType() ?? typeof(object), options, depth + 1));
@@ -94,10 +95,10 @@ public static class YamlishSerializer
             }
 
             var mapping = new YamlishMapping();
-            foreach (var member in GetSerializableMembers(runtimeType, options))
+            foreach (var member in options.GetTypeInfo(runtimeType).SerializableMembers)
             {
                 var memberValue = member.GetValue(value);
-                if (ShouldIgnore(memberValue, member.MemberType, member.IgnoreCondition))
+                if (ShouldIgnore(memberValue, member.DefaultValue, member.IgnoreCondition))
                     continue;
 
                 mapping.Add(member.SerializedName, Serialize(memberValue, member.MemberType, options, depth + 1));
@@ -170,7 +171,7 @@ public static class YamlishSerializer
                 throw CannotConvert(node, type);
 
             var instance = Activator.CreateInstance(type) ?? throw CannotCreate(type);
-            foreach (var member in GetDeserializableMembers(type, options))
+            foreach (var member in options.GetTypeInfo(type).DeserializableMembers)
             {
                 var entry = objectMapping.FirstOrDefault(entry => options.PropertyNameComparer.Equals(entry.Key, member.SerializedName));
                 if (entry.Key is null)
@@ -193,75 +194,21 @@ public static class YamlishSerializer
             };
         }
 
-        private static IEnumerable<SerializableMember> GetSerializableMembers(Type type, YamlishSerializerOptions options)
-        {
-            foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-            {
-                if (property.GetMethod is null || property.GetIndexParameters().Length > 0)
-                    continue;
-
-                var ignoreCondition = GetIgnoreCondition(property, options);
-                if (ignoreCondition is not YamlishIgnoreCondition.Always)
-                    yield return new SerializableMember(GetName(property, options), property.PropertyType, property.GetValue, SetValue: null, ignoreCondition);
-            }
-
-            if (options.IncludeFields)
-            {
-                foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
-                {
-                    var ignoreCondition = GetIgnoreCondition(field, options);
-                    if (ignoreCondition is not YamlishIgnoreCondition.Always)
-                        yield return new SerializableMember(GetName(field, options), field.FieldType, field.GetValue, field.SetValue, ignoreCondition);
-                }
-            }
-        }
-
-        private static IEnumerable<SerializableMember> GetDeserializableMembers(Type type, YamlishSerializerOptions options)
-        {
-            foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-            {
-                if (property.SetMethod is null || property.GetIndexParameters().Length > 0 || GetAttributeIgnoreCondition(property) is YamlishIgnoreCondition.Always)
-                    continue;
-
-                yield return new SerializableMember(GetName(property, options), property.PropertyType, property.GetValue, property.SetValue, YamlishIgnoreCondition.Never);
-            }
-
-            if (options.IncludeFields)
-            {
-                foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
-                {
-                    if (!field.IsInitOnly && GetAttributeIgnoreCondition(field) is not YamlishIgnoreCondition.Always)
-                        yield return new SerializableMember(GetName(field, options), field.FieldType, field.GetValue, field.SetValue, YamlishIgnoreCondition.Never);
-                }
-            }
-        }
-
-        private static YamlishIgnoreCondition GetIgnoreCondition(MemberInfo member, YamlishSerializerOptions options)
-        {
-            return GetAttributeIgnoreCondition(member) ?? options.DefaultIgnoreCondition;
-        }
-
-        private static YamlishIgnoreCondition? GetAttributeIgnoreCondition(MemberInfo member)
-        {
-            return member.GetCustomAttribute<YamlishIgnoreAttribute>()?.Condition;
-        }
-
-        private static bool ShouldIgnore(object? value, Type type, YamlishIgnoreCondition condition)
+        private static bool ShouldIgnore(object? value, object? defaultValue, YamlishIgnoreCondition condition)
         {
             return condition switch
             {
                 YamlishIgnoreCondition.Never => false,
                 YamlishIgnoreCondition.Always => true,
                 YamlishIgnoreCondition.WhenWritingNull => value is null,
-                YamlishIgnoreCondition.WhenWritingDefault => Equals(value, type.IsValueType ? Activator.CreateInstance(type) : null),
+                YamlishIgnoreCondition.WhenWritingDefault => Equals(value, defaultValue),
                 _ => throw new ArgumentOutOfRangeException(nameof(condition)),
             };
         }
 
-        private static string GetName(MemberInfo member, YamlishSerializerOptions options)
+        private static object? GetDefaultValue(Type type, YamlishIgnoreCondition condition)
         {
-            var attribute = member.GetCustomAttribute<YamlishPropertyNameAttribute>();
-            return attribute?.Name ?? options.PropertyNamingPolicy?.ConvertName(member.Name) ?? member.Name;
+            return condition is YamlishIgnoreCondition.WhenWritingDefault && type.IsValueType ? Activator.CreateInstance(type) : null;
         }
 
         private static bool IsScalarType(Type type)
@@ -362,6 +309,5 @@ public static class YamlishSerializer
 
         private static FormatException CannotConvert(YamlishNode node, Type type) => new($"Cannot convert a {node.Kind} node to '{type}'.");
 
-        private sealed record SerializableMember(string SerializedName, Type MemberType, Func<object, object?> GetValue, Action<object, object?>? SetValue, YamlishIgnoreCondition IgnoreCondition);
     }
 }

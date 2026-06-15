@@ -64,3 +64,14 @@ public sealed class Product
     public decimal Price { get; set; }
 }
 ```
+
+Attributes can also be added using serializer options. Option-provided attributes override attributes declared on the member.
+
+```csharp
+var options = new YamlishSerializerOptions();
+options.AddAttribute(typeof(Product), nameof(Product.IsAvailable), new YamlishIgnoreAttribute());
+options.AddAttribute<Product>(product => product.Price, new YamlishPropertyNameAttribute("cost"));
+options.AddPropertyAttribute(property => property.PropertyType == typeof(Uri), new YamlishIgnoreAttribute());
+```
+
+Serializer options become read-only after their first use. Resolved member metadata is then cached by type and reused by subsequent serialization and deserialization operations.

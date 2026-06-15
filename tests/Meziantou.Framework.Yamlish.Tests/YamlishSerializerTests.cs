@@ -27,6 +27,47 @@ public sealed class YamlishSerializerTests
     }
 
     [Fact]
+    public void Options_AddAttribute_OverridesDeclaredAttributes()
+    {
+        var options = new YamlishSerializerOptions();
+        options.AddAttribute(typeof(Product), nameof(Product.Id), new YamlishPropertyNameAttribute("id_from_options"));
+        options.AddAttribute(typeof(Product), nameof(Product.Ignored), new YamlishIgnoreAttribute { Condition = YamlishIgnoreCondition.Never });
+        options.AddAttribute<Product>(product => product.Price, new YamlishIgnoreAttribute());
+
+        var content = YamlishSerializer.Serialize(new Product { Id = "abc", Ignored = "value" }, options);
+        var result = YamlishSerializer.Deserialize<Product>("id_from_options: def\nIgnored: deserialized", options);
+
+        Assert.Contains("id_from_options: abc", content, StringComparison.Ordinal);
+        Assert.Contains("Ignored: value", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("Price", content, StringComparison.Ordinal);
+        Assert.Equal("def", result?.Id);
+        Assert.Equal("deserialized", result?.Ignored);
+    }
+
+    [Fact]
+    public void Options_AreReadOnlyAndMetadataIsCachedAfterFirstUse()
+    {
+        var predicateEvaluationCount = 0;
+        var options = new YamlishSerializerOptions();
+        options.AddPropertyAttribute(property =>
+        {
+            predicateEvaluationCount++;
+            return false;
+        }, new YamlishIgnoreAttribute());
+
+        YamlishSerializer.Serialize(new DefaultNamesProduct(), options);
+        var countAfterFirstUse = predicateEvaluationCount;
+        YamlishSerializer.Serialize(new DefaultNamesProduct(), options);
+        YamlishSerializer.Deserialize<DefaultNamesProduct>("Id: abc", options);
+
+        Assert.True(options.IsReadOnly);
+        Assert.True(countAfterFirstUse > 0);
+        Assert.Equal(countAfterFirstUse, predicateEvaluationCount);
+        Assert.Throws<InvalidOperationException>(() => options.IncludeFields = true);
+        Assert.Throws<InvalidOperationException>(() => options.AddAttribute(typeof(DefaultNamesProduct), nameof(DefaultNamesProduct.Id), new YamlishIgnoreAttribute()));
+    }
+
+    [Fact]
     public void Serialize_DefaultIgnoreCondition_WhenWritingDefault()
     {
         var options = new YamlishSerializerOptions { DefaultIgnoreCondition = YamlishIgnoreCondition.WhenWritingDefault };
@@ -69,6 +110,20 @@ public sealed class YamlishSerializerTests
         }, options);
 
         Assert.Equal("Never: 0", result);
+    }
+
+    [Fact]
+    public void Options_AddFieldAttribute_OverridesDeclaredAttribute()
+    {
+        var options = new YamlishSerializerOptions { IncludeFields = true };
+        options.AddFieldAttribute(field => field.Name == nameof(IgnoreConditionFields.Always), new YamlishIgnoreAttribute { Condition = YamlishIgnoreCondition.Never });
+
+        var result = YamlishSerializer.Serialize(new IgnoreConditionFields { Always = "value" }, options);
+
+        Assert.Equal("""
+            Never: 0
+            Always: value
+            """, result);
     }
 
     [Fact]

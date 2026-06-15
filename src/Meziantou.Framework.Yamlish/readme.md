@@ -48,6 +48,8 @@ var product = YamlishSerializer.Deserialize<Product>(content, options);
 
 Plain scalar values remain strings in the document model. During typed deserialization, they are converted to the requested .NET property type using invariant culture.
 
+Built-in converters support strings, characters, booleans, all integral and floating-point types, decimals, enums, GUIDs, dates, times, time spans, and URIs. Temporal and floating-point values use round-trip formats.
+
 Serialized documents do not end with a trailing newline. Block scalar chomping and folding follow YAML semantics.
 
 Properties and fields can be conditionally omitted using `YamlishIgnoreAttribute`. The global default is configured using `YamlishSerializerOptions.DefaultIgnoreCondition`.

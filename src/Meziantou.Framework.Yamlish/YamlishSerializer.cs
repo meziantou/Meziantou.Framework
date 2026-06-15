@@ -1,5 +1,4 @@
 using System.Collections;
-using System.ComponentModel;
 
 namespace Meziantou.Framework.Yamlish;
 
@@ -71,9 +70,6 @@ public static class YamlishSerializer
             if (converter is not null)
                 return converter.Write(value, converterType, options) ?? throw new InvalidOperationException($"The converter '{converter.GetType().FullName}' returned null.");
 
-            if (IsScalarType(runtimeType))
-                return new YamlishScalar(FormatScalar(value, runtimeType));
-
             if (value is IDictionary dictionary)
             {
                 var result = new YamlishMapping();
@@ -144,9 +140,6 @@ public static class YamlishSerializer
 
             if (type == typeof(object))
                 return DeserializeUntyped(node, options, depth);
-
-            if (node is YamlishScalar scalar)
-                return ParseScalar(scalar.Value, type);
 
             if (TryGetDictionaryValueType(type, out var dictionaryValueType))
             {
@@ -237,54 +230,6 @@ public static class YamlishSerializer
         private static object? GetDefaultValue(Type type, YamlishIgnoreCondition condition)
         {
             return condition is YamlishIgnoreCondition.WhenWritingDefault && type.IsValueType ? Activator.CreateInstance(type) : null;
-        }
-
-        private static bool IsScalarType(Type type)
-        {
-            type = Nullable.GetUnderlyingType(type) ?? type;
-            return type == typeof(string) || type == typeof(char) || type == typeof(bool) || type.IsEnum || type.IsPrimitive || type == typeof(decimal) || type == typeof(Guid) || type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(DateOnly) || type == typeof(TimeOnly) || type == typeof(TimeSpan) || type == typeof(Uri);
-        }
-
-        private static string FormatScalar(object value, Type type)
-        {
-            if (type == typeof(bool))
-                return (bool)value ? "true" : "false";
-
-            if (value is IFormattable formattable)
-                return formattable.ToString(format: null, CultureInfo.InvariantCulture);
-
-            var converter = TypeDescriptor.GetConverter(type);
-            if (converter.CanConvertTo(typeof(string)))
-                return converter.ConvertToInvariantString(value) ?? string.Empty;
-
-            return value.ToString() ?? string.Empty;
-        }
-
-        private static object ParseScalar(string value, Type type)
-        {
-            if (type == typeof(string))
-                return value;
-
-            if (type == typeof(char))
-                return value.Length is 1 ? value[0] : throw new FormatException($"Cannot convert '{value}' to '{type}'.");
-
-            if (type.IsEnum)
-                return Enum.Parse(type, value, ignoreCase: true);
-
-            var converter = TypeDescriptor.GetConverter(type);
-            if (converter.CanConvertFrom(typeof(string)))
-            {
-                try
-                {
-                    return converter.ConvertFromInvariantString(value) ?? throw new FormatException($"Cannot convert '{value}' to '{type}'.");
-                }
-                catch (Exception exception) when (exception is not FormatException)
-                {
-                    throw new FormatException($"Cannot convert '{value}' to '{type}'.", exception);
-                }
-            }
-
-            throw new NotSupportedException($"Type '{type}' cannot be deserialized from a Yamlish scalar.");
         }
 
         private static bool TryGetDictionaryValueType(Type type, [NotNullWhen(true)] out Type? valueType)

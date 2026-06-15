@@ -167,7 +167,7 @@ public sealed class YamlishSerializerOptions
                 return result;
             }
 
-            return null;
+            return BuiltInYamlishConverters.GetConverter(type);
         }
     }
 

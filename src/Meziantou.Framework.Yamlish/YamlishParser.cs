@@ -13,13 +13,13 @@ internal sealed class YamlishParser
     public static YamlishNode Parse(string content)
     {
         var parser = new YamlishParser(content);
-        parser.SkipBlankLines();
+        parser.SkipIgnorableLines();
         if (parser._index >= parser._lines.Length)
             return new YamlishMapping();
 
         var indent = parser.GetIndent(parser._index);
         var result = parser.ParseBlock(indent);
-        parser.SkipBlankLines();
+        parser.SkipIgnorableLines();
         if (parser._index < parser._lines.Length)
             Throw("Unexpected content", parser._index);
 
@@ -29,7 +29,7 @@ internal sealed class YamlishParser
     private YamlishNode ParseBlock(int indent)
     {
         ValidateIndent(_index, indent);
-        var content = _lines[_index].AsSpan(indent);
+        var content = GetContent(_lines[_index].AsSpan(indent));
         if (IsSequenceLine(content))
             return ParseSequence(indent);
 
@@ -37,6 +37,9 @@ internal sealed class YamlishParser
             return ParseMapping(indent);
 
         var lineIndex = _index++;
+        if (TryParseBlockScalarHeader(content, out var style, out var chomping))
+            return ParseBlockScalar(indent, style, chomping);
+
         return ParseInlineValue(content, lineIndex);
     }
 
@@ -45,7 +48,7 @@ internal sealed class YamlishParser
         var result = new YamlishMapping();
         while (_index < _lines.Length)
         {
-            if (IsBlank(_lines[_index]))
+            if (IsIgnorable(_lines[_index]))
             {
                 _index++;
                 continue;
@@ -58,7 +61,7 @@ internal sealed class YamlishParser
             if (lineIndent > indent)
                 Throw("Unexpected indentation", _index);
 
-            var content = _lines[_index].AsSpan(indent);
+            var content = GetContent(_lines[_index].AsSpan(indent));
             if (IsSequenceLine(content))
                 Throw("A sequence item is not valid inside a mapping", _index);
 
@@ -77,9 +80,9 @@ internal sealed class YamlishParser
             {
                 value = ParseNestedValue(indent, lineIndex);
             }
-            else if (valueText.SequenceEqual("|"))
+            else if (TryParseBlockScalarHeader(valueText, out var style, out var chomping))
             {
-                value = ParseLiteral(indent);
+                value = ParseBlockScalar(indent, style, chomping);
             }
             else
             {
@@ -105,7 +108,7 @@ internal sealed class YamlishParser
         var result = new YamlishSequence();
         while (_index < _lines.Length)
         {
-            if (IsBlank(_lines[_index]))
+            if (IsIgnorable(_lines[_index]))
             {
                 _index++;
                 continue;
@@ -118,7 +121,7 @@ internal sealed class YamlishParser
             if (lineIndent > indent)
                 Throw("Unexpected indentation", _index);
 
-            var content = _lines[_index].AsSpan(indent);
+            var content = GetContent(_lines[_index].AsSpan(indent));
             if (!IsSequenceLine(content))
                 break;
 
@@ -128,9 +131,9 @@ internal sealed class YamlishParser
             {
                 result.Add(ParseNestedValue(indent, lineIndex));
             }
-            else if (valueText.SequenceEqual("|"))
+            else if (TryParseBlockScalarHeader(valueText, out var style, out var chomping))
             {
-                result.Add(ParseLiteral(indent));
+                result.Add(ParseBlockScalar(indent, style, chomping));
             }
             else if (FindMappingSeparator(valueText) > 0)
             {
@@ -150,7 +153,7 @@ internal sealed class YamlishParser
         var result = new YamlishMapping();
         AddCompactMappingEntry(result, firstEntry, sequenceIndent, lineIndex);
 
-        SkipBlankLines();
+        SkipIgnorableLines();
         if (_index < _lines.Length && GetIndent(_index) > sequenceIndent)
         {
             var additionalEntries = ParseMapping(GetIndent(_index));
@@ -183,9 +186,9 @@ internal sealed class YamlishParser
         {
             value = ParseNestedValue(parentIndent, lineIndex);
         }
-        else if (valueText.SequenceEqual("|"))
+        else if (TryParseBlockScalarHeader(valueText, out var style, out var chomping))
         {
-            value = ParseLiteral(parentIndent);
+            value = ParseBlockScalar(parentIndent, style, chomping);
         }
         else
         {
@@ -197,53 +200,85 @@ internal sealed class YamlishParser
 
     private YamlishNode ParseNestedValue(int parentIndent, int parentLine)
     {
-        SkipBlankLines();
+        SkipIgnorableLines();
         if (_index >= _lines.Length || GetIndent(_index) <= parentIndent)
             Throw("Expected an indented value", parentLine);
 
         return ParseBlock(GetIndent(_index));
     }
 
-    private YamlishScalar ParseLiteral(int parentIndent)
+    private YamlishScalar ParseBlockScalar(int parentIndent, BlockScalarStyle style, BlockChomping chomping)
     {
         var start = _index;
         var end = start;
-        var contentIndent = int.MaxValue;
+        int? contentIndent = null;
+        var firstContentLine = -1;
         while (end < _lines.Length)
         {
             if (!IsBlank(_lines[end]))
             {
-                var indent = GetIndent(end);
+                var indent = GetBlockScalarIndent(end);
                 if (indent <= parentIndent)
                     break;
 
-                contentIndent = Math.Min(contentIndent, indent);
+                if (contentIndent is null)
+                {
+                    contentIndent = indent;
+                    firstContentLine = end;
+                }
+
+                if (indent < contentIndent)
+                    Throw("Block scalar content is less indented than the first content line", end);
             }
 
             end++;
         }
 
-        if (contentIndent is int.MaxValue)
+        contentIndent ??= GetLongestLineLength(start, end);
+        for (var i = start; i < firstContentLine; i++)
         {
-            _index = end;
-            return new YamlishScalar(string.Empty);
+            if (_lines[i].Length > contentIndent.Value)
+                Throw("Leading empty block scalar lines cannot be more indented than the first content line", i);
+        }
+
+        var lines = new BlockScalarLine[end - start];
+        var lastNonEmptyLine = -1;
+        for (var i = start; i < end; i++)
+        {
+            var line = _lines[i];
+            var isEmpty = IsBlank(line);
+            var value = isEmpty || line.Length < contentIndent.Value ? string.Empty : line[contentIndent.Value..];
+            var lineIndex = i - start;
+            lines[lineIndex] = new BlockScalarLine(value, HasLineBreak(i), !isEmpty && value.Length > 0 && char.IsWhiteSpace(value[0]));
+            if (!isEmpty)
+                lastNonEmptyLine = lineIndex;
         }
 
         var builder = new StringBuilder();
-        for (var i = start; i < end; i++)
+        for (var i = 0; i <= lastNonEmptyLine; i++)
         {
-            if (i > start)
-                builder.Append('\n');
-
-            var line = _lines[i];
-            if (line.Length >= contentIndent)
+            builder.Append(lines[i].Value);
+            if (lines[i].HasLineBreak)
             {
-                builder.Append(line.AsSpan(contentIndent));
+                if (i == lastNonEmptyLine || style is BlockScalarStyle.Literal)
+                {
+                    builder.Append('\n');
+                }
+                else
+                {
+                    AppendFoldedLineBreak(builder, lines, i, lastNonEmptyLine);
+                }
             }
         }
 
+        for (var i = lastNonEmptyLine + 1; i < lines.Length; i++)
+        {
+            if (lines[i].HasLineBreak)
+                builder.Append('\n');
+        }
+
         _index = end;
-        return new YamlishScalar(builder.ToString());
+        return new YamlishScalar(ApplyChomping(builder, lastNonEmptyLine >= 0, chomping));
     }
 
     private YamlishNode ParseInlineValue(ReadOnlySpan<char> value, int lineIndex)
@@ -258,14 +293,8 @@ internal sealed class YamlishParser
         if (value[0] is '"' or '\'')
             return new YamlishScalar(ParseQuotedScalar(value, lineIndex));
 
-        if (value[0] is '>' or '&' or '*' or '!' or '%')
+        if (value[0] is '|' or '>' or '&' or '*' or '!' or '%')
             Throw("Unsupported YAML syntax", lineIndex);
-
-        for (var i = 0; i < value.Length; i++)
-        {
-            if (value[i] is '#' && (i is 0 || char.IsWhiteSpace(value[i - 1])))
-                Throw("Comments are not supported", lineIndex);
-        }
 
         return new YamlishScalar(value.ToString());
     }
@@ -389,9 +418,95 @@ internal sealed class YamlishParser
         return -1;
     }
 
-    private void SkipBlankLines()
+    private static void AppendFoldedLineBreak(StringBuilder builder, BlockScalarLine[] lines, int lineIndex, int lastNonEmptyLine)
     {
-        while (_index < _lines.Length && IsBlank(_lines[_index]))
+        var current = lines[lineIndex];
+        var next = lines[lineIndex + 1];
+        if (current.IsMoreIndented || next.IsMoreIndented || current.Value.Length is 0)
+        {
+            builder.Append('\n');
+            return;
+        }
+
+        if (next.Value.Length is 0)
+        {
+            for (var i = lineIndex + 2; i <= lastNonEmptyLine; i++)
+            {
+                if (lines[i].Value.Length > 0)
+                {
+                    if (lines[i].IsMoreIndented)
+                        builder.Append('\n');
+
+                    return;
+                }
+            }
+
+            return;
+        }
+
+        builder.Append(' ');
+    }
+
+    private static string ApplyChomping(StringBuilder builder, bool hasContent, BlockChomping chomping)
+    {
+        if (chomping is BlockChomping.Keep)
+            return builder.ToString();
+
+        var hadTrailingLineBreak = builder.Length > 0 && builder[^1] is '\n';
+        while (builder.Length > 0 && builder[^1] is '\n')
+        {
+            builder.Length--;
+        }
+
+        if (chomping is BlockChomping.Clip && hasContent && hadTrailingLineBreak)
+            builder.Append('\n');
+
+        return builder.ToString();
+    }
+
+    private static bool TryParseBlockScalarHeader(ReadOnlySpan<char> value, out BlockScalarStyle style, out BlockChomping chomping)
+    {
+        style = value.Length > 0 && value[0] is '>' ? BlockScalarStyle.Folded : BlockScalarStyle.Literal;
+        chomping = value.Length > 1 && value[1] is '-' ? BlockChomping.Strip :
+            value.Length > 1 && value[1] is '+' ? BlockChomping.Keep :
+            BlockChomping.Clip;
+
+        return value.SequenceEqual("|") ||
+            value.SequenceEqual("|-") ||
+            value.SequenceEqual("|+") ||
+            value.SequenceEqual(">") ||
+            value.SequenceEqual(">-") ||
+            value.SequenceEqual(">+");
+    }
+
+    private int GetLongestLineLength(int start, int end)
+    {
+        var result = 0;
+        for (var i = start; i < end; i++)
+        {
+            result = Math.Max(result, _lines[i].Length);
+        }
+
+        return result;
+    }
+
+    private int GetBlockScalarIndent(int lineIndex)
+    {
+        var line = _lines[lineIndex];
+        var result = 0;
+        while (result < line.Length && line[result] is ' ')
+        {
+            result++;
+        }
+
+        return result;
+    }
+
+    private bool HasLineBreak(int lineIndex) => lineIndex < _lines.Length - 1;
+
+    private void SkipIgnorableLines()
+    {
+        while (_index < _lines.Length && IsIgnorable(_lines[_index]))
         {
             _index++;
         }
@@ -420,10 +535,60 @@ internal sealed class YamlishParser
 
     private static bool IsBlank(string line) => line.AsSpan().Trim().IsEmpty;
 
+    private static bool IsIgnorable(string line) => GetContent(line).Trim().IsEmpty;
+
+    private static ReadOnlySpan<char> GetContent(ReadOnlySpan<char> line)
+    {
+        var quote = '\0';
+        for (var i = 0; i < line.Length; i++)
+        {
+            var character = line[i];
+            if (quote is '\0')
+            {
+                if (character is '"' or '\'')
+                {
+                    quote = character;
+                }
+                else if (character is '#' && (i is 0 || char.IsWhiteSpace(line[i - 1])))
+                {
+                    return line[..i].TrimEnd();
+                }
+            }
+            else if (character == quote)
+            {
+                if (quote is '\'' && i + 1 < line.Length && line[i + 1] is '\'')
+                    i++;
+                else
+                    quote = '\0';
+            }
+            else if (quote is '"' && character is '\\')
+            {
+                i++;
+            }
+        }
+
+        return line.TrimEnd();
+    }
+
     private static bool IsSequenceLine(ReadOnlySpan<char> content) => content.Length > 0 && content[0] is '-' && (content.Length is 1 || char.IsWhiteSpace(content[1]));
 
     [DoesNotReturn]
     private static void Throw(string message, int lineIndex) => throw CreateException(message, lineIndex);
 
     private static FormatException CreateException(string message, int lineIndex) => new($"{message} at line {lineIndex + 1}.");
+
+    private enum BlockScalarStyle
+    {
+        Literal,
+        Folded,
+    }
+
+    private enum BlockChomping
+    {
+        Strip,
+        Clip,
+        Keep,
+    }
+
+    private readonly record struct BlockScalarLine(string Value, bool HasLineBreak, bool IsMoreIndented);
 }

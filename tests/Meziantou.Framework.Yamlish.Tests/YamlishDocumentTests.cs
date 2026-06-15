@@ -76,7 +76,7 @@ public sealed class YamlishDocumentTests
     }
 
     [Fact]
-    public void Parse_LiteralString_DoesNotAddTrailingNewLine()
+    public void Parse_LiteralString_AtEndOfInputWithoutLineBreakDoesNotAddTrailingNewLine()
     {
         var document = YamlishDocument.Parse("""
             value: |
@@ -101,7 +101,88 @@ public sealed class YamlishDocumentTests
             """);
 
         var mapping = Assert.IsType<YamlishMapping>(document.Root);
-        Assert.Equal("first\n\n  indented\nlast", Assert.IsType<YamlishScalar>(mapping["value"]).Value);
+        Assert.Equal("first\n\n  indented\nlast\n", Assert.IsType<YamlishScalar>(mapping["value"]).Value);
+    }
+
+    [Theory]
+    [InlineData("|-", "first\nsecond")]
+    [InlineData("|", "first\nsecond\n")]
+    [InlineData("|+", "first\nsecond\n\n")]
+    [InlineData(">-", "first second")]
+    [InlineData(">", "first second\n")]
+    [InlineData(">+", "first second\n\n")]
+    public void Parse_BlockScalarChomping(string header, string expected)
+    {
+        var document = YamlishDocument.Parse($"value: {header}\n  first\n  second\n\nnext: value");
+
+        var mapping = Assert.IsType<YamlishMapping>(document.Root);
+        Assert.Equal(expected, Assert.IsType<YamlishScalar>(mapping["value"]).Value);
+    }
+
+    [Fact]
+    public void Parse_FoldedString_PreservesBlankAndMoreIndentedLines()
+    {
+        var document = YamlishDocument.Parse("""
+            value: >-
+              folded
+              text
+
+              next
+              line
+                * bullet
+
+                * list
+                * lines
+
+              last
+              line
+            """);
+
+        var mapping = Assert.IsType<YamlishMapping>(document.Root);
+        Assert.Equal("folded text\nnext line\n  * bullet\n\n  * list\n  * lines\n\nlast line", Assert.IsType<YamlishScalar>(mapping["value"]).Value);
+    }
+
+    [Theory]
+    [InlineData("value: |-\n", "")]
+    [InlineData("value: |\n", "")]
+    [InlineData("value: |+\n\n", "\n")]
+    [InlineData("value: >-\n", "")]
+    [InlineData("value: >\n", "")]
+    [InlineData("value: >+\n\n", "\n")]
+    public void Parse_EmptyBlockScalarChomping(string content, string expected)
+    {
+        var document = YamlishDocument.Parse(content);
+
+        var mapping = Assert.IsType<YamlishMapping>(document.Root);
+        Assert.Equal(expected, Assert.IsType<YamlishScalar>(mapping["value"]).Value);
+    }
+
+    [Fact]
+    public void Parse_BlockScalarsInSequencesAndCompactMappings()
+    {
+        var document = YamlishDocument.Parse("""
+            values:
+              - >-
+                folded
+                value
+              - value: |-
+                  literal
+                  value
+            """);
+
+        var mapping = Assert.IsType<YamlishMapping>(document.Root);
+        var sequence = Assert.IsType<YamlishSequence>(mapping["values"]);
+        Assert.Equal("folded value", Assert.IsType<YamlishScalar>(sequence[0]).Value);
+        Assert.Equal("literal\nvalue", Assert.IsType<YamlishScalar>(Assert.IsType<YamlishMapping>(sequence[1])["value"]).Value);
+    }
+
+    [Fact]
+    public void Parse_BlockScalar_AllowsTabAsContent()
+    {
+        var document = YamlishDocument.Parse("value: |-\n  \tcontent");
+
+        var mapping = Assert.IsType<YamlishMapping>(document.Root);
+        Assert.Equal("\tcontent", Assert.IsType<YamlishScalar>(mapping["value"]).Value);
     }
 
     [Fact]
@@ -122,9 +203,50 @@ public sealed class YamlishDocumentTests
     }
 
     [Fact]
-    public void Parse_Comment_Throws()
+    public void Parse_Comments()
     {
-        Assert.Throws<FormatException>(() => YamlishDocument.Parse("name: value # comment"));
+        var document = YamlishDocument.Parse("""
+            # this is a comment
+            plain: value # comment
+            double: "value" # comment
+            single: 'value' # comment
+            quotedComment: "value # not comment" # comment
+            literal: |
+                value # not a comment
+            literalWithComment: | # comment
+              value
+            # comment between entries
+            nested: # comment
+              # nested comment
+              value: content # comment
+            inlineSequence: [one, "two # not comment"] # comment
+            sequence:
+              - one # comment
+              # comment between items
+              - two
+              - | # comment
+                three # not a comment
+            """);
+
+        var mapping = Assert.IsType<YamlishMapping>(document.Root);
+        Assert.Equal("value", Assert.IsType<YamlishScalar>(mapping["plain"]).Value);
+        Assert.Equal("value", Assert.IsType<YamlishScalar>(mapping["double"]).Value);
+        Assert.Equal("value", Assert.IsType<YamlishScalar>(mapping["single"]).Value);
+        Assert.Equal("value # not comment", Assert.IsType<YamlishScalar>(mapping["quotedComment"]).Value);
+        Assert.Equal("value # not a comment\n", Assert.IsType<YamlishScalar>(mapping["literal"]).Value);
+        Assert.Equal("value\n", Assert.IsType<YamlishScalar>(mapping["literalWithComment"]).Value);
+        Assert.Equal("content", Assert.IsType<YamlishScalar>(Assert.IsType<YamlishMapping>(mapping["nested"])["value"]).Value);
+        Assert.Equal(["one", "two # not comment"], Assert.IsType<YamlishSequence>(mapping["inlineSequence"]).Cast<YamlishScalar>().Select(item => item.Value));
+        Assert.Equal(["one", "two", "three # not a comment"], Assert.IsType<YamlishSequence>(mapping["sequence"]).Cast<YamlishScalar>().Select(item => item.Value));
+    }
+
+    [Fact]
+    public void Parse_CommentMarkerWithoutPrecedingWhitespaceIsPartOfPlainScalar()
+    {
+        var document = YamlishDocument.Parse("value: content#not-comment");
+
+        var mapping = Assert.IsType<YamlishMapping>(document.Root);
+        Assert.Equal("content#not-comment", Assert.IsType<YamlishScalar>(mapping["value"]).Value);
     }
 
     [Fact]
@@ -148,6 +270,7 @@ public sealed class YamlishDocumentTests
         Assert.Equal("line 1\n", Assert.IsType<YamlishScalar>(mapping["trailingNewLine"]).Value);
         Assert.Equal("value # not a comment", Assert.IsType<YamlishScalar>(mapping["commentLike"]).Value);
         Assert.Equal(["one", "two"], Assert.IsType<YamlishSequence>(mapping["tags"]).Cast<YamlishScalar>().Select(item => item.Value));
+        Assert.Contains("description: |-", content, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -165,5 +288,15 @@ public sealed class YamlishDocumentTests
         {
             Assert.False(new YamlishDocument(node).ToString().EndsWith("\n", StringComparison.Ordinal));
         }
+    }
+
+    [Fact]
+    public void Document_MultilineRootScalar_RoundTrips()
+    {
+        var content = new YamlishDocument(new YamlishScalar("first\nsecond")).ToString();
+        var document = YamlishDocument.Parse(content);
+
+        Assert.StartsWith("|-\n", content, StringComparison.Ordinal);
+        Assert.Equal("first\nsecond", Assert.IsType<YamlishScalar>(document.Root).Value);
     }
 }

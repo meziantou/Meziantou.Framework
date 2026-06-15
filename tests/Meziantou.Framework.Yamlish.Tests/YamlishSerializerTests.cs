@@ -153,7 +153,12 @@ public sealed class YamlishSerializerTests
     [InlineData("Value: plain value", "plain value")]
     [InlineData("Value: \" leading and trailing \"", " leading and trailing ")]
     [InlineData("Value: 'it''s literal'", "it's literal")]
-    [InlineData("Value: |\n  first\n  second", "first\nsecond")]
+    [InlineData("Value: |-\n  first\n  second\n", "first\nsecond")]
+    [InlineData("Value: |\n  first\n  second\n", "first\nsecond\n")]
+    [InlineData("Value: |+\n  first\n  second\n\n", "first\nsecond\n\n")]
+    [InlineData("Value: >-\n  first\n  second\n", "first second")]
+    [InlineData("Value: >\n  first\n  second\n", "first second\n")]
+    [InlineData("Value: >+\n  first\n  second\n\n", "first second\n\n")]
     public void Deserialize_StringValues(string content, string expected)
     {
         var result = YamlishSerializer.Deserialize<StringValue>(content);

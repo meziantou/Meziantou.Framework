@@ -102,7 +102,7 @@ internal static class YamlishWriter
     {
         if (value.Contains('\n', StringComparison.Ordinal) && !value.EndsWith("\n", StringComparison.Ordinal))
         {
-            writer.WriteLine('|');
+            writer.WriteLine("|-");
             var lines = value.Split('\n');
             var count = lines[^1].Length is 0 ? lines.Length - 1 : lines.Length;
             for (var i = 0; i < count; i++)

@@ -5,7 +5,8 @@
 - Mappings using `property: value`
 - Nested mappings and block sequences using indentation
 - Scalar-only inline sequences using `[]`
-- Plain, single-quoted, double-quoted, and literal block (`|`) strings
+- Plain, single-quoted, double-quoted, literal block (`|`, `|-`, `|+`), and folded block (`>`, `>-`, `>+`) strings
+- Full-line and trailing comments using `#`
 
 It intentionally does not support the complete YAML specification.
 
@@ -47,7 +48,7 @@ var product = YamlishSerializer.Deserialize<Product>(content, options);
 
 Plain scalar values remain strings in the document model. During typed deserialization, they are converted to the requested .NET property type using invariant culture.
 
-Serialized documents do not end with a trailing newline. Literal block values preserve newlines between their content lines without adding a newline after the final content line.
+Serialized documents do not end with a trailing newline. Block scalar chomping and folding follow YAML semantics.
 
 Properties and fields can be conditionally omitted using `YamlishIgnoreAttribute`. The global default is configured using `YamlishSerializerOptions.DefaultIgnoreCondition`.
 

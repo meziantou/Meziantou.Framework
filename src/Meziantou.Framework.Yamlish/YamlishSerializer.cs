@@ -211,9 +211,19 @@ public static class YamlishSerializer
             if (node is not YamlishMapping objectMapping)
                 throw CannotConvert(node, type);
 
-            var instance = existingValue ?? Activator.CreateInstance(type) ?? throw CannotCreate(type);
-            foreach (var member in options.GetTypeInfo(type).DeserializableMembers)
+            var typeInfo = options.GetTypeInfo(type);
+            HashSet<string>? constructorParameterNames = null;
+            var instance = existingValue;
+            if (instance is null)
             {
+                instance = CreateObject(objectMapping, type, typeInfo, options, depth, out constructorParameterNames);
+            }
+
+            foreach (var member in typeInfo.DeserializableMembers)
+            {
+                if (constructorParameterNames?.Contains(member.SerializedName) is true)
+                    continue;
+
                 var entry = objectMapping.FirstOrDefault(entry => options.PropertyNameComparer.Equals(entry.Key, member.SerializedName));
                 if (entry.Key is null)
                     continue;
@@ -226,6 +236,43 @@ public static class YamlishSerializer
             }
 
             return instance;
+        }
+
+        private static object CreateObject(YamlishMapping mapping, Type type, YamlishTypeInfo typeInfo, YamlishSerializerOptions options, int depth, out HashSet<string>? constructorParameterNames)
+        {
+            var constructor = typeInfo.Constructor;
+            if (constructor is null)
+            {
+                constructorParameterNames = null;
+                return Activator.CreateInstance(type) ?? throw CannotCreate(type);
+            }
+
+            if (constructor.Parameters.Length is 0)
+            {
+                constructorParameterNames = null;
+                return constructor.Constructor.Invoke([]);
+            }
+
+            constructorParameterNames = new HashSet<string>(options.PropertyNameComparer);
+            var arguments = new object?[constructor.Parameters.Length];
+            for (var i = 0; i < constructor.Parameters.Length; i++)
+            {
+                var parameter = constructor.Parameters[i];
+                var entry = mapping.FirstOrDefault(entry => options.PropertyNameComparer.Equals(entry.Key, parameter.SerializedName));
+                if (entry.Key is null)
+                {
+                    if (options.RespectRequiredConstructorParameters && !parameter.IsOptional)
+                        throw new FormatException($"Required constructor parameter '{parameter.SerializedName}' for type '{type.FullName}' was not provided.");
+
+                    arguments[i] = parameter.DefaultValue;
+                    continue;
+                }
+
+                constructorParameterNames.Add(parameter.SerializedName);
+                arguments[i] = Deserialize(entry.Value, parameter.ParameterType, options, depth + 1);
+            }
+
+            return constructor.Constructor.Invoke(arguments);
         }
 
         private static object DeserializeUntyped(YamlishNode node, YamlishSerializerOptions options, int depth)

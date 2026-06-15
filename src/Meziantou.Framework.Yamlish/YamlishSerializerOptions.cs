@@ -139,6 +139,16 @@ public sealed class YamlishSerializerOptions
         }
     } = true;
 
+    public bool RespectRequiredConstructorParameters
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    }
+
     public void AddAttribute(Type type, string memberName, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(type);

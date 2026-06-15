@@ -15,6 +15,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal(Environment.NewLine, options.NewLine);
         Assert.Equal(YamlishObjectCreationHandling.Replace, options.PreferredObjectCreationHandling);
         Assert.True(options.AllowDuplicateProperties);
+        Assert.False(options.RespectRequiredConstructorParameters);
     }
 
     [Fact]
@@ -82,6 +83,7 @@ public sealed class YamlishSerializerTests
         Assert.Throws<InvalidOperationException>(() => options.IndentCharacter = '\t');
         Assert.Throws<InvalidOperationException>(() => options.NewLine = "\n");
         Assert.Throws<InvalidOperationException>(() => options.AllowDuplicateProperties = false);
+        Assert.Throws<InvalidOperationException>(() => options.RespectRequiredConstructorParameters = true);
         Assert.Throws<InvalidOperationException>(() => options.AddAttribute(typeof(DefaultNamesProduct), nameof(DefaultNamesProduct.Id), new YamlishIgnoreAttribute()));
     }
 
@@ -205,6 +207,64 @@ public sealed class YamlishSerializerTests
     public void Serialize_DuplicateProperties_Throws()
     {
         Assert.Throws<ArgumentException>(() => YamlishSerializer.Serialize(new DuplicatePropertyNames()));
+    }
+
+    [Fact]
+    public void Deserialize_ParameterizedConstructor()
+    {
+        var value = YamlishSerializer.Deserialize<ConstructorValue>("Id: 42\nName: value");
+
+        Assert.NotNull(value);
+        Assert.Equal(42, value.Id);
+        Assert.Equal("value", value.Name);
+    }
+
+    [Fact]
+    public void Deserialize_MissingRequiredConstructorParameter_UsesDefaultByDefault()
+    {
+        var value = YamlishSerializer.Deserialize<ConstructorValue>("Name: value");
+
+        Assert.NotNull(value);
+        Assert.Equal(0, value.Id);
+        Assert.Equal("value", value.Name);
+    }
+
+    [Fact]
+    public void Deserialize_MissingRequiredConstructorParameter_ThrowsWhenRequiredParametersAreRespected()
+    {
+        var options = new YamlishSerializerOptions { RespectRequiredConstructorParameters = true };
+
+        var exception = Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<ConstructorValue>("Name: value", options));
+
+        Assert.Contains("Id", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Deserialize_MissingOptionalConstructorParameter_UsesDeclaredDefault()
+    {
+        var options = new YamlishSerializerOptions { RespectRequiredConstructorParameters = true };
+
+        var value = YamlishSerializer.Deserialize<OptionalConstructorValue>("Id: 42", options);
+
+        Assert.NotNull(value);
+        Assert.Equal(42, value.Id);
+        Assert.Equal("default", value.Name);
+    }
+
+    [Fact]
+    public void Deserialize_ConstructorParameter_UsesSerializedPropertyName()
+    {
+        var options = new YamlishSerializerOptions
+        {
+            PropertyNamingPolicy = YamlishNamingPolicy.SnakeCaseLower,
+            RespectRequiredConstructorParameters = true,
+        };
+
+        var value = YamlishSerializer.Deserialize<ConstructorValue>("id: 42\nName: value", options);
+
+        Assert.NotNull(value);
+        Assert.Equal(42, value.Id);
+        Assert.Equal("value", value.Name);
     }
 
     [Fact]
@@ -427,6 +487,21 @@ public sealed class YamlishSerializerTests
 
         [YamlishPropertyName("Value")]
         public string Second { get; set; } = "second";
+    }
+
+    private sealed class ConstructorValue(int id, string name)
+    {
+        public int Id { get; } = id;
+
+        [YamlishPropertyName("Name")]
+        public string Name { get; } = name;
+    }
+
+    private sealed class OptionalConstructorValue(int id, string name = "default")
+    {
+        public int Id { get; } = id;
+
+        public string Name { get; } = name;
     }
 
     private sealed class IgnoreConditions

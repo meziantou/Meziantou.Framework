@@ -49,6 +49,26 @@ public sealed class YamlishSerializerOptions
         }
     } = 2;
 
+    public char IndentCharacter
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    } = ' ';
+
+    public string NewLine
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    } = Environment.NewLine;
+
     public int MaxDepth
     {
         get;
@@ -78,6 +98,46 @@ public sealed class YamlishSerializerOptions
             field = value;
         }
     }
+
+    public bool IgnoreReadOnlyFields
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    }
+
+    public bool IgnoreReadOnlyProperties
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    }
+
+    public YamlishObjectCreationHandling PreferredObjectCreationHandling
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    } = YamlishObjectCreationHandling.Replace;
+
+    public bool AllowDuplicateProperties
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    } = true;
 
     public void AddAttribute(Type type, string memberName, YamlishAttribute attribute)
     {

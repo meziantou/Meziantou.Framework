@@ -3,6 +3,21 @@ namespace Meziantou.Framework.Yamlish.Tests;
 public sealed class YamlishSerializerTests
 {
     [Fact]
+    public void Options_DefaultValues()
+    {
+        var options = new YamlishSerializerOptions();
+
+        Assert.False(options.IgnoreReadOnlyFields);
+        Assert.False(options.IgnoreReadOnlyProperties);
+        Assert.False(options.IncludeFields);
+        Assert.Equal(' ', options.IndentCharacter);
+        Assert.Equal(2, options.IndentSize);
+        Assert.Equal(Environment.NewLine, options.NewLine);
+        Assert.Equal(YamlishObjectCreationHandling.Replace, options.PreferredObjectCreationHandling);
+        Assert.True(options.AllowDuplicateProperties);
+    }
+
+    [Fact]
     public void Serialize_UsesCSharpNamesByDefault()
     {
         var result = YamlishSerializer.Serialize(new DefaultNamesProduct { Id = "abc", IsAvailable = true, Price = 12.5m });
@@ -64,7 +79,132 @@ public sealed class YamlishSerializerTests
         Assert.True(countAfterFirstUse > 0);
         Assert.Equal(countAfterFirstUse, predicateEvaluationCount);
         Assert.Throws<InvalidOperationException>(() => options.IncludeFields = true);
+        Assert.Throws<InvalidOperationException>(() => options.IndentCharacter = '\t');
+        Assert.Throws<InvalidOperationException>(() => options.NewLine = "\n");
+        Assert.Throws<InvalidOperationException>(() => options.AllowDuplicateProperties = false);
         Assert.Throws<InvalidOperationException>(() => options.AddAttribute(typeof(DefaultNamesProduct), nameof(DefaultNamesProduct.Id), new YamlishIgnoreAttribute()));
+    }
+
+    [Fact]
+    public void Serialize_IgnoreReadOnlyProperties()
+    {
+        var value = new ReadOnlyMembers();
+
+        Assert.Contains("ReadOnlyProperty: property", YamlishSerializer.Serialize(value), StringComparison.Ordinal);
+        Assert.DoesNotContain("ReadOnlyProperty", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IgnoreReadOnlyProperties = true }), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Serialize_IgnoreReadOnlyFields()
+    {
+        var value = new ReadOnlyMembers();
+
+        Assert.Contains("ReadOnlyField: field", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IncludeFields = true }), StringComparison.Ordinal);
+        Assert.DoesNotContain("ReadOnlyField", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IncludeFields = true, IgnoreReadOnlyFields = true }), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SerializeAndDeserialize_IncludeFields()
+    {
+        var options = new YamlishSerializerOptions { IncludeFields = true };
+
+        var content = YamlishSerializer.Serialize(new FieldValue { Value = "serialized" }, options);
+        var result = YamlishSerializer.Deserialize<FieldValue>("Value: deserialized", options);
+
+        Assert.Equal("Value: serialized", content);
+        Assert.Equal("deserialized", result?.Value);
+    }
+
+    [Fact]
+    public void Serialize_UsesIndentCharacterAndIndentSize()
+    {
+        var options = new YamlishSerializerOptions { IndentCharacter = '\t', IndentSize = 3 };
+
+        var content = YamlishSerializer.Serialize(new NestedValue { Value = new StringValue { Value = "first\nsecond" } }, options);
+        var result = YamlishSerializer.Deserialize<NestedValue>(content, options);
+
+        Assert.Equal("Value:\n\t\t\tValue: |-\n\t\t\t\t\t\tfirst\n\t\t\t\t\t\tsecond", content);
+        Assert.Equal("first\nsecond", result?.Value?.Value);
+    }
+
+    [Fact]
+    public void Serialize_UsesNewLine()
+    {
+        var options = new YamlishSerializerOptions { NewLine = "\r\n" };
+
+        var content = YamlishSerializer.Serialize(new DefaultNamesProduct { Id = "abc", IsAvailable = true }, options);
+
+        Assert.Equal("Id: abc\r\nIsAvailable: true\r\nPrice: 0", content);
+    }
+
+    [Fact]
+    public void Deserialize_PreferredObjectCreationHandling_ReplaceByDefault()
+    {
+        var value = YamlishSerializer.Deserialize<ObjectCreationValue>("""
+            Values: [new]
+            SettableValues: [new]
+            EnumerableValues: [new]
+            Lookup:
+              existing: 2
+              new: 3
+            Dimensions:
+              Width: 10
+            """);
+
+        Assert.NotNull(value);
+        Assert.Equal(["initial"], value.Values);
+        Assert.Equal(["new"], value.SettableValues);
+        Assert.Equal(["new"], value.EnumerableValues);
+        Assert.Equal(1, value.Lookup["existing"]);
+        Assert.False(value.Lookup.ContainsKey("new"));
+        Assert.Equal(1, value.Dimensions.Width);
+    }
+
+    [Fact]
+    public void Deserialize_PreferredObjectCreationHandling_Populate()
+    {
+        var options = new YamlishSerializerOptions { PreferredObjectCreationHandling = YamlishObjectCreationHandling.Populate };
+
+        var value = YamlishSerializer.Deserialize<ObjectCreationValue>("""
+            Values: [new]
+            SettableValues: [new]
+            EnumerableValues: [new]
+            Lookup:
+              existing: 2
+              new: 3
+            Dimensions:
+              Width: 10
+            """, options);
+
+        Assert.NotNull(value);
+        Assert.Equal(["initial", "new"], value.Values);
+        Assert.Equal(["initial", "new"], value.SettableValues);
+        Assert.Equal(["new"], value.EnumerableValues);
+        Assert.Equal(2, value.Lookup["existing"]);
+        Assert.Equal(3, value.Lookup["new"]);
+        Assert.Equal(10, value.Dimensions.Width);
+    }
+
+    [Fact]
+    public void Deserialize_AllowsDuplicatePropertiesByDefault()
+    {
+        var value = YamlishSerializer.Deserialize<StringValue>("Value: first\nValue: second");
+
+        Assert.Equal("second", value?.Value);
+    }
+
+    [Fact]
+    public void Deserialize_AllowDuplicatePropertiesFalse_Throws()
+    {
+        var options = new YamlishSerializerOptions { AllowDuplicateProperties = false };
+
+        Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<StringValue>("Value: first\nValue: second", options));
+    }
+
+    [Fact]
+    public void Serialize_DuplicateProperties_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => YamlishSerializer.Serialize(new DuplicatePropertyNames()));
     }
 
     [Fact]
@@ -259,6 +399,36 @@ public sealed class YamlishSerializerTests
         public string? Value { get; set; }
     }
 
+    private sealed class NestedValue
+    {
+        public StringValue? Value { get; set; }
+    }
+
+    private sealed class ObjectCreationValue
+    {
+        public List<string> Values { get; } = ["initial"];
+
+        public List<string> SettableValues { get; set; } = ["initial"];
+
+        public IEnumerable<string> EnumerableValues { get; set; } = ["initial"];
+
+        public Dictionary<string, int> Lookup { get; } = new(StringComparer.Ordinal)
+        {
+            ["existing"] = 1,
+        };
+
+        public Dimensions Dimensions { get; } = new() { Width = 1 };
+    }
+
+    private sealed class DuplicatePropertyNames
+    {
+        [YamlishPropertyName("Value")]
+        public string First { get; set; } = "first";
+
+        [YamlishPropertyName("Value")]
+        public string Second { get; set; } = "second";
+    }
+
     private sealed class IgnoreConditions
     {
         [YamlishIgnore(Condition = YamlishIgnoreCondition.Never)]
@@ -275,6 +445,18 @@ public sealed class YamlishSerializerTests
     }
 
 #pragma warning disable CA1051
+    private sealed class FieldValue
+    {
+        public string? Value;
+    }
+
+    private sealed class ReadOnlyMembers
+    {
+        public readonly string ReadOnlyField = "field";
+
+        public string ReadOnlyProperty { get; } = "property";
+    }
+
     private sealed class IgnoreConditionFields
     {
         [YamlishIgnore(Condition = YamlishIgnoreCondition.Never)]

@@ -38,6 +38,21 @@ public sealed class YamlishMapping : YamlishNode, IReadOnlyDictionary<string, Ya
         _entries.Add(new KeyValuePair<string, YamlishNode>(key, value));
     }
 
+    internal void AddOrReplace(string key, YamlishNode value)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        ArgumentNullException.ThrowIfNull(value);
+        if (_lookup.TryAdd(key, value))
+        {
+            _entries.Add(new KeyValuePair<string, YamlishNode>(key, value));
+            return;
+        }
+
+        _lookup[key] = value;
+        var index = _entries.FindIndex(entry => StringComparer.Ordinal.Equals(entry.Key, key));
+        _entries[index] = new KeyValuePair<string, YamlishNode>(key, value);
+    }
+
     public bool ContainsKey(string key) => _lookup.ContainsKey(key);
 
     public bool TryGetValue(string key, out YamlishNode value) => _lookup.TryGetValue(key, out value!);

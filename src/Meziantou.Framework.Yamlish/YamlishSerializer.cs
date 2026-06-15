@@ -20,7 +20,7 @@ public static class YamlishSerializer
         options.MakeReadOnly();
         var root = ObjectBinder.Serialize(value, type, options, depth: 0);
         using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        YamlishWriter.Write(writer, root, options.IndentSize);
+        YamlishWriter.Write(writer, root, options.IndentCharacter, options.IndentSize, options.NewLine);
         return writer.ToString();
     }
 
@@ -36,18 +36,28 @@ public static class YamlishSerializer
         options ??= new YamlishSerializerOptions();
         ValidateOptions(options);
         options.MakeReadOnly();
-        var document = YamlishDocument.Parse(content);
+        var document = new YamlishDocument(YamlishParser.Parse(content, options.AllowDuplicateProperties));
         return ObjectBinder.Deserialize(document.Root, type, options, depth: 0);
     }
 
     private static void ValidateOptions(YamlishSerializerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options.PropertyNameComparer);
+        ArgumentNullException.ThrowIfNull(options.NewLine);
+        if (options.IndentCharacter is not (' ' or '\t'))
+            throw new ArgumentOutOfRangeException(nameof(options), "IndentCharacter must be a space or a tab.");
+
         if (options.IndentSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(options), "IndentSize must be greater than zero.");
 
+        if (options.NewLine is not ("\n" or "\r\n"))
+            throw new ArgumentOutOfRangeException(nameof(options), "NewLine must be '\\n' or '\\r\\n'.");
+
         if (options.MaxDepth <= 0)
             throw new ArgumentOutOfRangeException(nameof(options), "MaxDepth must be greater than zero.");
+
+        if (!Enum.IsDefined(options.PreferredObjectCreationHandling))
+            throw new ArgumentOutOfRangeException(nameof(options), "PreferredObjectCreationHandling is invalid.");
     }
 
     private static class ObjectBinder
@@ -114,7 +124,7 @@ public static class YamlishSerializer
             return mapping;
         }
 
-        public static object? Deserialize(YamlishNode node, Type type, YamlishSerializerOptions options, int depth)
+        public static object? Deserialize(YamlishNode node, Type type, YamlishSerializerOptions options, int depth, object? existingValue = null)
         {
             EnsureDepth(options, depth);
             var converter = options.GetConverter(type);
@@ -147,10 +157,10 @@ public static class YamlishSerializer
                     throw CannotConvert(node, type);
 
                 var dictionaryType = type.IsInterface || type.IsAbstract ? typeof(Dictionary<,>).MakeGenericType(typeof(string), dictionaryValueType) : type;
-                var dictionary = (IDictionary)(Activator.CreateInstance(dictionaryType) ?? throw CannotCreate(type));
+                var dictionary = existingValue as IDictionary ?? (IDictionary)(Activator.CreateInstance(dictionaryType) ?? throw CannotCreate(type));
                 foreach (var entry in mapping)
                 {
-                    dictionary.Add(entry.Key, Deserialize(entry.Value, dictionaryValueType, options, depth + 1));
+                    dictionary[entry.Key] = Deserialize(entry.Value, dictionaryValueType, options, depth + 1);
                 }
 
                 return dictionary;
@@ -160,6 +170,16 @@ public static class YamlishSerializer
             {
                 if (node is not YamlishSequence sequence)
                     throw CannotConvert(node, type);
+
+                if (existingValue is not null && !type.IsArray && type.GetMethod("Add", [elementType]) is { } populateAddMethod)
+                {
+                    foreach (var item in sequence)
+                    {
+                        populateAddMethod.Invoke(existingValue, [Deserialize(item, elementType, options, depth + 1)]);
+                    }
+
+                    return existingValue;
+                }
 
                 var listType = typeof(List<>).MakeGenericType(elementType);
                 var list = (IList)(Activator.CreateInstance(listType) ?? throw CannotCreate(type));
@@ -191,14 +211,18 @@ public static class YamlishSerializer
             if (node is not YamlishMapping objectMapping)
                 throw CannotConvert(node, type);
 
-            var instance = Activator.CreateInstance(type) ?? throw CannotCreate(type);
+            var instance = existingValue ?? Activator.CreateInstance(type) ?? throw CannotCreate(type);
             foreach (var member in options.GetTypeInfo(type).DeserializableMembers)
             {
                 var entry = objectMapping.FirstOrDefault(entry => options.PropertyNameComparer.Equals(entry.Key, member.SerializedName));
                 if (entry.Key is null)
                     continue;
 
-                member.SetValue!(instance, Deserialize(entry.Value, member.MemberType, options, depth + 1));
+                var memberValue = member.GetValue(instance);
+                var value = options.PreferredObjectCreationHandling is YamlishObjectCreationHandling.Populate && memberValue is not null
+                    ? Deserialize(entry.Value, member.MemberType, options, depth + 1, memberValue)
+                    : Deserialize(entry.Value, member.MemberType, options, depth + 1);
+                member.SetValue?.Invoke(instance, value);
             }
 
             return instance;

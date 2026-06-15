@@ -24,7 +24,7 @@ public sealed class YamlishDocument
     public void WriteTo(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
-        YamlishWriter.Write(writer, Root, indentSize: 2);
+        YamlishWriter.Write(writer, Root, indentCharacter: ' ', indentSize: 2, newLine: writer.NewLine);
     }
 
     public override string ToString()

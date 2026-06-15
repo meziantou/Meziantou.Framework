@@ -3,16 +3,18 @@ namespace Meziantou.Framework.Yamlish;
 internal sealed class YamlishParser
 {
     private readonly string[] _lines;
+    private readonly bool _allowDuplicateProperties;
     private int _index;
 
-    private YamlishParser(string content)
+    private YamlishParser(string content, bool allowDuplicateProperties)
     {
         _lines = content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n');
+        _allowDuplicateProperties = allowDuplicateProperties;
     }
 
-    public static YamlishNode Parse(string content)
+    public static YamlishNode Parse(string content, bool allowDuplicateProperties = false)
     {
-        var parser = new YamlishParser(content);
+        var parser = new YamlishParser(content, allowDuplicateProperties);
         parser.SkipIgnorableLines();
         if (parser._index >= parser._lines.Length)
             return new YamlishMapping();
@@ -89,15 +91,7 @@ internal sealed class YamlishParser
                 value = ParseInlineValue(valueText, lineIndex);
             }
 
-            try
-            {
-                result.Add(key, value);
-            }
-            catch (ArgumentException)
-            {
-                Throw($"Duplicate mapping key '{key}'", lineIndex);
-                throw;
-            }
+            AddMappingEntry(result, key, value, lineIndex);
         }
 
         return result;
@@ -159,14 +153,7 @@ internal sealed class YamlishParser
             var additionalEntries = ParseMapping(GetIndent(_index));
             foreach (var entry in additionalEntries)
             {
-                try
-                {
-                    result.Add(entry.Key, entry.Value);
-                }
-                catch (ArgumentException)
-                {
-                    Throw($"Duplicate mapping key '{entry.Key}'", _index);
-                }
+                AddMappingEntry(result, entry.Key, entry.Value, _index);
             }
         }
 
@@ -195,7 +182,25 @@ internal sealed class YamlishParser
             value = ParseInlineValue(valueText, lineIndex);
         }
 
-        mapping.Add(key, value);
+        AddMappingEntry(mapping, key, value, lineIndex);
+    }
+
+    private void AddMappingEntry(YamlishMapping mapping, string key, YamlishNode value, int lineIndex)
+    {
+        if (_allowDuplicateProperties)
+        {
+            mapping.AddOrReplace(key, value);
+            return;
+        }
+
+        try
+        {
+            mapping.Add(key, value);
+        }
+        catch (ArgumentException)
+        {
+            Throw($"Duplicate mapping key '{key}'", lineIndex);
+        }
     }
 
     private YamlishNode ParseNestedValue(int parentIndent, int parentLine)
@@ -492,14 +497,7 @@ internal sealed class YamlishParser
 
     private int GetBlockScalarIndent(int lineIndex)
     {
-        var line = _lines[lineIndex];
-        var result = 0;
-        while (result < line.Length && line[result] is ' ')
-        {
-            result++;
-        }
-
-        return result;
+        return GetIndentLength(_lines[lineIndex]);
     }
 
     private bool HasLineBreak(int lineIndex) => lineIndex < _lines.Length - 1;
@@ -514,15 +512,20 @@ internal sealed class YamlishParser
 
     private int GetIndent(int lineIndex)
     {
-        var line = _lines[lineIndex];
+        return GetIndentLength(_lines[lineIndex]);
+    }
+
+    private static int GetIndentLength(string line)
+    {
+        if (line.Length is 0 || line[0] is not (' ' or '\t'))
+            return 0;
+
+        var indentationCharacter = line[0];
         var result = 0;
-        while (result < line.Length && line[result] is ' ')
+        while (result < line.Length && line[result] == indentationCharacter)
         {
             result++;
         }
-
-        if (result < line.Length && line[result] is '\t')
-            Throw("Tabs are not allowed for indentation", lineIndex);
 
         return result;
     }

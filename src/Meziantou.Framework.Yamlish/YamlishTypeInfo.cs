@@ -23,7 +23,7 @@ internal sealed class YamlishTypeInfo
     {
         foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (property.GetMethod is null || property.GetIndexParameters().Length > 0)
+            if (property.GetMethod is null || property.GetIndexParameters().Length > 0 || (options.IgnoreReadOnlyProperties && property.SetMethod is null))
                 continue;
 
             var ignoreCondition = GetIgnoreCondition(property, options);
@@ -35,6 +35,9 @@ internal sealed class YamlishTypeInfo
         {
             foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
             {
+                if (options.IgnoreReadOnlyFields && field.IsInitOnly)
+                    continue;
+
                 var ignoreCondition = GetIgnoreCondition(field, options);
                 if (ignoreCondition is not YamlishIgnoreCondition.Always)
                     yield return new YamlishMemberInfo(GetName(field, options), field.FieldType, field.GetValue, field.SetValue, ignoreCondition, GetDefaultValue(field.FieldType, ignoreCondition));
@@ -46,10 +49,12 @@ internal sealed class YamlishTypeInfo
     {
         foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (property.SetMethod is null || property.GetIndexParameters().Length > 0 || GetAttributeIgnoreCondition(property, options) is YamlishIgnoreCondition.Always)
+            if ((property.SetMethod is null && options.PreferredObjectCreationHandling is YamlishObjectCreationHandling.Replace) ||
+                property.GetIndexParameters().Length > 0 ||
+                GetAttributeIgnoreCondition(property, options) is YamlishIgnoreCondition.Always)
                 continue;
 
-            yield return new YamlishMemberInfo(GetName(property, options), property.PropertyType, property.GetValue, property.SetValue, YamlishIgnoreCondition.Never, DefaultValue: null);
+            yield return new YamlishMemberInfo(GetName(property, options), property.PropertyType, property.GetValue, property.SetMethod is null ? null : property.SetValue, YamlishIgnoreCondition.Never, DefaultValue: null);
         }
 
         if (options.IncludeFields)

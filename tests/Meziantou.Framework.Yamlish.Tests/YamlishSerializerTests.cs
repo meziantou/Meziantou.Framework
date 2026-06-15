@@ -68,6 +68,64 @@ public sealed class YamlishSerializerTests
     }
 
     [Fact]
+    public void Options_Converters_SerializeAndDeserialize()
+    {
+        var options = new YamlishSerializerOptions();
+        options.Converters.Add(new TemperatureConverter());
+
+        var content = YamlishSerializer.Serialize(new Weather { Temperature = new Temperature(21) }, options);
+        var result = YamlishSerializer.Deserialize<Weather>("Temperature: 32 C", options);
+
+        Assert.Equal("Temperature: 21 C", content);
+        Assert.Equal(new Temperature(32), result?.Temperature);
+    }
+
+    [Fact]
+    public void Options_Converters_OverrideBuiltInAndUseRuntimeType()
+    {
+        var options = new YamlishSerializerOptions();
+        options.Converters.Add(new HexInt32Converter());
+        options.Converters.Add(new TemperatureConverter());
+
+        var integer = YamlishSerializer.Serialize(42, options);
+        var model = YamlishSerializer.Serialize(new ObjectValue { Value = new Temperature(21) }, options);
+
+        Assert.Equal("0x2A", integer);
+        Assert.Equal("Value: 21 C", model);
+    }
+
+    [Fact]
+    public void Options_ConverterFactory_SerializeAndDeserialize()
+    {
+        var options = new YamlishSerializerOptions();
+        options.Converters.Add(new WrapperConverterFactory());
+
+        var content = YamlishSerializer.Serialize(new Wrapper<int> { Value = 42 }, options);
+        var result = YamlishSerializer.Deserialize<Wrapper<int>>("84", options);
+
+        Assert.Equal("42", content);
+        Assert.Equal(84, result?.Value);
+    }
+
+    [Fact]
+    public void Options_Converters_FirstMatchWinsAndResolutionIsCached()
+    {
+        var first = new TrackingTemperatureConverter("first");
+        var second = new TrackingTemperatureConverter("second");
+        var options = new YamlishSerializerOptions();
+        options.Converters.Add(first);
+        options.Converters.Add(second);
+
+        Assert.Equal("first", YamlishSerializer.Serialize(new Temperature(1), options));
+        Assert.Equal("first", YamlishSerializer.Serialize(new Temperature(2), options));
+
+        Assert.Equal(1, first.CanConvertCallCount);
+        Assert.Equal(0, second.CanConvertCallCount);
+        Assert.True(options.Converters.IsReadOnly);
+        Assert.Throws<InvalidOperationException>(() => options.Converters.Add(new TemperatureConverter()));
+    }
+
+    [Fact]
     public void Serialize_DefaultIgnoreCondition_WhenWritingDefault()
     {
         var options = new YamlishSerializerOptions { DefaultIgnoreCondition = YamlishIgnoreCondition.WhenWritingDefault };
@@ -263,6 +321,91 @@ public sealed class YamlishSerializerTests
     private sealed class StringValue
     {
         public string? Value { get; set; }
+    }
+
+    private sealed class Weather
+    {
+        public Temperature Temperature { get; set; }
+    }
+
+    private sealed class ObjectValue
+    {
+        public object? Value { get; set; }
+    }
+
+    private readonly record struct Temperature(int Value);
+
+    private sealed class TemperatureConverter : YamlishConverter<Temperature>
+    {
+        public override Temperature Read(YamlishNode node, YamlishSerializerOptions options)
+        {
+            var value = Assert.IsType<YamlishScalar>(node).Value;
+            return new Temperature(int.Parse(value.AsSpan(0, value.Length - 2), CultureInfo.InvariantCulture));
+        }
+
+        public override YamlishNode Write(Temperature value, YamlishSerializerOptions options)
+        {
+            return new YamlishScalar($"{value.Value.ToString(CultureInfo.InvariantCulture)} C");
+        }
+    }
+
+    private sealed class HexInt32Converter : YamlishConverter<int>
+    {
+        public override int Read(YamlishNode node, YamlishSerializerOptions options)
+        {
+            return int.Parse(Assert.IsType<YamlishScalar>(node).Value.AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+        }
+
+        public override YamlishNode Write(int value, YamlishSerializerOptions options)
+        {
+            return new YamlishScalar($"0x{value.ToString("X", CultureInfo.InvariantCulture)}");
+        }
+    }
+
+    private sealed class TrackingTemperatureConverter(string value) : YamlishConverter
+    {
+        private readonly string _value = value;
+
+        public int CanConvertCallCount { get; private set; }
+
+        public override bool CanConvert(Type typeToConvert)
+        {
+            CanConvertCallCount++;
+            return typeToConvert == typeof(Temperature);
+        }
+
+        public override object? Read(YamlishNode node, Type typeToConvert, YamlishSerializerOptions options) => throw new NotSupportedException();
+
+        public override YamlishNode Write(object value, Type typeToConvert, YamlishSerializerOptions options) => new YamlishScalar(_value);
+    }
+
+    private sealed class Wrapper<T>
+    {
+        public T? Value { get; set; }
+    }
+
+    private sealed class WrapperConverterFactory : YamlishConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) => typeToConvert.IsGenericType && typeToConvert.GetGenericTypeDefinition() == typeof(Wrapper<>);
+
+        public override YamlishConverter CreateConverter(Type typeToConvert, YamlishSerializerOptions options)
+        {
+            return (YamlishConverter)Activator.CreateInstance(typeof(WrapperConverter<>).MakeGenericType(typeToConvert.GetGenericArguments()[0]))!;
+        }
+    }
+
+    private sealed class WrapperConverter<T> : YamlishConverter<Wrapper<T>>
+    {
+        public override Wrapper<T> Read(YamlishNode node, YamlishSerializerOptions options)
+        {
+            var value = Assert.IsType<YamlishScalar>(node).Value;
+            return new Wrapper<T> { Value = (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture) };
+        }
+
+        public override YamlishNode Write(Wrapper<T> value, YamlishSerializerOptions options)
+        {
+            return new YamlishScalar(Convert.ToString(value.Value, CultureInfo.InvariantCulture) ?? string.Empty);
+        }
     }
 
     private sealed class IgnoreConditions

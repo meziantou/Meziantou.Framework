@@ -60,6 +60,17 @@ public static class YamlishSerializer
                 throw new InvalidOperationException("Yamlish does not have a null scalar. Configure DefaultIgnoreCondition or provide a non-null value.");
 
             var runtimeType = value.GetType();
+            var converter = options.GetConverter(declaredType);
+            var converterType = declaredType;
+            if (converter is null && runtimeType != declaredType)
+            {
+                converter = options.GetConverter(runtimeType);
+                converterType = runtimeType;
+            }
+
+            if (converter is not null)
+                return converter.Write(value, converterType, options) ?? throw new InvalidOperationException($"The converter '{converter.GetType().FullName}' returned null.");
+
             if (IsScalarType(runtimeType))
                 return new YamlishScalar(FormatScalar(value, runtimeType));
 
@@ -110,6 +121,23 @@ public static class YamlishSerializer
         public static object? Deserialize(YamlishNode node, Type type, YamlishSerializerOptions options, int depth)
         {
             EnsureDepth(options, depth);
+            var converter = options.GetConverter(type);
+            if (converter is not null)
+            {
+                var result = converter.Read(node, type, options);
+                if (result is null)
+                {
+                    if (type.IsValueType && Nullable.GetUnderlyingType(type) is null)
+                        throw new InvalidOperationException($"The converter '{converter.GetType().FullName}' returned null for non-nullable type '{type.FullName}'.");
+                }
+                else if (!type.IsInstanceOfType(result))
+                {
+                    throw new InvalidOperationException($"The converter '{converter.GetType().FullName}' returned a value that is not compatible with '{type.FullName}'.");
+                }
+
+                return result;
+            }
+
             var nullableType = Nullable.GetUnderlyingType(type);
             if (nullableType is not null)
                 return Deserialize(node, nullableType, options, depth);

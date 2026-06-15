@@ -75,3 +75,23 @@ options.AddPropertyAttribute(property => property.PropertyType == typeof(Uri), n
 ```
 
 Serializer options become read-only after their first use. Resolved member metadata is then cached by type and reused by subsequent serialization and deserialization operations.
+
+## Converters
+
+Custom converters can read and write any `YamlishNode` shape. Converters are checked in collection order and resolved converters are cached after the options become read-only.
+
+```csharp
+var options = new YamlishSerializerOptions();
+options.Converters.Add(new TemperatureConverter());
+
+public sealed class TemperatureConverter : YamlishConverter<Temperature>
+{
+    public override Temperature Read(YamlishNode node, YamlishSerializerOptions options)
+        => new(int.Parse(((YamlishScalar)node).Value, CultureInfo.InvariantCulture));
+
+    public override YamlishNode Write(Temperature value, YamlishSerializerOptions options)
+        => new YamlishScalar(value.Value.ToString(CultureInfo.InvariantCulture));
+}
+```
+
+Use `YamlishConverterFactory` to create converters for open generic types or families of related types.

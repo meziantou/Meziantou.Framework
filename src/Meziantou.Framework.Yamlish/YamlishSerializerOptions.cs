@@ -7,9 +7,17 @@ namespace Meziantou.Framework.Yamlish;
 public sealed class YamlishSerializerOptions
 {
     private readonly ConcurrentDictionary<Type, YamlishTypeInfo> _typeInfoCache = new();
+    private readonly ConcurrentDictionary<Type, ConverterResolution> _converterCache = new();
     private readonly List<(Func<MemberInfo, bool> Condition, YamlishAttribute Attribute)> _memberAttributes = [];
 
+    public YamlishSerializerOptions()
+    {
+        Converters = new ConverterList(this);
+    }
+
     public bool IsReadOnly { get; private set; }
+
+    public IList<YamlishConverter> Converters { get; }
 
     public YamlishNamingPolicy? PropertyNamingPolicy
     {
@@ -133,6 +141,36 @@ public sealed class YamlishSerializerOptions
         return _typeInfoCache.GetOrAdd(type, static (type, options) => YamlishTypeInfo.Create(type, options), this);
     }
 
+    internal YamlishConverter? GetConverter(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        MakeReadOnly();
+        return _converterCache.GetOrAdd(type, static (type, options) => new ConverterResolution(FindConverter(type, options)), this).Converter;
+
+        static YamlishConverter? FindConverter(Type type, YamlishSerializerOptions options)
+        {
+            foreach (var converter in options.Converters)
+            {
+                if (!converter.CanConvert(type))
+                    continue;
+
+                if (converter is not YamlishConverterFactory factory)
+                    return converter;
+
+                var result = factory.CreateConverter(type, options);
+                if (result is null)
+                    continue;
+
+                if (result is YamlishConverterFactory || !result.CanConvert(type))
+                    throw new InvalidOperationException($"The converter '{result.GetType().FullName}' is not compatible with '{type.FullName}'.");
+
+                return result;
+            }
+
+            return null;
+        }
+    }
+
     internal T? GetCustomAttribute<T>(MemberInfo member) where T : YamlishAttribute
     {
         ArgumentNullException.ThrowIfNull(member);
@@ -161,4 +199,13 @@ public sealed class YamlishSerializerOptions
         VerifyMutable();
         _memberAttributes.Add((candidate => candidate.Module == member.Module && candidate.MetadataToken == member.MetadataToken, attribute));
     }
+
+    private sealed class ConverterList(YamlishSerializerOptions options) : ConfigurationList<YamlishConverter>
+    {
+        protected override bool IsImmutable => options.IsReadOnly;
+
+        protected override void VerifyMutable() => options.VerifyMutable();
+    }
+
+    private sealed record ConverterResolution(YamlishConverter? Converter);
 }

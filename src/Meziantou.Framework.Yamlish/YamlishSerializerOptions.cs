@@ -167,7 +167,7 @@ public sealed class YamlishSerializerOptions
                 return result;
             }
 
-            return BuiltInYamlishConverters.GetConverter(type);
+            return null;
         }
     }
 
@@ -200,7 +200,55 @@ public sealed class YamlishSerializerOptions
         _memberAttributes.Add((candidate => candidate.Module == member.Module && candidate.MetadataToken == member.MetadataToken, attribute));
     }
 
-    private sealed class ConverterList(YamlishSerializerOptions options) : ConfigurationList<YamlishConverter>
+    private sealed class ConverterList(YamlishSerializerOptions options) : ConfigurationList<YamlishConverter>(
+    [
+        new BigIntegerYamlishConverter(),
+        new BitArrayYamlishConverter(),
+        new BitVector32YamlishConverter(),
+        new BooleanYamlishConverter(),
+        new ByteArrayYamlishConverter(),
+        new ByteYamlishConverter(),
+        new CharYamlishConverter(),
+        new ComplexYamlishConverter(),
+        new CultureInfoYamlishConverter(),
+        new DateOnlyYamlishConverter(),
+        new DateTimeYamlishConverter(),
+        new DateTimeOffsetYamlishConverter(),
+        new DBNullYamlishConverter(),
+        new DecimalYamlishConverter(),
+        new DoubleYamlishConverter(),
+        new HalfYamlishConverter(),
+        new HttpMethodYamlishConverter(),
+        new HttpStatusCodeYamlishConverter(),
+        new Int16YamlishConverter(),
+        new Int32YamlishConverter(),
+        new Int64YamlishConverter(),
+        new Int128YamlishConverter(),
+        new IntPtrYamlishConverter(),
+        new IPAddressYamlishConverter(),
+        new IPNetworkYamlishConverter(),
+        new GuidYamlishConverter(),
+        new MediaTypeHeaderValueYamlishConverter(),
+        new MemoryByteYamlishConverter(),
+        new ReadOnlyMemoryByteYamlishConverter(),
+        new SByteYamlishConverter(),
+        new SingleYamlishConverter(),
+        new StringBuilderYamlishConverter(),
+        new StringYamlishConverter(),
+        new StringWriterYamlishConverter(),
+        new TypeYamlishConverter(),
+        new TimeOnlyYamlishConverter(),
+        new TimeSpanYamlishConverter(),
+        new UInt16YamlishConverter(),
+        new UInt32YamlishConverter(),
+        new UInt64YamlishConverter(),
+        new UInt128YamlishConverter(),
+        new UIntPtrYamlishConverter(),
+        new UriYamlishConverter(),
+        new VersionYamlishConverter(),
+        new UnixDomainSocketEndPointYamlishConverter(),
+        new EnumYamlishConverter(),
+    ])
     {
         protected override bool IsImmutable => options.IsReadOnly;
 

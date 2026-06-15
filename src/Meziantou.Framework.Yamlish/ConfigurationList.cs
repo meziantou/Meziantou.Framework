@@ -4,7 +4,12 @@ namespace Meziantou.Framework.Yamlish;
 
 internal abstract class ConfigurationList<T> : IList<T>
 {
-    private readonly List<T> _items = [];
+    private readonly List<T> _items;
+
+    protected ConfigurationList(IEnumerable<T>? items = null)
+    {
+        _items = items is null ? [] : [.. items];
+    }
 
     protected abstract bool IsImmutable { get; }
 

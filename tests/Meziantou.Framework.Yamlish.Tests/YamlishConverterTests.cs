@@ -1,3 +1,11 @@
+using System.Collections;
+using System.Collections.Specialized;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Sockets;
+using System.Numerics;
+using System.Text;
+
 namespace Meziantou.Framework.Yamlish.Tests;
 
 public sealed class YamlishConverterTests
@@ -13,6 +21,46 @@ public sealed class YamlishConverterTests
 
     [Fact]
     public void ByteConverter() => AssertBuiltInConverter(byte.MaxValue);
+
+    [Fact]
+    public void ByteArrayConverter()
+    {
+        byte[] value = [1, 2, 3];
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<byte[]>(content);
+
+        Assert.Equal("AQID", content);
+        Assert.Equal(value, result);
+    }
+
+    [Fact]
+    public void BigIntegerConverter() => AssertBuiltInConverter(BigInteger.Parse("123456789012345678901234567890", CultureInfo.InvariantCulture));
+
+    [Fact]
+    public void BitArrayConverter()
+    {
+        var value = new BitArray(4);
+        value[1] = true;
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<BitArray>(content);
+
+        Assert.Equal("0100", content);
+        Assert.Equal([false, true, false, false], result?.Cast<bool>());
+    }
+
+    [Fact]
+    public void BitVector32Converter()
+    {
+        var value = new BitVector32(2);
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<BitVector32>(content);
+
+        Assert.Equal("00000000000000000000000000000010", content);
+        Assert.Equal(value.Data, result.Data);
+    }
 
     [Fact]
     public void SByteConverter() => AssertBuiltInConverter(sbyte.MinValue);
@@ -66,6 +114,36 @@ public sealed class YamlishConverterTests
     public void GuidConverter() => AssertBuiltInConverter(Guid.Parse("a5bdf58d-9008-49d3-843d-4227b5604e68"));
 
     [Fact]
+    public void HalfConverter() => AssertBuiltInConverter((Half)0.5);
+
+    [Fact]
+    public void Int128Converter() => AssertBuiltInConverter(Int128.Parse("123456789012345678901234567890", CultureInfo.InvariantCulture));
+
+    [Fact]
+    public void UInt128Converter() => AssertBuiltInConverter(UInt128.Parse("123456789012345678901234567890", CultureInfo.InvariantCulture));
+
+    [Fact]
+    public void ComplexConverter()
+    {
+        var value = new Complex(12, 34);
+
+        AssertBuiltInConverter(value);
+        Assert.Equal("<12; 34>", YamlishSerializer.Serialize(value));
+    }
+
+    [Fact]
+    public void CultureInfoConverter()
+    {
+        AssertBuiltInConverter(CultureInfo.GetCultureInfo("en-US"));
+
+        var content = YamlishSerializer.Serialize(CultureInfo.InvariantCulture);
+        var result = YamlishSerializer.Deserialize<CultureInfo>(content);
+
+        Assert.Equal("Invariant Language (Invariant Country)", content);
+        Assert.Same(CultureInfo.InvariantCulture, result);
+    }
+
+    [Fact]
     public void DateTimeConverter()
     {
         var value = new DateTime(2026, 6, 15, 12, 34, 56, 789, DateTimeKind.Utc).AddTicks(1234);
@@ -114,6 +192,102 @@ public sealed class YamlishConverterTests
     public void UriConverter() => AssertBuiltInConverter(new Uri("https://example.com/path?q=value", UriKind.Absolute));
 
     [Fact]
+    public void DBNullConverter()
+    {
+        AssertBuiltInConverter(DBNull.Value);
+        Assert.Equal("null", YamlishSerializer.Serialize(DBNull.Value));
+    }
+
+    [Fact]
+    public void HttpMethodConverter() => AssertBuiltInConverter(HttpMethod.Patch);
+
+    [Fact]
+    public void HttpStatusCodeConverter()
+    {
+        AssertBuiltInConverter(HttpStatusCode.NotFound);
+        Assert.Equal("404 (NotFound)", YamlishSerializer.Serialize(HttpStatusCode.NotFound));
+    }
+
+    [Fact]
+    public void MediaTypeHeaderValueConverter() => AssertBuiltInConverter(MediaTypeHeaderValue.Parse("application/json; charset=utf-8"));
+
+    [Fact]
+    public void MemoryByteConverter()
+    {
+        var value = new Memory<byte>([1, 2, 3]);
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<Memory<byte>>(content);
+
+        Assert.Equal("AQID", content);
+        Assert.Equal(value.ToArray(), result.ToArray());
+    }
+
+    [Fact]
+    public void ReadOnlyMemoryByteConverter()
+    {
+        var value = new ReadOnlyMemory<byte>([1, 2, 3]);
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<ReadOnlyMemory<byte>>(content);
+
+        Assert.Equal("AQID", content);
+        Assert.Equal(value.ToArray(), result.ToArray());
+    }
+
+    [Fact]
+    public void IPAddressConverter() => AssertBuiltInConverter(IPAddress.Parse("192.168.1.42"));
+
+    [Fact]
+    public void IPNetworkConverter() => AssertBuiltInConverter(IPNetwork.Parse("192.168.1.0/24"));
+
+    [Fact]
+    public void StringBuilderConverter()
+    {
+        var content = YamlishSerializer.Serialize(new StringBuilder("value"));
+        var result = YamlishSerializer.Deserialize<StringBuilder>(content);
+
+        Assert.Equal("value", content);
+        Assert.Equal("value", result?.ToString());
+    }
+
+    [Fact]
+    public void TypeConverter()
+    {
+        var content = YamlishSerializer.Serialize(typeof(Dictionary<string, int>));
+        var result = YamlishSerializer.Deserialize<Type>(content);
+
+        Assert.Equal(typeof(Dictionary<string, int>), result);
+    }
+
+    [Fact]
+    public void VersionConverter() => AssertBuiltInConverter(new Version(1, 2, 3, 4));
+
+    [Fact]
+    public void StringWriterConverter()
+    {
+        using var value = new StringWriter(CultureInfo.InvariantCulture);
+        value.Write("value");
+
+        var content = YamlishSerializer.Serialize(value);
+        using var result = YamlishSerializer.Deserialize<StringWriter>(content);
+
+        Assert.Equal("value", content);
+        Assert.Equal("value", result?.ToString());
+    }
+
+    [Fact]
+    public void UnixDomainSocketEndPointConverter()
+    {
+        var value = new UnixDomainSocketEndPoint("/var/run/dummy.sock");
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<UnixDomainSocketEndPoint>(content);
+
+        Assert.Equal(value.ToString(), result?.ToString());
+    }
+
+    [Fact]
     public void EnumConverter() => AssertBuiltInConverter(DayOfWeek.Monday);
 
     [Fact]
@@ -136,7 +310,7 @@ public sealed class YamlishConverterTests
     public void CustomConverters_OverrideBuiltInAndUseRuntimeType()
     {
         var options = new YamlishSerializerOptions();
-        options.Converters.Add(new HexInt32Converter());
+        options.Converters.Insert(0, new HexInt32Converter());
         options.Converters.Add(new TemperatureConverter());
 
         var integer = YamlishSerializer.Serialize(42, options);
@@ -144,6 +318,25 @@ public sealed class YamlishConverterTests
 
         Assert.Equal("0x2A", integer);
         Assert.Equal("Value: 21 C", model);
+    }
+
+    [Fact]
+    public void DefaultConverters_AreExposedAndCanBeRemoved()
+    {
+        var options = new YamlishSerializerOptions();
+        var converter = Assert.Single(options.Converters, converter => converter.CanConvert(typeof(int)));
+
+        Assert.True(options.Converters.Remove(converter));
+        Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<int>("42", options));
+    }
+
+    [Fact]
+    public void ConverterList_OrderControlsPrecedence()
+    {
+        var options = new YamlishSerializerOptions();
+        options.Converters.Insert(0, new HexInt32Converter());
+
+        Assert.Equal("0x2A", YamlishSerializer.Serialize(42, options));
     }
 
     [Fact]

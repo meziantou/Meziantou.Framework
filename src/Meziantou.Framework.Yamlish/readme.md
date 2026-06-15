@@ -48,7 +48,7 @@ var product = YamlishSerializer.Deserialize<Product>(content, options);
 
 Plain scalar values remain strings in the document model. During typed deserialization, they are converted to the requested .NET property type using invariant culture.
 
-Built-in converters support strings, characters, booleans, all integral and floating-point types, decimals, enums, GUIDs, dates, times, time spans, and URIs. Temporal and floating-point values use round-trip formats.
+Built-in converters support strings, characters, booleans, all integral and floating-point types, decimals, big integers, complex numbers, bit arrays, byte arrays and byte memories, cultures, enums, GUIDs, dates, times, time spans, HTTP scalar values, network addresses, types, URIs, and versions. Temporal and floating-point values use round-trip formats.
 
 Serialized documents do not end with a trailing newline. Block scalar chomping and folding follow YAML semantics.
 
@@ -80,11 +80,11 @@ Serializer options become read-only after their first use. Resolved member metad
 
 ## Converters
 
-Custom converters can read and write any `YamlishNode` shape. Converters are checked in collection order and resolved converters are cached after the options become read-only.
+Custom converters can read and write any `YamlishNode` shape. The converter list contains all default converters and can be reordered, extended, or have converters removed before its first use. Converters are checked in collection order and resolved converters are cached after the options become read-only.
 
 ```csharp
 var options = new YamlishSerializerOptions();
-options.Converters.Add(new TemperatureConverter());
+options.Converters.Insert(0, new TemperatureConverter());
 
 public sealed class TemperatureConverter : YamlishConverter<Temperature>
 {

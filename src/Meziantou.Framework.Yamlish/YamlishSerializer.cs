@@ -115,6 +115,9 @@ public static class YamlishSerializer
             foreach (var member in options.GetTypeInfo(runtimeType).SerializableMembers)
             {
                 var memberValue = member.GetValue(value);
+                if (options.RespectNullableAnnotations && memberValue is null && !member.IsGetNullable)
+                    throw new InvalidOperationException($"The non-nullable member '{member.SerializedName}' on type '{runtimeType.FullName}' returned null.");
+
                 if (ShouldIgnore(memberValue, member.DefaultValue, member.IgnoreCondition))
                     continue;
 
@@ -221,17 +224,25 @@ public static class YamlishSerializer
 
             foreach (var member in typeInfo.DeserializableMembers)
             {
-                if (constructorParameterNames?.Contains(member.SerializedName) is true)
-                    continue;
-
                 var entry = objectMapping.FirstOrDefault(entry => options.PropertyNameComparer.Equals(entry.Key, member.SerializedName));
                 if (entry.Key is null)
+                {
+                    if (member.IsRequired)
+                        throw new FormatException($"Required member '{member.SerializedName}' for type '{type.FullName}' was not provided.");
+
+                    continue;
+                }
+
+                if (constructorParameterNames?.Contains(member.SerializedName) is true)
                     continue;
 
                 var memberValue = member.GetValue(instance);
                 var value = options.PreferredObjectCreationHandling is YamlishObjectCreationHandling.Populate && memberValue is not null
                     ? Deserialize(entry.Value, member.MemberType, options, depth + 1, memberValue)
                     : Deserialize(entry.Value, member.MemberType, options, depth + 1);
+                if (options.RespectNullableAnnotations && value is null && !member.IsSetNullable)
+                    throw new FormatException($"The non-nullable member '{member.SerializedName}' on type '{type.FullName}' cannot be set to null.");
+
                 member.SetValue?.Invoke(instance, value);
             }
 
@@ -265,11 +276,16 @@ public static class YamlishSerializer
                         throw new FormatException($"Required constructor parameter '{parameter.SerializedName}' for type '{type.FullName}' was not provided.");
 
                     arguments[i] = parameter.DefaultValue;
+                    if (options.RespectNullableAnnotations && arguments[i] is null && !parameter.IsNullable)
+                        throw new FormatException($"The non-nullable constructor parameter '{parameter.SerializedName}' for type '{type.FullName}' cannot be set to null.");
+
                     continue;
                 }
 
                 constructorParameterNames.Add(parameter.SerializedName);
                 arguments[i] = Deserialize(entry.Value, parameter.ParameterType, options, depth + 1);
+                if (options.RespectNullableAnnotations && arguments[i] is null && !parameter.IsNullable)
+                    throw new FormatException($"The non-nullable constructor parameter '{parameter.SerializedName}' for type '{type.FullName}' cannot be set to null.");
             }
 
             return constructor.Constructor.Invoke(arguments);

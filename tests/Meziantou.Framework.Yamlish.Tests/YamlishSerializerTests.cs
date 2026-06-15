@@ -16,6 +16,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal(YamlishObjectCreationHandling.Replace, options.PreferredObjectCreationHandling);
         Assert.True(options.AllowDuplicateProperties);
         Assert.False(options.RespectRequiredConstructorParameters);
+        Assert.False(options.RespectNullableAnnotations);
     }
 
     [Fact]
@@ -84,6 +85,7 @@ public sealed class YamlishSerializerTests
         Assert.Throws<InvalidOperationException>(() => options.NewLine = "\n");
         Assert.Throws<InvalidOperationException>(() => options.AllowDuplicateProperties = false);
         Assert.Throws<InvalidOperationException>(() => options.RespectRequiredConstructorParameters = true);
+        Assert.Throws<InvalidOperationException>(() => options.RespectNullableAnnotations = true);
         Assert.Throws<InvalidOperationException>(() => options.AddAttribute(typeof(DefaultNamesProduct), nameof(DefaultNamesProduct.Id), new YamlishIgnoreAttribute()));
     }
 
@@ -265,6 +267,115 @@ public sealed class YamlishSerializerTests
         Assert.NotNull(value);
         Assert.Equal(42, value.Id);
         Assert.Equal("value", value.Name);
+    }
+
+    [Fact]
+    public void Deserialize_MissingRequiredProperty_Throws()
+    {
+        var exception = Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<RequiredPropertyValue>("Other: value"));
+
+        Assert.Contains("value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Deserialize_RequiredProperty_IsSet()
+    {
+        var value = YamlishSerializer.Deserialize<RequiredPropertyValue>("value: content");
+
+        Assert.Equal("content", value?.Value);
+    }
+
+    [Fact]
+    public void Deserialize_MissingRequiredField_ThrowsWhenFieldsAreIncluded()
+    {
+        var options = new YamlishSerializerOptions { IncludeFields = true };
+
+        Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<RequiredFieldValue>("Other: value", options));
+    }
+
+    [Fact]
+    public void Deserialize_RequiredField_IsSetWhenFieldsAreIncluded()
+    {
+        var options = new YamlishSerializerOptions { IncludeFields = true };
+
+        var value = YamlishSerializer.Deserialize<RequiredFieldValue>("Value: content", options);
+
+        Assert.Equal("content", value?.Value);
+    }
+
+    [Fact]
+    public void Serialize_RespectNullableAnnotations_ThrowsForNullNonNullableGetter()
+    {
+        var options = new YamlishSerializerOptions { RespectNullableAnnotations = true };
+
+        Assert.Throws<InvalidOperationException>(() => YamlishSerializer.Serialize(new NullableAnnotationsValue { NonNullable = null! }, options));
+    }
+
+    [Fact]
+    public void Serialize_RespectNullableAnnotations_AllowsNullNullableGetter()
+    {
+        var options = new YamlishSerializerOptions { RespectNullableAnnotations = true };
+
+        YamlishSerializer.Serialize(new NullableAnnotationsValue { Nullable = null }, options);
+    }
+
+    [Fact]
+    public void Deserialize_RespectNullableAnnotations_ThrowsForNullNonNullableSetter()
+    {
+        var options = CreateNullValueConverterOptions();
+        options.RespectNullableAnnotations = true;
+
+        Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<NullableAnnotationsValue>("NonNullable: null", options));
+    }
+
+    [Fact]
+    public void Deserialize_RespectNullableAnnotations_AllowsNullNullableSetter()
+    {
+        var options = CreateNullValueConverterOptions();
+        options.RespectNullableAnnotations = true;
+
+        var value = YamlishSerializer.Deserialize<NullableAnnotationsValue>("Nullable: null", options);
+
+        Assert.Null(value?.Nullable);
+    }
+
+    [Fact]
+    public void Deserialize_RespectNullableAnnotations_ThrowsForNullNonNullableConstructorParameter()
+    {
+        var options = CreateNullValueConverterOptions();
+        options.RespectNullableAnnotations = true;
+
+        Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<NullableConstructorValue>("Value: null", options));
+    }
+
+    [Fact]
+    public void Deserialize_RespectNullableAnnotations_ThrowsForMissingNonNullableConstructorParameter()
+    {
+        var options = new YamlishSerializerOptions { RespectNullableAnnotations = true };
+
+        Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<ConstructorValue>("Id: 42", options));
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_HonorsCodeAnalysisAttributes()
+    {
+        var options = CreateNullValueConverterOptions();
+        options.RespectNullableAnnotations = true;
+
+        YamlishSerializer.Serialize(new CodeAnalysisNullableAnnotationsValue(), options);
+        var value = YamlishSerializer.Deserialize<CodeAnalysisNullableAnnotationsValue>("Setter: null", options);
+
+        Assert.Null(value?.Setter);
+    }
+
+    [Fact]
+    public void Deserialize_RespectNullableAnnotationsFalse_AllowsNullNonNullableSetter()
+    {
+        var options = CreateNullValueConverterOptions();
+
+        var value = YamlishSerializer.Deserialize<NullableAnnotationsValue>("NonNullable: null", options);
+
+        Assert.Null(value?.NonNullable);
     }
 
     [Fact]
@@ -502,6 +613,56 @@ public sealed class YamlishSerializerTests
         public int Id { get; } = id;
 
         public string Name { get; } = name;
+    }
+
+    private sealed class RequiredPropertyValue
+    {
+        [YamlishPropertyName("value")]
+        public required string Value { get; set; }
+    }
+
+#pragma warning disable CA1051
+    private sealed class RequiredFieldValue
+    {
+        public required string Value = null!;
+    }
+#pragma warning restore CA1051
+
+    private sealed class NullableAnnotationsValue
+    {
+        public NullValue NonNullable { get; set; } = new();
+
+        public NullValue? Nullable { get; set; }
+    }
+
+    private sealed class NullableConstructorValue(NullValue value)
+    {
+        public NullValue Value { get; } = value;
+    }
+
+    private sealed class CodeAnalysisNullableAnnotationsValue
+    {
+        [System.Diagnostics.CodeAnalysis.MaybeNull]
+        public NullValue Getter { get; } = null!;
+
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public NullValue Setter { get; set; } = new();
+    }
+
+    private sealed class NullValue;
+
+    private sealed class NullValueConverter : YamlishConverter<NullValue>
+    {
+        public override NullValue? Read(YamlishNode node, YamlishSerializerOptions options) => null;
+
+        public override YamlishNode Write(NullValue value, YamlishSerializerOptions options) => new YamlishScalar("value");
+    }
+
+    private static YamlishSerializerOptions CreateNullValueConverterOptions()
+    {
+        var options = new YamlishSerializerOptions();
+        options.Converters.Insert(0, new NullValueConverter());
+        return options;
     }
 
     private sealed class IgnoreConditions

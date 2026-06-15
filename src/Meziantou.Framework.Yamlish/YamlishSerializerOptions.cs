@@ -149,6 +149,16 @@ public sealed class YamlishSerializerOptions
         }
     }
 
+    public bool RespectNullableAnnotations
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    }
+
     public void AddAttribute(Type type, string memberName, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(type);

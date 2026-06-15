@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Yamlish;
 
@@ -19,10 +20,14 @@ internal sealed class YamlishTypeInfo
 
     public static YamlishTypeInfo Create(Type type, YamlishSerializerOptions options)
     {
-        return new YamlishTypeInfo(GetSerializableMembers(type, options).ToArray(), GetDeserializableMembers(type, options).ToArray(), GetConstructor(type, options));
+        var nullabilityInfoContext = new NullabilityInfoContext();
+        return new YamlishTypeInfo(
+            GetSerializableMembers(type, options, nullabilityInfoContext).ToArray(),
+            GetDeserializableMembers(type, options, nullabilityInfoContext).ToArray(),
+            GetConstructor(type, options, nullabilityInfoContext));
     }
 
-    private static YamlishConstructorInfo? GetConstructor(Type type, YamlishSerializerOptions options)
+    private static YamlishConstructorInfo? GetConstructor(Type type, YamlishSerializerOptions options, NullabilityInfoContext nullabilityInfoContext)
     {
         if (type.IsValueType)
             return null;
@@ -49,7 +54,8 @@ internal sealed class YamlishTypeInfo
                 GetName(member, options),
                 parameter.ParameterType,
                 parameter.IsOptional,
-                parameter.IsOptional ? parameter.DefaultValue : GetDefaultValue(parameter.ParameterType));
+                parameter.IsOptional ? parameter.DefaultValue : GetDefaultValue(parameter.ParameterType),
+                IsNullable(nullabilityInfoContext.Create(parameter).ReadState));
         }
 
         return new YamlishConstructorInfo(constructor, constructorParameters);
@@ -79,7 +85,7 @@ internal sealed class YamlishTypeInfo
         return null;
     }
 
-    private static IEnumerable<YamlishMemberInfo> GetSerializableMembers(Type type, YamlishSerializerOptions options)
+    private static IEnumerable<YamlishMemberInfo> GetSerializableMembers(Type type, YamlishSerializerOptions options, NullabilityInfoContext nullabilityInfoContext)
     {
         foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
@@ -88,7 +94,10 @@ internal sealed class YamlishTypeInfo
 
             var ignoreCondition = GetIgnoreCondition(property, options);
             if (ignoreCondition is not YamlishIgnoreCondition.Always)
-                yield return new YamlishMemberInfo(GetName(property, options), property.PropertyType, property.GetValue, SetValue: null, ignoreCondition, GetDefaultValue(property.PropertyType, ignoreCondition));
+            {
+                var nullabilityInfo = nullabilityInfoContext.Create(property);
+                yield return new YamlishMemberInfo(GetName(property, options), property.PropertyType, property.GetValue, SetValue: null, ignoreCondition, GetDefaultValue(property.PropertyType, ignoreCondition), IsRequired: false, IsNullable(nullabilityInfo.ReadState), IsSetNullable: true);
+            }
         }
 
         if (options.IncludeFields)
@@ -100,12 +109,15 @@ internal sealed class YamlishTypeInfo
 
                 var ignoreCondition = GetIgnoreCondition(field, options);
                 if (ignoreCondition is not YamlishIgnoreCondition.Always)
-                    yield return new YamlishMemberInfo(GetName(field, options), field.FieldType, field.GetValue, field.SetValue, ignoreCondition, GetDefaultValue(field.FieldType, ignoreCondition));
+                {
+                    var nullabilityInfo = nullabilityInfoContext.Create(field);
+                    yield return new YamlishMemberInfo(GetName(field, options), field.FieldType, field.GetValue, field.SetValue, ignoreCondition, GetDefaultValue(field.FieldType, ignoreCondition), IsRequired: false, IsNullable(nullabilityInfo.ReadState), IsSetNullable: true);
+                }
             }
         }
     }
 
-    private static IEnumerable<YamlishMemberInfo> GetDeserializableMembers(Type type, YamlishSerializerOptions options)
+    private static IEnumerable<YamlishMemberInfo> GetDeserializableMembers(Type type, YamlishSerializerOptions options, NullabilityInfoContext nullabilityInfoContext)
     {
         foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
@@ -114,7 +126,17 @@ internal sealed class YamlishTypeInfo
                 GetAttributeIgnoreCondition(property, options) is YamlishIgnoreCondition.Always)
                 continue;
 
-            yield return new YamlishMemberInfo(GetName(property, options), property.PropertyType, property.GetValue, property.SetMethod is null ? null : property.SetValue, YamlishIgnoreCondition.Never, DefaultValue: null);
+            var nullabilityInfo = nullabilityInfoContext.Create(property);
+            yield return new YamlishMemberInfo(
+                GetName(property, options),
+                property.PropertyType,
+                property.GetValue,
+                property.SetMethod is null ? null : property.SetValue,
+                YamlishIgnoreCondition.Never,
+                DefaultValue: null,
+                property.IsDefined(typeof(RequiredMemberAttribute)),
+                IsGetNullable: true,
+                IsNullable(nullabilityInfo.WriteState));
         }
 
         if (options.IncludeFields)
@@ -122,7 +144,19 @@ internal sealed class YamlishTypeInfo
             foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
             {
                 if (!field.IsInitOnly && GetAttributeIgnoreCondition(field, options) is not YamlishIgnoreCondition.Always)
-                    yield return new YamlishMemberInfo(GetName(field, options), field.FieldType, field.GetValue, field.SetValue, YamlishIgnoreCondition.Never, DefaultValue: null);
+                {
+                    var nullabilityInfo = nullabilityInfoContext.Create(field);
+                    yield return new YamlishMemberInfo(
+                        GetName(field, options),
+                        field.FieldType,
+                        field.GetValue,
+                        field.SetValue,
+                        YamlishIgnoreCondition.Never,
+                        DefaultValue: null,
+                        field.IsDefined(typeof(RequiredMemberAttribute)),
+                        IsGetNullable: true,
+                        IsNullable(nullabilityInfo.WriteState));
+                }
             }
         }
     }
@@ -151,5 +185,10 @@ internal sealed class YamlishTypeInfo
     private static object? GetDefaultValue(Type type)
     {
         return type.IsValueType ? Activator.CreateInstance(type) : null;
+    }
+
+    private static bool IsNullable(NullabilityState state)
+    {
+        return state is not NullabilityState.NotNull;
     }
 }

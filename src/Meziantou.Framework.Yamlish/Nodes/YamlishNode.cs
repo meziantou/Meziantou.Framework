@@ -1,9 +1,12 @@
 namespace Meziantou.Framework.Yamlish.Nodes;
 
+/// <summary>Represents a node in a Yamlish document.</summary>
 public abstract class YamlishNode
 {
+    /// <summary>Gets the kind of the Yamlish node.</summary>
     public abstract YamlishNodeKind Kind { get; }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         using var writer = new StringWriter(CultureInfo.InvariantCulture);

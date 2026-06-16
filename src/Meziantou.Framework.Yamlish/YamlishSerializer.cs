@@ -2,13 +2,24 @@ using System.Collections;
 
 namespace Meziantou.Framework.Yamlish;
 
+/// <summary>Provides methods for serializing objects to Yamlish and deserializing Yamlish content.</summary>
 public static class YamlishSerializer
 {
+    /// <summary>Serializes a value to a Yamlish string.</summary>
+    /// <typeparam name="T">The declared type of the value to serialize.</typeparam>
+    /// <param name="value">The value to serialize.</param>
+    /// <param name="options">The serializer options to use.</param>
+    /// <returns>The Yamlish representation of <paramref name="value" />.</returns>
     public static string Serialize<T>(T? value, YamlishSerializerOptions? options = null)
     {
         return Serialize(value, typeof(T), options);
     }
 
+    /// <summary>Serializes a value to a Yamlish string.</summary>
+    /// <param name="value">The value to serialize.</param>
+    /// <param name="type">The declared type of the value to serialize.</param>
+    /// <param name="options">The serializer options to use.</param>
+    /// <returns>The Yamlish representation of <paramref name="value" />.</returns>
     public static string Serialize(object? value, Type type, YamlishSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -24,11 +35,21 @@ public static class YamlishSerializer
         return writer.ToString();
     }
 
+    /// <summary>Deserializes Yamlish content to a value.</summary>
+    /// <typeparam name="T">The type to deserialize.</typeparam>
+    /// <param name="content">The Yamlish content to deserialize.</param>
+    /// <param name="options">The serializer options to use.</param>
+    /// <returns>The deserialized value.</returns>
     public static T? Deserialize<T>(string content, YamlishSerializerOptions? options = null)
     {
         return (T?)Deserialize(content, typeof(T), options);
     }
 
+    /// <summary>Deserializes Yamlish content to a value.</summary>
+    /// <param name="content">The Yamlish content to deserialize.</param>
+    /// <param name="type">The type to deserialize.</param>
+    /// <param name="options">The serializer options to use.</param>
+    /// <returns>The deserialized value.</returns>
     public static object? Deserialize(string content, Type type, YamlishSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(content);

@@ -21,6 +21,8 @@ public sealed class YamlishSequence : YamlishNode, IReadOnlyList<YamlishNode>
 
     public override YamlishNodeKind Kind => YamlishNodeKind.Sequence;
 
+    public YamlishSequenceStyle Style { get; set; }
+
     public int Count => _items.Count;
 
     public YamlishNode this[int index] => _items[index];

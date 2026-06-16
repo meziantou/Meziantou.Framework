@@ -19,7 +19,7 @@ internal static class YamlishWriter
         switch (node)
         {
             case YamlishScalar scalar:
-                WriteScalar(writer, scalar.Value, indent, indentCharacter, indentSize);
+                WriteScalar(writer, scalar, indent, indentCharacter, indentSize);
                 break;
 
             case YamlishMapping mapping:
@@ -42,11 +42,17 @@ internal static class YamlishWriter
             if (entry.Value is YamlishScalar scalar)
             {
                 writer.Write(' ');
-                WriteScalar(writer, scalar.Value, indent, indentCharacter, indentSize);
+                WriteScalar(writer, scalar, indent, indentCharacter, indentSize);
             }
-            else if (entry.Value is YamlishSequence { Count: 0 })
+            else if (entry.Value is YamlishSequence { Count: 0, Style: not YamlishSequenceStyle.Block })
             {
                 writer.WriteLine(" []");
+            }
+            else if (entry.Value is YamlishSequence { Style: YamlishSequenceStyle.Flow } sequence)
+            {
+                writer.Write(' ');
+                WriteFlowSequence(writer, sequence);
+                writer.WriteLine();
             }
             else
             {
@@ -65,19 +71,14 @@ internal static class YamlishWriter
             return;
         }
 
-        if (sequence.All(item => item is YamlishScalar))
+        if (sequence.Style is YamlishSequenceStyle.Flow && sequence.Any(item => item is not YamlishScalar))
+            throw new InvalidOperationException("Flow sequence style is only supported for scalar sequences.");
+
+        if (sequence.Style is not YamlishSequenceStyle.Block && sequence.All(item => item is YamlishScalar))
         {
             WriteIndent(writer, indent, indentCharacter);
-            writer.Write('[');
-            for (var i = 0; i < sequence.Count; i++)
-            {
-                if (i > 0)
-                    writer.Write(", ");
-
-                WriteInlineScalar(writer, ((YamlishScalar)sequence[i]).Value);
-            }
-
-            writer.WriteLine(']');
+            WriteFlowSequence(writer, sequence);
+            writer.WriteLine();
             return;
         }
 
@@ -88,7 +89,7 @@ internal static class YamlishWriter
             if (item is YamlishScalar scalar)
             {
                 writer.Write(' ');
-                WriteScalar(writer, scalar.Value, indent, indentCharacter, indentSize);
+                WriteScalar(writer, scalar, indent, indentCharacter, indentSize);
             }
             else
             {
@@ -98,9 +99,33 @@ internal static class YamlishWriter
         }
     }
 
-    private static void WriteScalar(TextWriter writer, string value, int indent, char indentCharacter, int indentSize)
+    private static void WriteFlowSequence(TextWriter writer, YamlishSequence sequence)
     {
-        if (value.Contains('\n', StringComparison.Ordinal) && !value.EndsWith("\n", StringComparison.Ordinal))
+        if (sequence.Any(item => item is not YamlishScalar))
+            throw new InvalidOperationException("Flow sequence style is only supported for scalar sequences.");
+
+        writer.Write('[');
+        for (var i = 0; i < sequence.Count; i++)
+        {
+            if (i > 0)
+                writer.Write(", ");
+
+            WriteInlineScalar(writer, (YamlishScalar)sequence[i]);
+        }
+
+        writer.Write(']');
+    }
+
+    private static void WriteScalar(TextWriter writer, YamlishScalar scalar, int indent, char indentCharacter, int indentSize)
+    {
+        var value = scalar.Value;
+        if (scalar.Style is YamlishScalarStyle.Literal or YamlishScalarStyle.Folded)
+        {
+            WriteBlockScalar(writer, scalar, indent, indentCharacter, indentSize);
+            return;
+        }
+
+        if (scalar.Style is YamlishScalarStyle.Auto && value.Contains('\n', StringComparison.Ordinal) && !value.EndsWith("\n", StringComparison.Ordinal))
         {
             writer.WriteLine("|-");
             var lines = value.Split('\n');
@@ -114,18 +139,52 @@ internal static class YamlishWriter
             return;
         }
 
-        WriteInlineScalar(writer, value);
+        WriteInlineScalar(writer, scalar);
         writer.WriteLine();
     }
 
-    private static void WriteInlineScalar(TextWriter writer, string value)
+    private static void WriteBlockScalar(TextWriter writer, YamlishScalar scalar, int indent, char indentCharacter, int indentSize)
     {
-        if (!RequiresQuotes(value))
+        writer.Write(scalar.Style is YamlishScalarStyle.Folded ? '>' : '|');
+        writer.Write(scalar.Chomping switch
         {
-            writer.Write(value);
+            YamlishScalarChomping.Clip => string.Empty,
+            YamlishScalarChomping.Strip => "-",
+            YamlishScalarChomping.Keep => "+",
+            _ => throw new ArgumentOutOfRangeException(nameof(scalar)),
+        });
+        writer.WriteLine();
+
+        var lines = scalar.Value.Split('\n');
+        var count = scalar.Value.EndsWith("\n", StringComparison.Ordinal) ? lines.Length - 1 : lines.Length;
+        for (var i = 0; i < count; i++)
+        {
+            WriteIndent(writer, indent + indentSize, indentCharacter);
+            writer.WriteLine(lines[i]);
+        }
+    }
+
+    private static void WriteInlineScalar(TextWriter writer, YamlishScalar scalar)
+    {
+        if (scalar.Style is YamlishScalarStyle.Plain || scalar.Style is YamlishScalarStyle.Auto && !RequiresQuotes(scalar.Value))
+        {
+            writer.Write(scalar.Value);
             return;
         }
 
+        if (scalar.Style is YamlishScalarStyle.SingleQuoted)
+        {
+            writer.Write('\'');
+            writer.Write(scalar.Value.Replace("'", "''", StringComparison.Ordinal));
+            writer.Write('\'');
+            return;
+        }
+
+        WriteDoubleQuotedScalar(writer, scalar.Value);
+    }
+
+    private static void WriteDoubleQuotedScalar(TextWriter writer, string value)
+    {
         writer.Write('"');
         foreach (var character in value)
         {

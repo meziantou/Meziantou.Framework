@@ -291,6 +291,38 @@ public sealed class YamlishDocumentTests
     }
 
     [Fact]
+    public void Document_ToString_UsesNodeStyles()
+    {
+        var document = new YamlishDocument(new YamlishMapping
+        {
+            {
+                "Values",
+                new YamlishSequence([new YamlishScalar("item1"), new YamlishScalar("item2")])
+                {
+                    Style = YamlishSequenceStyle.Block,
+                }
+            },
+            {
+                "Value",
+                new YamlishScalar("first\nsecond")
+                {
+                    Style = YamlishScalarStyle.Literal,
+                    Chomping = YamlishScalarChomping.Strip,
+                }
+            },
+        });
+
+        Assert.Equal("""
+            Values:
+              - item1
+              - item2
+            Value: |-
+              first
+              second
+            """, document.ToString(), ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
     public void Document_MultilineRootScalar_RoundTrips()
     {
         var content = new YamlishDocument(new YamlishScalar("first\nsecond")).ToString();

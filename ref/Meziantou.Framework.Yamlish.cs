@@ -78,6 +78,45 @@ namespace Meziantou.Framework.Yamlish
         public YamlishPropertyNameAttribute(string name) { }
     }
 
+    public enum YamlishScalarChomping
+    {
+        Clip = 0,
+        Strip = 1,
+        Keep = 2
+    }
+
+    public enum YamlishScalarStyle
+    {
+        Auto = 0,
+        Plain = 1,
+        DoubleQuoted = 2,
+        SingleQuoted = 3,
+        Literal = 4,
+        Folded = 5
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    public sealed class YamlishScalarStyleAttribute : Meziantou.Framework.Yamlish.YamlishAttribute
+    {
+        public Meziantou.Framework.Yamlish.YamlishScalarStyle Style { get => throw null; }
+        public Meziantou.Framework.Yamlish.YamlishScalarChomping Chomping { get => throw null; set { } }
+        public YamlishScalarStyleAttribute(Meziantou.Framework.Yamlish.YamlishScalarStyle style) { }
+    }
+
+    public enum YamlishSequenceStyle
+    {
+        Auto = 0,
+        Block = 1,
+        Flow = 2
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
+    public sealed class YamlishSequenceStyleAttribute : Meziantou.Framework.Yamlish.YamlishAttribute
+    {
+        public Meziantou.Framework.Yamlish.YamlishSequenceStyle Style { get => throw null; }
+        public YamlishSequenceStyleAttribute(Meziantou.Framework.Yamlish.YamlishSequenceStyle style) { }
+    }
+
     public static class YamlishSerializer
     {
         public static string Serialize<T>(T value, Meziantou.Framework.Yamlish.YamlishSerializerOptions? options = null) => throw null;
@@ -159,12 +198,15 @@ namespace Meziantou.Framework.Yamlish.Nodes
     {
         public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
         public string Value { get => throw null; }
+        public Meziantou.Framework.Yamlish.YamlishScalarStyle Style { get => throw null; set { } }
+        public Meziantou.Framework.Yamlish.YamlishScalarChomping Chomping { get => throw null; set { } }
         public YamlishScalar(string value) { }
     }
 
     public sealed class YamlishSequence : Meziantou.Framework.Yamlish.Nodes.YamlishNode, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.IEnumerable
     {
         public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
+        public Meziantou.Framework.Yamlish.YamlishSequenceStyle Style { get => throw null; set { } }
         public int Count { get => throw null; }
         public Meziantou.Framework.Yamlish.Nodes.YamlishNode this[int index] { get => throw null; }
         public YamlishSequence(System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.Nodes.YamlishNode> items) { }

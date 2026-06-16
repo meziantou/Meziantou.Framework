@@ -28,7 +28,7 @@ public sealed class YamlishSerializerTests
             Id: abc
             IsAvailable: true
             Price: 12.5
-            """, result);
+            """, result, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public sealed class YamlishSerializerTests
     [Fact]
     public void Serialize_UsesIndentCharacterAndIndentSize()
     {
-        var options = new YamlishSerializerOptions { IndentCharacter = '\t', IndentSize = 3 };
+        var options = new YamlishSerializerOptions { IndentCharacter = '\t', IndentSize = 3, NewLine = "\n" };
 
         var content = YamlishSerializer.Serialize(new NestedValue { Value = new StringValue { Value = "first\nsecond" } }, options);
         var result = YamlishSerializer.Deserialize<NestedValue>(content, options);
@@ -445,7 +445,7 @@ public sealed class YamlishSerializerTests
             Never: 0
             WhenWritingDefault: 1
             WhenWritingNull: value
-            """, result);
+            """, result, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -475,7 +475,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal("""
             Never: 0
             Always: value
-            """, result);
+            """, result, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -552,7 +552,7 @@ public sealed class YamlishSerializerTests
         var content = YamlishSerializer.Serialize(new StringValue { Value = value });
         var result = YamlishSerializer.Deserialize<StringValue>(content);
 
-        Assert.False(content.EndsWith("\n", StringComparison.Ordinal));
+        Assert.False(content.EndsWith('\n', StringComparison.Ordinal));
         Assert.Equal(value, result?.Value);
     }
 
@@ -584,7 +584,7 @@ public sealed class YamlishSerializerTests
             $type: derived
             DerivedValue: derived
             BaseValue: 1
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -611,7 +611,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal("""
             $type: DefaultPolymorphicDerived
             Value: derived
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -624,7 +624,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal("""
             $type: base
             BaseValue: 1
-            """, content);
+            """, content, ignoreLineEndingDifferences: true );
     }
 
     [Fact]
@@ -638,7 +638,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal("""
             $kind: custom
             Value: derived
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
         Assert.IsType<CustomPolymorphicDerived>(result);
     }
 
@@ -655,7 +655,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal("""
             $type: options
             Value: derived
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
         Assert.IsType<OptionsPolymorphicDerived>(result);
     }
 
@@ -703,7 +703,7 @@ public sealed class YamlishSerializerTests
               $type: derived
               DerivedValue: derived
               BaseValue: 1
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
         Assert.IsType<PolymorphicDerived>(result?.Value);
     }
 
@@ -723,7 +723,7 @@ public sealed class YamlishSerializerTests
               $type: derived
               DerivedValue: derived
               BaseValue: 1
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
         Assert.NotNull(result);
         var derived = Assert.IsType<PolymorphicDerived>(Assert.Single(result));
         Assert.Equal("derived", derived.DerivedValue);
@@ -745,7 +745,7 @@ public sealed class YamlishSerializerTests
               $type: derived
               DerivedValue: derived
               BaseValue: 1
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
         var derived = Assert.IsType<PolymorphicDerived>(result?["value"]);
         Assert.Equal("derived", derived.DerivedValue);
     }

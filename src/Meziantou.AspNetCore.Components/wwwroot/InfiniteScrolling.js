@@ -4,6 +4,7 @@
  *
  * @param {HTMLElement} lastIndicator
  * @param {DotNet.DotNetObject} instance
+ * @returns {{ dispose: () => void, onNewItems: () => void }}
  */
 export function initialize(lastIndicator, instance) {
     const options = {

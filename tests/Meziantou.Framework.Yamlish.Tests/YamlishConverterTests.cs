@@ -168,17 +168,17 @@ public sealed class YamlishConverterTests
     [Fact]
     public void UtcDateTimeConverters()
     {
-        const string content = "2000-01-01T12:00:00.0000000Z";
+        const string Content = "2000-01-01T12:00:00.0000000Z";
 
-        var dateTime = YamlishSerializer.Deserialize<DateTime>(content);
-        var dateTimeOffset = YamlishSerializer.Deserialize<DateTimeOffset>(content);
+        var dateTime = YamlishSerializer.Deserialize<DateTime>(Content);
+        var dateTimeOffset = YamlishSerializer.Deserialize<DateTimeOffset>(Content);
 
         Assert.Equal(new DateTime(2000, 1, 1, 12, 0, 0, DateTimeKind.Utc), dateTime);
         Assert.Equal(DateTimeKind.Utc, dateTime.Kind);
-        Assert.Equal(content, YamlishSerializer.Serialize(dateTime));
+        Assert.Equal(Content, YamlishSerializer.Serialize(dateTime));
         Assert.Equal(new DateTimeOffset(2000, 1, 1, 12, 0, 0, TimeSpan.Zero), dateTimeOffset);
         Assert.Equal(TimeSpan.Zero, dateTimeOffset.Offset);
-        Assert.Equal(content, YamlishSerializer.Serialize(dateTimeOffset));
+        Assert.Equal(Content, YamlishSerializer.Serialize(dateTimeOffset));
     }
 
     [Fact]

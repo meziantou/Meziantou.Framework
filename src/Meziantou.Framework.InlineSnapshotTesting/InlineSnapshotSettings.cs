@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
+using Meziantou.Framework.LLMContext;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -28,7 +29,7 @@ public sealed record InlineSnapshotSettings
     /// <summary>Gets or sets the file encoding to use when writing snapshots. If null, the encoding is detected from the source file.</summary>
     public Encoding? FileEncoding { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether to automatically detect CI environments and disable snapshot updates.</summary>
+    /// <summary>Gets or sets a value indicating whether to automatically detect continuous integration, continuous testing, and LLM environments and disable snapshot updates.</summary>
     public bool AutoDetectContinuousEnvironment { get; set; } = true;
 
     /// <summary>Gets or sets the allowed C# string formats for writing snapshots (quoted, verbatim, raw, etc.).</summary>
@@ -144,6 +145,7 @@ public sealed record InlineSnapshotSettings
         IsRunningOnContinuousIntegration = {IsRunningOnContinuousIntegration()}
         BuildServerDetector = {BuildServerDetector.Detected}
         ContinuousTestingDetector = {ContinuousTestingDetector.Detected}
+        LLMContextDetector = {LLMContextDetector.IsLLMContext()}
         """;
 
     public InlineSnapshotSettings()
@@ -175,7 +177,7 @@ public sealed record InlineSnapshotSettings
         }
     }
 
-    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected;
+    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMContextDetector.IsLLMContext();
 
     [DoesNotReturn]
     internal void AssertSnapshot(string? expected, string? actual)

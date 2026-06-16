@@ -3,7 +3,6 @@
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -15,9 +14,10 @@ const string StepSlnx = "slnx";
 const string StepTemplates = "templates";
 const string StepBom = "bom";
 const string StepValidateTestProjects = "validate-testprojects";
+const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
 string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom];
 string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom, StepValidateTestProjects];
-
+var updatedFiles = new ConcurrentBag<string>();
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -52,44 +52,45 @@ if (selectedSteps.Contains("all"))
 }
 
 var rootPath = GetRepositoryRoot();
-var hasErrors = false;
 
 bool ShouldRunStep(string stepName) => selectedSteps.Count is 0 ? defaultSteps.Contains(stepName, StringComparer.OrdinalIgnoreCase) : selectedSteps.Contains(stepName);
 
+var tasks = new List<Task>();
 if (ShouldRunStep(StepReadme))
 {
     Console.WriteLine("[update-all] Running readme");
-    hasErrors |= await RunUpdateReadmeStep(rootPath) != 0;
+    tasks.Add(Task.Run(() => RunUpdateReadmeStep(rootPath)));
 }
 
 if (ShouldRunStep(StepTrimmable))
 {
     Console.WriteLine("[update-all] Running trimmable");
-    hasErrors |= RunUpdateTrimmableStep(rootPath) != 0;
+    tasks.Add(Task.Run(() => RunUpdateTrimmableStep(rootPath)));
 }
 
 if (ShouldRunStep(StepSlnx))
 {
     Console.WriteLine("[update-all] Running slnx");
-    hasErrors |= RunUpdateProjectSlnxStep(rootPath, outputPath) != 0;
-}
-
-if (ShouldRunStep(StepTemplates))
-{
-    Console.WriteLine("[update-all] Running templates");
-    hasErrors |= RunTemplateStep(rootPath) != 0;
-}
-
-if (ShouldRunStep(StepBom))
-{
-    Console.WriteLine("[update-all] Running bom");
-    hasErrors |= RunUpdateBomStep(rootPath) != 0;
+    tasks.Add(Task.Run(() => RunUpdateProjectSlnxStep(rootPath, outputPath)));
 }
 
 if (ShouldRunStep(StepValidateTestProjects))
 {
     Console.WriteLine("[update-all] Running validate-testprojects");
-    hasErrors |= RunValidateTestProjectsConfigurationStep(rootPath) != 0;
+    tasks.Add(Task.Run(() => RunValidateTestProjectsConfigurationStep(rootPath)));
+}
+
+if (ShouldRunStep(StepTemplates))
+{
+    Console.WriteLine("[update-all] Running templates");
+    tasks.Add(Task.Run(() => RunTemplateStep(rootPath)));
+}
+
+await Task.WhenAll(tasks);
+if (ShouldRunStep(StepBom))
+{
+    Console.WriteLine("[update-all] Running bom");
+    RunUpdateBomStep(rootPath);
 }
 
 if (selectedSteps.Count > 0)
@@ -103,15 +104,32 @@ if (selectedSteps.Count > 0)
     }
 }
 
-if(hasErrors)
+if (!updatedFiles.IsEmpty)
 {
     Console.WriteLine("One or more steps reported errors, you can fix them and re-run the tool to check that all steps are successful.");
     Console.WriteLine("dotnet run ./eng/update-all.cs");
+
+    Console.WriteLine("Updated files:");
+    foreach (var file in updatedFiles)
+    {
+        Console.WriteLine($"- {file}");
+    }
+
+    Console.WriteLine("git diff:");
+    var psi = new ProcessStartInfo("git", ["--no-pager", "diff", "--ws-error-highlight=all"])
+    {
+        UseShellExecute = false,
+    };
+
+    using var process = Process.Start(psi)!;
+    process.WaitForExit();
+
+    return 1;
 }
 
-return hasErrors ? 1 : 0;
+return 0;
 
-static int RunTemplateStep(FullPath rootPath)
+void RunTemplateStep(FullPath rootPath)
 {
     var latestTargetFramework = GetLatestTargetFramework(rootPath);
     var templatesRootPath = rootPath / "src";
@@ -120,12 +138,11 @@ static int RunTemplateStep(FullPath rootPath)
         .OrderBy(path => path.Value, StringComparer.Ordinal)
         .ToArray();
 
-    var hasTemplateErrors = false;
-    foreach (var templateFile in templateFiles)
+    Parallel.ForEach(templateFiles, templateFile =>
     {
         var relativeTemplatePath = templateFile.MakePathRelativeTo(rootPath);
         Console.WriteLine($"[update-all] Transforming {relativeTemplatePath}");
-        var exitCode = RunProcessAndReturnExitCode(
+        var exitCode = RunProcessAndReturnExitCodeWithRetry(
             rootPath,
             "dotnet",
             [
@@ -141,43 +158,56 @@ static int RunTemplateStep(FullPath rootPath)
                 "<#",
                 "--end-code-block-delimiter",
                 "#>",
-            ]);
+                "--output-encoding",
+                "utf8",
+                "--line-ending",
+                "LF",
+            ],
+            retryDelays: [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)]);
 
-        hasTemplateErrors |= exitCode != 0;
-    }
-
-    return hasTemplateErrors ? 1 : 0;
+        if (exitCode != 0)
+        {
+            updatedFiles.Add(relativeTemplatePath);
+        }
+    });
 }
 
-static int RunUpdateBomStep(FullPath rootPath)
+void RunUpdateBomStep(FullPath rootPath)
 {
     var srcRootPath = rootPath / "src";
-    var editedFiles = 0;
 
     string[] extensions = ["*.cs", "*.csproj", "*.fsproj", "*.proj", "*.props", "*.targets", "*.save", "*.slnx", "*.ps1", "*.yml", "*.yaml", "*.md", "*.json"];
     var files = extensions.SelectMany(ext => Directory.EnumerateFiles(srcRootPath, ext, SearchOption.AllDirectories));
 
     Parallel.ForEach(files, file =>
     {
-        Console.WriteLine($"Processing {file}");
-        var content = File.ReadAllBytes(file);
-        if (content.Length < 3)
+        try
         {
-            return;
-        }
+            Console.WriteLine($"Processing {file}");
+            var content = File.ReadAllBytes(file);
+            using var stream = new MemoryStream(content);
+            using var reader = new StreamReader(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
+            var text = reader.ReadToEnd();
 
-        if (content[0] == 0xEF && content[1] == 0xBB && content[2] == 0xBF)
+            var normalizedContent = Encoding.UTF8.GetBytes(text.ReplaceLineEndings("\n"));
+            if (content.AsSpan().SequenceEqual(normalizedContent))
+            {
+                return;
+            }
+
+            Console.WriteLine($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
+            File.WriteAllBytes(file, normalizedContent);
+            updatedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
+        }
+        catch (Exception ex)
         {
-            Console.WriteLine($"WARNING: File {file} contains BOM. Removing it.");
-            File.WriteAllBytes(file, content.AsSpan(3).ToArray());
-            Interlocked.Increment(ref editedFiles);
+            Console.WriteLine($"ERROR: Failed to process {file}: {ex.Message}");
+            throw;
         }
     });
-
-    return editedFiles;
 }
 
-static int RunUpdateTrimmableStep(FullPath rootPath)
+void RunUpdateTrimmableStep(FullPath rootPath)
 {
     var srcPath = rootPath / "src";
     var trimmableCsprojPath = rootPath / "tests" / "Trimmable" / "Trimmable.csproj";
@@ -264,7 +294,7 @@ static int RunUpdateTrimmableStep(FullPath rootPath)
     {
         var existingBytes = File.ReadAllBytes(trimmableCsprojPath);
         var offset = 0;
-        if (existingBytes.Length >= 3 && existingBytes[0] == 0xEF && existingBytes[1] == 0xBB && existingBytes[2] == 0xBF)
+        if (existingBytes is [0xEF, 0xBB, 0xBF, ..])
         {
             offset = 3;
         }
@@ -278,22 +308,11 @@ static int RunUpdateTrimmableStep(FullPath rootPath)
     {
         File.WriteAllText(trimmableCsprojPath, newContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         Console.WriteLine("WARNING: tests/Trimmable/Trimmable.csproj was not up-to-date");
-
-        var psi = new ProcessStartInfo("git", ["--no-pager", "diff", trimmableCsprojPath])
-        {
-            UseShellExecute = false,
-        };
-        using var process = Process.Start(psi)!;
-        process.WaitForExit();
-
-        return 1;
+        updatedFiles.Add("tests/Trimmable/Trimmable.csproj");
     }
-
-    Console.WriteLine("tests/Trimmable/Trimmable.csproj is up-to-date");
-    return 0;
 }
 
-static int RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
+void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
 {
     var srcRootPath = rootPath / "src";
     var testsRootPath = rootPath / "tests";
@@ -451,7 +470,6 @@ static int RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
     }
 
     UpdateMainSolution();
-    return 0;
 
     List<string> GetProjectFiles(string rootDir)
     {
@@ -599,6 +617,7 @@ static int RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
         }
 
         File.WriteAllText(path, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        updatedFiles.Add(FullPath.FromPath(path).MakePathRelativeTo(rootPath));
     }
 
     void UpdateMainSolution()
@@ -748,13 +767,12 @@ static int RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
     }
 }
 
-static int RunValidateTestProjectsConfigurationStep(FullPath rootPath)
+void RunValidateTestProjectsConfigurationStep(FullPath rootPath)
 {
     var testsRootPath = rootPath / "tests";
     var tfmCache = new ConcurrentDictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
     var testProjects = Directory.GetFiles(testsRootPath, "*.csproj", SearchOption.AllDirectories);
-    var errors = new ConcurrentBag<string>();
 
     var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = 5 };
     Parallel.ForEach(testProjects, parallelOptions, proj =>
@@ -790,18 +808,11 @@ static int RunValidateTestProjectsConfigurationStep(FullPath rootPath)
                 {
                     var errorMsg = $"Project {proj} does not target {refTfm}, but it references {refProj} which does. ({string.Join(", ", testProjectTfms)}) != ({string.Join(", ", refTfms)})";
                     Console.Error.WriteLine($"ERROR: {errorMsg}");
-                    errors.Add(errorMsg);
+                    updatedFiles.Add(FullPath.FromPath(proj).MakePathRelativeTo(rootPath));
                 }
             }
         }
     });
-
-    if (!errors.IsEmpty)
-    {
-        return 1;
-    }
-
-    return 0;
 
     string[] GetProjectTargetFrameworksWithRetry(string projectPath)
     {
@@ -876,27 +887,17 @@ static int RunValidateTestProjectsConfigurationStep(FullPath rootPath)
     }
 }
 
-static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
+async Task RunUpdateReadmeStep(FullPath rootPath)
 {
     var srcRootPath = rootPath / "src";
 
     var nugetReadmeTask = Task.Run(UpdateNuGetReadme);
     var toolReadmeTask = Task.Run(UpdateToolReadmes);
+    var analyzerDocumentationTask = Task.Run(() => UpdateAnalyzerDocumentation(srcRootPath));
 
-    await Task.WhenAll(nugetReadmeTask, toolReadmeTask);
+    await Task.WhenAll(nugetReadmeTask, toolReadmeTask, analyzerDocumentationTask);
 
-    var nugetReadmeResult = nugetReadmeTask.Result;
-    var toolReadmeResult = toolReadmeTask.Result;
-
-    if (nugetReadmeResult != 0 || toolReadmeResult != 0)
-    {
-        _ = RunProcessAndReturnExitCode(rootPath, "git", ["--no-pager", "diff"]);
-        return 1;
-    }
-
-    return 0;
-
-    int UpdateNuGetReadme()
+    void UpdateNuGetReadme()
     {
         var readmePath = rootPath / "README.md";
         Console.WriteLine("[update-nuget-readme] Starting NuGet README update");
@@ -970,13 +971,11 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
         {
             File.WriteAllText(readmePath, newContent);
             Console.WriteLine("WARNING: README.md was not up-to-date");
-            return 1;
+            updatedFiles.Add(FullPath.FromPath(readmePath).MakePathRelativeTo(rootPath));
         }
-
-        return 0;
     }
 
-    int UpdateToolReadmes()
+    void UpdateToolReadmes()
     {
         var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
         var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
@@ -1035,7 +1034,7 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
                 Console.Error.WriteLine(error);
             }
 
-            return 1;
+            throw new InvalidOperationException($"One or more tool projects are missing a readme.md file. See errors above.");
         }
 
         Console.WriteLine("[update-tool-readme] Starting parallel --help generation");
@@ -1060,7 +1059,6 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
         generationStopwatch.Stop();
         Console.WriteLine($"[update-tool-readme] --help generation metrics: tool-projects={orderedToolProjects.Length}, elapsed={generationStopwatch.Elapsed.TotalSeconds:F2}s");
 
-        var editedFiles = 0;
         for (var i = 0; i < orderedToolProjects.Length; i++)
         {
             var update = readmeUpdates[i] ?? throw new InvalidOperationException($"Internal error: missing README update result for index {i}.");
@@ -1068,18 +1066,306 @@ static async Task<int> RunUpdateReadmeStep(FullPath rootPath)
             {
                 File.WriteAllText(update.ToolReadme, update.NewContent);
                 Console.WriteLine($"WARNING: {update.ToolReadme} was not up-to-date");
-                editedFiles++;
+                updatedFiles.Add(FullPath.FromPath(update.ToolReadme).MakePathRelativeTo(rootPath));
             }
         }
+    }
+}
 
-        if (editedFiles > 0)
+void UpdateAnalyzerDocumentation(FullPath srcRootPath)
+{
+    Console.WriteLine("[update-analyzer-docs] Starting analyzer documentation update");
+    var analyzerDocumentationStopwatch = Stopwatch.StartNew();
+
+    var candidateProjects = Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories)
+        .Select(FullPath.FromPath)
+        .Where(IsAnalyzerPackageProject)
+        .OrderBy(path => path.Value, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    Console.WriteLine($"[update-analyzer-docs] Discovery metrics: candidates={candidateProjects.Length}");
+
+    var projectsWithRules = 0;
+    foreach (var csproj in candidateProjects)
+    {
+        var projectName = csproj.NameWithoutExtension;
+        var analyzerSourceDirectories = GetAnalyzerSourceDirectories(csproj);
+        var rules = GetAnalyzerRulesFromProjectSource(analyzerSourceDirectories);
+        if (rules.Count is 0)
         {
-            Console.Error.WriteLine("ERROR: Some tool README files were not up-to-date");
-            return 1;
+            Console.WriteLine($"[update-analyzer-docs] Project '{projectName}' does not expose DiagnosticAnalyzer rules, skipping");
+            continue;
         }
 
-        return 0;
+        projectsWithRules++;
+        var projectDirectory = csproj.Parent;
+        var readmePath = projectDirectory / "readme.md";
+        if (!File.Exists(readmePath))
+        {
+            throw new InvalidOperationException($"Project '{csproj}' exposes analyzer rules but has no readme.md file.");
+        }
+
+        var existingReadmeContent = File.ReadAllText(readmePath);
+        var updatedReadmeContent = UpdateAnalyzerRulesSectionInReadme(existingReadmeContent, rules);
+        if (WriteFileIfChanged(readmePath, updatedReadmeContent))
+        {
+            Console.WriteLine($"WARNING: {readmePath} was not up-to-date");
+        }
     }
+
+    analyzerDocumentationStopwatch.Stop();
+    Console.WriteLine($"[update-analyzer-docs] Generation metrics: projects-with-rules={projectsWithRules}, elapsed={analyzerDocumentationStopwatch.Elapsed.TotalSeconds:F2}s");
+}
+
+static bool IsAnalyzerPackageProject(FullPath csprojPath)
+{
+    var doc = XDocument.Load(csprojPath);
+    return doc.Descendants()
+        .Any(node => node.Attribute("PackagePath")?.Value?.Contains("analyzers/dotnet/cs", StringComparison.OrdinalIgnoreCase) is true);
+}
+
+static IReadOnlyList<FullPath> GetAnalyzerSourceDirectories(FullPath packageProjectPath)
+{
+    var packageProjectDirectory = packageProjectPath.Parent;
+    var sourceDirectories = new HashSet<FullPath> { packageProjectDirectory };
+
+    var doc = XDocument.Load(packageProjectPath);
+    var packagedAnalyzerAssemblyNames = doc.Descendants()
+        .Where(node => node.Attribute("PackagePath")?.Value?.Contains("analyzers/dotnet/cs", StringComparison.OrdinalIgnoreCase) is true)
+        .Select(node => node.Attribute("Include")?.Value)
+        .Where(include => !string.IsNullOrWhiteSpace(include))
+        .Select(include => Path.GetFileNameWithoutExtension(include))
+        .Where(assemblyName => !string.IsNullOrWhiteSpace(assemblyName))
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    foreach (var projectReference in doc.Descendants("ProjectReference"))
+    {
+        var include = projectReference.Attribute("Include")?.Value;
+        if (string.IsNullOrWhiteSpace(include))
+            continue;
+
+        var normalizedInclude = include.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+        var referencedProjectPath = FullPath.Combine(packageProjectDirectory, normalizedInclude);
+        if (!File.Exists(referencedProjectPath))
+            continue;
+
+        if (packagedAnalyzerAssemblyNames.Contains(referencedProjectPath.NameWithoutExtension))
+        {
+            sourceDirectories.Add(referencedProjectPath.Parent);
+        }
+    }
+
+    return sourceDirectories
+        .OrderBy(path => path.Value, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+}
+
+static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectSource(IReadOnlyList<FullPath> projectDirectories)
+{
+    var rules = new Dictionary<string, AnalyzerRule>(StringComparer.Ordinal);
+    foreach (var projectDirectory in projectDirectories)
+    {
+        foreach (var rule in GetAnalyzerRulesFromProjectDirectory(projectDirectory))
+        {
+            rules.TryAdd(rule.Id, rule);
+        }
+    }
+
+    return rules.Values
+        .OrderBy(rule => rule.Id, StringComparer.Ordinal)
+        .ToArray();
+}
+
+static IReadOnlyList<AnalyzerRule> GetAnalyzerRulesFromProjectDirectory(FullPath projectDirectory)
+{
+    var analyzerFiles = Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories)
+        .Where(file =>
+        {
+            var content = File.ReadAllText(file);
+            return content.Contains("[DiagnosticAnalyzer", StringComparison.Ordinal) && content.Contains("DiagnosticDescriptor", StringComparison.Ordinal);
+        })
+        .ToArray();
+
+    if (analyzerFiles.Length is 0)
+    {
+        return [];
+    }
+
+    var stringConstantsByName = GetStringConstantsByName(projectDirectory);
+    var descriptorPattern = new Regex(
+        """
+        DiagnosticDescriptor\s+\w+\s*=\s*new\(
+            \s*id:\s*(?<id>"[^"]+"|[\w\.]+)\s*,
+            \s*title:\s*"(?<title>[^"]+)"\s*,
+            \s*messageFormat:\s*"(?<message>[^"]+)"\s*,
+            \s*category:\s*"(?<category>[^"]+)"\s*,
+            \s*(?:defaultSeverity:\s*)?DiagnosticSeverity\.(?<severity>\w+)\s*,
+            \s*isEnabledByDefault:\s*(?<enabled>true|false)\s*
+        \)
+        """,
+        RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
+        Timeout.InfiniteTimeSpan);
+
+    var rules = new Dictionary<string, AnalyzerRule>(StringComparer.Ordinal);
+    foreach (var analyzerFile in analyzerFiles)
+    {
+        var content = File.ReadAllText(analyzerFile);
+        foreach (Match match in descriptorPattern.Matches(content))
+        {
+            var idExpression = match.Groups["id"].Value;
+            if (!TryResolveDiagnosticId(idExpression, stringConstantsByName, out var id))
+            {
+                throw new InvalidOperationException($"Cannot resolve analyzer diagnostic id '{idExpression}' from '{analyzerFile}'.");
+            }
+
+            var title = match.Groups["title"].Value;
+            var category = match.Groups["category"].Value;
+            var severity = match.Groups["severity"].Value;
+            var isEnabledByDefault = bool.Parse(match.Groups["enabled"].Value);
+            rules.TryAdd(id, new AnalyzerRule(id, category, title, severity, isEnabledByDefault));
+        }
+    }
+
+    return rules.Values
+        .OrderBy(rule => rule.Id, StringComparer.Ordinal)
+        .ToArray();
+}
+
+static Dictionary<string, string> GetStringConstantsByName(FullPath projectDirectory)
+{
+    var constants = new Dictionary<string, string>(StringComparer.Ordinal);
+    var constantPattern = new Regex(
+        """
+        \bconst\s+string\s+(?<name>\w+)\s*=\s*"(?<value>[^"]+)"\s*;
+        """,
+        RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture,
+        Timeout.InfiniteTimeSpan);
+
+    foreach (var sourceFile in Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories))
+    {
+        var content = File.ReadAllText(sourceFile);
+        foreach (Match match in constantPattern.Matches(content))
+        {
+            var constantName = match.Groups["name"].Value;
+            var constantValue = match.Groups["value"].Value;
+            constants.TryAdd(constantName, constantValue);
+        }
+    }
+
+    return constants;
+}
+
+static bool TryResolveDiagnosticId(string idExpression, IReadOnlyDictionary<string, string> stringConstantsByName, [NotNullWhen(true)] out string? diagnosticId)
+{
+    if (idExpression.StartsWith('"', StringComparison.Ordinal) && idExpression.EndsWith('"', StringComparison.Ordinal))
+    {
+        diagnosticId = idExpression.Trim('"');
+        return true;
+    }
+
+    if (stringConstantsByName.TryGetValue(idExpression, out diagnosticId))
+    {
+        return true;
+    }
+
+    var separatorIndex = idExpression.LastIndexOf('.', StringComparison.Ordinal);
+    if (separatorIndex >= 0 && separatorIndex < idExpression.Length - 1)
+    {
+        var constantName = idExpression[(separatorIndex + 1)..];
+        if (stringConstantsByName.TryGetValue(constantName, out diagnosticId))
+        {
+            return true;
+        }
+    }
+
+    diagnosticId = string.Empty;
+    return false;
+}
+
+static string UpdateAnalyzerRulesSectionInReadme(string readmeContent, IReadOnlyList<AnalyzerRule> rules)
+{
+    var rulesTable = GenerateAnalyzerRulesTable(rules);
+    var markerContentPattern = new Regex(
+        $"(?<={Regex.Escape(AnalyzerRulesSectionMarker)})(.*?)(?={Regex.Escape(AnalyzerRulesSectionMarker)})",
+        RegexOptions.Singleline | RegexOptions.ExplicitCapture,
+        Timeout.InfiniteTimeSpan);
+
+    if (markerContentPattern.IsMatch(readmeContent))
+    {
+        return markerContentPattern.Replace(readmeContent, $"\n{rulesTable}\n");
+    }
+
+    if (readmeContent.Contains("## Analyzer rules", StringComparison.OrdinalIgnoreCase) ||
+        readmeContent.Contains("## Analyzer diagnostics", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException("The README contains an analyzer section but does not use the analyzer-rules markers.");
+    }
+
+    var sb = new StringBuilder();
+    sb.AppendLine(readmeContent.TrimEnd('\r', '\n'));
+    sb.AppendLine();
+    sb.AppendLine("## Analyzer rules");
+    sb.AppendLine();
+    sb.AppendLine(AnalyzerRulesSectionMarker);
+    sb.AppendLine(rulesTable);
+    sb.AppendLine(AnalyzerRulesSectionMarker);
+    return sb.ToString().TrimEnd('\r', '\n');
+}
+
+static string GenerateAnalyzerRulesTable(IReadOnlyList<AnalyzerRule> rules)
+{
+    var sb = new StringBuilder();
+    sb.AppendLine("| Id | Category | Description | Severity | Enabled |");
+    sb.AppendLine("| -- | -- | -- | :--: | :--: |");
+    foreach (var rule in rules)
+    {
+        sb.Append("| `")
+            .Append(rule.Id)
+            .Append("` | ")
+            .Append(EscapeMarkdownTableCell(rule.Category))
+            .Append(" | ")
+            .Append(EscapeMarkdownTableCell(rule.Title))
+            .Append(" | ")
+            .Append(rule.DefaultSeverity)
+            .Append(" | ")
+            .Append(rule.IsEnabledByDefault ? "✔️" : "❌")
+            .AppendLine(" |");
+    }
+
+    return sb.ToString().TrimEnd('\r', '\n');
+}
+
+bool WriteFileIfChanged(FullPath filePath, string content)
+{
+    var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+    var normalizedContent = content.ReplaceLineEndings("\n").TrimEnd('\r', '\n') + "\n";
+
+    if (File.Exists(filePath))
+    {
+        var existingContent = File.ReadAllText(filePath).ReplaceLineEndings("\n");
+        if (string.Equals(existingContent, normalizedContent, StringComparison.Ordinal))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        filePath.CreateParentDirectory();
+    }
+
+    File.WriteAllText(filePath, normalizedContent, encoding);
+    updatedFiles.Add(filePath.MakePathRelativeTo(rootPath));
+    return true;
+}
+
+static string EscapeMarkdownTableCell(string value)
+{
+    return value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("|", "\\|", StringComparison.Ordinal)
+        .Replace("\r\n", "<br />", StringComparison.Ordinal)
+        .Replace("\n", "<br />", StringComparison.Ordinal)
+        .Replace("\r", "<br />", StringComparison.Ordinal);
 }
 
 static int GetUpdateReadmeMaxDegreeOfParallelism()
@@ -1373,6 +1659,20 @@ static string GetLatestTargetFramework(FullPath rootPath)
     return directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
 }
 
+static int RunProcessAndReturnExitCodeWithRetry(FullPath workingDirectory, string fileName, string[] arguments, IReadOnlyList<TimeSpan> retryDelays)
+{
+    for (var attempt = 0; ; attempt++)
+    {
+        var exitCode = RunProcessAndReturnExitCode(workingDirectory, fileName, arguments);
+        if (exitCode is 0 || attempt >= retryDelays.Count)
+            return exitCode;
+
+        var retryDelay = retryDelays[attempt];
+        Console.Error.WriteLine($"WARNING: Process '{fileName} {string.Join(' ', arguments)}' failed on attempt {attempt + 1}/{retryDelays.Count + 1} with exit code {exitCode}. Retrying in {retryDelay.TotalSeconds:F0}s...");
+        Thread.Sleep(retryDelay);
+    }
+}
+
 static int RunProcessAndReturnExitCode(FullPath workingDirectory, string fileName, string[] arguments)
 {
     var psi = new ProcessStartInfo(fileName)
@@ -1396,6 +1696,13 @@ static FullPath GetRepositoryRoot()
 {
     return FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
 }
+
+internal readonly record struct AnalyzerRule(
+    string Id,
+    string Category,
+    string Title,
+    string DefaultSeverity,
+    bool IsEnabledByDefault);
 
 internal readonly record struct ToolProject(string Csproj, string? ToolName, string ToolReadme);
 

@@ -11,6 +11,9 @@ internal static partial class Program
     private const string DefaultEndCodeBlockDelimiter = "%>";
     private const string T4StartCodeBlockDelimiter = "<#";
     private const string T4EndCodeBlockDelimiter = "#>";
+    private const string LineEndingLf = "LF";
+    private const string LineEndingCrlf = "CRLF";
+    private const string LineEndingCr = "CR";
 
     public static Task<int> Main(string[] args)
     {
@@ -40,12 +43,24 @@ internal static partial class Program
             Description = "Delimiter that marks the end of a code block",
             Required = false,
         };
+        var outputEncodingOption = new Option<string?>("--output-encoding")
+        {
+            Description = "Output encoding for generated files. Example: utf8, utf8-bom, unicode, utf-16, utf-32",
+            Required = false,
+        };
+        var lineEndingOption = new Option<string?>("--line-ending")
+        {
+            Description = "Line ending to use in output. Values: LF, CRLF, CR",
+            Required = false,
+        };
 
         var rootCommand = new RootCommand("Render a template file using Meziantou.Framework.Templating");
         rootCommand.Options.Add(inputOption);
         rootCommand.Options.Add(outputOption);
         rootCommand.Options.Add(startCodeBlockDelimiterOption);
         rootCommand.Options.Add(endCodeBlockDelimiterOption);
+        rootCommand.Options.Add(outputEncodingOption);
+        rootCommand.Options.Add(lineEndingOption);
         rootCommand.SetAction((parseResult, cancellationToken) =>
         {
             return RenderTemplateAsync(
@@ -53,6 +68,8 @@ internal static partial class Program
                 parseResult.GetValue(outputOption),
                 parseResult.GetValue(startCodeBlockDelimiterOption),
                 parseResult.GetValue(endCodeBlockDelimiterOption),
+                parseResult.GetValue(outputEncodingOption),
+                parseResult.GetValue(lineEndingOption),
                 parseResult.InvocationConfiguration.Output,
                 parseResult.InvocationConfiguration.Error,
                 cancellationToken);
@@ -68,6 +85,8 @@ internal static partial class Program
         string? outputFile,
         string? startCodeBlockDelimiter,
         string? endCodeBlockDelimiter,
+        string? outputEncoding,
+        string? lineEnding,
         TextWriter output,
         TextWriter error,
         CancellationToken cancellationToken)
@@ -93,10 +112,23 @@ internal static partial class Program
             return 1;
         }
 
+        if (!TryResolveLineEnding(lineEnding, out var resolvedLineEnding))
+        {
+            await error.WriteLineAsync("Invalid line ending. Allowed values are LF, CRLF, CR".AsMemory(), cancellationToken);
+            return 1;
+        }
+
+        if (!TryResolveOutputEncoding(outputEncoding, out var resolvedOutputEncoding))
+        {
+            await error.WriteLineAsync("Invalid output encoding. Use a valid encoding name, for example utf8, utf8-bom, unicode, utf-16, utf-32".AsMemory(), cancellationToken);
+            return 1;
+        }
+
         var template = new Template
         {
             StartCodeBlockDelimiter = resolvedStartCodeBlockDelimiter,
             EndCodeBlockDelimiter = resolvedEndCodeBlockDelimiter,
+            SourceFileName = inputPath,
         };
         template.Load(templateContent);
         var resolvedOutputPath = ResolveOutputPath(outputFile, inputPath, template);
@@ -112,6 +144,11 @@ internal static partial class Program
             return 1;
         }
 
+        if (resolvedLineEnding is not null)
+        {
+            result = result.ReplaceLineEndings(resolvedLineEnding);
+        }
+
         if (resolvedOutputPath is null)
         {
             await output.WriteAsync(result.AsMemory(), cancellationToken);
@@ -120,8 +157,60 @@ internal static partial class Program
 
         var outputPath = resolvedOutputPath.Value;
         outputPath.CreateParentDirectory();
-        await File.WriteAllTextAsync(outputPath, result, cancellationToken).ConfigureAwait(false);
+        await File.WriteAllTextAsync(outputPath, result, resolvedOutputEncoding, cancellationToken).ConfigureAwait(false);
         return 0;
+    }
+
+    private static bool TryResolveLineEnding(string? value, out string? lineEnding)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            lineEnding = null;
+            return true;
+        }
+
+        lineEnding = value.Trim().ToUpperInvariant() switch
+        {
+            LineEndingLf => "\n",
+            LineEndingCrlf => "\r\n",
+            LineEndingCr => "\r",
+            _ => null,
+        };
+
+        return lineEnding is not null;
+    }
+
+    private static bool TryResolveOutputEncoding(string? value, out Encoding encoding)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            return true;
+        }
+
+        var normalized = value.Trim();
+        if (string.Equals(normalized, "utf8", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "utf-8", StringComparison.OrdinalIgnoreCase))
+        {
+            encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            return true;
+        }
+
+        if (string.Equals(normalized, "utf8-bom", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "utf-8-bom", StringComparison.OrdinalIgnoreCase))
+        {
+            encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+            return true;
+        }
+
+        try
+        {
+            encoding = Encoding.GetEncoding(normalized);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            encoding = null!;
+            return false;
+        }
     }
 
     private static FullPath? ResolveOutputPath(string? outputFile, FullPath inputPath, Template template)
@@ -137,7 +226,7 @@ internal static partial class Program
             return null;
         }
 
-        return inputPath.ChangeExtension(directiveOutputExtension);
+        return inputPath.WithExtension(directiveOutputExtension);
     }
 
     private static (string StartCodeBlockDelimiter, string EndCodeBlockDelimiter) ResolveCodeBlockDelimiters(string templateContent, string? startCodeBlockDelimiter, string? endCodeBlockDelimiter)

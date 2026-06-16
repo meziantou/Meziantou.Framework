@@ -11,17 +11,17 @@ namespace Meziantou.Framework;
 /// var filePath = tempDir.CreateTextFile("test.txt", "Hello World");
 /// Console.WriteLine($"File created at: {filePath}");
 /// // Directory is automatically deleted when disposed
-/// 
+///
 /// // Async disposal
 /// await using var tempDir2 = TemporaryDirectory.Create();
 /// await tempDir2.CreateTextFileAsync("data.json", "{}");
-/// 
+///
 /// // Working with subdirectories
 /// using var tempDir3 = TemporaryDirectory.Create();
 /// tempDir3.CreateDirectory("subdir");
 /// var nestedFile = tempDir3.GetFullPath("subdir/file.txt");
 /// File.WriteAllText(nestedFile, "content");
-/// 
+///
 /// // Using path operators
 /// using var tempDir4 = TemporaryDirectory.Create();
 /// var path = tempDir4 / "data" / "output.txt";
@@ -204,6 +204,7 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     /// <summary>Implicitly converts a <see cref="TemporaryDirectory"/> to a string path.</summary>
     /// <param name="temporaryDirectory">The temporary directory to convert.</param>
     /// <exception cref="ArgumentNullException"><paramref name="temporaryDirectory"/> is <see langword="null"/>.</exception>
+    [SuppressMessage("FullPath", "MFFP0011:Return FullPath instead of string", Justification = "There is another implicit operator to convert to FullPath")]
     public static implicit operator string(TemporaryDirectory temporaryDirectory)
     {
         ArgumentNullException.ThrowIfNull(temporaryDirectory);

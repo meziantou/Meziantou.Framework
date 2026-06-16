@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A PostgreSQL wire-protocol server library with callback-based authentication and query handling</Description>
   </PropertyGroup>

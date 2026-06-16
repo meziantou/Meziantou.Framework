@@ -69,6 +69,9 @@ public class Template
     /// <summary>Gets the generated C# source code after building the template.</summary>
     public string? SourceCode { get; private set; }
 
+    /// <summary>Gets or sets the optional source file name used in compiler diagnostics.</summary>
+    public string? SourceFileName { get; set; }
+
     /// <summary>Gets the list of template arguments.</summary>
     public ArgumentCollection Arguments { get; } = [];
 
@@ -529,7 +532,7 @@ public class Template
                     if (block is ClassMemberBlock)
                         continue;
 
-                    tw.WriteLine(block.BuildCode());
+                    WriteBlock(tw, block);
                 }
 
                 tw.Indent--;
@@ -540,7 +543,7 @@ public class Template
                     if (block is not ClassMemberBlock)
                         continue;
 
-                    tw.WriteLine(block.BuildCode());
+                    WriteBlock(tw, block);
                 }
 
                 tw.Indent--;
@@ -555,6 +558,31 @@ public class Template
                 FreezeCollections();
             }
         }
+    }
+
+    private void WriteBlock(IndentedTextWriter writer, TemplateBlock block)
+    {
+        var code = block.BuildCode();
+        if (block is CodeBlock or ClassMemberBlock && code.Length > 0 && block.Text.Length > 0)
+        {
+            var textOffset = code.IndexOf(block.Text, StringComparison.Ordinal);
+            if (textOffset >= 0)
+            {
+                var generatedCodeColumnOffset = (writer.Indent * IndentedTextWriter.DefaultTabString.Length) + textOffset;
+                writer.WriteLineNoTabs(CreateLineDirective(block.Span, generatedCodeColumnOffset));
+                writer.WriteLine(code);
+                writer.WriteLineNoTabs("#line default");
+                return;
+            }
+        }
+
+        writer.WriteLine(code);
+    }
+
+    private string CreateLineDirective(TextSpan span, int generatedCodeColumnOffset)
+    {
+        var fileName = SyntaxFactory.Literal(SourceFileName ?? string.Empty).Text;
+        return string.Create(CultureInfo.InvariantCulture, $"#line ({span.Start.Line}, {span.Start.Column}) - ({span.End.Line}, {span.End.Column}) {generatedCodeColumnOffset} {fileName}");
     }
 
     private void ApplyDirectives()

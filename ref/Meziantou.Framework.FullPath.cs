@@ -24,6 +24,7 @@ namespace Meziantou.Framework
         public static bool operator <=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
         public static bool operator >=(Meziantou.Framework.FullPath path1, Meziantou.Framework.FullPath path2) => throw null;
         public static Meziantou.Framework.FullPath operator /(Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
+        public static Meziantou.Framework.FullPath operator +(Meziantou.Framework.FullPath rootPath, string suffix) => throw null;
         public int CompareTo(Meziantou.Framework.FullPath other) => throw null;
         public int CompareTo(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
         public override bool Equals(object? obj) => throw null;
@@ -36,6 +37,11 @@ namespace Meziantou.Framework
         public bool IsChildOf(Meziantou.Framework.FullPath rootPath) => throw null;
         public void CreateParentDirectory() { }
         public Meziantou.Framework.FullPath ChangeExtension(string? extension) => throw null;
+        public Meziantou.Framework.FullPath WithExtension(string? extension) => throw null;
+        public Meziantou.Framework.FullPath WithExtension(string? extension, bool replaceAllTrailingExtensions) => throw null;
+        public Meziantou.Framework.FullPath WithExtension(string? extension, int extensionCount) => throw null;
+        public Meziantou.Framework.FullPath WithName(string name) => throw null;
+        public Meziantou.Framework.FullPath WithNameWithoutExtension(string nameWithoutExtension) => throw null;
         public static Meziantou.Framework.FullPath GetTempPath() => throw null;
         public static Meziantou.Framework.FullPath GetTempFileName() => throw null;
         public static Meziantou.Framework.FullPath CreateTempFile() => throw null;
@@ -50,6 +56,9 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2) => throw null;
         public static Meziantou.Framework.FullPath Combine(string rootPath, string path1, string path2, string path3) => throw null;
         public static Meziantou.Framework.FullPath Combine(params string[] paths) => throw null;
+        #if NET10_0 || NET11_0 || NET9_0
+        public static Meziantou.Framework.FullPath Combine(params System.ReadOnlySpan<string> paths) => throw null;
+        #endif
         public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string relativePath) => throw null;
         public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, string path1, string path2) => throw null;
         public static Meziantou.Framework.FullPath Combine(Meziantou.Framework.FullPath rootPath, params string[] paths) => throw null;
@@ -67,6 +76,7 @@ namespace Meziantou.Framework
         public bool TryGetSymbolicLinkTarget([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
         public bool TryGetSymbolicLinkTarget(Meziantou.Framework.SymbolicLinkResolutionMode resolutionMode, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.FullPath? result) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
+        [System.Runtime.Versioning.SupportedOSPlatform("macos")]
         public void OpenInExplorer() { }
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public string ToWindowsExtendedPath() => throw null;

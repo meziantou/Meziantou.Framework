@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/BloomFiltersBenchmarks/BloomFiltersBenchmarks.csproj" />
     <Project Path="benchmarks/DependencyScanningBenchmarks/DependencyScanningBenchmarks.csproj" />
     <Project Path="benchmarks/FastEnumGeneratorBenchmarks/FastEnumGeneratorBenchmarks.csproj" />
     <Project Path="benchmarks/GlobbingBenchmarks/GlobbingBenchmarks.csproj" />
+    <Project Path="benchmarks/SnapshotTestingBenchmarks/SnapshotTestingBenchmarks.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/BlazorAppSample/BlazorAppSample.csproj" />
@@ -37,6 +39,7 @@
     <Project Path="src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
     <Project Path="src/Meziantou.Framework.Bencode/Meziantou.Framework.Bencode.csproj" />
+    <Project Path="src/Meziantou.Framework.BloomFilters/Meziantou.Framework.BloomFilters.csproj" />
     <Project Path="src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
     <Project Path="src/Meziantou.Framework.ChromiumTracing/Meziantou.Framework.ChromiumTracing.csproj" />
     <Project Path="src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
@@ -54,6 +57,8 @@
     <Project Path="src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder/Meziantou.Framework.FixedStringBuilder.csproj" />
+    <Project Path="src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
+    <Project Path="src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
@@ -74,6 +79,7 @@
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <Project Path="src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
     <Project Path="src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
     <Project Path="src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
     <Project Path="src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
@@ -153,6 +159,7 @@
     <Project Path="tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bcrypt.Tests/Meziantou.Framework.Bcrypt.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bencode.Tests/Meziantou.Framework.Bencode.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.BloomFilters.Tests/Meziantou.Framework.BloomFilters.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ByteSize.Tests/Meziantou.Framework.ByteSize.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ChromiumTracing.Tests/Meziantou.Framework.ChromiumTracing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
@@ -170,6 +177,7 @@
     <Project Path="tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Tests/Meziantou.Framework.FixedStringBuilder.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.FullPath.Analyzer.Tests/Meziantou.Framework.FullPath.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tests/Meziantou.Framework.Html.Tests.csproj" />
@@ -188,6 +196,7 @@
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.LLMContext.Tests/Meziantou.Framework.LLMContext.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.MediaTags.Tests/Meziantou.Framework.MediaTags.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NtpClient.Tests/Meziantou.Framework.NtpClient.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NtpServer.Tests/Meziantou.Framework.NtpServer.Tests.csproj" />

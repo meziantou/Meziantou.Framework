@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.3</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>High-performance in-memory Bloom filters and counting Bloom filters with atomic concurrent writes and segmented storage</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.Hashing" Version="10.0.8" />
+  </ItemGroup>
+
+</Project>

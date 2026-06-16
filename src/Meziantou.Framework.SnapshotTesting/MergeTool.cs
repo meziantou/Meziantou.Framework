@@ -1,4 +1,5 @@
 using Meziantou.Framework.DiffEngine;
+using Meziantou.Framework.LLMContext;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.SnapshotTesting;
@@ -53,7 +54,8 @@ public abstract class MergeTool
         var variable = Environment.GetEnvironmentVariable("DiffEngine_Disabled");
         return string.Equals(variable, "true", StringComparison.OrdinalIgnoreCase) ||
                BuildServerDetector.Detected ||
-               ContinuousTestingDetector.Detected;
+               ContinuousTestingDetector.Detected ||
+               LLMContextDetector.IsLLMContext();
     }
 
     internal static MergeToolResult? Launch(IEnumerable<MergeTool?>? mergeTools, string currentFilePath, string newFilePath)
@@ -77,11 +79,11 @@ public abstract class MergeTool
         return null;
     }
 
-    private protected static string CopyFileToTemp(string path)
+    private protected static FullPath CopyFileToTemp(string path)
     {
-        var temp = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+        var temp = FullPath.GetTempPath() / Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(temp);
-        var filePath = Path.Combine(temp, Path.GetFileName(path));
+        var filePath = temp / Path.GetFileName(path);
         File.Copy(path, filePath, overwrite: false);
         return filePath;
     }

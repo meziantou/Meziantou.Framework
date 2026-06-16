@@ -118,6 +118,7 @@ public sealed class TemporaryFile : IDisposable, IAsyncDisposable
     /// <summary>Implicitly converts a <see cref="TemporaryFile"/> to a string path.</summary>
     /// <param name="temporaryFile">The temporary file to convert.</param>
     /// <exception cref="ArgumentNullException"><paramref name="temporaryFile"/> is <see langword="null"/>.</exception>
+    [SuppressMessage("FullPath", "MFFP0011:Return FullPath instead of string", Justification = "There is another implicit operator to convert to FullPath")]
     public static implicit operator string(TemporaryFile temporaryFile)
     {
         ArgumentNullException.ThrowIfNull(temporaryFile);

@@ -1,7 +1,6 @@
 <Project>
 
   <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
@@ -9,6 +8,20 @@
     <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
              Link="Properties/AssemblyInfo.common.cs"
              Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SixLabors.ImageSharp">
+      <IncludeAssets>compile;runtime</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' and '@(ProjectReference->WithMetadataValue(`Filename`, `Meziantou.Framework.FullPath`))' != '' and '@(ProjectReference->WithMetadataValue(`Filename`, `Meziantou.Framework.FullPath.Analyzer`))' == ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
   <Target Name="ConfigurePolyfill" AfterTargets="ResolveLockFileAnalyzers" BeforeTargets="CoreCompile">

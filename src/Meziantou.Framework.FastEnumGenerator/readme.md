@@ -50,14 +50,18 @@ When the target project supports C# 14 extension members, the generator also emi
 
 The package also ships analyzers and code fixes for enums configured with `FastEnumAttribute`.
 
-- `MFEG0001`: invalid `FastEnumAttribute` enum type
-- `MFEG0002`: use `TEnum.Parse(...)` instead of `Enum.Parse(...)`
-- `MFEG0003`: use `TEnum.TryParse(...)` instead of `Enum.TryParse(...)`
-- `MFEG0004`: use `TEnum.GetNames(useMetadata: false)` instead of `Enum.GetNames(...)`
-- `MFEG0005`: use `TEnum.GetValues()` instead of `Enum.GetValues(...)`
-- `MFEG0006`: use `value.GetName()` instead of `Enum.GetName(...)`
-- `MFEG0007`: use `TEnum.IsDefined(...)` instead of `Enum.IsDefined(...)`
-- `MFEG0008`: use `value.ToStringFast()` instead of `value.ToString()`
+<!-- analyzer-rules -->
+| Id | Category | Description | Severity | Enabled |
+| -- | -- | -- | :--: | :--: |
+| `MFEG0001` | FastEnumGenerator | FastEnum target type is invalid | Error | ✔️ |
+| `MFEG0002` | FastEnumGenerator | Use FastEnum Parse | Warning | ✔️ |
+| `MFEG0003` | FastEnumGenerator | Use FastEnum TryParse | Warning | ✔️ |
+| `MFEG0004` | FastEnumGenerator | Use FastEnum GetNames | Warning | ✔️ |
+| `MFEG0005` | FastEnumGenerator | Use FastEnum GetValues | Warning | ✔️ |
+| `MFEG0006` | FastEnumGenerator | Use FastEnum GetName | Warning | ✔️ |
+| `MFEG0007` | FastEnumGenerator | Use FastEnum IsDefined | Warning | ✔️ |
+| `MFEG0008` | FastEnumGenerator | Use FastEnum ToStringFast | Warning | ✔️ |
+<!-- analyzer-rules -->
 
 ### Metadata names
 

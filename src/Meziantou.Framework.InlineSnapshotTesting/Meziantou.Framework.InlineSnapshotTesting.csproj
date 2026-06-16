@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);MEZIANTOU_INLINE_SNAPSHOT_TESTING</DefineConstants>
     <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 
-    <Version>5.0.4</Version>
+    <Version>5.0.8</Version>
     <NoWarn>$(NoWarn);NU5100</NoWarn>
   </PropertyGroup>
 
@@ -45,6 +45,7 @@
     <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="../Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <ProjectReference Include="../Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
     <ProjectReference Include="../Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
   </ItemGroup>
 

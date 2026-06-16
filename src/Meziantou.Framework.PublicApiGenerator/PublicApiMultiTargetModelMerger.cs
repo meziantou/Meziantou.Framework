@@ -42,7 +42,36 @@ internal static class PublicApiMultiTargetModelMerger
             mergedTypes.Add(MergeType(typeGroup.Value, orderedSymbols));
         }
 
-        return new PublicApiModel(assemblyName, [.. mergedTypes]);
+        return new PublicApiModel(assemblyName, MergeAssemblyAttributes(modelsBySymbol, orderedSymbols), [.. mergedTypes]);
+    }
+
+    private static string MergeAssemblyAttributes(IReadOnlyDictionary<string, PublicApiModel> modelsBySymbol, string[] orderedSymbols)
+    {
+        var sourcesBySymbol = modelsBySymbol.ToDictionary(
+            model => model.Key,
+            model => model.Value.AssemblyAttributesSource,
+            StringComparer.Ordinal);
+        var sourceGroups = sourcesBySymbol
+            .GroupBy(source => source.Value, StringComparer.Ordinal)
+            .Where(group => !string.IsNullOrEmpty(group.Key))
+            .OrderBy(group => BuildCondition(group.Select(item => item.Key).ToArray()), StringComparer.Ordinal)
+            .ToArray();
+        if (sourceGroups.Length == 0)
+            return string.Empty;
+
+        if (sourceGroups.Length == 1 && sourceGroups[0].Count() == orderedSymbols.Length)
+            return sourceGroups[0].Key;
+
+        var sb = new StringBuilder();
+        foreach (var sourceGroup in sourceGroups)
+        {
+            sb.Append("#if ");
+            sb.AppendLine(BuildCondition(sourceGroup.Select(item => item.Key).ToArray()));
+            sb.Append(sourceGroup.Key);
+            sb.AppendLine("#endif");
+        }
+
+        return sb.ToString();
     }
 
     private static PublicApiTypeModel MergeType(IReadOnlyDictionary<string, PublicApiTypeModel> typesBySymbol, string[] orderedSymbols)

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Security.Cryptography;
+using Meziantou.Framework.LLMContext;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.SnapshotTesting;
@@ -18,6 +19,7 @@ public sealed record SnapshotSettings
 
     public static SnapshotSettings Default { get; set; } = new();
 
+    /// <summary>Gets or sets a value indicating whether to automatically detect continuous integration, continuous testing, and LLM environments and disable snapshot updates.</summary>
     public bool AutoDetectContinuousEnvironment { get; set; } = true;
 
     public bool ForceUpdateSnapshots { get; set; }
@@ -131,7 +133,7 @@ public sealed record SnapshotSettings
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
     }
 
-    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected;
+    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMContextDetector.IsLLMContext();
 
     private static FullPath DefaultSnapshotPath(SnapshotPathContext context)
     {

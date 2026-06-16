@@ -8,6 +8,16 @@ internal abstract class PackageUpdater
 
     public virtual async Task<string?> UpdateAsync(Dependency dependency, CancellationToken cancellationToken)
     {
+        var updatedVersion = await GetUpdatedVersionAsync(dependency, cancellationToken).ConfigureAwait(false);
+        if (updatedVersion is null)
+            return null;
+
+        await dependency.UpdateVersionAsync(updatedVersion, cancellationToken).ConfigureAwait(false);
+        return updatedVersion;
+    }
+
+    public async Task<string?> GetUpdatedVersionAsync(Dependency dependency, CancellationToken cancellationToken)
+    {
         if (dependency.Name is null || !IsSupported(dependency))
             return null;
 
@@ -48,7 +58,6 @@ internal abstract class PackageUpdater
         if (string.Equals(updatedReference, dependency.Version, StringComparison.Ordinal))
             return null;
 
-        await dependency.UpdateVersionAsync(updatedReference, cancellationToken).ConfigureAwait(false);
         return updatedReference;
     }
 

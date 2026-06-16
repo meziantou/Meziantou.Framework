@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - name: Build eng scripts
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
@@ -60,7 +60,7 @@ jobs:
     outputs:
       has-project: ${{ steps.package-project.outputs.has-project }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
@@ -95,14 +95,14 @@ jobs:
       - name: Skip packaging
         if: steps.package-project.outputs.has-project != 'true'
         run: Write-Host "No package project was impacted. Skipping build and pack."
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: nuget
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.NuGetDirectory }}/**/*
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: binlog
@@ -114,10 +114,10 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ create_nuget ]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         if: needs.create_nuget.outputs.has-project == 'true'
         with:
           name: nuget
@@ -152,7 +152,7 @@ jobs:
         run: |
           $SanitizedName = "${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=test-results-$SanitizedName-shard-${{ matrix.shard }}" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
@@ -181,7 +181,7 @@ jobs:
 
       - name: Cache Public API test compilation outputs
         if: steps.build-project.outputs.has-project == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: ${{ env.MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY }}
           key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}
@@ -216,7 +216,7 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true'
         run: Get-ChildItem -Recurse "${{ env.TestResultsDirectory }}/" -Filter "*.dmp" | Remove-Item -Force -ErrorAction SilentlyContinue
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always() && steps.build-project.outputs.has-project == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
@@ -228,7 +228,7 @@ jobs:
             ${{ env.TestResultsDirectory }}/**/*
             **/obj/**/GeneratedFiles/**/*.cs
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
@@ -246,7 +246,7 @@ jobs:
         runtime: [ "win-x64", "linux-x64", "osx-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable/Trimmable.csproj
@@ -259,7 +259,7 @@ jobs:
         runtime: [ "win-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable.Wpf/Trimmable.Wpf.csproj
@@ -269,13 +269,13 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [build_and_test]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - name: Install dotnet-coverage
         run: dotnet tool update --global dotnet-coverage
       - name: Download test results
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: test-results-*-coverage
           path: test-results
@@ -287,7 +287,7 @@ jobs:
       - name: Merge coverage files (format cobertura)
         if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
         run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: code-coverage
           if-no-files-found: warn
@@ -297,21 +297,22 @@ jobs:
             test-result.cobertura.xml
 
   deploy:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     runs-on: ubuntu-24.04
     needs: [ build_eng_scripts, validate_generated_files, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
       - name: NuGet login (OIDC → temp API key)
-        uses: NuGet/login@v1
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
         id: login
         with:
           user: meziantou

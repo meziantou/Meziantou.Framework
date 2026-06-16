@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.0</Version>
+    <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>A pooled, recyclable MemoryStream backed by a shared pool of fixed-size byte arrays, implementing IBufferWriter&lt;byte&gt;.</Description>
   </PropertyGroup>

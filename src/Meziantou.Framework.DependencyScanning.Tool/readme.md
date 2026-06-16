@@ -54,6 +54,7 @@ Options:
   --directory <directory>              Root directory
   --files <files>                      Glob patterns to find files to scan
   --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, SwiftPackage, MSBuildProjectReference
+  --upgradable                         Only list dependencies that can be upgraded
   --format <Json|Text>                 Output format. Available values: Text, Json
   -?, -h, --help                       Show help and usage information
 ```

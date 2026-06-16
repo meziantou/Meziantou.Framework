@@ -2,6 +2,8 @@ namespace Meziantou.Framework.Yamlish;
 
 public abstract class YamlishConverter
 {
+    public virtual bool HandleNullValues => false;
+
     public abstract bool CanConvert(Type typeToConvert);
 
     public abstract object? Read(YamlishNode node, Type typeToConvert, YamlishSerializerOptions options);

@@ -198,6 +198,7 @@ namespace Meziantou.Framework.Yamlish.Nodes
     {
         public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
         public string Value { get => throw null; }
+        public bool IsNull { get => throw null; }
         public Meziantou.Framework.Yamlish.YamlishScalarStyle Style { get => throw null; set { } }
         public Meziantou.Framework.Yamlish.YamlishScalarChomping Chomping { get => throw null; set { } }
         public YamlishScalar(string value) { }

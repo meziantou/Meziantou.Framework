@@ -11,6 +11,8 @@ public sealed class YamlishScalar : YamlishNode
 
     public string Value { get; }
 
+    public bool IsNull => Value is "null";
+
     public YamlishScalarStyle Style { get; set; }
 
     public YamlishScalarChomping Chomping { get; set; } = YamlishScalarChomping.Clip;

@@ -148,7 +148,7 @@ public sealed class YamlishSerializerOptions
             VerifyMutable();
             field = value;
         }
-    }
+    } = true;
 
     public bool RespectNullableAnnotations
     {
@@ -158,7 +158,7 @@ public sealed class YamlishSerializerOptions
             VerifyMutable();
             field = value;
         }
-    }
+    } = true;
 
     public void AddAttribute(Type type, YamlishAttribute attribute)
     {

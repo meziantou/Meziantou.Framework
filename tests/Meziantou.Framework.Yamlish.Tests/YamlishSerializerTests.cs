@@ -15,8 +15,8 @@ public sealed class YamlishSerializerTests
         Assert.Equal(Environment.NewLine, options.NewLine);
         Assert.Equal(YamlishObjectCreationHandling.Replace, options.PreferredObjectCreationHandling);
         Assert.True(options.AllowDuplicateProperties);
-        Assert.False(options.RespectRequiredConstructorParameters);
-        Assert.False(options.RespectNullableAnnotations);
+        Assert.True(options.RespectRequiredConstructorParameters);
+        Assert.True(options.RespectNullableAnnotations);
     }
 
     [Fact]
@@ -260,9 +260,11 @@ public sealed class YamlishSerializerTests
     }
 
     [Fact]
-    public void Deserialize_MissingRequiredConstructorParameter_UsesDefaultByDefault()
+    public void Deserialize_MissingRequiredConstructorParameter_UsesDefaultWhenRequiredParametersAreNotRespected()
     {
-        var value = YamlishSerializer.Deserialize<ConstructorValue>("Name: value");
+        var options = new YamlishSerializerOptions { RespectRequiredConstructorParameters = false };
+
+        var value = YamlishSerializer.Deserialize<ConstructorValue>("Name: value", options);
 
         Assert.NotNull(value);
         Assert.Equal(0, value.Id);
@@ -410,6 +412,7 @@ public sealed class YamlishSerializerTests
     public void Deserialize_RespectNullableAnnotationsFalse_AllowsNullNonNullableSetter()
     {
         var options = CreateNullValueConverterOptions();
+        options.RespectNullableAnnotations = false;
 
         var value = YamlishSerializer.Deserialize<NullableAnnotationsValue>("NonNullable: null", options);
 

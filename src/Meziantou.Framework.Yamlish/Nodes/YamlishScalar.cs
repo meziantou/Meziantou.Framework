@@ -16,6 +16,8 @@ public sealed class YamlishScalar : YamlishNode
     /// <summary>Gets the scalar value.</summary>
     public string Value { get; }
 
+    public bool IsNull => Value is "null";
+
     /// <summary>Gets or sets the style used when writing the scalar value.</summary>
     public YamlishScalarStyle Style { get; set; }
 

@@ -3,6 +3,11 @@ namespace Meziantou.Framework.Yamlish;
 /// <summary>Provides a converter for reading and writing Yamlish nodes.</summary>
 public abstract class YamlishConverter
 {
+    /// <summary>
+    /// Gets a value that indicates whether <see langword="null" /> should be passed to the converter on serialization, and whether <see langword="null" /> should be passed on deserialization.
+    /// </sumary>
+    public virtual bool HandleNullValues => false;
+
     /// <summary>Determines whether this converter can convert the specified type.</summary>
     /// <param name="typeToConvert">The type to convert.</param>
     /// <returns><see langword="true" /> if this converter can convert <paramref name="typeToConvert" />; otherwise, <see langword="false" />.</returns>

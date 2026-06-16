@@ -721,6 +721,14 @@ public sealed class YamlishSerializerTests
     }
 
     [Fact]
+    public void Deserialize_NullValue()
+    {
+        var result = YamlishSerializer.Deserialize<NullStringValue>("Prop: null");
+
+        Assert.Null(result!.Prop);
+    }
+
+    [Fact]
     public void Serialize_PolymorphicType_AddsDefaultTypeDiscriminator()
     {
         PolymorphicBase value = new PolymorphicDerived { BaseValue = 1, DerivedValue = "derived" };
@@ -979,6 +987,11 @@ public sealed class YamlishSerializerTests
     private sealed class StringValue
     {
         public string? Value { get; set; }
+    }
+
+    private sealed class NullStringValue
+    {
+        public string? Prop { get; set; }
     }
 
     private sealed class SequenceStyleValue

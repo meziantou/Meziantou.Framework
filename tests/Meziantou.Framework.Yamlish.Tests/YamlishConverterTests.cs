@@ -327,6 +327,29 @@ public sealed class YamlishConverterTests
     }
 
     [Fact]
+    public void CustomConverter_NullValue_IsHandledAutomaticallyByDefault()
+    {
+        var options = new YamlishSerializerOptions();
+        options.Converters.Add(new ThrowingNullHandledValueConverter());
+
+        var result = YamlishSerializer.Deserialize<NullHandledValue>("null", options);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void CustomConverter_HandleNullValues_ReadsNullValue()
+    {
+        var options = new YamlishSerializerOptions();
+        options.Converters.Add(new NullHandledValueConverter());
+
+        var result = YamlishSerializer.Deserialize<NullHandledValue>("null", options);
+
+        Assert.NotNull(result);
+        Assert.True(result.Handled);
+    }
+
+    [Fact]
     public void CustomConverters_OverrideBuiltInAndUseRuntimeType()
     {
         var options = new YamlishSerializerOptions();
@@ -488,6 +511,11 @@ public sealed class YamlishConverterTests
 
     private readonly record struct Temperature(int Value);
 
+    private sealed class NullHandledValue
+    {
+        public bool Handled { get; set; }
+    }
+
     private sealed class TemperatureConverter : YamlishConverter<Temperature>
     {
         public override Temperature Read(YamlishNode node, YamlishSerializerOptions options)
@@ -499,6 +527,35 @@ public sealed class YamlishConverterTests
         public override YamlishNode Write(Temperature value, YamlishSerializerOptions options)
         {
             return new YamlishScalar($"{value.Value.ToString(CultureInfo.InvariantCulture)} C");
+        }
+    }
+
+    private sealed class ThrowingNullHandledValueConverter : YamlishConverter<NullHandledValue>
+    {
+        public override NullHandledValue Read(YamlishNode node, YamlishSerializerOptions options)
+        {
+            throw new InvalidOperationException("The converter should not be called for null values.");
+        }
+
+        public override YamlishNode Write(NullHandledValue value, YamlishSerializerOptions options)
+        {
+            return new YamlishScalar("value");
+        }
+    }
+
+    private sealed class NullHandledValueConverter : YamlishConverter<NullHandledValue>
+    {
+        public override bool HandleNullValues => true;
+
+        public override NullHandledValue Read(YamlishNode node, YamlishSerializerOptions options)
+        {
+            Assert.True(Assert.IsType<YamlishScalar>(node).IsNull);
+            return new NullHandledValue { Handled = true };
+        }
+
+        public override YamlishNode Write(NullHandledValue value, YamlishSerializerOptions options)
+        {
+            return new YamlishScalar(value.Handled ? "handled" : "value");
         }
     }
 

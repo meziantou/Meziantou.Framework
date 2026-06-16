@@ -387,7 +387,7 @@ public sealed class YamlishConverterTests
             $type: CSharpDog
             Value:
               Name: Rex
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
         var dog = Assert.IsType<CSharpDog>(result.Value);
         Assert.Equal("Rex", dog.Name);
     }
@@ -404,7 +404,7 @@ public sealed class YamlishConverterTests
             $type: CSharpCat
             Value:
               Name: Felix
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
         var cat = Assert.IsType<CSharpCat>(result.Value);
         Assert.Equal("Felix", cat.Name);
     }
@@ -435,7 +435,7 @@ public sealed class YamlishConverterTests
         Assert.Equal("""
             $type: Int32
             Value: 42
-            """, content);
+            """, content, ignoreLineEndingDifferences: true);
         Assert.Equal(42, Assert.IsType<int>(result.Value));
     }
 

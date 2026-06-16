@@ -265,7 +265,7 @@ public sealed class YamlishDocumentTests
         var parsed = YamlishDocument.Parse(content);
 
         var mapping = Assert.IsType<YamlishMapping>(parsed.Root);
-        Assert.False(content.EndsWith('\n'));
+        Assert.False(content.EndsWith('\n', StringComparison.Ordinal));
         Assert.Equal("line 1\n  line 2", Assert.IsType<YamlishScalar>(mapping["description"]).Value);
         Assert.Equal("line 1\n", Assert.IsType<YamlishScalar>(mapping["trailingNewLine"]).Value);
         Assert.Equal("value # not a comment", Assert.IsType<YamlishScalar>(mapping["commentLike"]).Value);
@@ -296,7 +296,7 @@ public sealed class YamlishDocumentTests
         var content = new YamlishDocument(new YamlishScalar("first\nsecond")).ToString();
         var document = YamlishDocument.Parse(content);
 
-        Assert.StartsWith("|-\n", content, StringComparison.Ordinal);
+        Assert.StartsWith("|-" + Environment.NewLine, content, StringComparison.Ordinal);
         Assert.Equal("first\nsecond", Assert.IsType<YamlishScalar>(document.Root).Value);
     }
 }

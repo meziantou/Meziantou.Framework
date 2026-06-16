@@ -667,6 +667,135 @@ public sealed class YamlishSerializerTests
         Assert.Throws<NotSupportedException>(() => YamlishSerializer.Serialize<PolymorphicBase>(value));
     }
 
+    [Fact]
+    public void Deserialize_PolymorphicType_UnknownTypeDiscriminatorThrows()
+    {
+        var exception = Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<PolymorphicBase>("""
+            $type: unknown
+            BaseValue: 1
+            """));
+
+        Assert.Contains("unknown", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Deserialize_PolymorphicType_UsesPropertyNameComparerForTypeDiscriminatorPropertyName()
+    {
+        var result = YamlishSerializer.Deserialize<PolymorphicBase>("""
+            $TYPE: derived
+            DerivedValue: derived
+            BaseValue: 1
+            """);
+
+        Assert.IsType<PolymorphicDerived>(result);
+    }
+
+    [Fact]
+    public void SerializeAndDeserialize_PolymorphicType_InObjectProperty()
+    {
+        var value = new PolymorphicContainer { Value = new PolymorphicDerived { BaseValue = 1, DerivedValue = "derived" } };
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<PolymorphicContainer>(content);
+
+        Assert.Equal("""
+            Value:
+              $type: derived
+              DerivedValue: derived
+              BaseValue: 1
+            """, content);
+        Assert.IsType<PolymorphicDerived>(result?.Value);
+    }
+
+    [Fact]
+    public void SerializeAndDeserialize_PolymorphicType_InCollection()
+    {
+        var value = new List<PolymorphicBase>
+        {
+            new PolymorphicDerived { BaseValue = 1, DerivedValue = "derived" },
+        };
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<List<PolymorphicBase>>(content);
+
+        Assert.Equal("""
+            -
+              $type: derived
+              DerivedValue: derived
+              BaseValue: 1
+            """, content);
+        Assert.NotNull(result);
+        var derived = Assert.IsType<PolymorphicDerived>(Assert.Single(result));
+        Assert.Equal("derived", derived.DerivedValue);
+    }
+
+    [Fact]
+    public void SerializeAndDeserialize_PolymorphicType_InDictionary()
+    {
+        var value = new Dictionary<string, PolymorphicBase>(StringComparer.Ordinal)
+        {
+            ["value"] = new PolymorphicDerived { BaseValue = 1, DerivedValue = "derived" },
+        };
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<Dictionary<string, PolymorphicBase>>(content);
+
+        Assert.Equal("""
+            value:
+              $type: derived
+              DerivedValue: derived
+              BaseValue: 1
+            """, content);
+        var derived = Assert.IsType<PolymorphicDerived>(result?["value"]);
+        Assert.Equal("derived", derived.DerivedValue);
+    }
+
+    [Fact]
+    public void Serialize_PolymorphicType_DuplicateTypeDiscriminatorThrows()
+    {
+        var options = new YamlishSerializerOptions();
+        options.AddAttribute(typeof(OptionsPolymorphicBase), new YamlishDerivedTypeAttribute(typeof(OptionsPolymorphicDerived), "duplicate"));
+        options.AddAttribute(typeof(OptionsPolymorphicBase), new YamlishDerivedTypeAttribute(typeof(SecondOptionsPolymorphicDerived), "duplicate"));
+
+        Assert.Throws<InvalidOperationException>(() => YamlishSerializer.Serialize<OptionsPolymorphicBase>(new OptionsPolymorphicDerived(), options));
+    }
+
+    [Fact]
+    public void Serialize_PolymorphicType_NonAssignableDerivedTypeThrows()
+    {
+        var options = new YamlishSerializerOptions();
+        options.AddAttribute(typeof(OptionsPolymorphicBase), new YamlishDerivedTypeAttribute(typeof(StringValue), "invalid"));
+
+        Assert.Throws<InvalidOperationException>(() => YamlishSerializer.Serialize<OptionsPolymorphicBase>(new OptionsPolymorphicBase(), options));
+    }
+
+    [Fact]
+    public void Serialize_PolymorphicType_DiscriminatorPropertyCollisionThrows()
+    {
+        PolymorphicCollisionBase value = new PolymorphicCollisionDerived { Type = "value" };
+
+        Assert.Throws<ArgumentException>(() => YamlishSerializer.Serialize<PolymorphicCollisionBase>(value));
+    }
+
+    [Fact]
+    public void Deserialize_PolymorphicType_RespectsDerivedRequiredConstructorParameters()
+    {
+        Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<PolymorphicConstructorBase>("""
+            $type: constructor
+            """));
+    }
+
+    [Fact]
+    public void Deserialize_PolymorphicType_RespectsDerivedNullableAnnotations()
+    {
+        var options = CreateNullValueConverterOptions();
+
+        Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<PolymorphicNullableBase>("""
+            $type: nullable
+            Value: null
+            """, options));
+    }
+
     private sealed class Product
     {
         [YamlishPropertyName("product_id")]
@@ -746,6 +875,38 @@ public sealed class YamlishSerializerTests
     private sealed class OptionsPolymorphicDerived : OptionsPolymorphicBase
     {
         public string? Value { get; set; }
+    }
+
+    private sealed class SecondOptionsPolymorphicDerived : OptionsPolymorphicBase;
+
+    private sealed class PolymorphicContainer
+    {
+        public PolymorphicBase? Value { get; set; }
+    }
+
+    [YamlishDerivedType(typeof(PolymorphicCollisionDerived), "collision")]
+    private class PolymorphicCollisionBase;
+
+    private sealed class PolymorphicCollisionDerived : PolymorphicCollisionBase
+    {
+        [YamlishPropertyName("$type")]
+        public string? Type { get; set; }
+    }
+
+    [YamlishDerivedType(typeof(PolymorphicConstructorDerived), "constructor")]
+    private class PolymorphicConstructorBase;
+
+    private sealed class PolymorphicConstructorDerived(string name) : PolymorphicConstructorBase
+    {
+        public string Name { get; } = name;
+    }
+
+    [YamlishDerivedType(typeof(PolymorphicNullableDerived), "nullable")]
+    private class PolymorphicNullableBase;
+
+    private sealed class PolymorphicNullableDerived : PolymorphicNullableBase
+    {
+        public NullValue Value { get; set; } = new();
     }
 
     private static YamlishNamingPolicy GetYamlishNamingPolicy(string policyName)

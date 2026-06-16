@@ -92,6 +92,7 @@ public static class YamlishSerializer
 
             if (value is IDictionary dictionary)
             {
+                TryGetDictionaryValueType(declaredType, out var dictionaryValueType);
                 var result = new YamlishMapping();
                 foreach (DictionaryEntry entry in dictionary)
                 {
@@ -101,7 +102,7 @@ public static class YamlishSerializer
                     if (ShouldIgnore(entry.Value, GetDefaultValue(entry.Value?.GetType() ?? typeof(object), options.DefaultIgnoreCondition), options.DefaultIgnoreCondition))
                         continue;
 
-                    result.Add(key, Serialize(entry.Value, entry.Value?.GetType() ?? typeof(object), options, depth + 1));
+                    result.Add(key, Serialize(entry.Value, dictionaryValueType ?? entry.Value?.GetType() ?? typeof(object), options, depth + 1));
                 }
 
                 return result;
@@ -109,13 +110,14 @@ public static class YamlishSerializer
 
             if (value is IEnumerable enumerable)
             {
+                TryGetCollectionElementType(declaredType, out var elementType);
                 var result = new YamlishSequence();
                 foreach (var item in enumerable)
                 {
                     if (ShouldIgnore(item, GetDefaultValue(item?.GetType() ?? typeof(object), options.DefaultIgnoreCondition), options.DefaultIgnoreCondition))
                         continue;
 
-                    result.Add(Serialize(item, item?.GetType() ?? typeof(object), options, depth + 1));
+                    result.Add(Serialize(item, elementType ?? item?.GetType() ?? typeof(object), options, depth + 1));
                 }
 
                 return result;

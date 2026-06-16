@@ -1,0 +1,10 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <Description>A parser and serializer for a small, deliberate subset of YAML.</Description>
+    <IsTrimmable>false</IsTrimmable>
+  </PropertyGroup>
+
+</Project>

@@ -119,6 +119,7 @@
 | Meziantou.Framework.Win32.RestartManager | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.RestartManager.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.RestartManager/) | [readme](src/Meziantou.Framework.Win32.RestartManager/readme.md) |
 | Meziantou.Framework.WPF | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.WPF.svg)](https://www.nuget.org/packages/Meziantou.Framework.WPF/) | [readme](src/Meziantou.Framework.WPF/readme.md) |
 | Meziantou.Framework.Xml | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Xml.svg)](https://www.nuget.org/packages/Meziantou.Framework.Xml/) | [readme](src/Meziantou.Framework.Xml/readme.md) |
+| Meziantou.Framework.Yamlish | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Yamlish.svg)](https://www.nuget.org/packages/Meziantou.Framework.Yamlish/) | [readme](src/Meziantou.Framework.Yamlish/readme.md) |
 | Meziantou.Xunit | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Xunit.svg)](https://www.nuget.org/packages/Meziantou.Xunit/) | [readme](src/Meziantou.Xunit/readme.md) |
 
 # How to contribute

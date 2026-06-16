@@ -4,5 +4,11 @@ internal sealed class DateTimeOffsetYamlishConverter : ScalarYamlishConverter<Da
 {
     protected override DateTimeOffset Parse(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 
-    protected override string Format(DateTimeOffset value) => value.ToString("O", CultureInfo.InvariantCulture);
+    protected override string Format(DateTimeOffset value)
+    {
+        if (value.Offset == TimeSpan.Zero)
+            return value.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+
+        return value.ToString("O", CultureInfo.InvariantCulture);
+    }
 }

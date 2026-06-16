@@ -166,6 +166,22 @@ public sealed class YamlishConverterTests
     }
 
     [Fact]
+    public void UtcDateTimeConverters()
+    {
+        const string Content = "2000-01-01T12:00:00.0000000Z";
+
+        var dateTime = YamlishSerializer.Deserialize<DateTime>(Content);
+        var dateTimeOffset = YamlishSerializer.Deserialize<DateTimeOffset>(Content);
+
+        Assert.Equal(new DateTime(2000, 1, 1, 12, 0, 0, DateTimeKind.Utc), dateTime);
+        Assert.Equal(DateTimeKind.Utc, dateTime.Kind);
+        Assert.Equal(Content, YamlishSerializer.Serialize(dateTime));
+        Assert.Equal(new DateTimeOffset(2000, 1, 1, 12, 0, 0, TimeSpan.Zero), dateTimeOffset);
+        Assert.Equal(TimeSpan.Zero, dateTimeOffset.Offset);
+        Assert.Equal(Content, YamlishSerializer.Serialize(dateTimeOffset));
+    }
+
+    [Fact]
     public void DateOnlyConverter()
     {
         var value = new DateOnly(2026, 6, 15);

@@ -286,7 +286,7 @@ public sealed class YamlishDocumentTests
 
         foreach (var node in nodes)
         {
-            Assert.False(new YamlishDocument(node).ToString().EndsWith('\n'));
+            Assert.False(new YamlishDocument(node).ToString().EndsWith('\n', StringComparison.Ordinal));
         }
     }
 

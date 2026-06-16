@@ -525,6 +525,107 @@ public sealed class YamlishSerializerTests
         Assert.Equal(20, result.Dimensions?.Height);
     }
 
+    [Fact]
+    public void Deserialize_JaggedArray_BlockSequence()
+    {
+        var result = YamlishSerializer.Deserialize<string[][]>("""
+            -
+              - item1.1
+              - item1.2
+            -
+              - item2.1
+              - item2.2
+            """);
+
+        Assert.Equal(
+            [
+                ["item1.1", "item1.2"],
+                ["item2.1", "item2.2"],
+            ], result);
+    }
+
+    [Fact]
+    public void Serialize_UsesSequenceStyleAttributes()
+    {
+        var content = YamlishSerializer.Serialize(new SequenceStyleValue());
+
+        Assert.Equal("""
+            Block:
+              - item1
+              - item2
+            Flow: [item1, item2]
+            """, content, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void Serialize_UsesScalarStyleAttributes()
+    {
+        var content = YamlishSerializer.Serialize(new ScalarStyleValue());
+
+        Assert.Equal("""
+            Plain: item1,item2
+            DoubleQuoted: "item1"
+            SingleQuoted: 'it''s literal'
+            Literal: |-
+              first
+              second
+            Folded: >
+              first
+              second
+            """, content, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void Serialize_SequenceStyleAttribute_CanBeConfiguredWithOptions()
+    {
+        var options = new YamlishSerializerOptions();
+        options.AddAttribute(typeof(OptionsSequenceStyleValue), nameof(OptionsSequenceStyleValue.Values), new YamlishSequenceStyleAttribute(YamlishSequenceStyle.Block));
+
+        var content = YamlishSerializer.Serialize(new OptionsSequenceStyleValue(), options);
+
+        Assert.Equal("""
+            Values:
+              - item1
+              - item2
+            """, content, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void Serialize_ScalarStyleAttribute_CanBeConfiguredWithOptions()
+    {
+        var options = new YamlishSerializerOptions();
+        options.AddAttribute(typeof(OptionsScalarStyleValue), nameof(OptionsScalarStyleValue.Value), new YamlishScalarStyleAttribute(YamlishScalarStyle.SingleQuoted));
+
+        var content = YamlishSerializer.Serialize(new OptionsScalarStyleValue(), options);
+
+        Assert.Equal("Value: 'it''s literal'", content);
+    }
+
+    [Fact]
+    public void Serialize_JaggedArray_CanUseBlockSequenceStyle()
+    {
+        var value = new JaggedArrayValue
+        {
+            Items =
+            [
+                ["item1.1", "item1.2"],
+                ["item2.1", "item2.2"],
+            ],
+        };
+
+        var content = YamlishSerializer.Serialize(value);
+
+        Assert.Equal("""
+            Items:
+              -
+                - item1.1
+                - item1.2
+              -
+                - item2.1
+                - item2.2
+            """, content, ignoreLineEndingDifferences: true);
+    }
+
     [Theory]
     [InlineData("""
         Name: Test
@@ -878,6 +979,49 @@ public sealed class YamlishSerializerTests
     private sealed class StringValue
     {
         public string? Value { get; set; }
+    }
+
+    private sealed class SequenceStyleValue
+    {
+        [YamlishSequenceStyle(YamlishSequenceStyle.Block)]
+        public string[] Block { get; set; } = ["item1", "item2"];
+
+        [YamlishSequenceStyle(YamlishSequenceStyle.Flow)]
+        public string[] Flow { get; set; } = ["item1", "item2"];
+    }
+
+    private sealed class ScalarStyleValue
+    {
+        [YamlishScalarStyle(YamlishScalarStyle.Plain)]
+        public string Plain { get; set; } = "item1,item2";
+
+        [YamlishScalarStyle(YamlishScalarStyle.DoubleQuoted)]
+        public string DoubleQuoted { get; set; } = "item1";
+
+        [YamlishScalarStyle(YamlishScalarStyle.SingleQuoted)]
+        public string SingleQuoted { get; set; } = "it's literal";
+
+        [YamlishScalarStyle(YamlishScalarStyle.Literal, Chomping = YamlishScalarChomping.Strip)]
+        public string Literal { get; set; } = "first\nsecond";
+
+        [YamlishScalarStyle(YamlishScalarStyle.Folded)]
+        public string Folded { get; set; } = "first\nsecond\n";
+    }
+
+    private sealed class OptionsSequenceStyleValue
+    {
+        public string[] Values { get; set; } = ["item1", "item2"];
+    }
+
+    private sealed class OptionsScalarStyleValue
+    {
+        public string Value { get; set; } = "it's literal";
+    }
+
+    private sealed class JaggedArrayValue
+    {
+        [YamlishSequenceStyle(YamlishSequenceStyle.Block)]
+        public string[][]? Items { get; set; }
     }
 
     private sealed class WebsiteMetadata

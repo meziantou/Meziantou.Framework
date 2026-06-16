@@ -125,7 +125,8 @@ internal sealed class YamlishTypeInfo
             if (ignoreCondition is not YamlishIgnoreCondition.Always)
             {
                 var nullabilityInfo = nullabilityInfoContext.Create(property);
-                yield return new YamlishMemberInfo(GetName(property, options), property.PropertyType, property.GetValue, SetValue: null, ignoreCondition, GetDefaultValue(property.PropertyType, ignoreCondition), IsRequired: false, IsNullable(nullabilityInfo.ReadState), IsSetNullable: true);
+                var serializationStyle = GetSerializationStyle(property, options);
+                yield return new YamlishMemberInfo(GetName(property, options), property.PropertyType, property.GetValue, SetValue: null, ignoreCondition, serializationStyle.SequenceStyle, serializationStyle.ScalarStyle, serializationStyle.ScalarChomping, GetDefaultValue(property.PropertyType, ignoreCondition), IsRequired: false, IsNullable(nullabilityInfo.ReadState), IsSetNullable: true);
             }
         }
 
@@ -140,7 +141,8 @@ internal sealed class YamlishTypeInfo
                 if (ignoreCondition is not YamlishIgnoreCondition.Always)
                 {
                     var nullabilityInfo = nullabilityInfoContext.Create(field);
-                    yield return new YamlishMemberInfo(GetName(field, options), field.FieldType, field.GetValue, field.SetValue, ignoreCondition, GetDefaultValue(field.FieldType, ignoreCondition), IsRequired: false, IsNullable(nullabilityInfo.ReadState), IsSetNullable: true);
+                    var serializationStyle = GetSerializationStyle(field, options);
+                    yield return new YamlishMemberInfo(GetName(field, options), field.FieldType, field.GetValue, field.SetValue, ignoreCondition, serializationStyle.SequenceStyle, serializationStyle.ScalarStyle, serializationStyle.ScalarChomping, GetDefaultValue(field.FieldType, ignoreCondition), IsRequired: false, IsNullable(nullabilityInfo.ReadState), IsSetNullable: true);
                 }
             }
         }
@@ -162,6 +164,9 @@ internal sealed class YamlishTypeInfo
                 property.GetValue,
                 property.SetMethod is null ? null : property.SetValue,
                 YamlishIgnoreCondition.Never,
+                YamlishSequenceStyle.Auto,
+                YamlishScalarStyle.Auto,
+                YamlishScalarChomping.Clip,
                 DefaultValue: null,
                 property.IsDefined(typeof(RequiredMemberAttribute)),
                 IsGetNullable: true,
@@ -181,6 +186,9 @@ internal sealed class YamlishTypeInfo
                         field.GetValue,
                         field.SetValue,
                         YamlishIgnoreCondition.Never,
+                        YamlishSequenceStyle.Auto,
+                        YamlishScalarStyle.Auto,
+                        YamlishScalarChomping.Clip,
                         DefaultValue: null,
                         field.IsDefined(typeof(RequiredMemberAttribute)),
                         IsGetNullable: true,
@@ -206,6 +214,25 @@ internal sealed class YamlishTypeInfo
         return attribute?.Name ?? options.PropertyNamingPolicy?.ConvertName(member.Name) ?? member.Name;
     }
 
+    private static SerializationStyle GetSerializationStyle(MemberInfo member, YamlishSerializerOptions options)
+    {
+        var sequenceStyle = options.GetCustomAttribute<YamlishSequenceStyleAttribute>(member)?.Style ?? YamlishSequenceStyle.Auto;
+        var scalarAttribute = options.GetCustomAttribute<YamlishScalarStyleAttribute>(member);
+        var scalarStyle = scalarAttribute?.Style ?? YamlishScalarStyle.Auto;
+        var scalarChomping = scalarAttribute?.Chomping ?? YamlishScalarChomping.Clip;
+
+        if (!Enum.IsDefined(sequenceStyle))
+            throw new InvalidOperationException($"The sequence style configured on member '{member.Name}' is invalid.");
+
+        if (!Enum.IsDefined(scalarStyle))
+            throw new InvalidOperationException($"The scalar style configured on member '{member.Name}' is invalid.");
+
+        if (!Enum.IsDefined(scalarChomping))
+            throw new InvalidOperationException($"The scalar chomping configured on member '{member.Name}' is invalid.");
+
+        return new SerializationStyle(sequenceStyle, scalarStyle, scalarChomping);
+    }
+
     private static object? GetDefaultValue(Type type, YamlishIgnoreCondition ignoreCondition)
     {
         return ignoreCondition is YamlishIgnoreCondition.WhenWritingDefault && type.IsValueType ? Activator.CreateInstance(type) : null;
@@ -220,4 +247,6 @@ internal sealed class YamlishTypeInfo
     {
         return state is not NullabilityState.NotNull;
     }
+
+    private sealed record SerializationStyle(YamlishSequenceStyle SequenceStyle, YamlishScalarStyle ScalarStyle, YamlishScalarChomping ScalarChomping);
 }

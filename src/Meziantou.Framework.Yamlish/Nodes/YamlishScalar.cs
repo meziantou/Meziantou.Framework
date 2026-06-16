@@ -10,4 +10,8 @@ public sealed class YamlishScalar : YamlishNode
     public override YamlishNodeKind Kind => YamlishNodeKind.Scalar;
 
     public string Value { get; }
+
+    public YamlishScalarStyle Style { get; set; }
+
+    public YamlishScalarChomping Chomping { get; set; } = YamlishScalarChomping.Clip;
 }

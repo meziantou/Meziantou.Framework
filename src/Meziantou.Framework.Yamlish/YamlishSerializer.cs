@@ -143,7 +143,9 @@ public static class YamlishSerializer
                 if (ShouldIgnore(memberValue, member.DefaultValue, member.IgnoreCondition))
                     continue;
 
-                mapping.Add(member.SerializedName, Serialize(memberValue, member.MemberType, options, depth + 1));
+                var memberNode = Serialize(memberValue, member.MemberType, options, depth + 1);
+                ApplySerializationStyle(memberNode, member);
+                mapping.Add(member.SerializedName, memberNode);
             }
 
             return mapping;
@@ -365,6 +367,48 @@ public static class YamlishSerializer
         private static object? GetDefaultValue(Type type, YamlishIgnoreCondition condition)
         {
             return condition is YamlishIgnoreCondition.WhenWritingDefault && type.IsValueType ? Activator.CreateInstance(type) : null;
+        }
+
+        private static void ApplySerializationStyle(YamlishNode node, YamlishMemberInfo member)
+        {
+            if (member.SequenceStyle is not YamlishSequenceStyle.Auto)
+            {
+                if (node is not YamlishSequence)
+                    throw new InvalidOperationException($"The member '{member.SerializedName}' is configured with a sequence style but did not serialize to a sequence node.");
+
+                ApplySequenceStyle(node, member.SequenceStyle);
+            }
+
+            if (member.ScalarStyle is YamlishScalarStyle.Auto)
+                return;
+
+            if (node is not YamlishScalar scalar)
+                throw new InvalidOperationException($"The member '{member.SerializedName}' is configured with a scalar style but did not serialize to a scalar node.");
+
+            scalar.Style = member.ScalarStyle;
+            scalar.Chomping = member.ScalarChomping;
+        }
+
+        private static void ApplySequenceStyle(YamlishNode node, YamlishSequenceStyle style)
+        {
+            if (node is YamlishSequence sequence)
+            {
+                sequence.Style = style;
+                if (style is YamlishSequenceStyle.Block)
+                {
+                    foreach (var item in sequence)
+                    {
+                        ApplySequenceStyle(item, style);
+                    }
+                }
+            }
+            else if (style is YamlishSequenceStyle.Block && node is YamlishMapping mapping)
+            {
+                foreach (var entry in mapping)
+                {
+                    ApplySequenceStyle(entry.Value, style);
+                }
+            }
         }
 
         private static bool TryGetDictionaryValueType(Type type, [NotNullWhen(true)] out Type? valueType)

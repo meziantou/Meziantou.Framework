@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Nodes;
 
 public sealed class YamlishSequence : YamlishNode, IReadOnlyList<YamlishNode>
 {

@@ -1,6 +1,6 @@
 using System.Net.Sockets;
 
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Converters;
 
 internal sealed class UnixDomainSocketEndPointYamlishConverter : ScalarYamlishConverter<UnixDomainSocketEndPoint>
 {

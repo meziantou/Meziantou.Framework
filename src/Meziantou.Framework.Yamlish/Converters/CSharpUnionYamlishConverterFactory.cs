@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Converters;
 
 internal sealed class CSharpUnionYamlishConverterFactory : YamlishConverterFactory
 {

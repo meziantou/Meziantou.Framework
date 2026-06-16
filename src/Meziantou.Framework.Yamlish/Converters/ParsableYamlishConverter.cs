@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Converters;
 
 internal abstract class ParsableYamlishConverter<T> : ScalarYamlishConverter<T>
     where T : IParsable<T>, IFormattable

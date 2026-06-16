@@ -11,17 +11,17 @@ namespace Meziantou.Framework.Yamlish
     public abstract class YamlishConverter<T> : Meziantou.Framework.Yamlish.YamlishConverter
     {
         public sealed override bool CanConvert(System.Type typeToConvert) => throw null;
-        public abstract T Read(Meziantou.Framework.Yamlish.YamlishNode node, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
-        public abstract Meziantou.Framework.Yamlish.YamlishNode Write(T value, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
-        public sealed override object? Read(Meziantou.Framework.Yamlish.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
-        public sealed override Meziantou.Framework.Yamlish.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
+        public abstract T Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
+        public abstract Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(T value, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
+        public sealed override object? Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
+        public sealed override Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
     }
 
     public abstract class YamlishConverterFactory : Meziantou.Framework.Yamlish.YamlishConverter
     {
         public abstract Meziantou.Framework.Yamlish.YamlishConverter? CreateConverter(System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
-        public sealed override object? Read(Meziantou.Framework.Yamlish.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
-        public sealed override Meziantou.Framework.Yamlish.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
+        public sealed override object? Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
+        public sealed override Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
     }
 
     [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
@@ -32,16 +32,6 @@ namespace Meziantou.Framework.Yamlish
         public YamlishDerivedTypeAttribute(System.Type derivedType) { }
         public YamlishDerivedTypeAttribute(System.Type derivedType, string typeDiscriminator) { }
         public YamlishDerivedTypeAttribute(System.Type derivedType, int typeDiscriminator) { }
-    }
-
-    public sealed class YamlishDocument
-    {
-        public Meziantou.Framework.Yamlish.YamlishNode Root { get => throw null; }
-        public YamlishDocument(Meziantou.Framework.Yamlish.YamlishNode root) { }
-        public static Meziantou.Framework.Yamlish.YamlishDocument Parse(string content) => throw null;
-        public static Meziantou.Framework.Yamlish.YamlishDocument Parse(System.IO.TextReader reader) => throw null;
-        public void WriteTo(System.IO.TextWriter writer) { }
-        public override string ToString() => throw null;
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]
@@ -58,21 +48,6 @@ namespace Meziantou.Framework.Yamlish
         WhenWritingNull = 3
     }
 
-    public sealed class YamlishMapping : Meziantou.Framework.Yamlish.YamlishNode, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.YamlishNode>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.YamlishNode>>, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Yamlish.YamlishNode>, System.Collections.IEnumerable
-    {
-        public Meziantou.Framework.Yamlish.YamlishNodeKind Kind { get => throw null; }
-        public int Count { get => throw null; }
-        public System.Collections.Generic.IEnumerable<string> Keys { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.YamlishNode> Values { get => throw null; }
-        public Meziantou.Framework.Yamlish.YamlishNode this[string key] { get => throw null; }
-        public YamlishMapping(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.YamlishNode>> entries) { }
-        public void Add(string key, Meziantou.Framework.Yamlish.YamlishNode value) { }
-        public bool ContainsKey(string key) => throw null;
-        public bool TryGetValue(string key, out Meziantou.Framework.Yamlish.YamlishNode value) => throw null;
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.YamlishNode>> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-    }
-
     public abstract class YamlishNamingPolicy
     {
         public static Meziantou.Framework.Yamlish.YamlishNamingPolicy CamelCase { get => throw null; }
@@ -82,19 +57,6 @@ namespace Meziantou.Framework.Yamlish
         public static Meziantou.Framework.Yamlish.YamlishNamingPolicy KebabCaseUpper { get => throw null; }
         public static Meziantou.Framework.Yamlish.YamlishNamingPolicy PascalCase { get => throw null; }
         public abstract string ConvertName(string name);
-    }
-
-    public abstract class YamlishNode
-    {
-        public Meziantou.Framework.Yamlish.YamlishNodeKind Kind { get; }
-        public override string ToString() => throw null;
-    }
-
-    public enum YamlishNodeKind
-    {
-        Scalar = 0,
-        Mapping = 1,
-        Sequence = 2
     }
 
     public enum YamlishObjectCreationHandling
@@ -114,24 +76,6 @@ namespace Meziantou.Framework.Yamlish
     {
         public string Name { get => throw null; }
         public YamlishPropertyNameAttribute(string name) { }
-    }
-
-    public sealed class YamlishScalar : Meziantou.Framework.Yamlish.YamlishNode
-    {
-        public Meziantou.Framework.Yamlish.YamlishNodeKind Kind { get => throw null; }
-        public string Value { get => throw null; }
-        public YamlishScalar(string value) { }
-    }
-
-    public sealed class YamlishSequence : Meziantou.Framework.Yamlish.YamlishNode, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.YamlishNode>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Yamlish.YamlishNode>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yamlish.YamlishNode>, System.Collections.IEnumerable
-    {
-        public Meziantou.Framework.Yamlish.YamlishNodeKind Kind { get => throw null; }
-        public int Count { get => throw null; }
-        public Meziantou.Framework.Yamlish.YamlishNode this[int index] { get => throw null; }
-        public YamlishSequence(System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.YamlishNode> items) { }
-        public void Add(Meziantou.Framework.Yamlish.YamlishNode item) { }
-        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yamlish.YamlishNode> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
     public static class YamlishSerializer
@@ -169,5 +113,63 @@ namespace Meziantou.Framework.Yamlish
         public void AddFieldAttribute(System.Func<System.Reflection.FieldInfo, bool> condition, Meziantou.Framework.Yamlish.YamlishAttribute attribute) { }
         public void AddTypeAttribute(System.Func<System.Type, bool> condition, Meziantou.Framework.Yamlish.YamlishAttribute attribute) { }
         public void MakeReadOnly() { }
+    }
+}
+namespace Meziantou.Framework.Yamlish.Nodes
+{
+    public sealed class YamlishDocument
+    {
+        public Meziantou.Framework.Yamlish.Nodes.YamlishNode Root { get => throw null; }
+        public YamlishDocument(Meziantou.Framework.Yamlish.Nodes.YamlishNode root) { }
+        public static Meziantou.Framework.Yamlish.Nodes.YamlishDocument Parse(string content) => throw null;
+        public static Meziantou.Framework.Yamlish.Nodes.YamlishDocument Parse(System.IO.TextReader reader) => throw null;
+        public void WriteTo(System.IO.TextWriter writer) { }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class YamlishMapping : Meziantou.Framework.Yamlish.Nodes.YamlishNode, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.Nodes.YamlishNode>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.Nodes.YamlishNode>>, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.IEnumerable
+    {
+        public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
+        public int Count { get => throw null; }
+        public System.Collections.Generic.IEnumerable<string> Keys { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.Nodes.YamlishNode> Values { get => throw null; }
+        public Meziantou.Framework.Yamlish.Nodes.YamlishNode this[string key] { get => throw null; }
+        public YamlishMapping(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.Nodes.YamlishNode>> entries) { }
+        public void Add(string key, Meziantou.Framework.Yamlish.Nodes.YamlishNode value) { }
+        public bool ContainsKey(string key) => throw null;
+        public bool TryGetValue(string key, out Meziantou.Framework.Yamlish.Nodes.YamlishNode value) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.Yamlish.Nodes.YamlishNode>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
+    public abstract class YamlishNode
+    {
+        public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get; }
+        public override string ToString() => throw null;
+    }
+
+    public enum YamlishNodeKind
+    {
+        Scalar = 0,
+        Mapping = 1,
+        Sequence = 2
+    }
+
+    public sealed class YamlishScalar : Meziantou.Framework.Yamlish.Nodes.YamlishNode
+    {
+        public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
+        public string Value { get => throw null; }
+        public YamlishScalar(string value) { }
+    }
+
+    public sealed class YamlishSequence : Meziantou.Framework.Yamlish.Nodes.YamlishNode, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.IEnumerable
+    {
+        public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
+        public int Count { get => throw null; }
+        public Meziantou.Framework.Yamlish.Nodes.YamlishNode this[int index] { get => throw null; }
+        public YamlishSequence(System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.Nodes.YamlishNode> items) { }
+        public void Add(Meziantou.Framework.Yamlish.Nodes.YamlishNode item) { }
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yamlish.Nodes.YamlishNode> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 }

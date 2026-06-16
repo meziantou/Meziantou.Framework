@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Converters;
 
 internal abstract class ScalarYamlishConverter<T> : YamlishConverter<T>
 {

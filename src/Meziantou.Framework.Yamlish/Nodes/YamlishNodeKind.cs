@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Nodes;
 
 public enum YamlishNodeKind
 {

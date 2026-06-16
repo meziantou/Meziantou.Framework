@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Converters;
 
 internal sealed class BitArrayYamlishConverter : ScalarYamlishConverter<BitArray>
 {

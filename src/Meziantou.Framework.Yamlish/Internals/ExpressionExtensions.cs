@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Internals;
 
 internal static class ExpressionExtensions
 {

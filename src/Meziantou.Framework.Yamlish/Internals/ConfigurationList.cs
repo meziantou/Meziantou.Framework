@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Internals;
 
 internal abstract class ConfigurationList<T> : IList<T>
 {

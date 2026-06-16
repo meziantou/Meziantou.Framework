@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Converters;
 
 internal sealed class MediaTypeHeaderValueYamlishConverter : ScalarYamlishConverter<MediaTypeHeaderValue>
 {

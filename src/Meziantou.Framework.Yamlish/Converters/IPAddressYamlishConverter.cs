@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Converters;
 
 internal sealed class IPAddressYamlishConverter : ScalarYamlishConverter<IPAddress>
 {

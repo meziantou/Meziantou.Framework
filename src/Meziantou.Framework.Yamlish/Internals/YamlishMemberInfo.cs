@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Yamlish;
+namespace Meziantou.Framework.Yamlish.Internals;
 
 internal sealed record YamlishMemberInfo(
     string SerializedName,

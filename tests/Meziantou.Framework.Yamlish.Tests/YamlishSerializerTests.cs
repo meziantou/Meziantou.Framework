@@ -525,6 +525,52 @@ public sealed class YamlishSerializerTests
         Assert.Equal(20, result.Dimensions?.Height);
     }
 
+    [Theory]
+    [InlineData("""
+        Name: Test
+        Url: https://www.meziantou.net
+        Taxonomies:
+        - Name: Categories
+          Terms:
+          - Name: ".NET"
+            ChildrenNames: ["ASP.NET Core"]
+          - Name: "ASP.NET Core"
+            ChildrenNames: ["Blazor"]
+        """)]
+    [InlineData("""
+        Name: Test
+        Url: https://www.meziantou.net
+        Taxonomies:
+        - Name: Categories
+          Terms:
+            - Name: ".NET"
+              ChildrenNames: ["ASP.NET Core"]
+            - Name: "ASP.NET Core"
+              ChildrenNames: ["Blazor"]
+        """)]
+    public void Deserialize_ListOfObjects_WithNestedListOfObjects(string content)
+    {
+        var result = YamlishSerializer.Deserialize<WebsiteMetadata>(content);
+
+        Assert.NotNull(result);
+        Assert.Equal("Test", result.Name);
+        Assert.Equal("https://www.meziantou.net", result.Url);
+        var taxonomy = Assert.Single(result.Taxonomies);
+        Assert.Equal("Categories", taxonomy.Name);
+        Assert.Collection(
+            taxonomy.Terms,
+            term =>
+            {
+                Assert.Equal(".NET", term.Name);
+                Assert.Equal(["ASP.NET Core"], term.ChildrenNames);
+            },
+            term =>
+            {
+                Assert.Equal("ASP.NET Core", term.Name);
+                Assert.Equal(["Blazor"], term.ChildrenNames);
+            });
+    }
+
     [Fact]
     public void SerializeAndDeserialize_Dictionary()
     {
@@ -832,6 +878,29 @@ public sealed class YamlishSerializerTests
     private sealed class StringValue
     {
         public string? Value { get; set; }
+    }
+
+    private sealed class WebsiteMetadata
+    {
+        public string? Name { get; set; }
+
+        public string? Url { get; set; }
+
+        public List<Taxonomy> Taxonomies { get; set; } = [];
+    }
+
+    private sealed class Taxonomy
+    {
+        public string? Name { get; set; }
+
+        public List<Term> Terms { get; set; } = [];
+    }
+
+    private sealed class Term
+    {
+        public string? Name { get; set; }
+
+        public List<string> ChildrenNames { get; set; } = [];
     }
 
     [YamlishDerivedType(typeof(PolymorphicDerived), "derived")]

@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Yamlish.Tests;
 
@@ -134,7 +135,10 @@ public sealed class YamlishConverterTests
     [Fact]
     public void CultureInfoConverter()
     {
-        AssertBuiltInConverter(CultureInfo.GetCultureInfo("en-US"));
+        if (!Meziantou.Xunit.TestEnvironment.IsGlobalizationInvariant())
+        {
+            AssertBuiltInConverter(CultureInfo.GetCultureInfo("en-US"));
+        }
 
         var content = YamlishSerializer.Serialize(CultureInfo.InvariantCulture);
         var result = YamlishSerializer.Deserialize<CultureInfo>(content);

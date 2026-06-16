@@ -4,6 +4,7 @@ using System.Reflection;
 
 namespace Meziantou.Framework.Yamlish;
 
+/// <summary>Provides options that control Yamlish serialization and deserialization.</summary>
 public sealed class YamlishSerializerOptions
 {
     private readonly ConcurrentDictionary<Type, YamlishTypeInfo> _typeInfoCache = new();
@@ -11,15 +12,19 @@ public sealed class YamlishSerializerOptions
     private readonly List<(Func<Type, bool> Condition, YamlishAttribute Attribute)> _typeAttributes = [];
     private readonly List<(Func<MemberInfo, bool> Condition, YamlishAttribute Attribute)> _memberAttributes = [];
 
+    /// <summary>Initializes a new instance of the <see cref="YamlishSerializerOptions" /> class.</summary>
     public YamlishSerializerOptions()
     {
         Converters = new ConverterList(this);
     }
 
+    /// <summary>Gets a value indicating whether this instance is read-only.</summary>
     public bool IsReadOnly { get; private set; }
 
+    /// <summary>Gets the list of converters used by the serializer.</summary>
     public IList<YamlishConverter> Converters { get; }
 
+    /// <summary>Gets or sets the naming policy used to convert property names.</summary>
     public YamlishNamingPolicy? PropertyNamingPolicy
     {
         get;
@@ -30,6 +35,7 @@ public sealed class YamlishSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets the comparer used to match property names during deserialization.</summary>
     public StringComparer PropertyNameComparer
     {
         get;
@@ -40,6 +46,7 @@ public sealed class YamlishSerializerOptions
         }
     } = StringComparer.OrdinalIgnoreCase;
 
+    /// <summary>Gets or sets the number of indentation characters to write for each nesting level.</summary>
     public int IndentSize
     {
         get;
@@ -50,6 +57,7 @@ public sealed class YamlishSerializerOptions
         }
     } = 2;
 
+    /// <summary>Gets or sets the indentation character used when writing Yamlish.</summary>
     public char IndentCharacter
     {
         get;
@@ -60,6 +68,7 @@ public sealed class YamlishSerializerOptions
         }
     } = ' ';
 
+    /// <summary>Gets or sets the newline sequence used when writing Yamlish.</summary>
     public string NewLine
     {
         get;
@@ -70,6 +79,7 @@ public sealed class YamlishSerializerOptions
         }
     } = Environment.NewLine;
 
+    /// <summary>Gets or sets the maximum depth allowed during serialization and deserialization.</summary>
     public int MaxDepth
     {
         get;
@@ -80,6 +90,7 @@ public sealed class YamlishSerializerOptions
         }
     } = 64;
 
+    /// <summary>Gets or sets the default condition that determines when members are ignored during serialization.</summary>
     public YamlishIgnoreCondition DefaultIgnoreCondition
     {
         get;
@@ -90,6 +101,7 @@ public sealed class YamlishSerializerOptions
         }
     } = YamlishIgnoreCondition.WhenWritingNull;
 
+    /// <summary>Gets or sets a value indicating whether public fields are included during serialization and deserialization.</summary>
     public bool IncludeFields
     {
         get;
@@ -100,6 +112,7 @@ public sealed class YamlishSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets a value indicating whether read-only fields are ignored during serialization.</summary>
     public bool IgnoreReadOnlyFields
     {
         get;
@@ -110,6 +123,7 @@ public sealed class YamlishSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets a value indicating whether read-only properties are ignored during serialization.</summary>
     public bool IgnoreReadOnlyProperties
     {
         get;
@@ -120,6 +134,7 @@ public sealed class YamlishSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets the preferred behavior for object creation during deserialization.</summary>
     public YamlishObjectCreationHandling PreferredObjectCreationHandling
     {
         get;
@@ -130,6 +145,7 @@ public sealed class YamlishSerializerOptions
         }
     } = YamlishObjectCreationHandling.Replace;
 
+    /// <summary>Gets or sets a value indicating whether duplicate mapping keys are allowed when parsing Yamlish.</summary>
     public bool AllowDuplicateProperties
     {
         get;
@@ -140,6 +156,7 @@ public sealed class YamlishSerializerOptions
         }
     } = true;
 
+    /// <summary>Gets or sets a value indicating whether required constructor parameters must be present during deserialization.</summary>
     public bool RespectRequiredConstructorParameters
     {
         get;
@@ -150,6 +167,7 @@ public sealed class YamlishSerializerOptions
         }
     } = true;
 
+    /// <summary>Gets or sets a value indicating whether nullable annotations are enforced during serialization and deserialization.</summary>
     public bool RespectNullableAnnotations
     {
         get;
@@ -160,6 +178,9 @@ public sealed class YamlishSerializerOptions
         }
     } = true;
 
+    /// <summary>Adds a Yamlish attribute that applies to the specified type.</summary>
+    /// <param name="type">The type to which the attribute applies.</param>
+    /// <param name="attribute">The attribute to apply.</param>
     public void AddAttribute(Type type, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -169,6 +190,10 @@ public sealed class YamlishSerializerOptions
         _typeAttributes.Add((candidate => candidate == type, attribute));
     }
 
+    /// <summary>Adds a Yamlish attribute that applies to a member with the specified name on the specified type.</summary>
+    /// <param name="type">The type that declares the member.</param>
+    /// <param name="memberName">The name of the member to which the attribute applies.</param>
+    /// <param name="attribute">The attribute to apply.</param>
     public void AddAttribute(Type type, string memberName, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -186,10 +211,20 @@ public sealed class YamlishSerializerOptions
         }
     }
 
+    /// <summary>Adds a Yamlish attribute that applies to the specified property.</summary>
+    /// <param name="member">The property to which the attribute applies.</param>
+    /// <param name="attribute">The attribute to apply.</param>
     public void AddAttribute(PropertyInfo member, YamlishAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
 
+    /// <summary>Adds a Yamlish attribute that applies to the specified field.</summary>
+    /// <param name="member">The field to which the attribute applies.</param>
+    /// <param name="attribute">The attribute to apply.</param>
     public void AddAttribute(FieldInfo member, YamlishAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
 
+    /// <summary>Adds a Yamlish attribute that applies to the member selected by the specified expression.</summary>
+    /// <typeparam name="T">The type that declares the member.</typeparam>
+    /// <param name="member">An expression that selects one or more fields or properties.</param>
+    /// <param name="attribute">The attribute to apply.</param>
     public void AddAttribute<T>(Expression<Func<T, object>> member, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(member);
@@ -206,6 +241,9 @@ public sealed class YamlishSerializerOptions
         }
     }
 
+    /// <summary>Adds a Yamlish attribute that applies to properties matching the specified condition.</summary>
+    /// <param name="condition">The condition used to select properties.</param>
+    /// <param name="attribute">The attribute to apply.</param>
     public void AddPropertyAttribute(Func<PropertyInfo, bool> condition, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(condition);
@@ -214,6 +252,9 @@ public sealed class YamlishSerializerOptions
         _memberAttributes.Add((member => member is PropertyInfo property && condition(property), attribute));
     }
 
+    /// <summary>Adds a Yamlish attribute that applies to fields matching the specified condition.</summary>
+    /// <param name="condition">The condition used to select fields.</param>
+    /// <param name="attribute">The attribute to apply.</param>
     public void AddFieldAttribute(Func<FieldInfo, bool> condition, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(condition);
@@ -222,6 +263,9 @@ public sealed class YamlishSerializerOptions
         _memberAttributes.Add((member => member is FieldInfo field && condition(field), attribute));
     }
 
+    /// <summary>Adds a Yamlish attribute that applies to types matching the specified condition.</summary>
+    /// <param name="condition">The condition used to select types.</param>
+    /// <param name="attribute">The attribute to apply.</param>
     public void AddTypeAttribute(Func<Type, bool> condition, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(condition);
@@ -230,6 +274,7 @@ public sealed class YamlishSerializerOptions
         _typeAttributes.Add((condition, attribute));
     }
 
+    /// <summary>Makes this instance read-only.</summary>
     public void MakeReadOnly() => IsReadOnly = true;
 
     internal YamlishTypeInfo GetTypeInfo(Type type)
@@ -302,17 +347,22 @@ public sealed class YamlishSerializerOptions
     internal IEnumerable<T> GetCustomAttributes<T>(Type type) where T : YamlishAttribute
     {
         ArgumentNullException.ThrowIfNull(type);
-        MakeReadOnly();
 
-        for (var i = _typeAttributes.Count - 1; i >= 0; i--)
+        return GetCustomAttributes(type);
+        IEnumerable<T> GetCustomAttributes(Type type)
         {
-            var attribute = _typeAttributes[i];
-            if (attribute.Attribute is T result && attribute.Condition(type))
-                yield return result;
-        }
+            MakeReadOnly();
 
-        foreach (var attribute in type.GetCustomAttributes<T>())
-            yield return attribute;
+            for (var i = _typeAttributes.Count - 1; i >= 0; i--)
+            {
+                var attribute = _typeAttributes[i];
+                if (attribute.Attribute is T result && attribute.Condition(type))
+                    yield return result;
+            }
+
+            foreach (var attribute in type.GetCustomAttributes<T>())
+                yield return attribute;
+        }
     }
 
     internal void VerifyMutable()

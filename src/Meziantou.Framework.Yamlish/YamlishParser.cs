@@ -206,10 +206,18 @@ internal sealed class YamlishParser
     private YamlishNode ParseNestedValue(int parentIndent, int parentLine)
     {
         SkipIgnorableLines();
-        if (_index >= _lines.Length || GetIndent(_index) <= parentIndent)
+        if (_index >= _lines.Length)
             Throw("Expected an indented value", parentLine);
 
-        return ParseBlock(GetIndent(_index));
+        var indent = GetIndent(_index);
+        if (indent < parentIndent)
+            Throw("Expected an indented value", parentLine);
+
+        var content = GetContent(_lines[_index].AsSpan(indent));
+        if (indent == parentIndent && !IsSequenceLine(content))
+            Throw("Expected an indented value", parentLine);
+
+        return ParseBlock(indent);
     }
 
     private YamlishScalar ParseBlockScalar(int parentIndent, BlockScalarStyle style, BlockChomping chomping)

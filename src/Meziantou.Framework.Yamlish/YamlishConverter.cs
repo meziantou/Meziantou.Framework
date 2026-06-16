@@ -4,8 +4,9 @@ namespace Meziantou.Framework.Yamlish;
 public abstract class YamlishConverter
 {
     /// <summary>
-    /// Gets a value that indicates whether <see langword="null" /> should be passed to the converter on serialization, and whether <see langword="null" /> should be passed on deserialization.
-    /// </sumary>
+    /// Gets a value that indicates whether <see langword="null" /> should be passed to the converter
+    /// on serialization, and whether <see langword="null" /> should be passed on deserialization.
+    /// </summary>
     public virtual bool HandleNullValues => false;
 
     /// <summary>Determines whether this converter can convert the specified type.</summary>

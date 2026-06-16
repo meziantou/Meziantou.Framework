@@ -1,48 +1,37 @@
+using System.Text.Json;
+
 namespace Meziantou.Framework.Yamlish;
 
 public abstract class YamlishNamingPolicy
 {
-    public static YamlishNamingPolicy CamelCase { get; } = new CamelCaseNamingPolicy();
+    public static YamlishNamingPolicy CamelCase { get; } = new JsonNamingPolicyAdapter(JsonNamingPolicy.CamelCase);
 
-    public static YamlishNamingPolicy SnakeCaseLower { get; } = new SnakeCaseLowerNamingPolicy();
+    public static YamlishNamingPolicy SnakeCaseLower { get; } = new JsonNamingPolicyAdapter(JsonNamingPolicy.SnakeCaseLower);
+
+    public static YamlishNamingPolicy SnakeCaseUpper { get; } = new JsonNamingPolicyAdapter(JsonNamingPolicy.SnakeCaseUpper);
+
+    public static YamlishNamingPolicy KebabCaseLower { get; } = new JsonNamingPolicyAdapter(JsonNamingPolicy.KebabCaseLower);
+
+    public static YamlishNamingPolicy KebabCaseUpper { get; } = new JsonNamingPolicyAdapter(JsonNamingPolicy.KebabCaseUpper);
+
+    public static YamlishNamingPolicy PascalCase { get; } = new PascalCaseNamingPolicy();
 
     public abstract string ConvertName(string name);
 
-    private sealed class CamelCaseNamingPolicy : YamlishNamingPolicy
+    private sealed class JsonNamingPolicyAdapter(JsonNamingPolicy policy) : YamlishNamingPolicy
     {
-        public override string ConvertName(string name)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            if (char.IsLower(name[0]))
-                return name;
-
-            return char.ToLowerInvariant(name[0]) + name[1..];
-        }
+        public override string ConvertName(string name) => policy.ConvertName(name);
     }
 
-    private sealed class SnakeCaseLowerNamingPolicy : YamlishNamingPolicy
+    private sealed class PascalCaseNamingPolicy : YamlishNamingPolicy
     {
         public override string ConvertName(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
-            var builder = new StringBuilder(name.Length + 4);
-            for (var i = 0; i < name.Length; i++)
-            {
-                var character = name[i];
-                if (char.IsUpper(character))
-                {
-                    if (i > 0 && (char.IsLower(name[i - 1]) || (i + 1 < name.Length && char.IsLower(name[i + 1]))))
-                        builder.Append('_');
+            if (char.IsUpper(name[0]))
+                return name;
 
-                    builder.Append(char.ToLowerInvariant(character));
-                }
-                else
-                {
-                    builder.Append(character);
-                }
-            }
-
-            return builder.ToString();
+            return char.ToUpperInvariant(name[0]) + name[1..];
         }
     }
 }

@@ -43,6 +43,42 @@ public sealed class YamlishSerializerTests
         Assert.DoesNotContain("Ignored", result, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(nameof(YamlishNamingPolicy.CamelCase))]
+    [InlineData(nameof(YamlishNamingPolicy.SnakeCaseLower))]
+    [InlineData(nameof(YamlishNamingPolicy.SnakeCaseUpper))]
+    [InlineData(nameof(YamlishNamingPolicy.KebabCaseLower))]
+    [InlineData(nameof(YamlishNamingPolicy.KebabCaseUpper))]
+    public void NamingPolicy_MatchesSystemTextJson(string policyName)
+    {
+        var yamlishPolicy = GetYamlishNamingPolicy(policyName);
+        var jsonPolicy = GetJsonNamingPolicy(policyName);
+
+        foreach (var name in new[] { "IPAddress", "URLValue", "XmlDocument", "lowerCase", "SimpleXMLParser" })
+        {
+            Assert.Equal(jsonPolicy.ConvertName(name), yamlishPolicy.ConvertName(name));
+        }
+    }
+
+    [Theory]
+    [InlineData("value", "Value")]
+    [InlineData("Value", "Value")]
+    [InlineData("iPAddress", "IPAddress")]
+    public void NamingPolicy_PascalCase(string name, string expected)
+    {
+        Assert.Equal(expected, YamlishNamingPolicy.PascalCase.ConvertName(name));
+    }
+
+    [Fact]
+    public void Serialize_UsesKebabCasePolicy()
+    {
+        var options = new YamlishSerializerOptions { PropertyNamingPolicy = YamlishNamingPolicy.KebabCaseLower };
+
+        var result = YamlishSerializer.Serialize(new DefaultNamesProduct { Id = "abc", IsAvailable = true }, options);
+
+        Assert.Contains("is-available: true", result, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Options_AddAttribute_OverridesDeclaredAttributes()
     {
@@ -86,7 +122,9 @@ public sealed class YamlishSerializerTests
         Assert.Throws<InvalidOperationException>(() => options.AllowDuplicateProperties = false);
         Assert.Throws<InvalidOperationException>(() => options.RespectRequiredConstructorParameters = true);
         Assert.Throws<InvalidOperationException>(() => options.RespectNullableAnnotations = true);
+        Assert.Throws<InvalidOperationException>(() => options.AddAttribute(typeof(DefaultNamesProduct), new YamlishIgnoreAttribute()));
         Assert.Throws<InvalidOperationException>(() => options.AddAttribute(typeof(DefaultNamesProduct), nameof(DefaultNamesProduct.Id), new YamlishIgnoreAttribute()));
+        Assert.Throws<InvalidOperationException>(() => options.AddTypeAttribute(type => type == typeof(DefaultNamesProduct), new YamlishIgnoreAttribute()));
     }
 
     [Fact]
@@ -532,6 +570,100 @@ public sealed class YamlishSerializerTests
         Assert.Equal(expected, result?.Value);
     }
 
+    [Fact]
+    public void Serialize_PolymorphicType_AddsDefaultTypeDiscriminator()
+    {
+        PolymorphicBase value = new PolymorphicDerived { BaseValue = 1, DerivedValue = "derived" };
+
+        var content = YamlishSerializer.Serialize<PolymorphicBase>(value);
+
+        Assert.Equal("""
+            $type: derived
+            DerivedValue: derived
+            BaseValue: 1
+            """, content);
+    }
+
+    [Fact]
+    public void Deserialize_PolymorphicType_CreatesDerivedType()
+    {
+        var result = YamlishSerializer.Deserialize<PolymorphicBase>("""
+            $type: derived
+            DerivedValue: derived
+            BaseValue: 1
+            """);
+
+        var derived = Assert.IsType<PolymorphicDerived>(result);
+        Assert.Equal(1, derived.BaseValue);
+        Assert.Equal("derived", derived.DerivedValue);
+    }
+
+    [Fact]
+    public void Serialize_PolymorphicType_UsesDerivedTypeNameByDefault()
+    {
+        DefaultPolymorphicBase value = new DefaultPolymorphicDerived { Value = "derived" };
+
+        var content = YamlishSerializer.Serialize<DefaultPolymorphicBase>(value);
+
+        Assert.Equal("""
+            $type: DefaultPolymorphicDerived
+            Value: derived
+            """, content);
+    }
+
+    [Fact]
+    public void Serialize_PolymorphicType_CanAddDiscriminatorForBaseType()
+    {
+        PolymorphicBaseAndDerived value = new() { BaseValue = 1 };
+
+        var content = YamlishSerializer.Serialize<PolymorphicBaseAndDerived>(value);
+
+        Assert.Equal("""
+            $type: base
+            BaseValue: 1
+            """, content);
+    }
+
+    [Fact]
+    public void SerializeAndDeserialize_PolymorphicType_UsesCustomTypeDiscriminatorPropertyName()
+    {
+        CustomPolymorphicBase value = new CustomPolymorphicDerived { Value = "derived" };
+
+        var content = YamlishSerializer.Serialize<CustomPolymorphicBase>(value);
+        var result = YamlishSerializer.Deserialize<CustomPolymorphicBase>(content);
+
+        Assert.Equal("""
+            $kind: custom
+            Value: derived
+            """, content);
+        Assert.IsType<CustomPolymorphicDerived>(result);
+    }
+
+    [Fact]
+    public void SerializeAndDeserialize_PolymorphicType_UsesOptionsAttributes()
+    {
+        var options = new YamlishSerializerOptions();
+        options.AddAttribute(typeof(OptionsPolymorphicBase), new YamlishDerivedTypeAttribute(typeof(OptionsPolymorphicDerived), "options"));
+        OptionsPolymorphicBase value = new OptionsPolymorphicDerived { Value = "derived" };
+
+        var content = YamlishSerializer.Serialize<OptionsPolymorphicBase>(value, options);
+        var result = YamlishSerializer.Deserialize<OptionsPolymorphicBase>(content, options);
+
+        Assert.Equal("""
+            $type: options
+            Value: derived
+            """, content);
+        Assert.IsType<OptionsPolymorphicDerived>(result);
+    }
+
+    [Fact]
+    public void Serialize_PolymorphicType_UnknownDerivedTypeThrows()
+    {
+        PolymorphicBase value = new UnknownPolymorphicDerived { BaseValue = 1 };
+
+        Assert.Throws<NotSupportedException>(() => YamlishSerializer.Serialize<PolymorphicBase>(value));
+    }
+
     private sealed class Product
     {
         [YamlishPropertyName("product_id")]
@@ -568,6 +700,75 @@ public sealed class YamlishSerializerTests
     private sealed class StringValue
     {
         public string? Value { get; set; }
+    }
+
+    [YamlishDerivedType(typeof(PolymorphicDerived), "derived")]
+    private class PolymorphicBase
+    {
+        public int BaseValue { get; set; }
+    }
+
+    private sealed class PolymorphicDerived : PolymorphicBase
+    {
+        public string? DerivedValue { get; set; }
+    }
+
+    private sealed class UnknownPolymorphicDerived : PolymorphicBase;
+
+    [YamlishDerivedType(typeof(DefaultPolymorphicDerived))]
+    private class DefaultPolymorphicBase;
+
+    private sealed class DefaultPolymorphicDerived : DefaultPolymorphicBase
+    {
+        public string? Value { get; set; }
+    }
+
+    [YamlishDerivedType(typeof(PolymorphicBaseAndDerived), "base")]
+    private sealed class PolymorphicBaseAndDerived
+    {
+        public int BaseValue { get; set; }
+    }
+
+    [YamlishPolymorphic(TypeDiscriminatorPropertyName = "$kind")]
+    [YamlishDerivedType(typeof(CustomPolymorphicDerived), "custom")]
+    private class CustomPolymorphicBase;
+
+    private sealed class CustomPolymorphicDerived : CustomPolymorphicBase
+    {
+        public string? Value { get; set; }
+    }
+
+    private class OptionsPolymorphicBase;
+
+    private sealed class OptionsPolymorphicDerived : OptionsPolymorphicBase
+    {
+        public string? Value { get; set; }
+    }
+
+    private static YamlishNamingPolicy GetYamlishNamingPolicy(string policyName)
+    {
+        return policyName switch
+        {
+            nameof(YamlishNamingPolicy.CamelCase) => YamlishNamingPolicy.CamelCase,
+            nameof(YamlishNamingPolicy.SnakeCaseLower) => YamlishNamingPolicy.SnakeCaseLower,
+            nameof(YamlishNamingPolicy.SnakeCaseUpper) => YamlishNamingPolicy.SnakeCaseUpper,
+            nameof(YamlishNamingPolicy.KebabCaseLower) => YamlishNamingPolicy.KebabCaseLower,
+            nameof(YamlishNamingPolicy.KebabCaseUpper) => YamlishNamingPolicy.KebabCaseUpper,
+            _ => throw new ArgumentOutOfRangeException(nameof(policyName)),
+        };
+    }
+
+    private static System.Text.Json.JsonNamingPolicy GetJsonNamingPolicy(string policyName)
+    {
+        return policyName switch
+        {
+            nameof(YamlishNamingPolicy.CamelCase) => System.Text.Json.JsonNamingPolicy.CamelCase,
+            nameof(YamlishNamingPolicy.SnakeCaseLower) => System.Text.Json.JsonNamingPolicy.SnakeCaseLower,
+            nameof(YamlishNamingPolicy.SnakeCaseUpper) => System.Text.Json.JsonNamingPolicy.SnakeCaseUpper,
+            nameof(YamlishNamingPolicy.KebabCaseLower) => System.Text.Json.JsonNamingPolicy.KebabCaseLower,
+            nameof(YamlishNamingPolicy.KebabCaseUpper) => System.Text.Json.JsonNamingPolicy.KebabCaseUpper,
+            _ => throw new ArgumentOutOfRangeException(nameof(policyName)),
+        };
     }
 
     private sealed class NestedValue

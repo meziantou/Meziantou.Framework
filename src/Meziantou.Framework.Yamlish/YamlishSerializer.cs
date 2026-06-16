@@ -40,6 +40,16 @@ public static class YamlishSerializer
         return ObjectBinder.Deserialize(document.Root, type, options, depth: 0);
     }
 
+    internal static YamlishNode SerializeToNode(object value, Type type, YamlishSerializerOptions options)
+    {
+        return ObjectBinder.Serialize(value, type, options, depth: 0);
+    }
+
+    internal static object? DeserializeNode(YamlishNode node, Type type, YamlishSerializerOptions options)
+    {
+        return ObjectBinder.Deserialize(node, type, options, depth: 0);
+    }
+
     private static void ValidateOptions(YamlishSerializerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options.PropertyNameComparer);
@@ -111,8 +121,18 @@ public static class YamlishSerializer
                 return result;
             }
 
+            var declaredTypeInfo = options.GetTypeInfo(declaredType);
+            var runtimeTypeInfo = runtimeType == declaredType ? declaredTypeInfo : options.GetTypeInfo(runtimeType);
+            var polymorphismInfo = declaredTypeInfo.PolymorphismInfo;
+            var derivedTypeInfo = polymorphismInfo?.GetDerivedType(runtimeType);
+            if (polymorphismInfo is not null && runtimeType != declaredType && derivedTypeInfo is null)
+                throw new NotSupportedException($"Runtime type '{runtimeType.FullName}' is not configured as a derived type for polymorphic base type '{declaredType.FullName}'.");
+
             var mapping = new YamlishMapping();
-            foreach (var member in options.GetTypeInfo(runtimeType).SerializableMembers)
+            if (derivedTypeInfo is not null)
+                mapping.Add(polymorphismInfo!.TypeDiscriminatorPropertyName, new YamlishScalar(derivedTypeInfo.TypeDiscriminator));
+
+            foreach (var member in runtimeTypeInfo.SerializableMembers)
             {
                 var memberValue = member.GetValue(value);
                 if (options.RespectNullableAnnotations && memberValue is null && !member.IsGetNullable)
@@ -215,6 +235,9 @@ public static class YamlishSerializer
                 throw CannotConvert(node, type);
 
             var typeInfo = options.GetTypeInfo(type);
+            if (TryGetPolymorphicType(objectMapping, type, typeInfo, options, out var polymorphicType))
+                return Deserialize(node, polymorphicType, options, depth);
+
             HashSet<string>? constructorParameterNames = null;
             var instance = existingValue;
             if (instance is null)
@@ -247,6 +270,29 @@ public static class YamlishSerializer
             }
 
             return instance;
+        }
+
+        private static bool TryGetPolymorphicType(YamlishMapping mapping, Type type, YamlishTypeInfo typeInfo, YamlishSerializerOptions options, [NotNullWhen(true)] out Type? polymorphicType)
+        {
+            polymorphicType = null;
+            var polymorphismInfo = typeInfo.PolymorphismInfo;
+            if (polymorphismInfo is null)
+                return false;
+
+            var typeDiscriminatorEntry = mapping.FirstOrDefault(entry => options.PropertyNameComparer.Equals(entry.Key, polymorphismInfo.TypeDiscriminatorPropertyName));
+            if (typeDiscriminatorEntry.Key is null)
+                return false;
+
+            var typeDiscriminator = ConverterUtilities.GetScalarValue(typeDiscriminatorEntry.Value, type);
+            var derivedType = polymorphismInfo.GetDerivedType(typeDiscriminator);
+            if (derivedType is null)
+                throw new FormatException($"The type discriminator '{typeDiscriminator}' is not configured for polymorphic base type '{type.FullName}'.");
+
+            if (derivedType.Type == type)
+                return false;
+
+            polymorphicType = derivedType.Type;
+            return true;
         }
 
         private static object CreateObject(YamlishMapping mapping, Type type, YamlishTypeInfo typeInfo, YamlishSerializerOptions options, int depth, out HashSet<string>? constructorParameterNames)

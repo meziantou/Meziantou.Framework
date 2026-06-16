@@ -5,11 +5,12 @@ namespace Meziantou.Framework.Yamlish;
 
 internal sealed class YamlishTypeInfo
 {
-    private YamlishTypeInfo(YamlishMemberInfo[] serializableMembers, YamlishMemberInfo[] deserializableMembers, YamlishConstructorInfo? constructor)
+    private YamlishTypeInfo(YamlishMemberInfo[] serializableMembers, YamlishMemberInfo[] deserializableMembers, YamlishConstructorInfo? constructor, YamlishPolymorphismInfo? polymorphismInfo)
     {
         SerializableMembers = serializableMembers;
         DeserializableMembers = deserializableMembers;
         Constructor = constructor;
+        PolymorphismInfo = polymorphismInfo;
     }
 
     public YamlishMemberInfo[] SerializableMembers { get; }
@@ -18,13 +19,41 @@ internal sealed class YamlishTypeInfo
 
     public YamlishConstructorInfo? Constructor { get; }
 
+    public YamlishPolymorphismInfo? PolymorphismInfo { get; }
+
     public static YamlishTypeInfo Create(Type type, YamlishSerializerOptions options)
     {
         var nullabilityInfoContext = new NullabilityInfoContext();
         return new YamlishTypeInfo(
             GetSerializableMembers(type, options, nullabilityInfoContext).ToArray(),
             GetDeserializableMembers(type, options, nullabilityInfoContext).ToArray(),
-            GetConstructor(type, options, nullabilityInfoContext));
+            GetConstructor(type, options, nullabilityInfoContext),
+            GetPolymorphismInfo(type, options));
+    }
+
+    private static YamlishPolymorphismInfo? GetPolymorphismInfo(Type type, YamlishSerializerOptions options)
+    {
+        var derivedTypeAttributes = options.GetCustomAttributes<YamlishDerivedTypeAttribute>(type).ToArray();
+        if (derivedTypeAttributes.Length is 0)
+            return null;
+
+        var polymorphicAttribute = options.GetCustomAttribute<YamlishPolymorphicAttribute>(type);
+        var typeDiscriminatorPropertyName = polymorphicAttribute?.TypeDiscriminatorPropertyName ?? "$type";
+        var derivedTypes = new YamlishDerivedTypeInfo[derivedTypeAttributes.Length];
+        var discriminatorValues = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < derivedTypeAttributes.Length; i++)
+        {
+            var attribute = derivedTypeAttributes[i];
+            if (!type.IsAssignableFrom(attribute.DerivedType))
+                throw new InvalidOperationException($"The derived type '{attribute.DerivedType.FullName}' is not assignable to polymorphic base type '{type.FullName}'.");
+
+            if (!discriminatorValues.Add(attribute.TypeDiscriminator))
+                throw new InvalidOperationException($"The type discriminator '{attribute.TypeDiscriminator}' is already used for polymorphic base type '{type.FullName}'.");
+
+            derivedTypes[i] = new YamlishDerivedTypeInfo(attribute.DerivedType, attribute.TypeDiscriminator);
+        }
+
+        return new YamlishPolymorphismInfo(typeDiscriminatorPropertyName, derivedTypes);
     }
 
     private static YamlishConstructorInfo? GetConstructor(Type type, YamlishSerializerOptions options, NullabilityInfoContext nullabilityInfoContext)

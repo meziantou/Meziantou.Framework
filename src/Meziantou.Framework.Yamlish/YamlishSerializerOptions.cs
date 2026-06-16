@@ -8,6 +8,7 @@ public sealed class YamlishSerializerOptions
 {
     private readonly ConcurrentDictionary<Type, YamlishTypeInfo> _typeInfoCache = new();
     private readonly ConcurrentDictionary<Type, ConverterResolution> _converterCache = new();
+    private readonly List<(Func<Type, bool> Condition, YamlishAttribute Attribute)> _typeAttributes = [];
     private readonly List<(Func<MemberInfo, bool> Condition, YamlishAttribute Attribute)> _memberAttributes = [];
 
     public YamlishSerializerOptions()
@@ -159,6 +160,15 @@ public sealed class YamlishSerializerOptions
         }
     }
 
+    public void AddAttribute(Type type, YamlishAttribute attribute)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(attribute);
+        VerifyMutable();
+
+        _typeAttributes.Add((candidate => candidate == type, attribute));
+    }
+
     public void AddAttribute(Type type, string memberName, YamlishAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -210,6 +220,14 @@ public sealed class YamlishSerializerOptions
         ArgumentNullException.ThrowIfNull(attribute);
         VerifyMutable();
         _memberAttributes.Add((member => member is FieldInfo field && condition(field), attribute));
+    }
+
+    public void AddTypeAttribute(Func<Type, bool> condition, YamlishAttribute attribute)
+    {
+        ArgumentNullException.ThrowIfNull(condition);
+        ArgumentNullException.ThrowIfNull(attribute);
+        VerifyMutable();
+        _typeAttributes.Add((condition, attribute));
     }
 
     public void MakeReadOnly() => IsReadOnly = true;
@@ -266,6 +284,37 @@ public sealed class YamlishSerializerOptions
         return member.GetCustomAttribute<T>();
     }
 
+    internal T? GetCustomAttribute<T>(Type type) where T : YamlishAttribute
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        MakeReadOnly();
+
+        for (var i = _typeAttributes.Count - 1; i >= 0; i--)
+        {
+            var attribute = _typeAttributes[i];
+            if (attribute.Attribute is T result && attribute.Condition(type))
+                return result;
+        }
+
+        return type.GetCustomAttribute<T>();
+    }
+
+    internal IEnumerable<T> GetCustomAttributes<T>(Type type) where T : YamlishAttribute
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        MakeReadOnly();
+
+        for (var i = _typeAttributes.Count - 1; i >= 0; i--)
+        {
+            var attribute = _typeAttributes[i];
+            if (attribute.Attribute is T result && attribute.Condition(type))
+                yield return result;
+        }
+
+        foreach (var attribute in type.GetCustomAttributes<T>())
+            yield return attribute;
+    }
+
     internal void VerifyMutable()
     {
         if (IsReadOnly)
@@ -290,6 +339,7 @@ public sealed class YamlishSerializerOptions
         new ByteYamlishConverter(),
         new CharYamlishConverter(),
         new ComplexYamlishConverter(),
+        new CSharpUnionYamlishConverterFactory(),
         new CultureInfoYamlishConverter(),
         new DateOnlyYamlishConverter(),
         new DateTimeYamlishConverter(),

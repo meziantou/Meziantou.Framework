@@ -370,6 +370,84 @@ public sealed class YamlishConverterTests
         Assert.Throws<InvalidOperationException>(() => options.Converters.Add(new TemperatureConverter()));
     }
 
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void CSharpUnionConverter_ObjectCase()
+    {
+        CSharpPet value = new CSharpDog("Rex");
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<CSharpPet>(content);
+
+        Assert.Equal("""
+            $type: CSharpDog
+            Value:
+              Name: Rex
+            """, content);
+        var dog = Assert.IsType<CSharpDog>(result.Value);
+        Assert.Equal("Rex", dog.Name);
+    }
+
+    [Fact]
+    public void CSharpUnionConverter_OtherObjectCase()
+    {
+        CSharpPet value = new CSharpCat("Felix");
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<CSharpPet>(content);
+
+        Assert.Equal("""
+            $type: CSharpCat
+            Value:
+              Name: Felix
+            """, content);
+        var cat = Assert.IsType<CSharpCat>(result.Value);
+        Assert.Equal("Felix", cat.Name);
+    }
+
+    [Fact]
+    public void CSharpUnionConverter_FullNameDiscriminator()
+    {
+        var content = $"""
+            $type: {typeof(CSharpDog).FullName}
+            Value:
+              Name: Rex
+            """;
+
+        var result = YamlishSerializer.Deserialize<CSharpPet>(content);
+
+        var dog = Assert.IsType<CSharpDog>(result.Value);
+        Assert.Equal("Rex", dog.Name);
+    }
+
+    [Fact]
+    public void CSharpUnionConverter_ScalarCase()
+    {
+        CSharpScalarUnion value = 42;
+
+        var content = YamlishSerializer.Serialize(value);
+        var result = YamlishSerializer.Deserialize<CSharpScalarUnion>(content);
+
+        Assert.Equal("""
+            $type: Int32
+            Value: 42
+            """, content);
+        Assert.Equal(42, Assert.IsType<int>(result.Value));
+    }
+
+    [Fact]
+    public void CSharpUnionConverter_UnknownDiscriminator_Throws()
+    {
+        var exception = Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<CSharpPet>("""
+            $type: Unknown
+            Value:
+              Name: Rex
+            """));
+
+        Assert.Contains("Unknown", exception.Message, StringComparison.Ordinal);
+    }
+#endif
+
     private static void AssertBuiltInConverter<T>(T value)
     {
         var content = YamlishSerializer.Serialize(value);
@@ -462,4 +540,14 @@ public sealed class YamlishConverterTests
             return new YamlishScalar(Convert.ToString(value.Value, CultureInfo.InvariantCulture) ?? string.Empty);
         }
     }
+
+#if NET11_0_OR_GREATER
+    private sealed record CSharpCat(string Name);
+
+    private sealed record CSharpDog(string Name);
+
+    private union CSharpPet(CSharpCat, CSharpDog);
+
+    private union CSharpScalarUnion(int, string);
+#endif
 }

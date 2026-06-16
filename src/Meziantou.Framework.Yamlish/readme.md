@@ -50,8 +50,6 @@ Plain scalar values remain strings in the document model. During typed deseriali
 
 Built-in converters support strings, characters, booleans, all integral and floating-point types, decimals, big integers, complex numbers, bit arrays, byte arrays and byte memories, cultures, enums, GUIDs, dates, times, time spans, HTTP scalar values, network addresses, types, URIs, and versions. Temporal and floating-point values use round-trip formats.
 
-Serialized documents do not end with a trailing newline. Block scalar chomping and folding follow YAML semantics.
-
 Properties and fields can be conditionally omitted using `YamlishIgnoreAttribute`. The global default is configured using `YamlishSerializerOptions.DefaultIgnoreCondition`.
 
 ```csharp

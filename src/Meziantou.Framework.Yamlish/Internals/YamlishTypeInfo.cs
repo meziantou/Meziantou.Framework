@@ -5,10 +5,11 @@ namespace Meziantou.Framework.Yamlish.Internals;
 
 internal sealed class YamlishTypeInfo
 {
-    private YamlishTypeInfo(YamlishMemberInfo[] serializableMembers, YamlishMemberInfo[] deserializableMembers, YamlishConstructorInfo? constructor, YamlishPolymorphismInfo? polymorphismInfo)
+    private YamlishTypeInfo(YamlishMemberInfo[] serializableMembers, YamlishMemberInfo[] deserializableMembers, string[] ignoredDeserializationMemberNames, YamlishConstructorInfo? constructor, YamlishPolymorphismInfo? polymorphismInfo)
     {
         SerializableMembers = serializableMembers;
         DeserializableMembers = deserializableMembers;
+        IgnoredDeserializationMemberNames = ignoredDeserializationMemberNames;
         Constructor = constructor;
         PolymorphismInfo = polymorphismInfo;
     }
@@ -16,6 +17,8 @@ internal sealed class YamlishTypeInfo
     public YamlishMemberInfo[] SerializableMembers { get; }
 
     public YamlishMemberInfo[] DeserializableMembers { get; }
+
+    public string[] IgnoredDeserializationMemberNames { get; }
 
     public YamlishConstructorInfo? Constructor { get; }
 
@@ -27,6 +30,7 @@ internal sealed class YamlishTypeInfo
         return new YamlishTypeInfo(
             GetSerializableMembers(type, options, nullabilityInfoContext).ToArray(),
             GetDeserializableMembers(type, options, nullabilityInfoContext).ToArray(),
+            GetIgnoredDeserializationMemberNames(type, options).ToArray(),
             GetConstructor(type, options, nullabilityInfoContext),
             GetPolymorphismInfo(type, options));
     }
@@ -194,6 +198,24 @@ internal sealed class YamlishTypeInfo
                         IsGetNullable: true,
                         IsNullable(nullabilityInfo.WriteState));
                 }
+            }
+        }
+    }
+
+    private static IEnumerable<string> GetIgnoredDeserializationMemberNames(Type type, YamlishSerializerOptions options)
+    {
+        foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        {
+            if (property.GetIndexParameters().Length is 0 && GetAttributeIgnoreCondition(property, options) is YamlishIgnoreCondition.Always)
+                yield return GetName(property, options);
+        }
+
+        if (options.IncludeFields)
+        {
+            foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (GetAttributeIgnoreCondition(field, options) is YamlishIgnoreCondition.Always)
+                    yield return GetName(field, options);
             }
         }
     }

@@ -15,6 +15,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal(Environment.NewLine, options.NewLine);
         Assert.Equal(YamlishObjectCreationHandling.Replace, options.PreferredObjectCreationHandling);
         Assert.True(options.AllowDuplicateProperties);
+        Assert.False(options.RejectUnmatchedProperties);
         Assert.True(options.RespectRequiredConstructorParameters);
         Assert.True(options.RespectNullableAnnotations);
     }
@@ -120,6 +121,7 @@ public sealed class YamlishSerializerTests
         Assert.Throws<InvalidOperationException>(() => options.IndentCharacter = '\t');
         Assert.Throws<InvalidOperationException>(() => options.NewLine = "\n");
         Assert.Throws<InvalidOperationException>(() => options.AllowDuplicateProperties = false);
+        Assert.Throws<InvalidOperationException>(() => options.RejectUnmatchedProperties = true);
         Assert.Throws<InvalidOperationException>(() => options.RespectRequiredConstructorParameters = true);
         Assert.Throws<InvalidOperationException>(() => options.RespectNullableAnnotations = true);
         Assert.Throws<InvalidOperationException>(() => options.AddAttribute(typeof(DefaultNamesProduct), new YamlishIgnoreAttribute()));
@@ -241,6 +243,36 @@ public sealed class YamlishSerializerTests
         var options = new YamlishSerializerOptions { AllowDuplicateProperties = false };
 
         Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<StringValue>("Value: first\nValue: second", options));
+    }
+
+    [Fact]
+    public void Deserialize_AllowsUnmatchedPropertiesByDefault()
+    {
+        var value = YamlishSerializer.Deserialize<StringValue>("Value: first\nExtra: second");
+
+        Assert.Equal("first", value?.Value);
+    }
+
+    [Fact]
+    public void Deserialize_RejectUnmatchedProperties_Throws()
+    {
+        var options = new YamlishSerializerOptions { RejectUnmatchedProperties = true };
+
+        var exception = Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<StringValue>("Value: first\nExtra: second", options));
+
+        Assert.Contains("Extra", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Deserialize_RejectUnmatchedProperties_AllowsConstructorParameters()
+    {
+        var options = new YamlishSerializerOptions { RejectUnmatchedProperties = true };
+
+        var value = YamlishSerializer.Deserialize<ConstructorValue>("Id: 42\nName: value", options);
+
+        Assert.NotNull(value);
+        Assert.Equal(42, value.Id);
+        Assert.Equal("value", value.Name);
     }
 
     [Fact]
@@ -504,6 +536,21 @@ public sealed class YamlishSerializerTests
     }
 
     [Fact]
+    public void Deserialize_RejectUnmatchedProperties_AllowsIgnoredProperties()
+    {
+        var options = new YamlishSerializerOptions { RejectUnmatchedProperties = true };
+
+        var result = YamlishSerializer.Deserialize<IgnoreConditions>("""
+            Never: 1
+            Always: value
+            """, options);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Never);
+        Assert.Null(result.Always);
+    }
+
+    [Fact]
     public void Deserialize_ConvertsScalarsAndNestedValues()
     {
         var result = YamlishSerializer.Deserialize<Product>("""
@@ -752,6 +799,22 @@ public sealed class YamlishSerializerTests
             DerivedValue: derived
             BaseValue: 1
             """);
+
+        var derived = Assert.IsType<PolymorphicDerived>(result);
+        Assert.Equal(1, derived.BaseValue);
+        Assert.Equal("derived", derived.DerivedValue);
+    }
+
+    [Fact]
+    public void Deserialize_RejectUnmatchedProperties_AllowsPolymorphicTypeDiscriminator()
+    {
+        var options = new YamlishSerializerOptions { RejectUnmatchedProperties = true };
+
+        var result = YamlishSerializer.Deserialize<PolymorphicBase>("""
+            $type: derived
+            DerivedValue: derived
+            BaseValue: 1
+            """, options);
 
         var derived = Assert.IsType<PolymorphicDerived>(result);
         Assert.Equal(1, derived.BaseValue);

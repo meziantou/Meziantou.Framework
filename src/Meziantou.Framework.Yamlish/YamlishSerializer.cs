@@ -172,7 +172,7 @@ public static class YamlishSerializer
             return mapping;
         }
 
-        public static object? Deserialize(YamlishNode node, Type type, YamlishSerializerOptions options, int depth, object? existingValue = null)
+        public static object? Deserialize(YamlishNode node, Type type, YamlishSerializerOptions options, int depth, object? existingValue = null, HashSet<string>? ignoredPropertyNames = null)
         {
             EnsureDepth(options, depth);
             var converter = options.GetConverter(type);
@@ -263,14 +263,21 @@ public static class YamlishSerializer
                 throw CannotConvert(node, type);
 
             var typeInfo = options.GetTypeInfo(type);
-            if (TryGetPolymorphicType(objectMapping, type, typeInfo, options, out var polymorphicType))
-                return Deserialize(node, polymorphicType, options, depth);
+            if (TryGetPolymorphicType(objectMapping, type, typeInfo, options, out var polymorphicType, out var typeDiscriminatorPropertyName))
+            {
+                var polymorphicIgnoredPropertyNames = typeDiscriminatorPropertyName is null ? null : new HashSet<string>(options.PropertyNameComparer) { typeDiscriminatorPropertyName };
+                return Deserialize(node, polymorphicType, options, depth, existingValue: null, polymorphicIgnoredPropertyNames);
+            }
+
+            var unmatchedPropertyNames = CreateUnmatchedPropertyNames(objectMapping, typeInfo, options, ignoredPropertyNames);
+            if (typeDiscriminatorPropertyName is not null)
+                MarkPropertyAsMatched(unmatchedPropertyNames, typeDiscriminatorPropertyName);
 
             HashSet<string>? constructorParameterNames = null;
             var instance = existingValue;
             if (instance is null)
             {
-                instance = CreateObject(objectMapping, type, typeInfo, options, depth, out constructorParameterNames);
+                instance = CreateObject(objectMapping, type, typeInfo, options, depth, unmatchedPropertyNames, out constructorParameterNames);
             }
 
             foreach (var member in typeInfo.DeserializableMembers)
@@ -284,6 +291,7 @@ public static class YamlishSerializer
                     continue;
                 }
 
+                MarkPropertyAsMatched(unmatchedPropertyNames, entry.Key);
                 if (constructorParameterNames?.Contains(member.SerializedName) is true)
                     continue;
 
@@ -297,12 +305,14 @@ public static class YamlishSerializer
                 member.SetValue?.Invoke(instance, value);
             }
 
+            EnsureNoUnmatchedProperties(unmatchedPropertyNames, type);
             return instance;
         }
 
-        private static bool TryGetPolymorphicType(YamlishMapping mapping, Type type, YamlishTypeInfo typeInfo, YamlishSerializerOptions options, [NotNullWhen(true)] out Type? polymorphicType)
+        private static bool TryGetPolymorphicType(YamlishMapping mapping, Type type, YamlishTypeInfo typeInfo, YamlishSerializerOptions options, [NotNullWhen(true)] out Type? polymorphicType, out string? typeDiscriminatorPropertyName)
         {
             polymorphicType = null;
+            typeDiscriminatorPropertyName = null;
             var polymorphismInfo = typeInfo.PolymorphismInfo;
             if (polymorphismInfo is null)
                 return false;
@@ -311,6 +321,7 @@ public static class YamlishSerializer
             if (typeDiscriminatorEntry.Key is null)
                 return false;
 
+            typeDiscriminatorPropertyName = typeDiscriminatorEntry.Key;
             var typeDiscriminator = ConverterUtilities.GetScalarValue(typeDiscriminatorEntry.Value, type);
             var derivedType = polymorphismInfo.GetDerivedType(typeDiscriminator);
             if (derivedType is null)
@@ -323,7 +334,7 @@ public static class YamlishSerializer
             return true;
         }
 
-        private static object CreateObject(YamlishMapping mapping, Type type, YamlishTypeInfo typeInfo, YamlishSerializerOptions options, int depth, out HashSet<string>? constructorParameterNames)
+        private static object CreateObject(YamlishMapping mapping, Type type, YamlishTypeInfo typeInfo, YamlishSerializerOptions options, int depth, HashSet<string>? unmatchedPropertyNames, out HashSet<string>? constructorParameterNames)
         {
             var constructor = typeInfo.Constructor;
             if (constructor is null)
@@ -356,6 +367,7 @@ public static class YamlishSerializer
                     continue;
                 }
 
+                MarkPropertyAsMatched(unmatchedPropertyNames, entry.Key);
                 constructorParameterNames.Add(parameter.SerializedName);
                 arguments[i] = Deserialize(entry.Value, parameter.ParameterType, options, depth + 1);
                 if (options.RespectNullableAnnotations && arguments[i] is null && !parameter.IsNullable)
@@ -363,6 +375,47 @@ public static class YamlishSerializer
             }
 
             return constructor.Constructor.Invoke(arguments);
+        }
+
+        private static HashSet<string>? CreateUnmatchedPropertyNames(YamlishMapping mapping, YamlishTypeInfo typeInfo, YamlishSerializerOptions options, HashSet<string>? ignoredPropertyNames)
+        {
+            if (!options.RejectUnmatchedProperties)
+                return null;
+
+            var result = new HashSet<string>(options.PropertyNameComparer);
+            foreach (var entry in mapping)
+            {
+                result.Add(entry.Key);
+            }
+
+            foreach (var memberName in typeInfo.IgnoredDeserializationMemberNames)
+            {
+                result.Remove(memberName);
+            }
+
+            if (ignoredPropertyNames is not null)
+            {
+                foreach (var propertyName in ignoredPropertyNames)
+                {
+                    result.Remove(propertyName);
+                }
+            }
+
+            return result;
+        }
+
+        private static void MarkPropertyAsMatched(HashSet<string>? unmatchedPropertyNames, string propertyName)
+        {
+            unmatchedPropertyNames?.Remove(propertyName);
+        }
+
+        private static void EnsureNoUnmatchedProperties(HashSet<string>? unmatchedPropertyNames, Type type)
+        {
+            if (unmatchedPropertyNames is null || unmatchedPropertyNames.Count is 0)
+                return;
+
+            var propertyName = unmatchedPropertyNames.First();
+            throw new FormatException($"The property '{propertyName}' could not be mapped to a member of type '{type.FullName}'.");
         }
 
         private static object DeserializeUntyped(YamlishNode node, YamlishSerializerOptions options, int depth)

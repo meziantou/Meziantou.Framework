@@ -156,6 +156,17 @@ public sealed class YamlishSerializerOptions
         }
     } = true;
 
+    /// <summary>Gets or sets a value indicating whether deserialization rejects properties that do not match a .NET member.</summary>
+    public bool RejectUnmatchedProperties
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    }
+
     /// <summary>Gets or sets a value indicating whether required constructor parameters must be present during deserialization.</summary>
     public bool RespectRequiredConstructorParameters
     {

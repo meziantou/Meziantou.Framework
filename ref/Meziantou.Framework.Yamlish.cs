@@ -141,6 +141,7 @@ namespace Meziantou.Framework.Yamlish
         public bool IgnoreReadOnlyProperties { get => throw null; set { } }
         public Meziantou.Framework.Yamlish.YamlishObjectCreationHandling PreferredObjectCreationHandling { get => throw null; set { } }
         public bool AllowDuplicateProperties { get => throw null; set { } }
+        public bool RejectUnmatchedProperties { get => throw null; set { } }
         public bool RespectRequiredConstructorParameters { get => throw null; set { } }
         public bool RespectNullableAnnotations { get => throw null; set { } }
         public void AddAttribute(System.Type type, Meziantou.Framework.Yamlish.YamlishAttribute attribute) { }

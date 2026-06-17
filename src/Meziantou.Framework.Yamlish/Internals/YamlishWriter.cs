@@ -36,29 +36,7 @@ internal static class YamlishWriter
     {
         foreach (var entry in mapping)
         {
-            WriteIndent(writer, indent, indentCharacter);
-            writer.Write(entry.Key);
-            writer.Write(':');
-            if (entry.Value is YamlishScalar scalar)
-            {
-                writer.Write(' ');
-                WriteScalar(writer, scalar, indent, indentCharacter, indentSize);
-            }
-            else if (entry.Value is YamlishSequence { Count: 0, Style: not YamlishSequenceStyle.Block })
-            {
-                writer.WriteLine(" []");
-            }
-            else if (entry.Value is YamlishSequence { Style: YamlishSequenceStyle.Flow } sequence)
-            {
-                writer.Write(' ');
-                WriteFlowSequence(writer, sequence);
-                writer.WriteLine();
-            }
-            else
-            {
-                writer.WriteLine();
-                WriteNode(writer, entry.Value, indent + indentSize, indentCharacter, indentSize);
-            }
+            WriteMappingEntry(writer, entry, indent, writeIndent: true, indentCharacter, indentSize);
         }
     }
 
@@ -93,9 +71,59 @@ internal static class YamlishWriter
             }
             else
             {
-                writer.WriteLine();
-                WriteNode(writer, item, indent + indentSize, indentCharacter, indentSize);
+                if (item is YamlishMapping { Count: > 0 } mapping)
+                {
+                    writer.Write(' ');
+                    WriteCompactMapping(writer, mapping, indent + indentSize, indentCharacter, indentSize);
+                }
+                else
+                {
+                    writer.WriteLine();
+                    WriteNode(writer, item, indent + indentSize, indentCharacter, indentSize);
+                }
             }
+        }
+    }
+
+    private static void WriteCompactMapping(TextWriter writer, YamlishMapping mapping, int indent, char indentCharacter, int indentSize)
+    {
+        using var enumerator = mapping.GetEnumerator();
+        if (!enumerator.MoveNext())
+            return;
+
+        WriteMappingEntry(writer, enumerator.Current, indent, writeIndent: false, indentCharacter, indentSize);
+        while (enumerator.MoveNext())
+        {
+            WriteMappingEntry(writer, enumerator.Current, indent, writeIndent: true, indentCharacter, indentSize);
+        }
+    }
+
+    private static void WriteMappingEntry(TextWriter writer, KeyValuePair<string, YamlishNode> entry, int indent, bool writeIndent, char indentCharacter, int indentSize)
+    {
+        if (writeIndent)
+            WriteIndent(writer, indent, indentCharacter);
+
+        writer.Write(entry.Key);
+        writer.Write(':');
+        if (entry.Value is YamlishScalar scalar)
+        {
+            writer.Write(' ');
+            WriteScalar(writer, scalar, indent, indentCharacter, indentSize);
+        }
+        else if (entry.Value is YamlishSequence { Count: 0, Style: not YamlishSequenceStyle.Block })
+        {
+            writer.WriteLine(" []");
+        }
+        else if (entry.Value is YamlishSequence { Style: YamlishSequenceStyle.Flow } sequence)
+        {
+            writer.Write(' ');
+            WriteFlowSequence(writer, sequence);
+            writer.WriteLine();
+        }
+        else
+        {
+            writer.WriteLine();
+            WriteNode(writer, entry.Value, indent + indentSize, indentCharacter, indentSize);
         }
     }
 

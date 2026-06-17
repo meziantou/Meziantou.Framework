@@ -673,6 +673,32 @@ public sealed class YamlishSerializerTests
             """, content, ignoreLineEndingDifferences: true);
     }
 
+    [Fact]
+    public void Serialize_BlockSequenceOfObjects_UsesCompactMapping()
+    {
+        var value = new AssetCollection
+        {
+            Assets =
+            [
+                new Asset
+                {
+                    Path = "item-alpha",
+                    HtmlOutput = "item-alpha.html",
+                    ZipOutput = "item-alpha.zip",
+                },
+            ],
+        };
+
+        var content = YamlishSerializer.Serialize(value);
+
+        Assert.Equal("""
+            Assets:
+              - Path: item-alpha
+                HtmlOutput: item-alpha.html
+                ZipOutput: item-alpha.zip
+            """, content, ignoreLineEndingDifferences: true);
+    }
+
     [Theory]
     [InlineData("""
         Name: Test
@@ -939,8 +965,7 @@ public sealed class YamlishSerializerTests
         var result = YamlishSerializer.Deserialize<List<PolymorphicBase>>(content);
 
         Assert.Equal("""
-            -
-              $type: derived
+            - $type: derived
               DerivedValue: derived
               BaseValue: 1
             """, content, ignoreLineEndingDifferences: true);
@@ -1100,6 +1125,20 @@ public sealed class YamlishSerializerTests
     {
         [YamlishSequenceStyle(YamlishSequenceStyle.Block)]
         public string[][]? Items { get; set; }
+    }
+
+    private sealed class AssetCollection
+    {
+        public List<Asset> Assets { get; set; } = [];
+    }
+
+    private sealed class Asset
+    {
+        public string? Path { get; set; }
+
+        public string? HtmlOutput { get; set; }
+
+        public string? ZipOutput { get; set; }
     }
 
     private sealed class WebsiteMetadata

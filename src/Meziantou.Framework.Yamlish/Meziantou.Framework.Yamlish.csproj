@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <Description>A parser and serializer for a small, deliberate subset of YAML.</Description>
     <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>

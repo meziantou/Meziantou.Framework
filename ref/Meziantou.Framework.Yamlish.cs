@@ -198,10 +198,20 @@ namespace Meziantou.Framework.Yamlish.Nodes
     {
         public Meziantou.Framework.Yamlish.Nodes.YamlishNodeKind Kind { get => throw null; }
         public string Value { get => throw null; }
+        public Meziantou.Framework.Yamlish.Nodes.YamlishScalarKind ScalarKind { get => throw null; }
         public bool IsNull { get => throw null; }
         public Meziantou.Framework.Yamlish.YamlishScalarStyle Style { get => throw null; set { } }
         public Meziantou.Framework.Yamlish.YamlishScalarChomping Chomping { get => throw null; set { } }
         public YamlishScalar(string value) { }
+        public YamlishScalar(string value, Meziantou.Framework.Yamlish.Nodes.YamlishScalarKind scalarKind) { }
+        public static Meziantou.Framework.Yamlish.Nodes.YamlishScalar CreateNull() => throw null;
+    }
+
+    public enum YamlishScalarKind
+    {
+        Unknown = 0,
+        Null = 1,
+        String = 2
     }
 
     public sealed class YamlishSequence : Meziantou.Framework.Yamlish.Nodes.YamlishNode, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Yamlish.Nodes.YamlishNode>, System.Collections.IEnumerable

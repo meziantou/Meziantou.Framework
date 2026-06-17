@@ -176,7 +176,7 @@ public static class YamlishSerializer
         {
             EnsureDepth(options, depth);
             var converter = options.GetConverter(type);
-            if (node is YamlishScalar { IsNull: true } && converter?.HandleNullValues is not true && (!type.IsValueType || Nullable.GetUnderlyingType(type) is not null))
+            if (node is YamlishScalar { ScalarKind: YamlishScalarKind.Null } && converter?.HandleNullValues is not true && (!type.IsValueType || Nullable.GetUnderlyingType(type) is not null))
                 return null;
 
             if (converter is not null)

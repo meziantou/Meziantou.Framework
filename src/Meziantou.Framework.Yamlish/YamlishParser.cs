@@ -309,6 +309,9 @@ internal sealed class YamlishParser
         if (value[0] is '|' or '>' or '&' or '*' or '!' or '%')
             Throw("Unsupported YAML syntax", lineIndex);
 
+        if (value is "null")
+            return YamlishScalar.CreateNull();
+
         return new YamlishScalar(value.ToString());
     }
 

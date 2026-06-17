@@ -166,7 +166,7 @@ internal static class YamlishWriter
 
     private static void WriteInlineScalar(TextWriter writer, YamlishScalar scalar)
     {
-        if (scalar.Style is YamlishScalarStyle.Plain || scalar.Style is YamlishScalarStyle.Auto && !RequiresQuotes(scalar.Value))
+        if (scalar.Style is YamlishScalarStyle.Plain || scalar.Style is YamlishScalarStyle.Auto && !RequiresQuotes(scalar))
         {
             writer.Write(scalar.Value);
             return;
@@ -202,8 +202,12 @@ internal static class YamlishWriter
         writer.Write('"');
     }
 
-    private static bool RequiresQuotes(string value)
+    private static bool RequiresQuotes(YamlishScalar scalar)
     {
+        var value = scalar.Value;
+        if (scalar.ScalarKind is not YamlishScalarKind.Null && value is "null")
+            return true;
+
         if (value.Length is 0 || char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[^1]))
             return true;
 

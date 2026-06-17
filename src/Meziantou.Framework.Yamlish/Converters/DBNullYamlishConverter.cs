@@ -1,13 +1,17 @@
 namespace Meziantou.Framework.Yamlish.Converters;
 
-internal sealed class DBNullYamlishConverter : ScalarYamlishConverter<DBNull>
+internal sealed class DBNullYamlishConverter : YamlishConverter<DBNull>
 {
     public override bool HandleNullValues => true;
 
-    protected override DBNull Parse(string value)
+    public override DBNull Read(YamlishNode node, YamlishSerializerOptions options)
     {
+        var value = ConverterUtilities.GetScalarValue(node, typeof(DBNull));
         return value is "null" ? DBNull.Value : throw new FormatException($"Cannot convert '{value}' to '{typeof(DBNull)}'.");
     }
 
-    protected override string Format(DBNull value) => "null";
+    public override YamlishNode Write(DBNull value, YamlishSerializerOptions options)
+    {
+        return YamlishScalar.CreateNull();
+    }
 }

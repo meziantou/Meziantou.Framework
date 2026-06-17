@@ -61,6 +61,21 @@ public sealed class YamlishDocumentTests
         Assert.Equal("it's literal", Assert.IsType<YamlishScalar>(mapping["single"]).Value);
     }
 
+    [Fact]
+    public void Parse_ScalarKinds()
+    {
+        var document = YamlishDocument.Parse("""
+            nullValue: null
+            quotedNull: "null"
+            plainText: value
+            """);
+
+        var mapping = Assert.IsType<YamlishMapping>(document.Root);
+        Assert.Equal(YamlishScalarKind.Null, Assert.IsType<YamlishScalar>(mapping["nullValue"]).ScalarKind);
+        Assert.Equal(YamlishScalarKind.String, Assert.IsType<YamlishScalar>(mapping["quotedNull"]).ScalarKind);
+        Assert.Equal(YamlishScalarKind.String, Assert.IsType<YamlishScalar>(mapping["plainText"]).ScalarKind);
+    }
+
     [Theory]
     [InlineData("value: plain value", "plain value")]
     [InlineData("value: \"\"", "")]

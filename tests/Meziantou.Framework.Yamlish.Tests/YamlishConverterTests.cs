@@ -549,7 +549,7 @@ public sealed class YamlishConverterTests
 
         public override NullHandledValue Read(YamlishNode node, YamlishSerializerOptions options)
         {
-            Assert.True(Assert.IsType<YamlishScalar>(node).IsNull);
+            Assert.Equal(YamlishScalarKind.Null, Assert.IsType<YamlishScalar>(node).ScalarKind);
             return new NullHandledValue { Handled = true };
         }
 

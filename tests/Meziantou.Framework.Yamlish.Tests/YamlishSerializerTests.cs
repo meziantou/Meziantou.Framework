@@ -690,6 +690,7 @@ public sealed class YamlishSerializerTests
     [Theory]
     [InlineData("")]
     [InlineData("plain value")]
+    [InlineData("null")]
     [InlineData(" leading and trailing ")]
     [InlineData("quote: \"; slash: \\; tab: \t")]
     [InlineData("first\nsecond")]
@@ -705,6 +706,7 @@ public sealed class YamlishSerializerTests
 
     [Theory]
     [InlineData("Value: plain value", "plain value")]
+    [InlineData("Value: \"null\"", "null")]
     [InlineData("Value: \" leading and trailing \"", " leading and trailing ")]
     [InlineData("Value: 'it''s literal'", "it's literal")]
     [InlineData("Value: |-\n  first\n  second\n", "first\nsecond")]

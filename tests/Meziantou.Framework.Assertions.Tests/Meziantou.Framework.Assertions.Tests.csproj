@@ -1,0 +1,12 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Assertions.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Assertions/Meziantou.Framework.Assertions.csproj" />
+  </ItemGroup>
+
+</Project>

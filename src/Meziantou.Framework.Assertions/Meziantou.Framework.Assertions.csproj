@@ -1,0 +1,10 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks> <!-- TODO fix it -->
+    <RootNamespace>Meziantou.Framework.Assertions</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Assertion helpers for .NET tests</Description>
+  </PropertyGroup>
+
+</Project>

@@ -42,6 +42,7 @@ internal static class LanguageRegistry
         "markdown" or "md" or "mkdown" or "mkd" => Markdown.Instance,
         "http" or "https" => Http.Instance,
         "urlencoded" or "x-www-form-urlencoded" => UrlEncoded.Instance,
+        "msil" or "il" or "cil" => Msil.Instance,
         _ => throw new NotSupportedException($"Language '{language}' is not supported."),
     };
 }

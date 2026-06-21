@@ -63,6 +63,7 @@ The package currently supports these language identifiers and common aliases:
 - `json`, `jsonc`
 - `less`
 - `markdown`, `md`, `mkdown`, `mkd`
+- `msil`, `il`, `cil`
 - `nginx`, `nginxconf`
 - `php`
 - `powershell`, `pwsh`, `ps`, `ps1`

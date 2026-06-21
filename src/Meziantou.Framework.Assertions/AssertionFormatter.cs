@@ -58,8 +58,8 @@ internal class AssertionFormatter
             Expected expression: {error.ExpectedExpression}
             Actual expression: {error.ActualExpression}
             Index of first difference: {error.FirstDifferenceIndex}
-            Expected item: {FormatReadOnlySpanValue(error.ExpectedValue)}
-            Actual item: {FormatReadOnlySpanValue(error.ActualValue)}
+            Expected item: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex)}
+            Actual item: {FormatReadOnlySpanValue(error.ActualValue, error.FirstDifferenceIndex)}
             """);
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -96,8 +96,8 @@ internal class AssertionFormatter
             Expected expression: {error.ExpectedExpression}
             Actual expression: {error.ActualExpression}
             Index of first difference: {error.FirstDifferenceIndex}
-            Expected: {FormatValue(error.ExpectedValue)}
-            Actual: {FormatValue(error.ActualValue)}
+            Expected: {FormatValue(error.ExpectedValue, error.FirstDifferenceIndex)}
+            Actual: {FormatValue(error.ActualValue, error.FirstDifferenceIndex)}
             """);
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -108,7 +108,7 @@ internal class AssertionFormatter
         return result;
     }
 
-    protected virtual string FormatValue(object? value)
+    protected virtual string FormatValue(object? value, int? hightlightedIndex = null)
     {
         if (value is null)
             return "<null>";
@@ -116,9 +116,8 @@ internal class AssertionFormatter
         if (value is string stringValue)
             return FormatStringValue(stringValue);
 
-        // TODO IEnumerable cache (display first items, then "..." if there are more items), maybe add an option to set the number of items to display
-        // TODO add a way to highlight an item in a collection or text (using unicode characters) Maybe some "combining characters" like underscore.
-        // TODO max item limit
+        // TODO IEnumerable cache (display first items, then "..." if there are more items), maybe add an option to set the minimum number of items to display (continue enumeration if needed)
+        // TODO add a way to highlight an item in a collection or text (using unicode characters) Maybe some "combining characters" like underscore. (COMBINING LEFT TACK BELOW U+0318, COMBINING RIGHT TACK BELOW U+0319, COMBINING MINUS SIGN BELOW U+0320, COMBINING LOW LINE U+0332)
         // TODO handle circular reference
 
         if (value is System.Collections.IEnumerable enumerable)
@@ -140,15 +139,27 @@ internal class AssertionFormatter
         return value.ToString() ?? string.Empty;
     }
 
-    protected virtual string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value)
+    protected virtual string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value, int? highlightedIndex = null)
     {
-        // TODO
+        // TODO + hightlighted index
         return $"[{string.Join(", ", value.ToArray())}]";
     }
 
     private static string FormatStringValue(string value)
     {
-
         return $"\"{value}\""; // TODO escape string characters
+
+        static string EscapeChar(char value)
+        {
+            return value switch
+            {
+                '\r' => "\\r",
+                '\n' => "\\n",
+                '\t' => "\\t",
+                '"' => "\\\"",
+                '\\' => "\\\\",
+                _ => value.ToString(),
+            };
+        }
     }
 }

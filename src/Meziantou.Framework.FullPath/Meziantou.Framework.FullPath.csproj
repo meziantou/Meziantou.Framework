@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.1.5</Version>
+    <Version>2.1.6</Version>
     <Description>FullPath makes it easier to deal with paths</Description>
   </PropertyGroup>
 

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
 
-    <Version>2.0.38</Version>
+    <Version>2.0.39</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Components and services for Blazor</Description>
   </PropertyGroup>

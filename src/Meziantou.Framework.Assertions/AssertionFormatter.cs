@@ -109,6 +109,23 @@ internal class AssertionFormatter
         return result;
     }
 
+    public virtual string Format(FalseAssertionError error)
+    {
+        var result = $"""
+            Assert.False() assertion failed.
+            Expression: {error.Expression}
+            Expected: false
+            Actual:   true
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
     {
         var result = $"""

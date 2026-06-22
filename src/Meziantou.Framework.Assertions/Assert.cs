@@ -20,7 +20,6 @@ public static partial class Assert
     public static new bool ReferenceEquals(object? a, object? b) => throw new InvalidOperationException("Assert.ReferenceEquals should not be used");
 
 
-    // TODO move to another file
     /// <summary>
     /// Fails the assertion with the specified message.
     /// </summary>
@@ -29,9 +28,4 @@ public static partial class Assert
     {
         throw new AssertionException(ErrorFormatter.Format(new FailAssertionError(message)));
     }
-}
-
-internal readonly ref struct FailAssertionError(string? message)
-{
-    public string? Message { get; } = message;
 }

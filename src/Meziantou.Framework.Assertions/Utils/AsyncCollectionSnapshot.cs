@@ -1,7 +1,9 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.Assertions;
 
+[SuppressMessage("Maintainability", "MA0182:Unused internal types", Justification = "Reserved for async collection assertions.")]
 internal sealed class AsyncCollectionSnapshot<T> : IAsyncEnumerable<T>, IAsyncDisposable
 {
     private readonly List<T> _cache = [];

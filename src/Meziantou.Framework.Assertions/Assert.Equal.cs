@@ -32,13 +32,12 @@ partial class Assert
     {
         using var actualSnapshot = new CollectionSnapshot<T>(actual);
         using var expectedSnapshot = new CollectionSnapshot<T>(expected);
+        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var expectedEnumerator = expectedSnapshot.GetEnumerator();
 
         var index = 0;
         while (true)
         {
-            using var actualEnumerator = actualSnapshot.GetEnumerator();
-            using var expectedEnumerator = expectedSnapshot.GetEnumerator();
-
             var actualHasNext = actualEnumerator.MoveNext();
             var expectedHasNext = expectedEnumerator.MoveNext();
 

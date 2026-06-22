@@ -126,6 +126,16 @@ internal class AssertionFormatter
         return result;
     }
 
+    public virtual string Format(NullAssertionError error)
+    {
+        return $"""
+            Assert.Null() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected: <null>
+            Actual:   {FormatValue(error.ActualValue)}
+            """;
+    }
+
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
     {
         var result = $"""

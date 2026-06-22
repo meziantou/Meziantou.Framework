@@ -38,6 +38,32 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void CollectionComparer_Success()
+    {
+        IEnumerable<string> expected = ["a", "b"];
+        IEnumerable<string> actual = ["A", "B"];
+
+        AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CollectionComparer_Fails()
+    {
+        IEnumerable<string> expected = ["a", "b"];
+        IEnumerable<string> actual = ["A", "c"];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase, "custom message"), """
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 1
+            Expected: ["a", "̲b̲"̲]
+            Actual:   ["A", "̲c̲"̲]
+            Message: custom message
+            """);
+    }
+
+    [Fact]
     public async Task HighlightsAsyncCollectionDifference()
     {
         var actual = Enumerable.Range(0, 20).ToArray();
@@ -52,6 +78,56 @@ public sealed class AssertEqualTests
             Index of first difference: 12
             Expected: [0, 1, 2, ..., 10, 11, 1̲2̲, 13, 14, ...]
             Actual:   [0, 1, 2, ..., 10, 11, 4̲2̲, 13, 14, ...]
+            """);
+    }
+
+    [Fact]
+    public async Task AsyncCollectionComparer_Success()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable(["a", "b"]);
+        var actual = AssertionTestHelpers.ToAsyncEnumerable(["A", "B"]);
+
+        await AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AsyncCollectionComparer_Fails()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable(["a", "b"]);
+        var actual = AssertionTestHelpers.ToAsyncEnumerable(["A", "c"]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase), """
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 1
+            Expected: ["a", "̲b̲"̲]
+            Actual:   ["A", "̲c̲"̲]
+            """);
+    }
+
+    [Fact]
+    public void NonGenericCollection_Success()
+    {
+        System.Collections.IEnumerable expected = new object[] { "a", "b" };
+        System.Collections.IEnumerable actual = new object[] { "A", "B" };
+
+        AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void NonGenericCollection_Fails()
+    {
+        System.Collections.IEnumerable expected = new object[] { "a", "b", "c" };
+        System.Collections.IEnumerable actual = new object[] { "A", "d", "C" };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase), """
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 1
+            Expected: ["a", "̲b̲"̲, "c"]
+            Actual:   ["A", "̲d̲"̲, "C"]
             """);
     }
 

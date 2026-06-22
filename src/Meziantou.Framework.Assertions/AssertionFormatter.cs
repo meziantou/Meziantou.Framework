@@ -258,6 +258,58 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(ReadOnlySpanSingleAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatReadOnlySpanValue(error.ActualValue, GetSingleFailureHighlightedIndex(error.ActualValue.Length))}
+            """);
+    }
+
+    public virtual string Format(StringSingleAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatStringValue(error.ActualValue, GetSingleFailureHighlightedIndex(error.ActualValue.Length))}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionSingleAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, GetSingleFailureHighlightedIndex(error.ActualValue.Items.Count))}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionSinglePredicateAssertionError<T> error)
+    {
+        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Matching items:       {FormatValue(error.MatchingValues.Items, GetSingleFailureHighlightedIndex(error.MatchingValues.Items.Count))}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionSingleAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, GetSingleFailureHighlightedIndex(error.ActualValue.Items.Count))}
+            """);
+    }
+
     public virtual string Format<T>(ValueContainsAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""
@@ -644,6 +696,11 @@ internal class AssertionFormatter
             return null;
 
         return actualIndex;
+    }
+
+    private static int? GetSingleFailureHighlightedIndex(int count)
+    {
+        return count > 1 ? 1 : null;
     }
 
     private static void EnsureObservedItems<T>(CollectionSnapshot<T> snapshot, int maxIndex)

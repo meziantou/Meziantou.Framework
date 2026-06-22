@@ -93,9 +93,31 @@ public sealed class AssertionExceptionTests
             """);
     }
 
+    [Fact]
+    public void Formatter_UsesSuffixItemCount()
+    {
+        var formatter = new TestAssertionFormatter
+        {
+            MaxFormattedItems = 3,
+            SuffixItemCount = 3,
+        };
+
+        var value = formatter.FormatValueForTest(Enumerable.Range(0, 10), highlightedIndex: 1);
+
+        global::Xunit.Assert.Equal("[0, 1̲, 2, 3, 4, ...]", value);
+    }
+
     private static void Validate(Action action, string expectedMessage)
     {
         var exception = global::Xunit.Assert.Throws<AssertionException>(action);
         global::Xunit.Assert.Equal(expectedMessage, exception.Message);
+    }
+
+    private sealed class TestAssertionFormatter : AssertionFormatter
+    {
+        public string FormatValueForTest(object? value, int? highlightedIndex = null)
+        {
+            return FormatValue(value, highlightedIndex);
+        }
     }
 }

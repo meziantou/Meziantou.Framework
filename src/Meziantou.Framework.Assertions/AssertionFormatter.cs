@@ -4,11 +4,82 @@ namespace Meziantou.Framework.Assertions;
 internal class AssertionFormatter
 {
     private const char CombiningLowLine = '\u0332';
-    private const int MaxFormattedItems = 10;
-    private const int PrefixItemCount = 3;
-    private const int HighlightedContextItemCount = 2;
+    private int _highlightedContextItemCount = 2;
+    private int _maxFormattedItems = 10;
+    private int _prefixItemCount = 3;
+    private int _suffixItemCount;
 
     public static AssertionFormatter Default { get; } = new AssertionFormatter();
+
+    /// <summary>
+    /// Gets or sets the number of items to format from the start of an enumerable before truncating it.
+    /// </summary>
+    /// <remarks>
+    /// When there is no highlighted item, or when the highlighted item is within this leading range, the formatter writes items from the beginning of the enumerable.
+    /// If <see cref="SuffixItemCount"/> requires more items after a highlighted item, the formatter can write more than this value.
+    /// When the highlighted item index is greater than or equal to this value, the formatter switches to focused mode: it writes <see cref="PrefixItemCount"/> items from the beginning, an ellipsis, and a window around the highlighted item controlled by <see cref="HighlightedContextItemCount"/>.
+    /// </remarks>
+    public int MaxFormattedItems
+    {
+        get => _maxFormattedItems;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            _maxFormattedItems = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the number of items to keep from the start of an enumerable when a highlighted item is outside the leading range.
+    /// </summary>
+    /// <remarks>
+    /// This value is used only in focused mode, when the highlighted item index is greater than or equal to <see cref="MaxFormattedItems"/>.
+    /// It preserves the beginning of the enumerable before the ellipsis and the highlighted-item context window.
+    /// </remarks>
+    public int PrefixItemCount
+    {
+        get => _prefixItemCount;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            _prefixItemCount = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the minimum number of items to format after a highlighted item in the leading range.
+    /// </summary>
+    /// <remarks>
+    /// This value is used when the highlighted item index is less than <see cref="MaxFormattedItems"/>.
+    /// In that case, the formatter writes at least <see cref="MaxFormattedItems"/> items, and can continue up to the highlighted item plus this many following items.
+    /// This lets assertion failures found near the beginning of a snapshot show extra items after the difference.
+    /// </remarks>
+    public int SuffixItemCount
+    {
+        get => _suffixItemCount;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            _suffixItemCount = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the number of neighboring items to format before and after a highlighted item in focused mode.
+    /// </summary>
+    /// <remarks>
+    /// This value is used only when the highlighted item index is greater than or equal to <see cref="MaxFormattedItems"/>.
+    /// The formatter then writes <see cref="PrefixItemCount"/> items from the beginning, an ellipsis when items were skipped, and up to this many items on each side of the highlighted item.
+    /// </remarks>
+    public int HighlightedContextItemCount
+    {
+        get => _highlightedContextItemCount;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            _highlightedContextItemCount = value;
+        }
+    }
 
     public string Format(FailAssertionError error)
     {
@@ -161,14 +232,17 @@ internal class AssertionFormatter
         try
         {
             var items = new List<string>();
-            var focusStartIndex = highlightedIndex is >= MaxFormattedItems
+            var shouldFocusHighlightedItem = highlightedIndex is not null && highlightedIndex.GetValueOrDefault() >= MaxFormattedItems;
+            var focusStartIndex = shouldFocusHighlightedItem
                 ? Math.Max(PrefixItemCount, highlightedIndex.GetValueOrDefault() - HighlightedContextItemCount)
                 : -1;
-            var focusEndIndex = highlightedIndex is >= MaxFormattedItems
+            var focusEndIndex = shouldFocusHighlightedItem
                 ? highlightedIndex.GetValueOrDefault() + HighlightedContextItemCount
                 : -1;
-            var prefixItemCount = highlightedIndex is >= MaxFormattedItems ? PrefixItemCount : MaxFormattedItems;
-            var maxIndex = highlightedIndex is >= MaxFormattedItems ? focusEndIndex : MaxFormattedItems - 1;
+            var prefixItemCount = shouldFocusHighlightedItem ? PrefixItemCount : MaxFormattedItems;
+            var maxIndex = shouldFocusHighlightedItem
+                ? focusEndIndex
+                : Math.Max(MaxFormattedItems - 1, highlightedIndex.GetValueOrDefault(-1) + SuffixItemCount);
             var hasSkippedItems = false;
             var index = 0;
 

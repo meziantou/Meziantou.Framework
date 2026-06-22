@@ -208,6 +208,46 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(ReadOnlySpanEmptyAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Empty() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
+            """);
+    }
+
+    public virtual string Format(StringEmptyAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Empty() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatStringValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionEmptyAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Empty() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.ActualValue.Items.Count > 0 ? 0 : null)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionEmptyAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Empty() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.ActualValue.Items.Count > 0 ? 0 : null)}
+            """);
+    }
+
     public virtual string Format<T>(ValueContainsAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""

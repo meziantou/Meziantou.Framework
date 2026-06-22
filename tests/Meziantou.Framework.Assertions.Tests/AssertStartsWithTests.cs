@@ -24,6 +24,49 @@ public sealed class AssertStartsWithTests
     }
 
     [Fact]
+    public void ValueEnumerable_Success()
+    {
+        AssertionsAssert.StartsWith(1, Enumerable.Range(1, 3));
+        AssertionsAssert.StartsWith("a", new[] { "A", "b" }.AsEnumerable(), StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ValueEnumerable_Fails()
+    {
+        IEnumerable<int> actual = [2, 3];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.StartsWith(1, actual), """
+            Assert.StartsWith() assertion failed.
+            Expected expression: 1
+            Actual expression:   actual
+            Expected prefix: 1
+            Actual:          [2̲, 3]
+            """);
+    }
+
+    [Fact]
+    public void ValueNonGenericEnumerable_Success()
+    {
+        System.Collections.IEnumerable actual = new object[] { 1, 2, 3 };
+
+        AssertionsAssert.StartsWith(1, actual);
+    }
+
+    [Fact]
+    public void ValueNonGenericEnumerable_Fails()
+    {
+        System.Collections.IEnumerable actual = new object[] { 2, 3 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.StartsWith(1, actual), """
+            Assert.StartsWith() assertion failed.
+            Expected expression: 1
+            Actual expression:   actual
+            Expected prefix: 1
+            Actual:          [2̲, 3]
+            """);
+    }
+
+    [Fact]
     public void Span_Success()
     {
         AssertionsAssert.StartsWith<int>([1, 2], [1, 2, 3]);

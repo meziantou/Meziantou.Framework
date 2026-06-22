@@ -195,6 +195,19 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(ValueCollectionStartsWithAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected prefix: {FormatValue(error.ExpectedValue)}
+            Actual:          {FormatValue(error.ActualValue.Items, error.ActualValue.Items.Count > 0 ? 0 : null)}
+            """);
+    }
+
     public virtual string Format<T>(ReadOnlySpanStartsWithAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""

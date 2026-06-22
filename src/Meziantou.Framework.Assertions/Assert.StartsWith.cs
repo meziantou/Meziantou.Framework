@@ -22,6 +22,44 @@ partial class Assert
     }
 
     /// <summary>
+    /// Asserts that an enumerable starts with the specified value.
+    /// </summary>
+    /// <param name="expected">The value expected at the start of <paramref name="actual"/>.</param>
+    /// <param name="actual">The enumerable to inspect.</param>
+    /// <param name="comparer">The comparer used to compare values.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    public static void StartsWith<T>(T expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        comparer ??= EqualityComparer<T>.Default;
+        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualEnumerator = actualSnapshot.GetEnumerator();
+
+        if (!actualEnumerator.MoveNext() || !comparer.Equals(expected, actualEnumerator.Current))
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionStartsWithAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
+        }
+    }
+
+    /// <summary>
+    /// Asserts that a non-generic enumerable starts with the specified value.
+    /// </summary>
+    /// <param name="expected">The value expected at the start of <paramref name="actual"/>.</param>
+    /// <param name="actual">The enumerable to inspect.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    public static void StartsWith(object? expected, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
+        using var actualEnumerator = actualSnapshot.GetEnumerator();
+
+        if (!actualEnumerator.MoveNext() || !object.Equals(expected, actualEnumerator.Current))
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionStartsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
+        }
+    }
+
+    /// <summary>
     /// Asserts that a span starts with the specified prefix.
     /// </summary>
     /// <param name="expected">The prefix expected at the start of <paramref name="actual"/>.</param>

@@ -19,14 +19,14 @@ public sealed class AssertionExceptionTests
             Assert.True() assertion failed.
             Expression: false
             Expected: true
-            Actual: false
+            Actual:   false
             """);
 
         Validate(() => AssertionsAssert.True(false, "custom message"), """
             Assert.True() assertion failed.
             Expression: false
             Expected: true
-            Actual: false
+            Actual:   false
             Message: custom message
             """);
     }
@@ -40,9 +40,9 @@ public sealed class AssertionExceptionTests
         Validate(() => AssertionsAssert.Equal(expected, actual), """
             Assert.Equal() assertion failed.
             Expected expression: expected
-            Actual expression: actual
+            Actual expression:   actual
             Expected: "Hello\n\"World\""
-            Actual: "Hello\tWorld"
+            Actual:   "Hello\tWorld"
             """);
     }
 
@@ -57,10 +57,10 @@ public sealed class AssertionExceptionTests
         Validate(() => AssertionsAssert.Equal<int>(expected, actualEnumerable), """
             Assert.Equal() assertion failed: Lengths differ.
             Expected expression: expected
-            Actual expression: actualEnumerable
+            Actual expression:   actualEnumerable
             Index of first difference: 12
-            Expected: [0, 1, 2, ..., 10, 11, *12*, 13, 14, ...]
-            Actual: [0, 1, 2, ..., 10, 11, *42*, 13, 14, ...]
+            Expected: [0, 1, 2, ..., 10, 11, 1̲2̲, 13, 14, ...]
+            Actual:   [0, 1, 2, ..., 10, 11, 4̲2̲, 13, 14, ...]
             """);
     }
 
@@ -70,10 +70,10 @@ public sealed class AssertionExceptionTests
         Validate(() => AssertionsAssert.Equal<int>([1, 2, 3], [1, 42, 3]), """
             Assert.Equal() assertion failed: Item at index 1 differs.
             Expected expression: [1, 2, 3]
-            Actual expression: [1, 42, 3]
+            Actual expression:   [1, 42, 3]
             Index of first difference: 1
-            Expected item: [1, *2*, 3]
-            Actual item: [1, *42*, 3]
+            Expected item: [1, 2̲, 3]
+            Actual item:   [1, 4̲2̲, 3]
             """);
     }
 
@@ -87,9 +87,9 @@ public sealed class AssertionExceptionTests
         Validate(() => AssertionsAssert.Equal(expected, actual), """
             Assert.Equal() assertion failed.
             Expected expression: expected
-            Actual expression: actual
+            Actual expression:   actual
             Expected: <null>
-            Actual: [<circular reference>]
+            Actual:   [<circular reference>]
             """);
     }
 

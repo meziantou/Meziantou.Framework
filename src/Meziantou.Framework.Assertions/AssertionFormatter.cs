@@ -1,7 +1,9 @@
 namespace Meziantou.Framework.Assertions;
 
+#pragma warning disable CA1822, CA1852 // Formatter methods intentionally share an instance-based overridable shape.
 internal class AssertionFormatter
 {
+    private const char CombiningLowLine = '\u0332';
     private const int MaxFormattedItems = 10;
     private const int PrefixItemCount = 3;
     private const int HighlightedContextItemCount = 2;
@@ -25,7 +27,7 @@ internal class AssertionFormatter
             Assert.True() assertion failed.
             Expression: {error.Expression}
             Expected: true
-            Actual: false
+            Actual:   false
             """;
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -41,11 +43,11 @@ internal class AssertionFormatter
         var result = $"""
             Assert.Equal() assertion failed.
             Expected expression: {error.ExpectedExpression}
-            Actual expression: {error.ActualExpression}
+            Actual expression:   {error.ActualExpression}
             """;
 
         result += Environment.NewLine + "Expected: " + FormatValue(error.ExpectedValue);
-        result += Environment.NewLine + "Actual: " + FormatValue(error.ActualValue);
+        result += Environment.NewLine + "Actual:   " + FormatValue(error.ActualValue);
 
         if (!string.IsNullOrEmpty(error.Message))
         {
@@ -60,10 +62,10 @@ internal class AssertionFormatter
         var result = string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Equal() assertion failed: Item at index {error.FirstDifferenceIndex} differs.
             Expected expression: {error.ExpectedExpression}
-            Actual expression: {error.ActualExpression}
+            Actual expression:   {error.ActualExpression}
             Index of first difference: {error.FirstDifferenceIndex}
             Expected item: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex)}
-            Actual item: {FormatReadOnlySpanValue(error.ActualValue, error.FirstDifferenceIndex)}
+            Actual item:   {FormatReadOnlySpanValue(error.ActualValue, error.FirstDifferenceIndex)}
             """);
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -79,11 +81,11 @@ internal class AssertionFormatter
         var result = string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Equal() assertion failed: Lengths differ.
             Expected expression: {error.ExpectedExpression}
-            Actual expression: {error.ActualExpression}
+            Actual expression:   {error.ActualExpression}
             Expected length: {error.ExpectedValue.Length}
-            Actual length: {error.ActualValue.Length}
+            Actual length:   {error.ActualValue.Length}
             Expected: {FormatReadOnlySpanValue(error.ExpectedValue)}
-            Actual: {FormatReadOnlySpanValue(error.ActualValue)}
+            Actual:   {FormatReadOnlySpanValue(error.ActualValue)}
             """);
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -98,10 +100,10 @@ internal class AssertionFormatter
         var result = string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Equal() assertion failed: Lengths differ.
             Expected expression: {error.ExpectedExpression}
-            Actual expression: {error.ActualExpression}
+            Actual expression:   {error.ActualExpression}
             Index of first difference: {error.FirstDifferenceIndex}
             Expected: {FormatValue(error.ExpectedValue, error.FirstDifferenceIndex)}
-            Actual: {FormatValue(error.ActualValue, error.FirstDifferenceIndex)}
+            Actual:   {FormatValue(error.ActualValue, error.FirstDifferenceIndex)}
             """);
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -207,9 +209,21 @@ internal class AssertionFormatter
     private static string FormatHighlightedValue(string value, int index, int? highlightedIndex)
     {
         if (index == highlightedIndex)
-            return "*" + value + "*";
+            return Underline(value);
 
         return value;
+    }
+
+    private static string Underline(string value)
+    {
+        var result = new StringBuilder(value.Length * 2);
+        foreach (var c in value)
+        {
+            result.Append(c);
+            result.Append(CombiningLowLine);
+        }
+
+        return result.ToString();
     }
 
     private static string FormatStringValue(string value, int? highlightedIndex)
@@ -222,9 +236,7 @@ internal class AssertionFormatter
             var escapedChar = EscapeChar(value[i]);
             if (i == highlightedIndex)
             {
-                result.Append('*');
-                result.Append(escapedChar);
-                result.Append('*');
+                result.Append(Underline(escapedChar));
             }
             else
             {
@@ -250,3 +262,4 @@ internal class AssertionFormatter
         }
     }
 }
+#pragma warning restore CA1822, CA1852

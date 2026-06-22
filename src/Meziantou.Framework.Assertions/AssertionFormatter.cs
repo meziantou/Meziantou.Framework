@@ -2,9 +2,13 @@ namespace Meziantou.Framework.Assertions;
 
 internal class AssertionFormatter
 {
+    private const int MaxFormattedItems = 10;
+    private const int PrefixItemCount = 3;
+    private const int HighlightedContextItemCount = 2;
+
     public static AssertionFormatter Default { get; } = new AssertionFormatter();
 
-    public virtual string Format(FailAssertionError error)
+    public string Format(FailAssertionError error)
     {
         var result = "Assert.Fail() assertion failed.";
         if (!string.IsNullOrEmpty(error.Message))
@@ -108,27 +112,23 @@ internal class AssertionFormatter
         return result;
     }
 
-    protected virtual string FormatValue(object? value, int? hightlightedIndex = null)
+    protected virtual string FormatValue(object? value, int? highlightedIndex = null)
+    {
+        var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        return FormatValue(value, highlightedIndex, visited);
+    }
+
+    protected virtual string FormatValue(object? value, int? highlightedIndex, HashSet<object> visited)
     {
         if (value is null)
             return "<null>";
 
         if (value is string stringValue)
-            return FormatStringValue(stringValue);
-
-        // TODO IEnumerable cache (display first items, then "..." if there are more items), maybe add an option to set the minimum number of items to display (continue enumeration if needed)
-        // TODO add a way to highlight an item in a collection or text (using unicode characters) Maybe some "combining characters" like underscore. (COMBINING LEFT TACK BELOW U+0318, COMBINING RIGHT TACK BELOW U+0319, COMBINING MINUS SIGN BELOW U+0320, COMBINING LOW LINE U+0332)
-        // TODO handle circular reference
+            return FormatStringValue(stringValue, highlightedIndex);
 
         if (value is System.Collections.IEnumerable enumerable)
         {
-            var items = new List<string>();
-            foreach (var item in enumerable)
-            {
-                items.Add(FormatValue(item));
-            }
-
-            return $"[{string.Join(", ", items)}]";
+            return FormatEnumerableValue(enumerable, highlightedIndex, visited);
         }
 
         if (value is IFormattable formattable)
@@ -141,13 +141,99 @@ internal class AssertionFormatter
 
     protected virtual string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value, int? highlightedIndex = null)
     {
-        // TODO + hightlighted index
-        return $"[{string.Join(", ", value.ToArray())}]";
+        var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        var items = new List<string>(value.Length);
+        for (var i = 0; i < value.Length; i++)
+        {
+            items.Add(FormatHighlightedValue(FormatValue(value[i], highlightedIndex: null, visited), i, highlightedIndex));
+        }
+
+        return $"[{string.Join(", ", items)}]";
     }
 
-    private static string FormatStringValue(string value)
+    protected virtual string FormatEnumerableValue(System.Collections.IEnumerable value, int? highlightedIndex, HashSet<object> visited)
     {
-        return $"\"{value}\""; // TODO escape string characters
+        if (!visited.Add(value))
+            return "<circular reference>";
+
+        try
+        {
+            var items = new List<string>();
+            var focusStartIndex = highlightedIndex is >= MaxFormattedItems
+                ? Math.Max(PrefixItemCount, highlightedIndex.GetValueOrDefault() - HighlightedContextItemCount)
+                : -1;
+            var focusEndIndex = highlightedIndex is >= MaxFormattedItems
+                ? highlightedIndex.GetValueOrDefault() + HighlightedContextItemCount
+                : -1;
+            var prefixItemCount = highlightedIndex is >= MaxFormattedItems ? PrefixItemCount : MaxFormattedItems;
+            var maxIndex = highlightedIndex is >= MaxFormattedItems ? focusEndIndex : MaxFormattedItems - 1;
+            var hasSkippedItems = false;
+            var index = 0;
+
+            foreach (var item in value)
+            {
+                if (index > maxIndex)
+                {
+                    items.Add("...");
+                    break;
+                }
+
+                if (index < prefixItemCount || index >= focusStartIndex)
+                {
+                    if (hasSkippedItems)
+                    {
+                        items.Add("...");
+                        hasSkippedItems = false;
+                    }
+
+                    items.Add(FormatHighlightedValue(FormatValue(item, highlightedIndex: null, visited), index, highlightedIndex));
+                }
+                else
+                {
+                    hasSkippedItems = true;
+                }
+
+                index++;
+            }
+
+            return $"[{string.Join(", ", items)}]";
+        }
+        finally
+        {
+            visited.Remove(value);
+        }
+    }
+
+    private static string FormatHighlightedValue(string value, int index, int? highlightedIndex)
+    {
+        if (index == highlightedIndex)
+            return "*" + value + "*";
+
+        return value;
+    }
+
+    private static string FormatStringValue(string value, int? highlightedIndex)
+    {
+        var result = new StringBuilder(value.Length + 2);
+        result.Append('"');
+
+        for (var i = 0; i < value.Length; i++)
+        {
+            var escapedChar = EscapeChar(value[i]);
+            if (i == highlightedIndex)
+            {
+                result.Append('*');
+                result.Append(escapedChar);
+                result.Append('*');
+            }
+            else
+            {
+                result.Append(escapedChar);
+            }
+        }
+
+        result.Append('"');
+        return result.ToString();
 
         static string EscapeChar(char value)
         {
@@ -158,6 +244,7 @@ internal class AssertionFormatter
                 '\t' => "\\t",
                 '"' => "\\\"",
                 '\\' => "\\\\",
+                < ' ' => "\\u" + ((int)value).ToString("X4", CultureInfo.InvariantCulture),
                 _ => value.ToString(),
             };
         }

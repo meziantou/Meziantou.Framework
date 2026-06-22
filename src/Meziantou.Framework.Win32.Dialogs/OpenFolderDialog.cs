@@ -82,13 +82,13 @@ public sealed class OpenFolderDialog
 
         if (!string.IsNullOrEmpty(InitialDirectory))
         {
-            var result = PInvoke.SHCreateItemFromParsingName(InitialDirectory, null, typeof(IShellItem).GUID, out var shellItem);
+            var result = PInvoke.SHCreateItemFromParsingName(InitialDirectory, null, out IShellItem? shellItem);
             switch ((int)result)
             {
                 case NativeMethods.S_OK:
-                    if (shellItem is IShellItem item)
+                    if (shellItem is not null)
                     {
-                        dialog.SetFolder(item);
+                        dialog.SetFolder(shellItem);
                     }
 
                     break;

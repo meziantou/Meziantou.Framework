@@ -65,6 +65,24 @@ public sealed class AssertionExceptionTests
     }
 
     [Fact]
+    public async Task Equal_HighlightsAsyncCollectionDifference()
+    {
+        var actual = Enumerable.Range(0, 20).ToArray();
+        actual[12] = 42;
+        var expectedEnumerable = ToAsyncEnumerable(Enumerable.Range(0, 20));
+        var actualEnumerable = ToAsyncEnumerable(actual);
+
+        await ValidateAsync(() => AssertionsAssert.Equal<int>(expectedEnumerable, actualEnumerable), """
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: expectedEnumerable
+            Actual expression:   actualEnumerable
+            Index of first difference: 12
+            Expected: [0, 1, 2, ..., 10, 11, 1̲2̲, 13, 14, ...]
+            Actual:   [0, 1, 2, ..., 10, 11, 4̲2̲, 13, 14, ...]
+            """);
+    }
+
+    [Fact]
     public void Equal_HighlightsReadOnlySpanDifference()
     {
         Validate(() => AssertionsAssert.Equal<int>([1, 2, 3], [1, 42, 3]), """
@@ -111,6 +129,21 @@ public sealed class AssertionExceptionTests
     {
         var exception = global::Xunit.Assert.Throws<AssertionException>(action);
         global::Xunit.Assert.Equal(expectedMessage, exception.Message);
+    }
+
+    private static async Task ValidateAsync(Func<Task> action, string expectedMessage)
+    {
+        var exception = await global::Xunit.Assert.ThrowsAsync<AssertionException>(action);
+        global::Xunit.Assert.Equal(expectedMessage, exception.Message);
+    }
+
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(IEnumerable<T> items)
+    {
+        foreach (var item in items)
+        {
+            await Task.Yield();
+            yield return item;
+        }
     }
 
     private sealed class TestAssertionFormatter : AssertionFormatter

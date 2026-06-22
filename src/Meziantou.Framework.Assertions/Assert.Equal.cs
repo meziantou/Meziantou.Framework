@@ -57,4 +57,34 @@ partial class Assert
             index++;
         }
     }
+
+    public static async Task Equal<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+        await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
+        await using var expectedEnumerator = expectedSnapshot.GetAsyncEnumerator();
+
+        var index = 0;
+        while (true)
+        {
+            var actualHasNext = await actualEnumerator.MoveNextAsync().ConfigureAwait(false);
+            var expectedHasNext = await expectedEnumerator.MoveNextAsync().ConfigureAwait(false);
+
+            if (!actualHasNext && !expectedHasNext)
+                break;
+
+            if (actualHasNext != expectedHasNext)
+            {
+                throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionEqualAssertionError<T, T>(expectedSnapshot, actualSnapshot, index, message, actualExpression, expectedExpression)).ConfigureAwait(false));
+            }
+
+            if (!EqualityComparer<T>.Default.Equals(expectedEnumerator.Current, actualEnumerator.Current))
+            {
+                throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionEqualAssertionError<T, T>(expectedSnapshot, actualSnapshot, index, message, actualExpression, expectedExpression)).ConfigureAwait(false));
+            }
+
+            index++;
+        }
+    }
 }

@@ -185,6 +185,29 @@ internal class AssertionFormatter
         return result;
     }
 
+    public virtual async Task<string> FormatAsync<TExpected, TActual>(AsyncCollectionEqualAssertionError<TExpected, TActual> error)
+    {
+        var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
+        await EnsureObservedItemsAsync(error.ExpectedValue, maxIndex).ConfigureAwait(false);
+        await EnsureObservedItemsAsync(error.ActualValue, maxIndex).ConfigureAwait(false);
+
+        var result = string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
+            Actual:   {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex)}
+            """);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
     protected virtual string FormatValue(object? value, int? highlightedIndex = null)
     {
         var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
@@ -232,7 +255,7 @@ internal class AssertionFormatter
         try
         {
             var items = new List<string>();
-            var shouldFocusHighlightedItem = highlightedIndex is not null && highlightedIndex.GetValueOrDefault() >= MaxFormattedItems;
+            var shouldFocusHighlightedItem = IsFocusedHighlightedItem(highlightedIndex);
             var focusStartIndex = shouldFocusHighlightedItem
                 ? Math.Max(PrefixItemCount, highlightedIndex.GetValueOrDefault() - HighlightedContextItemCount)
                 : -1;
@@ -240,9 +263,7 @@ internal class AssertionFormatter
                 ? highlightedIndex.GetValueOrDefault() + HighlightedContextItemCount
                 : -1;
             var prefixItemCount = shouldFocusHighlightedItem ? PrefixItemCount : MaxFormattedItems;
-            var maxIndex = shouldFocusHighlightedItem
-                ? focusEndIndex
-                : Math.Max(MaxFormattedItems - 1, highlightedIndex.GetValueOrDefault(-1) + SuffixItemCount);
+            var maxIndex = GetMaxFormattedIndex(highlightedIndex);
             var hasSkippedItems = false;
             var index = 0;
 
@@ -277,6 +298,30 @@ internal class AssertionFormatter
         finally
         {
             visited.Remove(value);
+        }
+    }
+
+    private bool IsFocusedHighlightedItem(int? highlightedIndex)
+    {
+        return highlightedIndex is not null && highlightedIndex.GetValueOrDefault() >= MaxFormattedItems;
+    }
+
+    private int GetMaxFormattedIndex(int? highlightedIndex)
+    {
+        if (IsFocusedHighlightedItem(highlightedIndex))
+            return highlightedIndex.GetValueOrDefault() + HighlightedContextItemCount;
+
+        return Math.Max(MaxFormattedItems - 1, highlightedIndex.GetValueOrDefault(-1) + SuffixItemCount);
+    }
+
+    private static async Task EnsureObservedItemsAsync<T>(AsyncCollectionSnapshot<T> snapshot, int maxIndex)
+    {
+        if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
+            return;
+
+        await using var enumerator = snapshot.GetAsyncEnumerator();
+        while (!snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && await enumerator.MoveNextAsync().ConfigureAwait(false))
+        {
         }
     }
 

@@ -183,6 +183,91 @@ internal class AssertionFormatter
 
         return result;
     }
+
+    public virtual string Format<T>(ValueStartsWithAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected prefix: {FormatValue(error.ExpectedValue)}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanStartsWithAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex)}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.FirstDifferenceIndex < error.ActualValue.Length ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual string Format(ReadOnlySpanCharStartsWithAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatStringValue(error.ExpectedValue, error.FirstDifferenceIndex)}
+            Actual:          {FormatStringValue(error.ActualValue, error.FirstDifferenceIndex < error.ActualValue.Length ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionStartsWithAssertionError<T> error)
+    {
+        var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
+        await EnsureObservedItemsAsync(error.ExpectedValue, maxIndex).ConfigureAwait(false);
+        await EnsureObservedItemsAsync(error.ActualValue, maxIndex).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
+            Actual:          {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex < error.ActualValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionStartsWithAssertionError<TExpected, TActual> error)
+    {
+        var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
+        EnsureObservedItems(error.ExpectedValue, maxIndex);
+        await EnsureObservedItemsAsync(error.ActualValue, maxIndex).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
+            Actual:          {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex < error.ActualValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual string Format<TExpected, TActual>(CollectionStartsWithAssertionError<TExpected, TActual> error)
+    {
+        var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
+        EnsureObservedItems(error.ExpectedValue, maxIndex);
+        EnsureObservedItems(error.ActualValue, maxIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
+            Actual:          {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex < error.ActualValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
     public virtual string Format<TExpected, TActual>(CollectionEqualAssertionError<TExpected, TActual> error)
     {
         var result = string.Create(CultureInfo.InvariantCulture, $"""
@@ -331,6 +416,17 @@ internal class AssertionFormatter
         return Math.Max(MaxFormattedItems - 1, highlightedIndex.GetValueOrDefault(-1) + SuffixItemCount);
     }
 
+    private static void EnsureObservedItems<T>(CollectionSnapshot<T> snapshot, int maxIndex)
+    {
+        if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
+            return;
+
+        using var enumerator = snapshot.GetEnumerator();
+        while (!snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && enumerator.MoveNext())
+        {
+        }
+    }
+
     private static async Task EnsureObservedItemsAsync<T>(AsyncCollectionSnapshot<T> snapshot, int maxIndex)
     {
         if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
@@ -396,6 +492,11 @@ internal class AssertionFormatter
                 _ => value.ToString(),
             };
         }
+    }
+
+    private static string FormatStringValue(ReadOnlySpan<char> value, int? highlightedIndex)
+    {
+        return FormatStringValue(value.ToString(), highlightedIndex);
     }
 }
 #pragma warning restore CA1822, CA1852

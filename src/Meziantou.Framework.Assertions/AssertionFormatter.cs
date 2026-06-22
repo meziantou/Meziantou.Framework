@@ -208,6 +208,161 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(ValueContainsAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected item: {FormatValue(error.ExpectedValue)}
+            Actual:        {FormatReadOnlySpanValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format<T>(ValueCollectionContainsAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected item: {FormatValue(error.ExpectedValue)}
+            Actual:        {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanContainsAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected: {FormatReadOnlySpanValue(error.ExpectedValue)}
+            Actual:   {FormatReadOnlySpanValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format(ReadOnlySpanCharContainsAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            Expected: {FormatStringValue(error.ExpectedValue, highlightedIndex: null)}
+            Actual:   {FormatStringValue(error.ActualValue, highlightedIndex: null)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionContainsAssertionError<TExpected, TActual> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected: {FormatValue(error.ExpectedValue.Items)}
+            Actual:   {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<TExpected, TActual>(CollectionContainsAssertionError<TExpected, TActual> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected: {FormatValue(error.ExpectedValue.Items)}
+            Actual:   {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<T>(ValueEndsWithAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected suffix: {FormatValue(error.ExpectedValue)}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : error.ActualValue.Length - 1)}
+            """);
+    }
+
+    public virtual string Format<T>(ValueCollectionEndsWithAssertionError<T> error)
+    {
+        var highlightedIndex = error.ActualValue.Items.Count > 0 ? error.ActualValue.Items.Count - 1 : (int?)null;
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected suffix: {FormatValue(error.ExpectedValue)}
+            Actual:          {FormatValue(error.ActualValue.Items, highlightedIndex)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanEndsWithAssertionError<T> error)
+    {
+        var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Length, error.ActualValue.Length, error.FirstDifferenceIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected suffix: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex < error.ExpectedValue.Length ? error.FirstDifferenceIndex : null)}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, actualIndex)}
+            """);
+    }
+
+    public virtual string Format(ReadOnlySpanCharEndsWithAssertionError error)
+    {
+        var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Length, error.ActualValue.Length, error.FirstDifferenceIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected suffix: {FormatStringValue(error.ExpectedValue, error.FirstDifferenceIndex < error.ExpectedValue.Length ? error.FirstDifferenceIndex : null)}
+            Actual:          {FormatStringValue(error.ActualValue, actualIndex)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionEndsWithAssertionError<TExpected, TActual> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, int.MaxValue - 1).ConfigureAwait(false);
+        var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Items.Count, error.ActualValue.Items.Count, error.FirstDifferenceIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected suffix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex < error.ExpectedValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            Actual:          {FormatValue(error.ActualValue.Items, actualIndex)}
+            """);
+    }
+
+    public virtual string Format<TExpected, TActual>(CollectionEndsWithAssertionError<TExpected, TActual> error)
+    {
+        var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Items.Count, error.ActualValue.Items.Count, error.FirstDifferenceIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected suffix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex < error.ExpectedValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            Actual:          {FormatValue(error.ActualValue.Items, actualIndex)}
+            """);
+    }
+
     public virtual string Format<T>(ReadOnlySpanStartsWithAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""
@@ -427,6 +582,18 @@ internal class AssertionFormatter
             return highlightedIndex.GetValueOrDefault() + HighlightedContextItemCount;
 
         return Math.Max(MaxFormattedItems - 1, highlightedIndex.GetValueOrDefault(-1) + SuffixItemCount);
+    }
+
+    private static int? GetActualSuffixIndex(int expectedLength, int actualLength, int firstDifferenceIndex)
+    {
+        if (firstDifferenceIndex >= expectedLength)
+            return null;
+
+        var actualIndex = actualLength - expectedLength + firstDifferenceIndex;
+        if (actualIndex < 0 || actualIndex >= actualLength)
+            return null;
+
+        return actualIndex;
     }
 
     private static void EnsureObservedItems<T>(CollectionSnapshot<T> snapshot, int maxIndex)

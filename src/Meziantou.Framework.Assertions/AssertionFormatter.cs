@@ -169,6 +169,17 @@ internal class AssertionFormatter
             """;
     }
 
+    public virtual string Format(ThrowsAssertionError error)
+    {
+        return $"""
+            Assert.{(error.AllowDerivedTypes ? "ThrowsAny" : "Throws")}() assertion failed.
+            Expression:              {error.ActionExpression}
+            Expected exception type: {FormatType(error.ExpectedExceptionType)}
+            Actual exception type:   {FormatType(error.ActualException?.GetType())}
+            Exception:               {FormatException(error.ActualException)}
+            """;
+    }
+
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
     {
         var result = $"""
@@ -932,8 +943,11 @@ internal class AssertionFormatter
         return count > 1 ? 1 : null;
     }
 
-    private static string FormatException(Exception exception)
+    private static string FormatException(Exception? exception)
     {
+        if (exception is null)
+            return "<none>";
+
         var message = exception.Message;
         if (string.IsNullOrEmpty(message))
             return exception.GetType().FullName ?? exception.GetType().Name;

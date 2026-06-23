@@ -347,6 +347,43 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(ReadOnlySpanDistinctAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Distinct() assertion failed: Duplicate item found at index {error.DuplicateIndex}.
+            Expression: {error.ActualExpression}
+            First index:     {error.FirstIndex}
+            Duplicate index: {error.DuplicateIndex}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.DuplicateIndex)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionDistinctAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.DuplicateIndex));
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Distinct() assertion failed: Duplicate item found at index {error.DuplicateIndex}.
+            Expression: {error.ActualExpression}
+            First index:     {error.FirstIndex}
+            Duplicate index: {error.DuplicateIndex}
+            Actual:          {FormatValue(error.ActualValue.Items, error.DuplicateIndex)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionDistinctAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, GetMaxFormattedIndex(error.DuplicateIndex)).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Distinct() assertion failed: Duplicate item found at index {error.DuplicateIndex}.
+            Expression: {error.ActualExpression}
+            First index:     {error.FirstIndex}
+            Duplicate index: {error.DuplicateIndex}
+            Actual:          {FormatValue(error.ActualValue.Items, error.DuplicateIndex)}
+            """);
+    }
+
     public virtual string Format<T>(ReadOnlySpanCountAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""

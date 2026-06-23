@@ -54,6 +54,11 @@ namespace Meziantou.Framework.Assertions
         [System.Obsolete("This is an override of Object.ReferenceEquals(). Use Assert.Same() instead.", true)]
         public static bool ReferenceEquals(object? a, object? b) => throw null;
         public static void Fail(string? message = null) { }
+        public static void Distinct<T>(System.ReadOnlySpan<T> actual, System.Collections.Generic.IEqualityComparer<T>? comparer = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
+        public static void Distinct(string actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
+        public static void Distinct<T>(System.Collections.Generic.IEnumerable<T> actual, System.Collections.Generic.IEqualityComparer<T>? comparer = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
+        public static void Distinct(System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
+        public static System.Threading.Tasks.Task Distinct<T>(System.Collections.Generic.IAsyncEnumerable<T> actual, System.Collections.Generic.IEqualityComparer<T>? comparer = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
         public static void Empty<T>(System.ReadOnlySpan<T> actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
         public static void Empty(string actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
         public static void Empty<T>(System.Collections.Generic.IEnumerable<T> actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }

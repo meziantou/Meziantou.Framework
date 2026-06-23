@@ -158,6 +158,17 @@ internal class AssertionFormatter
             """;
     }
 
+    public virtual string Format(SameAssertionError error)
+    {
+        return $"""
+            Assert.Same() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected: same instance as {FormatValue(error.ExpectedValue)}
+            Actual:   {FormatValue(error.ActualValue)}
+            """;
+    }
+
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
     {
         var result = $"""

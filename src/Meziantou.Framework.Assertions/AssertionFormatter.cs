@@ -169,6 +169,16 @@ internal class AssertionFormatter
             """;
     }
 
+    public virtual string Format<T>(InRangeAssertionError<T> error)
+    {
+        return $"""
+            Assert.InRange() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected:   in range [{FormatValue(error.LowValue)}, {FormatValue(error.HighValue)}]
+            Actual:     {FormatValue(error.ActualValue)}
+            """;
+    }
+
     public virtual string Format(ThrowsAssertionError error)
     {
         return $"""

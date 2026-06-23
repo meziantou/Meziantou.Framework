@@ -38,7 +38,7 @@ public sealed class MarkdownRoundTrippingTests
         foreach (var testCase in AllCases.Value)
         {
             // Some tests may not round-trip due to extension-specific parsing behaviors
-            if (!ShouldSkip(testCase, out var reason))
+            if (!ShouldSkip(testCase, out _))
             {
                 data.Add(testCase);
             }

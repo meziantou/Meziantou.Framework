@@ -37,7 +37,11 @@ public sealed class MarkdownRoundTrippingTests
         var data = new TheoryData<MarkdigTestCase>();
         foreach (var testCase in AllCases.Value)
         {
-            data.Add(testCase);
+            // Some tests may not round-trip due to extension-specific parsing behaviors
+            if (!ShouldSkip(testCase, out var reason))
+            {
+                data.Add(testCase);
+            }
         }
         return data;
     }
@@ -50,13 +54,6 @@ public sealed class MarkdownRoundTrippingTests
     [MemberData(nameof(GetTestCases))]
     public void RoundTrip(MarkdigTestCase testCase)
     {
-        // Some tests may not round-trip due to extension-specific parsing behaviors
-        if (ShouldSkip(testCase, out var reason))
-        {
-            Assert.Skip(reason);
-            return;
-        }
-
         // 1. Convert the spec HTML to Markdown using our converter
         var markdown = HtmlToMarkdown.Convert(testCase.Html);
 

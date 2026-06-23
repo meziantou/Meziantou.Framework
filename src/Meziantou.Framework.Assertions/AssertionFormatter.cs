@@ -401,6 +401,31 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(CollectionAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Collection() assertion failed: Collection count does not match inspector count.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualValue.Items.Count}
+            Actual:         {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionInspectorAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Collection() assertion failed: Item at index {error.Index} failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.Index)}
+            Exception:  {FormatException(error.Exception)}
+            """);
+    }
+
     public virtual string Format<T>(ReadOnlySpanAllAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""

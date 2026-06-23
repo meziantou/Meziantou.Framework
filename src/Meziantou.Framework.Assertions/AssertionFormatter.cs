@@ -310,6 +310,43 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(ReadOnlySpanAllAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.All() assertion failed: Item at index {error.Index} failed.
+            Expression: {error.ActualExpression}
+            Assertion expression: {error.AssertionExpression}
+            Actual:     {FormatReadOnlySpanValue(error.ActualValue, error.Index)}
+            Exception:  {FormatException(error.Exception)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionAllAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.All() assertion failed: Item at index {error.Index} failed.
+            Expression: {error.ActualExpression}
+            Assertion expression: {error.AssertionExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.Index)}
+            Exception:  {FormatException(error.Exception)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionAllAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, GetMaxFormattedIndex(error.Index)).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.All() assertion failed: Item at index {error.Index} failed.
+            Expression: {error.ActualExpression}
+            Assertion expression: {error.AssertionExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.Index)}
+            Exception:  {FormatException(error.Exception)}
+            """);
+    }
+
     public virtual string Format<T>(ReadOnlySpanCountAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""
@@ -756,6 +793,15 @@ internal class AssertionFormatter
     private static int? GetSingleFailureHighlightedIndex(int count)
     {
         return count > 1 ? 1 : null;
+    }
+
+    private static string FormatException(Exception exception)
+    {
+        var message = exception.Message;
+        if (string.IsNullOrEmpty(message))
+            return exception.GetType().FullName ?? exception.GetType().Name;
+
+        return message.Replace(Environment.NewLine, Environment.NewLine + "            ", StringComparison.Ordinal);
     }
 
     private static void EnsureObservedItems<T>(CollectionSnapshot<T> snapshot, int maxIndex)

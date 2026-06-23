@@ -31,6 +31,52 @@ public sealed class ServiceDefaultTests
     }
 
     [Fact]
+    public async Task JsonOptions_AreAppliedToMinimalApis()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.UseMeziantouConventions();
+        builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
+
+        await using var app = builder.Build();
+        app.MapMeziantouDefaultEndpoints();
+        app.MapGet("/", () => TypedResults.Ok(new JsonPayload
+        {
+            SampleEnum = Sample.Value1,
+            SampleText = "test-value",
+            Values = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["MyKey"] = "my-value",
+            },
+            NullableValue = null,
+        }));
+        _ = app.RunAsync();
+
+        var address = GetServerAddress(app);
+        using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
+
+        Assert.Equal("""{"sampleEnum":"value1","sampleText":"test-value","values":{"myKey":"my-value"}}""", await httpClient.GetStringAsync("/"));
+    }
+
+    [Fact]
+    public async Task JsonOptions_AreAppliedToControllers()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.UseMeziantouConventions();
+        builder.Services.AddControllers();
+        builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
+
+        await using var app = builder.Build();
+        app.MapMeziantouDefaultEndpoints();
+        app.MapControllers();
+        _ = app.RunAsync();
+
+        var address = GetServerAddress(app);
+        using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
+
+        Assert.Equal("""{"sampleEnum":"value1","sampleText":"test-value","values":{"myKey":"my-value"}}""", await httpClient.GetStringAsync("/json-tests/payload"));
+    }
+
+    [Fact]
     public async Task CanCallTryUseMeziantouConventionsMultipleTimes()
     {
         var builder = WebApplication.CreateBuilder();
@@ -142,10 +188,32 @@ public sealed class ServiceDefaultTests
         Assert.True(response.Headers.CacheControl is null || response.Headers.CacheControl.NoCache == false);
     }
 
-    private enum Sample
+    public enum Sample
     {
         Value1,
         Value2,
+    }
+
+    public sealed class JsonPayload
+    {
+        public required Sample SampleEnum { get; init; }
+        public required string SampleText { get; init; }
+        public required Dictionary<string, string> Values { get; init; }
+        public string? NullableValue { get; init; }
+    }
+
+    internal static JsonPayload CreatePayload()
+    {
+        return new JsonPayload
+        {
+            SampleEnum = Sample.Value1,
+            SampleText = "test-value",
+            Values = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["MyKey"] = "my-value",
+            },
+            NullableValue = null,
+        };
     }
 
     private static string GetServerAddress(WebApplication app)

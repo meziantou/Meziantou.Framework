@@ -118,7 +118,7 @@ public class EnumerableTests
     public void EmptyIfNull_NotNull()
     {
         var items = new string[] { "" };
-        Assert.StrictEqual(items, items.EmptyIfNull());
+        Assert.Same(items, items.EmptyIfNull());
     }
 
 #nullable enable

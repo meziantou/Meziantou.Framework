@@ -246,6 +246,27 @@ internal class AssertionFormatter
         return result;
     }
 
+    public virtual string Format(EqualByStructureAssertionError error)
+    {
+        var result = $"""
+            Assert.EqualByStructure() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Path: {error.Path}
+            Reason: {error.Reason}
+            """;
+
+        result += Environment.NewLine + "Expected: " + FormatStructuralValue(error.ExpectedValue);
+        result += Environment.NewLine + "Actual:   " + FormatStructuralValue(error.ActualValue);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
     public virtual string Format<TExpected, TActual>(ReadOnlySpanEqualAssertionError<TExpected, TActual> error)
     {
         var result = string.Create(CultureInfo.InvariantCulture, $"""
@@ -925,6 +946,14 @@ internal class AssertionFormatter
         }
 
         return value.ToString() ?? string.Empty;
+    }
+
+    private string FormatStructuralValue(object? value)
+    {
+        if (value is StructuralMissingValue)
+            return "<missing>";
+
+        return FormatValue(value);
     }
 
     private static string FormatType(Type? type)

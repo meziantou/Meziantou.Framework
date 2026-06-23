@@ -819,6 +819,35 @@ internal class AssertionFormatter
         return result;
     }
 
+    public virtual string Format<TExpected, TActual>(CollectionEqualUnorderedAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            """;
+
+        if (error.MissingExpectedIndex is not null)
+        {
+            result += Environment.NewLine + "Missing expected item index: " + error.MissingExpectedIndex.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (error.UnexpectedActualIndex is not null)
+        {
+            result += Environment.NewLine + "Unexpected actual item index: " + error.UnexpectedActualIndex.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        result += Environment.NewLine + "Expected: " + FormatValue(error.ExpectedValue.Items, error.MissingExpectedIndex);
+        result += Environment.NewLine + "Actual:   " + FormatValue(error.ActualValue.Items, error.UnexpectedActualIndex);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
     public virtual async Task<string> FormatAsync<TExpected, TActual>(AsyncCollectionEqualAssertionError<TExpected, TActual> error)
     {
         var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
@@ -840,6 +869,35 @@ internal class AssertionFormatter
         }
 
         return result;
+    }
+
+    public virtual Task<string> FormatAsync<TExpected, TActual>(AsyncCollectionEqualUnorderedAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            """;
+
+        if (error.MissingExpectedIndex is not null)
+        {
+            result += Environment.NewLine + "Missing expected item index: " + error.MissingExpectedIndex.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (error.UnexpectedActualIndex is not null)
+        {
+            result += Environment.NewLine + "Unexpected actual item index: " + error.UnexpectedActualIndex.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        result += Environment.NewLine + "Expected: " + FormatValue(error.ExpectedValue.Items, error.MissingExpectedIndex);
+        result += Environment.NewLine + "Actual:   " + FormatValue(error.ActualValue.Items, error.UnexpectedActualIndex);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return Task.FromResult(result);
     }
 
     protected virtual string FormatValue(object? value, int? highlightedIndex = null)

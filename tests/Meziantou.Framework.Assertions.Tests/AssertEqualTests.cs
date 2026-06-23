@@ -1,9 +1,133 @@
+using System.Collections.Immutable;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;
 
 public sealed class AssertEqualTests
 {
+    [Fact]
+    public void DifferentNumericTypes_Success()
+    {
+        AssertionsAssert.Equal(42, 42L);
+        AssertionsAssert.Equal(42u, 42);
+        AssertionsAssert.Equal(42m, 42);
+        AssertionsAssert.Equal(1.5f, 1.5d);
+
+        object expected = 123;
+        object actual = 123L;
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentNumericTypes_Fails()
+    {
+        var expected = 42;
+        var actual = 43L;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: 42
+            Actual:   43
+            """);
+    }
+
+    [Fact]
+    public void HalfTolerance_Success()
+    {
+        Half expected = (Half)1;
+        Half actual = (Half)1.1;
+        Half tolerance = (Half)0.2;
+
+        AssertionsAssert.Equal(expected, actual, tolerance);
+    }
+
+    [Fact]
+    public void SingleTolerance_Success()
+    {
+        var expected = 1f;
+        var actual = 1.1f;
+        var tolerance = 0.2f;
+
+        AssertionsAssert.Equal(expected, actual, tolerance);
+    }
+
+    [Fact]
+    public void DoubleTolerance_Success()
+    {
+        var expected = 1d;
+        var actual = 1.1d;
+        var tolerance = 0.2d;
+
+        AssertionsAssert.Equal(expected, actual, tolerance);
+    }
+
+    [Fact]
+    public void DecimalTolerance_Success()
+    {
+        var expected = 1m;
+        var actual = 1.1m;
+        var tolerance = 0.2m;
+
+        AssertionsAssert.Equal(expected, actual, tolerance);
+    }
+
+    [Fact]
+    public void SingleTolerance_AllowsSameSpecialValues()
+    {
+        AssertionsAssert.Equal(float.NaN, float.NaN, 0f);
+        AssertionsAssert.Equal(float.PositiveInfinity, float.PositiveInfinity, 0f);
+    }
+
+    [Fact]
+    public void SingleTolerance_Fails()
+    {
+        var expected = 1f;
+        var actual = 1.3f;
+        var tolerance = 0.2f;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, tolerance), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: 1
+            Actual:   1.3
+            Tolerance: 0.2
+            """);
+    }
+
+    [Fact]
+    public void DoubleTolerance_FailsWithMessage()
+    {
+        var expected = 1d;
+        var actual = 1.3d;
+        var tolerance = 0.2d;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, tolerance, "custom message"), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: 1
+            Actual:   1.3
+            Tolerance: 0.2
+            Message: custom message
+            """);
+    }
+
+    [Fact]
+    public void DifferentScalarTypes_Success()
+    {
+        var dateTime = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        var dateTimeOffset = new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero);
+
+        AssertionsAssert.Equal(dateTime, (object)dateTime);
+        AssertionsAssert.Equal(dateTimeOffset, (object)dateTimeOffset);
+        AssertionsAssert.Equal('a', (object)'a');
+        AssertionsAssert.Equal("abc", (object)"abc");
+    }
+
     [Fact]
     public void EscapesStringValues()
     {
@@ -17,6 +141,121 @@ public sealed class AssertEqualTests
             Expected: "Hello\n\"World\""
             Actual:   "Hello\tWorld"
             """);
+    }
+
+    [Fact]
+    public void DifferentEnumerableTypes_Success()
+    {
+        IEnumerable<int> expected = [1, 2, 3];
+        IEnumerable<long> actual = [1L, 2L, 3L];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentNonGenericEnumerableTypes_Success()
+    {
+        System.Collections.IEnumerable expected = new object[] { 1, "a", 3 };
+        System.Collections.IEnumerable actual = new object[] { 1L, "a", 3L };
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentCollectionTypes_Success()
+    {
+        ICollection<int> expected = [1, 2, 3];
+        ICollection<long> actual = [1L, 2L, 3L];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentNonGenericCollectionTypes_Success()
+    {
+        System.Collections.ICollection expected = new object[] { 1, 2, 3 };
+        System.Collections.ICollection actual = new object[] { 1L, 2L, 3L };
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentReadOnlyCollectionTypes_Success()
+    {
+        IReadOnlyCollection<int> expected = [1, 2, 3];
+        IReadOnlyCollection<long> actual = [1L, 2L, 3L];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentImmutableArrayTypes_Success()
+    {
+        var expected = ImmutableArray.Create(1, 2, 3);
+        var actual = ImmutableArray.Create(1L, 2L, 3L);
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentListTypes_Success()
+    {
+        var expected = new List<int> { 1, 2, 3 };
+        var actual = new List<long> { 1L, 2L, 3L };
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentConcreteCollectionTypes_Fails()
+    {
+        var expected = new List<int> { 1, 2, 3 };
+        var actual = new List<long> { 1L, 42L, 3L };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 1
+            Expected: [1, 2̲, 3]
+            Actual:   [1, 4̲2̲, 3]
+            """);
+    }
+
+    [Fact]
+    public void DifferentReadOnlySpanTypes_Success()
+    {
+        ReadOnlySpan<int> expected = [1, 2, 3];
+        ReadOnlySpan<long> actual = [1L, 2L, 3L];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentSpanTypes_Success()
+    {
+        Span<int> expected = [1, 2, 3];
+        Span<long> actual = [1L, 2L, 3L];
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentMemoryTypes_Success()
+    {
+        var expected = new[] { 1, 2, 3 }.AsMemory();
+        var actual = new[] { 1L, 2L, 3L }.AsMemory();
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentReadOnlyMemoryTypes_Success()
+    {
+        ReadOnlyMemory<int> expected = new[] { 1, 2, 3 };
+        ReadOnlyMemory<long> actual = new[] { 1L, 2L, 3L };
+
+        AssertionsAssert.Equal(expected, actual);
     }
 
     [Fact]
@@ -134,14 +373,22 @@ public sealed class AssertEqualTests
     [Fact]
     public void HighlightsReadOnlySpanDifference()
     {
-        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal<int>([1, 2, 3], [1, 42, 3]), """
+        AssertionTestHelpers.Validate(Validate, """
             Assert.Equal() assertion failed: Item at index 1 differs.
-            Expected expression: [1, 2, 3]
-            Actual expression:   [1, 42, 3]
+            Expected expression: expected
+            Actual expression:   actual
             Index of first difference: 1
             Expected item: [1, 2̲, 3]
             Actual item:   [1, 4̲2̲, 3]
             """);
+
+        static void Validate()
+        {
+            ReadOnlySpan<int> expected = [1, 2, 3];
+            ReadOnlySpan<int> actual = [1, 42, 3];
+
+            AssertionsAssert.Equal(expected, actual);
+        }
     }
 
     [Fact]

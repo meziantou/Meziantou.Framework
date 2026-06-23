@@ -226,6 +226,26 @@ internal class AssertionFormatter
         return result;
     }
 
+    public virtual string Format<T>(EqualWithToleranceAssertionError<T> error)
+    {
+        var result = $"""
+            Assert.Equal() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            """;
+
+        result += Environment.NewLine + "Expected: " + FormatValue(error.ExpectedValue);
+        result += Environment.NewLine + "Actual:   " + FormatValue(error.ActualValue);
+        result += Environment.NewLine + "Tolerance: " + FormatValue(error.Tolerance);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
     public virtual string Format<TExpected, TActual>(ReadOnlySpanEqualAssertionError<TExpected, TActual> error)
     {
         var result = string.Create(CultureInfo.InvariantCulture, $"""

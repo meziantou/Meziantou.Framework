@@ -180,6 +180,19 @@ internal class AssertionFormatter
             """;
     }
 
+    public virtual string Format<T>(CollectionSetAssertionError<T> error)
+    {
+        var setName = error.IsSuperset ? "superset" : "subset";
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{(error.IsSuperset ? "ProperSuperset" : "ProperSubset")}() assertion failed.
+            Expected {setName} expression: {error.ExpectedExpression}
+            Actual expression:             {error.ActualExpression}
+            Expected {setName}: {FormatValue(error.ExpectedValue.Items)}
+            Actual:            {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
     {
         var result = $"""

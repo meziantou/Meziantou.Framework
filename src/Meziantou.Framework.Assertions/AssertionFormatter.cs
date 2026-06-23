@@ -136,6 +136,28 @@ internal class AssertionFormatter
             """;
     }
 
+    public virtual string Format(IsTypeAssertionError error)
+    {
+        return $"""
+            Assert.IsType() assertion failed.
+            Expression:    {error.ActualExpression}
+            Expected type: {FormatType(error.ExpectedType)}
+            Actual type:   {FormatType(error.ActualValue?.GetType())}
+            Actual value:  {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(IsAssignableToAssertionError error)
+    {
+        return $"""
+            Assert.IsAssignableTo() assertion failed.
+            Expression:    {error.ActualExpression}
+            Expected type: {FormatType(error.ExpectedType)}
+            Actual type:   {FormatType(error.ActualValue?.GetType())}
+            Actual value:  {FormatValue(error.ActualValue)}
+            """;
+    }
+
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
     {
         var result = $"""
@@ -751,6 +773,11 @@ internal class AssertionFormatter
         }
 
         return value.ToString() ?? string.Empty;
+    }
+
+    private static string FormatType(Type? type)
+    {
+        return type?.FullName ?? "<null>";
     }
 
     protected virtual string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value, int? highlightedIndex = null)

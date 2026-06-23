@@ -101,6 +101,10 @@ namespace Meziantou.Framework.Assertions
         public static System.Threading.Tasks.Task StartsWith<T>(System.Collections.Generic.IEnumerable<T> expected, System.Collections.Generic.IAsyncEnumerable<T> actual, System.Collections.Generic.IEqualityComparer<T>? comparer = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) => throw null;
         public static void StartsWith(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) { }
         public static void True([System.Diagnostics.CodeAnalysis.DoesNotReturnIf(false)] bool condition, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("condition")] string? expression = null) { }
+        public static T IsType<T>(object? actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
+        public static object IsType(System.Type expectedType, object? actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
+        public static T IsAssignableTo<T>(object? actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
+        public static object IsAssignableTo(System.Type expectedType, object? actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
     }
 
     public sealed class AssertionException : System.Exception

@@ -190,6 +190,16 @@ internal class AssertionFormatter
             """;
     }
 
+    public virtual string Format(RaiseAssertionError error)
+    {
+        return $"""
+            Assert.{(error.AllowDerivedTypes ? "RaiseAny" : "Raise")}() assertion failed.
+            Expression:               {error.ActionExpression}
+            Expected event args type: {FormatType(error.ExpectedEventArgsType)}
+            Actual event args type:   {FormatType(error.ActualEventArgsType)}
+            """;
+    }
+
     public virtual string Format<T>(CollectionSetAssertionError<T> error)
     {
         var setName = error.IsSuperset ? "superset" : "subset";

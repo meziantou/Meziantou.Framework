@@ -456,6 +456,30 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<TKey, TValue>(KeyValuePairCollectionContainsAssertionError<TKey, TValue> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected key expression: {error.ExpectedExpression}
+            Actual expression:       {error.ActualExpression}
+            Expected key: {FormatValue(error.ExpectedKey)}
+            Actual:       {FormatKeyValuePairs(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format(DictionaryContainsAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected key expression: {error.ExpectedExpression}
+            Actual expression:       {error.ActualExpression}
+            Expected key: {FormatValue(error.ExpectedKey)}
+            Actual:       {FormatDictionary(error.ActualValue)}
+            """);
+    }
+
     public virtual string Format<T>(ReadOnlySpanContainsAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""
@@ -743,6 +767,44 @@ internal class AssertionFormatter
         for (var i = 0; i < value.Length; i++)
         {
             items.Add(FormatHighlightedValue(FormatValue(value[i], highlightedIndex: null, visited), i, highlightedIndex));
+        }
+
+        return $"[{string.Join(", ", items)}]";
+    }
+
+    private string FormatKeyValuePairs<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> value)
+    {
+        var items = new List<string>();
+        var index = 0;
+        foreach (var item in value)
+        {
+            if (index >= MaxFormattedItems)
+            {
+                items.Add("...");
+                break;
+            }
+
+            items.Add(FormatValue(item.Key) + ": " + FormatValue(item.Value));
+            index++;
+        }
+
+        return $"[{string.Join(", ", items)}]";
+    }
+
+    private string FormatDictionary(System.Collections.IDictionary value)
+    {
+        var items = new List<string>();
+        var index = 0;
+        foreach (System.Collections.DictionaryEntry item in value)
+        {
+            if (index >= MaxFormattedItems)
+            {
+                items.Add("...");
+                break;
+            }
+
+            items.Add(FormatValue(item.Key) + ": " + FormatValue(item.Value));
+            index++;
         }
 
         return $"[{string.Join(", ", items)}]";

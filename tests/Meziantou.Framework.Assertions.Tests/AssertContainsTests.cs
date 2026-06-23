@@ -45,6 +45,98 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public void Dictionary_Success()
+    {
+        var actual = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["a"] = 1,
+            ["b"] = 2,
+        };
+
+        var result = AssertionsAssert.Contains("A", actual);
+
+        global::Xunit.Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public void ReadOnlyDictionary_Success()
+    {
+        IReadOnlyDictionary<string, int> actual = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 1,
+            ["b"] = 2,
+        };
+
+        var result = AssertionsAssert.Contains("a", actual);
+
+        global::Xunit.Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public void GenericDictionary_Success()
+    {
+        IDictionary<string, int> actual = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 1,
+            ["b"] = 2,
+        };
+
+        var result = AssertionsAssert.Contains("b", actual);
+
+        global::Xunit.Assert.Equal(2, result);
+    }
+
+    [Fact]
+    public void Dictionary_Fails()
+    {
+        var actual = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 1,
+            ["b"] = 2,
+        };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains("c", actual), """
+            Assert.Contains() assertion failed.
+            Expected key expression: "c"
+            Actual expression:       actual
+            Expected key: "c"
+            Actual:       ["a": 1, "b": 2]
+            """);
+    }
+
+    [Fact]
+    public void KeyValuePairEnumerableComparer_Success()
+    {
+        IEnumerable<KeyValuePair<string, int>> actual =
+        [
+            new("a", 1),
+            new("b", 2),
+        ];
+
+        var result = AssertionsAssert.Contains("A", actual, StringComparer.OrdinalIgnoreCase);
+
+        global::Xunit.Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public void KeyValuePairEnumerable_Fails()
+    {
+        IEnumerable<KeyValuePair<string, int>> actual =
+        [
+            new("a", 1),
+            new("b", 2),
+        ];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains("c", actual), """
+            Assert.Contains() assertion failed.
+            Expected key expression: "c"
+            Actual expression:       actual
+            Expected key: "c"
+            Actual:       ["a": 1, "b": 2]
+            """);
+    }
+
+    [Fact]
     public void ValueNonGenericEnumerable_Success()
     {
         System.Collections.IEnumerable actual = new object[] { 1, 2, 3 };
@@ -63,6 +155,38 @@ public sealed class AssertContainsTests
             Actual expression:   actual
             Expected item: 4
             Actual:        [1, 2, 3]
+            """);
+    }
+
+    [Fact]
+    public void NonGenericDictionary_Success()
+    {
+        System.Collections.IDictionary actual = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 1,
+            ["b"] = 2,
+        };
+
+        var result = AssertionsAssert.Contains("b", actual);
+
+        global::Xunit.Assert.Equal(2, result);
+    }
+
+    [Fact]
+    public void NonGenericDictionary_Fails()
+    {
+        System.Collections.IDictionary actual = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 1,
+            ["b"] = 2,
+        };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains("c", actual), """
+            Assert.Contains() assertion failed.
+            Expected key expression: "c"
+            Actual expression:       actual
+            Expected key: "c"
+            Actual:       ["a": 1, "b": 2]
             """);
     }
 

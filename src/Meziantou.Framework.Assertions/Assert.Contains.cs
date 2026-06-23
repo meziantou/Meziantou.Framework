@@ -47,6 +47,51 @@ partial class Assert
     }
 
     /// <summary>
+    /// Asserts that a dictionary-like collection contains the specified key and returns the associated value.
+    /// </summary>
+    /// <param name="expected">The key expected in <paramref name="actual"/>.</param>
+    /// <param name="actual">The dictionary-like collection to inspect.</param>
+    /// <param name="comparer">The comparer used to compare keys when <paramref name="actual"/> is not a dictionary.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected key.</param>
+    public static TValue Contains<TKey, TValue>(TKey expected, IEnumerable<KeyValuePair<TKey, TValue>> actual, IEqualityComparer<TKey>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual is IReadOnlyDictionary<TKey, TValue> readOnlyDictionary && readOnlyDictionary.TryGetValue(expected, out var readOnlyValue))
+            return readOnlyValue;
+
+        if (actual is IDictionary<TKey, TValue> dictionary && dictionary.TryGetValue(expected, out var value))
+            return value;
+
+        comparer ??= EqualityComparer<TKey>.Default;
+        using var actualSnapshot = new CollectionSnapshot<KeyValuePair<TKey, TValue>>(actual);
+        foreach (var item in actualSnapshot)
+        {
+            if (comparer.Equals(expected, item.Key))
+                return item.Value;
+        }
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression)));
+    }
+
+    /// <summary>
+    /// Asserts that a dictionary contains the specified key and returns the associated value.
+    /// </summary>
+    /// <param name="expected">The key expected in <paramref name="actual"/>.</param>
+    /// <param name="actual">The dictionary to inspect.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected key.</param>
+    public static TValue Contains<TKey, TValue>(TKey expected, Dictionary<TKey, TValue> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+        where TKey : notnull
+    {
+        if (actual.TryGetValue(expected, out var value))
+            return value;
+
+        using var actualSnapshot = new CollectionSnapshot<KeyValuePair<TKey, TValue>>(actual);
+        EnsureComplete(actualSnapshot);
+        throw new AssertionException(AssertionFormatter.Default.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression)));
+    }
+
+    /// <summary>
     /// Asserts that a non-generic enumerable contains the specified value.
     /// </summary>
     /// <param name="expected">The value expected in <paramref name="actual"/>.</param>
@@ -64,6 +109,33 @@ partial class Assert
         }
 
         throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionContainsAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
+    }
+
+    /// <summary>
+    /// Asserts that a non-generic dictionary contains the specified key and returns the associated value.
+    /// </summary>
+    /// <param name="expected">The key expected in <paramref name="actual"/>.</param>
+    /// <param name="actual">The dictionary to inspect.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected key.</param>
+    public static object? Contains(object? expected, System.Collections.IDictionary actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual.Contains(expected!))
+            return actual[expected!];
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new DictionaryContainsAssertionError(expected, actual, actualExpression, expectedExpression)));
+    }
+
+    /// <summary>
+    /// Asserts that a non-generic dictionary contains the specified string key and returns the associated value.
+    /// </summary>
+    /// <param name="expected">The key expected in <paramref name="actual"/>.</param>
+    /// <param name="actual">The dictionary to inspect.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected key.</param>
+    public static object? Contains(string expected, System.Collections.IDictionary actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        return Contains((object?)expected, actual, actualExpression, expectedExpression);
     }
 
     /// <summary>

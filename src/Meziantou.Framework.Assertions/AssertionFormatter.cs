@@ -310,6 +310,54 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(ReadOnlySpanCountAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualCount}
+            Actual:         {FormatReadOnlySpanValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format(StringCountAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualCount}
+            Actual:         {FormatStringValue(error.ActualValue, highlightedIndex: null)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionCountAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualCount}
+            Actual:         {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionCountAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualCount}
+            Actual:         {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
     public virtual string Format<T>(ValueContainsAssertionError<T> error)
     {
         return string.Create(CultureInfo.InvariantCulture, $"""
@@ -609,6 +657,13 @@ internal class AssertionFormatter
 
     protected virtual string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value, int? highlightedIndex = null)
     {
+        if (typeof(T) == typeof(char))
+        {
+            ref var firstChar = ref System.Runtime.CompilerServices.Unsafe.As<T, char>(ref System.Runtime.InteropServices.MemoryMarshal.GetReference(value));
+            var chars = System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref firstChar, value.Length);
+            return FormatStringValue(chars, highlightedIndex);
+        }
+
         var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var items = new List<string>(value.Length);
         for (var i = 0; i < value.Length; i++)

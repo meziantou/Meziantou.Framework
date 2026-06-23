@@ -18,19 +18,6 @@ partial class Assert
     }
 
     /// <summary>
-    /// Asserts that a character span is empty.
-    /// </summary>
-    /// <param name="actual">The span to inspect.</param>
-    /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Empty(ReadOnlySpan<char> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
-    {
-        if (actual.IsEmpty)
-            return;
-
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringEmptyAssertionError(actual, actualExpression)));
-    }
-
-    /// <summary>
     /// Asserts that a string is empty.
     /// </summary>
     /// <param name="actual">The string to inspect.</param>

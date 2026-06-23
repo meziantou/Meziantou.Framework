@@ -32,9 +32,9 @@ public sealed class AssertSetTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.ProperSubset(expected, actual), """
             Assert.ProperSubset() assertion failed.
             Expected subset expression: expected
-            Actual expression:             actual
+            Actual expression:          actual
             Expected subset: [1, 2]
-            Actual:            [2, 1]
+            Actual:          [2, 1]
             """);
     }
 
@@ -47,9 +47,9 @@ public sealed class AssertSetTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.ProperSubset(expected, actual), """
             Assert.ProperSubset() assertion failed.
             Expected subset expression: expected
-            Actual expression:             actual
+            Actual expression:          actual
             Expected subset: [1, 4]
-            Actual:            [1, 2, 3]
+            Actual:          [1, 2, 3]
             """);
     }
 
@@ -89,7 +89,7 @@ public sealed class AssertSetTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.ProperSuperset(expected, actual), """
             Assert.ProperSuperset() assertion failed.
             Expected superset expression: expected
-            Actual expression:             actual
+            Actual expression:            actual
             Expected superset: [1, 2]
             Actual:            [2, 1]
             """);
@@ -104,7 +104,7 @@ public sealed class AssertSetTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.ProperSuperset(expected, actual), """
             Assert.ProperSuperset() assertion failed.
             Expected superset expression: expected
-            Actual expression:             actual
+            Actual expression:            actual
             Expected superset: [1, 2, 3]
             Actual:            [1, 4]
             """);

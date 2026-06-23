@@ -183,13 +183,17 @@ internal class AssertionFormatter
     public virtual string Format<T>(CollectionSetAssertionError<T> error)
     {
         var setName = error.IsSuperset ? "superset" : "subset";
+        var expectedExpressionLabel = $"Expected {setName} expression:";
+        var actualExpressionLabel = "Actual expression:";
+        var expectedValueLabel = $"Expected {setName}:";
+        var actualValueLabel = "Actual:";
 
         return string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{(error.IsSuperset ? "ProperSuperset" : "ProperSubset")}() assertion failed.
-            Expected {setName} expression: {error.ExpectedExpression}
-            Actual expression:             {error.ActualExpression}
-            Expected {setName}: {FormatValue(error.ExpectedValue.Items)}
-            Actual:            {FormatValue(error.ActualValue.Items)}
+            {expectedExpressionLabel} {error.ExpectedExpression}
+            {actualExpressionLabel.PadRight(expectedExpressionLabel.Length)} {error.ActualExpression}
+            {expectedValueLabel} {FormatValue(error.ExpectedValue.Items)}
+            {actualValueLabel.PadRight(expectedValueLabel.Length)} {FormatValue(error.ActualValue.Items)}
             """);
     }
 

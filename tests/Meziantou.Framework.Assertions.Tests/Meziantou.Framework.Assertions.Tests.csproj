@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Assertions.Tests</RootNamespace>
   </PropertyGroup>
 

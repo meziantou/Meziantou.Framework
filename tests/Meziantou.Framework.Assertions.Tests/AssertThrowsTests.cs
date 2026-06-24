@@ -12,7 +12,7 @@ public sealed class AssertThrowsTests
 
         var result = AssertionsAssert.Throws<InvalidOperationException>(action);
 
-        global::Xunit.Assert.Same(exception, result);
+        AssertionsAssert.Same(exception, result);
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public sealed class AssertThrowsTests
 
         var result = AssertionsAssert.Throws(typeof(InvalidOperationException), action);
 
-        global::Xunit.Assert.Same(exception, result);
+        AssertionsAssert.Same(exception, result);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class AssertThrowsTests
 
         var result = AssertionsAssert.ThrowsAny<Exception>(action);
 
-        global::Xunit.Assert.Same(exception, result);
+        AssertionsAssert.Same(exception, result);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class AssertThrowsTests
 
         var result = AssertionsAssert.ThrowsAny(typeof(Exception), action);
 
-        global::Xunit.Assert.Same(exception, result);
+        AssertionsAssert.Same(exception, result);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class AssertThrowsTests
 
         var result = await AssertionsAssert.Throws<InvalidOperationException>(() => ThrowAsync(exception));
 
-        global::Xunit.Assert.Same(exception, result);
+        AssertionsAssert.Same(exception, result);
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public sealed class AssertThrowsTests
 
         var result = await AssertionsAssert.Throws(typeof(InvalidOperationException), () => ThrowAsync(exception));
 
-        global::Xunit.Assert.Same(exception, result);
+        AssertionsAssert.Same(exception, result);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public sealed class AssertThrowsTests
 
         var result = await AssertionsAssert.ThrowsAny<Exception>(() => ThrowAsync(exception));
 
-        global::Xunit.Assert.Same(exception, result);
+        AssertionsAssert.Same(exception, result);
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public sealed class AssertThrowsTests
 
         var result = await AssertionsAssert.ThrowsAny(typeof(Exception), () => ThrowAsync(exception));
 
-        global::Xunit.Assert.Same(exception, result);
+        AssertionsAssert.Same(exception, result);
     }
 
     [Fact]

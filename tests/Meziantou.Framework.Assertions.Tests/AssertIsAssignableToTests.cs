@@ -11,7 +11,7 @@ public sealed class AssertIsAssignableToTests
 
         var result = AssertionsAssert.IsAssignableTo<object>(actual);
 
-        global::Xunit.Assert.Same(actual, result);
+        AssertionsAssert.Same(actual, result);
     }
 
     [Fact]
@@ -21,7 +21,7 @@ public sealed class AssertIsAssignableToTests
 
         var result = AssertionsAssert.IsAssignableTo(typeof(object), actual);
 
-        global::Xunit.Assert.Same(actual, result);
+        AssertionsAssert.Same(actual, result);
     }
 
     [Fact]

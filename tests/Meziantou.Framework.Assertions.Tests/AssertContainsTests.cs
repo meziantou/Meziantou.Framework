@@ -55,7 +55,7 @@ public sealed class AssertContainsTests
 
         var result = AssertionsAssert.Contains("A", actual);
 
-        global::Xunit.Assert.Equal(1, result);
+        AssertionsAssert.Equal(1, result);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class AssertContainsTests
 
         var result = AssertionsAssert.Contains("a", actual);
 
-        global::Xunit.Assert.Equal(1, result);
+        AssertionsAssert.Equal(1, result);
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class AssertContainsTests
 
         var result = AssertionsAssert.Contains("b", actual);
 
-        global::Xunit.Assert.Equal(2, result);
+        AssertionsAssert.Equal(2, result);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public sealed class AssertContainsTests
 
         var result = AssertionsAssert.Contains("A", actual, StringComparer.OrdinalIgnoreCase);
 
-        global::Xunit.Assert.Equal(1, result);
+        AssertionsAssert.Equal(1, result);
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public sealed class AssertContainsTests
 
         var result = AssertionsAssert.Contains("b", actual);
 
-        global::Xunit.Assert.Equal(2, result);
+        AssertionsAssert.Equal(2, result);
     }
 
     [Fact]

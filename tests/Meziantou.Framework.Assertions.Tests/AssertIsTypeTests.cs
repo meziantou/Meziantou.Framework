@@ -11,7 +11,7 @@ public sealed class AssertIsTypeTests
 
         var result = AssertionsAssert.IsType<string>(actual);
 
-        global::Xunit.Assert.Equal("Hello", result);
+        AssertionsAssert.Equal("Hello", result);
     }
 
     [Fact]
@@ -21,7 +21,7 @@ public sealed class AssertIsTypeTests
 
         var result = AssertionsAssert.IsType(typeof(string), actual);
 
-        global::Xunit.Assert.Same(actual, result);
+        AssertionsAssert.Same(actual, result);
     }
 
     [Fact]

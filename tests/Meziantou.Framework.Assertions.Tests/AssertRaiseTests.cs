@@ -19,8 +19,8 @@ public sealed class AssertRaiseTests
             handler => source.Raised -= handler,
             () => source.Raise(sender, arguments));
 
-        global::Xunit.Assert.Same(sender, result.Sender);
-        global::Xunit.Assert.Same(arguments, result.Arguments);
+        AssertionsAssert.Same(sender, result.Sender);
+        AssertionsAssert.Same(arguments, result.Arguments);
     }
 
     [Fact]
@@ -35,8 +35,8 @@ public sealed class AssertRaiseTests
             handler => source.Raised -= handler,
             () => source.Raise(sender, arguments));
 
-        global::Xunit.Assert.Same(sender, result.Sender);
-        global::Xunit.Assert.Same(arguments, result.Arguments);
+        AssertionsAssert.Same(sender, result.Sender);
+        AssertionsAssert.Same(arguments, result.Arguments);
     }
 
     [Fact]
@@ -83,8 +83,8 @@ public sealed class AssertRaiseTests
             handler => source.Raised -= handler,
             () => source.Raise(source, arguments));
 
-        global::Xunit.Assert.Same(source, result.Sender);
-        global::Xunit.Assert.Same(arguments, result.Arguments);
+        AssertionsAssert.Same(source, result.Sender);
+        AssertionsAssert.Same(arguments, result.Arguments);
     }
 
     [Fact]
@@ -98,8 +98,8 @@ public sealed class AssertRaiseTests
             handler => source.Raised -= handler,
             () => source.Raise(source, arguments));
 
-        global::Xunit.Assert.Same(source, result.Sender);
-        global::Xunit.Assert.Same(arguments, result.Arguments);
+        AssertionsAssert.Same(source, result.Sender);
+        AssertionsAssert.Same(arguments, result.Arguments);
     }
 
     [Fact]
@@ -124,12 +124,12 @@ public sealed class AssertRaiseTests
         var source = new CountingEventSource();
         Action action = () => throw new InvalidOperationException("Failure");
 
-        global::Xunit.Assert.Throws<InvalidOperationException>(() => AssertionsAssert.Raise(
+        AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.Raise(
             handler => source.Raised += handler,
             handler => source.Raised -= handler,
             action));
-        global::Xunit.Assert.Equal(1, source.AttachCount);
-        global::Xunit.Assert.Equal(1, source.DetachCount);
+        AssertionsAssert.Equal(1, source.AttachCount);
+        AssertionsAssert.Equal(1, source.DetachCount);
     }
 
     [Fact]

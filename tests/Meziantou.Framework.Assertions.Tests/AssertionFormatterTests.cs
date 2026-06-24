@@ -1,3 +1,5 @@
+using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
+
 namespace Meziantou.Framework.Assertions.Tests;
 
 public sealed class AssertionFormatterTests
@@ -13,7 +15,7 @@ public sealed class AssertionFormatterTests
 
         var value = formatter.FormatValueForTest(Enumerable.Range(0, 10), highlightedIndex: 1);
 
-        global::Xunit.Assert.Equal("[0, 1̲, 2, 3, 4, ...]", value);
+        AssertionsAssert.Equal("[0, 1̲, 2, 3, 4, ...]", value);
     }
 
     private sealed class TestAssertionFormatter : AssertionFormatter

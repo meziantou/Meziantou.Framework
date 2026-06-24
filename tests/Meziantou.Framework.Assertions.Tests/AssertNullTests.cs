@@ -32,7 +32,7 @@ public sealed class AssertNullTests
 
         var result = AssertionsAssert.NotNull(actual);
 
-        global::Xunit.Assert.Same(actual, result);
+        AssertionsAssert.Same(actual, result);
     }
 
     [Fact]

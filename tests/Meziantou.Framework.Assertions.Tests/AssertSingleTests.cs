@@ -9,7 +9,7 @@ public sealed class AssertSingleTests
     {
         var result = AssertionsAssert.Single<int>([42]);
 
-        global::Xunit.Assert.Equal(42, result);
+        AssertionsAssert.Equal(42, result);
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class AssertSingleTests
     {
         var result = AssertionsAssert.Single("a".AsSpan());
 
-        global::Xunit.Assert.Equal('a', result);
+        AssertionsAssert.Equal('a', result);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class AssertSingleTests
     {
         var result = AssertionsAssert.Single("a");
 
-        global::Xunit.Assert.Equal('a', result);
+        AssertionsAssert.Equal('a', result);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class AssertSingleTests
     {
         var result = AssertionsAssert.Single(new[] { 42 }.AsEnumerable());
 
-        global::Xunit.Assert.Equal(42, result);
+        AssertionsAssert.Equal(42, result);
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public sealed class AssertSingleTests
 
         var result = AssertionsAssert.Single(actual, item => item % 2 == 0);
 
-        global::Xunit.Assert.Equal(2, result);
+        AssertionsAssert.Equal(2, result);
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public sealed class AssertSingleTests
 
         var result = AssertionsAssert.Single(actual);
 
-        global::Xunit.Assert.Equal(42, result);
+        AssertionsAssert.Equal(42, result);
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public sealed class AssertSingleTests
 
         var result = await AssertionsAssert.Single(actual);
 
-        global::Xunit.Assert.Equal(42, result);
+        AssertionsAssert.Equal(42, result);
     }
 
     [Fact]

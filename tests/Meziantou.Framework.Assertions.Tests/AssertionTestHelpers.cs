@@ -1,4 +1,5 @@
 using AssertionException = Meziantou.Framework.Assertions.AssertionException;
+using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;
 
@@ -6,14 +7,14 @@ internal static class AssertionTestHelpers
 {
     public static void Validate(Action action, string expectedMessage)
     {
-        var exception = global::Xunit.Assert.Throws<AssertionException>(action);
-        global::Xunit.Assert.Equal(expectedMessage, exception.Message);
+        var exception = AssertionsAssert.Throws<AssertionException>(action);
+        AssertionsAssert.Equal(expectedMessage, exception.Message);
     }
 
     public static async Task ValidateAsync(Func<Task> action, string expectedMessage)
     {
-        var exception = await global::Xunit.Assert.ThrowsAsync<AssertionException>(action);
-        global::Xunit.Assert.Equal(expectedMessage, exception.Message);
+        var exception = await AssertionsAssert.Throws<AssertionException>(action);
+        AssertionsAssert.Equal(expectedMessage, exception.Message);
     }
 
     public static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(IEnumerable<T> items)

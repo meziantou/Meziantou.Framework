@@ -26,7 +26,11 @@ public sealed class CommonMarkSpecTests
         var data = new TheoryData<CommonMarkSpecTestCase>();
         foreach (var testCase in TestCases.Value)
         {
-            data.Add(testCase);
+            // Some test cases cannot round-trip. Skip them with documented reasons.
+            if (!SkippedExamples.ContainsKey(testCase.Example))
+            {
+                data.Add(testCase);
+            }
         }
         return data;
     }
@@ -39,13 +43,6 @@ public sealed class CommonMarkSpecTests
     [MemberData(nameof(GetTestCases))]
     public void RoundTrip(CommonMarkSpecTestCase testCase)
     {
-        // Some test cases cannot round-trip. Skip them with documented reasons.
-        if (SkippedExamples.TryGetValue(testCase.Example, out var reason))
-        {
-            Assert.Skip(reason);
-            return;
-        }
-
         // 1. Convert the spec HTML to Markdown using our converter
         var markdown = HtmlToMarkdown.Convert(testCase.Html);
 

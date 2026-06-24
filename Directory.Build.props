@@ -40,10 +40,14 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Polyfill" Version="1.0.151">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.153">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
   </ItemGroup>
 
 </Project>

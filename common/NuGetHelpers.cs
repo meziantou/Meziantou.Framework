@@ -27,8 +27,9 @@ public static class NuGetHelpers
 
             if (!IsCacheValid())
             {
-                var tempFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
-
+                var cacheDirectory = Path.GetDirectoryName(cacheFolder) ?? throw new InvalidOperationException("Cannot determine cache directory path");
+                Directory.CreateDirectory(cacheDirectory);
+                var tempFolder = Path.Combine(cacheDirectory, Guid.NewGuid().ToString("N"));
                 Directory.CreateDirectory(tempFolder);
 
                 async Task<Stream> GetStream()
@@ -58,8 +59,6 @@ public static class NuGetHelpers
 
                 try
                 {
-                    var cacheDirectory = Path.GetDirectoryName(cacheFolder) ?? throw new InvalidOperationException("Cannot determine cache directory path");
-                    Directory.CreateDirectory(cacheDirectory);
                     Directory.Move(tempFolder, cacheFolder);
                 }
                 catch (Exception ex)

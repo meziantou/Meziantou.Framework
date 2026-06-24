@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.RobotsTxt/Meziantou.Framework.RobotsTxt.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.RobotsTxt.Tests/Meziantou.Framework.RobotsTxt.Tests.csproj" />
+  </Folder>
+</Solution>

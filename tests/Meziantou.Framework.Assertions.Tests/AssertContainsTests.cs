@@ -305,7 +305,7 @@ public sealed class AssertContainsTests
     [Fact]
     public void DoesNotContainDictionary_Fails()
     {
-        var actual = new Dictionary<string, int> { ["a"] = 1 };
+        var actual = new Dictionary<string, int>(StringComparer.Ordinal) { ["a"] = 1 };
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain("a", actual), """
             Assert.DoesNotContain() assertion failed.

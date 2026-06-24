@@ -1,11 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;
 
+[SuppressMessage("Design", "MA0046:The second parameter must be of type 'System.EventArgs' or a derived type", Justification = "TEventArgs is constrained to EventArgs.")]
+[SuppressMessage("Design", "MA0091:Sender parameter should be 'this' for instance events", Justification = "The tests intentionally verify the sender value captured by the assertion helpers.")]
 public sealed class AssertRaiseTests
 {
     [Fact]
-    public void RaiseGeneric_Success()
+    public void AssertRaiseGeneric_Success()
     {
         var source = new GenericEventSource<CustomEventArgs>();
         var sender = new object();
@@ -21,7 +24,7 @@ public sealed class AssertRaiseTests
     }
 
     [Fact]
-    public void RaiseNonGeneric_Success()
+    public void AssertRaiseNonGeneric_Success()
     {
         var source = new NonGenericEventSource();
         var sender = new object();
@@ -37,7 +40,7 @@ public sealed class AssertRaiseTests
     }
 
     [Fact]
-    public void Raise_FailsWhenNoEventIsRaised()
+    public void AssertRaise_FailsWhenNoEventIsRaised()
     {
         var source = new GenericEventSource<CustomEventArgs>();
 
@@ -53,7 +56,7 @@ public sealed class AssertRaiseTests
     }
 
     [Fact]
-    public void Raise_FailsWhenDerivedEventArgsIsRaised()
+    public void AssertRaise_FailsWhenDerivedEventArgsIsRaised()
     {
         var source = new GenericEventSource<BaseEventArgs>();
         var arguments = new DerivedEventArgs();
@@ -70,7 +73,7 @@ public sealed class AssertRaiseTests
     }
 
     [Fact]
-    public void RaiseAnyGeneric_AllowsDerivedEventArgs()
+    public void AssertRaiseAnyGeneric_AllowsDerivedEventArgs()
     {
         var source = new GenericEventSource<BaseEventArgs>();
         var arguments = new DerivedEventArgs();
@@ -85,7 +88,7 @@ public sealed class AssertRaiseTests
     }
 
     [Fact]
-    public void RaiseAnyNonGeneric_AllowsDerivedEventArgs()
+    public void AssertRaiseAnyNonGeneric_AllowsDerivedEventArgs()
     {
         var source = new NonGenericEventSource();
         var arguments = new CustomEventArgs("value");
@@ -100,7 +103,7 @@ public sealed class AssertRaiseTests
     }
 
     [Fact]
-    public void RaiseAny_FailsWhenNoEventIsRaised()
+    public void AssertRaiseAny_FailsWhenNoEventIsRaised()
     {
         var source = new GenericEventSource<CustomEventArgs>();
 
@@ -116,7 +119,7 @@ public sealed class AssertRaiseTests
     }
 
     [Fact]
-    public void Raise_DetachesHandlerWhenActionThrows()
+    public void AssertRaise_DetachesHandlerWhenActionThrows()
     {
         var source = new CountingEventSource();
         Action action = () => throw new InvalidOperationException("Failure");

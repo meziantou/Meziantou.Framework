@@ -98,7 +98,7 @@ internal class AssertionFormatter
             Assert.True() assertion failed.
             Expression: {error.Expression}
             Expected: true
-            Actual:   false
+            Actual:   {FormatBoolean(error.Actual)}
             """;
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -115,7 +115,7 @@ internal class AssertionFormatter
             Assert.False() assertion failed.
             Expression: {error.Expression}
             Expected: false
-            Actual:   true
+            Actual:   {FormatBoolean(error.Actual)}
             """;
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -124,6 +124,16 @@ internal class AssertionFormatter
         }
 
         return result;
+    }
+
+    private static string FormatBoolean(bool? value)
+    {
+        return value switch
+        {
+            true => "true",
+            false => "false",
+            null => "<null>",
+        };
     }
 
     public virtual string Format(NegativeTextAssertionError error)
@@ -317,6 +327,17 @@ internal class AssertionFormatter
             Expected exception type: {FormatType(error.ExpectedExceptionType)}
             Actual exception type:   {FormatType(error.ActualException?.GetType())}
             Exception:               {FormatException(error.ActualException)}
+            """;
+    }
+
+    public virtual string Format(RegexMatchesAssertionError error)
+    {
+        return $"""
+            Assert.Match() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected pattern: {FormatValue(error.ExpectedPattern)}
+            Actual:           {FormatValue(error.ActualValue)}
             """;
     }
 

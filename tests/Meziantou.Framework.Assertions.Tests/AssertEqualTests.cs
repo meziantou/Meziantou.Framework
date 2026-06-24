@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using AssertionException = Meziantou.Framework.Assertions.AssertionException;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;
@@ -141,6 +142,42 @@ public sealed class AssertEqualTests
             Expected: "Hello\n\"World\""
             Actual:   "Hello\tWorld"
             """);
+    }
+
+    [Fact]
+    public void String_IgnoreLineEndingDifferences_Success()
+    {
+        var expected = "line1\r\nline2\rline3";
+        var actual = "line1\nline2\nline3";
+
+        AssertionsAssert.Equal(expected, actual, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void String_IgnoreLineEndingDifferences_FailsWhenDisabled()
+    {
+        var expected = "line1\r\nline2";
+        var actual = "line1\nline2";
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(expected, actual, ignoreLineEndingDifferences: false));
+    }
+
+    [Fact]
+    public void CharSpan_IgnoreLineEndingDifferences_Success()
+    {
+        var expected = "line1\r\nline2\rline3";
+        var actual = "line1\nline2\nline3";
+
+        AssertionsAssert.Equal(expected.AsSpan(), actual.AsSpan(), ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void CharSpan_IgnoreLineEndingDifferences_FailsWhenOtherDifferences()
+    {
+        var expected = "line1\r\nline2";
+        var actual = "line1\nlineX";
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(expected.AsSpan(), actual.AsSpan(), ignoreLineEndingDifferences: true));
     }
 
     [Fact]

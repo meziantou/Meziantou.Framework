@@ -9,6 +9,9 @@ public sealed class AssertTrueTests
     {
         AssertionsAssert.True(true);
         AssertionsAssert.True(true, "custom message");
+
+        bool? nullableCondition = true;
+        AssertionsAssert.True(nullableCondition);
     }
 
     [Fact]
@@ -27,6 +30,22 @@ public sealed class AssertTrueTests
             Expected: true
             Actual:   false
             Message: custom message
+            """);
+
+        bool? nullableFalse = false;
+        AssertionTestHelpers.Validate(() => AssertionsAssert.True(nullableFalse), """
+            Assert.True() assertion failed.
+            Expression: nullableFalse
+            Expected: true
+            Actual:   false
+            """);
+
+        bool? nullableNull = null;
+        AssertionTestHelpers.Validate(() => AssertionsAssert.True(nullableNull), """
+            Assert.True() assertion failed.
+            Expression: nullableNull
+            Expected: true
+            Actual:   <null>
             """);
     }
 }

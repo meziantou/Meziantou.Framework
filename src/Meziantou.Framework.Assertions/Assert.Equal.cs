@@ -36,6 +36,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new EqualWithToleranceAssertionError<decimal>(expected, actual, tolerance, message, actualExpression, expectedExpression)));
     }
 
+    [OverloadResolutionPriority(-2)]
     public static void Equal<T>(T expected, T actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (TryEqualEnumerables(expected, actual, message, actualExpression, expectedExpression))
@@ -65,9 +66,39 @@ partial class Assert
         }
     }
 
+    public static void Equal(string expected, string actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (!string.Equals(expected, actual, StringComparison.Ordinal))
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<string, string>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+    }
+
     public static void Equal<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         EqualSpans<T, T>(expected, actual, message, actualExpression, expectedExpression);
+    }
+
+    public static void Equal(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, bool ignoreLineEndingDifferences, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (!ignoreLineEndingDifferences)
+        {
+            EqualSpans<char, char>(expected, actual, message, actualExpression, expectedExpression);
+            return;
+        }
+
+        Equal(NormalizeLineEndings(expected), NormalizeLineEndings(actual), message, actualExpression, expectedExpression);
+    }
+
+    public static void Equal(string expected, string actual, bool ignoreLineEndingDifferences, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (!ignoreLineEndingDifferences)
+        {
+            Equal(expected, actual, message, actualExpression, expectedExpression);
+            return;
+        }
+
+        Equal(NormalizeLineEndings(expected), NormalizeLineEndings(actual), message, actualExpression, expectedExpression);
     }
 
     [OverloadResolutionPriority(-1)]
@@ -298,5 +329,30 @@ partial class Assert
         }
 
         return false;
+    }
+
+    private static string NormalizeLineEndings(ReadOnlySpan<char> value)
+    {
+        if (!value.Contains('\r'))
+            return value.ToString();
+
+        var result = new System.Text.StringBuilder(value.Length);
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (value[i] == '\r')
+            {
+                result.Append('\n');
+                if (i + 1 < value.Length && value[i + 1] == '\n')
+                {
+                    i++;
+                }
+            }
+            else
+            {
+                result.Append(value[i]);
+            }
+        }
+
+        return result.ToString();
     }
 }

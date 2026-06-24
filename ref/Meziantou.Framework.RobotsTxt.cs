@@ -8,6 +8,7 @@ namespace Meziantou.Framework.RobotsTxt
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.RobotsTxt.RobotsGroup> Groups { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Sitemaps { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.RobotsTxt.RobotsParseError> ParseErrors { get => throw null; }
         public static Meziantou.Framework.RobotsTxt.RobotsFile Parse(string content) => throw null;
         public static Meziantou.Framework.RobotsTxt.RobotsFile Parse(System.ReadOnlySpan<char> content) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.RobotsTxt.RobotsFile> ParseAsync(System.IO.Stream stream, System.Text.Encoding? encoding = null, System.Threading.CancellationToken cancellationToken = null) => throw null;
@@ -27,6 +28,22 @@ namespace Meziantou.Framework.RobotsTxt
         public bool IsAllowed(string path) => throw null;
         public bool IsAllowed(System.ReadOnlySpan<char> path) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public sealed class RobotsParseError
+    {
+        public int LineNumber { get => throw null; }
+        public string Line { get => throw null; }
+        public Meziantou.Framework.RobotsTxt.RobotsParseErrorKind Kind { get => throw null; }
+        public RobotsParseError(int lineNumber, string line, Meziantou.Framework.RobotsTxt.RobotsParseErrorKind kind) { }
+        public override string ToString() => throw null;
+    }
+
+    public enum RobotsParseErrorKind
+    {
+        MalformedLine = 0,
+        UnknownDirective = 1,
+        InvalidCrawlDelay = 2
     }
 
     public sealed class RobotsRule

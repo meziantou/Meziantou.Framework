@@ -27,6 +27,17 @@ public sealed class AssertThrowsTests
     }
 
     [Fact]
+    public void ThrowsGeneric_PropertyGetter_Success()
+    {
+        var exception = new InvalidOperationException("Failure");
+        var source = new ThrowingPropertySource(exception);
+
+        var result = AssertionsAssert.Throws<InvalidOperationException>(() => source.Value);
+
+        AssertionsAssert.Same(exception, result);
+    }
+
+    [Fact]
     public void Throws_FailsWhenNoExceptionIsThrown()
     {
         AssertionTestHelpers.Validate(() => AssertionsAssert.Throws<InvalidOperationException>(() => { }), """
@@ -70,6 +81,17 @@ public sealed class AssertThrowsTests
         Action action = () => { throw exception; };
 
         var result = AssertionsAssert.ThrowsAny(typeof(Exception), action);
+
+        AssertionsAssert.Same(exception, result);
+    }
+
+    [Fact]
+    public void ThrowsAnyGeneric_PropertyGetter_Success()
+    {
+        var exception = new InvalidOperationException("Failure");
+        var source = new ThrowingPropertySource(exception);
+
+        var result = AssertionsAssert.ThrowsAny<Exception>(() => source.Value);
 
         AssertionsAssert.Same(exception, result);
     }
@@ -121,6 +143,17 @@ public sealed class AssertThrowsTests
     }
 
     [Fact]
+    public async Task ThrowsAsyncGeneric_TaskOfObject_Success()
+    {
+        var exception = new InvalidOperationException("Failure");
+        var source = new ThrowingPropertySource(exception);
+
+        var result = await AssertionsAssert.ThrowsAsync<InvalidOperationException>(() => source.ValueAsync);
+
+        AssertionsAssert.Same(exception, result);
+    }
+
+    [Fact]
     public async Task ThrowsAsync_FailsWhenNoExceptionIsThrown()
     {
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.ThrowsAsync<InvalidOperationException>(() => Task.CompletedTask), """
@@ -153,6 +186,17 @@ public sealed class AssertThrowsTests
     }
 
     [Fact]
+    public async Task ThrowsAnyAsyncGeneric_TaskOfObject_Success()
+    {
+        var exception = new InvalidOperationException("Failure");
+        var source = new ThrowingPropertySource(exception);
+
+        var result = await AssertionsAssert.ThrowsAnyAsync<Exception>(() => source.ValueAsync);
+
+        AssertionsAssert.Same(exception, result);
+    }
+
+    [Fact]
     public async Task ThrowsAnyAsync_FailsWhenUnrelatedExceptionIsThrown()
     {
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.ThrowsAnyAsync<ArgumentException>(() => ThrowAsync(new InvalidOperationException("Failure"))), """
@@ -167,5 +211,11 @@ public sealed class AssertThrowsTests
     private static Task ThrowAsync(Exception exception)
     {
         return Task.FromException(exception);
+    }
+
+    private sealed class ThrowingPropertySource(Exception exception)
+    {
+        public object? Value => throw exception;
+        public Task<object?> ValueAsync => Task.FromException<object?>(exception);
     }
 }

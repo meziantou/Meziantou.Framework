@@ -53,7 +53,7 @@ public sealed class RobotsRule
     private static bool WildcardMatch(ReadOnlySpan<char> pattern, ReadOnlySpan<char> path)
     {
         // Strip trailing '$' and remember whether end-anchoring is required.
-        bool endAnchor = false;
+        var endAnchor = false;
         if (pattern.Length > 0 && pattern[^1] == '$')
         {
             endAnchor = true;
@@ -71,15 +71,15 @@ public sealed class RobotsRule
 
         // dp[i] = true  →  pattern[0..i) matches some prefix of path.
         // We use two alternating arrays to stay O(pattern * path) in space.
-        int pLen = pattern.Length;
-        int sLen = path.Length;
+        var pLen = pattern.Length;
+        var sLen = path.Length;
 
         // patternIdx and pathIdx walk through segments split by '*'.
-        int pi = 0; // index into pattern
-        int si = 0; // index into path
+        var pi = 0; // index into pattern
+        var si = 0; // index into path
 
-        int starPatternIdx = -1;
-        int starPathIdx = -1;
+        var starPatternIdx = -1;
+        var starPathIdx = -1;
 
         while (si < sLen)
         {
@@ -130,7 +130,7 @@ public sealed class RobotsRule
         while (pi < pLen && pattern[pi] == '*')
             pi++;
 
-        bool fullPatternConsumed = pi == pLen;
+        var fullPatternConsumed = pi == pLen;
 
         if (!fullPatternConsumed)
             return false;

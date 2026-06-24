@@ -7,8 +7,9 @@ namespace Meziantou.Framework.RobotsTxt;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The parser is lenient: unknown directives and malformed lines are silently ignored,
-/// matching the behaviour of most web crawlers.
+/// The parser is lenient: unknown directives and malformed lines are skipped rather than throwing,
+/// matching the behaviour of most web crawlers. Each skipped line is recorded in
+/// <see cref="ParseErrors"/> so callers can audit file quality.
 /// </para>
 /// <para>
 /// Supported directives: <c>User-agent</c>, <c>Allow</c>, <c>Disallow</c>,
@@ -31,14 +32,18 @@ namespace Meziantou.Framework.RobotsTxt;
 ///     """);
 ///
 /// bool allowed = robots.IsAllowed("Googlebot", "/public/page");
+///
+/// foreach (var error in robots.ParseErrors)
+///     Console.WriteLine(error);
 /// </code>
 /// </example>
 public sealed class RobotsFile
 {
-    private RobotsFile(IReadOnlyList<RobotsGroup> groups, IReadOnlyList<string> sitemaps)
+    private RobotsFile(IReadOnlyList<RobotsGroup> groups, IReadOnlyList<string> sitemaps, IReadOnlyList<RobotsParseError> parseErrors)
     {
         Groups = groups;
         Sitemaps = sitemaps;
+        ParseErrors = parseErrors;
     }
 
     /// <summary>Gets the groups of directives defined in the file, in the order they appear.</summary>
@@ -48,6 +53,16 @@ public sealed class RobotsFile
     /// Gets the sitemap URLs declared by <c>Sitemap:</c> directives, in the order they appear.
     /// </summary>
     public IReadOnlyList<string> Sitemaps { get; }
+
+    /// <summary>
+    /// Gets the non-fatal parse errors encountered while reading the file.
+    /// </summary>
+    /// <remarks>
+    /// The list is empty when the file is fully valid. Each entry records the 1-based
+    /// <see cref="RobotsParseError.LineNumber"/>, the raw <see cref="RobotsParseError.Line"/> text,
+    /// and the <see cref="RobotsParseError.Kind"/> of problem.
+    /// </remarks>
+    public IReadOnlyList<RobotsParseError> ParseErrors { get; }
 
     /// <summary>Parses a <c>robots.txt</c> file from a string.</summary>
     /// <param name="content">The full text content of the <c>robots.txt</c> file.</param>
@@ -91,7 +106,7 @@ public sealed class RobotsFile
         string? line;
         while ((line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) is not null)
         {
-            parser.FeedLine(line.AsSpan());
+            parser.FeedLine(line);
         }
 
         return parser.Build();
@@ -181,12 +196,16 @@ public sealed class RobotsFile
         // Completed data.
         private List<RobotsGroup>? _groups;
         private List<string>? _sitemaps;
+        private List<RobotsParseError>? _errors;
+
+        // Line counter (1-based).
+        private int _lineNumber;
 
         public void Feed(ReadOnlySpan<char> content)
         {
             while (!content.IsEmpty)
             {
-                int nl = content.IndexOfAny('\n', '\r');
+                var nl = content.IndexOfAny('\n', '\r');
                 ReadOnlySpan<char> line;
                 if (nl < 0)
                 {
@@ -202,28 +221,33 @@ public sealed class RobotsFile
                         content = content[1..];
                 }
 
-                FeedLine(line);
+                FeedLine(line.ToString());
             }
         }
 
-        public void FeedLine(ReadOnlySpan<char> rawLine)
+        public void FeedLine(string rawLine)
         {
-            // Strip inline comments and trim whitespace.
-            var line = StripComment(rawLine).Trim();
+            _lineNumber++;
 
-            if (line.IsEmpty)
+            // Strip inline comments and trim whitespace.
+            var trimmed = StripComment(rawLine.AsSpan()).Trim();
+
+            if (trimmed.IsEmpty)
             {
                 FlushGroup();
                 return;
             }
 
             // Split "directive: value"
-            int colon = line.IndexOf(':');
+            var colon = trimmed.IndexOf(':');
             if (colon < 0)
-                return; // malformed — ignore
+            {
+                AddError(rawLine, RobotsParseErrorKind.MalformedLine);
+                return;
+            }
 
-            var directive = line[..colon].Trim();
-            var value = line[(colon + 1)..].Trim();
+            var directive = trimmed[..colon].Trim();
+            var value = trimmed[(colon + 1)..].Trim();
 
             if (directive.Equals("User-agent", StringComparison.OrdinalIgnoreCase))
             {
@@ -247,14 +271,23 @@ public sealed class RobotsFile
             else if (directive.Equals("Crawl-delay", StringComparison.OrdinalIgnoreCase))
             {
                 if (double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var seconds) && seconds >= 0)
+                {
                     _currentCrawlDelay = TimeSpan.FromSeconds(seconds);
+                }
+                else
+                {
+                    AddError(rawLine, RobotsParseErrorKind.InvalidCrawlDelay);
+                }
             }
             else if (directive.Equals("Sitemap", StringComparison.OrdinalIgnoreCase))
             {
                 _sitemaps ??= [];
                 _sitemaps.Add(value.ToString());
             }
-            // Unknown directives are silently ignored (lenient mode).
+            else
+            {
+                AddError(rawLine, RobotsParseErrorKind.UnknownDirective);
+            }
         }
 
         public readonly RobotsFile Build()
@@ -269,7 +302,16 @@ public sealed class RobotsFile
                     _currentCrawlDelay));
             }
 
-            return new RobotsFile(groups, (IReadOnlyList<string>?)_sitemaps ?? []);
+            return new RobotsFile(
+                groups,
+                (IReadOnlyList<string>?)_sitemaps ?? [],
+                (IReadOnlyList<RobotsParseError>?)_errors ?? []);
+        }
+
+        private void AddError(string rawLine, RobotsParseErrorKind kind)
+        {
+            _errors ??= [];
+            _errors.Add(new RobotsParseError(_lineNumber, rawLine, kind));
         }
 
         private void FlushGroup()
@@ -295,7 +337,7 @@ public sealed class RobotsFile
 
         private static ReadOnlySpan<char> StripComment(ReadOnlySpan<char> line)
         {
-            int hash = line.IndexOf('#');
+            var hash = line.IndexOf('#');
             return hash < 0 ? line : line[..hash];
         }
     }

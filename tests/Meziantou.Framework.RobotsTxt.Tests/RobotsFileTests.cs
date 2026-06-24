@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.RobotsTxt.Tests;
 
 public sealed class RobotsFileTests
@@ -136,6 +134,8 @@ public sealed class RobotsFileTests
 
         var group = Assert.Single(robots.Groups);
         Assert.Single(group.Rules);
+        Assert.Equal(2, robots.ParseErrors.Count);
+        Assert.All(robots.ParseErrors, e => Assert.Equal(RobotsParseErrorKind.UnknownDirective, e.Kind));
     }
 
     [Fact]
@@ -149,6 +149,9 @@ public sealed class RobotsFileTests
 
         Assert.Single(robots.Groups[0].Rules);
         Assert.Equal("/secret/", robots.Groups[0].Rules[0].Value);
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.MalformedLine, error.Kind);
+        Assert.Equal("this line has no colon", error.Line.Trim());
     }
 
     [Fact]
@@ -343,6 +346,106 @@ public sealed class RobotsFileTests
     }
 
     // -------------------------------------------------------------------------
+    // ParseErrors
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ParseErrors_EmptyForValidFile()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /private/
+            Allow: /public/
+            Crawl-delay: 1
+
+            Sitemap: https://example.com/sitemap.xml
+            """);
+
+        Assert.Empty(robots.ParseErrors);
+    }
+
+    [Fact]
+    public void ParseErrors_MalformedLine_RecordsLineNumberAndContent()
+    {
+        var robots = RobotsFile.Parse("User-agent: *\nthis has no colon\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.MalformedLine, error.Kind);
+        Assert.Equal(2, error.LineNumber);
+        Assert.Equal("this has no colon", error.Line);
+    }
+
+    [Fact]
+    public void ParseErrors_UnknownDirective_RecordsError()
+    {
+        var robots = RobotsFile.Parse("User-agent: *\nHost: example.com\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.UnknownDirective, error.Kind);
+        Assert.Equal(2, error.LineNumber);
+        Assert.Equal("Host: example.com", error.Line);
+    }
+
+    [Fact]
+    public void ParseErrors_InvalidCrawlDelay_RecordsError()
+    {
+        var robots = RobotsFile.Parse("User-agent: *\nCrawl-delay: notanumber\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
+        Assert.Equal(2, error.LineNumber);
+    }
+
+    [Fact]
+    public void ParseErrors_InvalidCrawlDelay_NegativeValue()
+    {
+        var robots = RobotsFile.Parse("User-agent: *\nCrawl-delay: -5\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
+    }
+
+    [Fact]
+    public void ParseErrors_MultipleErrors_AllRecorded()
+    {
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            bad line one
+            Host: example.com
+            bad line two
+            Disallow: /
+            """);
+
+        Assert.Equal(3, robots.ParseErrors.Count);
+        Assert.Equal(RobotsParseErrorKind.MalformedLine, robots.ParseErrors[0].Kind);
+        Assert.Equal(2, robots.ParseErrors[0].LineNumber);
+        Assert.Equal(RobotsParseErrorKind.UnknownDirective, robots.ParseErrors[1].Kind);
+        Assert.Equal(3, robots.ParseErrors[1].LineNumber);
+        Assert.Equal(RobotsParseErrorKind.MalformedLine, robots.ParseErrors[2].Kind);
+        Assert.Equal(4, robots.ParseErrors[2].LineNumber);
+    }
+
+    [Fact]
+    public void ParseErrors_RawLinePreservedBeforeCommentStripping()
+    {
+        // The raw line (including inline comment) should be stored, not the stripped version.
+        var robots = RobotsFile.Parse("User-agent: *\nHost: example.com # inline comment\nDisallow: /");
+
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal("Host: example.com # inline comment", error.Line);
+    }
+
+    [Fact]
+    public void ParseErrors_ToString_ContainsLineNumberAndKind()
+    {
+        var error = new RobotsParseError(5, "bad line", RobotsParseErrorKind.MalformedLine);
+        var s = error.ToString();
+        Assert.Contains("5", s, StringComparison.Ordinal);
+        Assert.Contains("MalformedLine", s, StringComparison.Ordinal);
+        Assert.Contains("bad line", s, StringComparison.Ordinal);
+    }
+
+    // -------------------------------------------------------------------------
     // RobotsRule.Matches — wildcard patterns
     // -------------------------------------------------------------------------
 
@@ -396,10 +499,10 @@ public sealed class RobotsFileTests
     [Fact]
     public async Task ParseAsync_Stream_Works()
     {
-        const string content = "User-agent: *\nDisallow: /\n";
-        using var stream = new System.IO.MemoryStream(Encoding.UTF8.GetBytes(content));
+        const string Content = "User-agent: *\nDisallow: /\n";
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(Content));
 
-        var robots = await RobotsFile.ParseAsync(stream);
+        var robots = await RobotsFile.ParseAsync(stream, cancellationToken: XunitCancellationToken);
 
         Assert.Single(robots.Groups);
         Assert.False(robots.IsAllowed("Bot", "/anything"));
@@ -408,10 +511,10 @@ public sealed class RobotsFileTests
     [Fact]
     public async Task ParseAsync_TextReader_Works()
     {
-        const string content = "User-agent: *\nDisallow: /secret/\n";
-        using var reader = new System.IO.StringReader(content);
+        const string Content = "User-agent: *\nDisallow: /secret/\n";
+        using var reader = new StringReader(Content);
 
-        var robots = await RobotsFile.ParseAsync(reader);
+        var robots = await RobotsFile.ParseAsync(reader, XunitCancellationToken);
 
         Assert.False(robots.IsAllowed("Bot", "/secret/page"));
         Assert.True(robots.IsAllowed("Bot", "/public/page"));

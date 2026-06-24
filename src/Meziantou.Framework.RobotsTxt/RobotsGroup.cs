@@ -74,7 +74,7 @@ public sealed class RobotsGroup
     public bool IsAllowed(ReadOnlySpan<char> path)
     {
         RobotsRule? bestMatch = null;
-        int bestLength = -1;
+        var bestLength = -1;
 
         foreach (var rule in Rules)
         {
@@ -85,7 +85,7 @@ public sealed class RobotsGroup
             if (!rule.Matches(path))
                 continue;
 
-            int len = rule.Value.Length;
+            var len = rule.Value.Length;
             if (len > bestLength || (len == bestLength && rule.Kind == RobotsRuleKind.Allow))
             {
                 bestMatch = rule;

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <PlatformTarget>x64</PlatformTarget>
+    <UseNewAssertions>false</UseNewAssertions>
   </PropertyGroup>
 
   <ItemGroup>

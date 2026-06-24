@@ -105,7 +105,7 @@ public sealed class AssertThrowsTests
     {
         var exception = new InvalidOperationException("Failure");
 
-        var result = await AssertionsAssert.Throws<InvalidOperationException>(() => ThrowAsync(exception));
+        var result = await AssertionsAssert.ThrowsAsync<InvalidOperationException>(() => ThrowAsync(exception));
 
         AssertionsAssert.Same(exception, result);
     }
@@ -115,7 +115,7 @@ public sealed class AssertThrowsTests
     {
         var exception = new InvalidOperationException("Failure");
 
-        var result = await AssertionsAssert.Throws(typeof(InvalidOperationException), () => ThrowAsync(exception));
+        var result = await AssertionsAssert.ThrowsAsync(typeof(InvalidOperationException), () => ThrowAsync(exception));
 
         AssertionsAssert.Same(exception, result);
     }
@@ -123,7 +123,7 @@ public sealed class AssertThrowsTests
     [Fact]
     public async Task ThrowsAsync_FailsWhenNoExceptionIsThrown()
     {
-        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Throws<InvalidOperationException>(() => Task.CompletedTask), """
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.ThrowsAsync<InvalidOperationException>(() => Task.CompletedTask), """
             Assert.Throws() assertion failed.
             Expression:              () => Task.CompletedTask
             Expected exception type: System.InvalidOperationException
@@ -137,7 +137,7 @@ public sealed class AssertThrowsTests
     {
         var exception = new InvalidOperationException("Failure");
 
-        var result = await AssertionsAssert.ThrowsAny<Exception>(() => ThrowAsync(exception));
+        var result = await AssertionsAssert.ThrowsAnyAsync<Exception>(() => ThrowAsync(exception));
 
         AssertionsAssert.Same(exception, result);
     }
@@ -147,7 +147,7 @@ public sealed class AssertThrowsTests
     {
         var exception = new InvalidOperationException("Failure");
 
-        var result = await AssertionsAssert.ThrowsAny(typeof(Exception), () => ThrowAsync(exception));
+        var result = await AssertionsAssert.ThrowsAnyAsync(typeof(Exception), () => ThrowAsync(exception));
 
         AssertionsAssert.Same(exception, result);
     }
@@ -155,7 +155,7 @@ public sealed class AssertThrowsTests
     [Fact]
     public async Task ThrowsAnyAsync_FailsWhenUnrelatedExceptionIsThrown()
     {
-        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.ThrowsAny<ArgumentException>(() => ThrowAsync(new InvalidOperationException("Failure"))), """
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.ThrowsAnyAsync<ArgumentException>(() => ThrowAsync(new InvalidOperationException("Failure"))), """
             Assert.ThrowsAny() assertion failed.
             Expression:              () => ThrowAsync(new InvalidOperationException("Failure"))
             Expected exception type: System.ArgumentException

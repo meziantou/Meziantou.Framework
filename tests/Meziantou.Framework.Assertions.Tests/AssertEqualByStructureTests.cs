@@ -226,6 +226,30 @@ public sealed class AssertEqualByStructureTests
             """);
     }
 
+    [Fact]
+    public void NotEqualByStructure_Success()
+    {
+        var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
+        var actual = new ActualPerson { Name = "Alice", Age = 43 };
+
+        AssertionsAssert.NotEqualByStructure(expected, actual);
+    }
+
+    [Fact]
+    public void NotEqualByStructure_Fails()
+    {
+        var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
+        var actual = new ActualPerson { Name = "Alice", Age = 42 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqualByStructure(expected, actual), """
+            Assert.NotEqualByStructure() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+ExpectedPerson
+            Actual:              Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+ActualPerson
+            """);
+    }
+
     private sealed class ExpectedPerson
     {
         public string? Name { get; set; }

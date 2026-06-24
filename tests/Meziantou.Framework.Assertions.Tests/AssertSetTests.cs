@@ -118,4 +118,40 @@ public sealed class AssertSetTests
 
         AssertionsAssert.ProperSuperset(expected, actual);
     }
+
+    [Fact]
+    public void NotProperSubset_Success()
+    {
+        AssertionsAssert.NotProperSubset([1, 2], [2, 1]);
+    }
+
+    [Fact]
+    public void NotProperSubset_Fails()
+    {
+        var expected = new[] { 1 };
+        var actual = new[] { 1, 2 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotProperSubset(expected, actual), """
+            Assert.NotProperSubset() assertion failed.
+            Expected subset expression: expected
+            Actual expression:          actual
+            Not expected subset: [1]
+            Actual:              [1, 2]
+            """);
+    }
+
+    [Fact]
+    public void NotProperSuperset_Fails()
+    {
+        var expected = new[] { 1, 2 };
+        var actual = new[] { 1 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotProperSuperset(expected, actual), """
+            Assert.NotProperSuperset() assertion failed.
+            Expected superset expression: expected
+            Actual expression:            actual
+            Not expected superset: [1, 2]
+            Actual:                [1]
+            """);
+    }
 }

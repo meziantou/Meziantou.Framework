@@ -172,4 +172,26 @@ public sealed class AssertEndsWithTests
             Actual:          [1, 2, 3̲]
             """);
     }
+
+    [Fact]
+    public void DoesNotEndWith_Success()
+    {
+        AssertionsAssert.DoesNotEndWith(2, [1, 2, 3]);
+        AssertionsAssert.DoesNotEndWith("He", "hello", StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DoesNotEndWith_Fails()
+    {
+        var expected = 3;
+        var actual = new[] { 1, 2, 3 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith(expected, actual), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected suffix: 3
+            Actual:              [1, 2, 3]
+            """);
+    }
 }

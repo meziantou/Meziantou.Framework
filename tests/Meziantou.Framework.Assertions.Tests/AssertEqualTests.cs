@@ -406,4 +406,44 @@ public sealed class AssertEqualTests
             Actual:   [<circular reference>]
             """);
     }
+
+    [Fact]
+    public void NotEqual_Success()
+    {
+        AssertionsAssert.NotEqual(1, 2);
+        AssertionsAssert.NotEqual<int>([1, 2], [2, 1]);
+    }
+
+    [Fact]
+    public void NotEqual_Fails()
+    {
+        var expected = 42;
+        var actual = 42;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqual(expected, actual), """
+            Assert.NotEqual() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: 42
+            Actual:              42
+            """);
+    }
+
+    [Fact]
+    public void NotEqualWithTolerance_Fails()
+    {
+        var expected = 1.0;
+        var actual = 1.1;
+        var tolerance = 0.2;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqual(expected, actual, tolerance, "custom message"), """
+            Assert.NotEqual() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: 1
+            Actual:       1.1
+            Tolerance:    0.2
+            Message: custom message
+            """);
+    }
 }

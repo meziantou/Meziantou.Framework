@@ -145,4 +145,23 @@ public sealed class AssertDistinctTests
             Actual:          [1, 2, 1̲]
             """);
     }
+
+    [Fact]
+    public void NotDistinct_Success()
+    {
+        AssertionsAssert.NotDistinct<int>([1, 2, 1]);
+    }
+
+    [Fact]
+    public void NotDistinct_Fails()
+    {
+        var actual = new[] { 1, 2, 3 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotDistinct(actual), """
+            Assert.NotDistinct() assertion failed.
+            Expression: actual
+            Not expected: all distinct items
+            Actual:       [1, 2, 3]
+            """);
+    }
 }

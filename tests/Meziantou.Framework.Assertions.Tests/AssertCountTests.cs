@@ -167,4 +167,25 @@ public sealed class AssertCountTests
             Actual:         [1, 2, 3]
             """);
     }
+
+    [Fact]
+    public void DoesNotHaveCount_Success()
+    {
+        AssertionsAssert.DoesNotHaveCount<int>(2, [1, 2, 3]);
+        AssertionsAssert.DoesNotHaveCount(2, "abc");
+    }
+
+    [Fact]
+    public void DoesNotHaveCount_Fails()
+    {
+        var actual = new[] { 1, 2, 3 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotHaveCount(3, actual), """
+            Assert.DoesNotHaveCount() assertion failed.
+            Expression: actual
+            Not expected count: 3
+            Actual count:       3
+            Actual:             [1, 2, 3]
+            """);
+    }
 }

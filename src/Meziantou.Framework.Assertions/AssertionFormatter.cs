@@ -126,6 +126,136 @@ internal class AssertionFormatter
         return result;
     }
 
+    public virtual string Format(NegativeTextAssertionError error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Not expected: {error.NotExpectedText}
+            Actual:       {error.ActualText}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(NegativeValueAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            {error.NotExpectedLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:              {FormatValue(error.ActualValue)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TActual>(NegativeActualValueAssertionError<TActual> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected: {error.NotExpectedText}
+            Actual:       {FormatValue(error.ActualValue)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format(NegativeSameAssertionError error)
+    {
+        return $"""
+            Assert.NotSame() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Not expected: same instance as {FormatValue(error.ExpectedValue)}
+            Actual:       {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format<T>(NegativeRangeAssertionError<T> error)
+    {
+        return $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected: in range [{FormatValue(error.LowValue)}, {FormatValue(error.HighValue)}]
+            Actual:       {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(NegativeTypeAssertionError error)
+    {
+        return $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression:          {error.ActualExpression}
+            {error.NotExpectedTypeLabel}: {FormatType(error.ExpectedType)}
+            Actual type:         {FormatType(error.ActualValue?.GetType())}
+            Actual value:        {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(NegativeSetAssertionError error)
+    {
+        var setName = error.IsSuperset ? "superset" : "subset";
+        var expectedExpressionLabel = $"Expected {setName} expression:";
+        var actualExpressionLabel = "Actual expression:";
+        var notExpectedValueLabel = $"Not expected {setName}:";
+        var actualValueLabel = "Actual:";
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.NotProper{(error.IsSuperset ? "Superset" : "Subset")}() assertion failed.
+            {expectedExpressionLabel} {error.ExpectedExpression}
+            {actualExpressionLabel.PadRight(expectedExpressionLabel.Length)} {error.ActualExpression}
+            {notExpectedValueLabel} {FormatValue(error.ExpectedValue)}
+            {actualValueLabel.PadRight(notExpectedValueLabel.Length)} {FormatValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format<T>(NegativeCountAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected count: {error.NotExpectedCount}
+            Actual count:       {error.ActualCount}
+            Actual:             {FormatValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format<T>(NegativeEqualWithToleranceAssertionError<T> error)
+    {
+        var result = $"""
+            Assert.NotEqual() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Not expected: {FormatValue(error.ExpectedValue)}
+            Actual:       {FormatValue(error.ActualValue)}
+            Tolerance:    {FormatValue(error.Tolerance)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
     public virtual string Format(NullAssertionError error)
     {
         return $"""

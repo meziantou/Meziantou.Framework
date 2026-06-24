@@ -51,4 +51,26 @@ public sealed class AssertIsAssignableToTests
             Actual value:  <null>
             """);
     }
+
+    [Fact]
+    public void IsNotAssignableTo_Success()
+    {
+        object actual = "Hello";
+
+        AssertionsAssert.IsNotAssignableTo<int>(actual);
+    }
+
+    [Fact]
+    public void IsNotAssignableTo_Fails()
+    {
+        object actual = "Hello";
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.IsNotAssignableTo<object>(actual), """
+            Assert.IsNotAssignableTo() assertion failed.
+            Expression:          actual
+            Not expected assignable type: System.Object
+            Actual type:         System.String
+            Actual value:        "Hello"
+            """);
+    }
 }

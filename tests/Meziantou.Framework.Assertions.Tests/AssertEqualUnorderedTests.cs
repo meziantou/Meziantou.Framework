@@ -141,4 +141,25 @@ public sealed class AssertEqualUnorderedTests
             Actual:   [1, 2, 2̲]
             """);
     }
+
+    [Fact]
+    public void NotEqualUnordered_Success()
+    {
+        AssertionsAssert.NotEqualUnordered([1, 2], [1, 3]);
+    }
+
+    [Fact]
+    public void NotEqualUnordered_Fails()
+    {
+        var expected = new[] { 1, 2 };
+        var actual = new[] { 2, 1 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqualUnordered(expected, actual), """
+            Assert.NotEqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [1, 2]
+            Actual:              [2, 1]
+            """);
+    }
 }

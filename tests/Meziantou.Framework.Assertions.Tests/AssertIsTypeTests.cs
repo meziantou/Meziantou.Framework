@@ -51,4 +51,26 @@ public sealed class AssertIsTypeTests
             Actual value:  <null>
             """);
     }
+
+    [Fact]
+    public void IsNotType_Success()
+    {
+        object actual = "Hello";
+
+        AssertionsAssert.IsNotType<object>(actual);
+    }
+
+    [Fact]
+    public void IsNotType_Fails()
+    {
+        object actual = "Hello";
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.IsNotType<string>(actual), """
+            Assert.IsNotType() assertion failed.
+            Expression:          actual
+            Not expected type: System.String
+            Actual type:         System.String
+            Actual value:        "Hello"
+            """);
+    }
 }

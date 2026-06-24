@@ -62,4 +62,23 @@ public sealed class AssertInRangeTests
             Actual:     "d"
             """);
     }
+
+    [Fact]
+    public void NotInRange_Success()
+    {
+        AssertionsAssert.NotInRange(4, 1, 3);
+    }
+
+    [Fact]
+    public void NotInRange_Fails()
+    {
+        var actual = 2;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotInRange(actual, 1, 3), """
+            Assert.NotInRange() assertion failed.
+            Expression: actual
+            Not expected: in range [1, 3]
+            Actual:       2
+            """);
+    }
 }

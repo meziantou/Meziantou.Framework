@@ -181,4 +181,24 @@ public sealed class AssertSingleTests
             Actual:     [1, 2̲, 3]
             """);
     }
+
+    [Fact]
+    public void NotSingle_Success()
+    {
+        AssertionsAssert.NotSingle<int>([]);
+        AssertionsAssert.NotSingle<int>([1, 2]);
+    }
+
+    [Fact]
+    public void NotSingle_Fails()
+    {
+        var actual = new[] { 42 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotSingle(actual), """
+            Assert.NotSingle() assertion failed.
+            Expression: actual
+            Not expected: a single item
+            Actual:       [42]
+            """);
+    }
 }

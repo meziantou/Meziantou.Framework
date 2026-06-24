@@ -51,4 +51,25 @@ public sealed class AssertSameTests
             Actual:   <null>
             """);
     }
+
+    [Fact]
+    public void NotSame_Success()
+    {
+        AssertionsAssert.NotSame(new object(), new object());
+    }
+
+    [Fact]
+    public void NotSame_Fails()
+    {
+        var expected = new object();
+        var actual = expected;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotSame(expected, actual), """
+            Assert.NotSame() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: same instance as System.Object
+            Actual:       System.Object
+            """);
+    }
 }

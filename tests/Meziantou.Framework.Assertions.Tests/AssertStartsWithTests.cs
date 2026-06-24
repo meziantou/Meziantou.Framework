@@ -195,4 +195,26 @@ public sealed class AssertStartsWithTests
             Actual:          [1, 2]
             """);
     }
+
+    [Fact]
+    public void DoesNotStartWith_Success()
+    {
+        AssertionsAssert.DoesNotStartWith(2, [1, 2, 3]);
+        AssertionsAssert.DoesNotStartWith("He", "hello", StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DoesNotStartWith_Fails()
+    {
+        var expected = 1;
+        var actual = new[] { 1, 2, 3 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith(expected, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected prefix: 1
+            Actual:              [1, 2, 3]
+            """);
+    }
 }

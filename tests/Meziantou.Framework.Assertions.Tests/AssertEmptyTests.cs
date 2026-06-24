@@ -111,4 +111,24 @@ public sealed class AssertEmptyTests
             Actual:     [1̲, 2, 3]
             """);
     }
+
+    [Fact]
+    public void NotEmpty_Success()
+    {
+        AssertionsAssert.NotEmpty([1]);
+        AssertionsAssert.NotEmpty("a");
+    }
+
+    [Fact]
+    public void NotEmpty_Fails()
+    {
+        var actual = Array.Empty<int>();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEmpty(actual), """
+            Assert.NotEmpty() assertion failed.
+            Expression: actual
+            Not expected: empty
+            Actual:       []
+            """);
+    }
 }

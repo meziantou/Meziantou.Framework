@@ -129,6 +129,47 @@ public sealed class AssertRaiseTests
         global::Xunit.Assert.Equal(1, source.DetachCount);
     }
 
+    [Fact]
+    public void DoesNotRaise_Success()
+    {
+        var source = new GenericEventSource<CustomEventArgs>();
+
+        AssertionsAssert.DoesNotRaise<CustomEventArgs>(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () => { });
+    }
+
+    [Fact]
+    public void DoesNotRaise_Fails()
+    {
+        var source = new GenericEventSource<CustomEventArgs>();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotRaise<CustomEventArgs>(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () => source.Raise(source, new CustomEventArgs("value"))), """
+            Assert.DoesNotRaise() assertion failed.
+            Not expected: event with exact Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
+            Actual:       () => source.Raise(source, new CustomEventArgs("value"))
+            """);
+    }
+
+    [Fact]
+    public void DoesNotRaiseAny_Fails()
+    {
+        var source = new GenericEventSource<BaseEventArgs>();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotRaiseAny<BaseEventArgs>(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () => source.Raise(source, new DerivedEventArgs())), """
+            Assert.DoesNotRaiseAny() assertion failed.
+            Not expected: event assignable to Meziantou.Framework.Assertions.Tests.AssertRaiseTests+BaseEventArgs
+            Actual:       () => source.Raise(source, new DerivedEventArgs())
+            """);
+    }
+
     private sealed class GenericEventSource<TEventArgs>
         where TEventArgs : EventArgs
     {

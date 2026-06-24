@@ -279,4 +279,40 @@ public sealed class AssertContainsTests
             Actual:   [1, 2, 3]
             """);
     }
+
+    [Fact]
+    public void DoesNotContain_Success()
+    {
+        AssertionsAssert.DoesNotContain(4, [1, 2, 3]);
+        AssertionsAssert.DoesNotContain("z", "abc");
+    }
+
+    [Fact]
+    public void DoesNotContain_Fails()
+    {
+        var expected = 2;
+        var actual = new[] { 1, 2, 3 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(expected, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected item: 2
+            Actual:              [1, 2, 3]
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContainDictionary_Fails()
+    {
+        var actual = new Dictionary<string, int> { ["a"] = 1 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain("a", actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: "a"
+            Actual expression:   actual
+            Not expected key: "a"
+            Actual:              [[a, 1]]
+            """);
+    }
 }

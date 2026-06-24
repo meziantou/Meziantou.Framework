@@ -47,6 +47,23 @@ partial class Assert
     }
 
     /// <summary>
+    /// Asserts that an enumerable contains at least one item that matches the specified predicate.
+    /// </summary>
+    /// <param name="actual">The enumerable to inspect.</param>
+    /// <param name="predicate">The predicate used to select matching items.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="predicateExpression">The expression that produced the predicate.</param>
+    public static void Contains<T>(IEnumerable<T> actual, Func<T, bool> predicate, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
+    {
+        using var matchingSnapshot = new CollectionSnapshot<T>(EnumerateMatchingItems(actual, predicate));
+        using var matchingEnumerator = matchingSnapshot.GetEnumerator();
+        if (matchingEnumerator.MoveNext())
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionContainsPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
+    }
+
+    /// <summary>
     /// Asserts that a dictionary-like collection contains the specified key and returns the associated value.
     /// </summary>
     /// <param name="expected">The key expected in <paramref name="actual"/>.</param>

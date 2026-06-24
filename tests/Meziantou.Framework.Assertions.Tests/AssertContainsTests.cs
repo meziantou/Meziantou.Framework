@@ -45,6 +45,27 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public void PredicateEnumerable_Success()
+    {
+        IEnumerable<string> collection = ["A", "sample", "C"];
+
+        AssertionsAssert.Contains(collection, item => item == "sample");
+    }
+
+    [Fact]
+    public void PredicateEnumerable_Fails()
+    {
+        IEnumerable<string> collection = ["A", "B", "C"];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains(collection, item => item == "sample"), """
+            Assert.Contains() assertion failed.
+            Expression: collection
+            Predicate expression: item => item == "sample"
+            Matching items:       []
+            """);
+    }
+
+    [Fact]
     public void Dictionary_Success()
     {
         var actual = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
@@ -299,6 +320,28 @@ public sealed class AssertContainsTests
             Actual expression:   actual
             Not expected item: 2
             Actual:              [1, 2, 3]
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContainPredicate_Success()
+    {
+        IEnumerable<string> collection = ["A", "B", "C"];
+
+        AssertionsAssert.DoesNotContain(collection, item => item == "sample");
+    }
+
+    [Fact]
+    public void DoesNotContainPredicate_Fails()
+    {
+        IEnumerable<string> collection = ["sample", "B", "sample"];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(collection, item => item == "sample"), """
+            Assert.DoesNotContain() assertion failed.
+            Expression: collection
+            Predicate expression: item => item == "sample"
+            Not expected: any matching item
+            Matching items: ["sample", "sample"]
             """);
     }
 

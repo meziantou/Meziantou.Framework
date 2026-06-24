@@ -551,6 +551,31 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(CollectionContainsPredicateAssertionError<T> error)
+    {
+        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expression: {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Matching items:       {FormatValue(error.MatchingValues.Items)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionDoesNotContainPredicateAssertionError<T> error)
+    {
+        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.DoesNotContain() assertion failed.
+            Expression: {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Not expected: any matching item
+            Matching items: {FormatValue(error.MatchingValues.Items)}
+            """);
+    }
+
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionSingleAssertionError<T> error)
     {
         await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);

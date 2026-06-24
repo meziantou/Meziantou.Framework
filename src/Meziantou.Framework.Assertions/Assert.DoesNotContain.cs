@@ -23,6 +23,16 @@ partial class Assert
         SucceedWhenAssertionFails(() => Contains(expected, actual, comparer, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<T, IEnumerable<T>>(nameof(DoesNotContain), "Not expected item", expected, actual, actualExpression, expectedExpression, message: null))));
     }
 
+    public static void DoesNotContain<T>(IEnumerable<T> actual, Func<T, bool> predicate, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
+    {
+        using var matchingSnapshot = new CollectionSnapshot<T>(EnumerateMatchingItems(actual, predicate));
+        using var matchingEnumerator = matchingSnapshot.GetEnumerator();
+        if (!matchingEnumerator.MoveNext())
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionDoesNotContainPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
+    }
+
     public static void DoesNotContain<TKey, TValue>(TKey expected, IEnumerable<KeyValuePair<TKey, TValue>> actual, IEqualityComparer<TKey>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         SucceedWhenAssertionFails(() => Contains(expected, actual, comparer, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<TKey, IEnumerable<KeyValuePair<TKey, TValue>>>(nameof(DoesNotContain), "Not expected key", expected, actual, actualExpression, expectedExpression, message: null))));

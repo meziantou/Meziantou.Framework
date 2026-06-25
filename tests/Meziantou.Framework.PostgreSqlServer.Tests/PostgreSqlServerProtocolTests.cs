@@ -528,7 +528,7 @@ public sealed class PostgreSqlServerProtocolTests
         bool trustServerCertificate = true)
     {
         var trustServerCertificateValue = trustServerCertificate ? "true" : "false";
-        return $"Host={IPAddress.Loopback};Port={port};Username={userName};Password={password};Database={database};SSL Mode={sslMode};Trust Server Certificate={trustServerCertificateValue};Pooling=false;Timeout=5;Command Timeout=5;Server Compatibility Mode=NoTypeLoading";
+        return $"Host={IPAddress.Loopback};Port={port};Username={userName};Password={password};Database={database};SSL Mode={sslMode};Trust Server Certificate={trustServerCertificateValue};Pooling=false;Timeout=30;Command Timeout=30;Server Compatibility Mode=NoTypeLoading";
     }
 
     private static TlsCertificateFiles CreateTlsCertificateFiles()

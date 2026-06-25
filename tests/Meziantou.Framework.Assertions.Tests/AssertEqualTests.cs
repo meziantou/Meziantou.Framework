@@ -135,7 +135,7 @@ public sealed class AssertEqualTests
         var expected = "Hello\n\"World\"";
         var actual = "Hello\tWorld";
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, StringComparison.Ordinal), """
             Assert.Equal() assertion failed.
             Expected expression: expected
             Actual expression:   actual

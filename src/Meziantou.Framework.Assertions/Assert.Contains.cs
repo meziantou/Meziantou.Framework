@@ -12,6 +12,7 @@ partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(1)]
     public static void Contains<T>(T expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
@@ -32,6 +33,7 @@ partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(1)]
     public static void Contains<T>(T expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
@@ -53,6 +55,7 @@ partial class Assert
     /// <param name="predicate">The predicate used to select matching items.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="predicateExpression">The expression that produced the predicate.</param>
+    [OverloadResolutionPriority(1)]
     public static void Contains<T>(IEnumerable<T> actual, Func<T, bool> predicate, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
     {
         using var matchingSnapshot = new CollectionSnapshot<T>(EnumerateMatchingItems(actual, predicate));
@@ -71,6 +74,7 @@ partial class Assert
     /// <param name="comparer">The comparer used to compare keys when <paramref name="actual"/> is not a dictionary.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected key.</param>
+    [OverloadResolutionPriority(1)]
     public static TValue Contains<TKey, TValue>(TKey expected, IEnumerable<KeyValuePair<TKey, TValue>> actual, IEqualityComparer<TKey>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is IReadOnlyDictionary<TKey, TValue> readOnlyDictionary && readOnlyDictionary.TryGetValue(expected, out var readOnlyValue))
@@ -97,6 +101,7 @@ partial class Assert
     /// <param name="actual">The dictionary to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected key.</param>
+    [OverloadResolutionPriority(1)]
     public static TValue Contains<TKey, TValue>(TKey expected, Dictionary<TKey, TValue> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
         where TKey : notnull
     {
@@ -115,6 +120,7 @@ partial class Assert
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(-1)]
     public static void Contains(object? expected, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
@@ -135,6 +141,7 @@ partial class Assert
     /// <param name="actual">The dictionary to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected key.</param>
+    [OverloadResolutionPriority(-1)]
     public static object? Contains(object? expected, System.Collections.IDictionary actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual.Contains(expected!))

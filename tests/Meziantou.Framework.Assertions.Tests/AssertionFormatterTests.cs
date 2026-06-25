@@ -15,7 +15,7 @@ public sealed class AssertionFormatterTests
 
         var value = formatter.FormatValueForTest(Enumerable.Range(0, 10), highlightedIndex: 1);
 
-        AssertionsAssert.Equal("[0, 1̲, 2, 3, 4, ...]", value);
+        AssertionsAssert.Equal("[0, 1̲, 2, 3, 4, ...]", value, StringComparison.Ordinal);
     }
 
     private sealed class TestAssertionFormatter : AssertionFormatter

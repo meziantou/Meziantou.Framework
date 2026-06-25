@@ -11,7 +11,7 @@ public sealed class AssertIsTypeTests
 
         var result = AssertionsAssert.IsType<string>(actual);
 
-        AssertionsAssert.Equal("Hello", result);
+        AssertionsAssert.Equal("Hello", result, StringComparison.Ordinal);
     }
 
     [Fact]

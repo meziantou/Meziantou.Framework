@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+    <NoWarn>$(NoWarn);MA0074</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

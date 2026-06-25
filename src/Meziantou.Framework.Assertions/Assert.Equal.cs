@@ -74,6 +74,14 @@ partial class Assert
         }
     }
 
+    public static void Equal(string? expected, string? actual, StringComparison comparison, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (string.Equals(expected, actual, comparison))
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<string, string>(expected, actual, message, actualExpression, expectedExpression)));
+    }
+
     public static void Equal<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         EqualSpans<T, T>(expected, actual, message, actualExpression, expectedExpression);
@@ -87,18 +95,26 @@ partial class Assert
             return;
         }
 
-        Equal(NormalizeLineEndings(expected), NormalizeLineEndings(actual), message, actualExpression, expectedExpression);
+        Equal(NormalizeLineEndings(expected), NormalizeLineEndings(actual), StringComparison.Ordinal, message, actualExpression, expectedExpression);
+    }
+
+    public static void Equal(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, StringComparison comparison, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual.Equals(expected, comparison))
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanEqualAssertionError<char, char>(expected, actual, GetFirstDifferenceIndex(expected, actual, comparison), message, actualExpression, expectedExpression)));
     }
 
     public static void Equal(string? expected, string? actual, bool ignoreLineEndingDifferences, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (!ignoreLineEndingDifferences)
         {
-            Equal(expected, actual, message, actualExpression, expectedExpression);
+            Equal(expected, actual, StringComparison.Ordinal, message, actualExpression, expectedExpression);
             return;
         }
 
-        Equal(NormalizeLineEndings(expected), NormalizeLineEndings(actual), message, actualExpression, expectedExpression);
+        Equal(NormalizeLineEndings(expected), NormalizeLineEndings(actual), StringComparison.Ordinal, message, actualExpression, expectedExpression);
     }
 
     [OverloadResolutionPriority(-1)]

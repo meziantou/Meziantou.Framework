@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Unix.ControlGroups;
@@ -134,7 +135,22 @@ public sealed class ProcessWrapper
             startInfo.Environment[name] = value;
         }
 
+        CopyWindowsStartInfoCredentials(source, startInfo);
+
         return startInfo;
+    }
+
+    private static void CopyWindowsStartInfoCredentials(ProcessStartInfo source, ProcessStartInfo destination)
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        destination.UserName = source.UserName;
+        destination.Domain = source.Domain;
+        destination.PasswordInClearText = source.PasswordInClearText;
+        destination.Password = source.Password?.Copy();
+        destination.LoadUserProfile = source.LoadUserProfile;
+        destination.UseCredentialsForNetworkingOnly = source.UseCredentialsForNetworkingOnly;
     }
 
     /// <summary>Creates a new <see cref="ProcessWrapper"/> for the specified executable.</summary>
@@ -190,6 +206,45 @@ public sealed class ProcessWrapper
     public ProcessWrapper WithWorkingDirectory(string workingDirectory)
     {
         _startInfo.WorkingDirectory = workingDirectory;
+        return this;
+    }
+
+    /// <summary>Sets alternate Windows credentials used to start the process.</summary>
+    /// <remarks><paramref name="userName"/> can be in the <c>user@domain</c> format when <paramref name="domain"/> is not set.</remarks>
+    [SupportedOSPlatform("windows")]
+    public ProcessWrapper WithCredentials(string userName, string passwordInClearText, string? domain = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+        ArgumentNullException.ThrowIfNull(passwordInClearText);
+
+        _startInfo.UserName = userName;
+        _startInfo.Domain = domain;
+        _startInfo.PasswordInClearText = passwordInClearText;
+        _startInfo.Password = null;
+        return this;
+    }
+
+    /// <summary>Sets alternate Windows credentials used to start the process.</summary>
+    /// <remarks><paramref name="userName"/> can be in the <c>user@domain</c> format when <paramref name="domain"/> is not set.</remarks>
+    [SupportedOSPlatform("windows")]
+    public ProcessWrapper WithCredentials(string userName, SecureString password, string? domain = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+        ArgumentNullException.ThrowIfNull(password);
+
+        _startInfo.UserName = userName;
+        _startInfo.Domain = domain;
+        _startInfo.Password = password.Copy();
+        _startInfo.PasswordInClearText = null;
+        return this;
+    }
+
+    /// <summary>Sets whether to use <c>LOGON_NETCREDENTIALS_ONLY</c> when starting the process on Windows.</summary>
+    /// <remarks>When enabled, this behaves similarly to <c>runas /netonly</c>.</remarks>
+    [SupportedOSPlatform("windows")]
+    public ProcessWrapper WithUseCredentialsForNetworkingOnly(bool useCredentialsForNetworkingOnly = true)
+    {
+        _startInfo.UseCredentialsForNetworkingOnly = useCredentialsForNetworkingOnly;
         return this;
     }
 

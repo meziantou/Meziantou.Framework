@@ -129,6 +129,22 @@ internal sealed class Mp4Writer : IMediaTagWriter
         WriteTextAtom(ms, ItunesAtomNames.Copyright, tags.Copyright);
         WriteFreeformTextAtom(ms, "com.apple.iTunes", "ISRC", tags.Isrc);
 
+        if (tags.ReplayGain is not null)
+        {
+            var replayGain = tags.ReplayGain.Value;
+            if (replayGain.TrackGain is not null)
+                WriteFreeformTextAtom(ms, "com.apple.iTunes", "REPLAYGAIN_TRACK_GAIN", replayGain.TrackGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
+
+            if (replayGain.TrackPeak is not null)
+                WriteFreeformTextAtom(ms, "com.apple.iTunes", "REPLAYGAIN_TRACK_PEAK", replayGain.TrackPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
+
+            if (replayGain.AlbumGain is not null)
+                WriteFreeformTextAtom(ms, "com.apple.iTunes", "REPLAYGAIN_ALBUM_GAIN", replayGain.AlbumGain.Value.ToString("F2", CultureInfo.InvariantCulture) + " dB");
+
+            if (replayGain.AlbumPeak is not null)
+                WriteFreeformTextAtom(ms, "com.apple.iTunes", "REPLAYGAIN_ALBUM_PEAK", replayGain.AlbumPeak.Value.ToString("F6", CultureInfo.InvariantCulture));
+        }
+
         if (tags.Bpm is not null)
             WriteUInt16Atom(ms, ItunesAtomNames.Bpm, (ushort)tags.Bpm.Value);
 

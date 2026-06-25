@@ -159,6 +159,37 @@ public sealed class Mp4Tests
     }
 
     [Fact]
+    public void WriteTags_ReplayGain_RoundTrip_OnM4aWithFlacExtension()
+    {
+        var tempFile = Path.GetTempFileName() + ".flac";
+        try
+        {
+            File.Copy(GetTestFilePath("basic.m4a"), tempFile, overwrite: true);
+
+            var newTags = new MediaTagInfo
+            {
+                ReplayGain = new ReplayGainInfo
+                {
+                    TrackGain = -11.19,
+                },
+            };
+
+            var writeResult = MediaFile.WriteTags(tempFile, newTags);
+            Assert.True(writeResult.IsSuccess);
+
+            var readResult = MediaFile.ReadTags(tempFile);
+            Assert.True(readResult.IsSuccess);
+            Assert.Equal(MediaFormat.Mp4, readResult.Value.Format);
+            Assert.NotNull(readResult.Value.ReplayGain);
+            Assert.Equal(-11.19, readResult.Value.ReplayGain.Value.TrackGain);
+        }
+        finally
+        {
+            File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
     public void ReadTags_InvalidFile_ReturnsError()
     {
         using var stream = new MemoryStream([0x00, 0x00, 0x00, 0x08, (byte)'f', (byte)'t', (byte)'y', (byte)'p']);

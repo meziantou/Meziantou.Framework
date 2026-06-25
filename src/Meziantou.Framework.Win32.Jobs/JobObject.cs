@@ -145,7 +145,6 @@ public sealed class JobObject : IDisposable
 
     /// <summary>Assigns a process to an existing job object.</summary>
     /// <param name="processHandle">The process handle.</param>
-    /// <returns>true if the function succeeds; otherwise false.</returns>
     public void AssignProcess(IntPtr processHandle)
     {
         var addedRef = false;

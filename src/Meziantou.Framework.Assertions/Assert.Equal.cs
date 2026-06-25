@@ -66,7 +66,7 @@ partial class Assert
         }
     }
 
-    public static void Equal(string expected, string actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal(string? expected, string? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (!string.Equals(expected, actual, StringComparison.Ordinal))
         {
@@ -90,7 +90,7 @@ partial class Assert
         Equal(NormalizeLineEndings(expected), NormalizeLineEndings(actual), message, actualExpression, expectedExpression);
     }
 
-    public static void Equal(string expected, string actual, bool ignoreLineEndingDifferences, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal(string? expected, string? actual, bool ignoreLineEndingDifferences, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (!ignoreLineEndingDifferences)
         {

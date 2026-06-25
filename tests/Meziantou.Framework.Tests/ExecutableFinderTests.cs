@@ -18,7 +18,7 @@ public class ExecutableFinderTests
         var path = Path.GetFullPath(fileNameWithoutExtension + ".exe");
         File.WriteAllBytes(path, []);
         var result = ExecutableFinder.GetFullExecutablePath(fileNameWithoutExtension, Path.GetDirectoryName(path));
-        Assert.Equal(path, result, ignoreCase: true);
+        Assert.Equal(path, result, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]

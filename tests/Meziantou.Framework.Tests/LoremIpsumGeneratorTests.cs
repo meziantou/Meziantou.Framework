@@ -1,3 +1,5 @@
+using Xunit.Sdk;
+
 namespace Meziantou.Framework.Tests;
 
 public class LoremIpsumGeneratorTests
@@ -35,6 +37,6 @@ public class LoremIpsumGeneratorTests
         var paragraphs = LoremIpsumGenerator.Paragraphs(wordsPerSentence: 3, sentencesPerParagraph: 2, paragraphCount: 4).ToArray();
 
         Assert.Equal(4, paragraphs.Length);
-        Assert.All(paragraphs, Assert.NotEmpty);
+        Assert.All(paragraphs, item => Assert.NotEmpty(item));
     }
 }

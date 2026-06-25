@@ -130,7 +130,7 @@ public sealed partial class InMemoryLoggerTests
         var logger = provider.CreateLogger("my_category");
         Parallel.For(0, 100_000, i => Log(logger, 1));
 
-        Assert.Equivalent(100_000, provider.Logs.Count());
+        Assert.HasCount(100_000, provider.Logs);
     }
 
     [Fact]

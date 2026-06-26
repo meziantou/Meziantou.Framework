@@ -95,33 +95,35 @@ jobs:
       - name: Skip packaging
         if: steps.package-project.outputs.has-project != 'true'
         run: Write-Host "No package project was impacted. Skipping build and pack."
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        if: always()
-        with:
-          name: nuget
-          if-no-files-found: error
-          retention-days: 3
-          path: ${{ env.NuGetDirectory }}/**/*
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        if: always()
-        with:
-          name: binlog
-          if-no-files-found: ${{ case(steps.package-project.outputs.has-project == 'true', 'error', 'warn') }}
-          retention-days: 3
-          path: '**/*.binlog'
+      - parallel:
+          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+            if: always()
+            with:
+              name: nuget
+              if-no-files-found: error
+              retention-days: 3
+              path: ${{ env.NuGetDirectory }}/**/*
+          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+            if: always()
+            with:
+              name: binlog
+              if-no-files-found: ${{ case(steps.package-project.outputs.has-project == 'true', 'error', 'warn') }}
+              retention-days: 3
+              path: '**/*.binlog'
 
   validate_nuget:
     runs-on: ubuntu-26.04
     needs: [ create_nuget ]
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        if: needs.create_nuget.outputs.has-project == 'true'
-        with:
-          name: nuget
-          path: ${{ env.NuGetDirectory }}
+      - parallel:
+          - name: Setup .NET
+            uses: ./.github/actions/setup-dotnet
+          - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+            if: needs.create_nuget.outputs.has-project == 'true'
+            with:
+              name: nuget
+              path: ${{ env.NuGetDirectory }}
       - name: Validate NuGet packages
         if: needs.create_nuget.outputs.has-project == 'true'
         run: dotnet run ./eng/validate-nuget.cs
@@ -179,30 +181,28 @@ jobs:
             .github/workflows/ci.yml
             eng/**/*.proj
 
-      - name: Cache Public API test compilation outputs
-        if: steps.build-project.outputs.has-project == 'true'
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
-        with:
-          path: ${{ env.MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY }}
-          key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}
-          restore-keys: |
-            public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-
-
-      - name: List environment variables
-        if: steps.build-project.outputs.has-project == 'true'
-        run: "Get-ChildItem env: | Sort-Object Name"
-
-      - name: .NET info
-        if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet --info
-
-      - name: Enable ProjFS
-        if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
-        run: |
-          $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
-          if ($feature.State -ne 'Enabled') {
-            Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
-          }
+      - parallel:
+          - name: Cache Public API test compilation outputs
+            if: steps.build-project.outputs.has-project == 'true'
+            uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+            with:
+              path: ${{ env.MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY }}
+              key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}
+              restore-keys: |
+                public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-
+          - name: List environment variables
+            if: steps.build-project.outputs.has-project == 'true'
+            run: "Get-ChildItem env: | Sort-Object Name"
+          - name: .NET info
+            if: steps.build-project.outputs.has-project == 'true'
+            run: dotnet --info
+          - name: Enable ProjFS
+            if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
+            run: |
+              $feature = Get-WindowsOptionalFeature -Online -FeatureName Client-ProjFS
+              if ($feature.State -ne 'Enabled') {
+                Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
+              }
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
@@ -216,26 +216,26 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true'
         run: Get-ChildItem -Recurse "${{ env.TestResultsDirectory }}/" -Filter "*.dmp" | Remove-Item -Force -ErrorAction SilentlyContinue
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        if: always() && steps.build-project.outputs.has-project == 'true'
-        with:
-          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
-          retention-days: 3
-          path: |
-            !**/*.coverage
-            **/*.binlog
-            ${{ env.TestResultsDirectory }}/**/*
-            **/obj/**/GeneratedFiles/**/*.cs
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
-        with:
-          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
-          if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
-          retention-days: 3
-          path: |
-            **/*.coverage
+      - parallel:
+          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+            if: always() && steps.build-project.outputs.has-project == 'true'
+            with:
+              name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
+              if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+              retention-days: 3
+              path: |
+                !**/*.coverage
+                **/*.binlog
+                ${{ env.TestResultsDirectory }}/**/*
+                **/obj/**/GeneratedFiles/**/*.cs
+          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+            if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
+            with:
+              name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
+              if-no-files-found: ${{ case(steps.build-project.outputs.project == 'eng/delta.proj', 'warn', 'error') }}
+              retention-days: 3
+              path: |
+                **/*.coverage
 
   test_trimming:
     runs-on: ubuntu-26.04
@@ -270,23 +270,29 @@ jobs:
     needs: [build_and_test]
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - name: Install dotnet-coverage
-        run: dotnet tool update --global dotnet-coverage
       - name: Download test results
+        id: download-test-results
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        background: true
         with:
           pattern: test-results-*-coverage
           path: test-results
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+
+      - name: Install dotnet-coverage
+        run: dotnet tool update --global dotnet-coverage
       # Delta builds can legitimately produce no .coverage files. In that case,
       # skip merge commands and allow the upload step to warn instead of failing.
-      - name: Merge coverage files (format coverage)
-        if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
-        run: dotnet-coverage merge --output test-result.coverage --output-format coverage (Get-ChildItem test-results -Recurse -Filter "*.coverage")
-      - name: Merge coverage files (format cobertura)
-        if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
-        run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
+      - name: Wait for background steps
+        wait-all:
+      - parallel:
+          - name: Merge coverage files (format coverage)
+            if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
+            run: dotnet-coverage merge --output test-result.coverage --output-format coverage (Get-ChildItem test-results -Recurse -Filter "*.coverage")
+          - name: Merge coverage files (format cobertura)
+            if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
+            run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: code-coverage
@@ -305,12 +311,13 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: nuget
-          path: ${{ env.NuGetDirectory }}
+      - parallel:
+          - name: Setup .NET
+            uses: ./.github/actions/setup-dotnet
+          - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+            with:
+              name: nuget
+              path: ${{ env.NuGetDirectory }}
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
         id: login

@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.9" Condition="'$(TargetFramework)' == 'net8.0'" />
-    <PackageReference Include="StackExchange.Redis" Version="2.13.17" />
+    <PackageReference Include="StackExchange.Redis" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup>

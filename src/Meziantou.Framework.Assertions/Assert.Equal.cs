@@ -237,6 +237,28 @@ partial class Assert
         await EqualAsyncCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
+    public static async Task Equal<T>(IEnumerable<T> expected, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        var actualList = new List<T>();
+        await foreach (var item in actual.ConfigureAwait(false))
+        {
+            actualList.Add(item);
+        }
+
+        Equal(expected, actualList, message, actualExpression, expectedExpression);
+    }
+
+    public static async Task Equal<T>(IAsyncEnumerable<T> expected, IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        var expectedList = new List<T>();
+        await foreach (var item in expected.ConfigureAwait(false))
+        {
+            expectedList.Add(item);
+        }
+
+        Equal(expectedList, actual, message, actualExpression, expectedExpression);
+    }
+
     private static async Task EqualAsyncCollections<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message, string? actualExpression, string? expectedExpression)
     {
         await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);

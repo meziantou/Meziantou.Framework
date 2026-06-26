@@ -519,6 +519,95 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task ExecuteBufferedAsync_WithCredentials_PropagatesToProcessStartInfo()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return fakeProcess;
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await CreateEchoCommand("ignored")
+                .WithCredentials("test-user", "test-password", "test-domain")
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.Equal("test-user", capturedStartInfo.UserName);
+        Assert.Equal("test-domain", capturedStartInfo.Domain);
+        Assert.Equal("test-password", capturedStartInfo.PasswordInClearText);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithCredentialsAndNetworkOnly_PropagatesToProcessStartInfo()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return fakeProcess;
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await CreateEchoCommand("ignored")
+                .WithCredentials("test-user", "test-password")
+                .WithUseCredentialsForNetworkingOnly()
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.True(capturedStartInfo.UseCredentialsForNetworkingOnly);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithSecureStringCredentials_PropagatesToProcessStartInfo()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        using var fakeProcess = FakeProcess.Create(0, outputText: "intercepted output\n", errorText: "");
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return fakeProcess;
+        });
+
+        using var password = new System.Security.SecureString();
+        foreach (var c in "test-password")
+        {
+            password.AppendChar(c);
+        }
+
+        password.MakeReadOnly();
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await CreateEchoCommand("ignored")
+                .WithCredentials("test-user", password, "test-domain")
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.Equal("test-user", capturedStartInfo.UserName);
+        Assert.Equal("test-domain", capturedStartInfo.Domain);
+        Assert.NotNull(capturedStartInfo.Password);
+        Assert.Null(capturedStartInfo.PasswordInClearText);
+    }
+
+    [Fact]
     public async Task WithEnvironmentVariables_Callback_SetsVariable()
     {
         ProcessWrapper command;

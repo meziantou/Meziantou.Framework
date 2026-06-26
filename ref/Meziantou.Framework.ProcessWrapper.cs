@@ -226,6 +226,12 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessWrapper WithArguments(params System.ReadOnlySpan<string> arguments) => throw null;
         public Meziantou.Framework.ProcessWrapper WithArguments(System.Collections.Generic.IEnumerable<string> arguments) => throw null;
         public Meziantou.Framework.ProcessWrapper WithWorkingDirectory(string workingDirectory) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public Meziantou.Framework.ProcessWrapper WithCredentials(string userName, string passwordInClearText, string? domain = null) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public Meziantou.Framework.ProcessWrapper WithCredentials(string userName, System.Security.SecureString password, string? domain = null) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public Meziantou.Framework.ProcessWrapper WithUseCredentialsForNetworkingOnly(bool useCredentialsForNetworkingOnly = true) => throw null;
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Action<Meziantou.Framework.ProcessWrapperEnvironmentVariables> configure) => throw null;
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Collections.Generic.IReadOnlyDictionary<string, string?> variables) => throw null;
         public Meziantou.Framework.ProcessWrapper WithValidation(Meziantou.Framework.ProcessValidationMode mode) => throw null;

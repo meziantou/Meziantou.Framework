@@ -129,6 +129,15 @@ internal static class DnsMessageEncoder
             record.RecordClass = recordClass;
             record.TimeToLive = ttl;
             record.DataLength = rdLength;
+            record.RawData = reader.GetBytes(rdataStart, rdLength).ToArray();
+
+            if (record is DnsOptRecord optRecord)
+            {
+                optRecord.UdpPayloadSize = (ushort)recordClass;
+                optRecord.ExtendedRCode = (byte)(ttl >> 24);
+                optRecord.EdnsVersion = (byte)(ttl >> 16);
+                optRecord.DnssecOk = ((ushort)ttl & 0x8000) != 0;
+            }
 
             // Ensure we consumed exactly rdLength bytes
             var consumed = reader.Position - rdataStart;

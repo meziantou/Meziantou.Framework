@@ -130,6 +130,35 @@ public sealed class DnsWireFormatTests
     }
 
     [Fact]
+    public void DecodeResponse_OptRecord_PopulatesEdnsMetadata()
+    {
+        var writer = new DnsWireWriter(512);
+
+        writer.WriteUInt16(0x1234);
+        writer.WriteUInt16(0x8180);
+        writer.WriteUInt16(0);
+        writer.WriteUInt16(0);
+        writer.WriteUInt16(0);
+        writer.WriteUInt16(1);
+
+        writer.WriteByte(0);
+        writer.WriteUInt16((ushort)DnsQueryType.OPT);
+        writer.WriteUInt16(1232);
+        writer.WriteByte(1);
+        writer.WriteByte(0);
+        writer.WriteUInt16(0x8000);
+        writer.WriteUInt16(0);
+
+        var response = DnsMessageEncoder.DecodeResponse(writer.ToArray());
+        var opt = Assert.IsType<Response.Records.DnsOptRecord>(Assert.Single(response.AdditionalRecords));
+
+        Assert.Equal(1232, opt.UdpPayloadSize);
+        Assert.Equal(1, opt.ExtendedRCode);
+        Assert.Equal(0, opt.EdnsVersion);
+        Assert.True(opt.DnssecOk);
+    }
+
+    [Fact]
     public void DecodeResponse_BasicResponse()
     {
         // Craft a minimal DNS response with 1 A record answer

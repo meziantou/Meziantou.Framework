@@ -21,7 +21,11 @@ namespace Meziantou.Framework.DnsClient
         public bool EnableEdns { get => throw null; set { } }
         public ushort EdnsUdpPayloadSize { get => throw null; set { } }
         public bool DnssecOk { get => throw null; set { } }
+        public Meziantou.Framework.DnsClient.DnssecValidationMode DnssecValidationMode { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsClient.DnssecTrustAnchor> DnssecTrustAnchors { get => throw null; set { } }
+        public System.TimeProvider TimeProvider { get => throw null; set { } }
         public System.Net.Http.HttpMessageHandler? HttpHandler { get => throw null; set { } }
+        public System.Func<string, System.Collections.Generic.IReadOnlyList<System.Net.IPAddress>>? ServerAddressResolver { get => throw null; set { } }
     }
 
     public enum DnsClientProtocol
@@ -45,6 +49,27 @@ namespace Meziantou.Framework.DnsClient
         public Meziantou.Framework.DnsClient.Query.DnsQueryType Type { get => throw null; }
         public Meziantou.Framework.DnsClient.Query.DnsQueryClass QueryClass { get => throw null; }
         public DnsQuestion(string name, Meziantou.Framework.DnsClient.Query.DnsQueryType type, Meziantou.Framework.DnsClient.Query.DnsQueryClass queryClass = 1) { }
+    }
+
+    public sealed class DnssecTrustAnchor
+    {
+        public string Name { get => throw null; }
+        public ushort KeyTag { get => throw null; }
+        public byte Algorithm { get => throw null; }
+        public byte DigestType { get => throw null; }
+        public byte[] Digest { get => throw null; }
+        public DnssecTrustAnchor(string name, ushort keyTag, byte algorithm, byte digestType, byte[] digest) { }
+    }
+
+    public static class DnssecTrustAnchors
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsClient.DnssecTrustAnchor> Root { get => throw null; }
+    }
+
+    public enum DnssecValidationMode
+    {
+        None = 0,
+        Local = 1
     }
 }
 namespace Meziantou.Framework.DnsClient.Query
@@ -222,6 +247,50 @@ namespace Meziantou.Framework.DnsClient.Response
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsClient.Response.DnsRecord> Answers { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsClient.Response.DnsRecord> Authorities { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsClient.Response.DnsRecord> AdditionalRecords { get => throw null; }
+        public Meziantou.Framework.DnsClient.Response.DnssecValidationResult DnssecValidationResult { get => throw null; }
+    }
+
+    public sealed class DnssecValidationIssue
+    {
+        public Meziantou.Framework.DnsClient.Response.DnssecValidationIssueCode Code { get => throw null; }
+        public string Message { get => throw null; }
+        public string? Name { get => throw null; }
+        public Meziantou.Framework.DnsClient.Query.DnsQueryType? RecordType { get => throw null; }
+    }
+
+    public enum DnssecValidationIssueCode
+    {
+        None = 0,
+        MissingQuestion = 1,
+        TruncatedResponse = 2,
+        MissingRecord = 3,
+        MissingRrsig = 4,
+        MissingDnskey = 5,
+        MissingDs = 6,
+        DigestMismatch = 7,
+        UnsupportedAlgorithm = 8,
+        UnsupportedDigest = 9,
+        SignatureNotYetValid = 10,
+        SignatureExpired = 11,
+        SignatureVerificationFailed = 12,
+        InvalidDenialProof = 13,
+        TrustChainIncomplete = 14,
+        InvalidData = 15
+    }
+
+    public sealed class DnssecValidationResult
+    {
+        public Meziantou.Framework.DnsClient.Response.DnssecValidationStatus Status { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsClient.Response.DnssecValidationIssue> Issues { get => throw null; }
+    }
+
+    public enum DnssecValidationStatus
+    {
+        NotValidated = 0,
+        Secure = 1,
+        Insecure = 2,
+        Bogus = 3,
+        Indeterminate = 4
     }
 }
 namespace Meziantou.Framework.DnsClient.Response.Records

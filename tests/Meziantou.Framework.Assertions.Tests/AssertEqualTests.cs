@@ -51,6 +51,23 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void Scalar_SucceedsWhenBothValuesAreNull()
+    {
+        Type? expected = null;
+        Type? actual = null;
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void Scalar_SucceedsWhenExpectedConvertsToActualType()
+    {
+        var actual = new ImplicitlyConvertibleValue(42);
+
+        AssertionsAssert.Equal(42, actual);
+    }
+
+    [Fact]
     public void HalfTolerance_Success()
     {
         Half expected = (Half)1;
@@ -172,6 +189,15 @@ public sealed class AssertEqualTests
             Expected: "Hello"
             Actual:   <null>
             """);
+    }
+
+    [Fact]
+    public void String_SucceedsWhenBothValuesAreNull()
+    {
+        string? expected = null;
+        string? actual = null;
+
+        AssertionsAssert.Equal(expected, actual);
     }
 
     [Fact]
@@ -634,5 +660,23 @@ public sealed class AssertEqualTests
             Tolerance:    0.2
             Message: custom message
             """);
+    }
+
+    private readonly struct ImplicitlyConvertibleValue : IEquatable<ImplicitlyConvertibleValue>
+    {
+        private readonly int _value;
+
+        public ImplicitlyConvertibleValue(int value)
+        {
+            _value = value;
+        }
+
+        public static implicit operator ImplicitlyConvertibleValue(int value) => new(value);
+
+        public bool Equals(ImplicitlyConvertibleValue other) => _value == other._value;
+
+        public override bool Equals(object? obj) => obj is ImplicitlyConvertibleValue other && Equals(other);
+
+        public override int GetHashCode() => _value;
     }
 }

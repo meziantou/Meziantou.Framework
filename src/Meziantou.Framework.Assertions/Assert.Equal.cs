@@ -54,11 +54,6 @@ public partial class Assert
     [OverloadResolutionPriority(-1)]
     public static void Equal<TExpected, TActual>(TExpected expected, [NotNullIfNotNull(nameof(expected))] TActual? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (actual is null)
-        {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<TExpected, TActual?>(expected, actual, message, actualExpression, expectedExpression)));
-        }
-
         if (TryEqualEnumerables(expected, actual, message, actualExpression, expectedExpression))
             return;
 
@@ -73,19 +68,14 @@ public partial class Assert
 
     public static void Equal(string? expected, [NotNullIfNotNull(nameof(expected))] string? actual, bool ignoreCase = false, bool ignoreLineEndingDifferences = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (actual is null)
-        {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<string?, string?>(expected, actual, message, actualExpression, expectedExpression)));
-        }
-
         var comparison = GetStringComparison(ignoreCase);
         var expectedValue = ignoreLineEndingDifferences && expected is not null ? NormalizeLineEndings(expected) : expected;
-        var actualValue = ignoreLineEndingDifferences ? NormalizeLineEndings(actual) : actual;
+        var actualValue = ignoreLineEndingDifferences && actual is not null ? NormalizeLineEndings(actual) : actual;
 
         if (string.Equals(expectedValue, actualValue, comparison))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<string, string>(expectedValue, actualValue, message, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<string?, string?>(expectedValue, actualValue, message, actualExpression, expectedExpression)));
     }
 
     public static void Equal<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)

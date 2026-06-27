@@ -39,7 +39,8 @@ public partial class Assert
         if (object.Equals(expected, actual))
             return true;
 
-        return TryCompareNumericValues(expected, actual, out var result) && result;
+        return (TryCompareNumericValues(expected, actual, out var result) && result)
+            || ValuesEqualAfterImplicitConversion(expected, actual);
     }
 
     private static bool TryCompareNumericValues<TExpected, TActual>(TExpected expected, TActual actual, out bool result)
@@ -85,5 +86,37 @@ public partial class Assert
     private static bool IsFloatingPointTypeCode(TypeCode typeCode)
     {
         return typeCode is TypeCode.Single or TypeCode.Double;
+    }
+
+    private static bool ValuesEqualAfterImplicitConversion<TExpected, TActual>(TExpected expected, TActual actual)
+    {
+        if (expected is null || actual is null)
+            return false;
+
+        return ValuesEqualAfterImplicitConversion(expected, actual, actual.GetType())
+            || ValuesEqualAfterImplicitConversion(actual, expected, expected.GetType());
+    }
+
+    private static bool ValuesEqualAfterImplicitConversion<TSource>(TSource source, object target, Type targetType)
+    {
+        var sourceType = source?.GetType();
+        if (sourceType is null || sourceType == targetType)
+            return false;
+
+        foreach (var method in sourceType.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Concat(targetType.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)))
+        {
+            if (method.Name != "op_Implicit" || method.ReturnType != targetType)
+                continue;
+
+            var parameters = method.GetParameters();
+            if (parameters.Length == 1 && parameters[0].ParameterType.IsAssignableFrom(sourceType))
+            {
+                var convertedValue = method.Invoke(obj: null, [source]);
+                if (object.Equals(convertedValue, target))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

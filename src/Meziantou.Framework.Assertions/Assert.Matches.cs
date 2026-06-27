@@ -17,7 +17,7 @@ public partial class Assert
         if (regex.IsMatch(actual))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new RegexMatchesAssertionError(regex.ToString(), actual, actualExpression, regexExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new RegexMatchesAssertionError(regex.ToString(), actual, actualExpression, regexExpression)));
     }
 
     /// <summary>Asserts that the specified regular expression pattern matches the actual value.</summary>
@@ -30,6 +30,6 @@ public partial class Assert
         if (Regex.IsMatch(actual, pattern, RegexOptions.None, RegexMatchTimeout))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new RegexMatchesAssertionError(pattern, actual, actualExpression, patternExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new RegexMatchesAssertionError(pattern, actual, actualExpression, patternExpression)));
     }
 }

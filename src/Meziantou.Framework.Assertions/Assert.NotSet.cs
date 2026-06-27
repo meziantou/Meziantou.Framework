@@ -12,7 +12,7 @@ public partial class Assert
         if (!(expectedSet.Count < actualSet.Count && expectedSet.IsSubsetOf(actualSet)))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeSetAssertionError(expected, actual, isSuperset: false, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeSetAssertionError(expected, actual, isSuperset: false, actualExpression, expectedExpression)));
     }
 
     public static void NotProperSubset(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -28,7 +28,7 @@ public partial class Assert
         if (!(expectedSet.Count > actualSet.Count && expectedSet.IsSupersetOf(actualSet)))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeSetAssertionError(expected, actual, isSuperset: true, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeSetAssertionError(expected, actual, isSuperset: true, actualExpression, expectedExpression)));
     }
 
     public static void NotProperSuperset(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)

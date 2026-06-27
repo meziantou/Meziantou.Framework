@@ -31,7 +31,7 @@ public partial class Assert
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new CollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new CollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)));
         }
     }
 
@@ -45,7 +45,7 @@ public partial class Assert
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem, comparer));
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new CollectionEqualUnorderedAssertionError<TExpected, TActual>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new CollectionEqualUnorderedAssertionError<TExpected, TActual>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)));
         }
     }
 
@@ -76,7 +76,7 @@ public partial class Assert
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
-            throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)).ConfigureAwait(false));
+            throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)).ConfigureAwait(false));
         }
     }
 
@@ -90,7 +90,7 @@ public partial class Assert
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem, comparer));
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
-            throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionEqualUnorderedAssertionError<TExpected, TActual>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)).ConfigureAwait(false));
+            throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionEqualUnorderedAssertionError<TExpected, TActual>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)).ConfigureAwait(false));
         }
     }
 

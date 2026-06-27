@@ -21,7 +21,7 @@ public partial class Assert
                 return;
         }
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ValueContainsAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ValueContainsAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that an enumerable contains the specified value.</summary>
@@ -35,7 +35,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<T>("Expected expression", "Expected item", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<T>("Expected expression", "Expected item", expected, actualExpression, expectedExpression)));
         }
 
         comparer ??= EqualityComparer<T>.Default;
@@ -47,7 +47,7 @@ public partial class Assert
                 return;
         }
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionContainsAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ValueCollectionContainsAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that an enumerable contains at least one item that matches the specified predicate.</summary>
@@ -60,7 +60,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsPredicateNullActualAssertionError(actualExpression, predicateExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ContainsPredicateNullActualAssertionError(actualExpression, predicateExpression)));
         }
 
         using var matchingSnapshot = new CollectionSnapshot<T>(EnumerateMatchingItems(actual, predicate));
@@ -68,7 +68,7 @@ public partial class Assert
         if (matchingEnumerator.MoveNext())
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionContainsPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionContainsPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
     }
 
     /// <summary>Asserts that a dictionary-like collection contains the specified key and returns the associated value.</summary>
@@ -82,7 +82,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<TKey>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<TKey>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
         }
 
         if (actual is IReadOnlyDictionary<TKey, TValue> readOnlyDictionary && readOnlyDictionary.TryGetValue(expected, out var readOnlyValue))
@@ -99,7 +99,7 @@ public partial class Assert
                 return item.Value;
         }
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a dictionary contains the specified key and returns the associated value.</summary>
@@ -113,7 +113,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<TKey>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<TKey>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
         }
 
         if (actual.TryGetValue(expected, out var value))
@@ -121,7 +121,7 @@ public partial class Assert
 
         using var actualSnapshot = new CollectionSnapshot<KeyValuePair<TKey, TValue>>(actual);
         EnsureComplete(actualSnapshot);
-        throw new AssertionException(AssertionFormatter.Default.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a non-generic enumerable contains the specified value.</summary>
@@ -134,7 +134,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<object?>("Expected expression", "Expected item", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<object?>("Expected expression", "Expected item", expected, actualExpression, expectedExpression)));
         }
 
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
@@ -145,7 +145,7 @@ public partial class Assert
                 return;
         }
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionContainsAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ValueCollectionContainsAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a non-generic dictionary contains the specified key and returns the associated value.</summary>
@@ -158,13 +158,13 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<object?>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<object?>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
         }
 
         if (actual.Contains(expected!))
             return actual[expected!];
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new DictionaryContainsAssertionError(expected, actual, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new DictionaryContainsAssertionError(expected, actual, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a non-generic dictionary contains the specified string key and returns the associated value.</summary>
@@ -189,7 +189,7 @@ public partial class Assert
         if (ContainsSubsequence(expected, actual, comparer))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanContainsAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanContainsAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a character span contains the specified substring.</summary>
@@ -203,7 +203,7 @@ public partial class Assert
         if (actual.Contains(expected, comparison))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharContainsAssertionError(expected, actual, comparison, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharContainsAssertionError(expected, actual, comparison, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a string contains the specified substring.</summary>
@@ -216,13 +216,13 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new StringContainsNullActualAssertionError(expected, comparison, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new StringContainsNullActualAssertionError(expected, comparison, actualExpression, expectedExpression)));
         }
 
         if (actual.Contains(expected, comparison))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharContainsAssertionError(expected, actual, comparison, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharContainsAssertionError(expected, actual, comparison, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that an asynchronous sequence contains the specified contiguous subsequence.</summary>
@@ -235,7 +235,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<IEnumerable<T>>("Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<IEnumerable<T>>("Expected expression", "Expected", expected, actualExpression, expectedExpression)));
         }
 
         comparer ??= EqualityComparer<T>.Default;
@@ -248,7 +248,7 @@ public partial class Assert
         if (ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
-        throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new CollectionAsyncCollectionContainsAssertionError<T, T>(expectedSnapshot, actualSnapshot, actualExpression, expectedExpression)).ConfigureAwait(false));
+        throw new AssertionException(await ErrorFormatter.FormatAsync(new CollectionAsyncCollectionContainsAssertionError<T, T>(expectedSnapshot, actualSnapshot, actualExpression, expectedExpression)).ConfigureAwait(false));
     }
 
     /// <summary>Asserts that a non-generic enumerable contains the specified contiguous non-generic subsequence.</summary>
@@ -261,7 +261,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<System.Collections.IEnumerable>("Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<System.Collections.IEnumerable>("Expected expression", "Expected", expected, actualExpression, expectedExpression)));
         }
 
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
@@ -272,7 +272,7 @@ public partial class Assert
         if (ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionContainsAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionContainsAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, actualExpression, expectedExpression)));
     }
 
     private static bool ContainsSubsequence<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T> comparer)

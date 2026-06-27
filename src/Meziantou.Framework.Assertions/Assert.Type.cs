@@ -14,7 +14,7 @@ public partial class Assert
         if (actual?.GetType() == typeof(T))
             return (T)actual;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new IsTypeAssertionError(typeof(T), actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new IsTypeAssertionError(typeof(T), actual, actualExpression)));
     }
 
     /// <summary>Asserts that an object is exactly of the specified type.</summary>
@@ -27,7 +27,7 @@ public partial class Assert
         if (actual?.GetType() == expectedType)
             return actual;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new IsTypeAssertionError(expectedType, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new IsTypeAssertionError(expectedType, actual, actualExpression)));
     }
 
     /// <summary>Asserts that an object can be assigned to the specified type.</summary>
@@ -40,7 +40,7 @@ public partial class Assert
         if (actual is T value)
             return value;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new IsAssignableToAssertionError(typeof(T), actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new IsAssignableToAssertionError(typeof(T), actual, actualExpression)));
     }
 
     /// <summary>Asserts that an object can be assigned to the specified type.</summary>
@@ -53,6 +53,6 @@ public partial class Assert
         if (actual is not null && expectedType.IsAssignableFrom(actual.GetType()))
             return actual;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new IsAssignableToAssertionError(expectedType, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new IsAssignableToAssertionError(expectedType, actual, actualExpression)));
     }
 }

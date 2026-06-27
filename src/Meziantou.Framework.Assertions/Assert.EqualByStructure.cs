@@ -11,7 +11,7 @@ public partial class Assert
         if (failure is null)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new EqualByStructureAssertionError(failure.Value.ExpectedValue, failure.Value.ActualValue, failure.Value.Path, failure.Value.Reason, message, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new EqualByStructureAssertionError(failure.Value.ExpectedValue, failure.Value.ActualValue, failure.Value.Path, failure.Value.Reason, message, actualExpression, expectedExpression)));
     }
 
     private static StructuralDifference? GetStructuralDifference(object? expected, object? actual, string path, HashSet<StructuralReferencePair> visited)

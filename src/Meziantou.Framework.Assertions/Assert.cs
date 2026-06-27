@@ -11,6 +11,13 @@ public static partial class Assert
         set => field = value ?? throw new ArgumentNullException(nameof(value));
     } = AssertionFormatter.Default;
 
+    /// <summary>Gets or sets the options used to format assertion failure messages.</summary>
+    public static FormatterOptions FormatterOptions
+    {
+        get => ErrorFormatter.Options;
+        set => ErrorFormatter.Options = value ?? throw new ArgumentNullException(nameof(value));
+    }
+
     [Obsolete("This is an override of Object.Equals(). Use Assert.Equal() instead.", true)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static new bool Equals(object? a, object? b) => throw new InvalidOperationException("Assert.Equals should not be used");

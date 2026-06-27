@@ -9,7 +9,7 @@ public partial class Assert
         if (actual.Length == expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCount(int expectedCount, string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -17,7 +17,7 @@ public partial class Assert
         if (actual.Length == expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringCountAssertionError(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new StringCountAssertionError(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCount<T>(int expectedCount, IEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -27,7 +27,7 @@ public partial class Assert
         if (actualSnapshot.Items.Count == expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionCountAssertionError<T>(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actualSnapshot.Items.Count, actualSnapshot, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionCountAssertionError<T>(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actualSnapshot.Items.Count, actualSnapshot, actualExpression)));
     }
 
     public static void HasCount(int expectedCount, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -37,7 +37,7 @@ public partial class Assert
         if (actualSnapshot.Items.Count == expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionCountAssertionError<object?>(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actualSnapshot.Items.Count, actualSnapshot, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionCountAssertionError<object?>(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actualSnapshot.Items.Count, actualSnapshot, actualExpression)));
     }
 
     public static async Task HasCount<T>(int expectedCount, IAsyncEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -47,7 +47,7 @@ public partial class Assert
         if (actualSnapshot.Items.Count == expectedCount)
             return;
 
-        throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionCountAssertionError<T>(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actualSnapshot.Items.Count, actualSnapshot, actualExpression)).ConfigureAwait(false));
+        throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionCountAssertionError<T>(nameof(HasCount), expectedCount.ToString(CultureInfo.InvariantCulture), actualSnapshot.Items.Count, actualSnapshot, actualExpression)).ConfigureAwait(false));
     }
 
     public static void HasCountGreaterThan<T>(int expectedCount, ReadOnlySpan<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -55,7 +55,7 @@ public partial class Assert
         if (actual.Length > expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCountGreaterThan), "> " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCountGreaterThan), "> " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCountGreaterThan(int expectedCount, string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -63,7 +63,7 @@ public partial class Assert
         if (actual.Length > expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringCountAssertionError(nameof(HasCountGreaterThan), "> " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new StringCountAssertionError(nameof(HasCountGreaterThan), "> " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCountGreaterThan<T>(int expectedCount, IEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -86,7 +86,7 @@ public partial class Assert
         if (actual.Length >= expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCountGreaterThanOrEqual), ">= " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCountGreaterThanOrEqual), ">= " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCountGreaterThanOrEqual(int expectedCount, string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -94,7 +94,7 @@ public partial class Assert
         if (actual.Length >= expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringCountAssertionError(nameof(HasCountGreaterThanOrEqual), ">= " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new StringCountAssertionError(nameof(HasCountGreaterThanOrEqual), ">= " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCountGreaterThanOrEqual<T>(int expectedCount, IEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -117,7 +117,7 @@ public partial class Assert
         if (actual.Length < expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCountLessThan), "< " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCountLessThan), "< " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCountLessThan(int expectedCount, string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -125,7 +125,7 @@ public partial class Assert
         if (actual.Length < expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringCountAssertionError(nameof(HasCountLessThan), "< " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new StringCountAssertionError(nameof(HasCountLessThan), "< " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCountLessThan<T>(int expectedCount, IEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -148,7 +148,7 @@ public partial class Assert
         if (actual.Length <= expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCountLessThanOrEqual), "<= " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCountAssertionError<T>(nameof(HasCountLessThanOrEqual), "<= " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCountLessThanOrEqual(int expectedCount, string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -156,7 +156,7 @@ public partial class Assert
         if (actual.Length <= expectedCount)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringCountAssertionError(nameof(HasCountLessThanOrEqual), "<= " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new StringCountAssertionError(nameof(HasCountLessThanOrEqual), "<= " + expectedCount.ToString(CultureInfo.InvariantCulture), actual.Length, actual, actualExpression)));
     }
 
     public static void HasCountLessThanOrEqual<T>(int expectedCount, IEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -181,7 +181,7 @@ public partial class Assert
         if (CompareCount(actualSnapshot.Items.Count, expectedCount, comparison))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionCountAssertionError<T>(assertionName, expectedCountText, actualSnapshot.Items.Count, actualSnapshot, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionCountAssertionError<T>(assertionName, expectedCountText, actualSnapshot.Items.Count, actualSnapshot, actualExpression)));
     }
 
     private static async Task AssertCountAsync<T>(int expectedCount, IAsyncEnumerable<T> actual, CountComparison comparison, string assertionName, string expectedCountText, string? actualExpression)
@@ -191,7 +191,7 @@ public partial class Assert
         if (CompareCount(actualSnapshot.Items.Count, expectedCount, comparison))
             return;
 
-        throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionCountAssertionError<T>(assertionName, expectedCountText, actualSnapshot.Items.Count, actualSnapshot, actualExpression)).ConfigureAwait(false));
+        throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionCountAssertionError<T>(assertionName, expectedCountText, actualSnapshot.Items.Count, actualSnapshot, actualExpression)).ConfigureAwait(false));
     }
 
     private static bool CompareCount(int actualCount, int expectedCount, CountComparison comparison)

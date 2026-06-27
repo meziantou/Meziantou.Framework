@@ -16,7 +16,7 @@ public partial class Assert
         if (!actual.IsEmpty && comparer.Equals(expected, actual[^1]))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ValueEndsWithAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ValueEndsWithAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that an enumerable ends with the specified value.</summary>
@@ -34,7 +34,7 @@ public partial class Assert
         if (actualSnapshot.Items.Count > 0 && comparer.Equals(expected, actualSnapshot.Items[^1]))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionEndsWithAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ValueCollectionEndsWithAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a non-generic enumerable ends with the specified value.</summary>
@@ -50,7 +50,7 @@ public partial class Assert
         if (actualSnapshot.Items.Count > 0 && object.Equals(expected, actualSnapshot.Items[^1]))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionEndsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ValueCollectionEndsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a span ends with the specified suffix.</summary>
@@ -66,7 +66,7 @@ public partial class Assert
         if (firstDifferenceIndex is null)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanEndsWithAssertionError<T>(expected, actual, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanEndsWithAssertionError<T>(expected, actual, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a character span ends with the specified suffix.</summary>
@@ -81,7 +81,7 @@ public partial class Assert
             return;
 
         var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, actual, comparison);
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharEndsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharEndsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a string ends with the specified suffix.</summary>
@@ -96,7 +96,7 @@ public partial class Assert
             return;
 
         var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, actual, comparison);
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharEndsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharEndsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that an asynchronous sequence ends with the specified suffix.</summary>
@@ -118,7 +118,7 @@ public partial class Assert
         if (firstDifferenceIndex is null)
             return;
 
-        throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new CollectionAsyncCollectionEndsWithAssertionError<T, T>(expectedSnapshot, actualSnapshot, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)).ConfigureAwait(false));
+        throw new AssertionException(await ErrorFormatter.FormatAsync(new CollectionAsyncCollectionEndsWithAssertionError<T, T>(expectedSnapshot, actualSnapshot, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)).ConfigureAwait(false));
     }
 
     /// <summary>Asserts that a non-generic enumerable ends with the specified non-generic suffix.</summary>
@@ -138,7 +138,7 @@ public partial class Assert
         if (firstDifferenceIndex is null)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionEndsWithAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionEndsWithAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)));
     }
 
     private static int? GetFirstSuffixDifferenceIndex<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T> comparer)

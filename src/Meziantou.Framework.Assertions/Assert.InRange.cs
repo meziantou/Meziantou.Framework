@@ -16,6 +16,6 @@ public partial class Assert
         if (comparer.Compare(actual, low) >= 0 && comparer.Compare(actual, high) <= 0)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new InRangeAssertionError<T>(actual, low, high, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new InRangeAssertionError<T>(actual, low, high, actualExpression)));
     }
 }

@@ -15,7 +15,7 @@ public partial class Assert
         if (!regex.IsMatch(actual))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotMatchAssertionError("Not expected pattern", regex.ToString(), actual, actualExpression, regexExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotMatchAssertionError("Not expected pattern", regex.ToString(), actual, actualExpression, regexExpression, message: null)));
     }
 
     /// <summary>Asserts that the specified regular expression pattern does not match the actual value.</summary>
@@ -28,6 +28,6 @@ public partial class Assert
         if (!Regex.IsMatch(actual, pattern, RegexOptions.None, RegexMatchTimeout))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotMatchAssertionError("Not expected pattern", pattern, actual, actualExpression, patternExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotMatchAssertionError("Not expected pattern", pattern, actual, actualExpression, patternExpression, message: null)));
     }
 }

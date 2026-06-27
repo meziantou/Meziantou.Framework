@@ -13,7 +13,7 @@ public partial class Assert
         if (actual.Length is 1)
             return actual[0];
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanSingleAssertionError<T>(actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanSingleAssertionError<T>(actual, actualExpression)));
     }
 
     /// <summary>Asserts that a character span contains a single character and returns it.</summary>
@@ -25,7 +25,7 @@ public partial class Assert
         if (actual.Length is 1)
             return actual[0];
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringSingleAssertionError(actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new StringSingleAssertionError(actual, actualExpression)));
     }
 
     /// <summary>Asserts that a string contains a single character and returns it.</summary>
@@ -37,7 +37,7 @@ public partial class Assert
         if (actual.Length is 1)
             return actual[0];
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringSingleAssertionError(actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new StringSingleAssertionError(actual, actualExpression)));
     }
 
     /// <summary>Asserts that an enumerable contains a single item and returns it.</summary>
@@ -51,14 +51,14 @@ public partial class Assert
 
         if (!actualEnumerator.MoveNext())
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new CollectionSingleAssertionError<T>(actualSnapshot, actualExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new CollectionSingleAssertionError<T>(actualSnapshot, actualExpression)));
         }
 
         var result = actualEnumerator.Current;
         if (!actualEnumerator.MoveNext())
             return result;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionSingleAssertionError<T>(actualSnapshot, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionSingleAssertionError<T>(actualSnapshot, actualExpression)));
     }
 
     /// <summary>Asserts that an enumerable contains a single item matching the predicate and returns it.</summary>
@@ -74,14 +74,14 @@ public partial class Assert
 
         if (!matchingEnumerator.MoveNext())
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new CollectionSinglePredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new CollectionSinglePredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
         }
 
         var result = matchingEnumerator.Current;
         if (!matchingEnumerator.MoveNext())
             return result;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionSinglePredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionSinglePredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
     }
 
     /// <summary>Asserts that a non-generic enumerable contains a single item and returns it.</summary>
@@ -95,14 +95,14 @@ public partial class Assert
 
         if (!actualEnumerator.MoveNext())
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new CollectionSingleAssertionError<object?>(actualSnapshot, actualExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new CollectionSingleAssertionError<object?>(actualSnapshot, actualExpression)));
         }
 
         var result = actualEnumerator.Current;
         if (!actualEnumerator.MoveNext())
             return result;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionSingleAssertionError<object?>(actualSnapshot, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionSingleAssertionError<object?>(actualSnapshot, actualExpression)));
     }
 
     /// <summary>Asserts that an asynchronous sequence contains a single item and returns it.</summary>
@@ -116,14 +116,14 @@ public partial class Assert
 
         if (!await actualEnumerator.MoveNextAsync().ConfigureAwait(false))
         {
-            throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionSingleAssertionError<T>(actualSnapshot, actualExpression)).ConfigureAwait(false));
+            throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionSingleAssertionError<T>(actualSnapshot, actualExpression)).ConfigureAwait(false));
         }
 
         var result = actualEnumerator.Current;
         if (!await actualEnumerator.MoveNextAsync().ConfigureAwait(false))
             return result;
 
-        throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionSingleAssertionError<T>(actualSnapshot, actualExpression)).ConfigureAwait(false));
+        throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionSingleAssertionError<T>(actualSnapshot, actualExpression)).ConfigureAwait(false));
     }
 
     private static IEnumerable<T> EnumerateMatchingItems<T>(IEnumerable<T> actual, Func<T, bool> predicate)

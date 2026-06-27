@@ -14,7 +14,7 @@ public partial class Assert
     {
         if (!condition)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new TrueAssertionError(condition, message, expression)));
+            throw new AssertionException(ErrorFormatter.Format(new TrueAssertionError(condition, message, expression)));
         }
     }
 
@@ -28,7 +28,7 @@ public partial class Assert
     {
         if (condition is not true)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new TrueAssertionError(condition, message, expression)));
+            throw new AssertionException(ErrorFormatter.Format(new TrueAssertionError(condition, message, expression)));
         }
     }
 }

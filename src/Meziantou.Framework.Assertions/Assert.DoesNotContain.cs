@@ -12,7 +12,7 @@ public partial class Assert
             if (!comparer.Equals(expected, actual[i]))
                 continue;
 
-            throw new AssertionException(AssertionFormatter.Default.Format(new NegativeReadOnlySpanExpectedActualValueAssertionError<T, T>(nameof(DoesNotContain), "Not expected item", expected, actual, actualExpression, expectedExpression, message: null)));
+            throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanExpectedActualValueAssertionError<T, T>(nameof(DoesNotContain), "Not expected item", expected, actual, actualExpression, expectedExpression, message: null)));
         }
     }
 
@@ -24,7 +24,7 @@ public partial class Assert
             if (!comparer.Equals(expected, item))
                 continue;
 
-            throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<T, IEnumerable<T>>("Not expected item", expected, actual, actualExpression, expectedExpression, message: null)));
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<T, IEnumerable<T>>("Not expected item", expected, actual, actualExpression, expectedExpression, message: null)));
         }
     }
 
@@ -35,7 +35,7 @@ public partial class Assert
         if (!matchingEnumerator.MoveNext())
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionDoesNotContainPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionDoesNotContainPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
     }
 
     public static void DoesNotContain<TKey, TValue>(TKey expected, IEnumerable<KeyValuePair<TKey, TValue>> actual, IEqualityComparer<TKey>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -46,7 +46,7 @@ public partial class Assert
             if (!comparer.Equals(expected, item.Key))
                 continue;
 
-            throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<TKey, IEnumerable<KeyValuePair<TKey, TValue>>>("Not expected key", expected, actual, actualExpression, expectedExpression, message: null)));
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<TKey, IEnumerable<KeyValuePair<TKey, TValue>>>("Not expected key", expected, actual, actualExpression, expectedExpression, message: null)));
         }
     }
 
@@ -56,7 +56,7 @@ public partial class Assert
         if (!actual.ContainsKey(expected))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<TKey, Dictionary<TKey, TValue>>("Not expected key", expected, actual, actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<TKey, Dictionary<TKey, TValue>>("Not expected key", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotContain(object? expected, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -66,7 +66,7 @@ public partial class Assert
             if (!object.Equals(expected, item))
                 continue;
 
-            throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<object?, System.Collections.IEnumerable>("Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, System.Collections.IEnumerable>("Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
         }
     }
 
@@ -75,7 +75,7 @@ public partial class Assert
         if (!actual.Contains(expected!))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<object?, System.Collections.IDictionary>("Not expected key", expected, actual, actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, System.Collections.IDictionary>("Not expected key", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotContain(string expected, System.Collections.IDictionary actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -89,7 +89,7 @@ public partial class Assert
         if (!ContainsSubsequence(expected, actual, comparer))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeReadOnlySpanValueAssertionError<T, T>(nameof(DoesNotContain), "Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanValueAssertionError<T, T>(nameof(DoesNotContain), "Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotContain(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -97,7 +97,7 @@ public partial class Assert
         if (!actual.Contains(expected, comparison))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeReadOnlySpanValueAssertionError<char, char>(nameof(DoesNotContain), "Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanValueAssertionError<char, char>(nameof(DoesNotContain), "Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotContain(string expected, string actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -105,7 +105,7 @@ public partial class Assert
         if (!actual.Contains(expected, comparison))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<string, string>("Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<string, string>("Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static async Task DoesNotContain<T>(IEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -118,7 +118,7 @@ public partial class Assert
         if (!ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotContain(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -130,6 +130,6 @@ public partial class Assert
         if (!ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 }

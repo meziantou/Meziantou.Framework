@@ -9,7 +9,7 @@ public partial class Assert
         if (!actual.IsEmpty)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeReadOnlySpanActualValueAssertionError<T>(nameof(NotEmpty), "empty", actual, actualExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanActualValueAssertionError<T>(nameof(NotEmpty), "empty", actual, actualExpression, message: null)));
     }
 
     public static void NotEmpty(string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -17,7 +17,7 @@ public partial class Assert
         if (actual.Length != 0)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<string>(nameof(NotEmpty), "empty", actual, actualExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<string>(nameof(NotEmpty), "empty", actual, actualExpression, message: null)));
     }
 
     public static void NotEmpty<T>(IEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -28,7 +28,7 @@ public partial class Assert
         if (actualEnumerator.MoveNext())
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<IEnumerable<T>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IEnumerable<T>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message: null)));
     }
 
     public static void NotEmpty(System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -39,7 +39,7 @@ public partial class Assert
         if (actualEnumerator.MoveNext())
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<IReadOnlyList<object?>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<object?>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message: null)));
     }
 
     public static async Task NotEmpty<T>(IAsyncEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -50,6 +50,6 @@ public partial class Assert
         if (await actualEnumerator.MoveNextAsync().ConfigureAwait(false))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<IReadOnlyList<T>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message: null)));
+        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<T>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message: null)));
     }
 }

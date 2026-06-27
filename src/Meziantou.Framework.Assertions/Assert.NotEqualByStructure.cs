@@ -10,6 +10,6 @@ public partial class Assert
         if (failure is not null)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualByStructureAssertionError(expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualByStructureAssertionError(expected, actual, actualExpression, expectedExpression, message)));
     }
 }

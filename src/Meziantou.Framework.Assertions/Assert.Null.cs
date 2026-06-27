@@ -12,6 +12,6 @@ public partial class Assert
         if (actual is null)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NullAssertionError(actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new NullAssertionError(actual, actualExpression)));
     }
 }

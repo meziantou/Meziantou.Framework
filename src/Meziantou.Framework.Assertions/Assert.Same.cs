@@ -14,6 +14,6 @@ public partial class Assert
         if (object.ReferenceEquals(expected, actual))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new SameAssertionError(expected, actual, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new SameAssertionError(expected, actual, actualExpression, expectedExpression)));
     }
 }

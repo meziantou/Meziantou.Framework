@@ -7,6 +7,12 @@ internal class AssertionFormatter
 
     public static AssertionFormatter Default { get; } = new AssertionFormatter();
 
+    internal FormatterOptions Options
+    {
+        get;
+        set => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = new();
+
     /// <summary>Gets or sets the number of items to format from the start of an enumerable before truncating it.</summary>
     /// <remarks>
     /// When there is no highlighted item, or when the highlighted item is within this leading range, the formatter writes items from the beginning of the enumerable.
@@ -15,13 +21,9 @@ internal class AssertionFormatter
     /// </remarks>
     public int MaxFormattedItems
     {
-        get;
-        set
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
-            field = value;
-        }
-    } = 10;
+        get => Options.MaxFormattedItems;
+        set => Options.MaxFormattedItems = value;
+    }
 
     /// <summary>Gets or sets the number of items to keep from the start of an enumerable when a highlighted item is outside the leading range.</summary>
     /// <remarks>
@@ -30,13 +32,9 @@ internal class AssertionFormatter
     /// </remarks>
     public int PrefixItemCount
     {
-        get;
-        set
-        {
-            ArgumentOutOfRangeException.ThrowIfNegative(value);
-            field = value;
-        }
-    } = 3;
+        get => Options.PrefixItemCount;
+        set => Options.PrefixItemCount = value;
+    }
 
     /// <summary>Gets or sets the minimum number of items to format after a highlighted item in the leading range.</summary>
     /// <remarks>
@@ -46,12 +44,8 @@ internal class AssertionFormatter
     /// </remarks>
     public int SuffixItemCount
     {
-        get;
-        set
-        {
-            ArgumentOutOfRangeException.ThrowIfNegative(value);
-            field = value;
-        }
+        get => Options.SuffixItemCount;
+        set => Options.SuffixItemCount = value;
     }
 
     /// <summary>Gets or sets the number of neighboring items to format before and after a highlighted item in focused mode.</summary>
@@ -61,13 +55,9 @@ internal class AssertionFormatter
     /// </remarks>
     public int HighlightedContextItemCount
     {
-        get;
-        set
-        {
-            ArgumentOutOfRangeException.ThrowIfNegative(value);
-            field = value;
-        }
-    } = 2;
+        get => Options.HighlightedContextItemCount;
+        set => Options.HighlightedContextItemCount = value;
+    }
 
     public string Format(FailAssertionError error)
     {

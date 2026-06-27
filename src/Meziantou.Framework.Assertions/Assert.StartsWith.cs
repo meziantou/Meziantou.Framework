@@ -15,7 +15,7 @@ public partial class Assert
         comparer ??= EqualityComparer<T>.Default;
         if (actual.IsEmpty || !comparer.Equals(expected, actual[0]))
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ValueStartsWithAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ValueStartsWithAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
         }
     }
 
@@ -33,7 +33,7 @@ public partial class Assert
 
         if (!actualEnumerator.MoveNext() || !comparer.Equals(expected, actualEnumerator.Current))
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionStartsWithAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ValueCollectionStartsWithAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
         }
     }
 
@@ -49,7 +49,7 @@ public partial class Assert
 
         if (!actualEnumerator.MoveNext() || !object.Equals(expected, actualEnumerator.Current))
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionStartsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ValueCollectionStartsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
         }
     }
 
@@ -65,7 +65,7 @@ public partial class Assert
         var firstDifferenceIndex = GetFirstDifferenceIndex(expected, actual, comparer);
         if (firstDifferenceIndex is not null)
         {
-            throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanStartsWithAssertionError<T>(expected, actual, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanStartsWithAssertionError<T>(expected, actual, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)));
         }
     }
 
@@ -81,7 +81,7 @@ public partial class Assert
             return;
 
         var firstDifferenceIndex = GetFirstDifferenceIndex(expected, actual, comparison);
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that a string starts with the specified prefix.</summary>
@@ -96,7 +96,7 @@ public partial class Assert
             return;
 
         var firstDifferenceIndex = GetFirstDifferenceIndex(expected, actual, comparison);
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
     }
 
     /// <summary>Asserts that an asynchronous sequence starts with the specified prefix.</summary>
@@ -120,7 +120,7 @@ public partial class Assert
             var actualHasNext = await actualEnumerator.MoveNextAsync().ConfigureAwait(false);
             if (!actualHasNext || !comparer.Equals(expectedEnumerator.Current, actualEnumerator.Current))
             {
-                throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new CollectionAsyncCollectionStartsWithAssertionError<T, T>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression)).ConfigureAwait(false));
+                throw new AssertionException(await ErrorFormatter.FormatAsync(new CollectionAsyncCollectionStartsWithAssertionError<T, T>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression)).ConfigureAwait(false));
             }
 
             index++;
@@ -168,7 +168,7 @@ public partial class Assert
             var actualHasNext = actualEnumerator.MoveNext();
             if (!actualHasNext || !Equals(expectedEnumerator.Current, actualEnumerator.Current, comparer))
             {
-                throw new AssertionException(AssertionFormatter.Default.Format(new CollectionStartsWithAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression)));
+                throw new AssertionException(ErrorFormatter.Format(new CollectionStartsWithAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression)));
             }
 
             index++;

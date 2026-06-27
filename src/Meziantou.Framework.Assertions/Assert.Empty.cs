@@ -12,7 +12,7 @@ public partial class Assert
         if (actual.IsEmpty)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanEmptyAssertionError<T>(actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanEmptyAssertionError<T>(actual, actualExpression)));
     }
 
     /// <summary>Asserts that a string is empty.</summary>
@@ -23,7 +23,7 @@ public partial class Assert
         if (actual.Length == 0)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new StringEmptyAssertionError(actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new StringEmptyAssertionError(actual, actualExpression)));
     }
 
     /// <summary>Asserts that an enumerable is empty.</summary>
@@ -37,7 +37,7 @@ public partial class Assert
         if (!actualEnumerator.MoveNext())
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionEmptyAssertionError<T>(actualSnapshot, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionEmptyAssertionError<T>(actualSnapshot, actualExpression)));
     }
 
     /// <summary>Asserts that a non-generic enumerable is empty.</summary>
@@ -51,7 +51,7 @@ public partial class Assert
         if (!actualEnumerator.MoveNext())
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new CollectionEmptyAssertionError<object?>(actualSnapshot, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionEmptyAssertionError<object?>(actualSnapshot, actualExpression)));
     }
 
     /// <summary>Asserts that an asynchronous sequence is empty.</summary>
@@ -65,6 +65,6 @@ public partial class Assert
         if (!await actualEnumerator.MoveNextAsync().ConfigureAwait(false))
             return;
 
-        throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new AsyncCollectionEmptyAssertionError<T>(actualSnapshot, actualExpression)).ConfigureAwait(false));
+        throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionEmptyAssertionError<T>(actualSnapshot, actualExpression)).ConfigureAwait(false));
     }
 }

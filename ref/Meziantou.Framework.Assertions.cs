@@ -6,6 +6,7 @@ namespace Meziantou.Framework.Assertions
 {
     public static class Assert
     {
+        public static Meziantou.Framework.Assertions.FormatterOptions FormatterOptions { get => throw null; set { } }
         public static void All<T>(System.ReadOnlySpan<T> actual, System.Action<T> assertion, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("assertion")] string? assertionExpression = null) { }
         public static void All<T>(System.ReadOnlySpan<T> actual, System.Action<T, int> assertion, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("assertion")] string? assertionExpression = null) { }
         public static void All<T>(System.Collections.Generic.IEnumerable<T> actual, System.Action<T> assertion, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("assertion")] string? assertionExpression = null) { }
@@ -309,6 +310,14 @@ namespace Meziantou.Framework.Assertions
     {
         public AssertionException(string? message) { }
         public AssertionException(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class FormatterOptions
+    {
+        public int MaxFormattedItems { get => throw null; set { } }
+        public int PrefixItemCount { get => throw null; set { } }
+        public int SuffixItemCount { get => throw null; set { } }
+        public int HighlightedContextItemCount { get => throw null; set { } }
     }
 
     public sealed class RaisedEvent<TEventArgs> where TEventArgs : System.EventArgs

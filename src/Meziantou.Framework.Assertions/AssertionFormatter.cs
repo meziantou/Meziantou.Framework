@@ -1367,9 +1367,6 @@ internal class AssertionFormatter
             var focusStartIndex = shouldFocusHighlightedItem
                 ? Math.Max(PrefixItemCount, highlightedIndex.GetValueOrDefault() - HighlightedContextItemCount)
                 : -1;
-            var focusEndIndex = shouldFocusHighlightedItem
-                ? highlightedIndex.GetValueOrDefault() + HighlightedContextItemCount
-                : -1;
             var prefixItemCount = shouldFocusHighlightedItem ? PrefixItemCount : MaxFormattedItems;
             var maxIndex = GetMaxFormattedIndex(highlightedIndex);
             var hasSkippedItems = false;

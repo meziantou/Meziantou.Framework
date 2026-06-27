@@ -2,8 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-#pragma warning disable CA1030 // Assertion methods intentionally use the xUnit-compatible Raise terminology.
-partial class Assert
+public partial class Assert
 {
     public static void DoesNotRaise(Action<EventHandler> attach, Action<EventHandler> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {

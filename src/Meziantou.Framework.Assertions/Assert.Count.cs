@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     public static void HasCount<T>(int expectedCount, ReadOnlySpan<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {

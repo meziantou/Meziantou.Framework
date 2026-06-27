@@ -2,11 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that an object is exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that an object is exactly of the specified type.</summary>
     /// <param name="actual">The value to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <typeparam name="T">The expected type.</typeparam>
@@ -19,9 +17,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new IsTypeAssertionError(typeof(T), actual, actualExpression)));
     }
 
-    /// <summary>
-    /// Asserts that an object is exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that an object is exactly of the specified type.</summary>
     /// <param name="expectedType">The expected type.</param>
     /// <param name="actual">The value to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -34,9 +30,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new IsTypeAssertionError(expectedType, actual, actualExpression)));
     }
 
-    /// <summary>
-    /// Asserts that an object can be assigned to the specified type.
-    /// </summary>
+    /// <summary>Asserts that an object can be assigned to the specified type.</summary>
     /// <param name="actual">The value to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <typeparam name="T">The expected assignable type.</typeparam>
@@ -49,9 +43,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new IsAssignableToAssertionError(typeof(T), actual, actualExpression)));
     }
 
-    /// <summary>
-    /// Asserts that an object can be assigned to the specified type.
-    /// </summary>
+    /// <summary>Asserts that an object can be assigned to the specified type.</summary>
     /// <param name="expectedType">The expected assignable type.</param>
     /// <param name="actual">The value to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>

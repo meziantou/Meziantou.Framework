@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     public static void DoesNotEndWith<T>(T expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
@@ -18,7 +18,7 @@ partial class Assert
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = new CollectionSnapshot<T>(actual);
         EnsureComplete(actualSnapshot);
-        if (actualSnapshot.Items.Count == 0 || !comparer.Equals(expected, actualSnapshot.Items[^1]))
+        if (actualSnapshot.Items.Count is 0 || !comparer.Equals(expected, actualSnapshot.Items[^1]))
         {
             return;
         }
@@ -30,7 +30,7 @@ partial class Assert
     {
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
         EnsureComplete(actualSnapshot);
-        if (actualSnapshot.Items.Count == 0 || !object.Equals(expected, actualSnapshot.Items[^1]))
+        if (actualSnapshot.Items.Count is 0 || !object.Equals(expected, actualSnapshot.Items[^1]))
         {
             return;
         }
@@ -74,7 +74,7 @@ partial class Assert
         if (GetFirstSuffixDifferenceIndex(expectedSnapshot.Items, actualSnapshot.Items, comparer) is not null)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(DoesNotEndWith), "matching suffix", AssertionFormatter.FormatExpression(actualExpression), message: null)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotEndWithAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected suffix", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotEndWith(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)

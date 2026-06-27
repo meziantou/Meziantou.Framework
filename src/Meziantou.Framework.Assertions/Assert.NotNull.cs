@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     public static object NotNull([NotNull] object? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {

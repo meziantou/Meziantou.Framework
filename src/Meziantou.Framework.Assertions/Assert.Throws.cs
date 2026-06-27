@@ -3,11 +3,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that the action throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that the action throws an exception exactly of the specified type.</summary>
     /// <param name="action">The action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
@@ -18,9 +16,7 @@ partial class Assert
         return (T)Throws(typeof(T), action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the action throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that the action throws an exception exactly of the specified type.</summary>
     /// <param name="expectedExceptionType">The exact expected exception type.</param>
     /// <param name="action">The action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
@@ -30,9 +26,7 @@ partial class Assert
         return ThrowsCore(expectedExceptionType, allowDerivedTypes: false, action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the function throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that the function throws an exception exactly of the specified type.</summary>
     /// <param name="action">The function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
@@ -43,9 +37,7 @@ partial class Assert
         return (T)Throws(typeof(T), action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the function throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that the function throws an exception exactly of the specified type.</summary>
     /// <param name="expectedExceptionType">The exact expected exception type.</param>
     /// <param name="action">The function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
@@ -55,9 +47,7 @@ partial class Assert
         return ThrowsCore(expectedExceptionType, allowDerivedTypes: false, () => _ = action(), actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the asynchronous action throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that the asynchronous action throws an exception exactly of the specified type.</summary>
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
@@ -68,9 +58,7 @@ partial class Assert
         return (T)await Throws(typeof(T), action, actionExpression).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Asserts that the asynchronous action throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that the asynchronous action throws an exception exactly of the specified type.</summary>
     /// <param name="expectedExceptionType">The exact expected exception type.</param>
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
@@ -80,9 +68,7 @@ partial class Assert
         return ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: false, action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the asynchronous function throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that the asynchronous function throws an exception exactly of the specified type.</summary>
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
@@ -93,9 +79,7 @@ partial class Assert
         return (T)await Throws(typeof(T), action, actionExpression).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Asserts that the asynchronous function throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Asserts that the asynchronous function throws an exception exactly of the specified type.</summary>
     /// <param name="expectedExceptionType">The exact expected exception type.</param>
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
@@ -105,9 +89,7 @@ partial class Assert
         return ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: false, async () => _ = await action().ConfigureAwait(false), actionExpression);
     }
 
-    /// <summary>
-    /// Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception exactly of the specified type.</summary>
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
@@ -119,9 +101,7 @@ partial class Assert
         return Throws<T>(action, actionExpression);
     }
 
-    /// <summary>
-    /// Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception exactly of the specified type.</summary>
     /// <param name="expectedExceptionType">The exact expected exception type.</param>
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
@@ -132,9 +112,7 @@ partial class Assert
         return Throws(expectedExceptionType, action, actionExpression);
     }
 
-    /// <summary>
-    /// Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception exactly of the specified type.</summary>
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
@@ -146,9 +124,7 @@ partial class Assert
         return Throws<T>(action, actionExpression);
     }
 
-    /// <summary>
-    /// Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception exactly of the specified type.
-    /// </summary>
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception exactly of the specified type.</summary>
     /// <param name="expectedExceptionType">The exact expected exception type.</param>
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
@@ -159,9 +135,7 @@ partial class Assert
         return Throws(expectedExceptionType, action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the action throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Asserts that the action throws an exception assignable to the specified type.</summary>
     /// <param name="action">The action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
@@ -172,9 +146,7 @@ partial class Assert
         return (T)ThrowsAny(typeof(T), action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the action throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Asserts that the action throws an exception assignable to the specified type.</summary>
     /// <param name="expectedExceptionType">The expected base exception type.</param>
     /// <param name="action">The action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
@@ -184,9 +156,7 @@ partial class Assert
         return ThrowsCore(expectedExceptionType, allowDerivedTypes: true, action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the function throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Asserts that the function throws an exception assignable to the specified type.</summary>
     /// <param name="action">The function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
@@ -197,9 +167,7 @@ partial class Assert
         return (T)ThrowsAny(typeof(T), action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the function throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Asserts that the function throws an exception assignable to the specified type.</summary>
     /// <param name="expectedExceptionType">The expected base exception type.</param>
     /// <param name="action">The function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
@@ -209,9 +177,7 @@ partial class Assert
         return ThrowsCore(expectedExceptionType, allowDerivedTypes: true, () => _ = action(), actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the asynchronous action throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Asserts that the asynchronous action throws an exception assignable to the specified type.</summary>
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
@@ -222,9 +188,7 @@ partial class Assert
         return (T)await ThrowsAny(typeof(T), action, actionExpression).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Asserts that the asynchronous action throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Asserts that the asynchronous action throws an exception assignable to the specified type.</summary>
     /// <param name="expectedExceptionType">The expected base exception type.</param>
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
@@ -234,9 +198,7 @@ partial class Assert
         return ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: true, action, actionExpression);
     }
 
-    /// <summary>
-    /// Asserts that the asynchronous function throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Asserts that the asynchronous function throws an exception assignable to the specified type.</summary>
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
@@ -247,9 +209,7 @@ partial class Assert
         return (T)await ThrowsAny(typeof(T), action, actionExpression).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Asserts that the asynchronous function throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Asserts that the asynchronous function throws an exception assignable to the specified type.</summary>
     /// <param name="expectedExceptionType">The expected base exception type.</param>
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
@@ -259,9 +219,7 @@ partial class Assert
         return ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: true, async () => _ = await action().ConfigureAwait(false), actionExpression);
     }
 
-    /// <summary>
-    /// Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception assignable to the specified type.</summary>
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
@@ -273,9 +231,7 @@ partial class Assert
         return ThrowsAny<T>(action, actionExpression);
     }
 
-    /// <summary>
-    /// Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception assignable to the specified type.</summary>
     /// <param name="expectedExceptionType">The expected base exception type.</param>
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
@@ -286,9 +242,7 @@ partial class Assert
         return ThrowsAny(expectedExceptionType, action, actionExpression);
     }
 
-    /// <summary>
-    /// Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception assignable to the specified type.</summary>
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
@@ -300,9 +254,7 @@ partial class Assert
         return ThrowsAny<T>(action, actionExpression);
     }
 
-    /// <summary>
-    /// Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception assignable to the specified type.
-    /// </summary>
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception assignable to the specified type.</summary>
     /// <param name="expectedExceptionType">The expected base exception type.</param>
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>

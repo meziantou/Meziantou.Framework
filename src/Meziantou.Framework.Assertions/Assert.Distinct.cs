@@ -2,11 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that a span does not contain duplicate items.
-    /// </summary>
+    /// <summary>Asserts that a span does not contain duplicate items.</summary>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -24,9 +22,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that a string does not contain duplicate characters.
-    /// </summary>
+    /// <summary>Asserts that a string does not contain duplicate characters.</summary>
     /// <param name="actual">The string to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     public static void Distinct(string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -34,9 +30,7 @@ partial class Assert
         Distinct(actual.AsSpan(), comparer: null, actualExpression);
     }
 
-    /// <summary>
-    /// Asserts that an enumerable does not contain duplicate items.
-    /// </summary>
+    /// <summary>Asserts that an enumerable does not contain duplicate items.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -56,9 +50,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that a non-generic enumerable does not contain duplicate items.
-    /// </summary>
+    /// <summary>Asserts that a non-generic enumerable does not contain duplicate items.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -77,9 +69,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that an asynchronous sequence does not contain duplicate items.
-    /// </summary>
+    /// <summary>Asserts that an asynchronous sequence does not contain duplicate items.</summary>
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>

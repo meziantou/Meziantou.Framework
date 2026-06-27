@@ -494,6 +494,21 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public async Task NotEqual_AsyncEnumerableFails()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2]);
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([1, 2]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.NotEqual(expected, actual), """
+            Assert.NotEqual() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [1, 2]
+            Actual:              [1, 2]
+            """);
+    }
+
+    [Fact]
     public void NotEqualWithTolerance_Fails()
     {
         var expected = 1.0;

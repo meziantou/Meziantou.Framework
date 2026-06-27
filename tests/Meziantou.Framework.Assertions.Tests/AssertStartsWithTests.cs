@@ -217,4 +217,19 @@ public sealed class AssertStartsWithTests
             Actual:              [1, 2, 3]
             """);
     }
+
+    [Fact]
+    public async Task DoesNotStartWith_AsyncEnumerableFails()
+    {
+        IEnumerable<int> expected = [1, 2];
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotStartWith(expected, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected prefix: [1, 2]
+            Actual:              [1, 2, 3]
+            """);
+    }
 }

@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     public static void DoesNotStartWith<T>(T expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
@@ -78,7 +78,8 @@ partial class Assert
                 return;
         }
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(DoesNotStartWith), "matching prefix", AssertionFormatter.FormatExpression(actualExpression), message: null)));
+        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotStartWithAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected prefix", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotStartWith(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)

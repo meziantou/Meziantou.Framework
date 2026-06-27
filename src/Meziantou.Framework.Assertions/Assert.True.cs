@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     /// <summary>
     /// Asserts that a condition is true. If the condition is false, an <see cref="AssertionException"/> is thrown.

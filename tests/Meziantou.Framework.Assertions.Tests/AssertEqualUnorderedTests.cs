@@ -162,4 +162,19 @@ public sealed class AssertEqualUnorderedTests
             Actual:              [2, 1]
             """);
     }
+
+    [Fact]
+    public async Task NotEqualUnordered_AsyncEnumerableFails()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2]);
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([2, 1]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.NotEqualUnordered(expected, actual), """
+            Assert.NotEqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [1, 2]
+            Actual:              [2, 1]
+            """);
+    }
 }

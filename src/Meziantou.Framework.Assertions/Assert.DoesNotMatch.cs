@@ -3,11 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that the specified regular expression does not match the actual value.
-    /// </summary>
+    /// <summary>Asserts that the specified regular expression does not match the actual value.</summary>
     /// <param name="regex">The regular expression not expected to match <paramref name="actual"/>.</param>
     /// <param name="actual">The string to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -20,9 +18,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotMatchAssertionError("Not expected pattern", regex.ToString(), actual, actualExpression, regexExpression, message: null)));
     }
 
-    /// <summary>
-    /// Asserts that the specified regular expression pattern does not match the actual value.
-    /// </summary>
+    /// <summary>Asserts that the specified regular expression pattern does not match the actual value.</summary>
     /// <param name="pattern">The regular expression pattern not expected to match <paramref name="actual"/>.</param>
     /// <param name="actual">The string to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>

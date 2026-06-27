@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Assertions;
 
-/// <summary>
-/// Represents an assertion failure.
-/// </summary>
+/// <summary>Represents an assertion failure.</summary>
 public sealed class AssertionException : Exception
 {
     /// <summary>

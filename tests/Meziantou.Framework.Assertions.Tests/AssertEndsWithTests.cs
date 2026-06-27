@@ -194,4 +194,19 @@ public sealed class AssertEndsWithTests
             Actual:              [1, 2, 3]
             """);
     }
+
+    [Fact]
+    public async Task DoesNotEndWith_AsyncEnumerableFails()
+    {
+        IEnumerable<int> expected = [2, 3];
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotEndWith(expected, actual), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected suffix: [2, 3]
+            Actual:              [1, 2, 3]
+            """);
+    }
 }

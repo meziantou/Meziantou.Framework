@@ -20,9 +20,7 @@ public static partial class Assert
     public static new bool ReferenceEquals(object? a, object? b) => throw new InvalidOperationException("Assert.ReferenceEquals should not be used");
 
 
-    /// <summary>
-    /// Fails the assertion with the specified message.
-    /// </summary>
+    /// <summary>Fails the assertion with the specified message.</summary>
     /// <param name="message">The message that describes the failure.</param>
     public static void Fail(string? message = null)
     {

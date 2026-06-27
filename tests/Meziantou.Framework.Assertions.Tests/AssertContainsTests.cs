@@ -324,6 +324,21 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public async Task DoesNotContain_AsyncEnumerableFails()
+    {
+        IEnumerable<int> expected = [2, 3];
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3, 4]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotContain(expected, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [2, 3]
+            Actual:              [1, 2, 3, 4]
+            """);
+    }
+
+    [Fact]
     public void DoesNotContainPredicate_Success()
     {
         IEnumerable<string> collection = ["A", "B", "C"];

@@ -2,11 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that all items in a span satisfy the specified assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in a span satisfy the specified assertion.</summary>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="assertion">The assertion to run for each item.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -26,9 +24,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that all items in a span satisfy the specified assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in a span satisfy the specified assertion.</summary>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="assertion">The assertion to run for each item and index.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -48,9 +44,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that all items in an enumerable satisfy the specified assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in an enumerable satisfy the specified assertion.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="assertion">The assertion to run for each item.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -60,9 +54,7 @@ partial class Assert
         All(actual, (item, _) => assertion(item), actualExpression, assertionExpression);
     }
 
-    /// <summary>
-    /// Asserts that all items in an enumerable satisfy the specified assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in an enumerable satisfy the specified assertion.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="assertion">The assertion to run for each item and index.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -87,9 +79,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that all items in a non-generic enumerable satisfy the specified assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in a non-generic enumerable satisfy the specified assertion.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="assertion">The assertion to run for each item.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -99,9 +89,7 @@ partial class Assert
         All(actual, (item, _) => assertion(item), actualExpression, assertionExpression);
     }
 
-    /// <summary>
-    /// Asserts that all items in a non-generic enumerable satisfy the specified assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in a non-generic enumerable satisfy the specified assertion.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="assertion">The assertion to run for each item and index.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -111,9 +99,7 @@ partial class Assert
         All(EnumerateObjects(actual), assertion, actualExpression, assertionExpression);
     }
 
-    /// <summary>
-    /// Asserts that all items in an asynchronous sequence satisfy the specified assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in an asynchronous sequence satisfy the specified assertion.</summary>
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="assertion">The assertion to run for each item.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -123,9 +109,7 @@ partial class Assert
         return All(actual, (item, _) => assertion(item), actualExpression, assertionExpression);
     }
 
-    /// <summary>
-    /// Asserts that all items in an asynchronous sequence satisfy the specified assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in an asynchronous sequence satisfy the specified assertion.</summary>
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="assertion">The assertion to run for each item and index.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -139,9 +123,7 @@ partial class Assert
         }, actualExpression, assertionExpression).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Asserts that all items in an asynchronous sequence satisfy the specified asynchronous assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in an asynchronous sequence satisfy the specified asynchronous assertion.</summary>
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="assertion">The assertion to run for each item.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -151,9 +133,7 @@ partial class Assert
         return All(actual, (item, _) => assertion(item), actualExpression, assertionExpression);
     }
 
-    /// <summary>
-    /// Asserts that all items in an asynchronous sequence satisfy the specified asynchronous assertion.
-    /// </summary>
+    /// <summary>Asserts that all items in an asynchronous sequence satisfy the specified asynchronous assertion.</summary>
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="assertion">The assertion to run for each item and index.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>

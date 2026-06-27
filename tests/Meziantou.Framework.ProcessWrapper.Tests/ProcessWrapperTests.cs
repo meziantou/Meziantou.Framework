@@ -487,7 +487,7 @@ public class ProcessWrapperTests
         var processResult = await result;
 
         var outputDir = NormalizeWorkingDirectoryPath(processResult.Output.StandardOutput.First().Text.TrimEnd(Path.DirectorySeparatorChar));
-        Assert.Equal(tempDir, outputDir, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        Assert.Equal(tempDir, outputDir, ignoreCase: OperatingSystem.IsWindows());
     }
 
     [Fact]

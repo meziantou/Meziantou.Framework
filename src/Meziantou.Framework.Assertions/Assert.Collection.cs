@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     public static void Collection<T>(IEnumerable<T> actual, Action<T>[] inspectors, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {

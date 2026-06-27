@@ -2,11 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that two objects refer to the same instance.
-    /// </summary>
+    /// <summary>Asserts that two objects refer to the same instance.</summary>
     /// <param name="expected">The expected object instance.</param>
     /// <param name="actual">The actual object instance.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>

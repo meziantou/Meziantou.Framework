@@ -2,11 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that a collection is a proper subset of another collection.
-    /// </summary>
+    /// <summary>Asserts that a collection is a proper subset of another collection.</summary>
     /// <param name="expected">The collection expected to be a proper subset of <paramref name="actual"/>.</param>
     /// <param name="actual">The collection expected to contain every unique item in <paramref name="expected"/> and at least one additional unique item.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -27,9 +25,7 @@ partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new CollectionSetAssertionError<T>(expectedSnapshot, actualSnapshot, isSuperset: false, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a non-generic collection is a proper subset of another non-generic collection.
-    /// </summary>
+    /// <summary>Asserts that a non-generic collection is a proper subset of another non-generic collection.</summary>
     /// <param name="expected">The collection expected to be a proper subset of <paramref name="actual"/>.</param>
     /// <param name="actual">The collection expected to contain every unique item in <paramref name="expected"/> and at least one additional unique item.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -40,9 +36,7 @@ partial class Assert
         ProperSubset(EnumerateObjects(expected), EnumerateObjects(actual), new ObjectEqualityComparer(comparer), actualExpression, expectedExpression);
     }
 
-    /// <summary>
-    /// Asserts that a collection is a proper superset of another collection.
-    /// </summary>
+    /// <summary>Asserts that a collection is a proper superset of another collection.</summary>
     /// <param name="expected">The collection expected to be a proper superset of <paramref name="actual"/>.</param>
     /// <param name="actual">The collection expected to be contained in <paramref name="expected"/> with at least one fewer unique item.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -63,9 +57,7 @@ partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new CollectionSetAssertionError<T>(expectedSnapshot, actualSnapshot, isSuperset: true, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a non-generic collection is a proper superset of another non-generic collection.
-    /// </summary>
+    /// <summary>Asserts that a non-generic collection is a proper superset of another non-generic collection.</summary>
     /// <param name="expected">The collection expected to be a proper superset of <paramref name="actual"/>.</param>
     /// <param name="actual">The collection expected to be contained in <paramref name="expected"/> with at least one fewer unique item.</param>
     /// <param name="comparer">The comparer used to compare values.</param>

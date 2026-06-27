@@ -2,11 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that a value is inside the specified inclusive range.
-    /// </summary>
+    /// <summary>Asserts that a value is inside the specified inclusive range.</summary>
     /// <param name="actual">The value to inspect.</param>
     /// <param name="low">The inclusive lower bound.</param>
     /// <param name="high">The inclusive upper bound.</param>

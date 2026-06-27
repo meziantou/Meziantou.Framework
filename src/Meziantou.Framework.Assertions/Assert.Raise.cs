@@ -2,25 +2,28 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-#pragma warning disable CA1030 // Assertion methods intentionally use the xUnit-compatible Raise terminology.
-partial class Assert
+public partial class Assert
 {
+    [SuppressMessage("Design", "CA1030:Use events where appropriate")]
     public static RaisedEvent<EventArgs> Raise(Action<EventHandler> attach, Action<EventHandler> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
         return RaiseCore(attach, detach, action, allowDerivedTypes: false, actionExpression);
     }
 
+    [SuppressMessage("Design", "CA1030:Use events where appropriate")]
     public static RaisedEvent<TEventArgs> Raise<TEventArgs>(Action<EventHandler<TEventArgs>> attach, Action<EventHandler<TEventArgs>> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where TEventArgs : EventArgs
     {
         return RaiseCore(attach, detach, action, allowDerivedTypes: false, actionExpression);
     }
 
+    [SuppressMessage("Design", "CA1030:Use events where appropriate")]
     public static RaisedEvent<EventArgs> RaiseAny(Action<EventHandler> attach, Action<EventHandler> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
         return RaiseCore(attach, detach, action, allowDerivedTypes: true, actionExpression);
     }
 
+    [SuppressMessage("Design", "CA1030:Use events where appropriate")]
     public static RaisedEvent<TEventArgs> RaiseAny<TEventArgs>(Action<EventHandler<TEventArgs>> attach, Action<EventHandler<TEventArgs>> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where TEventArgs : EventArgs
     {
@@ -31,20 +34,20 @@ partial class Assert
     {
         EventArgs? arguments = null;
         object? sender = null;
-        EventHandler handler = (eventSender, eventArguments) =>
+        void Handler(object? eventSender, EventArgs eventArguments)
         {
             sender ??= eventSender;
             arguments ??= eventArguments;
-        };
+        }
 
-        attach(handler);
+        attach(Handler);
         try
         {
             action();
         }
         finally
         {
-            detach(handler);
+            detach(Handler);
         }
 
         if (arguments is not null)
@@ -64,20 +67,20 @@ partial class Assert
     {
         TEventArgs? arguments = null;
         object? sender = null;
-        EventHandler<TEventArgs> handler = (eventSender, eventArguments) =>
+        void Handler(object? eventSender, TEventArgs eventArguments)
         {
             sender ??= eventSender;
             arguments ??= eventArguments;
-        };
+        }
 
-        attach(handler);
+        attach(Handler);
         try
         {
             action();
         }
         finally
         {
-            detach(handler);
+            detach(Handler);
         }
 
         if (arguments is not null)

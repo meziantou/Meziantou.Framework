@@ -2,11 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that a span contains the specified value.
-    /// </summary>
+    /// <summary>Asserts that a span contains the specified value.</summary>
     /// <param name="expected">The value expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -25,9 +23,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new ValueContainsAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that an enumerable contains the specified value.
-    /// </summary>
+    /// <summary>Asserts that an enumerable contains the specified value.</summary>
     /// <param name="expected">The value expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -48,9 +44,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionContainsAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that an enumerable contains at least one item that matches the specified predicate.
-    /// </summary>
+    /// <summary>Asserts that an enumerable contains at least one item that matches the specified predicate.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="predicate">The predicate used to select matching items.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -66,9 +60,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new CollectionContainsPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a dictionary-like collection contains the specified key and returns the associated value.
-    /// </summary>
+    /// <summary>Asserts that a dictionary-like collection contains the specified key and returns the associated value.</summary>
     /// <param name="expected">The key expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The dictionary-like collection to inspect.</param>
     /// <param name="comparer">The comparer used to compare keys when <paramref name="actual"/> is not a dictionary.</param>
@@ -94,9 +86,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a dictionary contains the specified key and returns the associated value.
-    /// </summary>
+    /// <summary>Asserts that a dictionary contains the specified key and returns the associated value.</summary>
     /// <param name="expected">The key expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The dictionary to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -113,9 +103,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a non-generic enumerable contains the specified value.
-    /// </summary>
+    /// <summary>Asserts that a non-generic enumerable contains the specified value.</summary>
     /// <param name="expected">The value expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -134,9 +122,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new ValueCollectionContainsAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a non-generic dictionary contains the specified key and returns the associated value.
-    /// </summary>
+    /// <summary>Asserts that a non-generic dictionary contains the specified key and returns the associated value.</summary>
     /// <param name="expected">The key expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The dictionary to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -150,9 +136,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new DictionaryContainsAssertionError(expected, actual, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a non-generic dictionary contains the specified string key and returns the associated value.
-    /// </summary>
+    /// <summary>Asserts that a non-generic dictionary contains the specified string key and returns the associated value.</summary>
     /// <param name="expected">The key expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The dictionary to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -162,9 +146,7 @@ partial class Assert
         return Contains((object?)expected, actual, actualExpression, expectedExpression);
     }
 
-    /// <summary>
-    /// Asserts that a span contains the specified subsequence.
-    /// </summary>
+    /// <summary>Asserts that a span contains the specified subsequence.</summary>
     /// <param name="expected">The subsequence expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -179,9 +161,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanContainsAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a character span contains the specified substring.
-    /// </summary>
+    /// <summary>Asserts that a character span contains the specified substring.</summary>
     /// <param name="expected">The substring expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparison">The comparison used to compare characters.</param>
@@ -195,9 +175,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharContainsAssertionError(expected, actual, comparison, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a string contains the specified substring.
-    /// </summary>
+    /// <summary>Asserts that a string contains the specified substring.</summary>
     /// <param name="expected">The substring expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The string to inspect.</param>
     /// <param name="comparison">The comparison used to compare characters.</param>
@@ -211,9 +189,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharContainsAssertionError(expected, actual, comparison, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that an asynchronous sequence contains the specified contiguous subsequence.
-    /// </summary>
+    /// <summary>Asserts that an asynchronous sequence contains the specified contiguous subsequence.</summary>
     /// <param name="expected">The subsequence expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -234,9 +210,7 @@ partial class Assert
         throw new AssertionException(await AssertionFormatter.Default.FormatAsync(new CollectionAsyncCollectionContainsAssertionError<T, T>(expectedSnapshot, actualSnapshot, actualExpression, expectedExpression)).ConfigureAwait(false));
     }
 
-    /// <summary>
-    /// Asserts that a non-generic enumerable contains the specified contiguous non-generic subsequence.
-    /// </summary>
+    /// <summary>Asserts that a non-generic enumerable contains the specified contiguous non-generic subsequence.</summary>
     /// <param name="expected">The subsequence expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>

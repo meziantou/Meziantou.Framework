@@ -8,7 +8,7 @@ public class ExecutableFinderTests
     public void GetFullExecutablePathTests_Windows()
     {
         var result = ExecutableFinder.GetFullExecutablePath("calc");
-        Assert.Equal(@"C:\Windows\System32\calc.exe", result, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(@"C:\Windows\System32\calc.exe", result, ignoreCase: true);
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -18,7 +18,7 @@ public class ExecutableFinderTests
         var path = Path.GetFullPath(fileNameWithoutExtension + ".exe");
         File.WriteAllBytes(path, []);
         var result = ExecutableFinder.GetFullExecutablePath(fileNameWithoutExtension, Path.GetDirectoryName(path));
-        Assert.Equal(path, result, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(path, result, ignoreCase: true);
     }
 
     [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]

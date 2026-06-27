@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     private static bool TryEqualMemory<TExpected, TActual>(TExpected expected, TActual actual, string? message, string? actualExpression, string? expectedExpression)
     {

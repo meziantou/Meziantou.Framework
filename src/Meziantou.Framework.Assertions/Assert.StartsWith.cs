@@ -2,11 +2,9 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
-    /// <summary>
-    /// Asserts that a span starts with the specified value.
-    /// </summary>
+    /// <summary>Asserts that a span starts with the specified value.</summary>
     /// <param name="expected">The value expected at the start of <paramref name="actual"/>.</param>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -21,9 +19,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that an enumerable starts with the specified value.
-    /// </summary>
+    /// <summary>Asserts that an enumerable starts with the specified value.</summary>
     /// <param name="expected">The value expected at the start of <paramref name="actual"/>.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -41,9 +37,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that a non-generic enumerable starts with the specified value.
-    /// </summary>
+    /// <summary>Asserts that a non-generic enumerable starts with the specified value.</summary>
     /// <param name="expected">The value expected at the start of <paramref name="actual"/>.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -59,9 +53,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that a span starts with the specified prefix.
-    /// </summary>
+    /// <summary>Asserts that a span starts with the specified prefix.</summary>
     /// <param name="expected">The prefix expected at the start of <paramref name="actual"/>.</param>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -77,9 +69,7 @@ partial class Assert
         }
     }
 
-    /// <summary>
-    /// Asserts that a character span starts with the specified prefix.
-    /// </summary>
+    /// <summary>Asserts that a character span starts with the specified prefix.</summary>
     /// <param name="expected">The prefix expected at the start of <paramref name="actual"/>.</param>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparison">The comparison used to compare characters.</param>
@@ -94,9 +84,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that a string starts with the specified prefix.
-    /// </summary>
+    /// <summary>Asserts that a string starts with the specified prefix.</summary>
     /// <param name="expected">The prefix expected at the start of <paramref name="actual"/>.</param>
     /// <param name="actual">The string to inspect.</param>
     /// <param name="comparison">The comparison used to compare characters.</param>
@@ -111,9 +99,7 @@ partial class Assert
         throw new AssertionException(AssertionFormatter.Default.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
     }
 
-    /// <summary>
-    /// Asserts that an asynchronous sequence starts with the specified prefix.
-    /// </summary>
+    /// <summary>Asserts that an asynchronous sequence starts with the specified prefix.</summary>
     /// <param name="expected">The prefix expected at the start of <paramref name="actual"/>.</param>
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -163,9 +149,7 @@ partial class Assert
         return expected.Length;
     }
 
-    /// <summary>
-    /// Asserts that a non-generic enumerable starts with the specified non-generic prefix.
-    /// </summary>
+    /// <summary>Asserts that a non-generic enumerable starts with the specified non-generic prefix.</summary>
     /// <param name="expected">The prefix expected at the start of <paramref name="actual"/>.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>

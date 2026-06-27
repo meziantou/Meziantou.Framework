@@ -4,16 +4,10 @@ namespace Meziantou.Framework.Assertions;
 internal class AssertionFormatter
 {
     private const char CombiningLowLine = '\u0332';
-    private int _highlightedContextItemCount = 2;
-    private int _maxFormattedItems = 10;
-    private int _prefixItemCount = 3;
-    private int _suffixItemCount;
 
     public static AssertionFormatter Default { get; } = new AssertionFormatter();
 
-    /// <summary>
-    /// Gets or sets the number of items to format from the start of an enumerable before truncating it.
-    /// </summary>
+    /// <summary>Gets or sets the number of items to format from the start of an enumerable before truncating it.</summary>
     /// <remarks>
     /// When there is no highlighted item, or when the highlighted item is within this leading range, the formatter writes items from the beginning of the enumerable.
     /// If <see cref="SuffixItemCount"/> requires more items after a highlighted item, the formatter can write more than this value.
@@ -21,34 +15,30 @@ internal class AssertionFormatter
     /// </remarks>
     public int MaxFormattedItems
     {
-        get => _maxFormattedItems;
+        get;
         set
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
-            _maxFormattedItems = value;
+            field = value;
         }
-    }
+    } = 10;
 
-    /// <summary>
-    /// Gets or sets the number of items to keep from the start of an enumerable when a highlighted item is outside the leading range.
-    /// </summary>
+    /// <summary>Gets or sets the number of items to keep from the start of an enumerable when a highlighted item is outside the leading range.</summary>
     /// <remarks>
     /// This value is used only in focused mode, when the highlighted item index is greater than or equal to <see cref="MaxFormattedItems"/>.
     /// It preserves the beginning of the enumerable before the ellipsis and the highlighted-item context window.
     /// </remarks>
     public int PrefixItemCount
     {
-        get => _prefixItemCount;
+        get;
         set
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);
-            _prefixItemCount = value;
+            field = value;
         }
-    }
+    } = 3;
 
-    /// <summary>
-    /// Gets or sets the minimum number of items to format after a highlighted item in the leading range.
-    /// </summary>
+    /// <summary>Gets or sets the minimum number of items to format after a highlighted item in the leading range.</summary>
     /// <remarks>
     /// This value is used when the highlighted item index is less than <see cref="MaxFormattedItems"/>.
     /// In that case, the formatter writes at least <see cref="MaxFormattedItems"/> items, and can continue up to the highlighted item plus this many following items.
@@ -56,30 +46,28 @@ internal class AssertionFormatter
     /// </remarks>
     public int SuffixItemCount
     {
-        get => _suffixItemCount;
+        get;
         set
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);
-            _suffixItemCount = value;
+            field = value;
         }
     }
 
-    /// <summary>
-    /// Gets or sets the number of neighboring items to format before and after a highlighted item in focused mode.
-    /// </summary>
+    /// <summary>Gets or sets the number of neighboring items to format before and after a highlighted item in focused mode.</summary>
     /// <remarks>
     /// This value is used only when the highlighted item index is greater than or equal to <see cref="MaxFormattedItems"/>.
     /// The formatter then writes <see cref="PrefixItemCount"/> items from the beginning, an ellipsis when items were skipped, and up to this many items on each side of the highlighted item.
     /// </remarks>
     public int HighlightedContextItemCount
     {
-        get => _highlightedContextItemCount;
+        get;
         set
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);
-            _highlightedContextItemCount = value;
+            field = value;
         }
-    }
+    } = 2;
 
     public string Format(FailAssertionError error)
     {

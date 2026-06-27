@@ -118,7 +118,7 @@ public partial class Assert
         if (!ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(DoesNotContain), "contained item", AssertionFormatter.FormatExpression(actualExpression), message: null)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotContainAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotContain(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)

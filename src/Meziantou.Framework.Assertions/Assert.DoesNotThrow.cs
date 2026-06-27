@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     public static void DoesNotThrow(Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {

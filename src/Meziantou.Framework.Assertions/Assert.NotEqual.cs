@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
-partial class Assert
+public partial class Assert
 {
     public static void NotEqual(Half expected, Half actual, Half tolerance, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
@@ -105,27 +105,33 @@ partial class Assert
 
     public static async Task NotEqual<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (!await AsyncCollectionsEqual(expected, actual, (IEqualityComparer<T>)EqualityComparer<T>.Default).ConfigureAwait(false))
+        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+        if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, (IEqualityComparer<T>)EqualityComparer<T>.Default).ConfigureAwait(false))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(NotEqual), "same sequence", AssertionFormatter.FormatExpression(actualExpression), message)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static async Task NotEqual<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (!await AsyncCollectionsEqual(expected, actual, comparer).ConfigureAwait(false))
+        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+        if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, comparer).ConfigureAwait(false))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(NotEqual), "same sequence", AssertionFormatter.FormatExpression(actualExpression), message)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     [OverloadResolutionPriority(-1)]
     public static async Task NotEqual<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, IAsyncEnumerable<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (!await AsyncCollectionsEqual(expected, actual, (System.Collections.IEqualityComparer?)null).ConfigureAwait(false))
+        await using var actualSnapshot = new AsyncCollectionSnapshot<TActual>(actual);
+        await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
+        if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, (System.Collections.IEqualityComparer?)null).ConfigureAwait(false))
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(NotEqual), "same sequence", AssertionFormatter.FormatExpression(actualExpression), message)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualAssertionError<IReadOnlyList<TExpected>, IReadOnlyList<TActual>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static void NotEqual(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -203,10 +209,8 @@ partial class Assert
         }
     }
 
-    private static async Task<bool> AsyncCollectionsEqual<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer)
+    private static async Task<bool> AsyncCollectionsEqual<T>(AsyncCollectionSnapshot<T> expectedSnapshot, AsyncCollectionSnapshot<T> actualSnapshot, IEqualityComparer<T>? comparer)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
         await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
         await using var expectedEnumerator = expectedSnapshot.GetAsyncEnumerator();
         comparer ??= EqualityComparer<T>.Default;
@@ -226,10 +230,8 @@ partial class Assert
         }
     }
 
-    private static async Task<bool> AsyncCollectionsEqual<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, IAsyncEnumerable<TActual> actual, System.Collections.IEqualityComparer? comparer)
+    private static async Task<bool> AsyncCollectionsEqual<TExpected, TActual>(AsyncCollectionSnapshot<TExpected> expectedSnapshot, AsyncCollectionSnapshot<TActual> actualSnapshot, System.Collections.IEqualityComparer? comparer)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<TActual>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
         await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
         await using var expectedEnumerator = expectedSnapshot.GetAsyncEnumerator();
 

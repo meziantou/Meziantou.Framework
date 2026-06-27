@@ -135,7 +135,7 @@ public sealed class AssertEqualTests
         var expected = "Hello\n\"World\"";
         var actual = "Hello\tWorld";
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, StringComparison.Ordinal), """
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
             Assert.Equal() assertion failed.
             Expected expression: expected
             Actual expression:   actual
@@ -145,12 +145,33 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void String_IgnoreCase_Success()
+    {
+        AssertionsAssert.Equal("Hello", "hello", ignoreCase: true);
+    }
+
+    [Fact]
+    public void String_IgnoreCase_FailsWhenDisabled()
+    {
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal("Hello", "hello"));
+    }
+
+    [Fact]
     public void String_IgnoreLineEndingDifferences_Success()
     {
         var expected = "line1\r\nline2\rline3";
         var actual = "line1\nline2\nline3";
 
         AssertionsAssert.Equal(expected, actual, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void String_IgnoreCaseAndLineEndingDifferences_Success()
+    {
+        var expected = "line1\r\nline2\rline3";
+        var actual = "LINE1\nLINE2\nLINE3";
+
+        AssertionsAssert.Equal(expected, actual, ignoreCase: true, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
@@ -169,6 +190,12 @@ public sealed class AssertEqualTests
         var actual = "line1\nline2\nline3";
 
         AssertionsAssert.Equal(expected.AsSpan(), actual.AsSpan(), ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void CharSpan_IgnoreCase_Success()
+    {
+        AssertionsAssert.Equal("Hello".AsSpan(), "hello".AsSpan(), ignoreCase: true);
     }
 
     [Fact]

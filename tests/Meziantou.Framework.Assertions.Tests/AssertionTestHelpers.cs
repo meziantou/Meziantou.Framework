@@ -8,13 +8,13 @@ internal static class AssertionTestHelpers
     public static void Validate(Action action, string expectedMessage)
     {
         var exception = AssertionsAssert.Throws<AssertionException>(action);
-        AssertionsAssert.Equal(expectedMessage, exception.Message, StringComparison.Ordinal);
+        AssertionsAssert.Equal(expectedMessage, exception.Message);
     }
 
     public static async Task ValidateAsync(Func<Task> action, string expectedMessage)
     {
         var exception = await AssertionsAssert.Throws<AssertionException>(action);
-        AssertionsAssert.Equal(expectedMessage, exception.Message, StringComparison.Ordinal);
+        AssertionsAssert.Equal(expectedMessage, exception.Message);
     }
 
     public static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(IEnumerable<T> items)

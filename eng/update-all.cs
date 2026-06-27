@@ -1,12 +1,16 @@
 #!/usr/bin/env dotnet
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
+#:project ../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework;
+using Meziantou.Framework.LLMContext;
+
+var isLlm = LLMContextDetector.IsLLMContext();
 
 const string StepReadme = "readme";
 const string StepTrimmable = "trimmable";
@@ -109,20 +113,23 @@ if (!updatedFiles.IsEmpty)
     Console.WriteLine("One or more steps reported errors, you can fix them and re-run the tool to check that all steps are successful.");
     Console.WriteLine("dotnet run ./eng/update-all.cs");
 
-    Console.WriteLine("Updated files:");
-    foreach (var file in updatedFiles)
+    if (!isLlm)
     {
-        Console.WriteLine($"- {file}");
+        Console.WriteLine("Updated files:");
+        foreach (var file in updatedFiles)
+        {
+            Console.WriteLine($"- {file}");
+        }
+
+        Console.WriteLine("git diff:");
+        var psi = new ProcessStartInfo("git", ["--no-pager", "diff", "--ws-error-highlight=all"])
+        {
+            UseShellExecute = false,
+        };
+
+        using var process = Process.Start(psi)!;
+        process.WaitForExit();
     }
-
-    Console.WriteLine("git diff:");
-    var psi = new ProcessStartInfo("git", ["--no-pager", "diff", "--ws-error-highlight=all"])
-    {
-        UseShellExecute = false,
-    };
-
-    using var process = Process.Start(psi)!;
-    process.WaitForExit();
 
     return 1;
 }
@@ -183,7 +190,6 @@ void RunUpdateBomStep(FullPath rootPath)
     {
         try
         {
-            Console.WriteLine($"Processing {file}");
             var content = File.ReadAllBytes(file);
             using var stream = new MemoryStream(content);
             using var reader = new StreamReader(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true), detectEncodingFromByteOrderMarks: true, bufferSize: 4096, leaveOpen: true);
@@ -195,7 +201,7 @@ void RunUpdateBomStep(FullPath rootPath)
                 return;
             }
 
-            Console.WriteLine($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
+            WriteIfNotLlm($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
             File.WriteAllBytes(file, normalizedContent);
             updatedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
         }
@@ -307,8 +313,8 @@ void RunUpdateTrimmableStep(FullPath rootPath)
     if (normalizedExisting != newContent)
     {
         File.WriteAllText(trimmableCsprojPath, newContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        Console.WriteLine("WARNING: tests/Trimmable/Trimmable.csproj was not up-to-date");
         updatedFiles.Add("tests/Trimmable/Trimmable.csproj");
+        WriteIfNotLlm("WARNING: tests/Trimmable/Trimmable.csproj was not up-to-date");
     }
 }
 
@@ -905,7 +911,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
 
         var csprojFiles = new List<string>(Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories));
         csprojFiles.Sort((a, b) => string.Compare(Path.GetFileNameWithoutExtension(a), Path.GetFileNameWithoutExtension(b), StringComparison.OrdinalIgnoreCase));
-        Console.WriteLine($"[update-nuget-readme] NuGet discovery: found {csprojFiles.Count} project files");
+        WriteIfNotLlm($"[update-nuget-readme] NuGet discovery: found {csprojFiles.Count} project files");
 
         var sb = new StringBuilder();
         sb.Append("| Name | Version | Readme |\n");
@@ -940,7 +946,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         }
 
         nugetUpdateStopwatch.Stop();
-        Console.WriteLine($"[update-nuget-readme] NuGet metrics: packable={packableProjectCount}, with-readme={projectWithReadmeCount}, elapsed={nugetUpdateStopwatch.Elapsed.TotalSeconds:F2}s");
+        WriteIfNotLlm($"[update-nuget-readme] NuGet metrics: packable={packableProjectCount}, with-readme={projectWithReadmeCount}, elapsed={nugetUpdateStopwatch.Elapsed.TotalSeconds:F2}s");
 
         var originalLines = File.ReadAllLines(readmePath);
         var originalContent = string.Join("\n", originalLines);
@@ -970,8 +976,8 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         if (originalContent != newContent)
         {
             File.WriteAllText(readmePath, newContent);
-            Console.WriteLine("WARNING: README.md was not up-to-date");
             updatedFiles.Add(FullPath.FromPath(readmePath).MakePathRelativeTo(rootPath));
+            WriteIfNotLlm("WARNING: README.md was not up-to-date");
         }
     }
 
@@ -981,7 +987,8 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
         var maxDegreeOfParallelism = GetUpdateReadmeMaxDegreeOfParallelism();
 
-        Console.WriteLine($"[update-tool-readme] Starting tool project discovery (max-degree-of-parallelism={maxDegreeOfParallelism})");
+        WriteIfNotLlm($"[update-tool-readme] Starting tool project discovery (max-degree-of-parallelism={maxDegreeOfParallelism})");
+
         var discoveryStopwatch = Stopwatch.StartNew();
         var csprojFiles = Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories).ToArray();
         var scannedProjectCount = csprojFiles.Length;
@@ -1025,7 +1032,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         var orderedToolProjects = toolProjects.OrderBy(project => project.Csproj, StringComparer.OrdinalIgnoreCase).ToArray();
 
         discoveryStopwatch.Stop();
-        Console.WriteLine($"[update-tool-readme] Discovery metrics: scanned={scannedProjectCount}, executable={executableProjectCount}, system-commandline={commandLineProjectCount}, tool-projects={orderedToolProjects.Length}, elapsed={discoveryStopwatch.Elapsed.TotalSeconds:F2}s");
+        WriteIfNotLlm($"[update-tool-readme] Discovery metrics: scanned={scannedProjectCount}, executable={executableProjectCount}, system-commandline={commandLineProjectCount}, tool-projects={orderedToolProjects.Length}, elapsed={discoveryStopwatch.Elapsed.TotalSeconds:F2}s");
 
         if (!missingReadmeErrors.IsEmpty)
         {
@@ -1037,17 +1044,19 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
             throw new InvalidOperationException($"One or more tool projects are missing a readme.md file. See errors above.");
         }
 
-        Console.WriteLine("[update-tool-readme] Starting parallel --help generation");
+        WriteIfNotLlm("[update-tool-readme] Starting parallel --help generation");
+
         var generationStopwatch = Stopwatch.StartNew();
         var helpSectionPattern = new Regex("(?<=<!-- help -->)(.*?)(?=<!-- help -->)", RegexOptions.Singleline | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
         var readmeUpdates = new ToolReadmeUpdate?[orderedToolProjects.Length];
         Parallel.For(0, orderedToolProjects.Length, parallelOptions, index =>
         {
             var project = orderedToolProjects[index];
-            Console.WriteLine($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Building tool project: {project.Csproj}");
+            WriteIfNotLlm($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Building tool project: {project.Csproj}");
+
             BuildToolProjectWithRetry(project.Csproj, latestTfm);
 
-            Console.WriteLine($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Generating help output for tool project: {project.Csproj}");
+            WriteIfNotLlm($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Generating help output for tool project: {project.Csproj}");
 
             var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, latestTfm, project.ToolName);
 
@@ -1057,7 +1066,8 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
             readmeUpdates[index] = new ToolReadmeUpdate(project.ToolReadme, toolReadmeContent, newToolReadmeContent);
         });
         generationStopwatch.Stop();
-        Console.WriteLine($"[update-tool-readme] --help generation metrics: tool-projects={orderedToolProjects.Length}, elapsed={generationStopwatch.Elapsed.TotalSeconds:F2}s");
+
+        WriteIfNotLlm($"[update-tool-readme] --help generation metrics: tool-projects={orderedToolProjects.Length}, elapsed={generationStopwatch.Elapsed.TotalSeconds:F2}s");
 
         for (var i = 0; i < orderedToolProjects.Length; i++)
         {
@@ -1065,8 +1075,8 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
             if (update.HasChanges)
             {
                 File.WriteAllText(update.ToolReadme, update.NewContent);
-                Console.WriteLine($"WARNING: {update.ToolReadme} was not up-to-date");
                 updatedFiles.Add(FullPath.FromPath(update.ToolReadme).MakePathRelativeTo(rootPath));
+                WriteIfNotLlm($"WARNING: {update.ToolReadme} was not up-to-date");
             }
         }
     }
@@ -1074,6 +1084,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
 
 void UpdateAnalyzerDocumentation(FullPath srcRootPath)
 {
+
     Console.WriteLine("[update-analyzer-docs] Starting analyzer documentation update");
     var analyzerDocumentationStopwatch = Stopwatch.StartNew();
 
@@ -1695,6 +1706,14 @@ static int RunProcessAndReturnExitCode(FullPath workingDirectory, string fileNam
 static FullPath GetRepositoryRoot()
 {
     return FullPath.CurrentDirectory().FindRequiredGitRepositoryRoot();
+}
+
+void WriteIfNotLlm(string message)
+{
+    if (!isLlm)
+    {
+        Console.WriteLine(message);
+    }
 }
 
 internal readonly record struct AnalyzerRule(

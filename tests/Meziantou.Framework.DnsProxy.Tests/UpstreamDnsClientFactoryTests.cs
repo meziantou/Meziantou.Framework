@@ -1,6 +1,8 @@
+using System.Reflection;
 using TestUtilities;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Forwarding;
+using Meziantou.Framework.DnsClient;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,6 +15,8 @@ namespace Meziantou.Framework.DnsProxy.Tests;
 
 public sealed class UpstreamDnsClientFactoryTests
 {
+    private static readonly FieldInfo DnsClientOptionsField = typeof(DnsClientType).GetField("_options", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
     [Fact]
     public void UpstreamDnsClientFactory_UsesConfiguredUpstreams()
     {
@@ -36,6 +40,31 @@ public sealed class UpstreamDnsClientFactoryTests
         var upstream = Assert.Single(upstreams);
         Assert.Equal("Custom (https://1.1.1.1/dns-query)", upstream.DisplayName);
         Assert.Equal("https://1.1.1.1/dns-query", upstream.Endpoint);
+    }
+
+    [Fact]
+    public void UpstreamDnsClientFactory_UsesConfiguredDnssecValidationMode()
+    {
+        var options = Options.Create(new DnsProxyOptions
+        {
+            DnssecValidationMode = DnssecValidationMode.Local,
+            Upstreams =
+            [
+                new UpstreamServerOption
+                {
+                    Name = "Custom",
+                    Endpoint = "https://1.1.1.1/dns-query",
+                    Protocol = "Https",
+                    UseHttp3 = false,
+                },
+            ],
+        });
+
+        using var factory = new UpstreamDnsClientFactory(options, NullLogger<UpstreamDnsClientFactory>.Instance);
+        var upstream = Assert.Single(factory.GetUpstreams());
+        var clientOptions = Assert.IsType<DnsClientOptions>(DnsClientOptionsField.GetValue(upstream.Client));
+
+        Assert.Equal(DnssecValidationMode.Local, clientOptions.DnssecValidationMode);
     }
 
     [Theory]

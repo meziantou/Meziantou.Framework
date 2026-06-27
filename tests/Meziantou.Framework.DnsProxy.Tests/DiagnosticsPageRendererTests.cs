@@ -3,6 +3,7 @@ using Meziantou.DnsProxy.Diagnostics;
 using Meziantou.DnsProxy.Filtering;
 using Meziantou.DnsProxy.Forwarding;
 using Meziantou.DnsProxy.History;
+using Meziantou.Framework.DnsClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -24,6 +25,7 @@ public sealed class DiagnosticsPageRendererTests
             DnsOverQuicPort = 8853,
             CertificatePath = "certs/proxy.pfx",
             FilterRefreshInterval = TimeSpan.FromMinutes(5),
+            DnssecValidationMode = DnssecValidationMode.Local,
             Filters = [],
             Rewrites = [],
             Upstreams =
@@ -72,6 +74,7 @@ public sealed class DiagnosticsPageRendererTests
         Assert.Contains("<span class='mono'>DnsOverQuicPort</span>: 8853", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>CertificatePath</span>: certs/proxy.pfx", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>FilterRefreshInterval</span>: 00:05:00", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>DnssecValidationMode</span>: Local", html, StringComparison.Ordinal);
         Assert.Contains("example.com A 1.2.3.4", html, StringComparison.Ordinal);
     }
 }

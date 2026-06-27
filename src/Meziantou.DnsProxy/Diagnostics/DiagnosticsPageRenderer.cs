@@ -38,6 +38,7 @@ internal static class DiagnosticsPageRenderer
         stringBuilder.Append("<li><span class='mono'>DnsOverQuicPort</span>: ").Append(HtmlEncode(options.DnsOverQuicPort.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>CertificatePath</span>: ").Append(HtmlEncode(options.CertificatePath ?? string.Empty)).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>FilterRefreshInterval</span>: ").Append(HtmlEncode(options.FilterRefreshInterval.ToString())).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>DnssecValidationMode</span>: ").Append(HtmlEncode(options.DnssecValidationMode.ToString())).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>DiagnosticsHistoryCapacity</span>: ").Append(HtmlEncode(options.DiagnosticsHistoryCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>Upstreams</span>: ").Append(HtmlEncode(string.Join(", ", upstreams.Select(u => u.DisplayName)))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>FilterLists</span>: ").Append(HtmlEncode(string.Join(", ", options.Filters.Select(f => f.Url)))).Append("</li>");

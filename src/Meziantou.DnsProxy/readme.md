@@ -18,6 +18,7 @@ Default configuration:
 - DNS over TLS listener: disabled by default (`DnsOverTlsPort=0`)
 - DNS over QUIC listener: disabled by default (`DnsOverQuicPort=0`)
 - Filter list refresh interval: `00:30:00`
+- DNSSEC validation: disabled by default (`DnssecValidationMode=None`; use `Local` to enable local validation)
 - Default filter lists:
   - AdGuard DNS filter (`https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt`)
   - StevenBlack hosts (`https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts`)
@@ -51,3 +52,4 @@ Parallel instances:
   - `DnsProxy__DnsPort`
   - `DnsProxy__HttpPort`
   - `DnsProxy__FilterRefreshInterval`
+  - `DnsProxy__DnssecValidationMode`

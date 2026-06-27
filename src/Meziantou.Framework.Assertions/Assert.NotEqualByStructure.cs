@@ -6,6 +6,10 @@ partial class Assert
 {
     public static void NotEqualByStructure(object? expected, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => EqualByStructure(expected, actual, message, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<object?, object?>(nameof(NotEqualByStructure), "Not expected", expected, actual, actualExpression, expectedExpression, message))));
+        var failure = GetStructuralDifference(expected, actual, "$", new HashSet<StructuralReferencePair>());
+        if (failure is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualByStructureAssertionError(expected, actual, actualExpression, expectedExpression, message)));
     }
 }

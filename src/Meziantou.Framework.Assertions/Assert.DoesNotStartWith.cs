@@ -6,68 +6,95 @@ partial class Assert
 {
     public static void DoesNotStartWith<T>(T expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        try
-        {
-            StartsWith(expected, actual, comparer, actualExpression, expectedExpression);
-        }
-        catch (AssertionException)
-        {
+        comparer ??= EqualityComparer<T>.Default;
+        if (actual.IsEmpty || !comparer.Equals(expected, actual[0]))
             return;
-        }
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<T, object>(nameof(DoesNotStartWith), "Not expected prefix", expected, MaterializeSpan(actual), actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeReadOnlySpanExpectedActualValueAssertionError<T, T>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotStartWith<T>(T expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => StartsWith(expected, actual, comparer, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<T, IEnumerable<T>>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null))));
+        comparer ??= EqualityComparer<T>.Default;
+        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        if (!actualEnumerator.MoveNext() || !comparer.Equals(expected, actualEnumerator.Current))
+        {
+            return;
+        }
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotStartWithAssertionError<T, IEnumerable<T>>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotStartWith(object? expected, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => StartsWith(expected, actual, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<object?, System.Collections.IEnumerable>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null))));
+        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
+        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        if (!actualEnumerator.MoveNext() || !object.Equals(expected, actualEnumerator.Current))
+        {
+            return;
+        }
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotStartWithAssertionError<object?, System.Collections.IEnumerable>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotStartWith<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        try
-        {
-            StartsWith(expected, actual, comparer, actualExpression, expectedExpression);
-        }
-        catch (AssertionException)
-        {
+        comparer ??= EqualityComparer<T>.Default;
+        if (GetFirstDifferenceIndex(expected, actual, comparer) is not null)
             return;
-        }
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<object, object>(nameof(DoesNotStartWith), "Not expected prefix", MaterializeSpan(expected), MaterializeSpan(actual), actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeReadOnlySpanValueAssertionError<T, T>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotStartWith(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        try
-        {
-            StartsWith(expected, actual, comparison, actualExpression, expectedExpression);
-        }
-        catch (AssertionException)
-        {
+        if (!actual.StartsWith(expected, comparison))
             return;
-        }
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<string, object>(nameof(DoesNotStartWith), "Not expected prefix", expected.ToString(), MaterializeSpan(actual), actualExpression, expectedExpression, message: null)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeReadOnlySpanValueAssertionError<char, char>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
     public static void DoesNotStartWith(string expected, string actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => StartsWith(expected, actual, comparison, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<string, string>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null))));
+        if (!actual.StartsWith(expected, comparison))
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotStartWithAssertionError<string, string>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
-    public static Task DoesNotStartWith<T>(IEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task DoesNotStartWith<T>(IEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        return SucceedWhenAssertionFailsAsync(() => StartsWith(expected, actual, comparer, actualExpression, expectedExpression), () => CreateNegativeTextAssertion(nameof(DoesNotStartWith), "matching prefix", ActualExpressionText(actualExpression)));
+        comparer ??= EqualityComparer<T>.Default;
+        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
+        await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
+        using var expectedEnumerator = expectedSnapshot.GetEnumerator();
+
+        while (expectedEnumerator.MoveNext())
+        {
+            var actualHasNext = await actualEnumerator.MoveNextAsync().ConfigureAwait(false);
+            if (!actualHasNext || !comparer.Equals(expectedEnumerator.Current, actualEnumerator.Current))
+                return;
+        }
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(DoesNotStartWith), "matching prefix", AssertionFormatter.FormatExpression(actualExpression), message: null)));
     }
 
     public static void DoesNotStartWith(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-            SucceedWhenAssertionFails(() => StartsWith(expected, actual, comparer, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null))));
+        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
+        using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
+        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var expectedEnumerator = expectedSnapshot.GetEnumerator();
+
+        while (expectedEnumerator.MoveNext())
+        {
+            var actualHasNext = actualEnumerator.MoveNext();
+            if (!actualHasNext || !Equals(expectedEnumerator.Current, actualEnumerator.Current, comparer))
+                return;
+        }
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new DoesNotStartWithAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 }

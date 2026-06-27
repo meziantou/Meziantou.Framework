@@ -9,7 +9,7 @@ partial class Assert
         if (!actual.IsEmpty)
             return;
 
-        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<object>(nameof(NotEmpty), "empty", MaterializeSpan(actual), actualExpression, message: null)));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeReadOnlySpanActualValueAssertionError<T>(nameof(NotEmpty), "empty", actual, actualExpression, message: null)));
     }
 
     public static void NotEmpty(string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)

@@ -152,14 +152,12 @@ internal class AssertionFormatter
         return result;
     }
 
-    public virtual string Format<TExpected, TActual>(NegativeValueAssertionError<TExpected, TActual> error)
+    public virtual string Format(NegativeExpressionAssertionError error)
     {
         var result = $"""
             Assert.{error.AssertionName}() assertion failed.
-            Expected expression: {error.ExpectedExpression}
-            Actual expression:   {error.ActualExpression}
-            {error.NotExpectedLabel}: {FormatValue(error.ExpectedValue)}
-            Actual:              {FormatValue(error.ActualValue)}
+            Not expected: {error.NotExpectedText}
+            Actual:       {error.Expression}
             """;
 
         if (!string.IsNullOrEmpty(error.Message))
@@ -168,6 +166,140 @@ internal class AssertionFormatter
         }
 
         return result;
+    }
+
+    public virtual string Format(NegativeExceptionAssertionError error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.Expression}
+            Not expected: {error.NotExpectedText}
+            Exception: {error.ExceptionType.FullName}
+            """;
+
+        if (!string.IsNullOrEmpty(error.ExceptionMessage))
+        {
+            result += Environment.NewLine + "Exception message: " + error.ExceptionMessage;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<T>(NegativeReadOnlySpanActualValueAssertionError<T> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected: {error.NotExpectedText}
+            Actual:       {FormatReadOnlySpanValue(error.ActualValue.Span)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(NegativeReadOnlySpanValueAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            {error.NotExpectedLabel}: {FormatReadOnlySpanValue(error.ExpectedValue.Span)}
+            Actual:              {FormatReadOnlySpanValue(error.ActualValue.Span)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(NegativeReadOnlySpanExpectedActualValueAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            {error.NotExpectedLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:              {FormatReadOnlySpanValue(error.ActualValue.Span)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += Environment.NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<T>(NegativeReadOnlySpanCountAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected count: {error.NotExpectedCount}
+            Actual count:       {error.ActualCount}
+            Actual:             {FormatReadOnlySpanValue(error.ActualValue.Span)}
+            """);
+    }
+
+    private string FormatNegativeValue(string assertionName, string? expectedExpression, string? actualExpression, string notExpectedLabel, object? expectedValue, object? actualValue, string? message)
+    {
+        var result = $"""
+            Assert.{assertionName}() assertion failed.
+            Expected expression: {expectedExpression}
+            Actual expression:   {actualExpression}
+            {notExpectedLabel}: {FormatValue(expectedValue)}
+            Actual:              {FormatValue(actualValue)}
+            """;
+
+        if (!string.IsNullOrEmpty(message))
+        {
+            result += Environment.NewLine + "Message: " + message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(DoesNotContainAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.DoesNotContain), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TExpected, TActual>(DoesNotStartWithAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.DoesNotStartWith), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TExpected, TActual>(DoesNotEndWithAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.DoesNotEndWith), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TExpected, TActual>(NotEqualAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.NotEqual), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TExpected, TActual>(NotEqualUnorderedAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.NotEqualUnordered), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format(NotEqualByStructureAssertionError error)
+    {
+        return FormatNegativeValue(nameof(Assert.NotEqualByStructure), error.ExpectedExpression, error.ActualExpression, "Not expected", error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format(DoesNotMatchAssertionError error)
+    {
+        return FormatNegativeValue(nameof(Assert.DoesNotMatch), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
     }
 
     public virtual string Format<TActual>(NegativeActualValueAssertionError<TActual> error)
@@ -1145,6 +1277,11 @@ internal class AssertionFormatter
     private static string FormatType(Type? type)
     {
         return type?.FullName ?? "<null>";
+    }
+
+    internal static string FormatExpression(string? expression)
+    {
+        return string.IsNullOrEmpty(expression) ? "<actual>" : expression;
     }
 
     protected virtual string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value, int? highlightedIndex = null)

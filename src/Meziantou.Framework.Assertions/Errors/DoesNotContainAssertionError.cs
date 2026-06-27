@@ -1,8 +1,7 @@
 namespace Meziantou.Framework.Assertions;
 
-internal readonly struct NegativeValueAssertionError<TExpected, TActual>(string assertionName, string notExpectedLabel, TExpected expectedValue, TActual actualValue, string? actualExpression, string? expectedExpression, string? message)
+internal readonly struct DoesNotContainAssertionError<TExpected, TActual>(string notExpectedLabel, TExpected expectedValue, TActual actualValue, string? actualExpression, string? expectedExpression, string? message)
 {
-    public string AssertionName { get; } = assertionName;
     public string NotExpectedLabel { get; } = notExpectedLabel;
     public string? Message { get; } = message;
     public string? ExpectedExpression { get; } = expectedExpression;

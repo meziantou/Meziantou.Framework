@@ -12,7 +12,7 @@ partial class Assert
         }
         catch (Exception ex)
         {
-            throw CreateNegativeTextAssertion(nameof(DoesNotThrow), "exception", actionExpression ?? "<action>", ex.Message);
+            throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExceptionAssertionError(nameof(DoesNotThrow), "exception", actionExpression ?? "<action>", ex.GetType(), ex.Message)));
         }
     }
 
@@ -30,7 +30,7 @@ partial class Assert
         }
         catch (Exception ex) when (ex.GetType() == exceptionType)
         {
-            throw CreateNegativeTextAssertion(nameof(DoesNotThrow), "exception of type " + exceptionType.FullName, actionExpression ?? "<action>", ex.Message);
+            throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExceptionAssertionError(nameof(DoesNotThrow), "exception of type " + exceptionType.FullName, actionExpression ?? "<action>", ex.GetType(), ex.Message)));
         }
     }
 
@@ -48,7 +48,7 @@ partial class Assert
         }
         catch (Exception ex) when (exceptionType.IsAssignableFrom(ex.GetType()))
         {
-            throw CreateNegativeTextAssertion(nameof(DoesNotThrowAny), "exception assignable to " + exceptionType.FullName, actionExpression ?? "<action>", ex.Message);
+            throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExceptionAssertionError(nameof(DoesNotThrowAny), "exception assignable to " + exceptionType.FullName, actionExpression ?? "<action>", ex.GetType(), ex.Message)));
         }
     }
 
@@ -60,7 +60,7 @@ partial class Assert
         }
         catch (Exception ex)
         {
-            throw CreateNegativeTextAssertion(nameof(DoesNotThrow), "exception", actionExpression ?? "<action>", ex.Message);
+            throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExceptionAssertionError(nameof(DoesNotThrow), "exception", actionExpression ?? "<action>", ex.GetType(), ex.Message)));
         }
     }
 
@@ -78,7 +78,7 @@ partial class Assert
         }
         catch (Exception ex) when (ex.GetType() == exceptionType)
         {
-            throw CreateNegativeTextAssertion(nameof(DoesNotThrow), "exception of type " + exceptionType.FullName, actionExpression ?? "<action>", ex.Message);
+            throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExceptionAssertionError(nameof(DoesNotThrow), "exception of type " + exceptionType.FullName, actionExpression ?? "<action>", ex.GetType(), ex.Message)));
         }
     }
 
@@ -96,7 +96,7 @@ partial class Assert
         }
         catch (Exception ex) when (exceptionType.IsAssignableFrom(ex.GetType()))
         {
-            throw CreateNegativeTextAssertion(nameof(DoesNotThrowAny), "exception assignable to " + exceptionType.FullName, actionExpression ?? "<action>", ex.Message);
+            throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExceptionAssertionError(nameof(DoesNotThrowAny), "exception assignable to " + exceptionType.FullName, actionExpression ?? "<action>", ex.GetType(), ex.Message)));
         }
     }
 }

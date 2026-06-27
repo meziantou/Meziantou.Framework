@@ -6,43 +6,109 @@ partial class Assert
 {
     public static void NotEqualUnordered<T>(IEnumerable<T> expected, IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => EqualUnordered(expected, actual, message, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<IEnumerable<T>, IEnumerable<T>>(nameof(NotEqualUnordered), "Not expected", expected, actual, actualExpression, expectedExpression, message))));
+        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
+        EnsureComplete(actualSnapshot);
+        EnsureComplete(expectedSnapshot);
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, EqualityComparer<T>.Default.Equals);
+        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualUnorderedAssertionError<IEnumerable<T>, IEnumerable<T>>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
     }
 
     public static void NotEqualUnordered<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => EqualUnordered(expected, actual, comparer, message, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<IEnumerable<T>, IEnumerable<T>>(nameof(NotEqualUnordered), "Not expected", expected, actual, actualExpression, expectedExpression, message))));
+        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
+        EnsureComplete(actualSnapshot);
+        EnsureComplete(expectedSnapshot);
+        comparer ??= EqualityComparer<T>.Default;
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
+        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualUnorderedAssertionError<IEnumerable<T>, IEnumerable<T>>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
     }
 
     [OverloadResolutionPriority(-1)]
     public static void NotEqualUnordered<TExpected, TActual>(IEnumerable<TExpected> expected, IEnumerable<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => EqualUnordered(expected, actual, message, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<IEnumerable<TExpected>, IEnumerable<TActual>>(nameof(NotEqualUnordered), "Not expected", expected, actual, actualExpression, expectedExpression, message))));
+        using var actualSnapshot = new CollectionSnapshot<TActual>(actual);
+        using var expectedSnapshot = new CollectionSnapshot<TExpected>(expected);
+        EnsureComplete(actualSnapshot);
+        EnsureComplete(expectedSnapshot);
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem));
+        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualUnorderedAssertionError<IEnumerable<TExpected>, IEnumerable<TActual>>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
     }
 
-    public static Task NotEqualUnordered<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task NotEqualUnordered<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        return SucceedWhenAssertionFailsAsync(() => EqualUnordered(expected, actual, message, actualExpression, expectedExpression), () => CreateNegativeTextAssertion(nameof(NotEqualUnordered), "same unordered sequence", ActualExpressionText(actualExpression), message));
+        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, EqualityComparer<T>.Default.Equals);
+        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(NotEqualUnordered), "same unordered sequence", AssertionFormatter.FormatExpression(actualExpression), message)));
     }
 
-    public static Task NotEqualUnordered<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task NotEqualUnordered<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        return SucceedWhenAssertionFailsAsync(() => EqualUnordered(expected, actual, comparer, message, actualExpression, expectedExpression), () => CreateNegativeTextAssertion(nameof(NotEqualUnordered), "same unordered sequence", ActualExpressionText(actualExpression), message));
+        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+        comparer ??= EqualityComparer<T>.Default;
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
+        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(NotEqualUnordered), "same unordered sequence", AssertionFormatter.FormatExpression(actualExpression), message)));
     }
 
     [OverloadResolutionPriority(-1)]
-    public static Task NotEqualUnordered<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, IAsyncEnumerable<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task NotEqualUnordered<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, IAsyncEnumerable<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        return SucceedWhenAssertionFailsAsync(() => EqualUnordered(expected, actual, message, actualExpression, expectedExpression), () => CreateNegativeTextAssertion(nameof(NotEqualUnordered), "same unordered sequence", ActualExpressionText(actualExpression), message));
+        await using var actualSnapshot = new AsyncCollectionSnapshot<TActual>(actual);
+        await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
+        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem));
+        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeExpressionAssertionError(nameof(NotEqualUnordered), "same unordered sequence", AssertionFormatter.FormatExpression(actualExpression), message)));
     }
 
     public static void NotEqualUnordered(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => EqualUnordered(expected, actual, message, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>(nameof(NotEqualUnordered), "Not expected", expected, actual, actualExpression, expectedExpression, message))));
+        using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
+        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
+        EnsureComplete(expectedSnapshot);
+        EnsureComplete(actualSnapshot);
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem));
+        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualUnorderedAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
     }
 
     public static void NotEqualUnordered(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        SucceedWhenAssertionFails(() => EqualUnordered(expected, actual, comparer, message, actualExpression, expectedExpression), () => new AssertionException(AssertionFormatter.Default.Format(new NegativeValueAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>(nameof(NotEqualUnordered), "Not expected", expected, actual, actualExpression, expectedExpression, message))));
+        using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
+        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
+        EnsureComplete(expectedSnapshot);
+        EnsureComplete(actualSnapshot);
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem, comparer));
+        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+            return;
+
+        throw new AssertionException(AssertionFormatter.Default.Format(new NotEqualUnorderedAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
     }
 }

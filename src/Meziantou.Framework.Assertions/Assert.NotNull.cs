@@ -9,7 +9,7 @@ partial class Assert
         if (actual is not null)
             return actual;
 
-        return ThrowFailure<object>(new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<object?>(nameof(NotNull), "<null>", actual, actualExpression, message: null))));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<object?>(nameof(NotNull), "<null>", actual, actualExpression, message: null)));
     }
 
     public static T NotNull<T>([NotNull] T? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
@@ -18,6 +18,6 @@ partial class Assert
         if (actual.HasValue)
             return actual.GetValueOrDefault();
 
-        return ThrowFailure<T>(new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<T?>(nameof(NotNull), "<null>", actual, actualExpression, message: null))));
+        throw new AssertionException(AssertionFormatter.Default.Format(new NegativeActualValueAssertionError<T?>(nameof(NotNull), "<null>", actual, actualExpression, message: null)));
     }
 }

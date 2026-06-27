@@ -148,12 +148,10 @@ public sealed partial class ObservableCollectionTests
         else
         {
             Assert.All(eventAssert.CollectionChangedArgs.Select(e => e.Action), action => Assert.Equal(NotifyCollectionChangedAction.Add, action));
-            Assert.EqualUnordered(new[]
-            {
-                new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 3, NewItems = new[] { 3 }  },
-                new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 4, NewItems = new[] { 4 }  },
-                new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 5, NewItems = new[] { 5 }  },
-            }, eventAssert.CollectionChangedArgs);
+            Assert.Collection(eventAssert.CollectionChangedArgs,
+                e => { Assert.Equal(NotifyCollectionChangedAction.Add, e.Action); Assert.Equal(3, e.NewStartingIndex); Assert.Equal([3], e.NewItems!.Cast<int>().ToArray()); },
+                e => { Assert.Equal(NotifyCollectionChangedAction.Add, e.Action); Assert.Equal(4, e.NewStartingIndex); Assert.Equal([4], e.NewItems!.Cast<int>().ToArray()); },
+                e => { Assert.Equal(NotifyCollectionChangedAction.Add, e.Action); Assert.Equal(5, e.NewStartingIndex); Assert.Equal([5], e.NewItems!.Cast<int>().ToArray()); });
         }
     }
 
@@ -184,12 +182,10 @@ public sealed partial class ObservableCollectionTests
         else
         {
             Assert.All(eventAssert.CollectionChangedArgs.Select(e => e.Action), action => Assert.Equal(NotifyCollectionChangedAction.Add, action));
-            Assert.EqualUnordered(new[]
-            {
-                new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 2, NewItems = new[] { 2 }  },
-                new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 3, NewItems = new[] { 3 }  },
-                new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 4, NewItems = new[] { 4 }  },
-            }, eventAssert.CollectionChangedArgs);
+            Assert.Collection(eventAssert.CollectionChangedArgs,
+                e => { Assert.Equal(NotifyCollectionChangedAction.Add, e.Action); Assert.Equal(2, e.NewStartingIndex); Assert.Equal([2], e.NewItems!.Cast<int>().ToArray()); },
+                e => { Assert.Equal(NotifyCollectionChangedAction.Add, e.Action); Assert.Equal(3, e.NewStartingIndex); Assert.Equal([3], e.NewItems!.Cast<int>().ToArray()); },
+                e => { Assert.Equal(NotifyCollectionChangedAction.Add, e.Action); Assert.Equal(4, e.NewStartingIndex); Assert.Equal([4], e.NewItems!.Cast<int>().ToArray()); });
         }
     }
 

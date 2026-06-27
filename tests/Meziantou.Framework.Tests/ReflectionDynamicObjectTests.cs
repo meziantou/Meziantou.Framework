@@ -12,14 +12,14 @@ public class ReflectionDynamicObjectTests
         Assert.Equal(10, rdo.PrivateProperty);
         Assert.Equal(1, rdo[1]);
         Assert.Equal(3, rdo[1, 2]);
-        Assert.Equal("test", rdo["test"]);
+        Assert.Equal("test", (string)rdo["test"]);
         rdo["test"] = "sample";
-        Assert.Equal("testsample", rdo["test"]);
+        Assert.Equal("testsample", (string)rdo["test"]);
         Assert.Equal(42, rdo.PrivateMethod());
         Assert.Equal(1, rdo.PrivateMethodWithOverload());
         Assert.Equal(2, rdo.PrivateMethodWithOverload(1));
         Assert.Equal(3L, rdo.PrivateMethodWithOverload(1L));
-        Assert.Equal("test", rdo.ProtectedVirtualMethod());
+        Assert.Equal("test", (string)rdo.ProtectedVirtualMethod());
 
         rdo._privateField = 43;
         Assert.Equal(43, rdo._privateField);
@@ -34,7 +34,7 @@ public class ReflectionDynamicObjectTests
 
         Assert.Equal(42, rdo._privateField);
         Assert.Equal(11, rdo.PrivateProperty);
-        Assert.Equal("test2", rdo.ProtectedVirtualMethod());
+        Assert.Equal("test2", (string)rdo.ProtectedVirtualMethod());
     }
 
     [Fact]

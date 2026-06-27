@@ -18,6 +18,6 @@ public sealed partial class ObservableCollectionTests
         Assert.Equal("[1,2,3]", json);
 
         var deserialized = System.Text.Json.JsonSerializer.Deserialize<ConcurrentObservableCollection<int>>(json);
-        Assert.Equivalent(collection, deserialized);
+        Assert.Equal(collection, deserialized);
     }
 }

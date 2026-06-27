@@ -1,0 +1,1561 @@
+namespace Meziantou.Framework.Assertions;
+
+#pragma warning disable CA1822, CA1852 // Formatter methods intentionally share an instance-based overridable shape.
+internal class AssertionFormatter
+{
+    private const char CombiningLowLine = '\u0332';
+    private const string NewLine = "\n";
+
+    public static AssertionFormatter Default { get; } = new AssertionFormatter();
+
+    internal FormatterOptions Options
+    {
+        get;
+        set => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = new();
+
+    /// <summary>Gets or sets the number of items to format from the start of an enumerable before truncating it.</summary>
+    /// <remarks>
+    /// When there is no highlighted item, or when the highlighted item is within this leading range, the formatter writes items from the beginning of the enumerable.
+    /// If <see cref="SuffixItemCount"/> requires more items after a highlighted item, the formatter can write more than this value.
+    /// When the highlighted item index is greater than or equal to this value, the formatter switches to focused mode: it writes <see cref="PrefixItemCount"/> items from the beginning, an ellipsis, and a window around the highlighted item controlled by <see cref="HighlightedContextItemCount"/>.
+    /// </remarks>
+    public int MaxFormattedItems
+    {
+        get => Options.MaxFormattedItems;
+        set => Options.MaxFormattedItems = value;
+    }
+
+    /// <summary>Gets or sets the number of items to keep from the start of an enumerable when a highlighted item is outside the leading range.</summary>
+    /// <remarks>
+    /// This value is used only in focused mode, when the highlighted item index is greater than or equal to <see cref="MaxFormattedItems"/>.
+    /// It preserves the beginning of the enumerable before the ellipsis and the highlighted-item context window.
+    /// </remarks>
+    public int PrefixItemCount
+    {
+        get => Options.PrefixItemCount;
+        set => Options.PrefixItemCount = value;
+    }
+
+    /// <summary>Gets or sets the minimum number of items to format after a highlighted item in the leading range.</summary>
+    /// <remarks>
+    /// This value is used when the highlighted item index is less than <see cref="MaxFormattedItems"/>.
+    /// In that case, the formatter writes at least <see cref="MaxFormattedItems"/> items, and can continue up to the highlighted item plus this many following items.
+    /// This lets assertion failures found near the beginning of a snapshot show extra items after the difference.
+    /// </remarks>
+    public int SuffixItemCount
+    {
+        get => Options.SuffixItemCount;
+        set => Options.SuffixItemCount = value;
+    }
+
+    /// <summary>Gets or sets the number of neighboring items to format before and after a highlighted item in focused mode.</summary>
+    /// <remarks>
+    /// This value is used only when the highlighted item index is greater than or equal to <see cref="MaxFormattedItems"/>.
+    /// The formatter then writes <see cref="PrefixItemCount"/> items from the beginning, an ellipsis when items were skipped, and up to this many items on each side of the highlighted item.
+    /// </remarks>
+    public int HighlightedContextItemCount
+    {
+        get => Options.HighlightedContextItemCount;
+        set => Options.HighlightedContextItemCount = value;
+    }
+
+    public string Format(FailAssertionError error)
+    {
+        var result = "Assert.Fail() assertion failed.";
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format(TrueAssertionError error)
+    {
+        var result = $"""
+            Assert.True() assertion failed.
+            Expression: {error.Expression}
+            Expected: true
+            Actual:   {FormatBoolean(error.Actual)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format(FalseAssertionError error)
+    {
+        var result = $"""
+            Assert.False() assertion failed.
+            Expression: {error.Expression}
+            Expected: false
+            Actual:   {FormatBoolean(error.Actual)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    private static string FormatBoolean(bool? value)
+    {
+        return value switch
+        {
+            true => "true",
+            false => "false",
+            null => "<null>",
+        };
+    }
+
+    public virtual string Format(NegativeTextAssertionError error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Not expected: {error.NotExpectedText}
+            Actual:       {error.ActualText}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format(NegativeExpressionAssertionError error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Not expected: {error.NotExpectedText}
+            Actual:       {error.Expression}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format(NegativeExceptionAssertionError error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.Expression}
+            Not expected: {error.NotExpectedText}
+            Exception: {error.ExceptionType.FullName}
+            """;
+
+        if (!string.IsNullOrEmpty(error.ExceptionMessage))
+        {
+            result += NewLine + "Exception message: " + error.ExceptionMessage;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<T>(NegativeReadOnlySpanActualValueAssertionError<T> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected: {error.NotExpectedText}
+            Actual:       {FormatReadOnlySpanValue(error.ActualValue.Span)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(NegativeReadOnlySpanValueAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            {error.NotExpectedLabel}: {FormatReadOnlySpanValue(error.ExpectedValue.Span)}
+            Actual:              {FormatReadOnlySpanValue(error.ActualValue.Span)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(NegativeReadOnlySpanExpectedActualValueAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            {error.NotExpectedLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:              {FormatReadOnlySpanValue(error.ActualValue.Span)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<T>(NegativeReadOnlySpanCountAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected count: {error.NotExpectedCount}
+            Actual count:       {error.ActualCount}
+            Actual:             {FormatReadOnlySpanValue(error.ActualValue.Span)}
+            """);
+    }
+
+    private string FormatNegativeValue(string assertionName, string? expectedExpression, string? actualExpression, string notExpectedLabel, object? expectedValue, object? actualValue, string? message)
+    {
+        var result = $"""
+            Assert.{assertionName}() assertion failed.
+            Expected expression: {expectedExpression}
+            Actual expression:   {actualExpression}
+            {notExpectedLabel}: {FormatValue(expectedValue)}
+            Actual:              {FormatValue(actualValue)}
+            """;
+
+        if (!string.IsNullOrEmpty(message))
+        {
+            result += NewLine + "Message: " + message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(DoesNotContainAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.DoesNotContain), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TExpected, TActual>(DoesNotStartWithAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.DoesNotStartWith), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TExpected, TActual>(DoesNotEndWithAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.DoesNotEndWith), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TExpected, TActual>(NotEqualAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.NotEqual), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TExpected, TActual>(NotEqualUnorderedAssertionError<TExpected, TActual> error)
+    {
+        return FormatNegativeValue(nameof(Assert.NotEqualUnordered), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format(NotEqualByStructureAssertionError error)
+    {
+        return FormatNegativeValue(nameof(Assert.NotEqualByStructure), error.ExpectedExpression, error.ActualExpression, "Not expected", error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format(DoesNotMatchAssertionError error)
+    {
+        return FormatNegativeValue(nameof(Assert.DoesNotMatch), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
+    }
+
+    public virtual string Format<TActual>(NegativeActualValueAssertionError<TActual> error)
+    {
+        var result = $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected: {error.NotExpectedText}
+            Actual:       {FormatValue(error.ActualValue)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format(NegativeSameAssertionError error)
+    {
+        return $"""
+            Assert.NotSame() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Not expected: same instance as {FormatValue(error.ExpectedValue)}
+            Actual:       {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format<T>(NegativeRangeAssertionError<T> error)
+    {
+        return $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected: in range [{FormatValue(error.LowValue)}, {FormatValue(error.HighValue)}]
+            Actual:       {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(NegativeTypeAssertionError error)
+    {
+        return $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression:          {error.ActualExpression}
+            {error.NotExpectedTypeLabel}: {FormatType(error.ExpectedType)}
+            Actual type:         {FormatType(error.ActualValue?.GetType())}
+            Actual value:        {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(NegativeSetAssertionError error)
+    {
+        var setName = error.IsSuperset ? "superset" : "subset";
+        var expectedExpressionLabel = $"Expected {setName} expression:";
+        var actualExpressionLabel = "Actual expression:";
+        var notExpectedValueLabel = $"Not expected {setName}:";
+        var actualValueLabel = "Actual:";
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.NotProper{(error.IsSuperset ? "Superset" : "Subset")}() assertion failed.
+            {expectedExpressionLabel} {error.ExpectedExpression}
+            {actualExpressionLabel.PadRight(expectedExpressionLabel.Length)} {error.ActualExpression}
+            {notExpectedValueLabel} {FormatValue(error.ExpectedValue)}
+            {actualValueLabel.PadRight(notExpectedValueLabel.Length)} {FormatValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format<T>(NegativeCountAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Not expected count: {error.NotExpectedCount}
+            Actual count:       {error.ActualCount}
+            Actual:             {FormatValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format<T>(NegativeEqualWithToleranceAssertionError<T> error)
+    {
+        var result = $"""
+            Assert.NotEqual() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Not expected: {FormatValue(error.ExpectedValue)}
+            Actual:       {FormatValue(error.ActualValue)}
+            Tolerance:    {FormatValue(error.Tolerance)}
+            """;
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format(NullAssertionError error)
+    {
+        return $"""
+            Assert.Null() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected: <null>
+            Actual:   {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(IsTypeAssertionError error)
+    {
+        return $"""
+            Assert.IsType() assertion failed.
+            Expression:    {error.ActualExpression}
+            Expected type: {FormatType(error.ExpectedType)}
+            Actual type:   {FormatType(error.ActualValue?.GetType())}
+            Actual value:  {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(IsAssignableToAssertionError error)
+    {
+        return $"""
+            Assert.IsAssignableTo() assertion failed.
+            Expression:    {error.ActualExpression}
+            Expected type: {FormatType(error.ExpectedType)}
+            Actual type:   {FormatType(error.ActualValue?.GetType())}
+            Actual value:  {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(SameAssertionError error)
+    {
+        return $"""
+            Assert.Same() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected: same instance as {FormatValue(error.ExpectedValue)}
+            Actual:   {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format<T>(InRangeAssertionError<T> error)
+    {
+        return $"""
+            Assert.InRange() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected:   in range [{FormatValue(error.LowValue)}, {FormatValue(error.HighValue)}]
+            Actual:     {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(ThrowsAssertionError error)
+    {
+        return $"""
+            Assert.{(error.AllowDerivedTypes ? "ThrowsAny" : "Throws")}() assertion failed.
+            Expression:              {error.ActionExpression}
+            Expected exception type: {FormatType(error.ExpectedExceptionType)}
+            Actual exception type:   {FormatType(error.ActualException?.GetType())}
+            Exception:               {FormatException(error.ActualException)}
+            """;
+    }
+
+    public virtual string Format(RegexMatchesAssertionError error)
+    {
+        return $"""
+            Assert.Match() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected pattern: {FormatValue(error.ExpectedPattern)}
+            Actual:           {FormatValue(error.ActualValue)}
+            """;
+    }
+
+    public virtual string Format(RaiseAssertionError error)
+    {
+        return $"""
+            Assert.{(error.AllowDerivedTypes ? "RaiseAny" : "Raise")}() assertion failed.
+            Expression:               {error.ActionExpression}
+            Expected event args type: {FormatType(error.ExpectedEventArgsType)}
+            Actual event args type:   {FormatType(error.ActualEventArgsType)}
+            """;
+    }
+
+    public virtual string Format<T>(CollectionSetAssertionError<T> error)
+    {
+        var setName = error.IsSuperset ? "superset" : "subset";
+        var expectedExpressionLabel = $"Expected {setName} expression:";
+        var actualExpressionLabel = "Actual expression:";
+        var expectedValueLabel = $"Expected {setName}:";
+        var actualValueLabel = "Actual:";
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{(error.IsSuperset ? "ProperSuperset" : "ProperSubset")}() assertion failed.
+            {expectedExpressionLabel} {error.ExpectedExpression}
+            {actualExpressionLabel.PadRight(expectedExpressionLabel.Length)} {error.ActualExpression}
+            {expectedValueLabel} {FormatValue(error.ExpectedValue.Items)}
+            {actualValueLabel.PadRight(expectedValueLabel.Length)} {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.Equal() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            """;
+
+        result += NewLine + "Expected: " + FormatValue(error.ExpectedValue);
+        result += NewLine + "Actual:   " + FormatValue(error.ActualValue);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<T>(EqualWithToleranceAssertionError<T> error)
+    {
+        var result = $"""
+            Assert.Equal() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            """;
+
+        result += NewLine + "Expected: " + FormatValue(error.ExpectedValue);
+        result += NewLine + "Actual:   " + FormatValue(error.ActualValue);
+        result += NewLine + "Tolerance: " + FormatValue(error.Tolerance);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format(EqualByStructureAssertionError error)
+    {
+        var result = $"""
+            Assert.EqualByStructure() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Path: {error.Path}
+            Reason: {error.Reason}
+            """;
+
+        result += NewLine + "Expected: " + FormatStructuralValue(error.ExpectedValue);
+        result += NewLine + "Actual:   " + FormatStructuralValue(error.ActualValue);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(ReadOnlySpanEqualAssertionError<TExpected, TActual> error)
+    {
+        var result = string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Equal() assertion failed: Item at index {error.FirstDifferenceIndex} differs.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected item: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex)}
+            Actual item:   {FormatReadOnlySpanValue(error.ActualValue, error.FirstDifferenceIndex)}
+            """);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(ReadOnlySpanLengthAssertionError<TExpected, TActual> error)
+    {
+        var result = string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected length: {error.ExpectedValue.Length}
+            Actual length:   {error.ActualValue.Length}
+            Expected: {FormatReadOnlySpanValue(error.ExpectedValue)}
+            Actual:   {FormatReadOnlySpanValue(error.ActualValue)}
+            """);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<T>(ValueStartsWithAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected prefix: {FormatValue(error.ExpectedValue)}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
+            """);
+    }
+
+    public virtual string Format<T>(ValueCollectionStartsWithAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected prefix: {FormatValue(error.ExpectedValue)}
+            Actual:          {FormatValue(error.ActualValue.Items, error.ActualValue.Items.Count > 0 ? 0 : null)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanEmptyAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Empty() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
+            """);
+    }
+
+    public virtual string Format(StringEmptyAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Empty() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatStringValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionEmptyAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Empty() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.ActualValue.Items.Count > 0 ? 0 : null)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionEmptyAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Empty() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.ActualValue.Items.Count > 0 ? 0 : null)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanSingleAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatReadOnlySpanValue(error.ActualValue, GetSingleFailureHighlightedIndex(error.ActualValue.Length))}
+            """);
+    }
+
+    public virtual string Format(StringSingleAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatStringValue(error.ActualValue, GetSingleFailureHighlightedIndex(error.ActualValue.Length))}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionSingleAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, GetSingleFailureHighlightedIndex(error.ActualValue.Items.Count))}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionSinglePredicateAssertionError<T> error)
+    {
+        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Matching items:       {FormatValue(error.MatchingValues.Items, GetSingleFailureHighlightedIndex(error.MatchingValues.Items.Count))}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionContainsPredicateAssertionError<T> error)
+    {
+        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expression: {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Matching items:       {FormatValue(error.MatchingValues.Items)}
+            """);
+    }
+
+    public virtual string Format(ContainsPredicateNullActualAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expression: {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Actual: <null>
+            """);
+    }
+
+    public virtual string Format<T>(CollectionDoesNotContainPredicateAssertionError<T> error)
+    {
+        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.DoesNotContain() assertion failed.
+            Expression: {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Not expected: any matching item
+            Matching items: {FormatValue(error.MatchingValues.Items)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionSingleAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Single() assertion failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, GetSingleFailureHighlightedIndex(error.ActualValue.Items.Count))}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Collection() assertion failed: Collection count does not match inspector count.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualValue.Items.Count}
+            Actual:         {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionInspectorAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Collection() assertion failed: Item at index {error.Index} failed.
+            Expression: {error.ActualExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.Index)}
+            Exception:  {FormatException(error.Exception)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanAllAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.All() assertion failed: Item at index {error.Index} failed.
+            Expression: {error.ActualExpression}
+            Assertion expression: {error.AssertionExpression}
+            Actual:     {FormatReadOnlySpanValue(error.ActualValue, error.Index)}
+            Exception:  {FormatException(error.Exception)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionAllAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.All() assertion failed: Item at index {error.Index} failed.
+            Expression: {error.ActualExpression}
+            Assertion expression: {error.AssertionExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.Index)}
+            Exception:  {FormatException(error.Exception)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionAllAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, GetMaxFormattedIndex(error.Index)).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.All() assertion failed: Item at index {error.Index} failed.
+            Expression: {error.ActualExpression}
+            Assertion expression: {error.AssertionExpression}
+            Actual:     {FormatValue(error.ActualValue.Items, error.Index)}
+            Exception:  {FormatException(error.Exception)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanDistinctAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Distinct() assertion failed: Duplicate item found at index {error.DuplicateIndex}.
+            Expression: {error.ActualExpression}
+            First index:     {error.FirstIndex}
+            Duplicate index: {error.DuplicateIndex}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.DuplicateIndex)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionDistinctAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.DuplicateIndex));
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Distinct() assertion failed: Duplicate item found at index {error.DuplicateIndex}.
+            Expression: {error.ActualExpression}
+            First index:     {error.FirstIndex}
+            Duplicate index: {error.DuplicateIndex}
+            Actual:          {FormatValue(error.ActualValue.Items, error.DuplicateIndex)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionDistinctAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, GetMaxFormattedIndex(error.DuplicateIndex)).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Distinct() assertion failed: Duplicate item found at index {error.DuplicateIndex}.
+            Expression: {error.ActualExpression}
+            First index:     {error.FirstIndex}
+            Duplicate index: {error.DuplicateIndex}
+            Actual:          {FormatValue(error.ActualValue.Items, error.DuplicateIndex)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanCountAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualCount}
+            Actual:         {FormatReadOnlySpanValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format(StringCountAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualCount}
+            Actual:         {FormatStringValue(error.ActualValue, highlightedIndex: null)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionCountAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualCount}
+            Actual:         {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionCountAssertionError<T> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expression: {error.ActualExpression}
+            Expected count: {error.ExpectedCount}
+            Actual count:   {error.ActualCount}
+            Actual:         {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<T>(ValueContainsAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected item: {FormatValue(error.ExpectedValue)}
+            Actual:        {FormatReadOnlySpanValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format<T>(ValueCollectionContainsAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected item: {FormatValue(error.ExpectedValue)}
+            Actual:        {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<TExpected>(ContainsNullActualAssertionError<TExpected> error)
+    {
+        var actualExpressionPadding = new string(' ', error.ExpectedExpressionLabel.Length - "Actual expression".Length + 1);
+        var actualValuePadding = new string(' ', error.ExpectedValueLabel.Length - "Actual".Length + 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            {error.ExpectedExpressionLabel}: {error.ExpectedExpression}
+            Actual expression:{actualExpressionPadding}{error.ActualExpression}
+            {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:{actualValuePadding}<null>
+            """);
+    }
+
+    public virtual string Format<TExpected>(NullActualAssertionError<TExpected> error)
+    {
+        var actualExpressionPadding = new string(' ', error.ExpectedExpressionLabel.Length - "Actual expression".Length + 1);
+        var actualValuePadding = new string(' ', error.ExpectedValueLabel.Length - "Actual".Length + 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            {error.ExpectedExpressionLabel}: {error.ExpectedExpression}
+            Actual expression:{actualExpressionPadding}{error.ActualExpression}
+            {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:{actualValuePadding}<null>
+            """);
+    }
+
+    public virtual string Format<TKey, TValue>(KeyValuePairCollectionContainsAssertionError<TKey, TValue> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected key expression: {error.ExpectedExpression}
+            Actual expression:       {error.ActualExpression}
+            Expected key: {FormatValue(error.ExpectedKey)}
+            Actual:       {FormatKeyValuePairs(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format(DictionaryContainsAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected key expression: {error.ExpectedExpression}
+            Actual expression:       {error.ActualExpression}
+            Expected key: {FormatValue(error.ExpectedKey)}
+            Actual:       {FormatDictionary(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanContainsAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected: {FormatReadOnlySpanValue(error.ExpectedValue)}
+            Actual:   {FormatReadOnlySpanValue(error.ActualValue)}
+            """);
+    }
+
+    public virtual string Format(ReadOnlySpanCharContainsAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            Expected: {FormatStringValue(error.ExpectedValue, highlightedIndex: null)}
+            Actual:   {FormatStringValue(error.ActualValue, highlightedIndex: null)}
+            """);
+    }
+
+    public virtual string Format(StringContainsNullActualAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            Expected: {FormatValue(error.ExpectedValue)}
+            Actual:   <null>
+            """);
+    }
+
+    public virtual string Format(StringNullActualAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:          <null>
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionContainsAssertionError<TExpected, TActual> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected: {FormatValue(error.ExpectedValue.Items)}
+            Actual:   {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<TExpected, TActual>(CollectionContainsAssertionError<TExpected, TActual> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected: {FormatValue(error.ExpectedValue.Items)}
+            Actual:   {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
+    public virtual string Format<T>(ValueEndsWithAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected suffix: {FormatValue(error.ExpectedValue)}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : error.ActualValue.Length - 1)}
+            """);
+    }
+
+    public virtual string Format<T>(ValueCollectionEndsWithAssertionError<T> error)
+    {
+        var highlightedIndex = error.ActualValue.Items.Count > 0 ? error.ActualValue.Items.Count - 1 : (int?)null;
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Expected suffix: {FormatValue(error.ExpectedValue)}
+            Actual:          {FormatValue(error.ActualValue.Items, highlightedIndex)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanEndsWithAssertionError<T> error)
+    {
+        var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Length, error.ActualValue.Length, error.FirstDifferenceIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected suffix: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex < error.ExpectedValue.Length ? error.FirstDifferenceIndex : null)}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, actualIndex)}
+            """);
+    }
+
+    public virtual string Format(ReadOnlySpanCharEndsWithAssertionError error)
+    {
+        var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Length, error.ActualValue.Length, error.FirstDifferenceIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected suffix: {FormatStringValue(error.ExpectedValue, error.FirstDifferenceIndex < error.ExpectedValue.Length ? error.FirstDifferenceIndex : null)}
+            Actual:          {FormatStringValue(error.ActualValue, actualIndex)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionEndsWithAssertionError<TExpected, TActual> error)
+    {
+        await EnsureObservedItemsAsync(error.ActualValue, int.MaxValue - 1).ConfigureAwait(false);
+        var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Items.Count, error.ActualValue.Items.Count, error.FirstDifferenceIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected suffix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex < error.ExpectedValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            Actual:          {FormatValue(error.ActualValue.Items, actualIndex)}
+            """);
+    }
+
+    public virtual string Format<TExpected, TActual>(CollectionEndsWithAssertionError<TExpected, TActual> error)
+    {
+        var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Items.Count, error.ActualValue.Items.Count, error.FirstDifferenceIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.EndsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected suffix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex < error.ExpectedValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            Actual:          {FormatValue(error.ActualValue.Items, actualIndex)}
+            """);
+    }
+
+    public virtual string Format<T>(ReadOnlySpanStartsWithAssertionError<T> error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex)}
+            Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.FirstDifferenceIndex < error.ActualValue.Length ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual string Format(ReadOnlySpanCharStartsWithAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatStringValue(error.ExpectedValue, error.FirstDifferenceIndex)}
+            Actual:          {FormatStringValue(error.ActualValue, error.FirstDifferenceIndex < error.ActualValue.Length ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<T>(AsyncCollectionStartsWithAssertionError<T> error)
+    {
+        var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
+        await EnsureObservedItemsAsync(error.ExpectedValue, maxIndex).ConfigureAwait(false);
+        await EnsureObservedItemsAsync(error.ActualValue, maxIndex).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
+            Actual:          {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex < error.ActualValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionStartsWithAssertionError<TExpected, TActual> error)
+    {
+        var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
+        EnsureObservedItems(error.ExpectedValue, maxIndex);
+        await EnsureObservedItemsAsync(error.ActualValue, maxIndex).ConfigureAwait(false);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
+            Actual:          {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex < error.ActualValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual string Format<TExpected, TActual>(CollectionStartsWithAssertionError<TExpected, TActual> error)
+    {
+        var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
+        EnsureObservedItems(error.ExpectedValue, maxIndex);
+        EnsureObservedItems(error.ActualValue, maxIndex);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.StartsWith() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected prefix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
+            Actual:          {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex < error.ActualValue.Items.Count ? error.FirstDifferenceIndex : null)}
+            """);
+    }
+
+    public virtual string Format<TExpected, TActual>(CollectionEqualAssertionError<TExpected, TActual> error)
+    {
+        var result = string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected: {FormatValue(error.ExpectedValue, error.FirstDifferenceIndex)}
+            Actual:   {FormatValue(error.ActualValue, error.FirstDifferenceIndex)}
+            """);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual string Format<TExpected, TActual>(CollectionEqualUnorderedAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            """;
+
+        if (error.MissingExpectedIndex is not null)
+        {
+            result += NewLine + "Missing expected item index: " + error.MissingExpectedIndex.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (error.UnexpectedActualIndex is not null)
+        {
+            result += NewLine + "Unexpected actual item index: " + error.UnexpectedActualIndex.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        result += NewLine + "Expected: " + FormatValue(error.ExpectedValue.Items, error.MissingExpectedIndex);
+        result += NewLine + "Actual:   " + FormatValue(error.ActualValue.Items, error.UnexpectedActualIndex);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual async Task<string> FormatAsync<TExpected, TActual>(AsyncCollectionEqualAssertionError<TExpected, TActual> error)
+    {
+        var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
+        await EnsureObservedItemsAsync(error.ExpectedValue, maxIndex).ConfigureAwait(false);
+        await EnsureObservedItemsAsync(error.ActualValue, maxIndex).ConfigureAwait(false);
+
+        var result = string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Index of first difference: {error.FirstDifferenceIndex}
+            Expected: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
+            Actual:   {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex)}
+            """);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return result;
+    }
+
+    public virtual Task<string> FormatAsync<TExpected, TActual>(AsyncCollectionEqualUnorderedAssertionError<TExpected, TActual> error)
+    {
+        var result = $"""
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            """;
+
+        if (error.MissingExpectedIndex is not null)
+        {
+            result += NewLine + "Missing expected item index: " + error.MissingExpectedIndex.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        if (error.UnexpectedActualIndex is not null)
+        {
+            result += NewLine + "Unexpected actual item index: " + error.UnexpectedActualIndex.Value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        result += NewLine + "Expected: " + FormatValue(error.ExpectedValue.Items, error.MissingExpectedIndex);
+        result += NewLine + "Actual:   " + FormatValue(error.ActualValue.Items, error.UnexpectedActualIndex);
+
+        if (!string.IsNullOrEmpty(error.Message))
+        {
+            result += NewLine + "Message: " + error.Message;
+        }
+
+        return Task.FromResult(result);
+    }
+
+    protected virtual string FormatValue(object? value, int? highlightedIndex = null)
+    {
+        var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        return FormatValue(value, highlightedIndex, visited);
+    }
+
+    protected virtual string FormatValue(object? value, int? highlightedIndex, HashSet<object> visited)
+    {
+        if (value is null)
+            return "<null>";
+
+        if (value is string stringValue)
+            return FormatStringValue(stringValue, highlightedIndex);
+
+        if (value is System.Collections.IEnumerable enumerable)
+        {
+            return FormatEnumerableValue(enumerable, highlightedIndex, visited);
+        }
+
+        if (value is IFormattable formattable)
+        {
+            return formattable.ToString(format: null, CultureInfo.InvariantCulture) ?? string.Empty;
+        }
+
+        return value.ToString() ?? string.Empty;
+    }
+
+    private string FormatStructuralValue(object? value)
+    {
+        if (value is StructuralMissingValue)
+            return "<missing>";
+
+        return FormatValue(value);
+    }
+
+    private static string FormatType(Type? type)
+    {
+        return type?.FullName ?? "<null>";
+    }
+
+    internal static string FormatExpression(string? expression)
+    {
+        return string.IsNullOrEmpty(expression) ? "<actual>" : expression;
+    }
+
+    protected virtual string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value, int? highlightedIndex = null)
+    {
+        if (typeof(T) == typeof(char))
+        {
+            ref var firstChar = ref System.Runtime.CompilerServices.Unsafe.As<T, char>(ref System.Runtime.InteropServices.MemoryMarshal.GetReference(value));
+            var chars = System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref firstChar, value.Length);
+            return FormatStringValue(chars, highlightedIndex);
+        }
+
+        var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        var items = new List<string>(value.Length);
+        for (var i = 0; i < value.Length; i++)
+        {
+            items.Add(FormatHighlightedValue(FormatValue(value[i], highlightedIndex: null, visited), i, highlightedIndex));
+        }
+
+        return $"[{string.Join(", ", items)}]";
+    }
+
+    private string FormatKeyValuePairs<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> value)
+    {
+        var items = new List<string>();
+        var index = 0;
+        foreach (var item in value)
+        {
+            if (index >= MaxFormattedItems)
+            {
+                items.Add("...");
+                break;
+            }
+
+            items.Add(FormatValue(item.Key) + ": " + FormatValue(item.Value));
+            index++;
+        }
+
+        return $"[{string.Join(", ", items)}]";
+    }
+
+    private string FormatDictionary(System.Collections.IDictionary value)
+    {
+        var items = new List<string>();
+        var index = 0;
+        foreach (System.Collections.DictionaryEntry item in value)
+        {
+            if (index >= MaxFormattedItems)
+            {
+                items.Add("...");
+                break;
+            }
+
+            items.Add(FormatValue(item.Key) + ": " + FormatValue(item.Value));
+            index++;
+        }
+
+        return $"[{string.Join(", ", items)}]";
+    }
+
+    protected virtual string FormatEnumerableValue(System.Collections.IEnumerable value, int? highlightedIndex, HashSet<object> visited)
+    {
+        if (!visited.Add(value))
+            return "<circular reference>";
+
+        try
+        {
+            var items = new List<string>();
+            var shouldFocusHighlightedItem = IsFocusedHighlightedItem(highlightedIndex);
+            var focusStartIndex = shouldFocusHighlightedItem
+                ? Math.Max(PrefixItemCount, highlightedIndex.GetValueOrDefault() - HighlightedContextItemCount)
+                : -1;
+            var prefixItemCount = shouldFocusHighlightedItem ? PrefixItemCount : MaxFormattedItems;
+            var maxIndex = GetMaxFormattedIndex(highlightedIndex);
+            var hasSkippedItems = false;
+            var index = 0;
+
+            foreach (var item in value)
+            {
+                if (index > maxIndex)
+                {
+                    items.Add("...");
+                    break;
+                }
+
+                if (index < prefixItemCount || index >= focusStartIndex)
+                {
+                    if (hasSkippedItems)
+                    {
+                        items.Add("...");
+                        hasSkippedItems = false;
+                    }
+
+                    items.Add(FormatHighlightedValue(FormatValue(item, highlightedIndex: null, visited), index, highlightedIndex));
+                }
+                else
+                {
+                    hasSkippedItems = true;
+                }
+
+                index++;
+            }
+
+            return $"[{string.Join(", ", items)}]";
+        }
+        finally
+        {
+            visited.Remove(value);
+        }
+    }
+
+    private bool IsFocusedHighlightedItem(int? highlightedIndex)
+    {
+        return highlightedIndex is not null && highlightedIndex.GetValueOrDefault() >= MaxFormattedItems;
+    }
+
+    private int GetMaxFormattedIndex(int? highlightedIndex)
+    {
+        if (IsFocusedHighlightedItem(highlightedIndex))
+            return highlightedIndex.GetValueOrDefault() + HighlightedContextItemCount;
+
+        return Math.Max(MaxFormattedItems - 1, highlightedIndex.GetValueOrDefault(-1) + SuffixItemCount);
+    }
+
+    private static int? GetActualSuffixIndex(int expectedLength, int actualLength, int firstDifferenceIndex)
+    {
+        if (firstDifferenceIndex >= expectedLength)
+            return null;
+
+        var actualIndex = actualLength - expectedLength + firstDifferenceIndex;
+        if (actualIndex < 0 || actualIndex >= actualLength)
+            return null;
+
+        return actualIndex;
+    }
+
+    private static int? GetSingleFailureHighlightedIndex(int count)
+    {
+        return count > 1 ? 1 : null;
+    }
+
+    private static string FormatException(Exception? exception)
+    {
+        if (exception is null)
+            return "<none>";
+
+        var message = exception.Message;
+        if (string.IsNullOrEmpty(message))
+            return exception.GetType().FullName ?? exception.GetType().Name;
+
+        return message.Replace(NewLine, NewLine + "            ", StringComparison.Ordinal);
+    }
+
+    private static void EnsureObservedItems<T>(CollectionSnapshot<T> snapshot, int maxIndex)
+    {
+        if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
+            return;
+
+        using var enumerator = snapshot.GetEnumerator();
+        while (!snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && enumerator.MoveNext())
+        {
+        }
+    }
+
+    private static async Task EnsureObservedItemsAsync<T>(AsyncCollectionSnapshot<T> snapshot, int maxIndex)
+    {
+        if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
+            return;
+
+        await using var enumerator = snapshot.GetAsyncEnumerator();
+        while (!snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && await enumerator.MoveNextAsync().ConfigureAwait(false))
+        {
+        }
+    }
+
+    private static string FormatHighlightedValue(string value, int index, int? highlightedIndex)
+    {
+        if (index == highlightedIndex)
+            return Underline(value);
+
+        return value;
+    }
+
+    private static string Underline(string value)
+    {
+        var result = new StringBuilder(value.Length * 2);
+        foreach (var c in value)
+        {
+            result.Append(c);
+            result.Append(CombiningLowLine);
+        }
+
+        return result.ToString();
+    }
+
+    private static string FormatStringValue(string value, int? highlightedIndex)
+    {
+        var result = new StringBuilder(value.Length + 2);
+        result.Append('"');
+
+        for (var i = 0; i < value.Length; i++)
+        {
+            var escapedChar = EscapeChar(value[i]);
+            if (i == highlightedIndex)
+            {
+                result.Append(Underline(escapedChar));
+            }
+            else
+            {
+                result.Append(escapedChar);
+            }
+        }
+
+        result.Append('"');
+        return result.ToString();
+
+        static string EscapeChar(char value)
+        {
+            return value switch
+            {
+                '\r' => "\\r",
+                '\n' => "\\n",
+                '\t' => "\\t",
+                '"' => "\\\"",
+                '\\' => "\\\\",
+                < ' ' => "\\u" + ((int)value).ToString("X4", CultureInfo.InvariantCulture),
+                _ => value.ToString(),
+            };
+        }
+    }
+
+    private static string FormatStringValue(ReadOnlySpan<char> value, int? highlightedIndex)
+    {
+        return FormatStringValue(value.ToString(), highlightedIndex);
+    }
+}
+#pragma warning restore CA1822, CA1852

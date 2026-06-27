@@ -1229,6 +1229,12 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 if (key.StartsWith("GITHUB", StringComparison.Ordinal))
                 {
                     psi.EnvironmentVariables.Remove(key);
+                    continue;
+                }
+
+                if (key.StartsWith("COMPlus_Dbg", StringComparison.Ordinal) || key.StartsWith("DOTNET_Dbg", StringComparison.Ordinal))
+                {
+                    psi.EnvironmentVariables.Remove(key);
                 }
             }
 

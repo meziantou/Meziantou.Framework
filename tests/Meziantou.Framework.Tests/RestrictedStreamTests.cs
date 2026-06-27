@@ -706,7 +706,7 @@ public sealed class RestrictedStreamTests
         var bytesRead = restrictedStream.Read(buffer, 0, 10);
 
         Assert.Equal(5, bytesRead);
-        Assert.Equal([1, 2, 3, 4, 5], buffer[..5]);
+        Assert.Equal([1, 2, 3, 4, 5], buffer.AsSpan(0, 5));
     }
 
     [Fact]
@@ -762,7 +762,7 @@ public sealed class RestrictedStreamTests
         var bytesRead = await restrictedStream.ReadAsync(buffer.AsMemory(0, 10));
 
         Assert.Equal(5, bytesRead);
-        Assert.Equal([1, 2, 3, 4, 5], buffer[..5]);
+        Assert.Equal([1, 2, 3, 4, 5], buffer.AsSpan(0, 5));
     }
 
     [Fact]
@@ -776,7 +776,7 @@ public sealed class RestrictedStreamTests
         var bytesRead = await restrictedStream.ReadAsync(buffer.AsMemory());
 
         Assert.Equal(5, bytesRead);
-        Assert.Equal([1, 2, 3, 4, 5], buffer[..5]);
+        Assert.Equal([1, 2, 3, 4, 5], buffer.AsSpan(0, 5));
     }
 
     [Fact]
@@ -792,7 +792,7 @@ public sealed class RestrictedStreamTests
         var bytesRead = restrictedStream.EndRead(asyncResult);
 
         Assert.Equal(5, bytesRead);
-        Assert.Equal([1, 2, 3, 4, 5], buffer[..5]);
+        Assert.Equal([1, 2, 3, 4, 5], buffer.AsSpan(0, 5));
     }
 
     [Fact]
@@ -824,6 +824,6 @@ public sealed class RestrictedStreamTests
         Assert.Equal(3, bytesRead1);
         Assert.Equal(3, bytesRead2);
         Assert.Equal(3, bytesRead3);
-        Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9], buffer[..9]);
+        Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9], buffer.AsSpan(0, 9));
     }
 }

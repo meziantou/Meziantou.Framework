@@ -117,8 +117,8 @@ public sealed class CachedEnumerableTests
     {
         var enumerable = new SingleAsyncEnumerable<int>(RangeAsync(1, 3));
         await using var cachedEnumerable = CachedEnumerable.Create(enumerable);
-        Assert.Equal([1, 2, 3], cachedEnumerable);
-        Assert.Equal([1, 2, 3], cachedEnumerable);
+        await Assert.Equal([1, 2, 3], cachedEnumerable);
+        await Assert.Equal([1, 2, 3], cachedEnumerable);
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public sealed class CachedEnumerableTests
         Assert.True(await enumerator1.MoveNextAsync());
         Assert.False(await enumerator1.MoveNextAsync());
         Assert.Equal(3, count);
-        Assert.Equal([1, 2, 3], cachedEnumerable);
+        await Assert.Equal([1, 2, 3], cachedEnumerable);
     }
 
     [Fact]

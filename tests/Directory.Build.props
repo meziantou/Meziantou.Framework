@@ -24,4 +24,10 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(UseNewAssertions)' != 'false'">
+    <Using Include="Meziantou.Framework.Assertions" />
+    <Using Include="Meziantou.Framework.Assertions.Assert" Alias="Assert" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)../src/Meziantou.Framework.Assertions/Meziantou.Framework.Assertions.csproj" />
+  </ItemGroup>
+
 </Project>

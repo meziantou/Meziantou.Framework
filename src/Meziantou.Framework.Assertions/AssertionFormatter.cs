@@ -4,6 +4,7 @@ namespace Meziantou.Framework.Assertions;
 internal class AssertionFormatter
 {
     private const char CombiningLowLine = '\u0332';
+    private const string NewLine = "\n";
 
     public static AssertionFormatter Default { get; } = new AssertionFormatter();
 
@@ -64,7 +65,7 @@ internal class AssertionFormatter
         var result = "Assert.Fail() assertion failed.";
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -81,7 +82,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -98,7 +99,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -124,7 +125,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -140,7 +141,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -157,7 +158,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.ExceptionMessage))
         {
-            result += Environment.NewLine + "Exception message: " + error.ExceptionMessage;
+            result += NewLine + "Exception message: " + error.ExceptionMessage;
         }
 
         return result;
@@ -174,7 +175,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -192,7 +193,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -210,7 +211,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -239,7 +240,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(message))
         {
-            result += Environment.NewLine + "Message: " + message;
+            result += NewLine + "Message: " + message;
         }
 
         return result;
@@ -291,7 +292,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -370,7 +371,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -486,12 +487,12 @@ internal class AssertionFormatter
             Actual expression:   {error.ActualExpression}
             """;
 
-        result += Environment.NewLine + "Expected: " + FormatValue(error.ExpectedValue);
-        result += Environment.NewLine + "Actual:   " + FormatValue(error.ActualValue);
+        result += NewLine + "Expected: " + FormatValue(error.ExpectedValue);
+        result += NewLine + "Actual:   " + FormatValue(error.ActualValue);
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -505,13 +506,13 @@ internal class AssertionFormatter
             Actual expression:   {error.ActualExpression}
             """;
 
-        result += Environment.NewLine + "Expected: " + FormatValue(error.ExpectedValue);
-        result += Environment.NewLine + "Actual:   " + FormatValue(error.ActualValue);
-        result += Environment.NewLine + "Tolerance: " + FormatValue(error.Tolerance);
+        result += NewLine + "Expected: " + FormatValue(error.ExpectedValue);
+        result += NewLine + "Actual:   " + FormatValue(error.ActualValue);
+        result += NewLine + "Tolerance: " + FormatValue(error.Tolerance);
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -527,12 +528,12 @@ internal class AssertionFormatter
             Reason: {error.Reason}
             """;
 
-        result += Environment.NewLine + "Expected: " + FormatStructuralValue(error.ExpectedValue);
-        result += Environment.NewLine + "Actual:   " + FormatStructuralValue(error.ActualValue);
+        result += NewLine + "Expected: " + FormatStructuralValue(error.ExpectedValue);
+        result += NewLine + "Actual:   " + FormatStructuralValue(error.ActualValue);
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -551,7 +552,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -571,7 +572,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -1192,7 +1193,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -1208,20 +1209,20 @@ internal class AssertionFormatter
 
         if (error.MissingExpectedIndex is not null)
         {
-            result += Environment.NewLine + "Missing expected item index: " + error.MissingExpectedIndex.Value.ToString(CultureInfo.InvariantCulture);
+            result += NewLine + "Missing expected item index: " + error.MissingExpectedIndex.Value.ToString(CultureInfo.InvariantCulture);
         }
 
         if (error.UnexpectedActualIndex is not null)
         {
-            result += Environment.NewLine + "Unexpected actual item index: " + error.UnexpectedActualIndex.Value.ToString(CultureInfo.InvariantCulture);
+            result += NewLine + "Unexpected actual item index: " + error.UnexpectedActualIndex.Value.ToString(CultureInfo.InvariantCulture);
         }
 
-        result += Environment.NewLine + "Expected: " + FormatValue(error.ExpectedValue.Items, error.MissingExpectedIndex);
-        result += Environment.NewLine + "Actual:   " + FormatValue(error.ActualValue.Items, error.UnexpectedActualIndex);
+        result += NewLine + "Expected: " + FormatValue(error.ExpectedValue.Items, error.MissingExpectedIndex);
+        result += NewLine + "Actual:   " + FormatValue(error.ActualValue.Items, error.UnexpectedActualIndex);
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -1244,7 +1245,7 @@ internal class AssertionFormatter
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return result;
@@ -1260,20 +1261,20 @@ internal class AssertionFormatter
 
         if (error.MissingExpectedIndex is not null)
         {
-            result += Environment.NewLine + "Missing expected item index: " + error.MissingExpectedIndex.Value.ToString(CultureInfo.InvariantCulture);
+            result += NewLine + "Missing expected item index: " + error.MissingExpectedIndex.Value.ToString(CultureInfo.InvariantCulture);
         }
 
         if (error.UnexpectedActualIndex is not null)
         {
-            result += Environment.NewLine + "Unexpected actual item index: " + error.UnexpectedActualIndex.Value.ToString(CultureInfo.InvariantCulture);
+            result += NewLine + "Unexpected actual item index: " + error.UnexpectedActualIndex.Value.ToString(CultureInfo.InvariantCulture);
         }
 
-        result += Environment.NewLine + "Expected: " + FormatValue(error.ExpectedValue.Items, error.MissingExpectedIndex);
-        result += Environment.NewLine + "Actual:   " + FormatValue(error.ActualValue.Items, error.UnexpectedActualIndex);
+        result += NewLine + "Expected: " + FormatValue(error.ExpectedValue.Items, error.MissingExpectedIndex);
+        result += NewLine + "Actual:   " + FormatValue(error.ActualValue.Items, error.UnexpectedActualIndex);
 
         if (!string.IsNullOrEmpty(error.Message))
         {
-            result += Environment.NewLine + "Message: " + error.Message;
+            result += NewLine + "Message: " + error.Message;
         }
 
         return Task.FromResult(result);
@@ -1471,7 +1472,7 @@ internal class AssertionFormatter
         if (string.IsNullOrEmpty(message))
             return exception.GetType().FullName ?? exception.GetType().Name;
 
-        return message.Replace(Environment.NewLine, Environment.NewLine + "            ", StringComparison.Ordinal);
+        return message.Replace(NewLine, NewLine + "            ", StringComparison.Ordinal);
     }
 
     private static void EnsureObservedItems<T>(CollectionSnapshot<T> snapshot, int maxIndex)

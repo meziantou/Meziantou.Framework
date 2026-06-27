@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace Meziantou.Framework.Assertions;
 
 public partial class Assert
@@ -41,6 +43,7 @@ public partial class Assert
 
         return (TryCompareNumericValues(expected, actual, out var result) && result)
             || (TryCompareEnumerableValues(expected, actual, out result) && result)
+            || (TryCompareByAnonymousTypeStructure(expected, actual, out result) && result)
             || ValuesEqualAfterImplicitConversion(expected, actual);
     }
 
@@ -183,5 +186,42 @@ public partial class Assert
         }
 
         return false;
+    }
+
+    private static bool IsAnonymousType(Type type)
+    {
+        return type.IsSealed
+            && !type.IsPublic
+            && type.Name.StartsWith("<>", StringComparison.Ordinal);
+    }
+
+    private static bool TryCompareByAnonymousTypeStructure<TExpected, TActual>(TExpected expected, TActual actual, out bool result)
+    {
+        result = false;
+        if (expected is null)
+            return false;
+
+        var expectedType = expected.GetType();
+        if (!IsAnonymousType(expectedType))
+            return false;
+
+        if (actual is null)
+            return true;
+
+        var actualType = actual.GetType();
+        foreach (var expectedProperty in expectedType.GetProperties())
+        {
+            var actualProperty = actualType.GetProperty(expectedProperty.Name);
+            if (actualProperty is null)
+                return true;
+
+            var expectedValue = expectedProperty.GetValue(expected);
+            var actualValue = actualProperty.GetValue(actual);
+            if (!ValuesEqual(expectedValue, actualValue))
+                return true;
+        }
+
+        result = true;
+        return true;
     }
 }

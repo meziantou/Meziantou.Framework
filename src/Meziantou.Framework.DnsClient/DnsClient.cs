@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using Meziantou.Framework.DnsClient.Helpers;
+using Meziantou.Framework.DnsClient.Internal;
 using Meziantou.Framework.DnsClient.Protocol;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
@@ -37,8 +39,19 @@ public sealed class DnsClient : IDisposable
         ArgumentNullException.ThrowIfNull(server);
 
         _options = options ?? new DnsClientOptions();
+        ValidateOptions(_options);
         _protocol = protocol;
         _transport = CreateTransport(server, protocol, _options);
+    }
+
+    internal DnsClient(IDnsTransport transport, DnsClientProtocol protocol, DnsClientOptions? options)
+    {
+        ArgumentNullException.ThrowIfNull(transport);
+
+        _options = options ?? new DnsClientOptions();
+        ValidateOptions(_options);
+        _protocol = protocol;
+        _transport = transport;
     }
 
     /// <summary>Sends a DNS query for the specified domain name and record type.</summary>
@@ -95,7 +108,14 @@ public sealed class DnsClient : IDisposable
     /// <returns>The DNS response message.</returns>
     public async Task<DnsResponseMessage> SendAsync(DnsQueryMessage message, CancellationToken cancellationToken = default)
     {
+        return await SendCoreAsync(message, validateResponse: true, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<DnsResponseMessage> SendCoreAsync(DnsQueryMessage message, bool validateResponse, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(message);
+        ValidateOptions(_options);
+        ApplyOptions(message);
 
         var questionName = message.Questions.Count > 0 ? message.Questions[0].Name : "unknown";
         var questionType = message.Questions.Count > 0 ? message.Questions[0].Type.ToString() : "unknown";
@@ -115,7 +135,19 @@ public sealed class DnsClient : IDisposable
             cts.CancelAfter(_options.Timeout);
 
             var responseBytes = await _transport.SendAsync(queryBytes, cts.Token).ConfigureAwait(false);
-            var response = DnsMessageEncoder.DecodeResponse(responseBytes);
+            var response = DnsMessageEncoder.DecodeResponse(
+                responseBytes,
+                preserveRawRecordData: _options.DnssecValidationMode is DnssecValidationMode.Local);
+
+            if (validateResponse && _options.DnssecValidationMode is DnssecValidationMode.Local)
+            {
+                var validator = new DnssecValidator(
+                    SendWithoutValidationAsync,
+                    _options.DnssecTrustAnchors,
+                    _options.TimeProvider);
+                response.DnssecValidationResult = await validator.ValidateAsync(response, cts.Token).ConfigureAwait(false);
+                activity?.SetTag("dns.dnssec.validation_status", response.DnssecValidationResult.Status.ToString());
+            }
 
             activity?.SetTag("dns.response.code", response.Header.ResponseCode.ToString());
 
@@ -135,6 +167,11 @@ public sealed class DnsClient : IDisposable
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             throw;
         }
+    }
+
+    private Task<DnsResponseMessage> SendWithoutValidationAsync(DnsQueryMessage message, CancellationToken cancellationToken)
+    {
+        return SendCoreAsync(message, validateResponse: false, cancellationToken);
     }
 
     /// <summary>Releases the resources used by this instance.</summary>
@@ -160,30 +197,74 @@ public sealed class DnsClient : IDisposable
     {
         return protocol switch
         {
-            DnsClientProtocol.Udp => CreateUdpTransport(server),
-            DnsClientProtocol.Tcp => CreateTcpTransport(server),
-            DnsClientProtocol.Tls => CreateTlsTransport(server),
+            DnsClientProtocol.Udp => CreateUdpTransport(server, options),
+            DnsClientProtocol.Tcp => CreateTcpTransport(server, options),
+            DnsClientProtocol.Tls => CreateTlsTransport(server, options),
             DnsClientProtocol.Https => CreateHttpsTransport(server, options),
-            DnsClientProtocol.Quic => CreateQuicTransport(server),
+            DnsClientProtocol.Quic => CreateQuicTransport(server, options),
             _ => throw new ArgumentOutOfRangeException(nameof(protocol), protocol, "Unsupported DNS protocol."),
         };
     }
 
-    private static DnsUdpTransport CreateUdpTransport(string server)
+    private static void ValidateOptions(DnsClientOptions options)
     {
-        var endpoint = ParseEndpoint(server, defaultPort: 53);
+        if (options.DnssecValidationMode is DnssecValidationMode.Local && !options.EnableEdns)
+            throw new ArgumentException("Local DNSSEC validation requires EDNS to be enabled.", nameof(options));
+
+        if (options.DnssecTrustAnchors is null)
+            throw new ArgumentException("DNSSEC trust anchors cannot be null.", nameof(options));
+
+        if (options.TimeProvider is null)
+            throw new ArgumentException("The DNSSEC time provider cannot be null.", nameof(options));
+    }
+
+    private void ApplyOptions(DnsQueryMessage message)
+    {
+        var localValidation = _options.DnssecValidationMode is DnssecValidationMode.Local;
+        var requiresDnssecEdns = localValidation || _options.DnssecOk;
+
+        if (_options.EnableEdns && message.EdnsOptions is null && requiresDnssecEdns)
+        {
+            message.EdnsOptions = new DnsEdnsOptions
+            {
+                UdpPayloadSize = _options.EdnsUdpPayloadSize,
+            };
+        }
+
+        if (message.EdnsOptions is not null)
+        {
+            if (message.EdnsOptions.UdpPayloadSize == 0)
+            {
+                message.EdnsOptions.UdpPayloadSize = _options.EdnsUdpPayloadSize;
+            }
+
+            if (requiresDnssecEdns)
+            {
+                message.EdnsOptions.DnssecOk = true;
+            }
+        }
+
+        if (localValidation)
+        {
+            message.CheckingDisabled = true;
+        }
+    }
+
+    private static DnsUdpTransport CreateUdpTransport(string server, DnsClientOptions options)
+    {
+        var endpoint = ParseEndpoint(server, defaultPort: 53, options);
         return new DnsUdpTransport(endpoint);
     }
 
-    private static DnsTcpTransport CreateTcpTransport(string server)
+    private static DnsTcpTransport CreateTcpTransport(string server, DnsClientOptions options)
     {
-        var endpoint = ParseEndpoint(server, defaultPort: 53);
+        var endpoint = ParseEndpoint(server, defaultPort: 53, options);
         return new DnsTcpTransport(endpoint);
     }
 
-    private static DnsTlsTransport CreateTlsTransport(string server)
+    private static DnsTlsTransport CreateTlsTransport(string server, DnsClientOptions options)
     {
-        var (host, endpoint) = ParseHostAndEndpoint(server, defaultPort: 853);
+        var (host, endpoint) = ParseHostAndEndpoint(server, defaultPort: 853, options);
         return new DnsTlsTransport(host, endpoint);
     }
 
@@ -196,20 +277,32 @@ public sealed class DnsClient : IDisposable
     }
 
     [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance")]
-    private static IDnsTransport CreateQuicTransport(string server)
+    private static IDnsTransport CreateQuicTransport(string server, DnsClientOptions options)
     {
 #if NET9_0_OR_GREATER
-        var (host, endpoint) = ParseHostAndEndpoint(server, defaultPort: 853);
+        var (host, endpoint) = ParseHostAndEndpoint(server, defaultPort: 853, options);
         return new DnsQuicTransport(host, endpoint);
 #else
         throw new PlatformNotSupportedException("DNS over QUIC requires .NET 9.0 or later.");
 #endif
     }
 
-    private static IPEndPoint ParseEndpoint(string server, int defaultPort)
+    private static IPEndPoint ParseEndpoint(string server, int defaultPort, DnsClientOptions? options)
     {
         if (IPAddress.TryParse(server, out var address))
             return new IPEndPoint(address, defaultPort);
+
+        if (TryParseBracketedHostAndPort(server, out var bracketedHost, out var bracketedPort))
+        {
+            if (IPAddress.TryParse(bracketedHost, out var hostAddress))
+                return new IPEndPoint(hostAddress, bracketedPort);
+
+            var addresses = ResolveHost(bracketedHost, options);
+            if (addresses.Length is 0)
+                throw new ArgumentException($"Could not resolve host: {bracketedHost}", nameof(server));
+
+            return new IPEndPoint(addresses[0], bracketedPort);
+        }
 
         // Try host:port format
         var colonIndex = server.LastIndexOf(':', StringComparison.Ordinal);
@@ -219,7 +312,7 @@ public sealed class DnsClient : IDisposable
             if (IPAddress.TryParse(host, out var hostAddress))
                 return new IPEndPoint(hostAddress, port);
 
-            var addresses = Dns.GetHostAddresses(host);
+            var addresses = ResolveHost(host, options);
             if (addresses.Length is 0)
                 throw new ArgumentException($"Could not resolve host: {host}", nameof(server));
 
@@ -227,17 +320,29 @@ public sealed class DnsClient : IDisposable
         }
 
         // Resolve hostname
-        var resolved = Dns.GetHostAddresses(server);
+        var resolved = ResolveHost(server, options);
         if (resolved.Length is 0)
             throw new ArgumentException($"Could not resolve host: {server}", nameof(server));
 
         return new IPEndPoint(resolved[0], defaultPort);
     }
 
-    private static (string Host, IPEndPoint Endpoint) ParseHostAndEndpoint(string server, int defaultPort)
+    private static (string Host, IPEndPoint Endpoint) ParseHostAndEndpoint(string server, int defaultPort, DnsClientOptions? options)
     {
         if (IPAddress.TryParse(server, out var address))
             return (server, new IPEndPoint(address, defaultPort));
+
+        if (TryParseBracketedHostAndPort(server, out var bracketedHost, out var bracketedPort))
+        {
+            if (IPAddress.TryParse(bracketedHost, out var hostAddress))
+                return (bracketedHost, new IPEndPoint(hostAddress, bracketedPort));
+
+            var addresses = ResolveHost(bracketedHost, options);
+            if (addresses.Length is 0)
+                throw new ArgumentException($"Could not resolve host: {bracketedHost}", nameof(server));
+
+            return (bracketedHost, new IPEndPoint(addresses[0], bracketedPort));
+        }
 
         var colonIndex = server.LastIndexOf(':', StringComparison.Ordinal);
         if (colonIndex > 0 && int.TryParse(server.AsSpan(colonIndex + 1), System.Globalization.CultureInfo.InvariantCulture, out var port))
@@ -246,17 +351,44 @@ public sealed class DnsClient : IDisposable
             if (IPAddress.TryParse(host, out var hostAddress))
                 return (host, new IPEndPoint(hostAddress, port));
 
-            var addresses = Dns.GetHostAddresses(host);
+            var addresses = ResolveHost(host, options);
             if (addresses.Length is 0)
                 throw new ArgumentException($"Could not resolve host: {host}", nameof(server));
 
             return (host, new IPEndPoint(addresses[0], port));
         }
 
-        var resolved = Dns.GetHostAddresses(server);
+        var resolved = ResolveHost(server, options);
         if (resolved.Length is 0)
             throw new ArgumentException($"Could not resolve host: {server}", nameof(server));
 
         return (server, new IPEndPoint(resolved[0], defaultPort));
+    }
+
+    private static bool TryParseBracketedHostAndPort(string server, [NotNullWhen(true)] out string? host, out int port)
+    {
+        host = null;
+        port = 0;
+        if (!server.StartsWith('[', StringComparison.Ordinal))
+            return false;
+
+        var closingBracketIndex = server.IndexOf(']', StringComparison.Ordinal);
+        if (closingBracketIndex <= 1 || closingBracketIndex + 2 > server.Length || server[closingBracketIndex + 1] != ':')
+            return false;
+
+        if (!int.TryParse(server.AsSpan(closingBracketIndex + 2), System.Globalization.CultureInfo.InvariantCulture, out port))
+            return false;
+
+        host = server[1..closingBracketIndex];
+        return true;
+    }
+
+    private static IPAddress[] ResolveHost(string host, DnsClientOptions? options)
+    {
+        var resolved = options?.ServerAddressResolver?.Invoke(host);
+        if (resolved is not null)
+            return resolved.ToArray();
+
+        return Dns.GetHostAddresses(host);
     }
 }

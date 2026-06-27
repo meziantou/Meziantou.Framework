@@ -130,6 +130,53 @@ public sealed class DnsWireFormatTests
     }
 
     [Fact]
+    public void DecodeResponse_OptRecord_PopulatesEdnsMetadata()
+    {
+        var writer = new DnsWireWriter(512);
+
+        writer.WriteUInt16(0x1234);
+        writer.WriteUInt16(0x8180);
+        writer.WriteUInt16(0);
+        writer.WriteUInt16(0);
+        writer.WriteUInt16(0);
+        writer.WriteUInt16(1);
+
+        writer.WriteByte(0);
+        writer.WriteUInt16((ushort)DnsQueryType.OPT);
+        writer.WriteUInt16(1232);
+        writer.WriteByte(1);
+        writer.WriteByte(0);
+        writer.WriteUInt16(0x8000);
+        writer.WriteUInt16(0);
+
+        var response = DnsMessageEncoder.DecodeResponse(writer.ToArray());
+        var opt = Assert.IsType<Response.Records.DnsOptRecord>(Assert.Single(response.AdditionalRecords));
+
+        Assert.Equal(1232, opt.UdpPayloadSize);
+        Assert.Equal(1, opt.ExtendedRCode);
+        Assert.Equal(0, opt.EdnsVersion);
+        Assert.True(opt.DnssecOk);
+    }
+
+    [Fact]
+    public void DecodeResponse_Default_DoesNotPreserveRawRecordData()
+    {
+        var response = DnsMessageEncoder.DecodeResponse(CreateResponseWithARecord());
+        var record = Assert.Single(response.Answers);
+
+        Assert.Empty(record.RawData);
+    }
+
+    [Fact]
+    public void DecodeResponse_WhenRequested_PreservesRawRecordData()
+    {
+        var response = DnsMessageEncoder.DecodeResponse(CreateResponseWithARecord(), preserveRawRecordData: true);
+        var record = Assert.Single(response.Answers);
+
+        Assert.Equal([1, 2, 3, 4], record.RawData);
+    }
+
+    [Fact]
     public void DecodeResponse_BasicResponse()
     {
         // Craft a minimal DNS response with 1 A record answer
@@ -171,6 +218,31 @@ public sealed class DnsWireFormatTests
         Assert.Equal(System.Net.IPAddress.Parse("1.2.3.4"), aRecord.Address);
         Assert.Equal("example.com", aRecord.Name);
         Assert.Equal((uint)300, aRecord.TimeToLive);
+    }
+
+    private static byte[] CreateResponseWithARecord()
+    {
+        var writer = new DnsWireWriter(512);
+
+        writer.WriteUInt16(0x1234);
+        writer.WriteUInt16(0x8180);
+        writer.WriteUInt16(1);
+        writer.WriteUInt16(1);
+        writer.WriteUInt16(0);
+        writer.WriteUInt16(0);
+
+        writer.WriteDomainName("example.com");
+        writer.WriteUInt16(1);
+        writer.WriteUInt16(1);
+
+        writer.WriteDomainName("example.com");
+        writer.WriteUInt16(1);
+        writer.WriteUInt16(1);
+        writer.WriteUInt32(300);
+        writer.WriteUInt16(4);
+        writer.WriteBytes([1, 2, 3, 4]);
+
+        return writer.ToArray();
     }
 
     [Fact]

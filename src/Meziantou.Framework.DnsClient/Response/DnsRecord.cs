@@ -19,4 +19,6 @@ public abstract class DnsRecord
 
     /// <summary>Gets the length of the resource data in bytes.</summary>
     public ushort DataLength { get; internal set; }
+
+    internal byte[] RawData { get; set; } = [];
 }

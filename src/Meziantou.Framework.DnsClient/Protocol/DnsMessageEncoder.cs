@@ -59,7 +59,7 @@ internal static class DnsMessageEncoder
         return writer.ToArray();
     }
 
-    public static DnsResponseMessage DecodeResponse(ReadOnlySpan<byte> data)
+    public static DnsResponseMessage DecodeResponse(ReadOnlySpan<byte> data, bool preserveRawRecordData = false)
     {
         if (data.Length < 12)
             throw new DnsProtocolException("DNS message is too short (minimum 12 bytes for header).");
@@ -103,14 +103,14 @@ internal static class DnsMessageEncoder
         response.Questions = questions;
 
         // Answer, Authority, Additional sections
-        response.Answers = ReadRecords(ref reader, header.AnswerCount);
-        response.Authorities = ReadRecords(ref reader, header.AuthorityCount);
-        response.AdditionalRecords = ReadRecords(ref reader, header.AdditionalCount);
+        response.Answers = ReadRecords(ref reader, header.AnswerCount, preserveRawRecordData);
+        response.Authorities = ReadRecords(ref reader, header.AuthorityCount, preserveRawRecordData);
+        response.AdditionalRecords = ReadRecords(ref reader, header.AdditionalCount, preserveRawRecordData);
 
         return response;
     }
 
-    private static List<DnsRecord> ReadRecords(ref DnsWireReader reader, ushort count)
+    private static List<DnsRecord> ReadRecords(ref DnsWireReader reader, ushort count, bool preserveRawRecordData)
     {
         var records = new List<DnsRecord>(count);
         for (var i = 0; i < count; i++)
@@ -129,6 +129,18 @@ internal static class DnsMessageEncoder
             record.RecordClass = recordClass;
             record.TimeToLive = ttl;
             record.DataLength = rdLength;
+            if (preserveRawRecordData)
+            {
+                record.RawData = reader.GetBytes(rdataStart, rdLength).ToArray();
+            }
+
+            if (record is DnsOptRecord optRecord)
+            {
+                optRecord.UdpPayloadSize = (ushort)recordClass;
+                optRecord.ExtendedRCode = (byte)(ttl >> 24);
+                optRecord.EdnsVersion = (byte)(ttl >> 16);
+                optRecord.DnssecOk = ((ushort)ttl & 0x8000) != 0;
+            }
 
             // Ensure we consumed exactly rdLength bytes
             var consumed = reader.Position - rdataStart;

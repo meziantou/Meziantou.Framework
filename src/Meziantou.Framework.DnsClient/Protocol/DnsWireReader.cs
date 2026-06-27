@@ -75,6 +75,14 @@ internal ref struct DnsWireReader
         _position += count;
     }
 
+    public readonly ReadOnlySpan<byte> GetBytes(int offset, int count)
+    {
+        if (offset < 0 || count < 0 || offset + count > _message.Length)
+            throw new DnsProtocolException($"Cannot read {count} bytes at offset {offset}: exceeds message boundary.");
+
+        return _message.Slice(offset, count);
+    }
+
     public string ReadDomainName()
     {
         var sb = new StringBuilder(64);

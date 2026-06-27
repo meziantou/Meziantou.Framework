@@ -258,6 +258,21 @@ public sealed class DnsClientIntegrationTests
     }
 
     [Fact]
+    public async Task Query_DNSSEC_LocalValidation()
+    {
+        using var client = new DnsClient(CloudflareDoH, DnsClientProtocol.Https, new DnsClientOptions
+        {
+            DnssecValidationMode = DnssecValidationMode.Local,
+            Timeout = TimeSpan.FromSeconds(20),
+        });
+
+        var response = await QueryWithRetryAsync(client, "cloudflare.com", DnsQueryType.A);
+
+        Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
+        Assert.Equal(DnssecValidationStatus.Secure, response.DnssecValidationResult.Status);
+    }
+
+    [Fact]
     public async Task Query_DNSKEY_Record()
     {
         using var client = new DnsClient(CloudflareDoH, DnsClientProtocol.Https, new DnsClientOptions

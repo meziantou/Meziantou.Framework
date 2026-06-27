@@ -22,4 +22,7 @@ public sealed class DnsResponseMessage
 
     /// <summary>Gets the additional resource records.</summary>
     public IReadOnlyList<DnsRecord> AdditionalRecords { get; internal set; } = [];
+
+    /// <summary>Gets the local DNSSEC validation result.</summary>
+    public DnssecValidationResult DnssecValidationResult { get; internal set; } = DnssecValidationResult.NotValidatedResult;
 }

@@ -59,12 +59,10 @@ var response = await client.QueryAsync("münchen.de", DnsQueryType.A);
 
 ```c#
 using var client = new DnsClient("https://cloudflare-dns.com/dns-query", DnsClientProtocol.Https,
-    new DnsClientOptions { DnssecOk = true });
+    new DnsClientOptions { DnssecValidationMode = DnssecValidationMode.Local });
 
-var query = new DnsQueryMessage { RecursionDesired = true };
-query.Questions.Add(new DnsQuestion("cloudflare.com", DnsQueryType.A));
-query.EdnsOptions = new DnsEdnsOptions { UdpPayloadSize = 4096, DnssecOk = true };
-
-var response = await client.SendAsync(query);
-Console.WriteLine($"Authenticated: {response.Header.AuthenticatedData}");
+var response = await client.QueryAsync("cloudflare.com", DnsQueryType.A);
+Console.WriteLine($"Local DNSSEC validation: {response.DnssecValidationResult.Status}");
 ```
+
+`DnsResponseHeader.AuthenticatedData` exposes the upstream resolver's AD flag. Use `DnssecValidationMode.Local` when the client must validate the DNSSEC chain locally.

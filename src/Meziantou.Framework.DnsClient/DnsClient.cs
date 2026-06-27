@@ -135,7 +135,9 @@ public sealed class DnsClient : IDisposable
             cts.CancelAfter(_options.Timeout);
 
             var responseBytes = await _transport.SendAsync(queryBytes, cts.Token).ConfigureAwait(false);
-            var response = DnsMessageEncoder.DecodeResponse(responseBytes);
+            var response = DnsMessageEncoder.DecodeResponse(
+                responseBytes,
+                preserveRawRecordData: _options.DnssecValidationMode is DnssecValidationMode.Local);
 
             if (validateResponse && _options.DnssecValidationMode is DnssecValidationMode.Local)
             {

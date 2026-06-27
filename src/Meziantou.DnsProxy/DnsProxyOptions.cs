@@ -1,3 +1,5 @@
+using Meziantou.Framework.DnsClient;
+
 namespace Meziantou.DnsProxy;
 
 internal sealed class DnsProxyOptions
@@ -25,6 +27,8 @@ internal sealed class DnsProxyOptions
     public int DiagnosticsHistoryCapacity { get; set; } = 10_000;
 
     public TimeSpan FilterRefreshInterval { get; set; } = TimeSpan.FromMinutes(30);
+
+    public DnssecValidationMode DnssecValidationMode { get; set; }
 
     public List<UpstreamServerOption> Upstreams { get; set; } =
     [

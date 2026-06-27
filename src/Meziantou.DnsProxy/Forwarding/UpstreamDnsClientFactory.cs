@@ -11,7 +11,8 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
     public UpstreamDnsClientFactory(IOptions<DnsProxyOptions> options, ILogger<UpstreamDnsClientFactory> logger)
     {
         var upstreams = new List<UpstreamDnsClientInfo>();
-        foreach (var upstream in options.Value.Upstreams)
+        var dnsProxyOptions = options.Value;
+        foreach (var upstream in dnsProxyOptions.Upstreams)
         {
             if (string.IsNullOrWhiteSpace(upstream.Endpoint))
             {
@@ -28,14 +29,14 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
             try
             {
                 dnsClient = protocol == DnsClientProtocol.Https
-                    ? new DnsClient(upstream.Endpoint, protocol, new DnsClientOptions { HttpHandler = httpHandler })
-                    : new DnsClient(upstream.Endpoint, protocol);
+                    ? new DnsClient(upstream.Endpoint, protocol, CreateDnsClientOptions(dnsProxyOptions, httpHandler))
+                    : new DnsClient(upstream.Endpoint, protocol, CreateDnsClientOptions(dnsProxyOptions, httpHandler: null));
             }
             catch (PlatformNotSupportedException ex) when (protocol == DnsClientProtocol.Quic)
             {
                 httpHandler?.Dispose();
                 httpHandler = CreateHttpHandler(useHttp3: false);
-                dnsClient = new DnsClient($"https://{upstream.Endpoint}/dns-query", DnsClientProtocol.Https, new DnsClientOptions { HttpHandler = httpHandler });
+                dnsClient = new DnsClient($"https://{upstream.Endpoint}/dns-query", DnsClientProtocol.Https, CreateDnsClientOptions(dnsProxyOptions, httpHandler));
                 effectiveProtocol = DnsClientProtocol.Https;
                 logger.LogWarning(ex, "DNS over QUIC is not supported on this platform for {Upstream}. Falling back to DNS over HTTPS.", upstream.Endpoint);
             }
@@ -77,5 +78,14 @@ internal sealed class UpstreamDnsClientFactory : IDisposable
         }
 
         return handler;
+    }
+
+    private static DnsClientOptions CreateDnsClientOptions(DnsProxyOptions options, HttpMessageHandler? httpHandler)
+    {
+        return new DnsClientOptions
+        {
+            DnssecValidationMode = options.DnssecValidationMode,
+            HttpHandler = httpHandler,
+        };
     }
 }

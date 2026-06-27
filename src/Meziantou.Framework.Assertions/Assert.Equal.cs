@@ -37,7 +37,7 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(-2)]
-    public static void Equal<T>(T expected, T actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal<T>(T expected, [NotNullIfNotNull(nameof(expected))] T? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (TryEqualEnumerables(expected, actual, message, actualExpression, expectedExpression))
             return;
@@ -52,8 +52,13 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(-1)]
-    public static void Equal<TExpected, TActual>(TExpected expected, TActual actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal<TExpected, TActual>(TExpected expected, [NotNullIfNotNull(nameof(expected))] TActual? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<TExpected, TActual?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+
         if (TryEqualEnumerables(expected, actual, message, actualExpression, expectedExpression))
             return;
 
@@ -66,11 +71,16 @@ public partial class Assert
         }
     }
 
-    public static void Equal(string? expected, string? actual, bool ignoreCase = false, bool ignoreLineEndingDifferences = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal(string? expected, [NotNullIfNotNull(nameof(expected))] string? actual, bool ignoreCase = false, bool ignoreLineEndingDifferences = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<string?, string?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+
         var comparison = GetStringComparison(ignoreCase);
         var expectedValue = ignoreLineEndingDifferences && expected is not null ? NormalizeLineEndings(expected) : expected;
-        var actualValue = ignoreLineEndingDifferences && actual is not null ? NormalizeLineEndings(actual) : actual;
+        var actualValue = ignoreLineEndingDifferences ? NormalizeLineEndings(actual) : actual;
 
         if (string.Equals(expectedValue, actualValue, comparison))
             return;
@@ -125,19 +135,34 @@ public partial class Assert
         }
     }
 
-    public static void Equal<T>(IEnumerable<T> expected, IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal<T>(IEnumerable<T> expected, [NotNullIfNotNull(nameof(expected))] IEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<IEnumerable<T>, IEnumerable<T>?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+
         EqualCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression);
     }
 
-    public static void Equal<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal<T>(IEnumerable<T> expected, [NotNullIfNotNull(nameof(expected))] IEnumerable<T>? actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<IEnumerable<T>, IEnumerable<T>?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+
         EqualCollections<T>(expected, actual, comparer, message, actualExpression, expectedExpression);
     }
 
     [OverloadResolutionPriority(-1)]
-    public static void Equal<TExpected, TActual>(IEnumerable<TExpected> expected, IEnumerable<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal<TExpected, TActual>(IEnumerable<TExpected> expected, [NotNullIfNotNull(nameof(expected))] IEnumerable<TActual>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<IEnumerable<TExpected>, IEnumerable<TActual>?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+
         EqualCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression);
     }
 
@@ -202,24 +227,50 @@ public partial class Assert
         }
     }
 
-    public static async Task Equal<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task Equal<T>(IAsyncEnumerable<T> expected, [NotNullIfNotNull(nameof(expected))] IAsyncEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<IReadOnlyList<T>, IAsyncEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
+        }
+
         await EqualAsyncCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
-    public static async Task Equal<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task Equal<T>(IAsyncEnumerable<T> expected, [NotNullIfNotNull(nameof(expected))] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<IReadOnlyList<T>, IAsyncEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
+        }
+
         await EqualAsyncCollections<T>(expected, actual, comparer, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
     [OverloadResolutionPriority(-1)]
-    public static async Task Equal<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, IAsyncEnumerable<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task Equal<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, [NotNullIfNotNull(nameof(expected))] IAsyncEnumerable<TActual>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
+            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<IReadOnlyList<TExpected>, IAsyncEnumerable<TActual>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
+        }
+
         await EqualAsyncCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
-    public static async Task Equal<T>(IEnumerable<T> expected, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task Equal<T>(IEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<IEnumerable<T>, IAsyncEnumerable<T>?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+
         var actualList = new List<T>();
         await foreach (var item in actual.ConfigureAwait(false))
         {
@@ -229,8 +280,15 @@ public partial class Assert
         Equal(expected, actualList, message, actualExpression, expectedExpression);
     }
 
-    public static async Task Equal<T>(IAsyncEnumerable<T> expected, IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task Equal<T>(IAsyncEnumerable<T> expected, [NotNullIfNotNull(nameof(expected))] IEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<IReadOnlyList<T>, IEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
+        }
+
         var expectedList = new List<T>();
         await foreach (var item in expected.ConfigureAwait(false))
         {
@@ -301,13 +359,23 @@ public partial class Assert
         }
     }
 
-    public static void Equal(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal(System.Collections.IEnumerable expected, [NotNullIfNotNull(nameof(expected))] System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+
         Equal(expected, actual, comparer: null, message, actualExpression, expectedExpression);
     }
 
-    public static void Equal(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Equal(System.Collections.IEnumerable expected, [NotNullIfNotNull(nameof(expected))] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new EqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
         using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
         using var actualEnumerator = actualSnapshot.GetEnumerator();

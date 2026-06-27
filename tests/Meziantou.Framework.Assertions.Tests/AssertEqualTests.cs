@@ -36,6 +36,21 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void Scalar_FailsWhenActualIsNull()
+    {
+        object expected = 42;
+        object? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: 42
+            Actual:   <null>
+            """);
+    }
+
+    [Fact]
     public void HalfTolerance_Success()
     {
         Half expected = (Half)1;
@@ -141,6 +156,21 @@ public sealed class AssertEqualTests
             Actual expression:   actual
             Expected: "Hello\n\"World\""
             Actual:   "Hello\tWorld"
+            """);
+    }
+
+    [Fact]
+    public void String_FailsWhenActualIsNull()
+    {
+        var expected = "Hello";
+        string? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: "Hello"
+            Actual:   <null>
             """);
     }
 
@@ -341,6 +371,21 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void Collection_FailsWhenActualIsNull()
+    {
+        IEnumerable<int> expected = [1, 2, 3];
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [1, 2, 3]
+            Actual:   <null>
+            """);
+    }
+
+    [Fact]
     public void CollectionComparer_Success()
     {
         IEnumerable<string> expected = ["a", "b"];
@@ -381,6 +426,21 @@ public sealed class AssertEqualTests
             Index of first difference: 12
             Expected: [0, 1, 2, ..., 10, 11, 1̲2̲, 13, 14, ...]
             Actual:   [0, 1, 2, ..., 10, 11, 4̲2̲, 13, 14, ...]
+            """);
+    }
+
+    [Fact]
+    public async Task AsyncCollection_FailsWhenActualIsNull()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]);
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [1, 2, 3]
+            Actual:   <null>
             """);
     }
 
@@ -431,6 +491,21 @@ public sealed class AssertEqualTests
             Index of first difference: 1
             Expected: ["a", "̲b̲"̲, "c"]
             Actual:   ["A", "̲d̲"̲, "C"]
+            """);
+    }
+
+    [Fact]
+    public void NonGenericCollection_FailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable expected = new object[] { 1, 2, 3 };
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [1, 2, 3]
+            Actual:   <null>
             """);
     }
 

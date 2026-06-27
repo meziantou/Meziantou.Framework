@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.17</Version>
+    <Version>1.0.18</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Fluent API for wrapping System.Diagnostics.Process</Description>
   </PropertyGroup>
@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.Pipelines" Version="10.0.8" />
+    <PackageReference Include="System.IO.Pipelines" Version="10.0.9" />
   </ItemGroup>
 
   <ItemGroup>

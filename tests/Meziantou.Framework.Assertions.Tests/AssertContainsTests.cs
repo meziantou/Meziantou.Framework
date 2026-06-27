@@ -435,6 +435,29 @@ public sealed class AssertContainsTests
     {
         AssertionsAssert.DoesNotContain(4, [1, 2, 3]);
         AssertionsAssert.DoesNotContain("z", "abc");
+
+        IEnumerable<int>? enumerable = null;
+        IEnumerable<KeyValuePair<string, int>>? keyValuePairs = null;
+        Dictionary<string, int>? genericDictionary = null;
+        System.Collections.IEnumerable? nonGenericEnumerable = null;
+        System.Collections.IDictionary? dictionary = null;
+        string? text = null;
+
+        AssertionsAssert.DoesNotContain(4, enumerable);
+        AssertionsAssert.DoesNotContain("key", keyValuePairs);
+        AssertionsAssert.DoesNotContain("key", genericDictionary);
+        AssertionsAssert.DoesNotContain(4, nonGenericEnumerable);
+        AssertionsAssert.DoesNotContain("key", dictionary);
+        AssertionsAssert.DoesNotContain("z", text);
+    }
+
+    [Fact]
+    public async Task DoesNotContain_AsyncEnumerableSucceedsWhenActualIsNull()
+    {
+        IEnumerable<int> expected = [2, 3];
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionsAssert.DoesNotContain(expected, actual);
     }
 
     [Fact]

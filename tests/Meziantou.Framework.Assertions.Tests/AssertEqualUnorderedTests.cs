@@ -56,6 +56,21 @@ public sealed class AssertEqualUnorderedTests
     }
 
     [Fact]
+    public void Enumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<int> expected = [1, 2, 3];
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered(expected, actual), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [1, 2, 3]
+            Actual:   <null>
+            """);
+    }
+
+    [Fact]
     public void Enumerable_FailsWhenActualHasUnexpectedItem()
     {
         IEnumerable<int> expected = [1, 2];
@@ -117,6 +132,21 @@ public sealed class AssertEqualUnorderedTests
     }
 
     [Fact]
+    public void NonGenericEnumerable_FailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable expected = new object[] { 1, 2, 3 };
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered(expected, actual), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [1, 2, 3]
+            Actual:   <null>
+            """);
+    }
+
+    [Fact]
     public async Task AsyncEnumerable_Success()
     {
         var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]);
@@ -143,9 +173,41 @@ public sealed class AssertEqualUnorderedTests
     }
 
     [Fact]
+    public async Task AsyncEnumerable_FailsWhenActualIsNull()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]);
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.EqualUnordered(expected, actual), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [1, 2, 3]
+            Actual:   <null>
+            """);
+    }
+
+    [Fact]
     public void NotEqualUnordered_Success()
     {
         AssertionsAssert.NotEqualUnordered([1, 2], [1, 3]);
+
+        IEnumerable<int> expected = [1, 2];
+        IEnumerable<int>? actual = null;
+        System.Collections.IEnumerable expectedNonGeneric = new object[] { 1, 2 };
+        System.Collections.IEnumerable? actualNonGeneric = null;
+
+        AssertionsAssert.NotEqualUnordered(expected, actual);
+        AssertionsAssert.NotEqualUnordered(expectedNonGeneric, actualNonGeneric);
+    }
+
+    [Fact]
+    public async Task NotEqualUnordered_AsyncEnumerableSucceedsWhenActualIsNull()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2]);
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionsAssert.NotEqualUnordered(expected, actual);
     }
 
     [Fact]

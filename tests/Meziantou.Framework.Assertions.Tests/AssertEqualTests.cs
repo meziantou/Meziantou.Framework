@@ -551,6 +551,41 @@ public sealed class AssertEqualTests
     {
         AssertionsAssert.NotEqual(1, 2);
         AssertionsAssert.NotEqual<int>([1, 2], [2, 1]);
+
+        object expected = 42;
+        object? actual = null;
+        IEnumerable<int> expectedCollection = [1, 2];
+        IEnumerable<int>? actualCollection = null;
+        System.Collections.IEnumerable expectedNonGenericCollection = new object[] { 1, 2 };
+        System.Collections.IEnumerable? actualNonGenericCollection = null;
+
+        AssertionsAssert.NotEqual(expected, actual);
+        AssertionsAssert.NotEqual(expectedCollection, actualCollection);
+        AssertionsAssert.NotEqual(expectedNonGenericCollection, actualNonGenericCollection);
+    }
+
+    [Fact]
+    public async Task NotEqual_AsyncEnumerableSucceedsWhenActualIsNull()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2]);
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionsAssert.NotEqual(expected, actual);
+    }
+
+    [Fact]
+    public void NotEqual_FailsWhenBothValuesAreNull()
+    {
+        object? expected = null;
+        object? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqual(expected, actual), """
+            Assert.NotEqual() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: <null>
+            Actual:              <null>
+            """);
     }
 
     [Fact]

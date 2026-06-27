@@ -45,6 +45,20 @@ public sealed class AssertStartsWithTests
     }
 
     [Fact]
+    public void ValueEnumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.StartsWith(1, actual), """
+            Assert.StartsWith() assertion failed.
+            Expected expression: 1
+            Actual expression:   actual
+            Expected prefix: 1
+            Actual:          <null>
+            """);
+    }
+
+    [Fact]
     public void ValueNonGenericEnumerable_Success()
     {
         System.Collections.IEnumerable actual = new object[] { 1, 2, 3 };
@@ -63,6 +77,20 @@ public sealed class AssertStartsWithTests
             Actual expression:   actual
             Expected prefix: 1
             Actual:          [2̲, 3]
+            """);
+    }
+
+    [Fact]
+    public void ValueNonGenericEnumerable_FailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.StartsWith(1, actual), """
+            Assert.StartsWith() assertion failed.
+            Expected expression: 1
+            Actual expression:   actual
+            Expected prefix: 1
+            Actual:          <null>
             """);
     }
 
@@ -145,6 +173,22 @@ public sealed class AssertStartsWithTests
     }
 
     [Fact]
+    public void String_FailsWhenActualIsNull()
+    {
+        var expected = "He";
+        string? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.StartsWith(expected, actual), """
+            Assert.StartsWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Comparison: Ordinal
+            Expected prefix: "He"
+            Actual:          <null>
+            """);
+    }
+
+    [Fact]
     public async Task EnumerableAsyncEnumerable_Success()
     {
         IEnumerable<string> expected = ["a", "b"];
@@ -168,6 +212,21 @@ public sealed class AssertStartsWithTests
             Index of first difference: 12
             Expected prefix: [0, 1, 2, ..., 10, 11, 1̲2̲, 13, 14, ...]
             Actual:          [0, 1, 2, ..., 10, 11, 4̲2̲, 13, 14, ...]
+            """);
+    }
+
+    [Fact]
+    public async Task EnumerableAsyncEnumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<int> expected = [1, 2];
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.StartsWith(expected, actual), """
+            Assert.StartsWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected prefix: [1, 2]
+            Actual:          <null>
             """);
     }
 
@@ -197,10 +256,42 @@ public sealed class AssertStartsWithTests
     }
 
     [Fact]
+    public void NonGenericEnumerable_FailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable expected = new object[] { 1, 2 };
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.StartsWith(expected, actual), """
+            Assert.StartsWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected prefix: [1, 2]
+            Actual:          <null>
+            """);
+    }
+
+    [Fact]
     public void DoesNotStartWith_Success()
     {
         AssertionsAssert.DoesNotStartWith(2, [1, 2, 3]);
         AssertionsAssert.DoesNotStartWith("He", "hello", StringComparison.Ordinal);
+
+        IEnumerable<int>? enumerable = null;
+        System.Collections.IEnumerable? nonGenericEnumerable = null;
+        string? text = null;
+
+        AssertionsAssert.DoesNotStartWith(1, enumerable);
+        AssertionsAssert.DoesNotStartWith(1, nonGenericEnumerable);
+        AssertionsAssert.DoesNotStartWith("He", text);
+    }
+
+    [Fact]
+    public async Task DoesNotStartWith_AsyncEnumerableSucceedsWhenActualIsNull()
+    {
+        IEnumerable<int> expected = [1, 2];
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionsAssert.DoesNotStartWith(expected, actual);
     }
 
     [Fact]

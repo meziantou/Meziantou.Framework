@@ -913,6 +913,20 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<TExpected>(NullActualAssertionError<TExpected> error)
+    {
+        var actualExpressionPadding = new string(' ', error.ExpectedExpressionLabel.Length - "Actual expression".Length + 1);
+        var actualValuePadding = new string(' ', error.ExpectedValueLabel.Length - "Actual".Length + 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            {error.ExpectedExpressionLabel}: {error.ExpectedExpression}
+            Actual expression:{actualExpressionPadding}{error.ActualExpression}
+            {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:{actualValuePadding}<null>
+            """);
+    }
+
     public virtual string Format<TKey, TValue>(KeyValuePairCollectionContainsAssertionError<TKey, TValue> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
@@ -969,6 +983,18 @@ internal class AssertionFormatter
             Comparison: {error.Comparison}
             Expected: {FormatValue(error.ExpectedValue)}
             Actual:   <null>
+            """);
+    }
+
+    public virtual string Format(StringNullActualAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.{error.AssertionName}() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:          <null>
             """);
     }
 

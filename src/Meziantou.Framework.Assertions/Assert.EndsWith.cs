@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
@@ -25,8 +26,13 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void EndsWith<T>(T expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EndsWith<T>(T expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression)));
+        }
+
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = new CollectionSnapshot<T>(actual);
         EnsureComplete(actualSnapshot);
@@ -42,8 +48,13 @@ public partial class Assert
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void EndsWith(object? expected, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EndsWith(object? expected, [NotNull] System.Collections.IEnumerable? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression)));
+        }
+
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
         EnsureComplete(actualSnapshot);
 
@@ -90,8 +101,13 @@ public partial class Assert
     /// <param name="comparison">The comparison used to compare characters.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void EndsWith(string expected, string actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EndsWith(string expected, [NotNull] string? actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(EndsWith), "Expected suffix", expected, comparison, actualExpression, expectedExpression)));
+        }
+
         if (actual.EndsWith(expected, comparison))
             return;
 
@@ -105,8 +121,13 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static async Task EndsWith<T>(IEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task EndsWith<T>(IEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression)));
+        }
+
         comparer ??= EqualityComparer<T>.Default;
 
         await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
@@ -127,8 +148,13 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void EndsWith(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EndsWith(System.Collections.IEnumerable expected, [NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression)));
+        }
+
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
         using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
 

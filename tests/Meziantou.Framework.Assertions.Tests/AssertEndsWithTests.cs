@@ -45,6 +45,20 @@ public sealed class AssertEndsWithTests
     }
 
     [Fact]
+    public void ValueEnumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith(4, actual), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: 4
+            Actual expression:   actual
+            Expected suffix: 4
+            Actual:          <null>
+            """);
+    }
+
+    [Fact]
     public void ValueNonGenericEnumerable_Success()
     {
         System.Collections.IEnumerable actual = new object[] { 1, 2, 3 };
@@ -63,6 +77,20 @@ public sealed class AssertEndsWithTests
             Actual expression:   actual
             Expected suffix: 4
             Actual:          [1, 2, 3̲]
+            """);
+    }
+
+    [Fact]
+    public void ValueNonGenericEnumerable_FailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith(4, actual), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: 4
+            Actual expression:   actual
+            Expected suffix: 4
+            Actual:          <null>
             """);
     }
 
@@ -124,6 +152,22 @@ public sealed class AssertEndsWithTests
     }
 
     [Fact]
+    public void String_FailsWhenActualIsNull()
+    {
+        var expected = "WORLD";
+        string? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith(expected, actual), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Comparison: Ordinal
+            Expected suffix: "WORLD"
+            Actual:          <null>
+            """);
+    }
+
+    [Fact]
     public async Task EnumerableAsyncEnumerable_Success()
     {
         IEnumerable<string> expected = ["c", "d"];
@@ -145,6 +189,21 @@ public sealed class AssertEndsWithTests
             Index of first difference: 1
             Expected suffix: [2, 4̲]
             Actual:          [1, 2, 3̲]
+            """);
+    }
+
+    [Fact]
+    public async Task EnumerableAsyncEnumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<int> expected = [2, 3];
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.EndsWith(expected, actual), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected suffix: [2, 3]
+            Actual:          <null>
             """);
     }
 
@@ -174,10 +233,42 @@ public sealed class AssertEndsWithTests
     }
 
     [Fact]
+    public void NonGenericEnumerable_FailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable expected = new object[] { 2, 3 };
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith(expected, actual), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected suffix: [2, 3]
+            Actual:          <null>
+            """);
+    }
+
+    [Fact]
     public void DoesNotEndWith_Success()
     {
         AssertionsAssert.DoesNotEndWith(2, [1, 2, 3]);
         AssertionsAssert.DoesNotEndWith("He", "hello", StringComparison.Ordinal);
+
+        IEnumerable<int>? enumerable = null;
+        System.Collections.IEnumerable? nonGenericEnumerable = null;
+        string? text = null;
+
+        AssertionsAssert.DoesNotEndWith(3, enumerable);
+        AssertionsAssert.DoesNotEndWith(3, nonGenericEnumerable);
+        AssertionsAssert.DoesNotEndWith("lo", text);
+    }
+
+    [Fact]
+    public async Task DoesNotEndWith_AsyncEnumerableSucceedsWhenActualIsNull()
+    {
+        IEnumerable<int> expected = [2, 3];
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionsAssert.DoesNotEndWith(expected, actual);
     }
 
     [Fact]

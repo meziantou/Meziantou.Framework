@@ -13,8 +13,11 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanExpectedActualValueAssertionError<T, T>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
-    public static void DoesNotStartWith<T>(T expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotStartWith<T>(T expected, IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+            return;
+
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = new CollectionSnapshot<T>(actual);
         using var actualEnumerator = actualSnapshot.GetEnumerator();
@@ -26,8 +29,11 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<T, IEnumerable<T>>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
-    public static void DoesNotStartWith(object? expected, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotStartWith(object? expected, System.Collections.IEnumerable? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+            return;
+
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
         using var actualEnumerator = actualSnapshot.GetEnumerator();
         if (!actualEnumerator.MoveNext() || !object.Equals(expected, actualEnumerator.Current))
@@ -55,16 +61,22 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanValueAssertionError<char, char>(nameof(DoesNotStartWith), "Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
-    public static void DoesNotStartWith(string expected, string actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotStartWith(string expected, string? actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+            return;
+
         if (!actual.StartsWith(expected, comparison))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<string, string>("Not expected prefix", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
-    public static async Task DoesNotStartWith<T>(IEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task DoesNotStartWith<T>(IEnumerable<T> expected, IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+            return;
+
         comparer ??= EqualityComparer<T>.Default;
         await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
         using var expectedSnapshot = new CollectionSnapshot<T>(expected);
@@ -82,8 +94,11 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected prefix", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message: null)));
     }
 
-    public static void DoesNotStartWith(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotStartWith(System.Collections.IEnumerable expected, System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+            return;
+
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
         using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
         using var actualEnumerator = actualSnapshot.GetEnumerator();

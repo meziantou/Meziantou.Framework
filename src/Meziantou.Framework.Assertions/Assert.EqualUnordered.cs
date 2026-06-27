@@ -1,22 +1,38 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
 public partial class Assert
 {
-    public static void EqualUnordered<T>(IEnumerable<T> expected, IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EqualUnordered<T>(IEnumerable<T> expected, [NotNull] IEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+        }
+
         EqualUnorderedCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression);
     }
 
-    public static void EqualUnordered<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EqualUnordered<T>(IEnumerable<T> expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+        }
+
         EqualUnorderedCollections(expected, actual, comparer, message, actualExpression, expectedExpression);
     }
 
     [OverloadResolutionPriority(-1)]
-    public static void EqualUnordered<TExpected, TActual>(IEnumerable<TExpected> expected, IEnumerable<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EqualUnordered<TExpected, TActual>(IEnumerable<TExpected> expected, [NotNull] IEnumerable<TActual>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<TExpected>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+        }
+
         EqualUnorderedCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression);
     }
 
@@ -49,19 +65,40 @@ public partial class Assert
         }
     }
 
-    public static async Task EqualUnordered<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task EqualUnordered<T>(IAsyncEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
+        }
+
         await EqualUnorderedAsyncCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
-    public static async Task EqualUnordered<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task EqualUnordered<T>(IAsyncEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
+        }
+
         await EqualUnorderedAsyncCollections(expected, actual, comparer, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
     [OverloadResolutionPriority(-1)]
-    public static async Task EqualUnordered<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, IAsyncEnumerable<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task EqualUnordered<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, [NotNull] IAsyncEnumerable<TActual>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
+            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<TExpected>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
+        }
+
         await EqualUnorderedAsyncCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
@@ -94,13 +131,23 @@ public partial class Assert
         }
     }
 
-    public static void EqualUnordered(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EqualUnordered(System.Collections.IEnumerable expected, [NotNull] System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+        }
+
         EqualUnordered(expected, actual, comparer: null, message, actualExpression, expectedExpression);
     }
 
-    public static void EqualUnordered(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void EqualUnordered(System.Collections.IEnumerable expected, [NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+        }
+
         EqualUnorderedCollections(EnumerateObjects(expected), EnumerateObjects(actual), comparer, message, actualExpression, expectedExpression);
     }
 

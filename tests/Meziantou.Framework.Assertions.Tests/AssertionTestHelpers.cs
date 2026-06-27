@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using AssertionException = Meziantou.Framework.Assertions.AssertionException;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
@@ -5,6 +6,17 @@ namespace Meziantou.Framework.Assertions.Tests;
 
 internal static class AssertionTestHelpers
 {
+    [ModuleInitializer]
+    public static void InitializeFormatterOptions()
+    {
+        AssertionsAssert.FormatterOptions = new()
+        {
+            MaxFormattedItems = 10,
+            PrefixItemCount = 3,
+            HighlightedContextItemCount = 2,
+        };
+    }
+
     public static void Validate(Action action, string expectedMessage)
     {
         var exception = AssertionsAssert.Throws<AssertionException>(action);

@@ -34,6 +34,17 @@ public sealed class AssertionFormatterTests
     }
 
     [Fact]
+    public void FormatterOptions_UsesLargerDefaults()
+    {
+        var options = new FormatterOptions();
+
+        AssertionsAssert.Equal(20, options.MaxFormattedItems);
+        AssertionsAssert.Equal(6, options.PrefixItemCount);
+        AssertionsAssert.Equal(0, options.SuffixItemCount);
+        AssertionsAssert.Equal(4, options.HighlightedContextItemCount);
+    }
+
+    [Fact]
     public void UsesSuffixItemCount()
     {
         var formatter = new TestAssertionFormatter

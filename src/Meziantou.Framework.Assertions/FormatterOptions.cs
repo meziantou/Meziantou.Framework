@@ -17,7 +17,7 @@ public sealed class FormatterOptions
             ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
             field = value;
         }
-    } = 10;
+    } = 20;
 
     /// <summary>Gets or sets the number of items to keep from the start of an enumerable when a highlighted item is outside the leading range.</summary>
     /// <remarks>
@@ -32,7 +32,7 @@ public sealed class FormatterOptions
             ArgumentOutOfRangeException.ThrowIfNegative(value);
             field = value;
         }
-    } = 3;
+    } = 6;
 
     /// <summary>Gets or sets the minimum number of items to format after a highlighted item in the leading range.</summary>
     /// <remarks>
@@ -63,5 +63,5 @@ public sealed class FormatterOptions
             ArgumentOutOfRangeException.ThrowIfNegative(value);
             field = value;
         }
-    } = 2;
+    } = 4;
 }

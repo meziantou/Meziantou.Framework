@@ -60,6 +60,22 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void Scalar_SucceedsWithDynamicActual()
+    {
+        dynamic actual = 42;
+
+        AssertionsAssert.Equal(42, actual);
+    }
+
+    [Fact]
+    public void Scalar_SucceedsWhenActualIsNativeInteger()
+    {
+        nint actual = 42;
+
+        AssertionsAssert.Equal(42, actual);
+    }
+
+    [Fact]
     public void Scalar_SucceedsWhenExpectedConvertsToActualType()
     {
         var actual = new ImplicitlyConvertibleValue(42);
@@ -322,6 +338,23 @@ public sealed class AssertEqualTests
     {
         var expected = new List<int> { 1, 2, 3 };
         var actual = new List<long> { 1L, 2L, 3L };
+
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void JaggedArrays_Success()
+    {
+        string[][] expected =
+        [
+            ["a", "b"],
+            ["c", "d"],
+        ];
+        string[][] actual =
+        [
+            ["a", "b"],
+            ["c", "d"],
+        ];
 
         AssertionsAssert.Equal(expected, actual);
     }

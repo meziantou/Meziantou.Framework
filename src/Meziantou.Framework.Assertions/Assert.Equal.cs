@@ -37,6 +37,21 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(-2)]
+    public static void Equal(object? expected, [NotNullIfNotNull(nameof(expected))] object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (TryEqualEnumerables(expected, actual, message, actualExpression, expectedExpression))
+            return;
+
+        if (TryEqualMemory(expected, actual, message, actualExpression, expectedExpression))
+            return;
+
+        if (!ValuesEqual(expected, actual))
+        {
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<object?, object?>(expected, actual, message, actualExpression, expectedExpression)));
+        }
+    }
+
+    [OverloadResolutionPriority(-1)]
     public static void Equal<T>(T expected, [NotNullIfNotNull(nameof(expected))] T? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (TryEqualEnumerables(expected, actual, message, actualExpression, expectedExpression))
@@ -48,21 +63,6 @@ public partial class Assert
         if (!ValuesEqual(expected, actual))
         {
             throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<T, T>(expected, actual, message, actualExpression, expectedExpression)));
-        }
-    }
-
-    [OverloadResolutionPriority(-1)]
-    public static void Equal<TExpected, TActual>(TExpected expected, [NotNullIfNotNull(nameof(expected))] TActual? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
-    {
-        if (TryEqualEnumerables(expected, actual, message, actualExpression, expectedExpression))
-            return;
-
-        if (TryEqualMemory(expected, actual, message, actualExpression, expectedExpression))
-            return;
-
-        if (!ValuesEqual(expected, actual))
-        {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<TExpected, TActual>(expected, actual, message, actualExpression, expectedExpression)));
         }
     }
 
@@ -98,7 +98,7 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanEqualAssertionError<char, char>(expected, actual, GetFirstDifferenceIndex(expected, actual, comparison), message, actualExpression, expectedExpression)));
     }
 
-    [OverloadResolutionPriority(-1)]
+    [OverloadResolutionPriority(-2)]
     public static void Equal<TExpected, TActual>(ReadOnlySpan<TExpected> expected, ReadOnlySpan<TActual> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         EqualSpans(expected, actual, message, actualExpression, expectedExpression);
@@ -145,7 +145,7 @@ public partial class Assert
         EqualCollections<T>(expected, actual, comparer, message, actualExpression, expectedExpression);
     }
 
-    [OverloadResolutionPriority(-1)]
+    [OverloadResolutionPriority(-2)]
     public static void Equal<TExpected, TActual>(IEnumerable<TExpected> expected, [NotNullIfNotNull(nameof(expected))] IEnumerable<TActual>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
@@ -241,7 +241,7 @@ public partial class Assert
         await EqualAsyncCollections<T>(expected, actual, comparer, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
-    [OverloadResolutionPriority(-1)]
+    [OverloadResolutionPriority(-2)]
     public static async Task Equal<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, [NotNullIfNotNull(nameof(expected))] IAsyncEnumerable<TActual>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)

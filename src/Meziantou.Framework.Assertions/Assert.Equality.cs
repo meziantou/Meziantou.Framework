@@ -40,12 +40,68 @@ public partial class Assert
             return true;
 
         return (TryCompareNumericValues(expected, actual, out var result) && result)
+            || (TryCompareEnumerableValues(expected, actual, out result) && result)
             || ValuesEqualAfterImplicitConversion(expected, actual);
+    }
+
+    private static bool TryCompareEnumerableValues<TExpected, TActual>(TExpected expected, TActual actual, out bool result)
+    {
+        result = false;
+        if (expected is string || actual is string)
+            return false;
+
+        if (expected is not System.Collections.IEnumerable expectedEnumerable || actual is not System.Collections.IEnumerable actualEnumerable)
+            return false;
+
+        result = EnumerableValuesEqual(expectedEnumerable, actualEnumerable);
+        return true;
+    }
+
+    private static bool EnumerableValuesEqual(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual)
+    {
+        var expectedEnumerator = expected.GetEnumerator();
+        var actualEnumerator = actual.GetEnumerator();
+
+        try
+        {
+            while (true)
+            {
+                var expectedHasNext = expectedEnumerator.MoveNext();
+                var actualHasNext = actualEnumerator.MoveNext();
+
+                if (!expectedHasNext && !actualHasNext)
+                    return true;
+
+                if (expectedHasNext != actualHasNext)
+                    return false;
+
+                if (!ValuesEqual(expectedEnumerator.Current, actualEnumerator.Current))
+                    return false;
+            }
+        }
+        finally
+        {
+            (expectedEnumerator as IDisposable)?.Dispose();
+            (actualEnumerator as IDisposable)?.Dispose();
+        }
     }
 
     private static bool TryCompareNumericValues<TExpected, TActual>(TExpected expected, TActual actual, out bool result)
     {
         result = false;
+
+        if (expected is IntPtr expectedIntPtr)
+            return TryCompareNumericValues(expectedIntPtr.ToInt64(), actual, out result);
+
+        if (actual is IntPtr actualIntPtr)
+            return TryCompareNumericValues(expected, actualIntPtr.ToInt64(), out result);
+
+        if (expected is UIntPtr expectedUIntPtr)
+            return TryCompareNumericValues(expectedUIntPtr.ToUInt64(), actual, out result);
+
+        if (actual is UIntPtr actualUIntPtr)
+            return TryCompareNumericValues(expected, actualUIntPtr.ToUInt64(), out result);
+
         if (expected is null || actual is null)
             return false;
 
@@ -93,12 +149,18 @@ public partial class Assert
         if (expected is null || actual is null)
             return false;
 
-        return ValuesEqualAfterImplicitConversion(expected, actual, actual.GetType())
+        return ValuesEqualAfterImplicitConversion(expected, actual, actual.GetType(), out var result) && result
             || ValuesEqualAfterImplicitConversion(actual, expected, expected.GetType());
     }
 
     private static bool ValuesEqualAfterImplicitConversion<TSource>(TSource source, object target, Type targetType)
     {
+        return ValuesEqualAfterImplicitConversion(source, target, targetType, out var result) && result;
+    }
+
+    private static bool ValuesEqualAfterImplicitConversion<TSource>(TSource source, object target, Type targetType, out bool result)
+    {
+        result = false;
         var sourceType = source?.GetType();
         if (sourceType is null || sourceType == targetType)
             return false;
@@ -113,7 +175,10 @@ public partial class Assert
             {
                 var convertedValue = method.Invoke(obj: null, [source]);
                 if (object.Equals(convertedValue, target))
+                {
+                    result = true;
                     return true;
+                }
             }
         }
 

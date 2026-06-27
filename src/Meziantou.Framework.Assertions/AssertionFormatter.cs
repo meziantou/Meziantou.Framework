@@ -704,6 +704,16 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format(ContainsPredicateNullActualAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expression: {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Actual: <null>
+            """);
+    }
+
     public virtual string Format<T>(CollectionDoesNotContainPredicateAssertionError<T> error)
     {
         EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
@@ -899,6 +909,20 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<TExpected>(ContainsNullActualAssertionError<TExpected> error)
+    {
+        var actualExpressionPadding = new string(' ', error.ExpectedExpressionLabel.Length - "Actual expression".Length + 1);
+        var actualValuePadding = new string(' ', error.ExpectedValueLabel.Length - "Actual".Length + 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            {error.ExpectedExpressionLabel}: {error.ExpectedExpression}
+            Actual expression:{actualExpressionPadding}{error.ActualExpression}
+            {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
+            Actual:{actualValuePadding}<null>
+            """);
+    }
+
     public virtual string Format<TKey, TValue>(KeyValuePairCollectionContainsAssertionError<TKey, TValue> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
@@ -943,6 +967,18 @@ internal class AssertionFormatter
             Comparison: {error.Comparison}
             Expected: {FormatStringValue(error.ExpectedValue, highlightedIndex: null)}
             Actual:   {FormatStringValue(error.ActualValue, highlightedIndex: null)}
+            """);
+    }
+
+    public virtual string Format(StringContainsNullActualAssertionError error)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.Contains() assertion failed.
+            Expected expression: {error.ExpectedExpression}
+            Actual expression:   {error.ActualExpression}
+            Comparison: {error.Comparison}
+            Expected: {FormatValue(error.ExpectedValue)}
+            Actual:   <null>
             """);
     }
 

@@ -45,6 +45,20 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public void ValueEnumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains(4, actual), """
+            Assert.Contains() assertion failed.
+            Expected expression: 4
+            Actual expression:   actual
+            Expected item: 4
+            Actual:        <null>
+            """);
+    }
+
+    [Fact]
     public void PredicateEnumerable_Success()
     {
         IEnumerable<string> collection = ["A", "sample", "C"];
@@ -62,6 +76,19 @@ public sealed class AssertContainsTests
             Expression: collection
             Predicate expression: item => item == "sample"
             Matching items:       []
+            """);
+    }
+
+    [Fact]
+    public void PredicateEnumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<string>? collection = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains(collection, item => item == "sample"), """
+            Assert.Contains() assertion failed.
+            Expression: collection
+            Predicate expression: item => item == "sample"
+            Actual: <null>
             """);
     }
 
@@ -126,6 +153,20 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public void Dictionary_FailsWhenActualIsNull()
+    {
+        Dictionary<string, int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains("c", actual), """
+            Assert.Contains() assertion failed.
+            Expected key expression: "c"
+            Actual expression:       actual
+            Expected key: "c"
+            Actual:       <null>
+            """);
+    }
+
+    [Fact]
     public void KeyValuePairEnumerableComparer_Success()
     {
         IEnumerable<KeyValuePair<string, int>> actual =
@@ -158,6 +199,20 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public void KeyValuePairEnumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<KeyValuePair<string, int>>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains("c", actual), """
+            Assert.Contains() assertion failed.
+            Expected key expression: "c"
+            Actual expression:       actual
+            Expected key: "c"
+            Actual:       <null>
+            """);
+    }
+
+    [Fact]
     public void ValueNonGenericEnumerable_Success()
     {
         System.Collections.IEnumerable actual = new object[] { 1, 2, 3 };
@@ -176,6 +231,20 @@ public sealed class AssertContainsTests
             Actual expression:   actual
             Expected item: 4
             Actual:        [1, 2, 3]
+            """);
+    }
+
+    [Fact]
+    public void ValueNonGenericEnumerable_FailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains(4, actual), """
+            Assert.Contains() assertion failed.
+            Expected expression: 4
+            Actual expression:   actual
+            Expected item: 4
+            Actual:        <null>
             """);
     }
 
@@ -208,6 +277,20 @@ public sealed class AssertContainsTests
             Actual expression:       actual
             Expected key: "c"
             Actual:       ["a": 1, "b": 2]
+            """);
+    }
+
+    [Fact]
+    public void NonGenericDictionary_FailsWhenActualIsNull()
+    {
+        System.Collections.IDictionary? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains("c", actual), """
+            Assert.Contains() assertion failed.
+            Expected key expression: "c"
+            Actual expression:       actual
+            Expected key: "c"
+            Actual:       <null>
             """);
     }
 
@@ -254,6 +337,22 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public void String_FailsWhenActualIsNull()
+    {
+        var expected = "WORLD";
+        string? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains(expected, actual), """
+            Assert.Contains() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Comparison: Ordinal
+            Expected: "WORLD"
+            Actual:   <null>
+            """);
+    }
+
+    [Fact]
     public async Task EnumerableAsyncEnumerable_Success()
     {
         IEnumerable<string> expected = ["b", "c"];
@@ -278,6 +377,21 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public async Task EnumerableAsyncEnumerable_FailsWhenActualIsNull()
+    {
+        IEnumerable<int> expected = [2, 4];
+        IAsyncEnumerable<int>? actual = null;
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Contains(expected, actual), """
+            Assert.Contains() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [2, 4]
+            Actual:   <null>
+            """);
+    }
+
+    [Fact]
     public void NonGenericEnumerable_Success()
     {
         System.Collections.IEnumerable expected = new object[] { "b", "c" };
@@ -298,6 +412,21 @@ public sealed class AssertContainsTests
             Actual expression:   actual
             Expected: [2, 4]
             Actual:   [1, 2, 3]
+            """);
+    }
+
+    [Fact]
+    public void NonGenericEnumerable_FailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable expected = new object[] { 2, 4 };
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains(expected, actual), """
+            Assert.Contains() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [2, 4]
+            Actual:   <null>
             """);
     }
 

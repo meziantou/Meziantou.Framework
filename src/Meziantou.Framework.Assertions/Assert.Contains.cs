@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
@@ -30,8 +31,13 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
     [OverloadResolutionPriority(1)]
-    public static void Contains<T>(T expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Contains<T>(T expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<T>("Expected expression", "Expected item", expected, actualExpression, expectedExpression)));
+        }
+
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = new CollectionSnapshot<T>(actual);
 
@@ -50,8 +56,13 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="predicateExpression">The expression that produced the predicate.</param>
     [OverloadResolutionPriority(1)]
-    public static void Contains<T>(IEnumerable<T> actual, Func<T, bool> predicate, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
+    public static void Contains<T>([NotNull] IEnumerable<T>? actual, Func<T, bool> predicate, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsPredicateNullActualAssertionError(actualExpression, predicateExpression)));
+        }
+
         using var matchingSnapshot = new CollectionSnapshot<T>(EnumerateMatchingItems(actual, predicate));
         using var matchingEnumerator = matchingSnapshot.GetEnumerator();
         if (matchingEnumerator.MoveNext())
@@ -67,8 +78,13 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected key.</param>
     [OverloadResolutionPriority(1)]
-    public static TValue Contains<TKey, TValue>(TKey expected, IEnumerable<KeyValuePair<TKey, TValue>> actual, IEqualityComparer<TKey>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static TValue Contains<TKey, TValue>(TKey expected, [NotNull] IEnumerable<KeyValuePair<TKey, TValue>>? actual, IEqualityComparer<TKey>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<TKey>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
+        }
+
         if (actual is IReadOnlyDictionary<TKey, TValue> readOnlyDictionary && readOnlyDictionary.TryGetValue(expected, out var readOnlyValue))
             return readOnlyValue;
 
@@ -92,9 +108,14 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected key.</param>
     [OverloadResolutionPriority(1)]
-    public static TValue Contains<TKey, TValue>(TKey expected, Dictionary<TKey, TValue> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static TValue Contains<TKey, TValue>(TKey expected, [NotNull] Dictionary<TKey, TValue>? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
         where TKey : notnull
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<TKey>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
+        }
+
         if (actual.TryGetValue(expected, out var value))
             return value;
 
@@ -109,8 +130,13 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
     [OverloadResolutionPriority(-1)]
-    public static void Contains(object? expected, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Contains(object? expected, [NotNull] System.Collections.IEnumerable? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<object?>("Expected expression", "Expected item", expected, actualExpression, expectedExpression)));
+        }
+
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
 
         foreach (var item in actualSnapshot)
@@ -128,8 +154,13 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected key.</param>
     [OverloadResolutionPriority(-1)]
-    public static object? Contains(object? expected, System.Collections.IDictionary actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static object? Contains(object? expected, [NotNull] System.Collections.IDictionary? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<object?>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression)));
+        }
+
         if (actual.Contains(expected!))
             return actual[expected!];
 
@@ -141,7 +172,7 @@ public partial class Assert
     /// <param name="actual">The dictionary to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected key.</param>
-    public static object? Contains(string expected, System.Collections.IDictionary actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static object? Contains(string expected, [NotNull] System.Collections.IDictionary? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         return Contains((object?)expected, actual, actualExpression, expectedExpression);
     }
@@ -181,8 +212,13 @@ public partial class Assert
     /// <param name="comparison">The comparison used to compare characters.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void Contains(string expected, string actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Contains(string expected, [NotNull] string? actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new StringContainsNullActualAssertionError(expected, comparison, actualExpression, expectedExpression)));
+        }
+
         if (actual.Contains(expected, comparison))
             return;
 
@@ -195,8 +231,13 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static async Task Contains<T>(IEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task Contains<T>(IEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<IEnumerable<T>>("Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+        }
+
         comparer ??= EqualityComparer<T>.Default;
 
         await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
@@ -216,8 +257,13 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void Contains(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Contains(System.Collections.IEnumerable expected, [NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        if (actual is null)
+        {
+            throw new AssertionException(AssertionFormatter.Default.Format(new ContainsNullActualAssertionError<System.Collections.IEnumerable>("Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+        }
+
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
         using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
 

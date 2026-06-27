@@ -148,7 +148,7 @@ public sealed partial class ObservableCollectionTests
         else
         {
             Assert.All(eventAssert.CollectionChangedArgs.Select(e => e.Action), action => Assert.Equal(NotifyCollectionChangedAction.Add, action));
-            Assert.Equivalent(new[]
+            Assert.EqualUnordered(new[]
             {
                 new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 3, NewItems = new[] { 3 }  },
                 new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 4, NewItems = new[] { 4 }  },
@@ -184,7 +184,7 @@ public sealed partial class ObservableCollectionTests
         else
         {
             Assert.All(eventAssert.CollectionChangedArgs.Select(e => e.Action), action => Assert.Equal(NotifyCollectionChangedAction.Add, action));
-            Assert.Equivalent(new[]
+            Assert.EqualUnordered(new[]
             {
                 new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 2, NewItems = new[] { 2 }  },
                 new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 3, NewItems = new[] { 3 }  },

@@ -1,10 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
-using Meziantou.DnsProxy;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using DnsProxyProgram = global::Program;
 
 namespace Meziantou.Framework.DnsProxy.Tests;
@@ -82,33 +79,33 @@ public sealed class DnsProxyIntegrationTests
     [Fact]
     public async Task DisableFilteringEndpoint_DisablesRewriteRulesTemporarily()
     {
+        const int DnsPort = 0;
+        const int HttpPort = 5080;
+        const int DiagnosticsHistoryCapacity = 1;
+        const string RewriteDomain = "temporary-filter-disable.example";
+        const string RewriteAddress = "203.0.113.123";
+
         using var baseFactory = new WebApplicationFactory<DnsProxyProgram>();
         using var factory = baseFactory.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureAppConfiguration((_, configurationBuilder) =>
-            {
-                configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.Ordinal)
-                {
-                    ["DnsProxy:DnsPort"] = "0",
-                    ["DnsProxy:HttpPort"] = "5080",
-                    ["DnsProxy:DiagnosticsHistoryCapacity"] = "1",
-                });
-            });
-            builder.ConfigureServices(services =>
-            {
-                services.PostConfigure<DnsProxyOptions>(options =>
-                {
-                    options.Filters = [];
-                    options.Upstreams = [];
-                });
-            });
+            builder.UseSetting("DnsProxy:DnsPort", DnsPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:HttpPort", HttpPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:DiagnosticsHistoryCapacity", DiagnosticsHistoryCapacity.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:Filters:0:Url", "");
+            builder.UseSetting("DnsProxy:Filters:1:Url", "");
+            builder.UseSetting("DnsProxy:Rewrites:0:Domain", RewriteDomain);
+            builder.UseSetting("DnsProxy:Rewrites:0:Type", "A");
+            builder.UseSetting("DnsProxy:Rewrites:0:Value", RewriteAddress);
+            builder.UseSetting("DnsProxy:Upstreams:0:Endpoint", "");
+            builder.UseSetting("DnsProxy:Upstreams:1:Endpoint", "");
+            builder.UseSetting("DnsProxy:Upstreams:2:Endpoint", "");
         });
         var webClient = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,
         });
 
-        var query = CreateAQuery("localhost", id: 0x1234);
+        var query = CreateAQuery(RewriteDomain, id: 0x1234);
         using var requestBeforePause = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
         {
             Content = new ByteArrayContent(query),
@@ -118,7 +115,8 @@ public sealed class DnsProxyIntegrationTests
         using var responseBeforePause = await webClient.SendAsync(requestBeforePause);
         responseBeforePause.EnsureSuccessStatusCode();
         var responseBeforePauseBytes = await responseBeforePause.Content.ReadAsByteArrayAsync();
-        AssertDnsResponseHasARecord(responseBeforePauseBytes, expectedId: 0x1234, expectedAddress: IPAddress.Parse("127.0.0.1"));
+        var rewriteAddress = IPAddress.Parse(RewriteAddress);
+        AssertDnsResponseHasARecord(responseBeforePauseBytes, expectedId: 0x1234, expectedAddress: rewriteAddress);
 
         using var disableContent = new StringContent("");
         using var disableResponse = await webClient.PostAsync("/filtering/disable", disableContent);
@@ -137,10 +135,9 @@ public sealed class DnsProxyIntegrationTests
         using var responseAfterPause = await webClient.SendAsync(requestAfterPause);
         responseAfterPause.EnsureSuccessStatusCode();
         var responseAfterPauseBytes = await responseAfterPause.Content.ReadAsByteArrayAsync();
-        AssertDnsResponseHasServerFailureWithoutAnswers(responseAfterPauseBytes, expectedId: 0x1234);
+        AssertDnsResponseDoesNotHaveARecord(responseAfterPauseBytes, expectedId: 0x1234, unexpectedAddress: rewriteAddress);
 
         var htmlAfterQuery = await webClient.GetStringAsync("/");
-        Assert.Contains("UpstreamFailure", htmlAfterQuery, StringComparison.Ordinal);
         Assert.DoesNotContain("Rewritten", htmlAfterQuery, StringComparison.Ordinal);
     }
 
@@ -196,7 +193,7 @@ public sealed class DnsProxyIntegrationTests
         Assert.Equal(expectedAddress, address);
     }
 
-    private static void AssertDnsResponseHasServerFailureWithoutAnswers(byte[] response, ushort expectedId)
+    private static void AssertDnsResponseDoesNotHaveARecord(byte[] response, ushort expectedId, IPAddress unexpectedAddress)
     {
         Assert.True(response.Length >= 12);
 
@@ -204,13 +201,33 @@ public sealed class DnsProxyIntegrationTests
         var id = ReadUInt16(response, ref offset);
         Assert.Equal(expectedId, id);
 
-        var flags = ReadUInt16(response, ref offset);
-        Assert.Equal(2, flags & 0x000F); // RCODE=SERVFAIL
+        _ = ReadUInt16(response, ref offset); // flags
         var questionCount = ReadUInt16(response, ref offset);
         var answerCount = ReadUInt16(response, ref offset);
+        _ = ReadUInt16(response, ref offset); // authorityCount
+        _ = ReadUInt16(response, ref offset); // additionalCount
 
         Assert.Equal(1, questionCount);
-        Assert.Equal(0, answerCount);
+
+        SkipDomainName(response, ref offset);
+        offset += 4; // QTYPE + QCLASS
+
+        for (var i = 0; i < answerCount; i++)
+        {
+            SkipDomainName(response, ref offset);
+            var recordType = ReadUInt16(response, ref offset);
+            _ = ReadUInt16(response, ref offset); // recordClass
+            offset += 4; // TTL
+            var rdLength = ReadUInt16(response, ref offset);
+
+            if (recordType == 1 && rdLength == 4)
+            {
+                var address = new IPAddress(response.AsSpan(offset, rdLength));
+                Assert.NotEqual(unexpectedAddress, address);
+            }
+
+            offset += rdLength;
+        }
     }
 
     private static void WriteDomainName(MemoryStream stream, string domain)

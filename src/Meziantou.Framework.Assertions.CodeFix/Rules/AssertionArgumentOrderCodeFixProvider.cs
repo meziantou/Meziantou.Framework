@@ -83,9 +83,9 @@ public sealed class AssertionArgumentOrderCodeFixProvider : CodeFixProvider
         out ArgumentSyntax actualArgument)
     {
         if (semanticModel.GetOperation(invocationExpression, cancellationToken) is IInvocationOperation invocationOperation &&
-            AssertionArgumentOrderAnalyzer.TryGetAssertionMatch(invocationOperation, assertType, out var match) &&
-            AssertionArgumentOrderAnalyzer.IsConstantOrCollectionContainingConstant(match.ActualArgument.Value) &&
-            !AssertionArgumentOrderAnalyzer.IsConstantOrCollectionContainingConstant(match.ExpectedArgument.Value) &&
+            AssertionArgumentOrderAnalyzerCommon.TryGetAssertionMatch(invocationOperation, assertType, out var match) &&
+            AssertionArgumentOrderAnalyzerCommon.IsConstantOrCollectionContainingConstant(match.ActualArgument.Value) &&
+            !AssertionArgumentOrderAnalyzerCommon.IsConstantOrCollectionContainingConstant(match.ExpectedArgument.Value) &&
             match.ExpectedArgument.Syntax is ArgumentSyntax expectedArgumentSyntax &&
             match.ActualArgument.Syntax is ArgumentSyntax actualArgumentSyntax)
         {

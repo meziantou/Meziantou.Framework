@@ -50,9 +50,7 @@ public sealed class DiagnosticsPageRendererTests
                 new UpstreamServerOption
                 {
                     Name = "Custom",
-                    Endpoint = "https://1.1.1.1/dns-query",
-                    Protocol = "Https",
-                    UseHttp3 = false,
+                    Url = new Uri("https://1.1.1.1/dns-query"),
                 },
             ],
         };

@@ -1,7 +1,8 @@
-using System.Net;
 using System.Diagnostics;
+using System.Net;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Filtering;
+using Meziantou.Framework;
 using Meziantou.Framework.DnsFilter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -43,8 +44,10 @@ public sealed class FilterEngineProviderTests
     [Fact]
     public async Task RefreshAsync_LoadsRemoteFiltersWithoutBlockingCalls()
     {
+        using var cacheDirectory = TemporaryDirectory.Create();
         var options = Options.Create(new DnsProxyOptions
         {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
             Filters =
             [
                 new FilterListOption
@@ -79,10 +82,63 @@ public sealed class FilterEngineProviderTests
     }
 
     [Fact]
-    public async Task RefreshAsync_WhenCanceled_ThrowsOperationCanceledException()
+    public async Task RefreshAsync_CachesRemoteFiltersAndLoadsCachedFiltersOnStartup()
     {
+        using var cacheDirectory = TemporaryDirectory.Create();
         var options = Options.Create(new DnsProxyOptions
         {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
+            Filters =
+            [
+                new FilterListOption
+                {
+                    Url = "https://filters.example/list.txt",
+                    Format = nameof(DnsFilterListFormat.AdBlock),
+                },
+            ],
+            Rewrites = [],
+        });
+
+        using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("||cached.example.com^"),
+        });
+        var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+        var provider = new FilterEngineProvider(
+            factory,
+            options,
+            NullLogger<FilterEngineProvider>.Instance);
+
+        await provider.RefreshAsync(CancellationToken.None);
+
+        using var cachedServiceProvider = CreateServiceProvider(_ => throw new InvalidOperationException("Remote refresh failed."));
+        var cachedFactory = cachedServiceProvider.GetRequiredService<IHttpClientFactory>();
+
+        var cachedProvider = new FilterEngineProvider(
+            cachedFactory,
+            options,
+            NullLogger<FilterEngineProvider>.Instance);
+
+        var result = cachedProvider.Engine.Evaluate("cached.example.com");
+        Assert.True(result.IsMatched);
+        Assert.Equal(1, cachedProvider.RuleCount);
+        Assert.Single(Directory.EnumerateFiles(cacheDirectory.FullPath, "*.txt"));
+
+        await cachedProvider.RefreshAsync(CancellationToken.None);
+
+        result = cachedProvider.Engine.Evaluate("cached.example.com");
+        Assert.True(result.IsMatched);
+        Assert.Equal(1, cachedProvider.RuleCount);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_WhenCanceled_ThrowsOperationCanceledException()
+    {
+        using var cacheDirectory = TemporaryDirectory.Create();
+        var options = Options.Create(new DnsProxyOptions
+        {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
             Filters =
             [
                 new FilterListOption
@@ -114,9 +170,11 @@ public sealed class FilterEngineProviderTests
     [Fact]
     public async Task FilterEngineRefreshService_RefreshesAtConfiguredInterval()
     {
+        using var cacheDirectory = TemporaryDirectory.Create();
         var requestCount = 0;
         var options = Options.Create(new DnsProxyOptions
         {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
             FilterRefreshInterval = TimeSpan.FromMilliseconds(100),
             Filters =
             [

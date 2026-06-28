@@ -23,6 +23,7 @@ public sealed class DnsProxyOptionsTests
         Assert.False(options.HasSecureServerListenerConfigured);
         Assert.Equal(10_000, options.DiagnosticsHistoryCapacity);
         Assert.Equal(TimeSpan.FromMinutes(30), options.FilterRefreshInterval);
+        Assert.Equal(DnsProxyOptions.GetDefaultBlockListCacheFolderPath(), options.BlockListCacheFolderPath);
         Assert.Equal(TimeSpan.FromMinutes(5), options.PositiveCacheDuration);
         Assert.Equal(TimeSpan.FromMinutes(5), options.NegativeCacheDuration);
         Assert.Equal(TimeSpan.FromHours(1), options.MaximumCacheDuration);

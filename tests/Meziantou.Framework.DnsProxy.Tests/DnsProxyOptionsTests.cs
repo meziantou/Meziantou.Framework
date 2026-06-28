@@ -23,6 +23,7 @@ public sealed class DnsProxyOptionsTests
         Assert.False(options.HasSecureServerListenerConfigured);
         Assert.Equal(10_000, options.DiagnosticsHistoryCapacity);
         Assert.Equal(TimeSpan.FromMinutes(30), options.FilterRefreshInterval);
+        Assert.Equal(DnsProxyOptions.GetDefaultBlockListCacheFolderPath(), options.BlockListCacheFolderPath);
         Assert.Equal(DnssecValidationMode.None, options.DnssecValidationMode);
         Assert.Collection(options.BootstrapDnsServers,
             item => Assert.Equal("9.9.9.9", item),

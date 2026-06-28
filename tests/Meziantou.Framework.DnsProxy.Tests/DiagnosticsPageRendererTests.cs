@@ -42,6 +42,7 @@ public sealed class DiagnosticsPageRendererTests
             DnsOverQuicPort = 8853,
             CertificatePath = "certs/proxy.pfx",
             FilterRefreshInterval = TimeSpan.FromMinutes(5),
+            BlockListCacheFolderPath = "/cache/block-lists",
             DnssecValidationMode = DnssecValidationMode.Local,
             Filters = [],
             Rewrites = [],
@@ -90,6 +91,7 @@ public sealed class DiagnosticsPageRendererTests
         Assert.Contains("<span class='mono'>DnsOverQuicPort</span>: 8853", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>CertificatePath</span>: certs/proxy.pfx", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>FilterRefreshInterval</span>: 00:05:00", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>BlockListCacheFolderPath</span>: /cache/block-lists", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>DnssecValidationMode</span>: Local", html, StringComparison.Ordinal);
         Assert.Contains("Filtering is enabled.", html, StringComparison.Ordinal);
         Assert.Contains("Disable filtering for 15 minutes", html, StringComparison.Ordinal);

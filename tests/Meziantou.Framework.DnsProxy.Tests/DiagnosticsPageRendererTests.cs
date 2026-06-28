@@ -80,7 +80,7 @@ public sealed class DiagnosticsPageRendererTests
         var html = DiagnosticsPageRenderer.Render(
             options,
             filterEngineProvider,
-            new FilteringPauseState(),
+            new FilteringPauseState(TimeProvider.System),
             upstreamFactory.GetUpstreams(),
             [historyEntry]);
 

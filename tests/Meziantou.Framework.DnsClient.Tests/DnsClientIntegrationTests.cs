@@ -67,6 +67,8 @@ public sealed class DnsClientIntegrationTests
                 using var client = new DnsClient(url, DnsClientProtocol.Https, new DnsClientOptions
                 {
                     DnssecValidationMode = DnssecValidationMode.Local,
+                    HttpVersion = HttpVersion.Version20,
+                    HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
                     Timeout = TimeSpan.FromSeconds(20),
                 });
 

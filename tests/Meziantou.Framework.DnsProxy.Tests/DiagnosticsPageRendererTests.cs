@@ -63,6 +63,7 @@ public sealed class DiagnosticsPageRendererTests
         var html = DiagnosticsPageRenderer.Render(
             options,
             filterEngineProvider,
+            new FilteringPauseState(),
             upstreamFactory.GetUpstreams(),
             [historyEntry]);
 
@@ -75,6 +76,37 @@ public sealed class DiagnosticsPageRendererTests
         Assert.Contains("<span class='mono'>CertificatePath</span>: certs/proxy.pfx", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>FilterRefreshInterval</span>: 00:05:00", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>DnssecValidationMode</span>: Local", html, StringComparison.Ordinal);
+        Assert.Contains("Filtering is enabled.", html, StringComparison.Ordinal);
+        Assert.Contains("Disable filtering for 15 minutes", html, StringComparison.Ordinal);
         Assert.Contains("example.com A 1.2.3.4", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Render_ContainsFilteringPauseStatus()
+    {
+        var options = new DnsProxyOptions
+        {
+            Filters = [],
+            Rewrites = [],
+            Upstreams = [],
+        };
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddHttpClient();
+        using var serviceProvider = serviceCollection.BuildServiceProvider();
+        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+        var filterEngineProvider = new FilterEngineProvider(httpClientFactory, Options.Create(options), NullLogger<FilterEngineProvider>.Instance);
+        var filteringPauseState = new FilteringPauseState();
+        var disabledUntilUtc = filteringPauseState.DisableFor(TimeSpan.FromMinutes(15));
+
+        var html = DiagnosticsPageRenderer.Render(
+            options,
+            filterEngineProvider,
+            filteringPauseState,
+            [],
+            []);
+
+        Assert.Contains("Filtering is disabled until", html, StringComparison.Ordinal);
+        Assert.Contains(disabledUntilUtc.ToString("u", CultureInfo.InvariantCulture), html, StringComparison.Ordinal);
+        Assert.Contains("<button type='submit' disabled>Disable filtering for 15 minutes</button>", html, StringComparison.Ordinal);
     }
 }

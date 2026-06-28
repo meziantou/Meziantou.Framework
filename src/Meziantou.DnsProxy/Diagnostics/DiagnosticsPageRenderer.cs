@@ -6,7 +6,7 @@ namespace Meziantou.DnsProxy.Diagnostics;
 
 internal static class DiagnosticsPageRenderer
 {
-    public static string Render(DnsProxyOptions options, FilterEngineProvider filters, IReadOnlyList<UpstreamDnsClientInfo> upstreams, IReadOnlyList<RequestHistoryEntry> historyEntries)
+    public static string Render(DnsProxyOptions options, FilterEngineProvider filters, FilteringPauseState filteringPauseState, IReadOnlyList<UpstreamDnsClientInfo> upstreams, IReadOnlyList<RequestHistoryEntry> historyEntries)
     {
         var stringBuilder = new StringBuilder();
         stringBuilder.Append("""
@@ -22,6 +22,7 @@ internal static class DiagnosticsPageRenderer
                 th { background: #f7f7f7; position: sticky; top: 0; }
                 .small { color: #666; font-size: 0.85rem; }
                 .mono { font-family: ui-monospace, Consolas, monospace; }
+                button { padding: 0.45rem 0.7rem; }
               </style>
             </head>
             <body>
@@ -45,6 +46,21 @@ internal static class DiagnosticsPageRenderer
         stringBuilder.Append("<li><span class='mono'>Rewrites</span>: ").Append(HtmlEncode(string.Join(", ", options.Rewrites.Select(r => $"{r.Domain} => {r.Type}:{r.Value}")))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>LoadedFilterRules</span>: ").Append(HtmlEncode(filters.RuleCount.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("</ul>");
+        stringBuilder.Append("<h2>Filtering</h2>");
+        var disabledUntilUtc = filteringPauseState.DisabledUntilUtc;
+        if (disabledUntilUtc is null)
+        {
+            stringBuilder.Append("<p>Filtering is enabled.</p>");
+            stringBuilder.Append("<form method='post' action='/filtering/disable'><button type='submit'>Disable filtering for 15 minutes</button></form>");
+        }
+        else
+        {
+            stringBuilder.Append("<p>Filtering is disabled until <span class='mono'>")
+                .Append(HtmlEncode(disabledUntilUtc.Value.ToString("u", System.Globalization.CultureInfo.InvariantCulture)))
+                .Append("</span>.</p>");
+            stringBuilder.Append("<form method='post' action='/filtering/disable'><button type='submit' disabled>Disable filtering for 15 minutes</button></form>");
+        }
+
         stringBuilder.Append("<h2>Recent Requests</h2>");
         stringBuilder.Append("<p class='small'>Stored entries: ").Append(HtmlEncode(historyEntries.Count.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</p>");
         stringBuilder.Append("""

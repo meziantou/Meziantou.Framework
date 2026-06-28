@@ -14,13 +14,15 @@ namespace Meziantou.DnsProxy.Proxy;
 internal sealed class DnsProxyHandler
 {
     private readonly FilterEngineProvider _filterEngineProvider;
+    private readonly FilteringPauseState _filteringPauseState;
     private readonly UpstreamDnsClientFactory _upstreamDnsClientFactory;
     private readonly RequestHistoryStore _requestHistoryStore;
     private readonly ILogger<DnsProxyHandler> _logger;
 
-    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, UpstreamDnsClientFactory upstreamDnsClientFactory, RequestHistoryStore requestHistoryStore, ILogger<DnsProxyHandler> logger)
+    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, UpstreamDnsClientFactory upstreamDnsClientFactory, RequestHistoryStore requestHistoryStore, ILogger<DnsProxyHandler> logger)
     {
         _filterEngineProvider = filterEngineProvider;
+        _filteringPauseState = filteringPauseState;
         _upstreamDnsClientFactory = upstreamDnsClientFactory;
         _requestHistoryStore = requestHistoryStore;
         _logger = logger;
@@ -44,27 +46,30 @@ internal sealed class DnsProxyHandler
                 Upstream = "-",
             };
 
-            var filterResult = _filterEngineProvider.Engine.Evaluate(
-                question.Name,
-                ConvertToFilterQueryType(question.Type),
-                new DnsClientInfo
+            if (!_filteringPauseState.IsDisabled)
+            {
+                var filterResult = _filterEngineProvider.Engine.Evaluate(
+                    question.Name,
+                    ConvertToFilterQueryType(question.Type),
+                    new DnsClientInfo
+                    {
+                        Address = context.RemoteEndPoint is IPEndPoint endpoint ? endpoint.Address : null,
+                    });
+
+                if (TryApplyRewrite(question, filterResult, response, historyEntryBuilder))
                 {
-                    Address = context.RemoteEndPoint is IPEndPoint endpoint ? endpoint.Address : null,
-                });
+                    _requestHistoryStore.Add(historyEntryBuilder.Build(response));
+                    continue;
+                }
 
-            if (TryApplyRewrite(question, filterResult, response, historyEntryBuilder))
-            {
-                _requestHistoryStore.Add(historyEntryBuilder.Build(response));
-                continue;
-            }
-
-            if (filterResult.IsMatched && filterResult.Action == DnsFilterAction.Block)
-            {
-                response.ResponseCode = DnsResponseCode.NameError;
-                historyEntryBuilder.Result = "Blocked";
-                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-                _requestHistoryStore.Add(historyEntryBuilder.Build(response));
-                continue;
+                if (filterResult.IsMatched && filterResult.Action == DnsFilterAction.Block)
+                {
+                    response.ResponseCode = DnsResponseCode.NameError;
+                    historyEntryBuilder.Result = "Blocked";
+                    historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
+                    _requestHistoryStore.Add(historyEntryBuilder.Build(response));
+                    continue;
+                }
             }
 
             var forwardResult = await ForwardToFastestUpstreamAsync(question, cancellationToken).ConfigureAwait(false);

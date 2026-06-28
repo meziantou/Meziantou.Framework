@@ -36,6 +36,8 @@
     <Project Path="src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit/Meziantou.Extensions.Logging.Xunit.csproj" />
     <Project Path="src/Meziantou.Framework.AnsiFormatting/Meziantou.Framework.AnsiFormatting.csproj" />
+    <Project Path="src/Meziantou.Framework.Assertions.Analyzer/Meziantou.Framework.Assertions.Analyzer.csproj" />
+    <Project Path="src/Meziantou.Framework.Assertions.CodeFix/Meziantou.Framework.Assertions.CodeFix.csproj" />
     <Project Path="src/Meziantou.Framework.Assertions/Meziantou.Framework.Assertions.csproj" />
     <Project Path="src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
@@ -158,6 +160,7 @@
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.Tests/Meziantou.Extensions.Logging.Xunit.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/Meziantou.Extensions.Logging.Xunit.v3.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.AnsiFormatting.Tests/Meziantou.Framework.AnsiFormatting.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Assertions.Analyzer.Tests/Meziantou.Framework.Assertions.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Assertions.Tests/Meziantou.Framework.Assertions.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bcrypt.Tests/Meziantou.Framework.Bcrypt.Tests.csproj" />

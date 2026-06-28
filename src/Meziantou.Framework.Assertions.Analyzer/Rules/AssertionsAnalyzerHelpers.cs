@@ -13,6 +13,12 @@ internal static class AssertionsAnalyzerHelpers
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType);
     }
 
+    internal static bool IsAssertIsTypeInvocation(IInvocationOperation invocationOperation, INamedTypeSymbol assertType)
+    {
+        return invocationOperation.TargetMethod is { IsStatic: true, Name: "IsType" } targetMethod &&
+            SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType);
+    }
+
     internal static IOperation UnwrapImplicitConversion(IOperation operation)
     {
         while (operation is IConversionOperation { IsImplicit: true } conversionOperation)

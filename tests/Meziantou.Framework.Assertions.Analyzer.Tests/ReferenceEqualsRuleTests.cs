@@ -32,7 +32,7 @@ public sealed class ReferenceEqualsRuleTests : AssertionsAnalyzerTestBase
                 }
                 """;
 
-            var fixedSource = """
+        var fixedSource = """
                 namespace Meziantou.Framework.Assertions
                 {
                     public static class Assert
@@ -56,7 +56,7 @@ public sealed class ReferenceEqualsRuleTests : AssertionsAnalyzerTestBase
                 }
                 """;
 
-            await CreateCodeFixTest<ReferenceEqualsAnalyzerType, ReferenceEqualsCodeFixProviderType>(source, fixedSource, addAssertionsReference: false).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<ReferenceEqualsAnalyzerType, ReferenceEqualsCodeFixProviderType>(source, fixedSource, addAssertionsReference: false).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class ReferenceEqualsRuleTests : AssertionsAnalyzerTestBase
                 }
                 """;
 
-            var fixedSource = """
+        var fixedSource = """
                 namespace Meziantou.Framework.Assertions
                 {
                     public static class Assert
@@ -110,7 +110,7 @@ public sealed class ReferenceEqualsRuleTests : AssertionsAnalyzerTestBase
                 }
                 """;
 
-            await CreateCodeFixTest<ReferenceEqualsAnalyzerType, ReferenceEqualsCodeFixProviderType>(source, fixedSource, addAssertionsReference: false).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<ReferenceEqualsAnalyzerType, ReferenceEqualsCodeFixProviderType>(source, fixedSource, addAssertionsReference: false).RunAsync(XunitCancellationToken);
     }
 
     [Fact]

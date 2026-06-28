@@ -1,7 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
-    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ASSERTIONS_CODEFIX</DefineConstants>
     <IsPackable>false</IsPackable>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>

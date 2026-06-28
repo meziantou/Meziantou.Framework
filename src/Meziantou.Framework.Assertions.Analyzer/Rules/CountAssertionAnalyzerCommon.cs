@@ -7,6 +7,14 @@ namespace Meziantou.Framework.Analyzers.Assertions;
 
 internal static class CountAssertionAnalyzerCommon
 {
+    private const string EmptyAssertionMethodName = "Empty";
+    private const string HasCountAssertionMethodName = "HasCount";
+    private const string DoesNotHaveCountAssertionMethodName = "DoesNotHaveCount";
+    private const string HasCountLessThanAssertionMethodName = "HasCountLessThan";
+    private const string HasCountLessThanOrEqualAssertionMethodName = "HasCountLessThanOrEqual";
+    private const string HasCountGreaterThanAssertionMethodName = "HasCountGreaterThan";
+    private const string HasCountGreaterThanOrEqualAssertionMethodName = "HasCountGreaterThanOrEqual";
+
     internal static bool TryCreateSymbols(Compilation compilation, out Symbols symbols)
     {
         var arrayType = compilation.GetSpecialType(SpecialType.System_Array);
@@ -44,13 +52,31 @@ internal static class CountAssertionAnalyzerCommon
 
     internal static bool TryGetAssertionMatch(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, Symbols symbols, out AssertionMatch match)
     {
-        if (invocationOperation.TargetMethod is not { IsStatic: true, Name: "Equal" } targetMethod ||
+        if (invocationOperation.TargetMethod is not { IsStatic: true } targetMethod ||
             !SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType))
         {
             match = default;
             return false;
         }
 
+        switch (targetMethod.Name)
+        {
+            case "Equal":
+                return TryGetAssertEqualAssertionMatch(invocationOperation, symbols, out match);
+
+            case "True":
+                return TryGetAssertBooleanAssertionMatch(invocationOperation, symbols, conditionExpectedToBeFalse: false, out match);
+
+            case "False":
+                return TryGetAssertBooleanAssertionMatch(invocationOperation, symbols, conditionExpectedToBeFalse: true, out match);
+        }
+
+        match = default;
+        return false;
+    }
+
+    private static bool TryGetAssertEqualAssertionMatch(IInvocationOperation invocationOperation, Symbols symbols, out AssertionMatch match)
+    {
         IArgumentOperation? expectedArgument = null;
         IArgumentOperation? actualArgument = null;
         foreach (var argument in invocationOperation.Arguments)
@@ -78,16 +104,172 @@ internal static class CountAssertionAnalyzerCommon
             return false;
         }
 
-        var expectedValue = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(expectedArgument.Value);
-        var useEmptyAssertion = NumericHelpers.IsZero(expectedValue.ConstantValue);
-        if (!useEmptyAssertion && expectedValue.Type?.SpecialType != SpecialType.System_Int32)
+        if (!TryGetAssertionMethodForEquality(expectedArgument.Value, out var expectedOperation, out var assertionMethodName))
         {
             match = default;
             return false;
         }
 
-        match = new AssertionMatch(expectedArgument, actualArgument, collectionOperation, countOperation, useEmptyAssertion);
+        match = new AssertionMatch(expectedOperation, collectionOperation, countOperation, assertionMethodName);
         return true;
+    }
+
+    private static bool TryGetAssertBooleanAssertionMatch(IInvocationOperation invocationOperation, Symbols symbols, bool conditionExpectedToBeFalse, out AssertionMatch match)
+    {
+        var conditionArgument = invocationOperation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "condition");
+        if (conditionArgument is null)
+        {
+            match = default;
+            return false;
+        }
+
+        if (!TryGetCollectionComparisonCondition(conditionArgument.Value, symbols, out var expectedOperation, out var collectionOperation, out var countOperation, out var comparisonOperator, out var collectionOperationOnLeftSide))
+        {
+            match = default;
+            return false;
+        }
+
+        if (!TryGetAssertionMethodForComparison(expectedOperation, comparisonOperator, collectionOperationOnLeftSide, conditionExpectedToBeFalse, out var unwrappedExpectedOperation, out var assertionMethodName))
+        {
+            match = default;
+            return false;
+        }
+
+        match = new AssertionMatch(unwrappedExpectedOperation, collectionOperation, countOperation, assertionMethodName);
+        return true;
+    }
+
+    private static bool TryGetCollectionComparisonCondition(
+        IOperation conditionOperation,
+        Symbols symbols,
+        out IOperation expectedOperation,
+        out IOperation collectionOperation,
+        out IOperation countOperation,
+        out BinaryOperatorKind comparisonOperator,
+        out bool collectionOperationOnLeftSide)
+    {
+        conditionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionOperation);
+        if (conditionOperation is not IBinaryOperation binaryOperation ||
+            binaryOperation.OperatorKind is not (BinaryOperatorKind.Equals or
+                                                BinaryOperatorKind.NotEquals or
+                                                BinaryOperatorKind.LessThan or
+                                                BinaryOperatorKind.LessThanOrEqual or
+                                                BinaryOperatorKind.GreaterThan or
+                                                BinaryOperatorKind.GreaterThanOrEqual))
+        {
+            expectedOperation = null!;
+            collectionOperation = null!;
+            countOperation = null!;
+            comparisonOperator = default;
+            collectionOperationOnLeftSide = default;
+            return false;
+        }
+
+        if (TryGetCollectionOperation(binaryOperation.LeftOperand, symbols, out collectionOperation, out countOperation))
+        {
+            expectedOperation = binaryOperation.RightOperand;
+            comparisonOperator = binaryOperation.OperatorKind;
+            collectionOperationOnLeftSide = true;
+            return true;
+        }
+
+        if (TryGetCollectionOperation(binaryOperation.RightOperand, symbols, out collectionOperation, out countOperation))
+        {
+            expectedOperation = binaryOperation.LeftOperand;
+            comparisonOperator = binaryOperation.OperatorKind;
+            collectionOperationOnLeftSide = false;
+            return true;
+        }
+
+        expectedOperation = null!;
+        collectionOperation = null!;
+        countOperation = null!;
+        comparisonOperator = default;
+        collectionOperationOnLeftSide = default;
+        return false;
+    }
+
+    private static bool TryGetAssertionMethodForEquality(IOperation operation, out IOperation expectedOperation, out string assertionMethodName)
+    {
+        expectedOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+        if (NumericHelpers.IsZero(expectedOperation.ConstantValue))
+        {
+            assertionMethodName = EmptyAssertionMethodName;
+            return true;
+        }
+
+        if (expectedOperation.Type?.SpecialType == SpecialType.System_Int32)
+        {
+            assertionMethodName = HasCountAssertionMethodName;
+            return true;
+        }
+
+        expectedOperation = null!;
+        assertionMethodName = null!;
+        return false;
+    }
+
+    private static bool TryGetAssertionMethodForComparison(IOperation expectedOperation, BinaryOperatorKind comparisonOperator, bool collectionOperationOnLeftSide, bool conditionExpectedToBeFalse, out IOperation unwrappedExpectedOperation, out string assertionMethodName)
+    {
+        if (conditionExpectedToBeFalse)
+            comparisonOperator = NegateComparisonOperator(comparisonOperator);
+
+        if (comparisonOperator == BinaryOperatorKind.Equals)
+            return TryGetAssertionMethodForEquality(expectedOperation, out unwrappedExpectedOperation, out assertionMethodName);
+
+        if (!TryGetIntExpectedOperation(expectedOperation, out unwrappedExpectedOperation))
+        {
+            assertionMethodName = null!;
+            return false;
+        }
+
+        assertionMethodName = GetAssertionMethodName(comparisonOperator, collectionOperationOnLeftSide);
+        return true;
+    }
+
+    private static bool TryGetIntExpectedOperation(IOperation operation, out IOperation expectedOperation)
+    {
+        expectedOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(operation);
+        if (expectedOperation.Type?.SpecialType != SpecialType.System_Int32)
+        {
+            expectedOperation = null!;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static string GetAssertionMethodName(BinaryOperatorKind comparisonOperator, bool collectionOperationOnLeftSide)
+    {
+        if (comparisonOperator == BinaryOperatorKind.NotEquals)
+            return DoesNotHaveCountAssertionMethodName;
+
+        return (comparisonOperator, collectionOperationOnLeftSide) switch
+        {
+            (BinaryOperatorKind.LessThan, true) => HasCountLessThanAssertionMethodName,
+            (BinaryOperatorKind.LessThanOrEqual, true) => HasCountLessThanOrEqualAssertionMethodName,
+            (BinaryOperatorKind.GreaterThan, true) => HasCountGreaterThanAssertionMethodName,
+            (BinaryOperatorKind.GreaterThanOrEqual, true) => HasCountGreaterThanOrEqualAssertionMethodName,
+            (BinaryOperatorKind.LessThan, false) => HasCountGreaterThanAssertionMethodName,
+            (BinaryOperatorKind.LessThanOrEqual, false) => HasCountGreaterThanOrEqualAssertionMethodName,
+            (BinaryOperatorKind.GreaterThan, false) => HasCountLessThanAssertionMethodName,
+            (BinaryOperatorKind.GreaterThanOrEqual, false) => HasCountLessThanOrEqualAssertionMethodName,
+            _ => throw new ArgumentOutOfRangeException(nameof(comparisonOperator)),
+        };
+    }
+
+    private static BinaryOperatorKind NegateComparisonOperator(BinaryOperatorKind comparisonOperator)
+    {
+        return comparisonOperator switch
+        {
+            BinaryOperatorKind.Equals => BinaryOperatorKind.NotEquals,
+            BinaryOperatorKind.NotEquals => BinaryOperatorKind.Equals,
+            BinaryOperatorKind.LessThan => BinaryOperatorKind.GreaterThanOrEqual,
+            BinaryOperatorKind.LessThanOrEqual => BinaryOperatorKind.GreaterThan,
+            BinaryOperatorKind.GreaterThan => BinaryOperatorKind.LessThanOrEqual,
+            BinaryOperatorKind.GreaterThanOrEqual => BinaryOperatorKind.LessThan,
+            _ => throw new ArgumentOutOfRangeException(nameof(comparisonOperator)),
+        };
     }
 
     private static bool TryGetCollectionOperation(IOperation operation, Symbols symbols, out IOperation collectionOperation, out IOperation countOperation)
@@ -177,11 +359,13 @@ internal static class CountAssertionAnalyzerCommon
     }
 
     internal readonly record struct AssertionMatch(
-        IArgumentOperation ExpectedArgument,
-        IArgumentOperation ActualArgument,
+        IOperation ExpectedOperation,
         IOperation CollectionOperation,
         IOperation CountOperation,
-        bool UseEmptyAssertion);
+        string AssertionMethodName)
+    {
+        internal bool UseEmptyAssertion => AssertionMethodName == EmptyAssertionMethodName;
+    }
 
     internal readonly record struct Symbols(
         INamedTypeSymbol ArrayType,

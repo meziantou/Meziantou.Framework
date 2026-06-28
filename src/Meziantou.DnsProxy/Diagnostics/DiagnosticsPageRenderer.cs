@@ -41,6 +41,9 @@ internal static class DiagnosticsPageRenderer
         stringBuilder.Append("<li><span class='mono'>FilterRefreshInterval</span>: ").Append(HtmlEncode(options.FilterRefreshInterval.ToString())).Append("</li>");
         var blockListCacheFolderPath = string.IsNullOrWhiteSpace(options.BlockListCacheFolderPath) ? DnsProxyOptions.GetDefaultBlockListCacheFolderPath() : options.BlockListCacheFolderPath;
         stringBuilder.Append("<li><span class='mono'>BlockListCacheFolderPath</span>: ").Append(HtmlEncode(blockListCacheFolderPath)).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>PositiveCacheDuration</span>: ").Append(HtmlEncode(options.PositiveCacheDuration.ToString())).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>NegativeCacheDuration</span>: ").Append(HtmlEncode(options.NegativeCacheDuration.ToString())).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>MaximumCacheDuration</span>: ").Append(HtmlEncode(options.MaximumCacheDuration.ToString())).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>DnssecValidationMode</span>: ").Append(HtmlEncode(options.DnssecValidationMode.ToString())).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>DiagnosticsHistoryCapacity</span>: ").Append(HtmlEncode(options.DiagnosticsHistoryCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>Upstreams</span>: ").Append(HtmlEncode(string.Join(", ", upstreams.Select(u => u.DisplayName)))).Append("</li>");

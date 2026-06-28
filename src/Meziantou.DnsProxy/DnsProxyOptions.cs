@@ -30,6 +30,12 @@ internal sealed class DnsProxyOptions
 
     public string BlockListCacheFolderPath { get; set; } = GetDefaultBlockListCacheFolderPath();
 
+    public TimeSpan PositiveCacheDuration { get; set; } = TimeSpan.FromMinutes(5);
+
+    public TimeSpan NegativeCacheDuration { get; set; } = TimeSpan.FromMinutes(5);
+
+    public TimeSpan MaximumCacheDuration { get; set; } = TimeSpan.FromHours(1);
+
     public DnssecValidationMode DnssecValidationMode { get; set; }
 
     public List<string> BootstrapDnsServers { get; set; } =

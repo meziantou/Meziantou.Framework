@@ -224,7 +224,7 @@ public sealed class UrlPatternCollectionTests
 
         var collection = new UrlPatternCollection(patterns);
 
-        Assert.Equal(2, collection.Count);
+        Assert.HasCount(2, collection);
     }
 
     [Fact]
@@ -236,7 +236,7 @@ public sealed class UrlPatternCollectionTests
 
         var enumerated = collection.ToList();
 
-        Assert.Equal(2, enumerated.Count);
+        Assert.HasCount(2, enumerated);
         Assert.Contains(pattern1, enumerated);
         Assert.Contains(pattern2, enumerated);
     }
@@ -383,7 +383,7 @@ public sealed class UrlPatternCollectionTests
         var collection = new UrlPatternCollection { pattern1, pattern2 };
 
         // Unlike URLPatternSet which deduplicates, UrlPatternCollection allows duplicates
-        Assert.Equal(2, collection.Count);
+        Assert.HasCount(2, collection);
     }
 
     // Match priority - first match wins
@@ -626,7 +626,7 @@ public sealed class UrlPatternCollectionTests
             UrlPattern.Create(new UrlPatternInit { Pathname = "/c" }),
         };
 
-        Assert.Equal(3, ((IReadOnlyList<UrlPattern>)collection).Count);
+        Assert.HasCount(3, ((IReadOnlyList<UrlPattern>)collection));
     }
 
     [Fact]

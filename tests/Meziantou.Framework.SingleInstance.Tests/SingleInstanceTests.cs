@@ -27,7 +27,7 @@ public sealed class SingleInstanceTests
             await Task.Delay(50);
         }
 
-        Assert.Equal(2, events.Count);
+        Assert.HasCount(2, events);
         var orderedEvents = events.OrderBy(args => args.Arguments.Length).ToList();
         Assert.Equal(["123"], orderedEvents[0].Arguments);
         Assert.Equal(["a", "b", "c"], orderedEvents[1].Arguments);

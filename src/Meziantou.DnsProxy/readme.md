@@ -19,6 +19,7 @@ Default configuration:
 - DNS over QUIC listener: disabled by default (`DnsOverQuicPort=0`)
 - Filter list refresh interval: `00:30:00`
 - Block list cache folder: local application data under `meziantou/dnsproxy/block-lists`
+- DNS cache durations: positive `00:05:00`, negative `00:05:00`, maximum `01:00:00`
 - DNSSEC validation: disabled by default (`DnssecValidationMode=None`; use `Local` to enable local validation)
 - Bootstrap DNS servers: Quad9 (`9.9.9.9`, `149.112.112.112`, `2620:fe::fe`, `2620:fe::9`) and Cloudflare (`1.1.1.1`, `1.0.0.1`, `2606:4700:4700::1111`, `2606:4700:4700::1001`)
 - Default filter lists:
@@ -55,6 +56,9 @@ Parallel instances:
   - `DnsProxy__HttpPort`
   - `DnsProxy__FilterRefreshInterval`
   - `DnsProxy__BlockListCacheFolderPath`
+  - `DnsProxy__PositiveCacheDuration`
+  - `DnsProxy__NegativeCacheDuration`
+  - `DnsProxy__MaximumCacheDuration`
   - `DnsProxy__DnssecValidationMode`
   - `DnsProxy__BootstrapDnsServers__0`
   - `DnsProxy__Upstreams__0__Url`

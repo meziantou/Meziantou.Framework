@@ -42,7 +42,7 @@ public sealed class CountAssertionCodeFixProvider : CodeFixProvider
 
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    title: match.UseEmptyAssertion ? "Use Assert.Empty" : "Use Assert.HasCount",
+                    title: "Use Assert." + match.AssertionMethodName,
                     createChangedDocument: cancellationToken => ApplyFixAsync(context.Document, invocationExpression, assertType, symbols, cancellationToken),
                     equivalenceKey: GetType().FullName),
                 diagnostic);
@@ -65,9 +65,12 @@ public sealed class CountAssertionCodeFixProvider : CodeFixProvider
         if (!TryGetCollectionExpression(match.CollectionOperation, out var collectionExpression))
             return document;
 
+        if (!TryGetExpressionSyntax(match.ExpectedOperation, out var expectedExpression))
+            return document;
+
         var newInvocationExpression = invocationExpression
-            .WithExpression(ReplaceMethodName(invocationExpression.Expression, match.UseEmptyAssertion ? "Empty" : "HasCount"))
-            .WithArgumentList(CreateArgumentList(match, collectionExpression))
+            .WithExpression(ReplaceMethodName(invocationExpression.Expression, match.AssertionMethodName))
+            .WithArgumentList(CreateArgumentList(match.UseEmptyAssertion, expectedExpression, collectionExpression))
             .WithAdditionalAnnotations(Formatter.Annotation);
         var newRoot = root.ReplaceNode(invocationExpression, newInvocationExpression);
         return document.WithSyntaxRoot(newRoot);
@@ -116,20 +119,25 @@ public sealed class CountAssertionCodeFixProvider : CodeFixProvider
 
     private static bool TryGetCollectionExpression(IOperation operation, out ExpressionSyntax collectionExpression)
     {
+        return TryGetExpressionSyntax(operation, out collectionExpression);
+    }
+
+    private static bool TryGetExpressionSyntax(IOperation operation, out ExpressionSyntax expression)
+    {
         var syntax = operation.Syntax;
         if (syntax is ArgumentSyntax argumentSyntax)
         {
-            collectionExpression = argumentSyntax.Expression;
+            expression = argumentSyntax.Expression;
             return true;
         }
 
         if (syntax is ExpressionSyntax expressionSyntax)
         {
-            collectionExpression = expressionSyntax;
+            expression = expressionSyntax;
             return true;
         }
 
-        collectionExpression = null!;
+        expression = null!;
         return false;
     }
 
@@ -151,20 +159,17 @@ public sealed class CountAssertionCodeFixProvider : CodeFixProvider
         return SyntaxFactory.Identifier(identifier.LeadingTrivia, text, identifier.TrailingTrivia);
     }
 
-    private static ArgumentListSyntax CreateArgumentList(CountAssertionAnalyzerCommon.AssertionMatch match, ExpressionSyntax collectionExpression)
+    private static ArgumentListSyntax CreateArgumentList(bool useEmptyAssertion, ExpressionSyntax expectedExpression, ExpressionSyntax collectionExpression)
     {
-        if (match.UseEmptyAssertion)
+        if (useEmptyAssertion)
         {
-            var actualArgument = (ArgumentSyntax)match.ActualArgument.Syntax;
-            return SyntaxFactory.ArgumentList([SyntaxFactory.Argument(collectionExpression.WithoutTrivia()).WithTriviaFrom(actualArgument)]);
+            return SyntaxFactory.ArgumentList([SyntaxFactory.Argument(collectionExpression.WithoutTrivia())]);
         }
 
-        var expectedArgument = (ArgumentSyntax)match.ExpectedArgument.Syntax;
-        var actualCountArgument = (ArgumentSyntax)match.ActualArgument.Syntax;
         return SyntaxFactory.ArgumentList(
         [
-            SyntaxFactory.Argument(expectedArgument.Expression.WithoutTrivia()).WithTriviaFrom(expectedArgument),
-            SyntaxFactory.Argument(collectionExpression.WithoutTrivia()).WithTriviaFrom(actualCountArgument),
+            SyntaxFactory.Argument(expectedExpression.WithoutTrivia()),
+            SyntaxFactory.Argument(collectionExpression.WithoutTrivia()),
         ]);
     }
 }

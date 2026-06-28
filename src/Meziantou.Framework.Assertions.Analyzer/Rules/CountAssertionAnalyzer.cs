@@ -11,15 +11,15 @@ public sealed class CountAssertionAnalyzer : DiagnosticAnalyzer
     public static readonly DiagnosticDescriptor UseEmptyDescriptor = new(
         id: RuleIdentifiers.UseEmptyAssertionDiagnosticId,
         title: "Use Assert.Empty for zero count checks",
-        messageFormat: "Use Assert.Empty instead of Assert.Equal(0, count)",
+        messageFormat: "Use Assert.Empty for count checks equal to zero",
         category: "Assertions",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
     public static readonly DiagnosticDescriptor UseHasCountDescriptor = new(
         id: RuleIdentifiers.UseHasCountAssertionDiagnosticId,
-        title: "Use Assert.HasCount for count checks",
-        messageFormat: "Use Assert.HasCount instead of Assert.Equal(expected, count)",
+        title: "Use specialized count assertions",
+        messageFormat: "Use a specialized count assertion method",
         category: "Assertions",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);

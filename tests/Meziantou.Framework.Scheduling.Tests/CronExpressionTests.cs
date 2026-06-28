@@ -269,7 +269,7 @@ public sealed class CronExpressionTests
     private static void AssertOccurrencesStartWith(IEnumerable<DateTime> occurrences, params DateTime[] expectedOccurrences)
     {
         var actualList = occurrences.Take(expectedOccurrences.Length).ToList();
-        Assert.Equal(expectedOccurrences.Length, actualList.Count);
+        Assert.HasCount(expectedOccurrences.Length, actualList);
         for (var i = 0; i < expectedOccurrences.Length; i++)
         {
             Assert.Equal(expectedOccurrences[i], actualList[i]);

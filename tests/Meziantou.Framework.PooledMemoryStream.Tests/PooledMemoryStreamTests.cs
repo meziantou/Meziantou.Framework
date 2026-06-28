@@ -135,7 +135,7 @@ public sealed class PooledMemoryStreamTests
         stream.Write(overwrite);
 
         var result = stream.ToArray();
-        Assert.Equal(100, result.Length);
+        Assert.HasCount(100, result);
         Assert.Equal(overwrite, result.AsSpan(20, overwrite.Length));
     }
 
@@ -149,7 +149,7 @@ public sealed class PooledMemoryStreamTests
         stream.Write("xyz"u8);
 
         var result = stream.ToArray();
-        Assert.Equal(23, result.Length);
+        Assert.HasCount(23, result);
         Assert.Equal("abc"u8, result.AsSpan()[0..3]);
         Assert.All(result.AsSpan()[3..20], b => Assert.Equal(0, b));
         Assert.Equal("xyz"u8, result.AsSpan()[20..23]);
@@ -165,7 +165,7 @@ public sealed class PooledMemoryStreamTests
         Assert.Equal(100, stream.Length);
 
         var result = stream.ToArray();
-        Assert.Equal(100, result.Length);
+        Assert.HasCount(100, result);
         Assert.All(result.AsSpan()[10..], b => Assert.Equal(0, b));
     }
 
@@ -218,7 +218,7 @@ public sealed class PooledMemoryStreamTests
         Assert.Equal(data, buffer.AsSpan(0, length).ToArray());
 
         Assert.True(stream.TryGetBuffer(out var segment));
-        Assert.Equal(length, segment.Count);
+        Assert.HasCount(length, segment);
         Assert.Equal(data, segment.AsSpan().ToArray());
 
         using var target = new MemoryStream();
@@ -294,7 +294,7 @@ public sealed class PooledMemoryStreamTests
         writer.Advance(10);
 
         var result = stream.ToArray();
-        Assert.Equal(30, result.Length);
+        Assert.HasCount(30, result);
         for (var i = 0; i < 20; i++)
             Assert.Equal((byte)i, result[i]);
         for (var i = 0; i < 10; i++)

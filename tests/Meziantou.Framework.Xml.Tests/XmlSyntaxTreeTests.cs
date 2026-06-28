@@ -195,7 +195,7 @@ public sealed class XmlSyntaxTreeTests
     {
         var tree = XmlSyntaxTree.ParseText("<root>\n  <a />\n</root>");
 
-        Assert.Equal(3, tree.SourceText.Lines.Count);
+        Assert.HasCount(3, tree.SourceText.Lines);
         Assert.Equal("<root>", tree.SourceText.Lines[0].Text);
     }
 
@@ -217,7 +217,7 @@ public sealed class XmlSyntaxTreeTests
 
         var comments = tree.Root.SelectSyntaxNodes("//comment()").Cast<XmlCommentSyntax>().ToList();
 
-        Assert.Equal(2, comments.Count);
+        Assert.HasCount(2, comments);
         Assert.Equal("first", comments[0].Text);
         Assert.Equal("second", comments[1].Text);
     }
@@ -229,7 +229,7 @@ public sealed class XmlSyntaxTreeTests
 
         var textNodes = tree.Root.SelectSyntaxNodes("//item/text()").ToList();
 
-        Assert.Equal(2, textNodes.Count);
+        Assert.HasCount(2, textNodes);
         Assert.Equal("alpha", Assert.IsType<XmlTextSyntax>(textNodes[0]).Text);
         Assert.Equal("beta", Assert.IsType<XmlCDataSectionSyntax>(textNodes[1]).Text);
     }
@@ -437,7 +437,7 @@ public sealed class XmlSyntaxTreeTests
 
         var attributes = tree.Root.SelectSyntaxNodes("//a:item/@a:value | //a:item/@b:value", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
 
-        Assert.Equal(2, attributes.Count);
+        Assert.HasCount(2, attributes);
         Assert.Contains(attributes, attribute => attribute.Name == "a:value" && attribute.Value == "1");
         Assert.Contains(attributes, attribute => attribute.Name == "b:value" && attribute.Value == "2");
     }
@@ -488,14 +488,14 @@ public sealed class XmlSyntaxTreeTests
         var namespaceManager = CreateNamespaceManager();
 
         var namespacedAttributes = tree.Root.SelectSyntaxNodes("//@a:flag | //@s:flag | //@r:flag", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
-        Assert.Equal(4, namespacedAttributes.Count);
+        Assert.HasCount(4, namespacedAttributes);
         Assert.Contains(namespacedAttributes, attribute => attribute.Name == "a:flag" && attribute.Value == "1");
         Assert.Contains(namespacedAttributes, attribute => attribute.Name == "a:flag" && attribute.Value == "3");
         Assert.Contains(namespacedAttributes, attribute => attribute.Name == "s:flag" && attribute.Value == "2");
         Assert.Contains(namespacedAttributes, attribute => attribute.Name == "r:flag" && attribute.Value == "4");
 
         var nonNamespacedAttributes = tree.Root.SelectSyntaxNodes("//@id | //@flag", namespaceManager).Cast<XmlAttributeSyntax>().ToList();
-        Assert.Equal(5, nonNamespacedAttributes.Count);
+        Assert.HasCount(5, nonNamespacedAttributes);
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "id" && attribute.Value == "root-default");
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "id" && attribute.Value == "sub-default");
         Assert.Contains(nonNamespacedAttributes, attribute => attribute.Name == "id" && attribute.Value == "sub-no-ns");

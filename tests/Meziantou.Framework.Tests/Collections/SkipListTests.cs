@@ -10,7 +10,7 @@ public sealed class SkipListTests
         var list = new SkipList<int> { 3, 1, 2, 1, 3 };
 
         Assert.Equal([1, 2, 3], list);
-        Assert.Equal(3, list.Count);
+        Assert.HasCount(3, list);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public sealed class SkipListTests
         var list = new SkipList<int>([5, 1, 5, 2, 1]);
 
         Assert.Equal([1, 2, 5], list);
-        Assert.Equal(3, list.Count);
+        Assert.HasCount(3, list);
     }
 
     [Fact]

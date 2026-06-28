@@ -25,7 +25,7 @@ public sealed class DoubleEndedQueueTests
         list.AddLast(3);
 
         Assert.Equal([1, 2, 3], list);
-        Assert.Equal(3, list.Count);
+        Assert.HasCount(3, list);
     }
 
     [Fact]

@@ -192,7 +192,7 @@ public class TemplateTest
         var textBlocks = template.Blocks.OfType<TextBlock>().ToArray();
 
         Assert.Equal("a\nb", template.Run());
-        Assert.Equal(2, textBlocks.Length);
+        Assert.HasCount(2, textBlocks);
         Assert.Equal("a\n", textBlocks[0].Text);
         Assert.Equal("b", textBlocks[1].Text);
     }
@@ -210,7 +210,7 @@ public class TemplateTest
         var textBlocks = template.Blocks.OfType<TextBlock>().ToArray();
 
         Assert.Equal("a\nb", template.Run());
-        Assert.Equal(2, textBlocks.Length);
+        Assert.HasCount(2, textBlocks);
         Assert.Equal("a\n", textBlocks[0].Text);
         Assert.Equal("b", textBlocks[1].Text);
     }

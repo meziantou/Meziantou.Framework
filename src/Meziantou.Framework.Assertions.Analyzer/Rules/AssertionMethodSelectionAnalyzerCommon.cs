@@ -1,5 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
@@ -27,19 +29,11 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         }
 
         var conditionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionArgument.Value);
-        if (conditionOperation is not IBinaryOperation binaryOperation ||
-            binaryOperation.OperatorKind is not (BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals))
-        {
-            match = default;
-            return false;
-        }
-
-        if (TryGetNullComparedValue(binaryOperation.LeftOperand, binaryOperation.RightOperand, out var actualOperation) ||
-            TryGetNullComparedValue(binaryOperation.RightOperand, binaryOperation.LeftOperand, out actualOperation))
-        {
-            match = new NullCheckMatch(actualOperation, binaryOperation.OperatorKind == BinaryOperatorKind.Equals ? NullAssertionMethodName : NotNullAssertionMethodName);
+        if (TryGetNullCheckMatchFromBinaryOperation(conditionOperation, out match))
             return true;
-        }
+
+        if (TryGetNullCheckMatchFromPattern(conditionOperation, out match))
+            return true;
 
         match = default;
         return false;
@@ -139,6 +133,64 @@ internal static class AssertionMethodSelectionAnalyzerCommon
 
         actualOperation = null!;
         return false;
+    }
+
+    private static bool TryGetNullCheckMatchFromBinaryOperation(IOperation conditionOperation, out NullCheckMatch match)
+    {
+        if (conditionOperation is not IBinaryOperation binaryOperation ||
+            binaryOperation.OperatorKind is not (BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals))
+        {
+            match = default;
+            return false;
+        }
+
+        if (TryGetNullComparedValue(binaryOperation.LeftOperand, binaryOperation.RightOperand, out var actualOperation) ||
+            TryGetNullComparedValue(binaryOperation.RightOperand, binaryOperation.LeftOperand, out actualOperation))
+        {
+            match = new NullCheckMatch(actualOperation, binaryOperation.OperatorKind == BinaryOperatorKind.Equals ? NullAssertionMethodName : NotNullAssertionMethodName);
+            return true;
+        }
+
+        match = default;
+        return false;
+    }
+
+    private static bool TryGetNullCheckMatchFromPattern(IOperation conditionOperation, out NullCheckMatch match)
+    {
+        if (conditionOperation is not IIsPatternOperation isPatternOperation)
+        {
+            match = default;
+            return false;
+        }
+
+        if (IsNullPattern(isPatternOperation.Pattern))
+        {
+            match = new NullCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), NullAssertionMethodName);
+            return true;
+        }
+
+        if (IsNotNullPattern(isPatternOperation.Pattern))
+        {
+            match = new NullCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), NotNullAssertionMethodName);
+            return true;
+        }
+
+        match = default;
+        return false;
+    }
+
+    private static bool IsNullPattern(IPatternOperation pattern)
+    {
+        return pattern.Syntax is ConstantPatternSyntax { Expression.RawKind: (int)SyntaxKind.NullLiteralExpression };
+    }
+
+    private static bool IsNotNullPattern(IPatternOperation pattern)
+    {
+        return pattern.Syntax is UnaryPatternSyntax
+        {
+            OperatorToken.RawKind: (int)SyntaxKind.NotKeyword,
+            Pattern: ConstantPatternSyntax { Expression.RawKind: (int)SyntaxKind.NullLiteralExpression },
+        };
     }
 
     internal readonly record struct NullCheckMatch(IOperation ActualOperation, string AssertionMethodName);

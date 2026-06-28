@@ -6,6 +6,5 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Assertions.Analyzer.Tests/Meziantou.Framework.Assertions.Analyzer.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.Assertions.Tests/Meziantou.Framework.Assertions.Tests.csproj" />
   </Folder>
 </Solution>

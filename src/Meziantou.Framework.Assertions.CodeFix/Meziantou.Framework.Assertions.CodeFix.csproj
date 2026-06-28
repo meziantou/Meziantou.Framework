@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_ASSERTIONS_CODEFIX</DefineConstants>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <NoWarn>$(NoWarn);RS1041</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/AssertionArgumentOrderAnalyzer.common.cs" Link="Rules/AssertionArgumentOrderAnalyzer.common.cs" />
+    <Compile Include="../Meziantou.Framework.Assertions.Analyzer/AssertionsAnalyzerHelpers.cs" Link="AssertionsAnalyzerHelpers.cs" />
+    <Compile Include="../Meziantou.Framework.Assertions.Analyzer/RuleIdentifiers.cs" Link="RuleIdentifiers.cs" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

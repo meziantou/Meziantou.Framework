@@ -50,12 +50,29 @@ public sealed class DnsClientDnssecOptionsTests
     }
 
     [Fact]
-    public async Task QueryAsync_Https_DoesNotRequestHttp3()
+    public async Task QueryAsync_Https_DefaultOptions_RequestsHttp3OrLower()
     {
         using var handler = new CapturingHttpMessageHandler();
         using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
         {
             HttpHandler = handler,
+        });
+
+        await client.QueryAsync("example.com", DnsQueryType.A);
+
+        Assert.Equal(HttpVersion.Version30, handler.RequestVersion);
+        Assert.Equal(HttpVersionPolicy.RequestVersionOrLower, handler.RequestVersionPolicy);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_UsesConfiguredHttpVersion()
+    {
+        using var handler = new CapturingHttpMessageHandler();
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+            HttpVersion = HttpVersion.Version20,
+            HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
         });
 
         await client.QueryAsync("example.com", DnsQueryType.A);

@@ -4,9 +4,7 @@ internal sealed class UpstreamServerOption
 {
     public string Name { get; set; } = "";
 
-    public string Endpoint { get; set; } = "";
+    public Uri Url { get; set; } = new("https://cloudflare-dns.com/dns-query");
 
-    public string Protocol { get; set; } = "Https";
-
-    public bool UseHttp3 { get; set; } = true;
+    public int Priority { get; set; }
 }

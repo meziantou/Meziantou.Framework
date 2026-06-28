@@ -24,6 +24,15 @@ public sealed class DnsProxyOptionsTests
         Assert.Equal(10_000, options.DiagnosticsHistoryCapacity);
         Assert.Equal(TimeSpan.FromMinutes(30), options.FilterRefreshInterval);
         Assert.Equal(DnssecValidationMode.None, options.DnssecValidationMode);
+        Assert.Collection(options.BootstrapDnsServers,
+            item => Assert.Equal("9.9.9.9", item),
+            item => Assert.Equal("149.112.112.112", item),
+            item => Assert.Equal("1.1.1.1", item),
+            item => Assert.Equal("1.0.0.1", item),
+            item => Assert.Equal("2620:fe::fe", item),
+            item => Assert.Equal("2620:fe::9", item),
+            item => Assert.Equal("2606:4700:4700::1111", item),
+            item => Assert.Equal("2606:4700:4700::1001", item));
         Assert.Collection(options.Filters,
             item =>
             {
@@ -38,21 +47,39 @@ public sealed class DnsProxyOptionsTests
         Assert.Collection(options.Upstreams,
             item =>
             {
-                Assert.Equal("Cloudflare", item.Name);
-                Assert.Equal("cloudflare-dns.com", item.Endpoint);
-                Assert.Equal("Quic", item.Protocol);
+                Assert.Equal("Cloudflare H3", item.Name);
+                Assert.Equal(new Uri("h3://cloudflare-dns.com/dns-query"), item.Url);
+                Assert.Equal(0, item.Priority);
             },
             item =>
             {
-                Assert.Equal("Quad9", item.Name);
-                Assert.Equal("dns.quad9.net", item.Endpoint);
-                Assert.Equal("Quic", item.Protocol);
+                Assert.Equal("NextDNS DoQ", item.Name);
+                Assert.Equal(new Uri("quic://dns.nextdns.io"), item.Url);
+                Assert.Equal(1, item.Priority);
             },
             item =>
             {
-                Assert.Equal("NextDNS", item.Name);
-                Assert.Equal("dns.nextdns.io", item.Endpoint);
-                Assert.Equal("Quic", item.Protocol);
+                Assert.Equal("Quad9 DoQ", item.Name);
+                Assert.Equal(new Uri("quic://dns.quad9.net"), item.Url);
+                Assert.Equal(2, item.Priority);
+            },
+            item =>
+            {
+                Assert.Equal("Cloudflare DoH", item.Name);
+                Assert.Equal(new Uri("https://cloudflare-dns.com/dns-query"), item.Url);
+                Assert.Equal(3, item.Priority);
+            },
+            item =>
+            {
+                Assert.Equal("NextDNS DoH", item.Name);
+                Assert.Equal(new Uri("https://dns.nextdns.io"), item.Url);
+                Assert.Equal(4, item.Priority);
+            },
+            item =>
+            {
+                Assert.Equal("Quad9 DoH", item.Name);
+                Assert.Equal(new Uri("https://dns.quad9.net/dns-query"), item.Url);
+                Assert.Equal(5, item.Priority);
             });
     }
 

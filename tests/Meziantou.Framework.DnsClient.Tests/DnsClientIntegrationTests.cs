@@ -10,6 +10,7 @@ public sealed class DnsClientIntegrationTests
 {
     private const string CloudflareDoH = "https://cloudflare-dns.com/dns-query";
     private const string Quad9DoH = "https://dns.quad9.net/dns-query";
+    private static readonly string[] DnsOverHttpsFallbackUrls = [CloudflareDoH, Quad9DoH];
 
     private static DnsClient CreateDoHClient(string url = CloudflareDoH, TimeSpan? timeout = null)
     {
@@ -54,6 +55,31 @@ public sealed class DnsClientIntegrationTests
         }
 
         return response;
+    }
+
+    private static async Task<DnsResponseMessage> QueryWithLocalValidationFallbackAsync(string domain, DnsQueryType type)
+    {
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo? exception = null;
+        foreach (var url in DnsOverHttpsFallbackUrls)
+        {
+            try
+            {
+                using var client = new DnsClient(url, DnsClientProtocol.Https, new DnsClientOptions
+                {
+                    DnssecValidationMode = DnssecValidationMode.Local,
+                    Timeout = TimeSpan.FromSeconds(20),
+                });
+
+                return await QueryWithRetryAsync(client, domain, type);
+            }
+            catch (Exception ex)
+            {
+                exception = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex);
+            }
+        }
+
+        exception!.Throw();
+        throw new InvalidOperationException("No DNS over HTTPS resolver was configured.");
     }
 
     [Fact]
@@ -260,13 +286,7 @@ public sealed class DnsClientIntegrationTests
     [Fact]
     public async Task Query_DNSSEC_LocalValidation()
     {
-        using var client = new DnsClient(CloudflareDoH, DnsClientProtocol.Https, new DnsClientOptions
-        {
-            DnssecValidationMode = DnssecValidationMode.Local,
-            Timeout = TimeSpan.FromSeconds(20),
-        });
-
-        var response = await QueryWithRetryAsync(client, "cloudflare.com", DnsQueryType.A);
+        var response = await QueryWithLocalValidationFallbackAsync("cloudflare.com", DnsQueryType.A);
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.Equal(DnssecValidationStatus.Secure, response.DnssecValidationResult.Status);

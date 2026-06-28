@@ -21,11 +21,12 @@ var dnsOverHttpsPath = string.IsNullOrWhiteSpace(bootstrapOptions.DnsOverHttpsPa
 
 builder.Services.AddHttpClient();
 builder.Services.Configure<DnsProxyOptions>(builder.Configuration.GetSection(DnsProxyOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<RequestHistoryStore>();
+builder.Services.AddSingleton<FilteringPauseState>();
 builder.Services.AddSingleton<FilterEngineProvider>();
 builder.Services.AddHostedService<FilterEngineRefreshService>();
 builder.Services.AddSingleton<UpstreamDnsClientFactory>();
-builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<DnsResponseCache>();
 builder.Services.AddSingleton<DnsProxyHandler>();
 
@@ -66,10 +67,17 @@ try
     app.MapDnsHandler(dnsProxyHandler.HandleAsync);
     app.MapDnsOverHttps(dnsOverHttpsPath);
 
-    app.MapGet("/", (RequestHistoryStore historyStore, IOptions<DnsProxyOptions> optionsAccessor, FilterEngineProvider filters, UpstreamDnsClientFactory upstreams) =>
+    app.MapGet("/", (RequestHistoryStore historyStore, IOptions<DnsProxyOptions> optionsAccessor, FilterEngineProvider filters, FilteringPauseState filteringPauseState, UpstreamDnsClientFactory upstreams) =>
     {
-        var html = DiagnosticsPageRenderer.Render(optionsAccessor.Value, filters, upstreams.GetUpstreams(), historyStore.GetSnapshot());
+        var html = DiagnosticsPageRenderer.Render(optionsAccessor.Value, filters, filteringPauseState, upstreams.GetUpstreams(), historyStore.GetSnapshot());
         return Results.Content(html, "text/html; charset=utf-8");
+    });
+
+    app.MapPost("/filtering/disable", (FilteringPauseState filteringPauseState) =>
+    {
+        filteringPauseState.DisableFor(TimeSpan.FromMinutes(15));
+
+        return Results.Redirect("/");
     });
 
     await app.RunAsync().ConfigureAwait(false);

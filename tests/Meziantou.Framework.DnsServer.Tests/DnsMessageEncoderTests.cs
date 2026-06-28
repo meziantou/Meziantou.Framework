@@ -194,7 +194,7 @@ public sealed class DnsMessageEncoderTests
         var decoded = DnsMessageEncoder.DecodeQuery(bytes);
 
         var data = Assert.IsType<DnsTxtRecordData>(Assert.Single(decoded.Answers).Data);
-        Assert.Equal(2, data.Text.Count);
+        Assert.HasCount(2, data.Text);
         Assert.Equal("v=spf1 include:_spf.google.com ~all", data.Text[0]);
         Assert.Equal("hello world", data.Text[1]);
     }
@@ -537,7 +537,7 @@ public sealed class DnsMessageEncoderTests
         Assert.Contains(DnsQueryType.A, data.TypeBitMaps);
         Assert.Contains(DnsQueryType.AAAA, data.TypeBitMaps);
         Assert.Contains(DnsQueryType.MX, data.TypeBitMaps);
-        Assert.Equal(3, data.TypeBitMaps.Count);
+        Assert.HasCount(3, data.TypeBitMaps);
     }
 
     [Fact]
@@ -665,7 +665,7 @@ public sealed class DnsMessageEncoderTests
         var bytes = DnsMessageEncoder.EncodeResponse(response);
         var decoded = DnsMessageEncoder.DecodeQuery(bytes);
 
-        Assert.Equal(2, decoded.Answers.Count);
+        Assert.HasCount(2, decoded.Answers);
         Assert.Single(decoded.Authorities);
         Assert.Equal(IPAddress.Parse("192.168.1.1"), ((DnsARecordData)decoded.Answers[0].Data!).Address);
         Assert.Equal(IPAddress.Parse("192.168.1.2"), ((DnsARecordData)decoded.Answers[1].Data!).Address);
@@ -766,7 +766,7 @@ public sealed class DnsMessageEncoderTests
         var bytes = DnsMessageEncoder.EncodeResponse(query);
         var decoded = DnsMessageEncoder.DecodeQuery(bytes);
 
-        Assert.Equal(2, decoded.Questions.Count);
+        Assert.HasCount(2, decoded.Questions);
         Assert.Equal(DnsQueryType.A, decoded.Questions[0].Type);
         Assert.Equal(DnsQueryType.AAAA, decoded.Questions[1].Type);
     }

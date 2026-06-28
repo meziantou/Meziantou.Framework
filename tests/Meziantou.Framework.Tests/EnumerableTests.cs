@@ -69,7 +69,7 @@ public class EnumerableTests
             bag.Add(i);
         });
 
-        Assert.Equal(100, bag.Count);
+        Assert.HasCount(100, bag);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class EnumerableTests
             bag.Add(i);
         });
 
-        Assert.Equal(100, bag.Count);
+        Assert.HasCount(100, bag);
     }
 
     [Fact]

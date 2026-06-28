@@ -12,7 +12,7 @@ public class LoremIpsumGeneratorTests
         Assert.EndsWith(".", sentence, StringComparison.Ordinal);
         var content = sentence[..^1];
         Assert.True(char.IsUpper(content[0]));
-        Assert.Equal(4, content.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.HasCount(4, content.Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 
     [Fact]
@@ -22,12 +22,12 @@ public class LoremIpsumGeneratorTests
 
         Assert.EndsWith(".", paragraph, StringComparison.Ordinal);
         var sentences = paragraph.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        Assert.Equal(3, sentences.Length);
+        Assert.HasCount(3, sentences);
 
         foreach (var sentence in sentences)
         {
             Assert.True(char.IsUpper(sentence[0]));
-            Assert.Equal(5, sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length);
+            Assert.HasCount(5, sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries));
         }
     }
 
@@ -36,7 +36,7 @@ public class LoremIpsumGeneratorTests
     {
         var paragraphs = LoremIpsumGenerator.Paragraphs(wordsPerSentence: 3, sentencesPerParagraph: 2, paragraphCount: 4).ToArray();
 
-        Assert.Equal(4, paragraphs.Length);
+        Assert.HasCount(4, paragraphs);
         Assert.All(paragraphs, item => Assert.NotEmpty(item));
     }
 }

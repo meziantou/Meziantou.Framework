@@ -21,7 +21,7 @@ public sealed class AppendOnlyCollectionTests
             collection.Add(i);
         }
 
-        Assert.Equal(10000, collection.Count);
+        Assert.HasCount(10000, collection);
         for (var i = 0; i < 1000; i++)
         {
             Assert.Equal(i, collection[i]);
@@ -49,7 +49,7 @@ public sealed class AppendOnlyCollectionTests
             collection.Add(i);
         }
 
-        Assert.Equal(10000, collection.Count);
+        Assert.HasCount(10000, collection);
         for (var i = 0; i < 1000; i++)
         {
             Assert.Equal(i, collection[i]);
@@ -199,6 +199,6 @@ public sealed class AppendOnlyCollectionTests
         cts.Cancel();
         await Task.WhenAll(readers);
 
-        Assert.Equal(Count, collection.Count);
+        Assert.HasCount(Count, collection);
     }
 }

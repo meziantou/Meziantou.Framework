@@ -110,7 +110,7 @@ public sealed class ComplianceTests
             case JsonValueKind.Object:
                 var expectedObj = expected.AsObject();
                 var actualObj = actual.AsObject();
-                Assert.Equal(expectedObj.Count, actualObj.Count);
+                Assert.HasCount(expectedObj.Count, actualObj);
                 foreach (var prop in expectedObj)
                 {
                     Assert.True(actualObj.ContainsKey(prop.Key), $"{context}: missing property '{prop.Key}'");
@@ -122,7 +122,7 @@ public sealed class ComplianceTests
             case JsonValueKind.Array:
                 var expectedArr = expected.AsArray();
                 var actualArr = actual.AsArray();
-                Assert.Equal(expectedArr.Count, actualArr.Count);
+                Assert.HasCount(expectedArr.Count, actualArr);
                 for (var i = 0; i < expectedArr.Count; i++)
                 {
                     AssertJsonNodesEqual(expectedArr[i], actualArr[i], $"{context}[{i}]");

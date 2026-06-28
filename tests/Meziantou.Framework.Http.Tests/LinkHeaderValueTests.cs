@@ -36,7 +36,7 @@ public sealed class LinkHeaderValueTests
             { "link", "<e>;rel=f" },
         };
 
-        Assert.Equal(3, header.EnumerateLinkHeaders().Count());
+        Assert.HasCount(3, header.EnumerateLinkHeaders());
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.History;
+using Meziantou.Framework.DnsClient;
 using Microsoft.Extensions.Options;
 
 namespace Meziantou.Framework.DnsProxy.Tests;
@@ -22,6 +23,7 @@ public sealed class DnsProxyOptionsTests
         Assert.False(options.HasSecureServerListenerConfigured);
         Assert.Equal(10_000, options.DiagnosticsHistoryCapacity);
         Assert.Equal(TimeSpan.FromMinutes(30), options.FilterRefreshInterval);
+        Assert.Equal(DnssecValidationMode.None, options.DnssecValidationMode);
         Assert.Collection(options.Filters,
             item =>
             {

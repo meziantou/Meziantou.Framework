@@ -17,14 +17,16 @@ internal sealed class DnsProxyHandler
     private readonly FilteringPauseState _filteringPauseState;
     private readonly UpstreamDnsClientFactory _upstreamDnsClientFactory;
     private readonly RequestHistoryStore _requestHistoryStore;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<DnsProxyHandler> _logger;
 
-    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, UpstreamDnsClientFactory upstreamDnsClientFactory, RequestHistoryStore requestHistoryStore, ILogger<DnsProxyHandler> logger)
+    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, UpstreamDnsClientFactory upstreamDnsClientFactory, RequestHistoryStore requestHistoryStore, TimeProvider timeProvider, ILogger<DnsProxyHandler> logger)
     {
         _filterEngineProvider = filterEngineProvider;
         _filteringPauseState = filteringPauseState;
         _upstreamDnsClientFactory = upstreamDnsClientFactory;
         _requestHistoryStore = requestHistoryStore;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -37,7 +39,7 @@ internal sealed class DnsProxyHandler
         {
             var historyEntryBuilder = new RequestHistoryEntryBuilder
             {
-                TimestampUtc = DateTimeOffset.UtcNow,
+                TimestampUtc = _timeProvider.GetUtcNow(),
                 Client = context.RemoteEndPoint is IPEndPoint ipEndPoint ? ipEndPoint.Address.ToString() : context.RemoteEndPoint.ToString() ?? "unknown",
                 Protocol = context.Protocol.ToString(),
                 QuestionName = question.Name,

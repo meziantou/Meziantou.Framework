@@ -1,6 +1,6 @@
 namespace Meziantou.DnsProxy.Filtering;
 
-internal sealed class FilteringPauseState
+internal sealed class FilteringPauseState(TimeProvider timeProvider)
 {
     private long _disabledUntilUtcTicks;
 
@@ -15,8 +15,9 @@ internal sealed class FilteringPauseState
             }
 
             var disabledUntilUtc = new DateTimeOffset(ticks, TimeSpan.Zero);
-            if (disabledUntilUtc <= DateTimeOffset.UtcNow)
+            if (disabledUntilUtc <= timeProvider.GetUtcNow())
             {
+                Interlocked.CompareExchange(ref _disabledUntilUtcTicks, 0, ticks);
                 return null;
             }
 
@@ -31,7 +32,7 @@ internal sealed class FilteringPauseState
         if (duration <= TimeSpan.Zero)
             throw new ArgumentOutOfRangeException(nameof(duration), duration, "The duration must be greater than zero.");
 
-        var disabledUntilUtc = DateTimeOffset.UtcNow.Add(duration);
+        var disabledUntilUtc = timeProvider.GetUtcNow().Add(duration);
         Volatile.Write(ref _disabledUntilUtcTicks, disabledUntilUtc.UtcDateTime.Ticks);
 
         return disabledUntilUtc;

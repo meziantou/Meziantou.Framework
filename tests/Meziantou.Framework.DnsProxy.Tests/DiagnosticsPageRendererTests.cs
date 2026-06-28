@@ -7,11 +7,28 @@ using Meziantou.Framework.DnsClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.DnsProxy.Tests;
 
 public sealed class DiagnosticsPageRendererTests
 {
+    [Fact]
+    public void FilteringPauseState_ClearsExpiredPause()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 06, 28, 12, 0, 0, TimeSpan.Zero));
+        var filteringPauseState = new FilteringPauseState(timeProvider);
+
+        var disabledUntilUtc = filteringPauseState.DisableFor(TimeSpan.FromMinutes(15));
+        Assert.Equal(new DateTimeOffset(2026, 06, 28, 12, 15, 0, TimeSpan.Zero), disabledUntilUtc);
+        Assert.True(filteringPauseState.IsDisabled);
+
+        timeProvider.SetUtcNow(disabledUntilUtc);
+
+        Assert.Null(filteringPauseState.DisabledUntilUtc);
+        Assert.False(filteringPauseState.IsDisabled);
+    }
+
     [Fact]
     public void Render_ContainsConfiguredPorts()
     {

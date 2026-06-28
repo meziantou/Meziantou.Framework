@@ -21,6 +21,7 @@ var dnsOverHttpsPath = string.IsNullOrWhiteSpace(bootstrapOptions.DnsOverHttpsPa
 
 builder.Services.AddHttpClient();
 builder.Services.Configure<DnsProxyOptions>(builder.Configuration.GetSection(DnsProxyOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<RequestHistoryStore>();
 builder.Services.AddSingleton<FilteringPauseState>();
 builder.Services.AddSingleton<FilterEngineProvider>();

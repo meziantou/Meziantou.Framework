@@ -1424,7 +1424,7 @@ jobs:
         // Ensure getting scanning in parallel gives the same result
         options.DegreeOfParallelism = 16;
         var dependencies2 = await Scan(options);
-        Assert.Equal(dependencies.Length, dependencies2.Length);
+        Assert.HasCount(dependencies.Length, dependencies2);
         return dependencies;
 
         async Task<Dependency[]> Scan(ScannerOptions options)

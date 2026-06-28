@@ -51,7 +51,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
         var path2 = FullPath.FromPath("Packages/Release.1.0.0.nupkg");
         var result = await RunValidation(path1, path2);
         Assert.Equal(1, result.ExitCode);
-        Assert.Equal(2, result.ValidationResults!.Packages.Count);
+        Assert.HasCount(2, result.ValidationResults!.Packages);
         Assert.False(result.ValidationResults.Packages[path1].IsValid);
         Assert.Contains(result.ValidationResults.Packages[path1].Errors, item => item.ErrorCode == 81);
         Assert.False(result.ValidationResults.Packages[path2].IsValid);

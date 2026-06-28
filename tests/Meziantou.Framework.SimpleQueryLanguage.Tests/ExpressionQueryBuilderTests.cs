@@ -40,7 +40,7 @@ public sealed class ExpressionQueryBuilderTests
         var items = new[] { new Sample { Int32Value = 3 }, new Sample { Int32Value = 5 }, new Sample { Int32Value = 7 }, new Sample { Int32Value = 10 }, new Sample { Int32Value = 12 } }.AsQueryable();
         var result = query.Apply(items).ToList();
 
-        Assert.Equal(3, result.Count);
+        Assert.HasCount(3, result);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class ExpressionQueryBuilderTests
         }.AsQueryable();
         var result = query.Apply(items).ToList();
 
-        Assert.Equal(2, result.Count);
+        Assert.HasCount(2, result);
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public sealed class ExpressionQueryBuilderTests
         var items = new[] { new Sample { Int32Value = 1 }, new Sample { Int32Value = 2 } }.AsQueryable();
         var result = query.Apply(items).ToList();
 
-        Assert.Equal(2, result.Count);
+        Assert.HasCount(2, result);
     }
 
     [Fact]

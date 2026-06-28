@@ -143,7 +143,7 @@ public sealed class HarDocumentTests
         Assert.Equal("https://example.com/api/data", entry.Request.Url);
         Assert.Equal("HTTP/1.1", entry.Request.HttpVersion);
         Assert.Equal(200, entry.Request.HeadersSize);
-        Assert.Equal(2, entry.Request.Headers.Count);
+        Assert.HasCount(2, entry.Request.Headers);
         var cookie = Assert.Single(entry.Request.Cookies);
         Assert.Equal("session", cookie.Name);
         Assert.Equal("abc123", cookie.Value);
@@ -180,7 +180,7 @@ public sealed class HarDocumentTests
         Assert.Equal(doc.Log.Version, doc2.Log.Version);
         Assert.Equal(doc.Log.Creator.Name, doc2.Log.Creator.Name);
         Assert.Equal(doc.Log.Browser?.Name, doc2.Log.Browser?.Name);
-        Assert.Equal(doc.Log.Entries.Count, doc2.Log.Entries.Count);
+        Assert.HasCount(doc.Log.Entries.Count, doc2.Log.Entries);
 
         var entry1 = doc.Log.Entries[0];
         var entry2 = doc2.Log.Entries[0];

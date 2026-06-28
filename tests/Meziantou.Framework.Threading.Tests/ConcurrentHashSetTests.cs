@@ -16,7 +16,7 @@ public class ConcurrentHashSetTests
         Assert.Contains(1, set);
         Assert.DoesNotContain(4, set);
 
-        Assert.Equal(3, set.Count);
+        Assert.HasCount(3, set);
         Assert.Equal([1, 2, 3], set.Order());
 
         set.Clear();

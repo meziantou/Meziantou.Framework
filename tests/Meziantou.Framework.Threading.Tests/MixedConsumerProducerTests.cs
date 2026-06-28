@@ -56,7 +56,7 @@ public sealed class MixedConsumerProducerTests
             });
         });
 
-        Assert.Equal(3, exception.InnerExceptions.Count);
+        Assert.HasCount(3, exception.InnerExceptions);
         Assert.All(exception.InnerExceptions, e => Assert.IsType<InvalidOperationException>(e));
     }
 
@@ -77,7 +77,7 @@ public sealed class MixedConsumerProducerTests
         });
 
         Assert.Equal(4, processed); // every item was attempted even though some failed
-        Assert.Equal(2, exception.InnerExceptions.Count); // items 2 and 4
+        Assert.HasCount(2, exception.InnerExceptions); // items 2 and 4
     }
 
     [Fact]

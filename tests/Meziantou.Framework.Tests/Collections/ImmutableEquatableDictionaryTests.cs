@@ -11,7 +11,7 @@ public sealed class ImmutableEquatableDictionaryTests
     {
         var empty = ImmutableEquatableDictionary<string, int>.Empty;
 
-        Assert.Equal(0, empty.Count);
+        Assert.Empty(empty);
         Assert.Empty(empty);
         Assert.False(empty.ContainsKey("test"));
     }
@@ -30,7 +30,7 @@ public sealed class ImmutableEquatableDictionaryTests
     {
         var empty = ImmutableEquatableDictionary.Empty<string, int>();
 
-        Assert.Equal(0, empty.Count);
+        Assert.Empty(empty);
         Assert.Empty(empty);
     }
 
@@ -46,7 +46,7 @@ public sealed class ImmutableEquatableDictionaryTests
 
         var dict = pairs.ToImmutableEquatableDictionary();
 
-        Assert.Equal(3, dict.Count);
+        Assert.HasCount(3, dict);
         Assert.Equal(1, dict["a"]);
         Assert.Equal(2, dict["b"]);
         Assert.Equal(3, dict["c"]);
@@ -67,7 +67,7 @@ public sealed class ImmutableEquatableDictionaryTests
 
         var dict = values.ToImmutableEquatableDictionary(s => s[0]);
 
-        Assert.Equal(3, dict.Count);
+        Assert.HasCount(3, dict);
         Assert.Equal("apple", dict['a']);
         Assert.Equal("banana", dict['b']);
         Assert.Equal("cherry", dict['c']);
@@ -80,7 +80,7 @@ public sealed class ImmutableEquatableDictionaryTests
 
         var dict = values.ToImmutableEquatableDictionary(s => s[0], s => s.Length);
 
-        Assert.Equal(3, dict.Count);
+        Assert.HasCount(3, dict);
         Assert.Equal(5, dict['a']); // "apple".Length
         Assert.Equal(6, dict['b']); // "banana".Length
         Assert.Equal(6, dict['c']); // "cherry".Length
@@ -226,7 +226,7 @@ public sealed class ImmutableEquatableDictionaryTests
             actual.Add((kvp.Key, kvp.Value));
         }
 
-        Assert.Equal(expected.Length, actual.Count);
+        Assert.HasCount(expected.Length, actual);
         foreach (var item in expected)
         {
             Assert.Contains(item, actual);
@@ -240,7 +240,7 @@ public sealed class ImmutableEquatableDictionaryTests
 
         var keys = dict.Keys;
 
-        Assert.Equal(3, keys.Count);
+        Assert.HasCount(3, keys);
         Assert.Contains("a", keys);
         Assert.Contains("b", keys);
         Assert.Contains("c", keys);
@@ -253,7 +253,7 @@ public sealed class ImmutableEquatableDictionaryTests
 
         var values = dict.Values;
 
-        Assert.Equal(3, values.Count);
+        Assert.HasCount(3, values);
         Assert.Contains(1, values);
         Assert.Contains(2, values);
         Assert.Contains(3, values);
@@ -339,7 +339,7 @@ public sealed class ImmutableEquatableDictionaryTests
         var source = new Dictionary<string, int>(StringComparer.Ordinal) { ["a"] = 1, ["b"] = 2 };
         var dict = source.ToImmutableEquatableDictionary();
 
-        Assert.Equal(2, dict.Count);
+        Assert.HasCount(2, dict);
         Assert.Equal(1, dict["a"]);
         Assert.Equal(2, dict["b"]);
     }

@@ -168,7 +168,7 @@ public sealed class ImmutableEquatableArrayTests
         var array = ImmutableEquatableArray.Create(new[] { "a", "b", "c" });
         var readOnlyList = (IReadOnlyList<string>)array;
 
-        Assert.Equal(3, readOnlyList.Count);
+        Assert.HasCount(3, readOnlyList);
         Assert.Equal("a", readOnlyList[0]);
         Assert.Equal("b", readOnlyList[1]);
         Assert.Equal("c", readOnlyList[2]);
@@ -181,7 +181,7 @@ public sealed class ImmutableEquatableArrayTests
         var collection = (ICollection<string>)array;
 
         Assert.True(collection.IsReadOnly);
-        Assert.Equal(2, collection.Count);
+        Assert.HasCount(2, collection);
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public sealed class ImmutableEquatableArrayTests
 
         Assert.True(list.IsReadOnly);
         Assert.True(list.IsFixedSize);
-        Assert.Equal(2, list.Count);
+        Assert.HasCount(2, list);
         Assert.False(list.IsSynchronized);
         Assert.Same(array, list.SyncRoot);
     }

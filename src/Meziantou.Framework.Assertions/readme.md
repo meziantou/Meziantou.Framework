@@ -12,4 +12,6 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0001` | Assertions | Pass the expected value before the actual value | Warning | ✔️ |
 | `MFAS0002` | Assertions | Use Assert.Same instead of Assert.ReferenceEquals | Error | ✔️ |
 | `MFAS0003` | Assertions | Do not use Assert.IsType with static or abstract types | Error | ✔️ |
+| `MFAS0004` | Assertions | Use Assert.Empty for zero count checks | Warning | ✔️ |
+| `MFAS0005` | Assertions | Use Assert.HasCount for count checks | Warning | ✔️ |
 <!-- analyzer-rules -->

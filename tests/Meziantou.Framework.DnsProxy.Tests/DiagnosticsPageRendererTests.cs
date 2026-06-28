@@ -112,7 +112,7 @@ public sealed class DiagnosticsPageRendererTests
         using var serviceProvider = serviceCollection.BuildServiceProvider();
         var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
         var filterEngineProvider = new FilterEngineProvider(httpClientFactory, Options.Create(options), NullLogger<FilterEngineProvider>.Instance);
-        var filteringPauseState = new FilteringPauseState();
+        var filteringPauseState = new FilteringPauseState(TimeProvider.System);
         var disabledUntilUtc = filteringPauseState.DisableFor(TimeSpan.FromMinutes(15));
 
         var html = DiagnosticsPageRenderer.Render(

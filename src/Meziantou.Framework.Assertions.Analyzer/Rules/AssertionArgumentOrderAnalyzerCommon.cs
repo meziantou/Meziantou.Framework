@@ -3,11 +3,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
 
-#if MEZIANTOU_FRAMEWORK_ASSERTIONS_CODEFIX
-internal static class AssertionArgumentOrderAnalyzer
-#else
-public sealed partial class AssertionArgumentOrderAnalyzer
-#endif
+internal static class AssertionArgumentOrderAnalyzerCommon
 {
     internal static bool TryGetAssertionMatch(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, out AssertionMatch match)
     {

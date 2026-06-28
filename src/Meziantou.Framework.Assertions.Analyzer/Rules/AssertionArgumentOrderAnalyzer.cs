@@ -16,7 +16,7 @@ public sealed partial class AssertionArgumentOrderAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -35,13 +35,13 @@ public sealed partial class AssertionArgumentOrderAnalyzer : DiagnosticAnalyzer
     private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol assertType)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
-        if (!TryGetAssertionMatch(invocationOperation, assertType, out var match))
+        if (!AssertionArgumentOrderAnalyzerCommon.TryGetAssertionMatch(invocationOperation, assertType, out var match))
             return;
 
-        if (!IsConstantOrCollectionContainingConstant(match.ActualArgument.Value))
+        if (!AssertionArgumentOrderAnalyzerCommon.IsConstantOrCollectionContainingConstant(match.ActualArgument.Value))
             return;
 
-        if (IsConstantOrCollectionContainingConstant(match.ExpectedArgument.Value))
+        if (AssertionArgumentOrderAnalyzerCommon.IsConstantOrCollectionContainingConstant(match.ExpectedArgument.Value))
             return;
 
         context.ReportDiagnostic(Diagnostic.Create(Descriptor, match.ActualArgument.Value.Syntax.GetLocation()));

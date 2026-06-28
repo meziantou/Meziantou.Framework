@@ -5,21 +5,21 @@ namespace Meziantou.Framework.Analyzers.Assertions;
 
 internal static class AssertionsAnalyzerHelpers
 {
-    internal const string AssertMetadataName = "Meziantou.Framework.Assertions.Assert";
+    public const string AssertMetadataName = "Meziantou.Framework.Assertions.Assert";
 
-    internal static bool IsAssertReferenceEqualsInvocation(IInvocationOperation invocationOperation, INamedTypeSymbol assertType)
+    public static bool IsAssertReferenceEqualsInvocation(IInvocationOperation invocationOperation, INamedTypeSymbol assertType)
     {
         return invocationOperation.TargetMethod is { IsStatic: true, Name: "ReferenceEquals" } targetMethod &&
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType);
     }
 
-    internal static bool IsAssertIsTypeInvocation(IInvocationOperation invocationOperation, INamedTypeSymbol assertType)
+    public static bool IsAssertIsTypeInvocation(IInvocationOperation invocationOperation, INamedTypeSymbol assertType)
     {
         return invocationOperation.TargetMethod is { IsStatic: true, Name: "IsType" } targetMethod &&
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType);
     }
 
-    internal static IOperation UnwrapImplicitConversion(IOperation operation)
+    public static IOperation UnwrapImplicitConversion(IOperation operation)
     {
         while (operation is IConversionOperation { IsImplicit: true } conversionOperation)
         {

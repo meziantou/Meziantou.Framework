@@ -14,7 +14,7 @@ public sealed class DnsWireFormatTests
         var bytes = writer.ToArray();
 
         // \x07example\x03com\x00
-        Assert.Equal(13, bytes.Length);
+        Assert.HasCount(13, bytes);
         Assert.Equal(7, bytes[0]);
         Assert.Equal((byte)'e', bytes[1]);
         Assert.Equal(3, bytes[8]);
@@ -41,7 +41,7 @@ public sealed class DnsWireFormatTests
         var bytes = writer.ToArray();
 
         // Should be same as without trailing dot
-        Assert.Equal(13, bytes.Length);
+        Assert.HasCount(13, bytes);
         Assert.Equal(0, bytes[12]);
     }
 

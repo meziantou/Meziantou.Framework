@@ -35,7 +35,7 @@ internal sealed class DnsHttpsTransport : IDnsTransport
         {
             Content = content,
             Version = System.Net.HttpVersion.Version20,
-            VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher,
+            VersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
         };
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/dns-message"));
 

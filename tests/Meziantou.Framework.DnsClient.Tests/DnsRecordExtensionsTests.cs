@@ -19,7 +19,7 @@ public sealed class DnsRecordExtensionsTests
 
         var addresses = records.GetIPAddresses().ToList();
 
-        Assert.Equal(3, addresses.Count);
+        Assert.HasCount(3, addresses);
         Assert.Equal(IPAddress.Parse("1.2.3.4"), addresses[0]);
         Assert.Equal(IPAddress.Parse("::1"), addresses[1]);
         Assert.Equal(IPAddress.Parse("5.6.7.8"), addresses[2]);
@@ -38,7 +38,7 @@ public sealed class DnsRecordExtensionsTests
 
         var addresses = records.GetIPAddresses().ToList();
 
-        Assert.Equal(2, addresses.Count);
+        Assert.HasCount(2, addresses);
         Assert.Equal(IPAddress.Parse("1.1.1.1"), addresses[0]);
         Assert.Equal(IPAddress.Parse("2606:4700::1"), addresses[1]);
     }
@@ -63,7 +63,7 @@ public sealed class DnsRecordExtensionsTests
 
         var addresses = records.GetIPv4Addresses().ToList();
 
-        Assert.Equal(2, addresses.Count);
+        Assert.HasCount(2, addresses);
         Assert.All(addresses, a => Assert.Equal(AddressFamily.InterNetwork, a.AddressFamily));
     }
 
@@ -79,7 +79,7 @@ public sealed class DnsRecordExtensionsTests
 
         var addresses = records.GetIPv6Addresses().ToList();
 
-        Assert.Equal(2, addresses.Count);
+        Assert.HasCount(2, addresses);
         Assert.All(addresses, a => Assert.Equal(AddressFamily.InterNetworkV6, a.AddressFamily));
     }
 

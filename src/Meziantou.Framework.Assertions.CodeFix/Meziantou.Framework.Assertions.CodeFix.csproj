@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/AssertionArgumentOrderAnalyzer.common.cs" Link="Rules/AssertionArgumentOrderAnalyzer.common.cs" />
+    <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/AssertionArgumentOrderAnalyzerCommon.cs" Link="Rules/AssertionArgumentOrderAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/AssertionsAnalyzerHelpers.cs" Link="Rules/AssertionsAnalyzerHelpers.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/RuleIdentifiers.cs" Link="Rules/RuleIdentifiers.cs" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />

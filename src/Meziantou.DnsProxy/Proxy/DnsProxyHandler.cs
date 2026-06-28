@@ -15,13 +15,15 @@ internal sealed class DnsProxyHandler
 {
     private readonly FilterEngineProvider _filterEngineProvider;
     private readonly UpstreamDnsClientFactory _upstreamDnsClientFactory;
+    private readonly DnsResponseCache _dnsResponseCache;
     private readonly RequestHistoryStore _requestHistoryStore;
     private readonly ILogger<DnsProxyHandler> _logger;
 
-    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, UpstreamDnsClientFactory upstreamDnsClientFactory, RequestHistoryStore requestHistoryStore, ILogger<DnsProxyHandler> logger)
+    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, UpstreamDnsClientFactory upstreamDnsClientFactory, DnsResponseCache dnsResponseCache, RequestHistoryStore requestHistoryStore, ILogger<DnsProxyHandler> logger)
     {
         _filterEngineProvider = filterEngineProvider;
         _upstreamDnsClientFactory = upstreamDnsClientFactory;
+        _dnsResponseCache = dnsResponseCache;
         _requestHistoryStore = requestHistoryStore;
         _logger = logger;
     }
@@ -67,38 +69,24 @@ internal sealed class DnsProxyHandler
                 continue;
             }
 
+            if (_dnsResponseCache.TryGet(question, response))
+            {
+                ApplyQueryEdnsOptions(context, response);
+                historyEntryBuilder.Result = "CacheHit";
+                historyEntryBuilder.Upstream = "Cache";
+                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
+                _requestHistoryStore.Add(historyEntryBuilder.Build(response));
+                continue;
+            }
+
             var forwardResult = await ForwardToFastestUpstreamAsync(question, cancellationToken).ConfigureAwait(false);
             if (forwardResult.IsSuccess)
             {
                 var upstreamResponse = forwardResult.Response!;
-                response.ResponseCode = (DnsResponseCode)upstreamResponse.Header.ResponseCode;
-                response.RecursionAvailable = upstreamResponse.Header.RecursionAvailable;
-
-                foreach (var answer in upstreamResponse.Answers)
-                {
-                    response.Answers.Add(DnsRecordConverter.ConvertToServerRecord(answer));
-                }
-
-                foreach (var authority in upstreamResponse.Authorities)
-                {
-                    response.Authorities.Add(DnsRecordConverter.ConvertToServerRecord(authority));
-                }
-
-                foreach (var additionalRecord in upstreamResponse.AdditionalRecords)
-                {
-                    response.AdditionalRecords.Add(DnsRecordConverter.ConvertToServerRecord(additionalRecord));
-                }
-
-                if (context.Query.EdnsOptions is { } queryEdns)
-                {
-                    response.EdnsOptions = new DnsEdnsOptions
-                    {
-                        UdpPayloadSize = queryEdns.UdpPayloadSize,
-                        Version = queryEdns.Version,
-                        DnssecOk = queryEdns.DnssecOk,
-                        ExtendedRCode = queryEdns.ExtendedRCode,
-                    };
-                }
+                var forwardedResponse = context.CreateResponse();
+                ApplyUpstreamResponse(context, upstreamResponse, forwardedResponse);
+                _dnsResponseCache.Store(question, forwardedResponse);
+                AppendResponse(forwardedResponse, response);
 
                 historyEntryBuilder.Upstream = forwardResult.UpstreamEndpoint;
                 historyEntryBuilder.LatencyMs = forwardResult.LatencyMs;
@@ -115,6 +103,71 @@ internal sealed class DnsProxyHandler
         }
 
         return response;
+    }
+
+    private static void ApplyUpstreamResponse(DnsRequestContext context, Meziantou.Framework.DnsClient.Response.DnsResponseMessage upstreamResponse, DnsMessage response)
+    {
+        response.ResponseCode = (DnsResponseCode)upstreamResponse.Header.ResponseCode;
+        response.RecursionAvailable = upstreamResponse.Header.RecursionAvailable;
+
+        foreach (var answer in upstreamResponse.Answers)
+        {
+            response.Answers.Add(DnsRecordConverter.ConvertToServerRecord(answer));
+        }
+
+        foreach (var authority in upstreamResponse.Authorities)
+        {
+            response.Authorities.Add(DnsRecordConverter.ConvertToServerRecord(authority));
+        }
+
+        foreach (var additionalRecord in upstreamResponse.AdditionalRecords)
+        {
+            response.AdditionalRecords.Add(DnsRecordConverter.ConvertToServerRecord(additionalRecord));
+        }
+
+        ApplyQueryEdnsOptions(context, response);
+    }
+
+    private static void ApplyQueryEdnsOptions(DnsRequestContext context, DnsMessage response)
+    {
+        if (context.Query.EdnsOptions is not { } queryEdns)
+        {
+            return;
+        }
+
+        response.EdnsOptions = new DnsEdnsOptions
+        {
+            UdpPayloadSize = queryEdns.UdpPayloadSize,
+            Version = queryEdns.Version,
+            DnssecOk = queryEdns.DnssecOk,
+            ExtendedRCode = queryEdns.ExtendedRCode,
+        };
+    }
+
+    private static void AppendResponse(DnsMessage source, DnsMessage target)
+    {
+        target.IsAuthoritative = source.IsAuthoritative;
+        target.IsTruncated = source.IsTruncated;
+        target.RecursionAvailable = source.RecursionAvailable;
+        target.AuthenticatedData = source.AuthenticatedData;
+        target.CheckingDisabled = source.CheckingDisabled;
+        target.ResponseCode = source.ResponseCode;
+        target.EdnsOptions = source.EdnsOptions;
+
+        foreach (var answer in source.Answers)
+        {
+            target.Answers.Add(answer);
+        }
+
+        foreach (var authority in source.Authorities)
+        {
+            target.Authorities.Add(authority);
+        }
+
+        foreach (var additionalRecord in source.AdditionalRecords)
+        {
+            target.AdditionalRecords.Add(additionalRecord);
+        }
     }
 
     private static DnsFilterQueryType ConvertToFilterQueryType(DnsQueryType queryType)

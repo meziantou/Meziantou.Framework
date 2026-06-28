@@ -28,6 +28,12 @@ internal sealed class DnsProxyOptions
 
     public TimeSpan FilterRefreshInterval { get; set; } = TimeSpan.FromMinutes(30);
 
+    public TimeSpan PositiveCacheDuration { get; set; } = TimeSpan.FromMinutes(5);
+
+    public TimeSpan NegativeCacheDuration { get; set; } = TimeSpan.FromMinutes(5);
+
+    public TimeSpan MaximumCacheDuration { get; set; } = TimeSpan.FromHours(1);
+
     public DnssecValidationMode DnssecValidationMode { get; set; }
 
     public List<string> BootstrapDnsServers { get; set; } =

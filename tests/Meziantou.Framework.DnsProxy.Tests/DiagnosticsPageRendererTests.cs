@@ -25,6 +25,9 @@ public sealed class DiagnosticsPageRendererTests
             DnsOverQuicPort = 8853,
             CertificatePath = "certs/proxy.pfx",
             FilterRefreshInterval = TimeSpan.FromMinutes(5),
+            PositiveCacheDuration = TimeSpan.FromMinutes(2),
+            NegativeCacheDuration = TimeSpan.FromMinutes(3),
+            MaximumCacheDuration = TimeSpan.FromMinutes(10),
             DnssecValidationMode = DnssecValidationMode.Local,
             Filters = [],
             Rewrites = [],
@@ -72,6 +75,9 @@ public sealed class DiagnosticsPageRendererTests
         Assert.Contains("<span class='mono'>DnsOverQuicPort</span>: 8853", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>CertificatePath</span>: certs/proxy.pfx", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>FilterRefreshInterval</span>: 00:05:00", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>PositiveCacheDuration</span>: 00:02:00", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>NegativeCacheDuration</span>: 00:03:00", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>MaximumCacheDuration</span>: 00:10:00", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>DnssecValidationMode</span>: Local", html, StringComparison.Ordinal);
         Assert.Contains("example.com A 1.2.3.4", html, StringComparison.Ordinal);
     }

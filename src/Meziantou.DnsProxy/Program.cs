@@ -27,6 +27,7 @@ builder.Services.AddSingleton<FilteringPauseState>();
 builder.Services.AddSingleton<FilterEngineProvider>();
 builder.Services.AddHostedService<FilterEngineRefreshService>();
 builder.Services.AddSingleton<UpstreamDnsClientFactory>();
+builder.Services.AddSingleton<DnsResponseCache>();
 builder.Services.AddSingleton<DnsProxyHandler>();
 
 var certificate = bootstrapOptions.HasSecureServerListenerConfigured ? GetRequiredCertificate(bootstrapOptions) : null;

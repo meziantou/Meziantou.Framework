@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/AssertionMethodSelectionAnalyzerCommon.cs" Link="Rules/AssertionMethodSelectionAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/AssertionArgumentOrderAnalyzerCommon.cs" Link="Rules/AssertionArgumentOrderAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Rules/CountAssertionAnalyzerCommon.cs" Link="Rules/CountAssertionAnalyzerCommon.cs" />
     <Compile Include="../Meziantou.Framework.Assertions.Analyzer/Internals/NumericHelpers.cs" Link="Internals/NumericHelpers.cs" />

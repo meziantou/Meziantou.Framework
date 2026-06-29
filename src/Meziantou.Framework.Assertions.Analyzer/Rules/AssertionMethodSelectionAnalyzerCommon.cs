@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -152,7 +153,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
             methodNames.Contains(targetMethod.Name);
     }
 
-    private static bool TryGetAssertCondition(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, out IOperation conditionOperation, out bool conditionExpectedToBeFalse)
+    private static bool TryGetAssertCondition(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, [NotNullWhen(true)] out IOperation? conditionOperation, out bool conditionExpectedToBeFalse)
     {
         if (IsAssertInvocation(invocationOperation, assertType, "True"))
         {
@@ -164,7 +165,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         }
         else
         {
-            conditionOperation = null!;
+            conditionOperation = null;
             conditionExpectedToBeFalse = false;
             return false;
         }
@@ -172,7 +173,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         var conditionArgument = invocationOperation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "condition");
         if (conditionArgument is null)
         {
-            conditionOperation = null!;
+            conditionOperation = null;
             return false;
         }
 
@@ -251,7 +252,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         };
     }
 
-    private static bool TryGetTypePattern(IPatternOperation pattern, out ITypeSymbol type, out bool isNegated)
+    private static bool TryGetTypePattern(IPatternOperation pattern, [NotNullWhen(true)] out ITypeSymbol? type, out bool isNegated)
     {
         if (pattern is ITypePatternOperation { MatchedType: { } directType })
         {
@@ -270,12 +271,12 @@ internal static class AssertionMethodSelectionAnalyzerCommon
             return true;
         }
 
-        type = null!;
+        type = null;
         isNegated = false;
         return false;
     }
 
-    private static bool TryGetIsTypeOperationType(IIsTypeOperation isTypeOperation, out ITypeSymbol type)
+    private static bool TryGetIsTypeOperationType(IIsTypeOperation isTypeOperation, [NotNullWhen(true)] out ITypeSymbol? type)
     {
         if (isTypeOperation.TypeOperand is not null)
         {
@@ -283,7 +284,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
             return true;
         }
 
-        type = null!;
+        type = null;
         return false;
     }
 

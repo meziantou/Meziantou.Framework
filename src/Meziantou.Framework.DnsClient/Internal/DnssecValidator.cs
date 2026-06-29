@@ -270,6 +270,11 @@ internal sealed class DnssecValidator
     {
         var record = rrset[0];
         var now = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
+        if (!DnssecCanonicalizer.IsAncestorOrEqual(signature.SignerName, record.Name))
+        {
+            return ValidationOutcome.Bogus(new DnssecValidationIssue(DnssecValidationIssueCode.InvalidData, "The RRSIG signer name is not an ancestor of the RRset owner name.", record.Name, record.RecordType));
+        }
+
         if (now < signature.SignatureInception)
         {
             return ValidationOutcome.Bogus(new DnssecValidationIssue(DnssecValidationIssueCode.SignatureNotYetValid, "The RRSIG inception time is in the future.", record.Name, record.RecordType));
@@ -286,7 +291,7 @@ internal sealed class DnssecValidator
         }
 
         var candidateKeys = keys
-            .Where(key => key.Algorithm == signature.Algorithm && DnssecCanonicalizer.ComputeKeyTag(key) == signature.KeyTag)
+            .Where(key => IsDnskeyUsableForZoneSigning(key) && key.Algorithm == signature.Algorithm && DnssecCanonicalizer.ComputeKeyTag(key) == signature.KeyTag)
             .ToArray();
         if (candidateKeys.Length is 0)
         {
@@ -400,7 +405,8 @@ internal sealed class DnssecValidator
 
     private static bool IsTrustAnchorMatch(DnssecTrustAnchor anchor, string ownerName, DnsDnskeyRecord key)
     {
-        return DnssecCanonicalizer.NormalizeName(anchor.Name) == DnssecCanonicalizer.NormalizeName(ownerName)
+        return IsDnskeyUsableForZoneSigning(key)
+            && DnssecCanonicalizer.NormalizeName(anchor.Name) == DnssecCanonicalizer.NormalizeName(ownerName)
             && anchor.KeyTag == DnssecCanonicalizer.ComputeKeyTag(key)
             && anchor.Algorithm == key.Algorithm
             && DnssecCanonicalizer.IsSupportedDigest(anchor.DigestType)
@@ -409,6 +415,9 @@ internal sealed class DnssecValidator
 
     private static bool IsDsMatch(string ownerName, DnsDnskeyRecord key, IReadOnlyList<DnsDsRecord> dsRecords, List<DnssecValidationIssue> issues)
     {
+        if (!IsDnskeyUsableForZoneSigning(key))
+            return false;
+
         foreach (var ds in dsRecords)
         {
             if (ds.KeyTag != DnssecCanonicalizer.ComputeKeyTag(key) || ds.Algorithm != key.Algorithm)
@@ -427,6 +436,16 @@ internal sealed class DnssecValidator
         }
 
         return false;
+    }
+
+    private static bool IsDnskeyUsableForZoneSigning(DnsDnskeyRecord key)
+    {
+        const ushort ZoneKeyFlag = 0x0100;
+        const ushort RevokeFlag = 0x0080;
+
+        return key.Protocol is 3
+            && (key.Flags & ZoneKeyFlag) is ZoneKeyFlag
+            && (key.Flags & RevokeFlag) is 0;
     }
 
     private static DnssecValidationResult ToResult(ValidationOutcome outcome)

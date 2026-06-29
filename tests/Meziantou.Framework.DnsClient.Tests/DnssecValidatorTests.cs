@@ -77,6 +77,25 @@ public sealed class DnssecValidatorTests
     }
 
     [Fact]
+    public async Task ValidateAsync_BogusWhenSignerNameIsNotOwnerAncestor()
+    {
+        var fixture = DnssecTestFixture.Create();
+        var result = await fixture.ValidateAsync(fixture.CrossZoneSignedResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+        Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.InvalidData);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_BogusWhenDnskeyDoesNotHaveZoneKeyFlag()
+    {
+        var fixture = DnssecTestFixture.Create(exampleKeyFlags: 1);
+        var result = await fixture.ValidateAsync(fixture.PositiveAResponse);
+
+        Assert.Equal(DnssecValidationStatus.Bogus, result.Status);
+    }
+
+    [Fact]
     public async Task ValidateAsync_UnsupportedAlgorithm()
     {
         var fixture = DnssecTestFixture.Create();
@@ -102,6 +121,24 @@ public sealed class DnssecValidatorTests
 
         Assert.Equal(20326, DnssecCanonicalizer.ComputeKeyTag(key));
         Assert.Equal("E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D", Convert.ToHexString(DnssecCanonicalizer.ComputeDigest(".", key, digestType: 2)));
+    }
+
+    [Fact]
+    public void ComputeNsec3Hash_ReturnsEmptyWhenIterationCountExceedsCap()
+    {
+        var accepted = new DnsNsec3Record
+        {
+            HashAlgorithm = 1,
+            Iterations = DnssecCanonicalizer.MaxNsec3Iterations,
+        };
+        var rejected = new DnsNsec3Record
+        {
+            HashAlgorithm = 1,
+            Iterations = DnssecCanonicalizer.MaxNsec3Iterations + 1,
+        };
+
+        Assert.NotEmpty(DnssecCanonicalizer.ComputeNsec3Hash("www.example.com", accepted));
+        Assert.Empty(DnssecCanonicalizer.ComputeNsec3Hash("www.example.com", rejected));
     }
 
     [Fact]
@@ -140,6 +177,7 @@ public sealed class DnssecValidatorTests
             DnsResponseMessage noDataResponse,
             DnsResponseMessage insecureUnsignedResponse,
             DnsResponseMessage expiredSignatureResponse,
+            DnsResponseMessage crossZoneSignedResponse,
             DnsResponseMessage unsupportedAlgorithmResponse)
         {
             Responses = responses;
@@ -151,6 +189,7 @@ public sealed class DnssecValidatorTests
             NoDataResponse = noDataResponse;
             InsecureUnsignedResponse = insecureUnsignedResponse;
             ExpiredSignatureResponse = expiredSignatureResponse;
+            CrossZoneSignedResponse = crossZoneSignedResponse;
             UnsupportedAlgorithmResponse = unsupportedAlgorithmResponse;
         }
 
@@ -172,9 +211,11 @@ public sealed class DnssecValidatorTests
 
         public DnsResponseMessage ExpiredSignatureResponse { get; }
 
+        public DnsResponseMessage CrossZoneSignedResponse { get; }
+
         public DnsResponseMessage UnsupportedAlgorithmResponse { get; }
 
-        public static DnssecTestFixture Create(bool dsMismatch = false)
+        public static DnssecTestFixture Create(bool dsMismatch = false, ushort? exampleKeyFlags = null)
         {
             var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
             var timeProvider = new FixedTimeProvider(now);
@@ -182,10 +223,17 @@ public sealed class DnssecValidatorTests
             using var rootRsa = RSA.Create(2048);
             using var comRsa = RSA.Create(2048);
             using var exampleRsa = RSA.Create(2048);
+            using var attackerRsa = RSA.Create(2048);
 
             var rootKey = CreateDnskey(".", rootRsa);
             var comKey = CreateDnskey("com", comRsa);
             var exampleKey = CreateDnskey("example.com", exampleRsa);
+            var attackerKey = CreateDnskey("attacker.example.com", attackerRsa);
+            if (exampleKeyFlags is not null)
+            {
+                exampleKey.Flags = exampleKeyFlags.Value;
+            }
+
             var trustAnchor = new DnssecTrustAnchor(".", DnssecCanonicalizer.ComputeKeyTag(rootKey), rootKey.Algorithm, 2, DnssecCanonicalizer.ComputeDigest(".", rootKey, digestType: 2));
 
             var responses = new Dictionary<QueryKey, DnsResponseMessage>();
@@ -211,6 +259,13 @@ public sealed class DnssecValidatorTests
             var exampleDnskeySignature = CreateSignature([exampleKey], DnsQueryType.DNSKEY, "example.com", exampleKey, exampleRsa, now);
             responses.Add(new("example.com", DnsQueryType.DNSKEY), CreateMessage("example.com", DnsQueryType.DNSKEY, [exampleKey, exampleDnskeySignature]));
 
+            var attackerDs = CreateDs("attacker.example.com", attackerKey);
+            var attackerDsSignature = CreateSignature([attackerDs], DnsQueryType.DS, "example.com", exampleKey, exampleRsa, now);
+            responses.Add(new("attacker.example.com", DnsQueryType.DS), CreateMessage("attacker.example.com", DnsQueryType.DS, [attackerDs, attackerDsSignature]));
+
+            var attackerDnskeySignature = CreateSignature([attackerKey], DnsQueryType.DNSKEY, "attacker.example.com", attackerKey, attackerRsa, now);
+            responses.Add(new("attacker.example.com", DnsQueryType.DNSKEY), CreateMessage("attacker.example.com", DnsQueryType.DNSKEY, [attackerKey, attackerDnskeySignature]));
+
             var unsignedDsDenial = CreateNsec("unsigned.com", "z.com", [DnsQueryType.NS, DnsQueryType.NSEC, DnsQueryType.RRSIG]);
             var unsignedDsDenialSignature = CreateSignature([unsignedDsDenial], DnsQueryType.NSEC, "com", comKey, comRsa, now);
             responses.Add(new("unsigned.com", DnsQueryType.DS), CreateMessage("unsigned.com", DnsQueryType.DS, [], [unsignedDsDenial, unsignedDsDenialSignature]));
@@ -218,6 +273,8 @@ public sealed class DnssecValidatorTests
             var a = CreateRecord(new DnsARecord { Address = IPAddress.Parse("192.0.2.1") }, "www.example.com", DnsQueryType.A);
             var aSignature = CreateSignature([a], DnsQueryType.A, "example.com", exampleKey, exampleRsa, now);
             var positiveAResponse = CreateMessage("www.example.com", DnsQueryType.A, [a, aSignature]);
+            var crossZoneSignature = CreateSignature([a], DnsQueryType.A, "attacker.example.com", attackerKey, attackerRsa, now);
+            var crossZoneSignedResponse = CreateMessage("www.example.com", DnsQueryType.A, [a, crossZoneSignature]);
 
             var alias = CreateRecord(new DnsCnameRecord { CanonicalName = "www.example.com" }, "alias.example.com", DnsQueryType.CNAME);
             var aliasSignature = CreateSignature([alias], DnsQueryType.CNAME, "example.com", exampleKey, exampleRsa, now);
@@ -240,7 +297,7 @@ public sealed class DnssecValidatorTests
             var unsupportedSignature = CreateUnsupportedSignature(a, exampleKey, now);
             var unsupportedAlgorithmResponse = CreateMessage("www.example.com", DnsQueryType.A, [a, unsupportedSignature]);
 
-            return new(responses, [trustAnchor], timeProvider, positiveAResponse, cnameResponse, nxDomainResponse, noDataResponse, insecureUnsignedResponse, expiredSignatureResponse, unsupportedAlgorithmResponse);
+            return new(responses, [trustAnchor], timeProvider, positiveAResponse, cnameResponse, nxDomainResponse, noDataResponse, insecureUnsignedResponse, expiredSignatureResponse, crossZoneSignedResponse, unsupportedAlgorithmResponse);
         }
 
         public async Task<DnssecValidationResult> ValidateAsync(DnsResponseMessage response)

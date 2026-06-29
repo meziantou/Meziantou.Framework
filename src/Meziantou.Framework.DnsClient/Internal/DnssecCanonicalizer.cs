@@ -509,9 +509,7 @@ internal static class DnssecCanonicalizer
 
     private static int CompareCanonicalLabels(string left, string right)
     {
-        var leftBytes = Encoding.ASCII.GetBytes(left.ToLowerInvariant());
-        var rightBytes = Encoding.ASCII.GetBytes(right.ToLowerInvariant());
-        return leftBytes.AsSpan().SequenceCompareTo(rightBytes);
+        return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class ByteArrayComparer : IComparer<byte[]>

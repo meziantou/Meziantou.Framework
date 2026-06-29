@@ -139,22 +139,25 @@ internal static class DnssecCanonicalizer
             return [];
 
         var owner = GetCanonicalDomainNameBytes(name);
-        var buffer = new byte[owner.Length + record.Salt.Length];
+        var salt = record.Salt.AsSpan();
+        Span<byte> buffer = stackalloc byte[owner.Length + salt.Length];
         owner.CopyTo(buffer);
-        record.Salt.CopyTo(buffer.AsSpan(owner.Length));
+        salt.CopyTo(buffer[owner.Length..]);
 #pragma warning disable CA5350 // NSEC3 hash algorithm 1 is SHA-1 by specification.
-        var hash = SHA1.HashData(buffer);
-        var iterationBuffer = new byte[hash.Length + record.Salt.Length];
+        Span<byte> hash = stackalloc byte[SHA1.HashSizeInBytes];
+        _ = SHA1.HashData(buffer, hash);
+
+        Span<byte> iterationBuffer = stackalloc byte[SHA1.HashSizeInBytes + salt.Length];
 
         for (var i = 0; i < record.Iterations; i++)
         {
             hash.CopyTo(iterationBuffer);
-            record.Salt.CopyTo(iterationBuffer.AsSpan(hash.Length));
-            hash = SHA1.HashData(iterationBuffer);
+            salt.CopyTo(iterationBuffer[hash.Length..]);
+            _ = SHA1.HashData(iterationBuffer, hash);
         }
 #pragma warning restore CA5350
 
-        return hash;
+        return hash.ToArray();
     }
 
     public static byte[] DecodeBase32Hex(string value)

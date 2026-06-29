@@ -15,13 +15,13 @@ public class UnsafeListDictionaryTests
             { 2, "c" },
         };
 
-        Assert.Equal(3, dict.Count); // Allows duplicate values
+        Assert.HasCount(3, dict); // Allows duplicate values
         Assert.Contains(1, (IReadOnlyDictionary<int, string>)dict);
         Assert.Contains(2, (IReadOnlyDictionary<int, string>)dict);
         Assert.DoesNotContain(4, (IReadOnlyDictionary<int, string>)dict);
 
         dict[1] = "d";
-        Assert.Equal(3, dict.Count); // Replace existing item
+        Assert.HasCount(3, dict); // Replace existing item
         Assert.Equal([1, 2, 2], dict.Keys);
         Assert.Equal(["d", "b", "c"], dict.Values);
 

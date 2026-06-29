@@ -47,9 +47,9 @@ public sealed class HttpBasicAuthenticationTests
         await application.SendAndAssert("/", "myName", "invalid", response =>
         {
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-            Assert.Contains(response.Headers.WwwAuthenticate, static value =>
-            string.Equals(value.Scheme, HttpBasicAuthenticationDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(value.Parameter, "realm=\"My API\", charset=\"UTF-8\"", StringComparison.Ordinal));
+            Assert.Contains(response.Headers.WwwAuthenticate, value =>
+                string.Equals(value.Scheme, HttpBasicAuthenticationDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(value.Parameter, "realm=\"My API\", charset=\"UTF-8\"", StringComparison.Ordinal));
         });
     }
 

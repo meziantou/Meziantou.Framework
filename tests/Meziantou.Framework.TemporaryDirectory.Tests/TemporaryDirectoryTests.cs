@@ -16,7 +16,7 @@ public class TemporaryDirectoryTests
                 dirs[i].CreateEmptyFile("test.txt");
             });
 
-            Assert.Equal(Iterations, dirs.Select(dir => dir.FullPath).Distinct().Count());
+            Assert.HasCount(Iterations, dirs.Select(dir => dir.FullPath).Distinct());
 
             foreach (var dir in dirs)
             {

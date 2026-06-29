@@ -171,7 +171,7 @@ public sealed class SynchronizedListTests
         }
 
         await Task.WhenAll(tasks);
-        Assert.Equal(100, list.Count);
+        Assert.HasCount(100, list);
 
         tasks.Clear();
         for (var i = 0; i < 100; i++)

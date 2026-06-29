@@ -17,7 +17,7 @@ public sealed partial class InMemoryLoggerTests
 
         var log = logger.Logs.Informations.Single();
         Assert.Equal("Test", log.Message);
-        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
+        Assert.EqualByStructure(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
         Assert.Empty(log.Scopes);
         Assert.Equal("[sample] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
     }
@@ -31,7 +31,7 @@ public sealed partial class InMemoryLoggerTests
 
         var log = logger.Logs.Informations.Single();
         Assert.Equal("Test", log.Message);
-        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
+        Assert.EqualByStructure(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
         Assert.Empty(log.Scopes);
         Assert.Equal("[Meziantou.Extensions.Logging.InMemory.Tests.InMemoryLoggerTests] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
     }
@@ -54,7 +54,7 @@ public sealed partial class InMemoryLoggerTests
 
         var log = inMemoryLoggerProvider.Logs.Informations.Single();
         Assert.Equal("Test", log.Message);
-        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
+        Assert.EqualByStructure(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
         Assert.Empty(log.Scopes);
         Assert.Equal("[Meziantou.Extensions.Logging.InMemory.Tests.InMemoryLoggerTests] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
     }
@@ -68,7 +68,7 @@ public sealed partial class InMemoryLoggerTests
 
         var log = provider.Logs.Informations.Single();
         Assert.Equal("Test", log.Message);
-        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
+        Assert.EqualByStructure(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
         Assert.Empty(log.Scopes);
         Assert.Equal("[my_category] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
     }
@@ -88,8 +88,8 @@ public sealed partial class InMemoryLoggerTests
 
         var log = provider.Logs.Informations.Single();
         Assert.Equal("Test 1", log.Message);
-        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") }, log.State);
-        Assert.Equivalent(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } }, log.Scopes);
+        Assert.EqualByStructure(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") }, log.State);
+        Assert.EqualByStructure(new object[] { new { Name = "test" }, new { Age = 52, Name = "John" } }, log.Scopes);
         Assert.Equal("[my_category] Information: Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}", log.ToString());
     }
 
@@ -106,8 +106,8 @@ public sealed partial class InMemoryLoggerTests
 
         var log = provider.Logs.Informations.Single();
         Assert.Equal("Test 1", log.Message);
-        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") }, log.State);
-        Assert.Equivalent(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } }, log.Scopes);
+        Assert.EqualByStructure(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") }, log.State);
+        Assert.EqualByStructure(new object[] { new { Name = "test" }, new { Age = 52, Name = "John" } }, log.Scopes);
         Assert.Equal("[my_category] Information (1 Sample Event Id): Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}", log.ToString());
         Assert.True(log.TryGetParameterValue("{OriginalFormat}", out var format));
         Assert.Equal("Test {Number}", format);
@@ -130,7 +130,7 @@ public sealed partial class InMemoryLoggerTests
         var logger = provider.CreateLogger("my_category");
         Parallel.For(0, 100_000, i => Log(logger, 1));
 
-        Assert.Equivalent(100_000, provider.Logs.Count());
+        Assert.HasCount(100_000, provider.Logs);
     }
 
     [Fact]

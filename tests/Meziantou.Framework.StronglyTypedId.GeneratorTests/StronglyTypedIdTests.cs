@@ -371,8 +371,8 @@ public sealed partial class StronglyTypedIdTests
         var value = IdInt32.FromInt32(1);
 
         // The following should compile
-        Assert.IsAssignableFrom<IStronglyTypedId>(value);
-        Assert.IsAssignableFrom<IStronglyTypedId<int>>(value);
+        Assert.IsAssignableTo<IStronglyTypedId>(value);
+        Assert.IsAssignableTo<IStronglyTypedId<int>>(value);
     }
 
     [Fact]
@@ -381,8 +381,8 @@ public sealed partial class StronglyTypedIdTests
         var value = IdInt32Comparable.FromInt32(1);
 
         // The following should compile
-        Assert.IsAssignableFrom<IComparable>(value);
-        Assert.IsAssignableFrom<IComparable<IdInt32Comparable>>(value);
+        Assert.IsAssignableTo<IComparable>(value);
+        Assert.IsAssignableTo<IComparable<IdInt32Comparable>>(value);
     }
 
     [Fact]
@@ -392,8 +392,8 @@ public sealed partial class StronglyTypedIdTests
         var value2 = IdInt32ComparableOfT.FromInt32(2);
 
         // The following should compile
-        Assert.IsAssignableFrom<IComparable>(value1);
-        Assert.IsAssignableFrom<IComparable<IdInt32ComparableOfT>>(value1);
+        Assert.IsAssignableTo<IComparable>(value1);
+        Assert.IsAssignableTo<IComparable<IdInt32ComparableOfT>>(value1);
         Assert.True(value1 < value2);
         Assert.True(value1 <= value2);
         Assert.False(value1 > value2);

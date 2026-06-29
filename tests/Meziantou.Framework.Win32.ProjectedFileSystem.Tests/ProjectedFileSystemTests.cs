@@ -134,7 +134,7 @@ public sealed class ProjectedFileSystemTests
             // Read the entire file and verify content integrity
             // The file contains predictable data: byte[i] = i % 256
             var allData = File.ReadAllBytes(filePath);
-            Assert.Equal(10000, allData.Length);
+            Assert.HasCount(10000, allData);
 
             // Verify data at various positions - with the bug, data would be from offset 0
             // Check beginning
@@ -187,7 +187,7 @@ public sealed class ProjectedFileSystemTests
 
             // Read the entire file and verify content integrity
             var allData = File.ReadAllBytes(filePath);
-            Assert.Equal(10000, allData.Length);
+            Assert.HasCount(10000, allData);
 
             // Verify data at various positions
             Assert.Equal(0, allData[0]);
@@ -235,7 +235,7 @@ public sealed class ProjectedFileSystemTests
 
             // Step 1: First enumeration - ProjFS queries provider for entries
             var firstEnum = Directory.GetFileSystemEntries(fullPath).OrderBy(Path.GetFileName, StringComparer.Ordinal).ToList();
-            Assert.Equal(5, firstEnum.Count);
+            Assert.HasCount(5, firstEnum);
 
             // Step 2: Access each entry to create on-disk placeholders
             // This is critical - ProjFS creates placeholder metadata on disk when entries are accessed
@@ -250,8 +250,8 @@ public sealed class ProjectedFileSystemTests
             var thirdEnum = Directory.GetFileSystemEntries(fullPath).OrderBy(Path.GetFileName, StringComparer.Ordinal).ToList();
 
             // All enumerations should return exactly 5 unique entries
-            Assert.Equal(5, secondEnum.Count);
-            Assert.Equal(5, thirdEnum.Count);
+            Assert.HasCount(5, secondEnum);
+            Assert.HasCount(5, thirdEnum);
 
             // Verify the expected entries exist (in sorted order by filename)
             var expectedNames = new[] { "apple.txt", "banana", "mango.txt", "yellow.txt", "zebra.txt" };

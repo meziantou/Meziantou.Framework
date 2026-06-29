@@ -10,7 +10,7 @@ public sealed class ImmutableEquatableSetTests
     public void Empty_ShouldReturnEmptySet()
     {
         var empty = ImmutableEquatableSet<string>.Empty;
-        Assert.Equal(0, empty.Count);
+        Assert.Empty(empty);
     }
 
     [Fact]
@@ -19,7 +19,7 @@ public sealed class ImmutableEquatableSetTests
         var values = new HashSet<string>(StringComparer.Ordinal) { "a", "b", "c" };
         var set = ImmutableEquatableSet.Create(values);
 
-        Assert.Equal(3, set.Count);
+        Assert.HasCount(3, set);
         Assert.Contains("a", set);
         Assert.Contains("b", set);
         Assert.Contains("c", set);
@@ -89,8 +89,10 @@ public sealed class ImmutableEquatableSetTests
         Assert.False(set.Equals(null));
         Assert.False(set == null);
         Assert.False(null == set);
+#pragma warning disable MFAS0007 // Preserve == and != operator validation
         Assert.True(set != null);
         Assert.True(null != set);
+#pragma warning restore MFAS0007
     }
 
     [Fact]
@@ -166,7 +168,7 @@ public sealed class ImmutableEquatableSetTests
         var collection = (ICollection<string>)set;
 
         Assert.True(collection.IsReadOnly);
-        Assert.Equal(2, collection.Count);
+        Assert.HasCount(2, collection);
     }
 
     [Fact]
@@ -175,7 +177,7 @@ public sealed class ImmutableEquatableSetTests
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b" });
         var collection = (System.Collections.ICollection)set;
 
-        Assert.Equal(2, collection.Count);
+        Assert.HasCount(2, collection);
         Assert.False(collection.IsSynchronized);
         Assert.Same(set, collection.SyncRoot);
     }
@@ -294,7 +296,7 @@ public sealed class ImmutableEquatableSetTests
         var values = new[] { "a", "b", "c", "a" }; // Include duplicate
         var result = values.ToImmutableEquatableSet();
 
-        Assert.Equal(3, result.Count); // Should remove duplicate
+        Assert.HasCount(3, result); // Should remove duplicate
         Assert.Contains("a", result);
         Assert.Contains("b", result);
         Assert.Contains("c", result);
@@ -322,7 +324,7 @@ public sealed class ImmutableEquatableSetTests
         var values = new[] { "a", "b", "c", "a" }; // Include duplicate
         var result = ImmutableEquatableSet.Create(values.AsSpan());
 
-        Assert.Equal(3, result.Count); // Should remove duplicate
+        Assert.HasCount(3, result); // Should remove duplicate
         Assert.Contains("a", result);
         Assert.Contains("b", result);
         Assert.Contains("c", result);
@@ -333,7 +335,7 @@ public sealed class ImmutableEquatableSetTests
     {
         ImmutableEquatableSet<string> set = ["a", "b", "c", "a"]; // Include duplicate
 
-        Assert.Equal(3, set.Count); // Should remove duplicate
+        Assert.HasCount(3, set); // Should remove duplicate
         Assert.Contains("a", set);
         Assert.Contains("b", set);
         Assert.Contains("c", set);
@@ -345,7 +347,7 @@ public sealed class ImmutableEquatableSetTests
         var empty = ImmutableEquatableSet<string>.Empty;
         var iset = (ISet<string>)empty;
 
-        Assert.Equal(0, empty.Count);
+        Assert.Empty(empty);
         Assert.DoesNotContain("anything", empty);
         Assert.True(iset.IsSubsetOf(new[] { "a", "b" }));
         Assert.False(iset.IsSupersetOf(new[] { "a" }));

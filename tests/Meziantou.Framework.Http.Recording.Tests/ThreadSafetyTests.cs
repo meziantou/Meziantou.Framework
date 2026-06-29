@@ -45,7 +45,7 @@ public sealed class ThreadSafetyTests
 
         await Task.WhenAll(tasks);
 
-        Assert.Equal(RequestCount, results.Count);
+        Assert.HasCount(RequestCount, results);
         Assert.Equal(0, innerHandler.CallCount);
 
         // Verify all unique responses were returned

@@ -59,7 +59,7 @@ public class ChangeJournalTests
             var drive = Path.GetPathRoot(file) ?? throw new InvalidOperationException("Cannot determine drive root");
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
             var entries = changeJournal.Entries.ToList();
-            Assert.True(entries.Count >= 0);
+            Assert.NotEmpty(entries);
         });
     }
 
@@ -72,7 +72,7 @@ public class ChangeJournalTests
             var drive = Path.GetPathRoot(file) ?? throw new InvalidOperationException("Cannot determine drive root");
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive), unprivileged: true);
             var entries = changeJournal.GetEntries(ChangeReason.FileCreate, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
-            Assert.True(entries.Count >= 0);
+            Assert.NotEmpty(entries);
         });
     }
 

@@ -170,7 +170,7 @@ public sealed class OpenTelemetryReceiverTests
         await SendTracesAsync(app.HttpClient, CreateTraceRequest("00000000000000000000000000000021", ("0000000000000021", null, "root-keep")));
 
         var spans = GetTraceSpans(app.Receiver);
-        Assert.Equal(2, spans.Count);
+        Assert.HasCount(2, spans);
         Assert.Contains(spans, span => span.Name == "root-keep");
         Assert.Contains(spans, span => span.Name == "child");
     }
@@ -193,7 +193,7 @@ public sealed class OpenTelemetryReceiverTests
         _ = await client.ExportAsync(CreateTraceRequest("00000000000000000000000000000031", ("0000000000000031", null, "root-keep")), cancellationToken: XunitCancellationToken).ResponseAsync;
 
         var spans = GetTraceSpans(app.Receiver);
-        Assert.Equal(2, spans.Count);
+        Assert.HasCount(2, spans);
         Assert.Contains(spans, span => span.Name == "root-keep");
         Assert.Contains(spans, span => span.Name == "child");
     }
@@ -264,7 +264,7 @@ public sealed class OpenTelemetryReceiverTests
             ("0000000000000063", "0000000000000061", "child-2")));
 
         var spans = GetTraceSpans(app.Receiver);
-        Assert.Equal(2, spans.Count);
+        Assert.HasCount(2, spans);
         Assert.Contains(spans, span => span.Name == "root");
         Assert.Contains(spans, span => span.Name == "child-1");
         Assert.DoesNotContain(spans, span => span.Name == "child-2");
@@ -296,7 +296,7 @@ public sealed class OpenTelemetryReceiverTests
 
         var spans = GetTraceSpans(app.Receiver);
         var names = spans.Select(span => span.Name).ToList();
-        Assert.Equal(2, names.Count);
+        Assert.HasCount(2, names);
         Assert.DoesNotContain("root", names);
         Assert.Contains("child-1", names);
         Assert.Contains("child-2", names);
@@ -315,7 +315,7 @@ public sealed class OpenTelemetryReceiverTests
         await SendLogsAsync(app.HttpClient, "third");
 
         var items = app.Receiver.Logs.ToList();
-        Assert.Equal(2, items.Count);
+        Assert.HasCount(2, items);
 
         var first = Assert.IsType<OpenTelemetryLogsItem>(items[0]);
         var second = Assert.IsType<OpenTelemetryLogsItem>(items[1]);
@@ -332,7 +332,7 @@ public sealed class OpenTelemetryReceiverTests
         await SendLogsAsync(app.HttpClient, "second");
         await SendLogsAsync(app.HttpClient, "third");
 
-        Assert.Equal(3, app.Receiver.Logs.Count());
+        Assert.HasCount(3, app.Receiver.Logs);
     }
 
     private static async Task SendLogsAsync(HttpClient httpClient, string body, string endpoint = "/v1/logs")

@@ -583,7 +583,7 @@ public sealed class TextDiffTests
         Assert.Equal(NewText, ReconstructHierarchyNewText(result));
 
         var replacedEntries = result.Entries.Where(e => e.Operation == TextDiffHierarchyOperation.Replace).ToList();
-        Assert.Equal(2, replacedEntries.Count);
+        Assert.HasCount(2, replacedEntries);
 
         Assert.Contains(replacedEntries[0].Children, e => e.Operation == TextDiffHierarchyOperation.Delete && e.OldText == "a");
         Assert.Contains(replacedEntries[0].Children, e => e.Operation == TextDiffHierarchyOperation.Insert && e.NewText == "o");
@@ -648,7 +648,7 @@ public sealed class TextDiffTests
     {
         var chunks = TextChunker.Lines.Chunk("line1\nline2\r\nline3").ToList();
 
-        Assert.Equal(3, chunks.Count);
+        Assert.HasCount(3, chunks);
         Assert.Equal("line1\n", chunks[0]);
         Assert.Equal("line2\r\n", chunks[1]);
         Assert.Equal("line3", chunks[2]);
@@ -659,7 +659,7 @@ public sealed class TextDiffTests
     {
         var chunks = TextChunker.Lines.Chunk("line1\u0085line2\u2028line3\u2029line4").ToList();
 
-        Assert.Equal(4, chunks.Count);
+        Assert.HasCount(4, chunks);
         Assert.Equal("line1\u0085", chunks[0]);
         Assert.Equal("line2\u2028", chunks[1]);
         Assert.Equal("line3\u2029", chunks[2]);
@@ -672,7 +672,7 @@ public sealed class TextDiffTests
     {
         var chunks = TextChunker.Words.Chunk("hello  world").ToList();
 
-        Assert.Equal(3, chunks.Count);
+        Assert.HasCount(3, chunks);
         Assert.Equal("hello", chunks[0]);
         Assert.Equal("  ", chunks[1]);
         Assert.Equal("world", chunks[2]);
@@ -684,7 +684,7 @@ public sealed class TextDiffTests
     {
         var chunks = TextChunker.Characters.Chunk("abc").ToList();
 
-        Assert.Equal(3, chunks.Count);
+        Assert.HasCount(3, chunks);
         Assert.Equal("a", chunks[0]);
         Assert.Equal("b", chunks[1]);
         Assert.Equal("c", chunks[2]);

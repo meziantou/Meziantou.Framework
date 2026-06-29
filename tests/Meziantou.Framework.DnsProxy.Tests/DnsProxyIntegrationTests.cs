@@ -1,6 +1,11 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
+using Microsoft.Extensions.Options;
 using DnsProxyProgram = global::Program;
 
 namespace Meziantou.Framework.DnsProxy.Tests;
@@ -16,41 +21,26 @@ public sealed class DnsProxyIntegrationTests
         const string DnsPortVariableName = "DnsProxy__DnsPort";
         const string HttpPortVariableName = "DnsProxy__HttpPort";
         const string FilterRefreshIntervalVariableName = "DnsProxy__FilterRefreshInterval";
-        const string Upstream0ProtocolVariableName = "DnsProxy__Upstreams__0__Protocol";
-        const string Upstream0EndpointVariableName = "DnsProxy__Upstreams__0__Endpoint";
-        const string Upstream0UseHttp3VariableName = "DnsProxy__Upstreams__0__UseHttp3";
-        const string Upstream1ProtocolVariableName = "DnsProxy__Upstreams__1__Protocol";
-        const string Upstream1EndpointVariableName = "DnsProxy__Upstreams__1__Endpoint";
-        const string Upstream1UseHttp3VariableName = "DnsProxy__Upstreams__1__UseHttp3";
-        const string Upstream2ProtocolVariableName = "DnsProxy__Upstreams__2__Protocol";
-        const string Upstream2EndpointVariableName = "DnsProxy__Upstreams__2__Endpoint";
-        const string Upstream2UseHttp3VariableName = "DnsProxy__Upstreams__2__UseHttp3";
+        const string Upstream0UrlVariableName = "DnsProxy__Upstreams__0__Url";
+        const string Upstream1UrlVariableName = "DnsProxy__Upstreams__1__Url";
+        const string Upstream2UrlVariableName = "DnsProxy__Upstreams__2__Url";
+        const string BootstrapDnsServersVariableName = "DnsProxy__BootstrapDnsServers__0";
 
         var previousDnsPort = Environment.GetEnvironmentVariable(DnsPortVariableName);
         var previousHttpPort = Environment.GetEnvironmentVariable(HttpPortVariableName);
         var previousFilterRefreshInterval = Environment.GetEnvironmentVariable(FilterRefreshIntervalVariableName);
-        var previousUpstream0Protocol = Environment.GetEnvironmentVariable(Upstream0ProtocolVariableName);
-        var previousUpstream0Endpoint = Environment.GetEnvironmentVariable(Upstream0EndpointVariableName);
-        var previousUpstream0UseHttp3 = Environment.GetEnvironmentVariable(Upstream0UseHttp3VariableName);
-        var previousUpstream1Protocol = Environment.GetEnvironmentVariable(Upstream1ProtocolVariableName);
-        var previousUpstream1Endpoint = Environment.GetEnvironmentVariable(Upstream1EndpointVariableName);
-        var previousUpstream1UseHttp3 = Environment.GetEnvironmentVariable(Upstream1UseHttp3VariableName);
-        var previousUpstream2Protocol = Environment.GetEnvironmentVariable(Upstream2ProtocolVariableName);
-        var previousUpstream2Endpoint = Environment.GetEnvironmentVariable(Upstream2EndpointVariableName);
-        var previousUpstream2UseHttp3 = Environment.GetEnvironmentVariable(Upstream2UseHttp3VariableName);
+        var previousUpstream0Url = Environment.GetEnvironmentVariable(Upstream0UrlVariableName);
+        var previousUpstream1Url = Environment.GetEnvironmentVariable(Upstream1UrlVariableName);
+        var previousUpstream2Url = Environment.GetEnvironmentVariable(Upstream2UrlVariableName);
+        var previousBootstrapDnsServers = Environment.GetEnvironmentVariable(BootstrapDnsServersVariableName);
 
         Environment.SetEnvironmentVariable(DnsPortVariableName, DnsPort.ToString(CultureInfo.InvariantCulture));
         Environment.SetEnvironmentVariable(HttpPortVariableName, HttpPort.ToString(CultureInfo.InvariantCulture));
         Environment.SetEnvironmentVariable(FilterRefreshIntervalVariableName, FilterRefreshInterval);
-        Environment.SetEnvironmentVariable(Upstream0ProtocolVariableName, "Https");
-        Environment.SetEnvironmentVariable(Upstream0EndpointVariableName, "https://1.1.1.1/dns-query");
-        Environment.SetEnvironmentVariable(Upstream0UseHttp3VariableName, bool.FalseString);
-        Environment.SetEnvironmentVariable(Upstream1ProtocolVariableName, "Https");
-        Environment.SetEnvironmentVariable(Upstream1EndpointVariableName, "https://9.9.9.9/dns-query");
-        Environment.SetEnvironmentVariable(Upstream1UseHttp3VariableName, bool.FalseString);
-        Environment.SetEnvironmentVariable(Upstream2ProtocolVariableName, "Https");
-        Environment.SetEnvironmentVariable(Upstream2EndpointVariableName, "https://dns.nextdns.io/dns-query");
-        Environment.SetEnvironmentVariable(Upstream2UseHttp3VariableName, bool.FalseString);
+        Environment.SetEnvironmentVariable(Upstream0UrlVariableName, "https://1.1.1.1/dns-query");
+        Environment.SetEnvironmentVariable(Upstream1UrlVariableName, "https://9.9.9.9/dns-query");
+        Environment.SetEnvironmentVariable(Upstream2UrlVariableName, "https://dns.nextdns.io/dns-query");
+        Environment.SetEnvironmentVariable(BootstrapDnsServersVariableName, "1.1.1.1");
 
         try
         {
@@ -76,23 +66,141 @@ public sealed class DnsProxyIntegrationTests
 
             var htmlAfterQuery = await webClient.GetStringAsync("/");
             Assert.Contains("localhost A", htmlAfterQuery, StringComparison.Ordinal);
-            Assert.Contains("Rewritten", htmlAfterQuery, StringComparison.Ordinal);
+            Assert.Contains("CustomRecord", htmlAfterQuery, StringComparison.Ordinal);
         }
         finally
         {
             Environment.SetEnvironmentVariable(DnsPortVariableName, previousDnsPort);
             Environment.SetEnvironmentVariable(HttpPortVariableName, previousHttpPort);
             Environment.SetEnvironmentVariable(FilterRefreshIntervalVariableName, previousFilterRefreshInterval);
-            Environment.SetEnvironmentVariable(Upstream0ProtocolVariableName, previousUpstream0Protocol);
-            Environment.SetEnvironmentVariable(Upstream0EndpointVariableName, previousUpstream0Endpoint);
-            Environment.SetEnvironmentVariable(Upstream0UseHttp3VariableName, previousUpstream0UseHttp3);
-            Environment.SetEnvironmentVariable(Upstream1ProtocolVariableName, previousUpstream1Protocol);
-            Environment.SetEnvironmentVariable(Upstream1EndpointVariableName, previousUpstream1Endpoint);
-            Environment.SetEnvironmentVariable(Upstream1UseHttp3VariableName, previousUpstream1UseHttp3);
-            Environment.SetEnvironmentVariable(Upstream2ProtocolVariableName, previousUpstream2Protocol);
-            Environment.SetEnvironmentVariable(Upstream2EndpointVariableName, previousUpstream2Endpoint);
-            Environment.SetEnvironmentVariable(Upstream2UseHttp3VariableName, previousUpstream2UseHttp3);
+            Environment.SetEnvironmentVariable(Upstream0UrlVariableName, previousUpstream0Url);
+            Environment.SetEnvironmentVariable(Upstream1UrlVariableName, previousUpstream1Url);
+            Environment.SetEnvironmentVariable(Upstream2UrlVariableName, previousUpstream2Url);
+            Environment.SetEnvironmentVariable(BootstrapDnsServersVariableName, previousBootstrapDnsServers);
         }
+    }
+
+    [Fact]
+    public async Task DisableFilteringEndpoint_DoesNotDisableCustomRecords()
+    {
+        const int DnsPort = 0;
+        const int HttpPort = 5080;
+        const int DiagnosticsHistoryCapacity = 1;
+        const string CustomRecordDomain = "temporary-filter-disable.example";
+        const string CustomRecordAddress = "203.0.113.123";
+
+        using var baseFactory = new WebApplicationFactory<DnsProxyProgram>();
+        using var factory = baseFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("DnsProxy:DnsPort", DnsPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:HttpPort", HttpPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:DiagnosticsHistoryCapacity", DiagnosticsHistoryCapacity.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:Filters:0:Url", "");
+            builder.UseSetting("DnsProxy:Filters:1:Url", "");
+            builder.UseSetting("DnsProxy:CustomRecords:0:Domain", CustomRecordDomain);
+            builder.UseSetting("DnsProxy:CustomRecords:0:Type", "A");
+            builder.UseSetting("DnsProxy:CustomRecords:0:Value", CustomRecordAddress);
+            builder.UseSetting("DnsProxy:Upstreams:0:Endpoint", "");
+            builder.UseSetting("DnsProxy:Upstreams:1:Endpoint", "");
+            builder.UseSetting("DnsProxy:Upstreams:2:Endpoint", "");
+        });
+        var webClient = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+        });
+
+        var query = CreateAQuery(CustomRecordDomain, id: 0x1234);
+        using var requestBeforePause = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
+        {
+            Content = new ByteArrayContent(query),
+        };
+        requestBeforePause.Content.Headers.ContentType = new MediaTypeHeaderValue("application/dns-message");
+        requestBeforePause.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/dns-message"));
+        using var responseBeforePause = await webClient.SendAsync(requestBeforePause);
+        responseBeforePause.EnsureSuccessStatusCode();
+        var responseBeforePauseBytes = await responseBeforePause.Content.ReadAsByteArrayAsync();
+        var customRecordAddress = IPAddress.Parse(CustomRecordAddress);
+        AssertDnsResponseHasARecord(responseBeforePauseBytes, expectedId: 0x1234, expectedAddress: customRecordAddress);
+
+        using var disableContent = new StringContent("");
+        using var disableResponse = await webClient.PostAsync("/filtering/disable", disableContent);
+        Assert.Equal(HttpStatusCode.Redirect, disableResponse.StatusCode);
+        Assert.Equal("/", disableResponse.Headers.Location?.ToString());
+
+        var html = await webClient.GetStringAsync("/");
+        Assert.Contains("Filtering is disabled until", html, StringComparison.Ordinal);
+
+        using var requestAfterPause = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
+        {
+            Content = new ByteArrayContent(query),
+        };
+        requestAfterPause.Content.Headers.ContentType = new MediaTypeHeaderValue("application/dns-message");
+        requestAfterPause.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/dns-message"));
+        using var responseAfterPause = await webClient.SendAsync(requestAfterPause);
+        responseAfterPause.EnsureSuccessStatusCode();
+        var responseAfterPauseBytes = await responseAfterPause.Content.ReadAsByteArrayAsync();
+        AssertDnsResponseHasARecord(responseAfterPauseBytes, expectedId: 0x1234, expectedAddress: customRecordAddress);
+
+        var htmlAfterQuery = await webClient.GetStringAsync("/");
+        Assert.Contains("CustomRecord", htmlAfterQuery, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CustomRecords_AreUsedBeforeBlockLists()
+    {
+        const int DnsPort = 0;
+        const int HttpPort = 5080;
+        const string CustomRecordDomain = "blocked-custom-record.example";
+        const string CustomRecordAddress = "203.0.113.124";
+
+        using var baseFactory = new WebApplicationFactory<DnsProxyProgram>();
+        using var factory = baseFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("DnsProxy:DnsPort", DnsPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:HttpPort", HttpPort.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting("DnsProxy:Filters:0:Url", "https://filters.example/list.txt");
+            builder.UseSetting("DnsProxy:Filters:0:Format", "AdBlock");
+            builder.UseSetting("DnsProxy:Filters:1:Url", "");
+            builder.UseSetting("DnsProxy:CustomRecords:0:Domain", CustomRecordDomain);
+            builder.UseSetting("DnsProxy:CustomRecords:0:Type", "A");
+            builder.UseSetting("DnsProxy:CustomRecords:0:Value", CustomRecordAddress);
+            builder.UseSetting("DnsProxy:Upstreams:0:Endpoint", "");
+            builder.UseSetting("DnsProxy:Upstreams:1:Endpoint", "");
+            builder.UseSetting("DnsProxy:Upstreams:2:Endpoint", "");
+            builder.ConfigureServices(services =>
+            {
+                services.Configure<HttpClientFactoryOptions>(Options.DefaultName, options =>
+                {
+                    options.HttpMessageHandlerBuilderActions.Add(handlerBuilder =>
+                    {
+                        handlerBuilder.PrimaryHandler = new DelegateHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new StringContent($"||{CustomRecordDomain}^"),
+                        });
+                    });
+                });
+            });
+        });
+        var webClient = factory.CreateClient();
+
+        var html = await WaitForLoadedFilterRuleAsync(webClient);
+        Assert.DoesNotContain("<span class='mono'>LoadedFilterRules</span>: 0", html, StringComparison.Ordinal);
+
+        var query = CreateAQuery(CustomRecordDomain, id: 0x1234);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
+        {
+            Content = new ByteArrayContent(query),
+        };
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/dns-message");
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/dns-message"));
+        using var response = await webClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var responseBytes = await response.Content.ReadAsByteArrayAsync();
+        AssertDnsResponseHasARecord(responseBytes, expectedId: 0x1234, expectedAddress: IPAddress.Parse(CustomRecordAddress));
+
+        var htmlAfterQuery = await webClient.GetStringAsync("/");
+        Assert.Contains("CustomRecord", htmlAfterQuery, StringComparison.Ordinal);
+        Assert.DoesNotContain("Blocked", htmlAfterQuery, StringComparison.Ordinal);
     }
 
     private static byte[] CreateAQuery(string domain, ushort id)
@@ -113,7 +221,7 @@ public sealed class DnsProxyIntegrationTests
 
     private static void AssertDnsResponseHasARecord(byte[] response, ushort expectedId, IPAddress expectedAddress)
     {
-        Assert.True(response.Length >= 12);
+        Assert.InRange(response.Length, 12, int.MaxValue);
 
         var offset = 0;
         var id = ReadUInt16(response, ref offset);
@@ -127,7 +235,7 @@ public sealed class DnsProxyIntegrationTests
         _ = ReadUInt16(response, ref offset); // additionalCount
 
         Assert.Equal(1, questionCount);
-        Assert.True(answerCount >= 1);
+        Assert.InRange(answerCount, 1, ushort.MaxValue);
 
         SkipDomainName(response, ref offset);
         offset += 4; // QTYPE + QCLASS
@@ -141,10 +249,39 @@ public sealed class DnsProxyIntegrationTests
         Assert.Equal(1, recordType);
         Assert.Equal(1, recordClass);
         Assert.Equal(4, rdLength);
-        Assert.True(offset + rdLength <= response.Length);
+        Assert.InRange(offset + rdLength, 0, response.Length);
 
         var address = new IPAddress(response.AsSpan(offset, rdLength));
         Assert.Equal(expectedAddress, address);
+    }
+
+    private static async Task<string> WaitForLoadedFilterRuleAsync(HttpClient webClient)
+    {
+        var timeout = TimeSpan.FromSeconds(5);
+        var stopwatch = Stopwatch.StartNew();
+        string html;
+        do
+        {
+            html = await webClient.GetStringAsync("/");
+            if (!html.Contains("<span class='mono'>LoadedFilterRules</span>: 0", StringComparison.Ordinal))
+            {
+                return html;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+        }
+        while (stopwatch.Elapsed < timeout);
+
+        return html;
+    }
+
+    private sealed class DelegateHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(responseFactory(request));
+        }
     }
 
     private static void WriteDomainName(MemoryStream stream, string domain)

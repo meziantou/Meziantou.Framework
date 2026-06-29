@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Assertions.Analyzer/Meziantou.Framework.Assertions.Analyzer.csproj" />
+    <Project Path="../src/Meziantou.Framework.Assertions.CodeFix/Meziantou.Framework.Assertions.CodeFix.csproj" />
+    <Project Path="../src/Meziantou.Framework.Assertions/Meziantou.Framework.Assertions.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Assertions.Analyzer.Tests/Meziantou.Framework.Assertions.Analyzer.Tests.csproj" />
+  </Folder>
+</Solution>

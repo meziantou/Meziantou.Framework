@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Assertions;
 
-internal readonly struct NotEqualByStructureAssertionError(object? expectedValue, object? actualValue, string? actualExpression, string? expectedExpression, string? message)
+internal readonly struct NotEquivalentAssertionError(object? expectedValue, object? actualValue, string? actualExpression, string? expectedExpression, string? message)
 {
     public string? Message { get; } = message;
     public string? ExpectedExpression { get; } = expectedExpression;

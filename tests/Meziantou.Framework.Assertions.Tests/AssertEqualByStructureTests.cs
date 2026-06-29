@@ -7,14 +7,14 @@ public sealed class AssertEqualByStructureTests
     [Fact]
     public void Null_Success()
     {
-        AssertionsAssert.EqualByStructure(expected: null, actual: null);
+        AssertionsAssert.Equivalent(expected: null, actual: null);
     }
 
     [Fact]
     public void Scalar_Success()
     {
-        AssertionsAssert.EqualByStructure(42, 42L);
-        AssertionsAssert.EqualByStructure("value", "value");
+        AssertionsAssert.Equivalent(42, 42L);
+        AssertionsAssert.Equivalent("value", "value");
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public sealed class AssertEqualByStructureTests
         var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
         var actual = new ActualPerson { Name = "Alice", Age = 42 };
 
-        AssertionsAssert.EqualByStructure(expected, actual);
+        AssertionsAssert.Equivalent(expected, actual);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class AssertEqualByStructureTests
         var expected = new FieldPerson { Name = "Alice", Age = 42 };
         var actual = new ActualPerson { Name = "Alice", Age = 42 };
 
-        AssertionsAssert.EqualByStructure(expected, actual);
+        AssertionsAssert.Equivalent(expected, actual);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public sealed class AssertEqualByStructureTests
         var expected = new PersonWithPrivateState("Alice", "expected secret");
         var actual = new PersonWithPrivateState("Alice", "actual secret");
 
-        AssertionsAssert.EqualByStructure(expected, actual);
+        AssertionsAssert.Equivalent(expected, actual);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class AssertEqualByStructureTests
             Address = new ActualAddress { City = "Paris", ZipCode = 75000L },
         };
 
-        AssertionsAssert.EqualByStructure(expected, actual);
+        AssertionsAssert.Equivalent(expected, actual);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class AssertEqualByStructureTests
         var expected = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2, 3 } };
         var actual = new PersonWithScores { Name = "Alice", Scores = new[] { 1L, 2L, 3L } };
 
-        AssertionsAssert.EqualByStructure(expected, actual);
+        AssertionsAssert.Equivalent(expected, actual);
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public sealed class AssertEqualByStructureTests
         var actual = new Node { Name = "root" };
         actual.Next = actual;
 
-        AssertionsAssert.EqualByStructure(expected, actual);
+        AssertionsAssert.Equivalent(expected, actual);
     }
 
     [Fact]
@@ -174,8 +174,8 @@ public sealed class AssertEqualByStructureTests
         var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
         var actual = new ActualPerson { Name = "Bob", Age = 42 };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualByStructure(expected, actual), """
-            Assert.EqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Path: $.Name
@@ -199,8 +199,8 @@ public sealed class AssertEqualByStructureTests
             Address = new ActualAddress { City = "Paris", ZipCode = 69000 },
         };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualByStructure(expected, actual, "custom message"), """
-            Assert.EqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual, "custom message"), """
+            Assert.Equivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Path: $.Address.ZipCode
@@ -217,8 +217,8 @@ public sealed class AssertEqualByStructureTests
         var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
         var actual = new PersonWithNameOnly { Name = "Alice" };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualByStructure(expected, actual), """
-            Assert.EqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Path: $.Age
@@ -234,8 +234,8 @@ public sealed class AssertEqualByStructureTests
         var expected = new PersonWithNameOnly { Name = "Alice" };
         var actual = new ActualPerson { Name = "Alice", Age = 42 };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualByStructure(expected, actual), """
-            Assert.EqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Path: $.Age
@@ -251,8 +251,8 @@ public sealed class AssertEqualByStructureTests
         var expected = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2, 3 } };
         var actual = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 42, 3 } };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualByStructure(expected, actual), """
-            Assert.EqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Path: $.Scores[1]
@@ -268,8 +268,8 @@ public sealed class AssertEqualByStructureTests
         var expected = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2, 3 } };
         var actual = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2 } };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualByStructure(expected, actual), """
-            Assert.EqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Path: $.Scores[2]
@@ -285,8 +285,8 @@ public sealed class AssertEqualByStructureTests
         var expected = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2 } };
         var actual = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2, 3 } };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualByStructure(expected, actual), """
-            Assert.EqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Path: $.Scores[2]
@@ -302,8 +302,8 @@ public sealed class AssertEqualByStructureTests
         var expected = new NullablePerson { Name = null };
         var actual = new NullablePerson { Name = "Alice" };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualByStructure(expected, actual), """
-            Assert.EqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Path: $.Name
@@ -314,26 +314,41 @@ public sealed class AssertEqualByStructureTests
     }
 
     [Fact]
-    public void NotEqualByStructure_Success()
+    public void NotEquivalent_Success()
     {
         var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
         var actual = new ActualPerson { Name = "Alice", Age = 43 };
 
-        AssertionsAssert.NotEqualByStructure(expected, actual);
+        AssertionsAssert.NotEquivalent(expected, actual);
     }
 
     [Fact]
-    public void NotEqualByStructure_Fails()
+    public void NotEquivalent_Fails()
     {
         var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
         var actual = new ActualPerson { Name = "Alice", Age = 42 };
 
-        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqualByStructure(expected, actual), """
-            Assert.NotEqualByStructure() assertion failed.
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEquivalent(expected, actual), """
+            Assert.NotEquivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Not expected: Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+ExpectedPerson
             Actual:              Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+ActualPerson
+            """);
+    }
+
+    [Fact]
+    public void NotEquivalent_IgnoresCollectionOrderWhenConfigured()
+    {
+        var expected = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2, 3 } };
+        var actual = new PersonWithScores { Name = "Alice", Scores = new[] { 3, 2, 1 } };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEquivalent(expected, actual, new EquivalentOptions { IgnoreCollectionOrder = true }), """
+            Assert.NotEquivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+PersonWithScores
+            Actual:              Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+PersonWithScores
             """);
     }
 

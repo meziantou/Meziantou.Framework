@@ -16,9 +16,8 @@ Assertion helpers for .NET tests.
 - `NotEqual`: Asserts two values are not equal.
 - `EqualUnordered`: Asserts two sequences contain the same values regardless of order.
 - `NotEqualUnordered`: Asserts two sequences differ when compared without ordering.
-- `EqualByStructure`: Asserts two objects are equal by recursively comparing members.
-- `NotEqualByStructure`: Asserts two objects are structurally different.
-- `Equivalent`: Alias of structural equality checks.
+- `Equivalent`: Asserts two objects are equal by recursively comparing members.
+- `NotEquivalent`: Asserts two objects are structurally different.
 - `IsType`: Asserts a value is exactly of the specified type and returns it.
 - `IsNotType`: Asserts a value is not exactly of the specified type.
 - `IsAssignableTo`: Asserts a value is assignable to the specified type and returns it.

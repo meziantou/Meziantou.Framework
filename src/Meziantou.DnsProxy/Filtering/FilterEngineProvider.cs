@@ -18,10 +18,7 @@ internal sealed class FilterEngineProvider
         _options = options;
         _logger = logger;
 
-        var initialRuleSet = new DnsFilterRuleSet();
-        AddRewriteRules(initialRuleSet, options.Value);
-        _engine = new DnsFilterEngine(initialRuleSet);
-        _ruleCount = initialRuleSet.Rules.Count;
+        _engine = new DnsFilterEngine(new DnsFilterRuleSet());
     }
 
     public DnsFilterEngine Engine => Volatile.Read(ref _engine);
@@ -59,51 +56,7 @@ internal sealed class FilterEngineProvider
             }
         }
 
-        AddRewriteRules(ruleSet, options);
-
         Volatile.Write(ref _ruleCount, ruleSet.Rules.Count);
         Volatile.Write(ref _engine, new DnsFilterEngine(ruleSet));
-    }
-
-    private void AddRewriteRules(DnsFilterRuleSet ruleSet, DnsProxyOptions options)
-    {
-        foreach (var rewrite in options.Rewrites)
-        {
-            if (string.IsNullOrWhiteSpace(rewrite.Domain))
-            {
-                continue;
-            }
-
-            if (!TryBuildRewriteValue(rewrite, out var rewriteValue))
-            {
-                _logger.LogWarning("Skipping invalid rewrite rule for domain {Domain}", rewrite.Domain);
-                continue;
-            }
-
-            ruleSet.AddFromList($"||{rewrite.Domain}^$dnsrewrite={rewriteValue}", DnsFilterListFormat.AdBlock);
-        }
-    }
-
-    private static bool TryBuildRewriteValue(RewriteRuleOption rewrite, out string rewriteValue)
-    {
-        rewriteValue = string.Empty;
-        if (string.IsNullOrWhiteSpace(rewrite.Value))
-        {
-            return false;
-        }
-
-        if (Enum.TryParse<DnsFilterRewriteResponseCode>(rewrite.Value, ignoreCase: true, out _))
-        {
-            rewriteValue = rewrite.Value;
-            return true;
-        }
-
-        if (!Enum.TryParse<DnsFilterQueryType>(rewrite.Type, ignoreCase: true, out var rewriteType))
-        {
-            return false;
-        }
-
-        rewriteValue = $"NOERROR;{rewriteType};{rewrite.Value}";
-        return true;
     }
 }

@@ -45,6 +45,12 @@ internal sealed class RequestHistoryEntryBuilder
             DnsARecordData aData => $"{record.Name} A {aData.Address}",
             DnsAaaaRecordData aaaaData => $"{record.Name} AAAA {aaaaData.Address}",
             DnsCnameRecordData cnameData => $"{record.Name} CNAME {cnameData.CanonicalName}",
+            DnsPtrRecordData ptrData => $"{record.Name} PTR {ptrData.DomainName}",
+            DnsNsRecordData nsData => $"{record.Name} NS {nsData.NameServer}",
+            DnsTxtRecordData txtData => $"{record.Name} TXT {string.Join(" ", txtData.Text)}",
+            DnsMxRecordData mxData => $"{record.Name} MX {mxData.Preference} {mxData.Exchange}",
+            DnsSrvRecordData srvData => $"{record.Name} SRV {srvData.Priority} {srvData.Weight} {srvData.Port} {srvData.Target}",
+            DnsCaaRecordData caaData => $"{record.Name} CAA {caaData.Flags} {caaData.Tag} {caaData.Value}",
             null => $"{record.Name} {record.Type} <empty>",
             _ => $"{record.Name} {record.Type}",
         };

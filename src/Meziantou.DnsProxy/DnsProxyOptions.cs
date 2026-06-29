@@ -64,5 +64,5 @@ internal sealed class DnsProxyOptions
         new FilterListOption { Url = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", Format = "Hosts" },
     ];
 
-    public List<RewriteRuleOption> Rewrites { get; set; } = [];
+    public List<CustomDnsRecordOption> CustomRecords { get; set; } = [];
 }

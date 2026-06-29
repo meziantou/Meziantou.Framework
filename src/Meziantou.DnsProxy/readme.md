@@ -3,12 +3,12 @@
 This project provides a DNS proxy service built with:
 
 - `Meziantou.Framework.DnsServer` to accept queries from clients
-- `Meziantou.Framework.DnsFilter` to apply filter lists and rewrites
+- `Meziantou.Framework.DnsFilter` to apply filter lists
 - `Meziantou.Framework.DnsClient` to forward queries to multiple upstream DNS servers
 
 Pipeline:
 
-`client -> filter -> forward to remotes (fastest) -> response to client`
+`client -> custom records -> filter -> cache/forward to remotes (fastest) -> response to client`
 
 Default configuration:
 
@@ -24,6 +24,7 @@ Default configuration:
 - Default filter lists:
   - AdGuard DNS filter (`https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt`)
   - StevenBlack hosts (`https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts`)
+- Custom DNS records: `localhost A 127.0.0.1` and `localhost AAAA ::1`
 - Remote DNS servers: Cloudflare H3, NextDNS DoQ, Quad9 DoQ, Cloudflare DoH, NextDNS DoH, and Quad9 DoH
 - In-memory diagnostics history size: `10000` entries
 
@@ -58,5 +59,22 @@ Parallel instances:
   - `DnsProxy__NegativeCacheDuration`
   - `DnsProxy__MaximumCacheDuration`
   - `DnsProxy__DnssecValidationMode`
+  - `DnsProxy__CustomRecords__0__Domain`
+  - `DnsProxy__CustomRecords__0__Type`
+  - `DnsProxy__CustomRecords__0__Value`
   - `DnsProxy__BootstrapDnsServers__0`
   - `DnsProxy__Upstreams__0__Url`
+
+Custom records:
+
+- Custom records are answered before filtering, cache, and upstream forwarding.
+- Block lists and temporary filtering pauses do not affect custom records.
+- Use `Value` for one answer or `Values` for multiple answers of the same type.
+- Supported formats:
+  - `A`: `192.168.1.11`
+  - `AAAA`: `::1`
+  - `CNAME`, `PTR`, `NS`: domain name
+  - `TXT`: text
+  - `MX`: `10 mail.sample.local`
+  - `SRV`: `10 5 443 service.sample.local`
+  - `CAA`: `0 issue letsencrypt.org`

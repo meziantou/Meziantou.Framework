@@ -81,22 +81,22 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         }
 
         if (conditionOperation is IIsTypeOperation isTypeOperation &&
-            TryGetIsTypeOperationTypeSyntax(isTypeOperation, out var isTypeOperationTypeSyntax))
+            TryGetIsTypeOperationType(isTypeOperation, out var isTypeOperationType))
         {
             var assertionMethodName = conditionExpectedToBeFalse ? IsNotAssignableToAssertionMethodName : IsAssignableToAssertionMethodName;
-            match = new AssignableTypeCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isTypeOperation.ValueOperand), isTypeOperationTypeSyntax, assertionMethodName);
+            match = new AssignableTypeCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isTypeOperation.ValueOperand), isTypeOperationType, assertionMethodName);
             return true;
         }
 
         if (conditionOperation is not IIsPatternOperation isPatternOperation ||
-            !TryGetTypePattern(isPatternOperation.Pattern, out var typeSyntax, out var isNegated))
+            !TryGetTypePattern(isPatternOperation.Pattern, out var type, out var isNegated))
         {
             match = default;
             return false;
         }
 
         var patternAssertionMethodName = conditionExpectedToBeFalse == isNegated ? IsAssignableToAssertionMethodName : IsNotAssignableToAssertionMethodName;
-        match = new AssignableTypeCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), typeSyntax, patternAssertionMethodName);
+        match = new AssignableTypeCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), type, patternAssertionMethodName);
         return true;
     }
 
@@ -251,46 +251,39 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         };
     }
 
-    private static bool TryGetTypePattern(IPatternOperation pattern, out TypeSyntax typeSyntax, out bool isNegated)
+    private static bool TryGetTypePattern(IPatternOperation pattern, out ITypeSymbol type, out bool isNegated)
     {
-        if (pattern.Syntax is TypePatternSyntax { Type: var directTypeSyntax })
+        if (pattern is ITypePatternOperation { MatchedType: { } directType })
         {
-            typeSyntax = directTypeSyntax;
+            type = directType;
             isNegated = false;
             return true;
         }
 
-        if (pattern.Syntax is UnaryPatternSyntax
+        if (pattern is INegatedPatternOperation
             {
-                OperatorToken.RawKind: (int)SyntaxKind.NotKeyword,
-                Pattern: TypePatternSyntax { Type: var negatedTypeSyntax },
+                Pattern: ITypePatternOperation { MatchedType: { } negatedType },
             })
         {
-            typeSyntax = negatedTypeSyntax;
+            type = negatedType;
             isNegated = true;
             return true;
         }
 
-        typeSyntax = null!;
+        type = null!;
         isNegated = false;
         return false;
     }
 
-    private static bool TryGetIsTypeOperationTypeSyntax(IIsTypeOperation isTypeOperation, out TypeSyntax typeSyntax)
+    private static bool TryGetIsTypeOperationType(IIsTypeOperation isTypeOperation, out ITypeSymbol type)
     {
-        if (isTypeOperation.Syntax is BinaryExpressionSyntax { Right: TypeSyntax rightTypeSyntax })
-        {
-            typeSyntax = rightTypeSyntax;
-            return true;
-        }
-
         if (isTypeOperation.TypeOperand is not null)
         {
-            typeSyntax = SyntaxFactory.ParseTypeName(isTypeOperation.TypeOperand.ToDisplayString());
+            type = isTypeOperation.TypeOperand;
             return true;
         }
 
-        typeSyntax = null!;
+        type = null!;
         return false;
     }
 
@@ -298,7 +291,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
 
     internal readonly record struct NullNotNullValueTypeMatch(IOperation ActualOperation, ITypeSymbol ValueType, string AssertionMethodName);
 
-    internal readonly record struct AssignableTypeCheckMatch(IOperation ActualOperation, TypeSyntax TypeSyntax, string AssertionMethodName);
+    internal readonly record struct AssignableTypeCheckMatch(IOperation ActualOperation, ITypeSymbol Type, string AssertionMethodName);
 
     internal readonly record struct SameNotSameValueTypeMatch(IOperation ExpectedOperation, IOperation ActualOperation, string AssertionMethodName);
 }

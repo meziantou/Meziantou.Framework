@@ -164,8 +164,9 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
             invocationExpression.ArgumentList.Arguments.Count == 1 &&
             TryGetExpressionSyntax(assignableTypeCheckMatch.ActualOperation, out var actualAssignableExpression))
         {
+            var assignableTypeSyntax = SyntaxFactory.ParseTypeName(assignableTypeCheckMatch.Type.ToMinimalDisplayString(semanticModel, invocationExpression.SpanStart));
             fixedInvocation = invocationExpression
-                .WithExpression(ReplaceMethodNameWithTypeArgument(invocationExpression.Expression, assignableTypeCheckMatch.AssertionMethodName, assignableTypeCheckMatch.TypeSyntax))
+                .WithExpression(ReplaceMethodNameWithTypeArgument(invocationExpression.Expression, assignableTypeCheckMatch.AssertionMethodName, assignableTypeSyntax))
                 .WithArgumentList(SyntaxFactory.ArgumentList([SyntaxFactory.Argument(actualAssignableExpression.WithoutTrivia())]));
             return true;
         }

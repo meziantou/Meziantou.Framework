@@ -14,4 +14,13 @@ public partial class Assert
 
         throw new AssertionException(ErrorFormatter.Format(new NullAssertionError(actual, actualExpression)));
     }
+
+    public static void Null<T>(T? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+        where T : struct
+    {
+        if (!actual.HasValue)
+            return;
+
+        throw new AssertionException(ErrorFormatter.Format(new NullAssertionError(actual, actualExpression)));
+    }
 }

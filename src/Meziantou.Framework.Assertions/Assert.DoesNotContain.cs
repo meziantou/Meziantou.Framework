@@ -118,16 +118,12 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanValueAssertionError<char, char>(nameof(DoesNotContain), "Not expected", expected, actual, actualExpression, expectedExpression, message: null)));
     }
 
-    public static void DoesNotContain(string expected, string? actual, bool ignoreCase, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
-    {
-        DoesNotContain(expected, actual, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal, actualExpression, expectedExpression);
-    }
-
-    public static void DoesNotContain(string expected, string? actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain(string expected, string? actual, bool ignoreCase = false, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
             return;
 
+        var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (!actual.Contains(expected, comparison))
             return;
 

@@ -101,19 +101,9 @@ public partial class Assert
     /// <param name="ignoreCase">When <see langword="true"/>, the comparison ignores casing (OrdinalIgnoreCase); otherwise, it is case-sensitive (Ordinal).</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith(string expected, [NotNull] string? actual, bool ignoreCase, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void StartsWith(string expected, [NotNull] string? actual, bool ignoreCase = false, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        StartsWith(expected, actual, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal, actualExpression, expectedExpression);
-    }
-
-    /// <summary>Asserts that a string starts with the specified prefix.</summary>
-    /// <param name="expected">The prefix expected at the start of <paramref name="actual"/>.</param>
-    /// <param name="actual">The string to inspect.</param>
-    /// <param name="comparison">The comparison used to compare characters.</param>
-    /// <param name="actualExpression">The expression that produced the actual value.</param>
-    /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith(string expected, [NotNull] string? actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
-    {
+        var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (actual is null)
         {
             throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(StartsWith), "Expected prefix", expected, comparison, actualExpression, expectedExpression)));

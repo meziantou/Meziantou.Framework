@@ -9,6 +9,8 @@ namespace Meziantou.Framework.DnsClient.Internal;
 
 internal static class DnssecCanonicalizer
 {
+    public const ushort MaxNsec3Iterations = 100;
+
     public static string NormalizeName(string name)
     {
         if (string.IsNullOrEmpty(name) || name is ".")
@@ -133,7 +135,7 @@ internal static class DnssecCanonicalizer
 
     public static byte[] ComputeNsec3Hash(string name, DnsNsec3Record record)
     {
-        if (record.HashAlgorithm is not 1)
+        if (record.HashAlgorithm is not 1 || record.Iterations > MaxNsec3Iterations)
             return [];
 
         var owner = GetCanonicalDomainNameBytes(name);
@@ -142,13 +144,13 @@ internal static class DnssecCanonicalizer
         record.Salt.CopyTo(buffer.AsSpan(owner.Length));
 #pragma warning disable CA5350 // NSEC3 hash algorithm 1 is SHA-1 by specification.
         var hash = SHA1.HashData(buffer);
+        var iterationBuffer = new byte[hash.Length + record.Salt.Length];
 
         for (var i = 0; i < record.Iterations; i++)
         {
-            buffer = new byte[hash.Length + record.Salt.Length];
-            hash.CopyTo(buffer);
-            record.Salt.CopyTo(buffer.AsSpan(hash.Length));
-            hash = SHA1.HashData(buffer);
+            hash.CopyTo(iterationBuffer);
+            record.Salt.CopyTo(iterationBuffer.AsSpan(hash.Length));
+            hash = SHA1.HashData(iterationBuffer);
         }
 #pragma warning restore CA5350
 
@@ -202,7 +204,7 @@ internal static class DnssecCanonicalizer
 
         while (leftIndex >= 0 && rightIndex >= 0)
         {
-            var comparison = string.CompareOrdinal(leftLabels[leftIndex], rightLabels[rightIndex]);
+            var comparison = CompareCanonicalLabels(leftLabels[leftIndex], rightLabels[rightIndex]);
             if (comparison != 0)
                 return comparison;
 
@@ -214,6 +216,22 @@ internal static class DnssecCanonicalizer
             return 0;
 
         return leftIndex < rightIndex ? -1 : 1;
+    }
+
+    public static bool IsAncestorOrEqual(string ancestorName, string name)
+    {
+        var ancestorLabels = GetLabels(ancestorName);
+        var labels = GetLabels(name);
+        if (ancestorLabels.Length > labels.Length)
+            return false;
+
+        for (var i = 1; i <= ancestorLabels.Length; i++)
+        {
+            if (CompareCanonicalLabels(ancestorLabels[^i], labels[^i]) != 0)
+                return false;
+        }
+
+        return true;
     }
 
     private static byte[] GetCanonicalRecordData(DnsRecord record, DnsRrsigRecord signature)
@@ -487,6 +505,13 @@ internal static class DnssecCanonicalizer
     {
         var normalized = NormalizeName(name);
         return normalized.Length is 0 ? [] : normalized.Split('.');
+    }
+
+    private static int CompareCanonicalLabels(string left, string right)
+    {
+        var leftBytes = Encoding.ASCII.GetBytes(left.ToLowerInvariant());
+        var rightBytes = Encoding.ASCII.GetBytes(right.ToLowerInvariant());
+        return leftBytes.AsSpan().SequenceCompareTo(rightBytes);
     }
 
     private sealed class ByteArrayComparer : IComparer<byte[]>

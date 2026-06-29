@@ -92,7 +92,7 @@ public sealed class DnsWireFormatTests
 
         var bytes = DnsMessageEncoder.EncodeQuery(query);
 
-        Assert.True(bytes.Length >= 12); // At least header
+        Assert.HasCountGreaterThanOrEqual(12, bytes); // At least header
 
         // Check header ID
         Assert.Equal(0x12, bytes[0]);

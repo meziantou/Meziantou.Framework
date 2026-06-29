@@ -121,7 +121,7 @@ public sealed class DnsClient : IDisposable
         var questionType = message.Questions.Count > 0 ? message.Questions[0].Type.ToString() : "unknown";
         var questionClass = message.Questions.Count > 0 ? message.Questions[0].QueryClass.ToString() : "unknown";
 
-        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.query");
+        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.query", ActivityKind.Client);
         activity?.SetTag("dns.question.name", questionName);
         activity?.SetTag("dns.question.type", questionType);
         activity?.SetTag("dns.question.class", questionClass);

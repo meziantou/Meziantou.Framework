@@ -195,11 +195,12 @@ public partial class Assert
     /// <summary>Asserts that a character span contains the specified substring.</summary>
     /// <param name="expected">The substring expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The span to inspect.</param>
-    /// <param name="comparison">The comparison used to compare characters.</param>
+    /// <param name="ignoreCase">When <see langword="true"/>, the comparison ignores casing (OrdinalIgnoreCase); otherwise, it is case-sensitive (Ordinal).</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void Contains(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, StringComparison comparison = StringComparison.Ordinal, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Contains(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, bool ignoreCase = false, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
+        var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (actual.Contains(expected, comparison))
             return;
 

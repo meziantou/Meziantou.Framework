@@ -46,6 +46,9 @@ public sealed class DiagnosticsPageRendererTests
             PositiveCacheDuration = TimeSpan.FromMinutes(2),
             NegativeCacheDuration = TimeSpan.FromMinutes(3),
             MaximumCacheDuration = TimeSpan.FromMinutes(10),
+            MaxCacheEntries = 123,
+            MaxDnsQueriesPerClientPerMinute = 456,
+            MaxRateLimitClientEntries = 789,
             DnssecValidationMode = DnssecValidationMode.Local,
             Filters = [],
             CustomRecords =
@@ -86,6 +89,7 @@ public sealed class DiagnosticsPageRendererTests
             options,
             filterEngineProvider,
             new FilteringPauseState(TimeProvider.System),
+            new FilteringControlToken(),
             upstreamFactory.GetUpstreams(),
             [historyEntry]);
 
@@ -101,9 +105,13 @@ public sealed class DiagnosticsPageRendererTests
         Assert.Contains("<span class='mono'>PositiveCacheDuration</span>: 00:02:00", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>NegativeCacheDuration</span>: 00:03:00", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>MaximumCacheDuration</span>: 00:10:00", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>MaxCacheEntries</span>: 123", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>MaxDnsQueriesPerClientPerMinute</span>: 456", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>MaxRateLimitClientEntries</span>: 789", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>DnssecValidationMode</span>: Local", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>CustomRecords</span>: sample.local =&gt; A:192.168.1.11", html, StringComparison.Ordinal);
         Assert.Contains("Filtering is enabled.", html, StringComparison.Ordinal);
+        Assert.Contains("name='controlToken'", html, StringComparison.Ordinal);
         Assert.Contains("Disable filtering for 15 minutes", html, StringComparison.Ordinal);
         Assert.Contains("example.com A 1.2.3.4", html, StringComparison.Ordinal);
     }
@@ -129,6 +137,7 @@ public sealed class DiagnosticsPageRendererTests
             options,
             filterEngineProvider,
             filteringPauseState,
+            new FilteringControlToken(),
             [],
             []);
 

@@ -36,6 +36,12 @@ internal sealed class DnsProxyOptions
 
     public TimeSpan MaximumCacheDuration { get; set; } = TimeSpan.FromHours(1);
 
+    public int MaxCacheEntries { get; set; } = 10_000;
+
+    public int MaxDnsQueriesPerClientPerMinute { get; set; } = 600;
+
+    public int MaxRateLimitClientEntries { get; set; } = 10_000;
+
     public DnssecValidationMode DnssecValidationMode { get; set; }
 
     public List<string> BootstrapDnsServers { get; set; } =

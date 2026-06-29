@@ -23,8 +23,8 @@ internal sealed class RequestHistoryStore
 
     public IReadOnlyList<RequestHistoryEntry> GetSnapshot()
     {
-        return _entries.ToArray()
-            .OrderByDescending(item => item.TimestampUtc)
-            .ToArray();
+        var snapshot = _entries.ToArray();
+        Array.Reverse(snapshot);
+        return snapshot;
     }
 }

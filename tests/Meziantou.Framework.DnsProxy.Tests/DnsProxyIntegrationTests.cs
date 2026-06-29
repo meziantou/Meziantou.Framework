@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
+using Meziantou.DnsProxy.Filtering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -122,7 +123,12 @@ public sealed class DnsProxyIntegrationTests
         var customRecordAddress = IPAddress.Parse(CustomRecordAddress);
         AssertDnsResponseHasARecord(responseBeforePauseBytes, expectedId: 0x1234, expectedAddress: customRecordAddress);
 
-        using var disableContent = new StringContent("");
+        var htmlBeforePause = await webClient.GetStringAsync("/");
+        var controlToken = ExtractControlToken(htmlBeforePause);
+        using var disableContent = new FormUrlEncodedContent(
+        [
+            new KeyValuePair<string, string>(FilteringControlToken.FormFieldName, controlToken),
+        ]);
         using var disableResponse = await webClient.PostAsync("/filtering/disable", disableContent);
         Assert.Equal(HttpStatusCode.Redirect, disableResponse.StatusCode);
         Assert.Equal("/", disableResponse.Headers.Location?.ToString());
@@ -217,6 +223,18 @@ public sealed class DnsProxyIntegrationTests
         WriteUInt16(ms, 1);      // QTYPE=A
         WriteUInt16(ms, 1);      // QCLASS=IN
         return ms.ToArray();
+    }
+
+    private static string ExtractControlToken(string html)
+    {
+        var prefix = $"name='{FilteringControlToken.FormFieldName}' value='";
+        var startIndex = html.IndexOf(prefix, StringComparison.Ordinal);
+        Assert.NotEqual(-1, startIndex);
+        startIndex += prefix.Length;
+        var endIndex = html.IndexOf('\'', startIndex, StringComparison.Ordinal);
+        Assert.NotEqual(-1, endIndex);
+
+        return html[startIndex..endIndex];
     }
 
     private static void AssertDnsResponseHasARecord(byte[] response, ushort expectedId, IPAddress expectedAddress)

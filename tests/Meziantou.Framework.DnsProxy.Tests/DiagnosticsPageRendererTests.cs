@@ -48,7 +48,10 @@ public sealed class DiagnosticsPageRendererTests
             MaximumCacheDuration = TimeSpan.FromMinutes(10),
             DnssecValidationMode = DnssecValidationMode.Local,
             Filters = [],
-            Rewrites = [],
+            CustomRecords =
+            [
+                new CustomDnsRecordOption { Domain = "sample.local", Type = "A", Value = "192.168.1.11" },
+            ],
             Upstreams =
             [
                 new UpstreamServerOption
@@ -99,6 +102,7 @@ public sealed class DiagnosticsPageRendererTests
         Assert.Contains("<span class='mono'>NegativeCacheDuration</span>: 00:03:00", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>MaximumCacheDuration</span>: 00:10:00", html, StringComparison.Ordinal);
         Assert.Contains("<span class='mono'>DnssecValidationMode</span>: Local", html, StringComparison.Ordinal);
+        Assert.Contains("<span class='mono'>CustomRecords</span>: sample.local =&gt; A:192.168.1.11", html, StringComparison.Ordinal);
         Assert.Contains("Filtering is enabled.", html, StringComparison.Ordinal);
         Assert.Contains("Disable filtering for 15 minutes", html, StringComparison.Ordinal);
         Assert.Contains("example.com A 1.2.3.4", html, StringComparison.Ordinal);
@@ -110,7 +114,7 @@ public sealed class DiagnosticsPageRendererTests
         var options = new DnsProxyOptions
         {
             Filters = [],
-            Rewrites = [],
+            CustomRecords = [],
             Upstreams = [],
         };
         var serviceCollection = new ServiceCollection();

@@ -159,7 +159,7 @@ public sealed class DnsProxyIntegrationTests
 
     private static void AssertDnsResponseHasARecord(byte[] response, ushort expectedId, IPAddress expectedAddress)
     {
-        Assert.True(response.Length >= 12);
+        Assert.HasCountGreaterThanOrEqual(12, response);
 
         var offset = 0;
         var id = ReadUInt16(response, ref offset);
@@ -187,7 +187,7 @@ public sealed class DnsProxyIntegrationTests
         Assert.Equal(1, recordType);
         Assert.Equal(1, recordClass);
         Assert.Equal(4, rdLength);
-        Assert.True(offset + rdLength <= response.Length);
+        Assert.HasCountGreaterThanOrEqual(offset + rdLength, response);
 
         var address = new IPAddress(response.AsSpan(offset, rdLength));
         Assert.Equal(expectedAddress, address);
@@ -195,7 +195,7 @@ public sealed class DnsProxyIntegrationTests
 
     private static void AssertDnsResponseDoesNotHaveARecord(byte[] response, ushort expectedId, IPAddress unexpectedAddress)
     {
-        Assert.True(response.Length >= 12);
+        Assert.HasCountGreaterThanOrEqual(12, response);
 
         var offset = 0;
         var id = ReadUInt16(response, ref offset);

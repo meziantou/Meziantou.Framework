@@ -6,7 +6,6 @@ using Meziantou.DnsProxy.History;
 using Meziantou.Framework.DnsFilter;
 using Meziantou.Framework.DnsServer.Handler;
 using Meziantou.Framework.DnsServer.Protocol;
-using Meziantou.Framework.DnsServer.Protocol.Records;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.DnsProxy.Proxy;
@@ -15,16 +14,18 @@ internal sealed class DnsProxyHandler
 {
     private readonly FilterEngineProvider _filterEngineProvider;
     private readonly FilteringPauseState _filteringPauseState;
+    private readonly CustomDnsRecordProvider _customDnsRecordProvider;
     private readonly UpstreamDnsClientFactory _upstreamDnsClientFactory;
     private readonly DnsResponseCache _dnsResponseCache;
     private readonly RequestHistoryStore _requestHistoryStore;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<DnsProxyHandler> _logger;
 
-    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, UpstreamDnsClientFactory upstreamDnsClientFactory, DnsResponseCache dnsResponseCache, RequestHistoryStore requestHistoryStore, TimeProvider timeProvider, ILogger<DnsProxyHandler> logger)
+    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, CustomDnsRecordProvider customDnsRecordProvider, UpstreamDnsClientFactory upstreamDnsClientFactory, DnsResponseCache dnsResponseCache, RequestHistoryStore requestHistoryStore, TimeProvider timeProvider, ILogger<DnsProxyHandler> logger)
     {
         _filterEngineProvider = filterEngineProvider;
         _filteringPauseState = filteringPauseState;
+        _customDnsRecordProvider = customDnsRecordProvider;
         _upstreamDnsClientFactory = upstreamDnsClientFactory;
         _dnsResponseCache = dnsResponseCache;
         _requestHistoryStore = requestHistoryStore;
@@ -50,6 +51,15 @@ internal sealed class DnsProxyHandler
                 Upstream = "-",
             };
 
+            if (_customDnsRecordProvider.TryApply(question, response))
+            {
+                ApplyQueryEdnsOptions(context, response);
+                historyEntryBuilder.Result = "CustomRecord";
+                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
+                _requestHistoryStore.Add(historyEntryBuilder.Build(response));
+                continue;
+            }
+
             if (!_filteringPauseState.IsDisabled)
             {
                 var filterResult = _filterEngineProvider.Engine.Evaluate(
@@ -59,12 +69,6 @@ internal sealed class DnsProxyHandler
                     {
                         Address = context.RemoteEndPoint is IPEndPoint endpoint ? endpoint.Address : null,
                     });
-
-                if (TryApplyRewrite(question, filterResult, response, historyEntryBuilder))
-                {
-                    _requestHistoryStore.Add(historyEntryBuilder.Build(response));
-                    continue;
-                }
 
                 if (filterResult.IsMatched && filterResult.Action == DnsFilterAction.Block)
                 {
@@ -182,64 +186,6 @@ internal sealed class DnsProxyHandler
         return Enum.IsDefined(typeof(DnsFilterQueryType), (ushort)queryType)
             ? (DnsFilterQueryType)queryType
             : DnsFilterQueryType.ANY;
-    }
-
-    private static bool TryApplyRewrite(Meziantou.Framework.DnsServer.Protocol.DnsQuestion question, DnsFilterResult filterResult, DnsMessage response, RequestHistoryEntryBuilder historyEntryBuilder)
-    {
-        if (!filterResult.IsMatched || filterResult.Rewrite is null)
-        {
-            return false;
-        }
-
-        response.ResponseCode = filterResult.Rewrite.ResponseCode switch
-        {
-            DnsFilterRewriteResponseCode.NoError => DnsResponseCode.NoError,
-            DnsFilterRewriteResponseCode.NameError => DnsResponseCode.NameError,
-            DnsFilterRewriteResponseCode.Refused => DnsResponseCode.Refused,
-            _ => DnsResponseCode.ServerFailure,
-        };
-
-        if (filterResult.Rewrite.RecordType is null || string.IsNullOrWhiteSpace(filterResult.Rewrite.Value))
-        {
-            historyEntryBuilder.Result = "RewriteCodeOnly";
-            historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-            return true;
-        }
-
-        var rewriteType = (DnsQueryType)filterResult.Rewrite.RecordType.Value;
-        var rewriteData = CreateRewriteData(rewriteType, filterResult.Rewrite.Value);
-        if (rewriteData is null)
-        {
-            historyEntryBuilder.Result = "RewriteUnsupported";
-            historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-            return true;
-        }
-
-        response.Answers.Add(new DnsResourceRecord
-        {
-            Name = question.Name,
-            Type = rewriteType,
-            Class = DnsQueryClass.IN,
-            TimeToLive = 60,
-            Data = rewriteData,
-        });
-
-        historyEntryBuilder.Result = "Rewritten";
-        historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
-        return true;
-    }
-
-    private static DnsResourceRecordData? CreateRewriteData(DnsQueryType recordType, string value)
-    {
-        return recordType switch
-        {
-            DnsQueryType.A when IPAddress.TryParse(value, out var ipAddress) && ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork
-                => new DnsARecordData { Address = ipAddress },
-            DnsQueryType.AAAA when IPAddress.TryParse(value, out var ipAddress) && ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6
-                => new DnsAaaaRecordData { Address = ipAddress },
-            DnsQueryType.CNAME => new DnsCnameRecordData { CanonicalName = value },
-            _ => null,
-        };
     }
 
     private async Task<ForwardResult> ForwardToFastestUpstreamAsync(Meziantou.Framework.DnsServer.Protocol.DnsQuestion question, CancellationToken cancellationToken)

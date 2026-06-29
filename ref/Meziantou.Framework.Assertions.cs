@@ -179,6 +179,8 @@ namespace Meziantou.Framework.Assertions
         public static System.Threading.Tasks.Task Equal<T>(System.Collections.Generic.IAsyncEnumerable<T> expected, [System.Diagnostics.CodeAnalysis.NotNullIfNotNull("expected")] System.Collections.Generic.IEnumerable<T>? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) => throw null;
         public static void Equal(System.Collections.IEnumerable expected, [System.Diagnostics.CodeAnalysis.NotNullIfNotNull("expected")] System.Collections.IEnumerable? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) { }
         public static void Equal(System.Collections.IEnumerable expected, [System.Diagnostics.CodeAnalysis.NotNullIfNotNull("expected")] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) { }
+        public static void Equivalent(object? expected, object? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) { }
+        public static void Equivalent(object? expected, object? actual, Meziantou.Framework.Assertions.EquivalentOptions? options, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) { }
         public static void EqualByStructure(object? expected, object? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) { }
         public static void EqualUnordered<T>(System.Collections.Generic.IEnumerable<T> expected, [System.Diagnostics.CodeAnalysis.NotNull] System.Collections.Generic.IEnumerable<T>? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) { }
         public static void EqualUnordered<T>(System.Collections.Generic.IEnumerable<T> expected, [System.Diagnostics.CodeAnalysis.NotNull] System.Collections.Generic.IEnumerable<T>? actual, System.Collections.Generic.IEqualityComparer<T>? comparer, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null, [System.Runtime.CompilerServices.CallerArgumentExpression("expected")] string? expectedExpression = null) { }
@@ -250,6 +252,7 @@ namespace Meziantou.Framework.Assertions
         public static void IsNotAssignableTo<T>(object? actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
         public static void IsNotAssignableTo(System.Type expectedType, object? actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
         public static void Null(object? actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
+        public static void Null<T>(T? actual, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) where T : struct { }
         public static Meziantou.Framework.Assertions.RaisedEvent<System.EventArgs> Raise(System.Action<System.EventHandler> attach, System.Action<System.EventHandler> detach, System.Action action, [System.Runtime.CompilerServices.CallerArgumentExpression("action")] string? actionExpression = null) => throw null;
         public static Meziantou.Framework.Assertions.RaisedEvent<TEventArgs> Raise<TEventArgs>(System.Action<System.EventHandler<TEventArgs>> attach, System.Action<System.EventHandler<TEventArgs>> detach, System.Action action, [System.Runtime.CompilerServices.CallerArgumentExpression("action")] string? actionExpression = null) where TEventArgs : System.EventArgs => throw null;
         public static Meziantou.Framework.Assertions.RaisedEvent<System.EventArgs> RaiseAny(System.Action<System.EventHandler> attach, System.Action<System.EventHandler> detach, System.Action action, [System.Runtime.CompilerServices.CallerArgumentExpression("action")] string? actionExpression = null) => throw null;
@@ -310,6 +313,13 @@ namespace Meziantou.Framework.Assertions
     {
         public AssertionException(string? message) { }
         public AssertionException(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class EquivalentOptions
+    {
+        public bool IgnoreCollectionOrder { get => throw null; set { } }
+        public bool IgnoreMemberNameCase { get => throw null; set { } }
+        public bool IgnoreStringCase { get => throw null; set { } }
     }
 
     public sealed class FormatterOptions

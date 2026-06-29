@@ -28,4 +28,20 @@ internal static class AssertionsAnalyzerHelpers
 
         return operation;
     }
+
+    public static bool IsValueType(ITypeSymbol? type)
+    {
+        return type?.IsValueType == true;
+    }
+
+    public static bool IsNonNullableValueType(ITypeSymbol? type)
+    {
+        return type is { IsValueType: true } &&
+               !IsNullableValueType(type);
+    }
+
+    private static bool IsNullableValueType(ITypeSymbol type)
+    {
+        return type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+    }
 }

@@ -28,6 +28,8 @@ internal sealed class DnsProxyOptions
 
     public TimeSpan FilterRefreshInterval { get; set; } = TimeSpan.FromMinutes(30);
 
+    public string BlockListCacheFolderPath { get; set; } = GetDefaultBlockListCacheFolderPath();
+
     public TimeSpan PositiveCacheDuration { get; set; } = TimeSpan.FromMinutes(5);
 
     public TimeSpan NegativeCacheDuration { get; set; } = TimeSpan.FromMinutes(5);
@@ -64,5 +66,16 @@ internal sealed class DnsProxyOptions
         new FilterListOption { Url = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", Format = "Hosts" },
     ];
 
-    public List<RewriteRuleOption> Rewrites { get; set; } = [];
+    public List<CustomDnsRecordOption> CustomRecords { get; set; } = [];
+
+    internal static string GetDefaultBlockListCacheFolderPath()
+    {
+        var localApplicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(localApplicationData))
+        {
+            localApplicationData = AppContext.BaseDirectory;
+        }
+
+        return Path.Combine(localApplicationData, "meziantou", "dnsproxy", "block-lists");
+    }
 }

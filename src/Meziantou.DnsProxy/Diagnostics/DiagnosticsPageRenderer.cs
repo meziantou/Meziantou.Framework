@@ -39,6 +39,8 @@ internal static class DiagnosticsPageRenderer
         stringBuilder.Append("<li><span class='mono'>DnsOverQuicPort</span>: ").Append(HtmlEncode(options.DnsOverQuicPort.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>CertificatePath</span>: ").Append(HtmlEncode(options.CertificatePath ?? string.Empty)).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>FilterRefreshInterval</span>: ").Append(HtmlEncode(options.FilterRefreshInterval.ToString())).Append("</li>");
+        var blockListCacheFolderPath = string.IsNullOrWhiteSpace(options.BlockListCacheFolderPath) ? DnsProxyOptions.GetDefaultBlockListCacheFolderPath() : options.BlockListCacheFolderPath;
+        stringBuilder.Append("<li><span class='mono'>BlockListCacheFolderPath</span>: ").Append(HtmlEncode(blockListCacheFolderPath)).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>PositiveCacheDuration</span>: ").Append(HtmlEncode(options.PositiveCacheDuration.ToString())).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>NegativeCacheDuration</span>: ").Append(HtmlEncode(options.NegativeCacheDuration.ToString())).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>MaximumCacheDuration</span>: ").Append(HtmlEncode(options.MaximumCacheDuration.ToString())).Append("</li>");
@@ -46,7 +48,7 @@ internal static class DiagnosticsPageRenderer
         stringBuilder.Append("<li><span class='mono'>DiagnosticsHistoryCapacity</span>: ").Append(HtmlEncode(options.DiagnosticsHistoryCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>Upstreams</span>: ").Append(HtmlEncode(string.Join(", ", upstreams.Select(u => u.DisplayName)))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>FilterLists</span>: ").Append(HtmlEncode(string.Join(", ", options.Filters.Select(f => f.Url)))).Append("</li>");
-        stringBuilder.Append("<li><span class='mono'>Rewrites</span>: ").Append(HtmlEncode(string.Join(", ", options.Rewrites.Select(r => $"{r.Domain} => {r.Type}:{r.Value}")))).Append("</li>");
+        stringBuilder.Append("<li><span class='mono'>CustomRecords</span>: ").Append(HtmlEncode(string.Join(", ", options.CustomRecords.Select(r => $"{r.Domain} => {r.Type}:{FormatCustomRecordValues(r)}")))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>LoadedFilterRules</span>: ").Append(HtmlEncode(filters.RuleCount.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("</ul>");
         stringBuilder.Append("<h2>Filtering</h2>");
@@ -105,6 +107,18 @@ internal static class DiagnosticsPageRenderer
             </html>
             """);
         return stringBuilder.ToString();
+    }
+
+    private static string FormatCustomRecordValues(CustomDnsRecordOption option)
+    {
+        var values = new List<string>();
+        if (!string.IsNullOrWhiteSpace(option.Value))
+        {
+            values.Add(option.Value);
+        }
+
+        values.AddRange(option.Values.Where(value => !string.IsNullOrWhiteSpace(value)));
+        return string.Join(", ", values);
     }
 
     private static string HtmlEncode(string value) => System.Net.WebUtility.HtmlEncode(value);

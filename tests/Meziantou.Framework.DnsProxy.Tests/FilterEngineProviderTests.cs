@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Filtering;
+using Meziantou.Framework;
 using Meziantou.Framework.DnsFilter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,16 +14,11 @@ namespace Meziantou.Framework.DnsProxy.Tests;
 public sealed class FilterEngineProviderTests
 {
     [Fact]
-    public async Task RefreshAsync_CreatesRewriteRules()
+    public async Task RefreshAsync_WithNoFilters_KeepsRuleSetEmpty()
     {
         var options = Options.Create(new DnsProxyOptions
         {
             Filters = [],
-            Rewrites =
-            [
-                new RewriteRuleOption { Domain = "example.com", Type = "A", Value = "127.0.0.1" },
-                new RewriteRuleOption { Domain = "v6.example.com", Type = "AAAA", Value = "::1" },
-            ],
         });
 
         using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK));
@@ -30,22 +26,18 @@ public sealed class FilterEngineProviderTests
         var provider = new FilterEngineProvider(factory, options, NullLogger<FilterEngineProvider>.Instance);
         await provider.RefreshAsync(CancellationToken.None);
 
-        var resultA = provider.Engine.Evaluate("example.com");
-        Assert.True(resultA.IsMatched);
-        Assert.NotNull(resultA.Rewrite);
-        Assert.Equal("127.0.0.1", resultA.Rewrite!.Value);
-
-        var resultAaaa = provider.Engine.Evaluate("v6.example.com", DnsFilterQueryType.AAAA);
-        Assert.True(resultAaaa.IsMatched);
-        Assert.NotNull(resultAaaa.Rewrite);
-        Assert.Equal("::1", resultAaaa.Rewrite!.Value);
+        var result = provider.Engine.Evaluate("example.com", DnsFilterQueryType.A);
+        Assert.False(result.IsMatched);
+        Assert.Equal(0, provider.RuleCount);
     }
 
     [Fact]
     public async Task RefreshAsync_LoadsRemoteFiltersWithoutBlockingCalls()
     {
+        using var cacheDirectory = TemporaryDirectory.Create();
         var options = Options.Create(new DnsProxyOptions
         {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
             Filters =
             [
                 new FilterListOption
@@ -54,7 +46,6 @@ public sealed class FilterEngineProviderTests
                     Format = nameof(DnsFilterListFormat.AdBlock),
                 },
             ],
-            Rewrites = [],
         });
 
         using var serviceProvider = CreateServiceProvider(request =>
@@ -82,8 +73,10 @@ public sealed class FilterEngineProviderTests
     [Fact]
     public async Task RefreshAsync_EmitsActivitiesWhenLoadingRemoteFilters()
     {
+        using var cacheDirectory = TemporaryDirectory.Create();
         var options = Options.Create(new DnsProxyOptions
         {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
             Filters =
             [
                 new FilterListOption
@@ -92,7 +85,6 @@ public sealed class FilterEngineProviderTests
                     Format = nameof(DnsFilterListFormat.AdBlock),
                 },
             ],
-            Rewrites = [],
         });
 
         var activities = new ConcurrentQueue<Activity>();
@@ -128,10 +120,12 @@ public sealed class FilterEngineProviderTests
     }
 
     [Fact]
-    public async Task RefreshAsync_WhenCanceled_ThrowsOperationCanceledException()
+    public async Task RefreshAsync_CachesRemoteFiltersAndLoadsCachedFiltersOnStartup()
     {
+        using var cacheDirectory = TemporaryDirectory.Create();
         var options = Options.Create(new DnsProxyOptions
         {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
             Filters =
             [
                 new FilterListOption
@@ -140,7 +134,56 @@ public sealed class FilterEngineProviderTests
                     Format = nameof(DnsFilterListFormat.AdBlock),
                 },
             ],
-            Rewrites = [],
+        });
+
+        using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("||cached.example.com^"),
+        });
+        var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+        var provider = new FilterEngineProvider(
+            factory,
+            options,
+            NullLogger<FilterEngineProvider>.Instance);
+
+        await provider.RefreshAsync(CancellationToken.None);
+
+        using var cachedServiceProvider = CreateServiceProvider(_ => throw new InvalidOperationException("Remote refresh failed."));
+        var cachedFactory = cachedServiceProvider.GetRequiredService<IHttpClientFactory>();
+
+        var cachedProvider = new FilterEngineProvider(
+            cachedFactory,
+            options,
+            NullLogger<FilterEngineProvider>.Instance);
+
+        var result = cachedProvider.Engine.Evaluate("cached.example.com");
+        Assert.True(result.IsMatched);
+        Assert.Equal(1, cachedProvider.RuleCount);
+        Assert.Single(Directory.EnumerateFiles(cacheDirectory.FullPath, "*.txt"));
+
+        await cachedProvider.RefreshAsync(CancellationToken.None);
+
+        result = cachedProvider.Engine.Evaluate("cached.example.com");
+        Assert.True(result.IsMatched);
+        Assert.Equal(1, cachedProvider.RuleCount);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_WhenCanceled_ThrowsOperationCanceledException()
+    {
+        using var cacheDirectory = TemporaryDirectory.Create();
+        var options = Options.Create(new DnsProxyOptions
+        {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
+            Filters =
+            [
+                new FilterListOption
+                {
+                    Url = "https://filters.example/list.txt",
+                    Format = nameof(DnsFilterListFormat.AdBlock),
+                },
+            ],
         });
 
         using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK)
@@ -163,9 +206,11 @@ public sealed class FilterEngineProviderTests
     [Fact]
     public async Task FilterEngineRefreshService_RefreshesAtConfiguredInterval()
     {
+        using var cacheDirectory = TemporaryDirectory.Create();
         var requestCount = 0;
         var options = Options.Create(new DnsProxyOptions
         {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
             FilterRefreshInterval = TimeSpan.FromMilliseconds(100),
             Filters =
             [
@@ -175,7 +220,6 @@ public sealed class FilterEngineProviderTests
                     Format = nameof(DnsFilterListFormat.AdBlock),
                 },
             ],
-            Rewrites = [],
         });
 
         using var serviceProvider = CreateServiceProvider(_ =>

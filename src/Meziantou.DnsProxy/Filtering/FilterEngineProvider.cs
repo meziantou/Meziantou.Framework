@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using Meziantou.Framework.DnsFilter;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,7 +22,7 @@ internal sealed class FilterEngineProvider
         _logger = logger;
 
         var initialRuleSet = new DnsFilterRuleSet();
-        AddRewriteRules(initialRuleSet, options.Value);
+        AddCachedFilterLists(initialRuleSet, options.Value);
         _engine = new DnsFilterEngine(initialRuleSet);
         _ruleCount = initialRuleSet.Rules.Count;
     }
@@ -47,7 +49,7 @@ internal sealed class FilterEngineProvider
             }
 
             filterCount++;
-            if (await TryLoadFilterAsync(httpClient, ruleSet, filter, cancellationToken).ConfigureAwait(false))
+            if (await TryLoadFilterAsync(httpClient, ruleSet, options, filter, cancellationToken).ConfigureAwait(false))
             {
                 loadedFilterCount++;
             }
@@ -56,8 +58,6 @@ internal sealed class FilterEngineProvider
                 failedFilterCount++;
             }
         }
-
-        AddRewriteRules(ruleSet, options);
 
         activity?.SetTag("dns_proxy.filter.count", filterCount);
         activity?.SetTag("dns_proxy.filter.loaded_count", loadedFilterCount);
@@ -77,7 +77,7 @@ internal sealed class FilterEngineProvider
         Volatile.Write(ref _engine, new DnsFilterEngine(ruleSet));
     }
 
-    private async Task<bool> TryLoadFilterAsync(HttpClient httpClient, DnsFilterRuleSet ruleSet, FilterListOption filter, CancellationToken cancellationToken)
+    private async Task<bool> TryLoadFilterAsync(HttpClient httpClient, DnsFilterRuleSet ruleSet, DnsProxyOptions options, FilterListOption filter, CancellationToken cancellationToken)
     {
         using var activity = DnsProxyTelemetry.ActivitySource.StartActivity("dns_proxy.filters.load");
         activity?.SetTag("dns_proxy.filter.url", filter.Url);
@@ -92,6 +92,7 @@ internal sealed class FilterEngineProvider
             var ruleCount = ruleSet.Rules.Count;
             var listText = await httpClient.GetStringAsync(filter.Url, cancellationToken).ConfigureAwait(false);
             ruleSet.AddFromList(listText, format);
+            await WriteFilterListToCacheAsync(options, filter, listText, cancellationToken).ConfigureAwait(false);
             activity?.SetTag("dns_proxy.filter.rule_count", ruleSet.Rules.Count - ruleCount);
             activity?.SetStatus(ActivityStatusCode.Ok);
 
@@ -103,6 +104,7 @@ internal sealed class FilterEngineProvider
         }
         catch (Exception ex)
         {
+            AddCachedFilterList(ruleSet, options, filter);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             _logger.LogWarning(ex, "Cannot load filter list {FilterUrl}", filter.Url);
 
@@ -110,45 +112,96 @@ internal sealed class FilterEngineProvider
         }
     }
 
-    private void AddRewriteRules(DnsFilterRuleSet ruleSet, DnsProxyOptions options)
+    private void AddCachedFilterLists(DnsFilterRuleSet ruleSet, DnsProxyOptions options)
     {
-        foreach (var rewrite in options.Rewrites)
+        foreach (var filter in options.Filters)
         {
-            if (string.IsNullOrWhiteSpace(rewrite.Domain))
+            if (string.IsNullOrWhiteSpace(filter.Url))
             {
                 continue;
             }
 
-            if (!TryBuildRewriteValue(rewrite, out var rewriteValue))
-            {
-                _logger.LogWarning("Skipping invalid rewrite rule for domain {Domain}", rewrite.Domain);
-                continue;
-            }
-
-            ruleSet.AddFromList($"||{rewrite.Domain}^$dnsrewrite={rewriteValue}", DnsFilterListFormat.AdBlock);
+            AddCachedFilterList(ruleSet, options, filter);
         }
     }
 
-    private static bool TryBuildRewriteValue(RewriteRuleOption rewrite, out string rewriteValue)
+    private void AddCachedFilterList(DnsFilterRuleSet ruleSet, DnsProxyOptions options, FilterListOption filter)
     {
-        rewriteValue = string.Empty;
-        if (string.IsNullOrWhiteSpace(rewrite.Value))
+        try
         {
-            return false;
-        }
+            var cacheFilePath = GetCacheFilePath(options, filter);
+            if (!File.Exists(cacheFilePath))
+            {
+                return;
+            }
 
-        if (Enum.TryParse<DnsFilterRewriteResponseCode>(rewrite.Value, ignoreCase: true, out _))
+            var listText = File.ReadAllText(cacheFilePath);
+            AddFilterList(ruleSet, filter, listText);
+        }
+        catch (Exception ex)
         {
-            rewriteValue = rewrite.Value;
-            return true;
+            _logger.LogWarning(ex, "Cannot load cached filter list {FilterUrl}", filter.Url);
         }
+    }
 
-        if (!Enum.TryParse<DnsFilterQueryType>(rewrite.Type, ignoreCase: true, out var rewriteType))
+    private async Task WriteFilterListToCacheAsync(DnsProxyOptions options, FilterListOption filter, string listText, CancellationToken cancellationToken)
+    {
+        string? temporaryFilePath = null;
+        try
         {
-            return false;
-        }
+            var cacheFilePath = GetCacheFilePath(options, filter);
+            var cacheDirectory = Path.GetDirectoryName(cacheFilePath);
+            if (string.IsNullOrWhiteSpace(cacheDirectory))
+            {
+                return;
+            }
 
-        rewriteValue = $"NOERROR;{rewriteType};{rewrite.Value}";
-        return true;
+            Directory.CreateDirectory(cacheDirectory);
+
+            temporaryFilePath = Path.Combine(cacheDirectory, Path.GetRandomFileName());
+            await File.WriteAllTextAsync(temporaryFilePath, listText, cancellationToken).ConfigureAwait(false);
+            File.Move(temporaryFilePath, cacheFilePath, overwrite: true);
+            temporaryFilePath = null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cannot cache filter list {FilterUrl}", filter.Url);
+        }
+        finally
+        {
+            if (temporaryFilePath is not null)
+            {
+                try
+                {
+                    File.Delete(temporaryFilePath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Cannot delete temporary cached filter list {TemporaryFilePath}", temporaryFilePath);
+                }
+            }
+        }
+    }
+
+    private static void AddFilterList(DnsFilterRuleSet ruleSet, FilterListOption filter, string listText)
+    {
+        var format = Enum.TryParse<DnsFilterListFormat>(filter.Format, ignoreCase: true, out var parsedFormat)
+            ? parsedFormat
+            : DnsFilterListFormat.AutoDetect;
+        ruleSet.AddFromList(listText, format);
+    }
+
+    private static string GetCacheFilePath(DnsProxyOptions options, FilterListOption filter)
+    {
+        var cacheFolderPath = string.IsNullOrWhiteSpace(options.BlockListCacheFolderPath)
+            ? DnsProxyOptions.GetDefaultBlockListCacheFolderPath()
+            : options.BlockListCacheFolderPath;
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(filter.Url))).ToLowerInvariant();
+
+        return Path.Combine(cacheFolderPath, hash + ".txt");
     }
 }

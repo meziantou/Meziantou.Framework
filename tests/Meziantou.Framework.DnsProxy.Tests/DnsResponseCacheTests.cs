@@ -92,7 +92,7 @@ public sealed class DnsResponseCacheTests
     }
 
     [Fact]
-    public void TryGet_RewritesTtlToRemainingLifetime()
+    public void TryGet_UpdatesTtlToRemainingLifetime()
     {
         var timeProvider = new ManualTimeProvider();
         var cache = CreateCache(timeProvider);

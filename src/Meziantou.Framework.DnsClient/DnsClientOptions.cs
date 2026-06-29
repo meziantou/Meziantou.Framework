@@ -28,6 +28,12 @@ public sealed class DnsClientOptions
     /// <summary>Gets or sets the time provider used for DNSSEC signature lifetime checks.</summary>
     public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
+    /// <summary>Gets or sets the HTTP version used for DNS over HTTPS requests. Default is HTTP/3.</summary>
+    public Version HttpVersion { get; set; } = System.Net.HttpVersion.Version30;
+
+    /// <summary>Gets or sets the HTTP version policy used for DNS over HTTPS requests. Default is <see cref="HttpVersionPolicy.RequestVersionOrLower"/>.</summary>
+    public HttpVersionPolicy HttpVersionPolicy { get; set; } = HttpVersionPolicy.RequestVersionOrLower;
+
     /// <summary>Gets or sets the HTTP message handler for DNS over HTTPS. When <see langword="null"/>, a default handler is used.</summary>
     public HttpMessageHandler? HttpHandler { get; set; }
 

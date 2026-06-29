@@ -71,6 +71,93 @@ public sealed class AssertEqualByStructureTests
     }
 
     [Fact]
+    public void Equivalent_Success()
+    {
+        var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
+        var actual = new ActualPerson { Name = "Alice", Age = 42 };
+
+        AssertionsAssert.Equivalent(expected, actual);
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenCollectionOrderDiffersByDefault()
+    {
+        var expected = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2, 3 } };
+        var actual = new PersonWithScores { Name = "Alice", Scores = new[] { 3, 2, 1 } };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $.Scores[0]
+            Reason: Values differ.
+            Expected: 1
+            Actual:   3
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_IgnoresCollectionOrderWhenConfigured()
+    {
+        var expected = new PersonWithScores { Name = "Alice", Scores = new[] { 1, 2, 3 } };
+        var actual = new PersonWithScores { Name = "Alice", Scores = new[] { 3, 2, 1 } };
+
+        AssertionsAssert.Equivalent(expected, actual, new EquivalentOptions { IgnoreCollectionOrder = true });
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenMemberNameCaseDiffersByDefault()
+    {
+        var expected = new ZipCodeContainerExpected { ZipCode = 75000 };
+        var actual = new ZipCodeContainerActual { Zipcode = 75000 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $.ZipCode
+            Reason: Actual member is missing.
+            Expected: 75000
+            Actual:   <missing>
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_IgnoresMemberNameCaseWhenConfigured()
+    {
+        var expected = new ZipCodeContainerExpected { ZipCode = 75000 };
+        var actual = new ZipCodeContainerActual { Zipcode = 75000 };
+
+        AssertionsAssert.Equivalent(expected, actual, new EquivalentOptions { IgnoreMemberNameCase = true });
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenStringCaseDiffersByDefault()
+    {
+        var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
+        var actual = new ActualPerson { Name = "alice", Age = 42 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $.Name
+            Reason: Values differ.
+            Expected: "Alice"
+            Actual:   "alice"
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_IgnoresStringCaseWhenConfigured()
+    {
+        var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
+        var actual = new ActualPerson { Name = "alice", Age = 42 };
+
+        AssertionsAssert.Equivalent(expected, actual, new EquivalentOptions { IgnoreStringCase = true });
+    }
+
+    [Fact]
     public void Cycles_Success()
     {
         var expected = new Node { Name = "root" };
@@ -307,6 +394,16 @@ public sealed class AssertEqualByStructureTests
     {
         public string? City { get; set; }
         public long ZipCode { get; set; }
+    }
+
+    private sealed class ZipCodeContainerExpected
+    {
+        public int ZipCode { get; set; }
+    }
+
+    private sealed class ZipCodeContainerActual
+    {
+        public int Zipcode { get; set; }
     }
 
     private sealed class PersonWithScores

@@ -214,7 +214,7 @@ public sealed class PooledMemoryStreamTests
         Assert.Equal(data, stream.ToArray());
 
         var buffer = stream.GetBuffer();
-        Assert.True(buffer.Length >= length);
+        Assert.HasCountGreaterThanOrEqual(length, buffer);
         Assert.Equal(data, buffer.AsSpan(0, length).ToArray());
 
         Assert.True(stream.TryGetBuffer(out var segment));

@@ -12,7 +12,6 @@ public sealed class ImmutableEquatableDictionaryTests
         var empty = ImmutableEquatableDictionary<string, int>.Empty;
 
         Assert.Empty(empty);
-        Assert.Empty(empty);
         Assert.False(empty.ContainsKey("test"));
     }
 
@@ -30,7 +29,6 @@ public sealed class ImmutableEquatableDictionaryTests
     {
         var empty = ImmutableEquatableDictionary.Empty<string, int>();
 
-        Assert.Empty(empty);
         Assert.Empty(empty);
     }
 

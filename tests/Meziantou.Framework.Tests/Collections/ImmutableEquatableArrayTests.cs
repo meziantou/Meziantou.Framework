@@ -170,10 +170,7 @@ public sealed class ImmutableEquatableArrayTests
         var array = ImmutableEquatableArray.Create(new[] { "a", "b", "c" });
         var readOnlyList = (IReadOnlyList<string>)array;
 
-        Assert.HasCount(3, readOnlyList);
-        Assert.Equal("a", readOnlyList[0]);
-        Assert.Equal("b", readOnlyList[1]);
-        Assert.Equal("c", readOnlyList[2]);
+        Assert.Equal(["a", "b", "c"], readOnlyList);
     }
 
     [Fact]

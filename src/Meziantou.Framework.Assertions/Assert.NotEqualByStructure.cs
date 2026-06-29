@@ -6,7 +6,7 @@ public partial class Assert
 {
     public static void NotEqualByStructure(object? expected, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        var failure = GetStructuralDifference(expected, actual, "$", new HashSet<StructuralReferencePair>());
+        var failure = GetStructuralDifference(expected, actual, "$", new HashSet<StructuralReferencePair>(), StructuralComparisonOptions.Create(options: null));
         if (failure is not null)
             return;
 

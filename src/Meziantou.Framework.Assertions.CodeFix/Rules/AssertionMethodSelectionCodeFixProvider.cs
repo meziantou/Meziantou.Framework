@@ -20,6 +20,8 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
         RuleIdentifiers.NotNullWithValueTypeDiagnosticId,
         RuleIdentifiers.SameWithValueTypeDiagnosticId,
         RuleIdentifiers.NotSameWithValueTypeDiagnosticId,
+        RuleIdentifiers.UseIsAssignableToDiagnosticId,
+        RuleIdentifiers.UseIsNotAssignableToDiagnosticId,
     ];
 
     public override FixAllProvider GetFixAllProvider()
@@ -105,6 +107,13 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
             return true;
         }
 
+        if (AssertionMethodSelectionAnalyzerCommon.TryGetAssignableTypeCheckMatch(invocationOperation, assertType, out var assignableTypeCheckMatch) &&
+            invocationExpression.ArgumentList.Arguments.Count == 1)
+        {
+            title = "Use Assert." + assignableTypeCheckMatch.AssertionMethodName;
+            return true;
+        }
+
         title = null!;
         return false;
     }
@@ -148,6 +157,16 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
             invocationExpression.ArgumentList.Arguments.Count == 2)
         {
             fixedInvocation = invocationExpression.WithExpression(ReplaceMethodName(invocationExpression.Expression, sameNotSameValueTypeMatch.AssertionMethodName));
+            return true;
+        }
+
+        if (AssertionMethodSelectionAnalyzerCommon.TryGetAssignableTypeCheckMatch(invocationOperation, assertType, out var assignableTypeCheckMatch) &&
+            invocationExpression.ArgumentList.Arguments.Count == 1 &&
+            TryGetExpressionSyntax(assignableTypeCheckMatch.ActualOperation, out var actualAssignableExpression))
+        {
+            fixedInvocation = invocationExpression
+                .WithExpression(ReplaceMethodNameWithTypeArgument(invocationExpression.Expression, assignableTypeCheckMatch.AssertionMethodName, assignableTypeCheckMatch.TypeSyntax))
+                .WithArgumentList(SyntaxFactory.ArgumentList([SyntaxFactory.Argument(actualAssignableExpression.WithoutTrivia())]));
             return true;
         }
 
@@ -199,8 +218,28 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
         return expression;
     }
 
+    private static ExpressionSyntax ReplaceMethodNameWithTypeArgument(ExpressionSyntax expression, string methodName, TypeSyntax typeArgument)
+    {
+        if (expression is MemberAccessExpressionSyntax memberAccessExpression)
+        {
+            return memberAccessExpression.WithName(CreateGenericName(memberAccessExpression.Name.Identifier, methodName, typeArgument));
+        }
+
+        if (expression is IdentifierNameSyntax identifierName)
+            return CreateGenericName(identifierName.Identifier, methodName, typeArgument);
+
+        return expression;
+    }
+
     private static SyntaxToken CreateIdentifier(SyntaxToken identifier, string text)
     {
         return SyntaxFactory.Identifier(identifier.LeadingTrivia, text, identifier.TrailingTrivia);
+    }
+
+    private static GenericNameSyntax CreateGenericName(SyntaxToken identifier, string methodName, TypeSyntax typeArgument)
+    {
+        return SyntaxFactory.GenericName(
+            CreateIdentifier(identifier, methodName),
+            SyntaxFactory.TypeArgumentList([typeArgument.WithoutTrivia()]));
     }
 }

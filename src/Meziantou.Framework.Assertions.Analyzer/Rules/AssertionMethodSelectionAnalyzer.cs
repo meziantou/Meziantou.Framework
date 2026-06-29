@@ -56,7 +56,23 @@ public sealed class AssertionMethodSelectionAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [UseNullDescriptor, UseNotNullDescriptor, NullWithValueTypeDescriptor, NotNullWithValueTypeDescriptor, SameWithValueTypeDescriptor, NotSameWithValueTypeDescriptor];
+    public static readonly DiagnosticDescriptor UseIsAssignableToDescriptor = new(
+        id: RuleIdentifiers.UseIsAssignableToDiagnosticId,
+        title: "Use Assert.IsAssignableTo for type pattern checks",
+        messageFormat: "Use Assert.IsAssignableTo<T>(value) for readability",
+        category: "Assertions",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor UseIsNotAssignableToDescriptor = new(
+        id: RuleIdentifiers.UseIsNotAssignableToDiagnosticId,
+        title: "Use Assert.IsNotAssignableTo for type pattern checks",
+        messageFormat: "Use Assert.IsNotAssignableTo<T>(value) for readability",
+        category: "Assertions",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [UseNullDescriptor, UseNotNullDescriptor, NullWithValueTypeDescriptor, NotNullWithValueTypeDescriptor, SameWithValueTypeDescriptor, NotSameWithValueTypeDescriptor, UseIsAssignableToDescriptor, UseIsNotAssignableToDescriptor];
 
     public override void Initialize(AnalysisContext context)
     {
@@ -86,6 +102,13 @@ public sealed class AssertionMethodSelectionAnalyzer : DiagnosticAnalyzer
         {
             var descriptor = nullNotNullValueTypeMatch.AssertionMethodName == "Equal" ? NullWithValueTypeDescriptor : NotNullWithValueTypeDescriptor;
             context.ReportDiagnostic(Diagnostic.Create(descriptor, nullNotNullValueTypeMatch.ActualOperation.Syntax.GetLocation(), nullNotNullValueTypeMatch.ValueType.ToDisplayString()));
+            return;
+        }
+
+        if (AssertionMethodSelectionAnalyzerCommon.TryGetAssignableTypeCheckMatch(invocationOperation, assertType, out var assignableTypeCheckMatch))
+        {
+            var descriptor = assignableTypeCheckMatch.AssertionMethodName == "IsAssignableTo" ? UseIsAssignableToDescriptor : UseIsNotAssignableToDescriptor;
+            context.ReportDiagnostic(Diagnostic.Create(descriptor, assignableTypeCheckMatch.ActualOperation.Syntax.GetLocation()));
             return;
         }
 

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using Meziantou.DnsProxy;
@@ -67,6 +68,55 @@ public sealed class FilterEngineProviderTests
         var result = provider.Engine.Evaluate("blocked.example.com");
         Assert.True(result.IsMatched);
         Assert.Equal(1, provider.RuleCount);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_EmitsActivitiesWhenLoadingRemoteFilters()
+    {
+        using var cacheDirectory = TemporaryDirectory.Create();
+        var options = Options.Create(new DnsProxyOptions
+        {
+            BlockListCacheFolderPath = cacheDirectory.FullPath,
+            Filters =
+            [
+                new FilterListOption
+                {
+                    Url = "https://filters.example/list.txt",
+                    Format = nameof(DnsFilterListFormat.AdBlock),
+                },
+            ],
+        });
+
+        var activities = new ConcurrentQueue<Activity>();
+        using var listener = CreateDnsProxyActivityListener(activities.Enqueue);
+        ActivitySource.AddActivityListener(listener);
+
+        using var serviceProvider = CreateServiceProvider(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("||blocked.example.com^"),
+        });
+        var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+        var provider = new FilterEngineProvider(
+            factory,
+            options,
+            NullLogger<FilterEngineProvider>.Instance);
+
+        await provider.RefreshAsync(CancellationToken.None);
+
+        var refreshActivity = Assert.Single(activities, activity => activity.OperationName == "dns_proxy.filters.refresh");
+        var loadActivity = Assert.Single(activities, activity => activity.OperationName == "dns_proxy.filters.load");
+
+        Assert.Equal(refreshActivity.SpanId, loadActivity.ParentSpanId);
+        Assert.Equal(ActivityStatusCode.Ok, refreshActivity.Status);
+        Assert.Equal(ActivityStatusCode.Ok, loadActivity.Status);
+        Assert.Equal(1, Assert.IsType<int>(refreshActivity.GetTagItem("dns_proxy.filter.count")));
+        Assert.Equal(1, Assert.IsType<int>(refreshActivity.GetTagItem("dns_proxy.filter.loaded_count")));
+        Assert.Equal(0, Assert.IsType<int>(refreshActivity.GetTagItem("dns_proxy.filter.failed_count")));
+        Assert.Equal(1, Assert.IsType<int>(refreshActivity.GetTagItem("dns_proxy.rule.count")));
+        Assert.Equal("https://filters.example/list.txt", loadActivity.GetTagItem("dns_proxy.filter.url"));
+        Assert.Equal(nameof(DnsFilterListFormat.AdBlock), loadActivity.GetTagItem("dns_proxy.filter.format"));
+        Assert.Equal(1, Assert.IsType<int>(loadActivity.GetTagItem("dns_proxy.filter.rule_count")));
     }
 
     [Fact]
@@ -214,6 +264,17 @@ public sealed class FilterEngineProviderTests
             .AddHttpClient(Options.DefaultName)
             .ConfigurePrimaryHttpMessageHandler(() => new DelegateHttpMessageHandler(responseFactory));
         return services.BuildServiceProvider();
+    }
+
+    private static ActivityListener CreateDnsProxyActivityListener(Action<Activity> activityStopped)
+    {
+        return new ActivityListener
+        {
+            ShouldListenTo = static source => source.Name == "Meziantou.DnsProxy",
+            Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = activityStopped,
+        };
     }
 
     private sealed class DelegateHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory) : HttpMessageHandler

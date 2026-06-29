@@ -13,4 +13,6 @@ internal static class RuleIdentifiers
     internal const string NotNullWithValueTypeDiagnosticId = "MFAS0009";
     internal const string SameWithValueTypeDiagnosticId = "MFAS0010";
     internal const string NotSameWithValueTypeDiagnosticId = "MFAS0011";
+    internal const string UseIsAssignableToDiagnosticId = "MFAS0012";
+    internal const string UseIsNotAssignableToDiagnosticId = "MFAS0013";
 }

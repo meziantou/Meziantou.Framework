@@ -20,4 +20,6 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0009` | Assertions | Do not use Assert.NotNull with value types | Error | ✔️ |
 | `MFAS0010` | Assertions | Do not use Assert.Same with value types | Error | ✔️ |
 | `MFAS0011` | Assertions | Do not use Assert.NotSame with value types | Error | ✔️ |
+| `MFAS0012` | Assertions | Use Assert.IsAssignableTo for type pattern checks | Warning | ✔️ |
+| `MFAS0013` | Assertions | Use Assert.IsNotAssignableTo for type pattern checks | Warning | ✔️ |
 <!-- analyzer-rules -->

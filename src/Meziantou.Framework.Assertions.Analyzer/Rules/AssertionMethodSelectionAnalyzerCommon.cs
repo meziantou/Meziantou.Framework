@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -12,6 +13,8 @@ internal static class AssertionMethodSelectionAnalyzerCommon
     private const string NotNullAssertionMethodName = "NotNull";
     private const string EqualAssertionMethodName = "Equal";
     private const string NotEqualAssertionMethodName = "NotEqual";
+    private const string IsAssignableToAssertionMethodName = "IsAssignableTo";
+    private const string IsNotAssignableToAssertionMethodName = "IsNotAssignableTo";
 
     internal static bool TryGetNullCheckMatch(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, out NullCheckMatch match)
     {
@@ -70,6 +73,34 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         return true;
     }
 
+    internal static bool TryGetAssignableTypeCheckMatch(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, out AssignableTypeCheckMatch match)
+    {
+        if (!TryGetAssertCondition(invocationOperation, assertType, out var conditionOperation, out var conditionExpectedToBeFalse))
+        {
+            match = default;
+            return false;
+        }
+
+        if (conditionOperation is IIsTypeOperation isTypeOperation &&
+            TryGetIsTypeOperationType(isTypeOperation, out var isTypeOperationType))
+        {
+            var assertionMethodName = conditionExpectedToBeFalse ? IsNotAssignableToAssertionMethodName : IsAssignableToAssertionMethodName;
+            match = new AssignableTypeCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isTypeOperation.ValueOperand), isTypeOperationType, assertionMethodName);
+            return true;
+        }
+
+        if (conditionOperation is not IIsPatternOperation isPatternOperation ||
+            !TryGetTypePattern(isPatternOperation.Pattern, out var type, out var isNegated))
+        {
+            match = default;
+            return false;
+        }
+
+        var patternAssertionMethodName = conditionExpectedToBeFalse == isNegated ? IsAssignableToAssertionMethodName : IsNotAssignableToAssertionMethodName;
+        match = new AssignableTypeCheckMatch(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(isPatternOperation.Value), type, patternAssertionMethodName);
+        return true;
+    }
+
     internal static bool TryGetSameNotSameValueTypeMatch(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, out SameNotSameValueTypeMatch match)
     {
         if (!IsAssertInvocation(invocationOperation, assertType, "Same", "NotSame"))
@@ -120,6 +151,34 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         return invocationOperation.TargetMethod is { IsStatic: true } targetMethod &&
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType) &&
             methodNames.Contains(targetMethod.Name);
+    }
+
+    private static bool TryGetAssertCondition(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, [NotNullWhen(true)] out IOperation? conditionOperation, out bool conditionExpectedToBeFalse)
+    {
+        if (IsAssertInvocation(invocationOperation, assertType, "True"))
+        {
+            conditionExpectedToBeFalse = false;
+        }
+        else if (IsAssertInvocation(invocationOperation, assertType, "False"))
+        {
+            conditionExpectedToBeFalse = true;
+        }
+        else
+        {
+            conditionOperation = null;
+            conditionExpectedToBeFalse = false;
+            return false;
+        }
+
+        var conditionArgument = invocationOperation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "condition");
+        if (conditionArgument is null)
+        {
+            conditionOperation = null;
+            return false;
+        }
+
+        conditionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionArgument.Value);
+        return true;
     }
 
     private static bool TryGetNullComparedValue(IOperation leftOperation, IOperation rightOperation, out IOperation actualOperation)
@@ -193,9 +252,47 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         };
     }
 
+    private static bool TryGetTypePattern(IPatternOperation pattern, [NotNullWhen(true)] out ITypeSymbol? type, out bool isNegated)
+    {
+        if (pattern is ITypePatternOperation { MatchedType: { } directType })
+        {
+            type = directType;
+            isNegated = false;
+            return true;
+        }
+
+        if (pattern is INegatedPatternOperation
+            {
+                Pattern: ITypePatternOperation { MatchedType: { } negatedType },
+            })
+        {
+            type = negatedType;
+            isNegated = true;
+            return true;
+        }
+
+        type = null;
+        isNegated = false;
+        return false;
+    }
+
+    private static bool TryGetIsTypeOperationType(IIsTypeOperation isTypeOperation, [NotNullWhen(true)] out ITypeSymbol? type)
+    {
+        if (isTypeOperation.TypeOperand is not null)
+        {
+            type = isTypeOperation.TypeOperand;
+            return true;
+        }
+
+        type = null;
+        return false;
+    }
+
     internal readonly record struct NullCheckMatch(IOperation ActualOperation, string AssertionMethodName);
 
     internal readonly record struct NullNotNullValueTypeMatch(IOperation ActualOperation, ITypeSymbol ValueType, string AssertionMethodName);
+
+    internal readonly record struct AssignableTypeCheckMatch(IOperation ActualOperation, ITypeSymbol Type, string AssertionMethodName);
 
     internal readonly record struct SameNotSameValueTypeMatch(IOperation ExpectedOperation, IOperation ActualOperation, string AssertionMethodName);
 }

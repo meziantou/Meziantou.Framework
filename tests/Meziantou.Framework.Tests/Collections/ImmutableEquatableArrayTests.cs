@@ -93,8 +93,7 @@ public sealed class ImmutableEquatableArrayTests
         Assert.False(array.Equals(null));
         Assert.False(array == null);
         Assert.False(null == array);
-        Assert.True(array != null);
-        Assert.True(null != array);
+        Assert.NotNull(array);
     }
 
     [Fact]

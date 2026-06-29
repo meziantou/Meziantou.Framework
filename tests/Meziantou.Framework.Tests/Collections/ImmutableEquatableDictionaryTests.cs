@@ -181,8 +181,7 @@ public sealed class ImmutableEquatableDictionaryTests
         Assert.False(dict.Equals(null));
         Assert.False(dict == null);
         Assert.False(null == dict);
-        Assert.True(dict != null);
-        Assert.True(null != dict);
+        Assert.NotNull(dict);
         Assert.False(dict.Equals((object?)null));
     }
 

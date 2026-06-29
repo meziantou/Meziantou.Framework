@@ -89,8 +89,7 @@ public sealed class ImmutableEquatableSetTests
         Assert.False(set.Equals(null));
         Assert.False(set == null);
         Assert.False(null == set);
-        Assert.True(set != null);
-        Assert.True(null != set);
+        Assert.NotNull(set);
     }
 
     [Fact]

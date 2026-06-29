@@ -1,3 +1,4 @@
+using System.Net;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Transport;
@@ -48,6 +49,38 @@ public sealed class DnsClientDnssecOptionsTests
         Assert.True(GetOptDnssecOk(transport.LastQuery));
     }
 
+    [Fact]
+    public async Task QueryAsync_Https_DefaultOptions_RequestsHttp3OrLower()
+    {
+        using var handler = new CapturingHttpMessageHandler();
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+        });
+
+        await client.QueryAsync("example.com", DnsQueryType.A);
+
+        Assert.Equal(HttpVersion.Version30, handler.RequestVersion);
+        Assert.Equal(HttpVersionPolicy.RequestVersionOrLower, handler.RequestVersionPolicy);
+    }
+
+    [Fact]
+    public async Task QueryAsync_Https_UsesConfiguredHttpVersion()
+    {
+        using var handler = new CapturingHttpMessageHandler();
+        using var client = new DnsClient("https://example.com/dns-query", DnsClientProtocol.Https, new DnsClientOptions
+        {
+            HttpHandler = handler,
+            HttpVersion = HttpVersion.Version20,
+            HttpVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
+        });
+
+        await client.QueryAsync("example.com", DnsQueryType.A);
+
+        Assert.Equal(HttpVersion.Version20, handler.RequestVersion);
+        Assert.Equal(HttpVersionPolicy.RequestVersionOrLower, handler.RequestVersionPolicy);
+    }
+
     private static bool IsCheckingDisabled(byte[] query)
     {
         var flags = (query[2] << 8) | query[3];
@@ -71,6 +104,19 @@ public sealed class DnsClientDnssecOptionsTests
         return (flags & 0x8000) != 0;
     }
 
+    private static byte[] CreateEmptyResponse(byte[] query)
+    {
+        return
+        [
+            query[0], query[1],
+            0x81, 0x80,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x00, 0x00,
+            0x00, 0x00,
+        ];
+    }
+
     private sealed class CapturingTransport : IDnsTransport
     {
         public byte[] LastQuery { get; private set; } = [];
@@ -84,18 +130,24 @@ public sealed class DnsClientDnssecOptionsTests
         public void Dispose()
         {
         }
+    }
 
-        private static byte[] CreateEmptyResponse(byte[] query)
+    private sealed class CapturingHttpMessageHandler : HttpMessageHandler
+    {
+        public Version? RequestVersion { get; private set; }
+
+        public HttpVersionPolicy? RequestVersionPolicy { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            return
-            [
-                query[0], query[1],
-                0x81, 0x80,
-                0x00, 0x00,
-                0x00, 0x00,
-                0x00, 0x00,
-                0x00, 0x00,
-            ];
+            RequestVersion = request.Version;
+            RequestVersionPolicy = request.VersionPolicy;
+
+            var query = await request.Content!.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(CreateEmptyResponse(query)),
+            };
         }
     }
 }

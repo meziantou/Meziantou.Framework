@@ -121,7 +121,7 @@ public sealed class DnsClient : IDisposable
         var questionType = message.Questions.Count > 0 ? message.Questions[0].Type.ToString() : "unknown";
         var questionClass = message.Questions.Count > 0 ? message.Questions[0].QueryClass.ToString() : "unknown";
 
-        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.query");
+        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.query", ActivityKind.Client);
         activity?.SetTag("dns.question.name", questionName);
         activity?.SetTag("dns.question.type", questionType);
         activity?.SetTag("dns.question.class", questionClass);
@@ -273,7 +273,7 @@ public sealed class DnsClient : IDisposable
         if (!Uri.TryCreate(server, UriKind.Absolute, out var uri))
             throw new ArgumentException($"Invalid DNS over HTTPS URL: {server}", nameof(server));
 
-        return new DnsHttpsTransport(uri, options.HttpHandler);
+        return new DnsHttpsTransport(uri, options.HttpHandler, options.HttpVersion, options.HttpVersionPolicy);
     }
 
     [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance")]

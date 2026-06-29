@@ -134,10 +134,11 @@ public sealed class ServiceDefaultTests
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
         using var response = await httpClient.GetAsync("/test", XunitCancellationToken);
 
-        Assert.True(response.Headers.CacheControl is not null);
-        Assert.True(response.Headers.CacheControl.NoCache);
-        Assert.True(response.Headers.CacheControl.NoStore);
-        Assert.True(response.Headers.CacheControl.MustRevalidate);
+        var cacheControl = response.Headers.CacheControl;
+        Assert.NotNull(cacheControl);
+        Assert.True(cacheControl.NoCache);
+        Assert.True(cacheControl.NoStore);
+        Assert.True(cacheControl.MustRevalidate);
     }
 
     [Fact]
@@ -160,10 +161,11 @@ public sealed class ServiceDefaultTests
         using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
         using var response = await httpClient.GetAsync("/test", XunitCancellationToken);
 
-        Assert.True(response.Headers.CacheControl is not null);
-        Assert.True(response.Headers.CacheControl.Public);
-        Assert.Equal(3600, response.Headers.CacheControl.MaxAge?.TotalSeconds);
-        Assert.False(response.Headers.CacheControl.NoCache);
+        var cacheControl = response.Headers.CacheControl;
+        Assert.NotNull(cacheControl);
+        Assert.True(cacheControl.Public);
+        Assert.Equal(3600, cacheControl.MaxAge?.TotalSeconds);
+        Assert.False(cacheControl.NoCache);
     }
 
     [Fact]

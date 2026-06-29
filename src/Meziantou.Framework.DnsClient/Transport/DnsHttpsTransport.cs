@@ -8,11 +8,15 @@ internal sealed class DnsHttpsTransport : IDnsTransport
 
     private readonly HttpClient _httpClient;
     private readonly Uri _endpoint;
+    private readonly Version _httpVersion;
+    private readonly HttpVersionPolicy _httpVersionPolicy;
     private readonly bool _disposeHttpClient;
 
-    public DnsHttpsTransport(Uri endpoint, HttpMessageHandler? handler)
+    public DnsHttpsTransport(Uri endpoint, HttpMessageHandler? handler, Version httpVersion, HttpVersionPolicy httpVersionPolicy)
     {
         _endpoint = endpoint;
+        _httpVersion = httpVersion;
+        _httpVersionPolicy = httpVersionPolicy;
         if (handler is not null)
         {
             _httpClient = new HttpClient(handler, disposeHandler: false);
@@ -34,8 +38,8 @@ internal sealed class DnsHttpsTransport : IDnsTransport
         using var request = new HttpRequestMessage(HttpMethod.Post, _endpoint)
         {
             Content = content,
-            Version = System.Net.HttpVersion.Version20,
-            VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher,
+            Version = _httpVersion,
+            VersionPolicy = _httpVersionPolicy,
         };
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/dns-message"));
 

@@ -22,6 +22,20 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
         RuleIdentifiers.NotSameWithValueTypeDiagnosticId,
         RuleIdentifiers.UseIsAssignableToDiagnosticId,
         RuleIdentifiers.UseIsNotAssignableToDiagnosticId,
+        RuleIdentifiers.UseMatchesDiagnosticId,
+        RuleIdentifiers.UseDoesNotMatchDiagnosticId,
+        RuleIdentifiers.UseStringContainsDiagnosticId,
+        RuleIdentifiers.UseStringDoesNotContainDiagnosticId,
+        RuleIdentifiers.UseStringStartsWithDiagnosticId,
+        RuleIdentifiers.UseStringDoesNotStartWithDiagnosticId,
+        RuleIdentifiers.UseStringEndsWithDiagnosticId,
+        RuleIdentifiers.UseStringDoesNotEndWithDiagnosticId,
+        RuleIdentifiers.UseCollectionContainsDiagnosticId,
+        RuleIdentifiers.UseCollectionDoesNotContainDiagnosticId,
+        RuleIdentifiers.UseCollectionAnyContainsDiagnosticId,
+        RuleIdentifiers.UseCollectionAnyDoesNotContainDiagnosticId,
+        RuleIdentifiers.UseCollectionAllDiagnosticId,
+        RuleIdentifiers.UseCollectionDoesNotAllDiagnosticId,
     ];
 
     public override FixAllProvider GetFixAllProvider()
@@ -43,25 +57,42 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
         if (assertType is null)
             return;
 
+        TrueFalseConditionMethodSelectionAnalyzerCommon.TryCreateSymbols(semanticModel.Compilation, out var symbols);
+
         foreach (var diagnostic in context.Diagnostics)
         {
-            var invocationExpression = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true).FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            // For TrueFalseCondition rules, the diagnostic is on the inner invocation;
+            // we need to find the outer Assert.True/False invocation to replace.
+            InvocationExpressionSyntax? invocationExpression;
+            if (IsTrueFalseConditionDiagnostic(diagnostic.Id))
+            {
+                invocationExpression = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true)
+                    .AncestorsAndSelf()
+                    .OfType<InvocationExpressionSyntax>()
+                    .Skip(1) // skip the inner invocation, get the outer Assert.True/False
+                    .FirstOrDefault();
+            }
+            else
+            {
+                invocationExpression = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true).FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            }
+
             if (invocationExpression is null)
                 continue;
 
-            if (!TryGetCodeFixTitle(semanticModel, invocationExpression, assertType, context.CancellationToken, out var title))
+            if (!TryGetCodeFixTitle(semanticModel, invocationExpression, assertType, symbols, context.CancellationToken, out var title))
                 continue;
 
             context.RegisterCodeFix(
                 CodeAction.Create(
                     title: title,
-                    createChangedDocument: cancellationToken => ApplyFixAsync(context.Document, invocationExpression, assertType, cancellationToken),
+                    createChangedDocument: cancellationToken => ApplyFixAsync(context.Document, invocationExpression, assertType, symbols, cancellationToken),
                     equivalenceKey: GetType().FullName),
                 diagnostic);
         }
     }
 
-    private static async Task<Document> ApplyFixAsync(Document document, InvocationExpressionSyntax invocationExpression, INamedTypeSymbol assertType, CancellationToken cancellationToken)
+    private static async Task<Document> ApplyFixAsync(Document document, InvocationExpressionSyntax invocationExpression, INamedTypeSymbol assertType, TrueFalseConditionMethodSelectionAnalyzerCommon.Symbols? symbols, CancellationToken cancellationToken)
     {
         var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
         if (root is null)
@@ -71,14 +102,14 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
         if (semanticModel is null)
             return document;
 
-        if (!TryCreateFixedInvocation(semanticModel, invocationExpression, assertType, cancellationToken, out var fixedInvocation))
+        if (!TryCreateFixedInvocation(semanticModel, invocationExpression, assertType, symbols, cancellationToken, out var fixedInvocation))
             return document;
 
         var newRoot = root.ReplaceNode(invocationExpression, fixedInvocation.WithAdditionalAnnotations(Formatter.Annotation));
         return document.WithSyntaxRoot(newRoot);
     }
 
-    private static bool TryGetCodeFixTitle(SemanticModel semanticModel, InvocationExpressionSyntax invocationExpression, INamedTypeSymbol assertType, CancellationToken cancellationToken, out string title)
+    private static bool TryGetCodeFixTitle(SemanticModel semanticModel, InvocationExpressionSyntax invocationExpression, INamedTypeSymbol assertType, TrueFalseConditionMethodSelectionAnalyzerCommon.Symbols? symbols, CancellationToken cancellationToken, out string title)
     {
         if (!TryGetInvocationOperation(semanticModel, invocationExpression, cancellationToken, out var invocationOperation))
         {
@@ -114,11 +145,18 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
             return true;
         }
 
+        if (symbols is not null &&
+            TrueFalseConditionMethodSelectionAnalyzerCommon.TryGetMatch(invocationOperation, assertType, symbols.Value, out var trueFalseMatch))
+        {
+            title = "Use Assert." + trueFalseMatch.AssertionMethodName;
+            return true;
+        }
+
         title = null!;
         return false;
     }
 
-    private static bool TryCreateFixedInvocation(SemanticModel semanticModel, InvocationExpressionSyntax invocationExpression, INamedTypeSymbol assertType, CancellationToken cancellationToken, out InvocationExpressionSyntax fixedInvocation)
+    private static bool TryCreateFixedInvocation(SemanticModel semanticModel, InvocationExpressionSyntax invocationExpression, INamedTypeSymbol assertType, TrueFalseConditionMethodSelectionAnalyzerCommon.Symbols? symbols, CancellationToken cancellationToken, out InvocationExpressionSyntax fixedInvocation)
     {
         if (!TryGetInvocationOperation(semanticModel, invocationExpression, cancellationToken, out var invocationOperation))
         {
@@ -171,8 +209,62 @@ public sealed class AssertionMethodSelectionCodeFixProvider : CodeFixProvider
             return true;
         }
 
+        if (symbols is not null &&
+            TrueFalseConditionMethodSelectionAnalyzerCommon.TryGetMatch(invocationOperation, assertType, symbols.Value, out var trueFalseMatch))
+        {
+            var argExpressions = new SyntaxNodeOrToken[trueFalseMatch.Arguments.Length * 2 - 1];
+            for (var i = 0; i < trueFalseMatch.Arguments.Length; i++)
+            {
+                if (i > 0)
+                    argExpressions[i * 2 - 1] = SyntaxFactory.Token(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space);
+
+                if (!TryGetExpressionSyntax(trueFalseMatch.Arguments[i], out var argExpr))
+                {
+                    fixedInvocation = null!;
+                    return false;
+                }
+
+                argExpressions[i * 2] = SyntaxFactory.Argument(argExpr.WithoutTrivia());
+            }
+
+            var argumentList = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList<ArgumentSyntax>(argExpressions));
+
+            if (trueFalseMatch.HasIgnoreCase)
+            {
+                var ignoreCaseExpr = trueFalseMatch.IgnoreCaseValue == true
+                    ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)
+                    : (ExpressionSyntax)SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
+
+                argumentList = argumentList.AddArguments(SyntaxFactory.Argument(ignoreCaseExpr));
+            }
+
+            fixedInvocation = invocationExpression
+                .WithExpression(ReplaceMethodName(invocationExpression.Expression, trueFalseMatch.AssertionMethodName))
+                .WithArgumentList(argumentList);
+            return true;
+        }
+
         fixedInvocation = null!;
         return false;
+    }
+
+    private static bool IsTrueFalseConditionDiagnostic(string diagnosticId)
+    {
+        return diagnosticId is
+            RuleIdentifiers.UseMatchesDiagnosticId or
+            RuleIdentifiers.UseDoesNotMatchDiagnosticId or
+            RuleIdentifiers.UseStringContainsDiagnosticId or
+            RuleIdentifiers.UseStringDoesNotContainDiagnosticId or
+            RuleIdentifiers.UseStringStartsWithDiagnosticId or
+            RuleIdentifiers.UseStringDoesNotStartWithDiagnosticId or
+            RuleIdentifiers.UseStringEndsWithDiagnosticId or
+            RuleIdentifiers.UseStringDoesNotEndWithDiagnosticId or
+            RuleIdentifiers.UseCollectionContainsDiagnosticId or
+            RuleIdentifiers.UseCollectionDoesNotContainDiagnosticId or
+            RuleIdentifiers.UseCollectionAnyContainsDiagnosticId or
+            RuleIdentifiers.UseCollectionAnyDoesNotContainDiagnosticId or
+            RuleIdentifiers.UseCollectionAllDiagnosticId or
+            RuleIdentifiers.UseCollectionDoesNotAllDiagnosticId;
     }
 
     private static bool TryGetInvocationOperation(SemanticModel semanticModel, InvocationExpressionSyntax invocationExpression, CancellationToken cancellationToken, out IInvocationOperation invocationOperation)

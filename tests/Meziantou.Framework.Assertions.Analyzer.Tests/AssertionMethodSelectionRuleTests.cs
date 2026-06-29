@@ -414,7 +414,79 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
     }
 
     [Fact]
-    public async Task Analyzer_DoesNotReportDiagnostic_ForValidNullAndSameAssertions()
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueRegexIsMatch()
+    {
+        var source = """
+            using System.Text.RegularExpressions;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.True({|MFAS0014:Regex.IsMatch(value, @"\d+")|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Text.RegularExpressions;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.Matches(@"\d+", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertFalseRegexIsMatch()
+    {
+        var source = """
+            using System.Text.RegularExpressions;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.False({|MFAS0015:Regex.IsMatch(value, @"\d+")|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Text.RegularExpressions;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.DoesNotMatch(@"\d+", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueStringContains()
     {
         var source = """
             using Meziantou.Framework.Assertions;
@@ -423,19 +495,656 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
 
             public static class TestClass
             {
-                public static void M(string? value, object expected, object actual)
+                public static void M(string value)
                 {
-                    int? nullableValue = value?.Length;
-                    Assert.Null(nullableValue);
-                    Assert.NotNull(nullableValue);
-                    Assert.Same(expected, actual);
-                    Assert.NotSame(expected, actual);
-                    _ = Assert.IsAssignableTo<object>(actual);
-                    Assert.IsNotAssignableTo<int>(actual);
+                    Assert.True({|MFAS0016:value.Contains("abc")|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.Contains("abc", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertFalseStringContains()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.False({|MFAS0017:value.Contains("abc")|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.DoesNotContain("abc", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueStringContainsWithOrdinalIgnoreCase()
+    {
+        var source = """
+            using System;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.True({|MFAS0016:value.Contains("abc", StringComparison.OrdinalIgnoreCase)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.Contains("abc", value, true);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueStringContainsWithOrdinal()
+    {
+        var source = """
+            using System;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.True({|MFAS0016:value.Contains("abc", StringComparison.Ordinal)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.Contains("abc", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForAssertTrueStringContainsWithCurrentCulture()
+    {
+        var source = """
+            using System;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.True(value.Contains("abc", StringComparison.CurrentCulture));
                 }
             }
             """;
 
         await CreateAnalyzerTest<AssertionMethodSelectionAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueStringStartsWith()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.True({|MFAS0018:value.StartsWith("abc")|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.StartsWith("abc", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertFalseStringStartsWith()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.False({|MFAS0019:value.StartsWith("abc")|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.DoesNotStartWith("abc", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueStringStartsWithIgnoreCase()
+    {
+        var source = """
+            using System;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.True({|MFAS0018:value.StartsWith("abc", StringComparison.OrdinalIgnoreCase)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.StartsWith("abc", value, true);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueStringStartsWithIgnoreCaseBool()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.True({|MFAS0018:value.StartsWith("abc", ignoreCase: true, culture: null)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.StartsWith("abc", value, true);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueStringEndsWith()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.True({|MFAS0020:value.EndsWith("abc")|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.EndsWith("abc", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertFalseStringEndsWith()
+    {
+        var source = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.False({|MFAS0021:value.EndsWith("abc")|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(string value)
+                {
+                    Assert.DoesNotEndWith("abc", value);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueCollectionContains()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection, int item)
+                {
+                    Assert.True({|MFAS0022:collection.Contains(item)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection, int item)
+                {
+                    Assert.Contains(item, collection);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertFalseCollectionContains()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection, int item)
+                {
+                    Assert.False({|MFAS0023:collection.Contains(item)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection, int item)
+                {
+                    Assert.DoesNotContain(item, collection);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueDictionaryContainsKey()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(Dictionary<string, int> dict, string key)
+                {
+                    Assert.True({|MFAS0022:dict.ContainsKey(key)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(Dictionary<string, int> dict, string key)
+                {
+                    Assert.Contains(key, dict);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertFalseDictionaryContainsKey()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(Dictionary<string, int> dict, string key)
+                {
+                    Assert.False({|MFAS0023:dict.ContainsKey(key)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(Dictionary<string, int> dict, string key)
+                {
+                    Assert.DoesNotContain(key, dict);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueCollectionAny()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    Assert.True({|MFAS0024:collection.Any(x => x > 0)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    Assert.Contains(collection, x => x > 0);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertFalseCollectionAny()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    Assert.False({|MFAS0025:collection.Any(x => x > 0)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    Assert.DoesNotContain(collection, x => x > 0);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertTrueCollectionAll()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    Assert.True({|MFAS0026:collection.All(x => x > 0)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    Assert.All(collection, x => x > 0);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForAssertFalseCollectionAll()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    Assert.False({|MFAS0027:collection.All(x => x > 0)|});
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(List<int> collection)
+                {
+                    Assert.DoesNotAll(collection, x => x > 0);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 }

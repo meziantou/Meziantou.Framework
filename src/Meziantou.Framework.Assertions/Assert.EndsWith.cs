@@ -98,6 +98,17 @@ public partial class Assert
     /// <summary>Asserts that a string ends with the specified suffix.</summary>
     /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>.</param>
     /// <param name="actual">The string to inspect.</param>
+    /// <param name="ignoreCase">When <see langword="true"/>, the comparison ignores casing (OrdinalIgnoreCase); otherwise, it is case-sensitive (Ordinal).</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    public static void EndsWith(string expected, [NotNull] string? actual, bool ignoreCase, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        EndsWith(expected, actual, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal, actualExpression, expectedExpression);
+    }
+
+    /// <summary>Asserts that a string ends with the specified suffix.</summary>
+    /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>.</param>
+    /// <param name="actual">The string to inspect.</param>
     /// <param name="comparison">The comparison used to compare characters.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>

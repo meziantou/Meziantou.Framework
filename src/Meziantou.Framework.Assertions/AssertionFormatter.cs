@@ -765,6 +765,30 @@ internal class AssertionFormatter
             """);
     }
 
+    public virtual string Format<T>(CollectionAllPredicateAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.All() assertion failed: Item at index {error.Index} did not satisfy the predicate.
+            Expression:          {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Actual:              {FormatValue(error.ActualValue.Items, error.Index)}
+            """);
+    }
+
+    public virtual string Format<T>(CollectionDoesNotAllPredicateAssertionError<T> error)
+    {
+        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+
+        return string.Create(CultureInfo.InvariantCulture, $"""
+            Assert.DoesNotAll() assertion failed: All items satisfy the predicate, but expected at least one that does not.
+            Expression:           {error.ActualExpression}
+            Predicate expression: {error.PredicateExpression}
+            Actual:               {FormatValue(error.ActualValue.Items)}
+            """);
+    }
+
     public virtual string Format<T>(CollectionAllAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));

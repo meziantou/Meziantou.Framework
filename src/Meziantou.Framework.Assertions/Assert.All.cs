@@ -44,6 +44,27 @@ public partial class Assert
         }
     }
 
+    /// <summary>Asserts that all items in an enumerable satisfy the specified predicate.</summary>
+    /// <param name="actual">The enumerable to inspect.</param>
+    /// <param name="predicate">The predicate that every item must satisfy.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="predicateExpression">The expression that produced the predicate.</param>
+    public static void All<T>(IEnumerable<T> actual, Func<T, bool> predicate, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
+    {
+        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+
+        var index = 0;
+        foreach (var item in actualSnapshot)
+        {
+            if (!predicate(item))
+            {
+                throw new AssertionException(ErrorFormatter.Format(new CollectionAllPredicateAssertionError<T>(actualSnapshot, index, actualExpression, predicateExpression)));
+            }
+
+            index++;
+        }
+    }
+
     /// <summary>Asserts that all items in an enumerable satisfy the specified assertion.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="assertion">The assertion to run for each item.</param>

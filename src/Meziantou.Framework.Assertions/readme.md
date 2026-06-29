@@ -95,4 +95,18 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0011` | Assertions | Do not use Assert.NotSame with value types | Error | ✔️ |
 | `MFAS0012` | Assertions | Use Assert.IsAssignableTo for type pattern checks | Warning | ✔️ |
 | `MFAS0013` | Assertions | Use Assert.IsNotAssignableTo for type pattern checks | Warning | ✔️ |
+| `MFAS0014` | Assertions | Use Assert.Matches instead of Assert.True(Regex.IsMatch(...)) | Warning | ✔️ |
+| `MFAS0015` | Assertions | Use Assert.DoesNotMatch instead of Assert.False(Regex.IsMatch(...)) | Warning | ✔️ |
+| `MFAS0016` | Assertions | Use Assert.Contains instead of Assert.True(string.Contains(...)) | Warning | ✔️ |
+| `MFAS0017` | Assertions | Use Assert.DoesNotContain instead of Assert.False(string.Contains(...)) | Warning | ✔️ |
+| `MFAS0018` | Assertions | Use Assert.StartsWith instead of Assert.True(string.StartsWith(...)) | Warning | ✔️ |
+| `MFAS0019` | Assertions | Use Assert.DoesNotStartWith instead of Assert.False(string.StartsWith(...)) | Warning | ✔️ |
+| `MFAS0020` | Assertions | Use Assert.EndsWith instead of Assert.True(string.EndsWith(...)) | Warning | ✔️ |
+| `MFAS0021` | Assertions | Use Assert.DoesNotEndWith instead of Assert.False(string.EndsWith(...)) | Warning | ✔️ |
+| `MFAS0022` | Assertions | Use Assert.Contains instead of Assert.True(collection.Contains(...)) | Warning | ✔️ |
+| `MFAS0023` | Assertions | Use Assert.DoesNotContain instead of Assert.False(collection.Contains(...)) | Warning | ✔️ |
+| `MFAS0024` | Assertions | Use Assert.Contains instead of Assert.True(collection.Any(...)) | Warning | ✔️ |
+| `MFAS0025` | Assertions | Use Assert.DoesNotContain instead of Assert.False(collection.Any(...)) | Warning | ✔️ |
+| `MFAS0026` | Assertions | Use Assert.All instead of Assert.True(collection.All(...)) | Warning | ✔️ |
+| `MFAS0027` | Assertions | Use Assert.DoesNotAll instead of Assert.False(collection.All(...)) | Warning | ✔️ |
 <!-- analyzer-rules -->

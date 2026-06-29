@@ -271,9 +271,9 @@ internal class AssertionFormatter
         return FormatNegativeValue(nameof(Assert.NotEqualUnordered), error.ExpectedExpression, error.ActualExpression, error.NotExpectedLabel, error.ExpectedValue, error.ActualValue, error.Message);
     }
 
-    public virtual string Format(NotEqualByStructureAssertionError error)
+    public virtual string Format(NotEquivalentAssertionError error)
     {
-        return FormatNegativeValue(nameof(Assert.NotEqualByStructure), error.ExpectedExpression, error.ActualExpression, "Not expected", error.ExpectedValue, error.ActualValue, error.Message);
+        return FormatNegativeValue(nameof(Assert.NotEquivalent), error.ExpectedExpression, error.ActualExpression, "Not expected", error.ExpectedValue, error.ActualValue, error.Message);
     }
 
     public virtual string Format(DoesNotMatchAssertionError error)
@@ -518,10 +518,10 @@ internal class AssertionFormatter
         return result;
     }
 
-    public virtual string Format(EqualByStructureAssertionError error)
+    public virtual string Format(EquivalentAssertionError error)
     {
         var result = $"""
-            Assert.{error.AssertionName}() assertion failed.
+            Assert.Equivalent() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Path: {error.Path}

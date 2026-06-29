@@ -12,22 +12,11 @@ public partial class Assert
 
     public static void Equivalent(object? expected, object? actual, EquivalentOptions? options, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        AssertEquivalent(expected, actual, options, assertionName: nameof(Equivalent), message, actualExpression, expectedExpression);
-    }
-
-    public static void EqualByStructure(object? expected, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
-    {
-        AssertEquivalent(expected, actual, options: null, assertionName: nameof(EqualByStructure), message, actualExpression, expectedExpression);
-    }
-
-    private static void AssertEquivalent(object? expected, object? actual, EquivalentOptions? options, string assertionName, string? message, string? actualExpression, string? expectedExpression)
-    {
-        var comparisonOptions = StructuralComparisonOptions.Create(options);
-        var failure = GetStructuralDifference(expected, actual, "$", new HashSet<StructuralReferencePair>(), comparisonOptions);
+        var failure = GetStructuralDifference(expected, actual, "$", new HashSet<StructuralReferencePair>(), StructuralComparisonOptions.Create(options));
         if (failure is null)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new EqualByStructureAssertionError(assertionName, failure.Value.ExpectedValue, failure.Value.ActualValue, failure.Value.Path, failure.Value.Reason, message, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new EquivalentAssertionError(failure.Value.ExpectedValue, failure.Value.ActualValue, failure.Value.Path, failure.Value.Reason, message, actualExpression, expectedExpression)));
     }
 
     private static StructuralDifference? GetStructuralDifference(object? expected, object? actual, string path, HashSet<StructuralReferencePair> visited, StructuralComparisonOptions options)

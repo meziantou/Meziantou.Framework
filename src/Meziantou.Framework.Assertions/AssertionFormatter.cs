@@ -521,7 +521,7 @@ internal class AssertionFormatter
     public virtual string Format(EqualByStructureAssertionError error)
     {
         var result = $"""
-            Assert.EqualByStructure() assertion failed.
+            Assert.{error.AssertionName}() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Path: {error.Path}

@@ -1,5 +1,25 @@
-using AssertionMethodSelectionAnalyzerType = Meziantou.Framework.Analyzers.Assertions.AssertionMethodSelectionAnalyzer;
-using AssertionMethodSelectionCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.AssertionMethodSelectionCodeFixProvider;
+using UseNullAssertionAnalyzerType = Meziantou.Framework.Analyzers.Assertions.UseNullAssertionAnalyzer;
+using UseNullAssertionCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.UseNullAssertionCodeFixProvider;
+using NullWithValueTypeAnalyzerType = Meziantou.Framework.Analyzers.Assertions.NullWithValueTypeAnalyzer;
+using NullWithValueTypeCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.NullWithValueTypeCodeFixProvider;
+using SameWithValueTypeAnalyzerType = Meziantou.Framework.Analyzers.Assertions.SameWithValueTypeAnalyzer;
+using SameWithValueTypeCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.SameWithValueTypeCodeFixProvider;
+using IsAssignableToAnalyzerType = Meziantou.Framework.Analyzers.Assertions.IsAssignableToAnalyzer;
+using IsAssignableToCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.IsAssignableToCodeFixProvider;
+using RegexMatchesAnalyzerType = Meziantou.Framework.Analyzers.Assertions.RegexMatchesAnalyzer;
+using RegexMatchesCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.RegexMatchesCodeFixProvider;
+using StringContainsAnalyzerType = Meziantou.Framework.Analyzers.Assertions.StringContainsAnalyzer;
+using StringContainsCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.StringContainsCodeFixProvider;
+using StringStartsWithAnalyzerType = Meziantou.Framework.Analyzers.Assertions.StringStartsWithAnalyzer;
+using StringStartsWithCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.StringStartsWithCodeFixProvider;
+using StringEndsWithAnalyzerType = Meziantou.Framework.Analyzers.Assertions.StringEndsWithAnalyzer;
+using StringEndsWithCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.StringEndsWithCodeFixProvider;
+using CollectionContainsAnalyzerType = Meziantou.Framework.Analyzers.Assertions.CollectionContainsAnalyzer;
+using CollectionContainsCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.CollectionContainsCodeFixProvider;
+using CollectionAnyAnalyzerType = Meziantou.Framework.Analyzers.Assertions.CollectionAnyAnalyzer;
+using CollectionAnyCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.CollectionAnyCodeFixProvider;
+using CollectionAllAnalyzerType = Meziantou.Framework.Analyzers.Assertions.CollectionAllAnalyzer;
+using CollectionAllCodeFixProviderType = Meziantou.Framework.Analyzers.Assertions.CollectionAllCodeFixProvider;
 
 namespace Meziantou.Framework.Tests;
 
@@ -36,7 +56,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<UseNullAssertionAnalyzerType, UseNullAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -70,7 +90,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<UseNullAssertionAnalyzerType, UseNullAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -104,7 +124,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<UseNullAssertionAnalyzerType, UseNullAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -138,7 +158,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<UseNullAssertionAnalyzerType, UseNullAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -172,7 +192,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<IsAssignableToAnalyzerType, IsAssignableToCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -206,7 +226,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<IsAssignableToAnalyzerType, IsAssignableToCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -240,7 +260,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<IsAssignableToAnalyzerType, IsAssignableToCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -274,7 +294,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<IsAssignableToAnalyzerType, IsAssignableToCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -308,7 +328,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<NullWithValueTypeAnalyzerType, NullWithValueTypeCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -342,7 +362,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<NullWithValueTypeAnalyzerType, NullWithValueTypeCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -376,7 +396,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<SameWithValueTypeAnalyzerType, SameWithValueTypeCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -410,7 +430,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<SameWithValueTypeAnalyzerType, SameWithValueTypeCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -446,7 +466,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<RegexMatchesAnalyzerType, RegexMatchesCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -482,7 +502,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<RegexMatchesAnalyzerType, RegexMatchesCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -516,7 +536,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringContainsAnalyzerType, StringContainsCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -550,7 +570,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringContainsAnalyzerType, StringContainsCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -586,7 +606,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringContainsAnalyzerType, StringContainsCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -622,7 +642,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringContainsAnalyzerType, StringContainsCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -643,7 +663,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateAnalyzerTest<AssertionMethodSelectionAnalyzerType>(source).RunAsync(XunitCancellationToken);
+        await CreateAnalyzerTest<StringContainsAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -677,7 +697,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringStartsWithAnalyzerType, StringStartsWithCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -711,7 +731,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringStartsWithAnalyzerType, StringStartsWithCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -747,7 +767,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringStartsWithAnalyzerType, StringStartsWithCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -781,7 +801,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringStartsWithAnalyzerType, StringStartsWithCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -815,7 +835,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringEndsWithAnalyzerType, StringEndsWithCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -849,7 +869,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<StringEndsWithAnalyzerType, StringEndsWithCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -885,7 +905,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<CollectionContainsAnalyzerType, CollectionContainsCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -921,7 +941,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<CollectionContainsAnalyzerType, CollectionContainsCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -957,7 +977,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<CollectionContainsAnalyzerType, CollectionContainsCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -993,7 +1013,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<CollectionContainsAnalyzerType, CollectionContainsCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -1031,7 +1051,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<CollectionAnyAnalyzerType, CollectionAnyCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -1069,7 +1089,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<CollectionAnyAnalyzerType, CollectionAnyCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -1107,7 +1127,7 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<CollectionAllAnalyzerType, CollectionAllCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 
     [Fact]
@@ -1145,6 +1165,6 @@ public sealed class AssertionMethodSelectionRuleTests : AssertionsAnalyzerTestBa
             }
             """;
 
-        await CreateCodeFixTest<AssertionMethodSelectionAnalyzerType, AssertionMethodSelectionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+        await CreateCodeFixTest<CollectionAllAnalyzerType, CollectionAllCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
     }
 }

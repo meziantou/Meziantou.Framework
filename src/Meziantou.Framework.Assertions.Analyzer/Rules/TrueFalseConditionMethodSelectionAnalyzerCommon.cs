@@ -100,45 +100,27 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return true;
     }
 
-    internal static bool TryGetMatch(
+    internal static bool TryGetAssertInnerInvocation(
         IInvocationOperation assertInvocation,
         INamedTypeSymbol assertType,
-        Symbols symbols,
-        out TrueFalseConditionMatch match)
+        out IInvocationOperation innerInvocation,
+        out bool conditionExpectedToBeFalse)
     {
-        if (!TryGetAssertCondition(assertInvocation, assertType, out var conditionOperation, out var conditionExpectedToBeFalse))
+        if (!TryGetAssertCondition(assertInvocation, assertType, out var conditionOperation, out conditionExpectedToBeFalse))
         {
-            match = default;
+            innerInvocation = null!;
             return false;
         }
 
         conditionOperation = AssertionsAnalyzerHelpers.UnwrapImplicitConversion(conditionOperation);
-        if (conditionOperation is not IInvocationOperation innerInvocation)
+        if (conditionOperation is not IInvocationOperation inner)
         {
-            match = default;
+            innerInvocation = null!;
             return false;
         }
 
-        if (TryGetRegexIsMatchMatch(innerInvocation, symbols, conditionExpectedToBeFalse, out match))
-            return true;
-
-        if (TryGetStringOperationMatch(innerInvocation, symbols, conditionExpectedToBeFalse, out match))
-            return true;
-
-        if (TryGetCollectionContainsMatch(innerInvocation, symbols, conditionExpectedToBeFalse, out match))
-            return true;
-
-        if (TryGetDictionaryContainsKeyMatch(innerInvocation, symbols, conditionExpectedToBeFalse, out match))
-            return true;
-
-        if (TryGetCollectionAnyMatch(innerInvocation, symbols, conditionExpectedToBeFalse, out match))
-            return true;
-
-        if (TryGetCollectionAllMatch(innerInvocation, symbols, conditionExpectedToBeFalse, out match))
-            return true;
-
-        match = default;
-        return false;
+        innerInvocation = inner;
+        return true;
     }
 
     private static bool TryGetAssertCondition(
@@ -181,7 +163,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return true;
     }
 
-    private static bool TryGetRegexIsMatchMatch(
+    internal static bool TryGetRegexIsMatchMatch(
         IInvocationOperation innerInvocation,
         Symbols symbols,
         bool conditionExpectedToBeFalse,
@@ -211,7 +193,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return true;
     }
 
-    private static bool TryGetStringOperationMatch(
+    internal static bool TryGetStringOperationMatch(
         IInvocationOperation innerInvocation,
         Symbols symbols,
         bool conditionExpectedToBeFalse,
@@ -388,7 +370,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return IsNullLiteral(operation);
     }
 
-    private static bool TryGetCollectionContainsMatch(
+    internal static bool TryGetCollectionContainsMatch(
         IInvocationOperation innerInvocation,
         Symbols symbols,
         bool conditionExpectedToBeFalse,
@@ -491,7 +473,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return false;
     }
 
-    private static bool TryGetDictionaryContainsKeyMatch(
+    internal static bool TryGetDictionaryContainsKeyMatch(
         IInvocationOperation innerInvocation,
         Symbols symbols,
         bool conditionExpectedToBeFalse,
@@ -547,7 +529,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return false;
     }
 
-    private static bool TryGetCollectionAnyMatch(
+    internal static bool TryGetCollectionAnyMatch(
         IInvocationOperation innerInvocation,
         Symbols symbols,
         bool conditionExpectedToBeFalse,
@@ -595,7 +577,7 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         return true;
     }
 
-    private static bool TryGetCollectionAllMatch(
+    internal static bool TryGetCollectionAllMatch(
         IInvocationOperation innerInvocation,
         Symbols symbols,
         bool conditionExpectedToBeFalse,
@@ -641,38 +623,6 @@ internal static class TrueFalseConditionMethodSelectionAnalyzerCommon
         // Assert.All(collection, predicate) — collection first, predicate second
         match = new TrueFalseConditionMatch(innerInvocation, assertionMethodName, [collectionOperation, predicateOperation]);
         return true;
-    }
-
-    internal static string GetDiagnosticId(TrueFalseConditionMatch match)
-    {
-        return match.AssertionMethodName switch
-        {
-            "Matches" => RuleIdentifiers.UseMatchesDiagnosticId,
-            "DoesNotMatch" => RuleIdentifiers.UseDoesNotMatchDiagnosticId,
-            "Contains" when IsStringContainsMatch(match) => RuleIdentifiers.UseStringContainsDiagnosticId,
-            "DoesNotContain" when IsStringContainsMatch(match) => RuleIdentifiers.UseStringDoesNotContainDiagnosticId,
-            "Contains" when IsCollectionAnyMatch(match) => RuleIdentifiers.UseCollectionAnyContainsDiagnosticId,
-            "DoesNotContain" when IsCollectionAnyMatch(match) => RuleIdentifiers.UseCollectionAnyDoesNotContainDiagnosticId,
-            "Contains" => RuleIdentifiers.UseCollectionContainsDiagnosticId,
-            "DoesNotContain" => RuleIdentifiers.UseCollectionDoesNotContainDiagnosticId,
-            "StartsWith" => RuleIdentifiers.UseStringStartsWithDiagnosticId,
-            "DoesNotStartWith" => RuleIdentifiers.UseStringDoesNotStartWithDiagnosticId,
-            "EndsWith" => RuleIdentifiers.UseStringEndsWithDiagnosticId,
-            "DoesNotEndWith" => RuleIdentifiers.UseStringDoesNotEndWithDiagnosticId,
-            "All" => RuleIdentifiers.UseCollectionAllDiagnosticId,
-            "DoesNotAll" => RuleIdentifiers.UseCollectionDoesNotAllDiagnosticId,
-            _ => throw new System.InvalidOperationException($"Unexpected assertion method: {match.AssertionMethodName}"),
-        };
-    }
-
-    private static bool IsStringContainsMatch(TrueFalseConditionMatch match)
-    {
-        return match.InnerInvocation.Instance?.Type?.SpecialType == SpecialType.System_String;
-    }
-
-    private static bool IsCollectionAnyMatch(TrueFalseConditionMatch match)
-    {
-        return match.InnerInvocation.TargetMethod.Name == "Any";
     }
 
     internal readonly record struct Symbols(

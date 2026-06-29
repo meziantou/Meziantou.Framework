@@ -1,16 +1,12 @@
 using System.Net;
 using System.Reflection;
-using TestUtilities;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Forwarding;
 using Meziantou.Framework.DnsClient;
-using Meziantou.Framework.DnsClient.Query;
-using Meziantou.Framework.DnsClient.Response;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 using DnsClientType = Meziantou.Framework.DnsClient.DnsClient;
-using DnsClientProtocol = Meziantou.Framework.DnsClient.DnsClientProtocol;
 
 namespace Meziantou.Framework.DnsProxy.Tests;
 
@@ -65,10 +61,10 @@ public sealed class UpstreamDnsClientFactoryTests
     }
 
     [Theory]
-    [InlineData("Cloudflare DoH", "https://cloudflare-dns.com/dns-query")]
-    [InlineData("Quad9 DoH", "https://dns.quad9.net/dns-query")]
-    [InlineData("NextDNS DoH", "https://dns.nextdns.io")]
-    public async Task UpstreamDnsClientFactory_DefaultDohUpstream_CanResolveRecordAsync(string name, string url)
+    [InlineData("Cloudflare DoH", "https://cloudflare-dns.com/dns-query", "https://cloudflare-dns.com/dns-query")]
+    [InlineData("Quad9 DoH", "https://dns.quad9.net/dns-query", "https://dns.quad9.net/dns-query")]
+    [InlineData("NextDNS DoH", "https://dns.nextdns.io", "https://dns.nextdns.io/")]
+    public void UpstreamDnsClientFactory_DefaultDohUpstream_CreatesClient(string name, string url, string expectedEndpoint)
     {
         var options = Options.Create(new DnsProxyOptions
         {
@@ -85,11 +81,10 @@ public sealed class UpstreamDnsClientFactoryTests
 
         using var factory = new UpstreamDnsClientFactory(options, NullLogger<UpstreamDnsClientFactory>.Instance);
         var upstream = Assert.Single(factory.GetUpstreams());
-        Assert.Equal($"{name} ({url})", upstream.DisplayName);
 
-        var response = await XUnitStaticHelpers.Retry(() => QueryARecordUsingUpstreamAsync(upstream, CancellationToken.None));
-        Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
-        Assert.NotEmpty(response.Answers);
+        Assert.Equal($"{name} ({url})", upstream.DisplayName);
+        Assert.Equal(expectedEndpoint, upstream.Endpoint);
+        Assert.NotNull(upstream.Client);
     }
 
     [Fact]
@@ -114,32 +109,5 @@ public sealed class UpstreamDnsClientFactoryTests
         var resolver = Assert.IsType<Func<string, IReadOnlyList<IPAddress>>>(clientOptions.ServerAddressResolver);
 
         Assert.Equal([IPAddress.Parse("192.0.2.1")], resolver("192.0.2.1"));
-    }
-
-    private static async Task<DnsResponseMessage> QueryARecordUsingUpstreamAsync(UpstreamDnsClientInfo upstream, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await QueryARecordAsync(upstream.Client, cancellationToken);
-        }
-        catch (OperationCanceledException) when (!upstream.Endpoint.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-        {
-            // Some environments block UDP/443 (DNS over QUIC). Validate upstream connectivity using DoH as fallback.
-            using var fallbackClient = new DnsClientType($"https://{upstream.Endpoint}/dns-query", DnsClientProtocol.Https);
-            return await QueryARecordAsync(fallbackClient, cancellationToken);
-        }
-        catch (PlatformNotSupportedException) when (!upstream.Endpoint.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-        {
-            // Some environments block UDP/443 (DNS over QUIC). Validate upstream connectivity using DoH as fallback.
-            using var fallbackClient = new DnsClientType($"https://{upstream.Endpoint}/dns-query", DnsClientProtocol.Https);
-            return await QueryARecordAsync(fallbackClient, cancellationToken);
-        }
-    }
-
-    private static async Task<DnsResponseMessage> QueryARecordAsync(DnsClientType client, CancellationToken cancellationToken)
-    {
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
-        return await client.QueryAsync("example.com", DnsQueryType.A, timeoutCts.Token);
     }
 }

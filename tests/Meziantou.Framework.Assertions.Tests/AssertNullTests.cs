@@ -26,6 +26,27 @@ public sealed class AssertNullTests
     }
 
     [Fact]
+    public void NullableValueType_Success()
+    {
+        int? actual = null;
+
+        AssertionsAssert.Null(actual);
+    }
+
+    [Fact]
+    public void NullableValueType_Fails()
+    {
+        int? actual = 42;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Null(actual), """
+            Assert.Null() assertion failed.
+            Expression: actual
+            Expected: <null>
+            Actual:   42
+            """);
+    }
+
+    [Fact]
     public void NotNull_Success()
     {
         var actual = "Hello";

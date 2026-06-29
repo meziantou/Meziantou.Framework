@@ -273,7 +273,7 @@ public sealed class DnsClient : IDisposable
         if (!Uri.TryCreate(server, UriKind.Absolute, out var uri))
             throw new ArgumentException($"Invalid DNS over HTTPS URL: {server}", nameof(server));
 
-        return new DnsHttpsTransport(uri, options.HttpHandler);
+        return new DnsHttpsTransport(uri, options.HttpHandler, options.HttpVersion, options.HttpVersionPolicy);
     }
 
     [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance")]

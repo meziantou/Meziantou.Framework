@@ -24,6 +24,8 @@ namespace Meziantou.Framework.DnsClient
         public Meziantou.Framework.DnsClient.DnssecValidationMode DnssecValidationMode { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.DnsClient.DnssecTrustAnchor> DnssecTrustAnchors { get => throw null; set { } }
         public System.TimeProvider TimeProvider { get => throw null; set { } }
+        public System.Version HttpVersion { get => throw null; set { } }
+        public System.Net.Http.HttpVersionPolicy HttpVersionPolicy { get => throw null; set { } }
         public System.Net.Http.HttpMessageHandler? HttpHandler { get => throw null; set { } }
         public System.Func<string, System.Collections.Generic.IReadOnlyList<System.Net.IPAddress>>? ServerAddressResolver { get => throw null; set { } }
     }

@@ -40,8 +40,6 @@ internal sealed class DnsProxyOptions
 
     public int MaxDnsQueriesPerClientPerMinute { get; set; } = 600;
 
-    public int MaxRateLimitClientEntries { get; set; } = 10_000;
-
     public DnssecValidationMode DnssecValidationMode { get; set; }
 
     public List<string> BootstrapDnsServers { get; set; } =

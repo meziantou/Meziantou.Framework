@@ -26,7 +26,6 @@ builder.Services.AddSingleton<RequestHistoryStore>();
 builder.Services.AddSingleton<FilteringPauseState>();
 builder.Services.AddSingleton<FilterEngineProvider>();
 builder.Services.AddHostedService<FilterEngineRefreshService>();
-builder.Services.AddSingleton<FilteringControlToken>();
 builder.Services.AddSingleton<CustomDnsRecordProvider>();
 builder.Services.AddSingleton<UpstreamDnsClientFactory>();
 builder.Services.AddSingleton<DnsResponseCache>();
@@ -70,25 +69,14 @@ try
     app.MapDnsHandler(dnsProxyHandler.HandleAsync);
     app.MapDnsOverHttps(dnsOverHttpsPath);
 
-    app.MapGet("/", (RequestHistoryStore historyStore, IOptions<DnsProxyOptions> optionsAccessor, FilterEngineProvider filters, FilteringPauseState filteringPauseState, FilteringControlToken filteringControlToken, UpstreamDnsClientFactory upstreams) =>
+    app.MapGet("/", (RequestHistoryStore historyStore, IOptions<DnsProxyOptions> optionsAccessor, FilterEngineProvider filters, FilteringPauseState filteringPauseState, UpstreamDnsClientFactory upstreams) =>
     {
-        var html = DiagnosticsPageRenderer.Render(optionsAccessor.Value, filters, filteringPauseState, filteringControlToken, upstreams.GetUpstreams(), historyStore.GetSnapshot());
+        var html = DiagnosticsPageRenderer.Render(optionsAccessor.Value, filters, filteringPauseState, upstreams.GetUpstreams(), historyStore.GetSnapshot());
         return Results.Content(html, "text/html; charset=utf-8");
     });
 
-    app.MapPost("/filtering/disable", async (HttpContext context, FilteringPauseState filteringPauseState, FilteringControlToken filteringControlToken) =>
+    app.MapPost("/filtering/disable", (FilteringPauseState filteringPauseState) =>
     {
-        if (!context.Request.HasFormContentType)
-        {
-            return Results.BadRequest();
-        }
-
-        var form = await context.Request.ReadFormAsync(context.RequestAborted).ConfigureAwait(false);
-        if (!filteringControlToken.IsValid(form[FilteringControlToken.FormFieldName]))
-        {
-            return Results.BadRequest();
-        }
-
         filteringPauseState.DisableFor(TimeSpan.FromMinutes(15));
 
         return Results.Redirect("/");

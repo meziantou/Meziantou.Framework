@@ -36,7 +36,6 @@ public sealed class DnsProxyOptionsTests
         Assert.Equal(TimeSpan.FromHours(1), options.MaximumCacheDuration);
         Assert.Equal(10_000, options.MaxCacheEntries);
         Assert.Equal(600, options.MaxDnsQueriesPerClientPerMinute);
-        Assert.Equal(10_000, options.MaxRateLimitClientEntries);
         Assert.Equal(DnssecValidationMode.None, options.DnssecValidationMode);
         Assert.Empty(options.CustomRecords);
         Assert.Collection(options.BootstrapDnsServers,
@@ -249,33 +248,27 @@ public sealed class DnsProxyOptionsTests
     [Fact]
     public void ClientRateLimiter_EnforcesConfiguredLimitPerClient()
     {
-        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 06, 28, 12, 0, 0, TimeSpan.Zero));
-        var limiter = new ClientRateLimiter(
+        using var limiter = new ClientRateLimiter(
             Options.Create(new DnsProxyOptions
             {
                 MaxDnsQueriesPerClientPerMinute = 2,
-            }),
-            timeProvider);
+            }));
         var clientAddress = IPAddress.Parse("192.0.2.1");
 
         Assert.True(limiter.TryAcquire(clientAddress));
         Assert.True(limiter.TryAcquire(clientAddress));
         Assert.False(limiter.TryAcquire(clientAddress));
-
-        timeProvider.Advance(TimeSpan.FromMinutes(1));
-
-        Assert.True(limiter.TryAcquire(clientAddress));
+        Assert.True(limiter.TryAcquire(IPAddress.Parse("192.0.2.2")));
     }
 
     [Fact]
     public void ClientRateLimiter_WhenDisabled_AllowsRequests()
     {
-        var limiter = new ClientRateLimiter(
+        using var limiter = new ClientRateLimiter(
             Options.Create(new DnsProxyOptions
             {
                 MaxDnsQueriesPerClientPerMinute = 0,
-            }),
-            TimeProvider.System);
+            }));
         var clientAddress = IPAddress.Parse("192.0.2.1");
 
         Assert.True(limiter.TryAcquire(clientAddress));

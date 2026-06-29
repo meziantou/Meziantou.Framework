@@ -6,7 +6,7 @@ namespace Meziantou.DnsProxy.Diagnostics;
 
 internal static class DiagnosticsPageRenderer
 {
-    public static string Render(DnsProxyOptions options, FilterEngineProvider filters, FilteringPauseState filteringPauseState, FilteringControlToken filteringControlToken, IReadOnlyList<UpstreamDnsClientInfo> upstreams, IReadOnlyList<RequestHistoryEntry> historyEntries)
+    public static string Render(DnsProxyOptions options, FilterEngineProvider filters, FilteringPauseState filteringPauseState, IReadOnlyList<UpstreamDnsClientInfo> upstreams, IReadOnlyList<RequestHistoryEntry> historyEntries)
     {
         var stringBuilder = new StringBuilder();
         stringBuilder.Append("""
@@ -46,7 +46,6 @@ internal static class DiagnosticsPageRenderer
         stringBuilder.Append("<li><span class='mono'>MaximumCacheDuration</span>: ").Append(HtmlEncode(options.MaximumCacheDuration.ToString())).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>MaxCacheEntries</span>: ").Append(HtmlEncode(options.MaxCacheEntries.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>MaxDnsQueriesPerClientPerMinute</span>: ").Append(HtmlEncode(options.MaxDnsQueriesPerClientPerMinute.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
-        stringBuilder.Append("<li><span class='mono'>MaxRateLimitClientEntries</span>: ").Append(HtmlEncode(options.MaxRateLimitClientEntries.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>DnssecValidationMode</span>: ").Append(HtmlEncode(options.DnssecValidationMode.ToString())).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>DiagnosticsHistoryCapacity</span>: ").Append(HtmlEncode(options.DiagnosticsHistoryCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append("</li>");
         stringBuilder.Append("<li><span class='mono'>Upstreams</span>: ").Append(HtmlEncode(string.Join(", ", upstreams.Select(u => u.DisplayName)))).Append("</li>");
@@ -59,26 +58,14 @@ internal static class DiagnosticsPageRenderer
         if (disabledUntilUtc is null)
         {
             stringBuilder.Append("<p>Filtering is enabled.</p>");
-            stringBuilder.Append("<form method='post' action='/filtering/disable'>")
-                .Append("<input type='hidden' name='")
-                .Append(HtmlEncode(FilteringControlToken.FormFieldName))
-                .Append("' value='")
-                .Append(HtmlEncode(filteringControlToken.Value))
-                .Append("' />")
-                .Append("<button type='submit'>Disable filtering for 15 minutes</button></form>");
+            stringBuilder.Append("<form method='post' action='/filtering/disable'><button type='submit'>Disable filtering for 15 minutes</button></form>");
         }
         else
         {
             stringBuilder.Append("<p>Filtering is disabled until <span class='mono'>")
                 .Append(HtmlEncode(disabledUntilUtc.Value.ToString("u", System.Globalization.CultureInfo.InvariantCulture)))
                 .Append("</span>.</p>");
-            stringBuilder.Append("<form method='post' action='/filtering/disable'>")
-                .Append("<input type='hidden' name='")
-                .Append(HtmlEncode(FilteringControlToken.FormFieldName))
-                .Append("' value='")
-                .Append(HtmlEncode(filteringControlToken.Value))
-                .Append("' />")
-                .Append("<button type='submit' disabled>Disable filtering for 15 minutes</button></form>");
+            stringBuilder.Append("<form method='post' action='/filtering/disable'><button type='submit' disabled>Disable filtering for 15 minutes</button></form>");
         }
 
         stringBuilder.Append("<h2>Recent Requests</h2>");

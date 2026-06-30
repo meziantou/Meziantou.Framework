@@ -18,6 +18,18 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(1)]
+    public static void DoesNotContain<T>(T expected, ICollection<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual is null)
+            return;
+
+        if (!actual.Contains(expected))
+            return;
+
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<T, ICollection<T>>("Not expected item", expected, actual, actualExpression, expectedExpression, message)));
+    }
+
+    [OverloadResolutionPriority(1)]
     public static void DoesNotContain<T>(T expected, IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)

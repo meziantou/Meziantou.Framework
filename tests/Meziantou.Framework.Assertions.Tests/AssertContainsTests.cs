@@ -31,6 +31,15 @@ public sealed class AssertContainsTests
     }
 
     [Fact]
+    public void ValueCollection_UsesCollectionComparer()
+    {
+        var actual = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };
+
+        AssertionsAssert.Contains("A", actual);
+        AssertionsAssert.DoesNotContain("B", actual);
+    }
+
+    [Fact]
     public void ValueEnumerable_Fails()
     {
         IEnumerable<int> actual = [1, 2, 3];

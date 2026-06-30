@@ -26,6 +26,26 @@ public partial class Assert
 
     /// <summary>Asserts that an enumerable contains the specified value.</summary>
     /// <param name="expected">The value expected in <paramref name="actual"/>.</param>
+    /// <param name="actual">The collection to inspect.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(1)]
+    public static void Contains<T>(T expected, [NotNull] ICollection<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<T>("Expected expression", "Expected item", expected, actualExpression, expectedExpression, message)));
+        }
+
+        if (actual.Contains(expected))
+            return;
+
+        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        throw new AssertionException(ErrorFormatter.Format(new ValueCollectionContainsAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression, message)));
+    }
+
+    /// <summary>Asserts that an enumerable contains the specified value.</summary>
+    /// <param name="expected">The value expected in <paramref name="actual"/>.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>

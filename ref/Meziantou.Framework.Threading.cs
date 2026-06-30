@@ -4,7 +4,7 @@
 
 namespace Meziantou.Framework.Collections.Concurrent
 {
-    public sealed class ConcurrentHashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
+    public sealed class ConcurrentHashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
         public bool IsEmpty { get => throw null; }
@@ -16,6 +16,16 @@ namespace Meziantou.Framework.Collections.Concurrent
         public void AddRange(System.Collections.Generic.IEnumerable<T>? values) { }
         public bool Remove(T item) => throw null;
         public void Clear() { }
+        public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public void IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) => throw null;
         public KeyEnumerator<T> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }

@@ -74,6 +74,7 @@ public sealed class FilterEngineProviderTests
     public async Task RefreshAsync_EmitsActivitiesWhenLoadingRemoteFilters()
     {
         using var cacheDirectory = TemporaryDirectory.Create();
+        var filterUrl = $"https://filters.example/{Guid.NewGuid():N}.txt";
         var options = Options.Create(new DnsProxyOptions
         {
             BlockListCacheFolderPath = cacheDirectory.FullPath,
@@ -81,7 +82,7 @@ public sealed class FilterEngineProviderTests
             [
                 new FilterListOption
                 {
-                    Url = "https://filters.example/list.txt",
+                    Url = filterUrl,
                     Format = nameof(DnsFilterListFormat.AdBlock),
                 },
             ],
@@ -104,8 +105,12 @@ public sealed class FilterEngineProviderTests
 
         await provider.RefreshAsync(CancellationToken.None);
 
-        var refreshActivity = Assert.Single(activities, activity => activity.OperationName == "dns_proxy.filters.refresh");
-        var loadActivity = Assert.Single(activities, activity => activity.OperationName == "dns_proxy.filters.load");
+        var loadActivity = Assert.Single(activities, activity =>
+            activity.OperationName == "dns_proxy.filters.load" &&
+            Equals(filterUrl, activity.GetTagItem("dns_proxy.filter.url")));
+        var refreshActivity = Assert.Single(activities, activity =>
+            activity.OperationName == "dns_proxy.filters.refresh" &&
+            activity.SpanId == loadActivity.ParentSpanId);
 
         Assert.Equal(refreshActivity.SpanId, loadActivity.ParentSpanId);
         Assert.Equal(ActivityStatusCode.Ok, refreshActivity.Status);
@@ -114,7 +119,7 @@ public sealed class FilterEngineProviderTests
         Assert.Equal(1, Assert.IsType<int>(refreshActivity.GetTagItem("dns_proxy.filter.loaded_count")));
         Assert.Equal(0, Assert.IsType<int>(refreshActivity.GetTagItem("dns_proxy.filter.failed_count")));
         Assert.Equal(1, Assert.IsType<int>(refreshActivity.GetTagItem("dns_proxy.rule.count")));
-        Assert.Equal("https://filters.example/list.txt", loadActivity.GetTagItem("dns_proxy.filter.url"));
+        Assert.Equal(filterUrl, loadActivity.GetTagItem("dns_proxy.filter.url"));
         Assert.Equal(nameof(DnsFilterListFormat.AdBlock), loadActivity.GetTagItem("dns_proxy.filter.format"));
         Assert.Equal(1, Assert.IsType<int>(loadActivity.GetTagItem("dns_proxy.filter.rule_count")));
     }

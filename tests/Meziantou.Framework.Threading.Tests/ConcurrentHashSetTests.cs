@@ -64,4 +64,46 @@ public class ConcurrentHashSetTests
         Assert.Equal(0, array[4]);
         Assert.Equal([1, 2, 3], array[1..4].Order());
     }
+
+    [Fact]
+    public void ImplementsSetInterfaces()
+    {
+        var set = new ConcurrentHashSet<int>();
+
+        Assert.IsAssignableTo<ISet<int>>(set);
+        Assert.IsAssignableTo<IReadOnlySet<int>>(set);
+    }
+
+    [Fact]
+    public void SetComparisonMethods_UseEqualityComparer()
+    {
+        var set = new ConcurrentHashSet<string>(StringComparer.OrdinalIgnoreCase);
+        set.AddRange("a", "b");
+
+        Assert.True(set.IsSubsetOf(["A", "B", "C"]));
+        Assert.True(set.IsProperSubsetOf(["A", "B", "C"]));
+        Assert.True(set.IsSupersetOf(["A"]));
+        Assert.True(set.IsProperSupersetOf(["A"]));
+        Assert.True(set.Overlaps(["A", "C"]));
+        Assert.True(set.SetEquals(["A", "B"]));
+    }
+
+    [Fact]
+    public void SetMutationMethods_UseEqualityComparer()
+    {
+        var set = new ConcurrentHashSet<string>(StringComparer.OrdinalIgnoreCase);
+        set.AddRange("a", "b");
+
+        set.UnionWith(["B", "c"]);
+        Assert.Equal(["a", "b", "c"], set.Order(StringComparer.OrdinalIgnoreCase));
+
+        set.IntersectWith(["A", "C"]);
+        Assert.Equal(["a", "c"], set.Order(StringComparer.OrdinalIgnoreCase));
+
+        set.SymmetricExceptWith(["A", "d", "D"]);
+        Assert.Equal(["c", "d"], set.Order(StringComparer.OrdinalIgnoreCase));
+
+        set.ExceptWith(["C"]);
+        Assert.Equal(["d"], set);
+    }
 }

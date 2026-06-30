@@ -3,74 +3,294 @@ using System.Diagnostics;
 
 namespace Meziantou.Framework.Assertions;
 
-internal sealed class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
+internal static class CollectionSnapshot
 {
-    private readonly List<T> _cache = [];
-    private readonly IEnumerable<T> _source;
-    private IEnumerator<T>? _enumerator;
-    private bool _isComplete;
-
-    public CollectionSnapshot(IEnumerable<T> source)
+    public static CollectionSnapshot<T> Create<T>(IEnumerable<T> source)
     {
-        _source = source;
+        return CollectionSnapshot<T>.Create(source);
     }
 
-    public bool IsComplete => _isComplete;
-
-    public int ObservedCount => _cache.Count;
-
-    public IReadOnlyList<T> Items => _cache;
-
-    public IEnumerator<T> GetEnumerator()
+    public static CollectionSnapshot<object?> Create(IEnumerable source)
     {
-        var index = 0;
-        while (TryGetItem(index, out var item))
+        if (source is IList list)
+            return new NonGenericListSnapshot(list);
+
+        return CollectionSnapshot<object?>.Create(EnumerateObjects(source));
+    }
+
+    public static AsyncCollectionSnapshot<T> Create<T>(IAsyncEnumerable<T> source)
+    {
+        return new AsyncCollectionSnapshot<T>(source);
+    }
+
+    private static IEnumerable<object?> EnumerateObjects(IEnumerable value)
+    {
+        foreach (var item in value)
         {
             yield return item;
-            index++;
         }
     }
 
-    private bool TryGetItem(int index, out T item)
+    private sealed class NonGenericListSnapshot(IList source) : CollectionSnapshot<object?>
     {
-        if (index < _cache.Count)
-        {
-            item = _cache[index];
-            return true;
-        }
+        private readonly ListAdapter _items = new(source);
 
-        if (_isComplete)
+        public override bool IsComplete => true;
+
+        public override int ObservedCount => _items.Count;
+
+        public override IReadOnlyList<object?> Items => _items;
+
+        public override bool TryGetItem(int index, out object? item)
         {
-            item = default!;
+            if (index < source.Count)
+            {
+                item = source[index];
+                return true;
+            }
+
+            item = default;
+
             return false;
         }
 
-        _enumerator ??= _source.GetEnumerator();
-
-        Debug.Assert(_enumerator is not null);
-        if (_enumerator.MoveNext())
+        private sealed class ListAdapter(IList source) : IReadOnlyList<object?>
         {
-            item = _enumerator.Current;
-            _cache.Add(item);
-            return true;
+            public int Count => source.Count;
+
+            public object? this[int index] => source[index];
+
+            public IEnumerator<object?> GetEnumerator()
+            {
+                for (var i = 0; i < source.Count; i++)
+                {
+                    yield return source[i];
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+    }
+}
+
+internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
+{
+    public abstract bool IsComplete { get; }
+
+    public abstract int ObservedCount { get; }
+
+    public abstract IReadOnlyList<T> Items { get; }
+
+    public static CollectionSnapshot<T> Create(IEnumerable<T> source)
+    {
+        if (source is IReadOnlyList<T> readOnlyList)
+            return new ReadOnlyListSnapshot(readOnlyList);
+
+        if (source is IList<T> list)
+            return new ListSnapshot(list);
+
+        return new LazySnapshot(source);
+    }
+
+    public abstract bool TryGetItem(int index, out T item);
+
+    public void EnsureComplete()
+    {
+        if (IsComplete)
+            return;
+
+        EnsureCompleteCore();
+    }
+
+    public Enumerator GetEnumerator()
+    {
+        return new Enumerator(this);
+    }
+
+    public virtual void Dispose()
+    {
+    }
+
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    protected virtual void EnsureCompleteCore()
+    {
+        for (var index = ObservedCount; TryGetItem(index, out _); index++)
+        {
+        }
+    }
+
+    public sealed class Enumerator(CollectionSnapshot<T> snapshot) : IEnumerator<T>
+    {
+        private int _index = -1;
+
+        public T Current { get; private set; } = default!;
+
+        object? IEnumerator.Current => Current;
+
+        public bool MoveNext()
+        {
+            _index++;
+            if (snapshot.TryGetItem(_index, out var item))
+            {
+                Current = item;
+                return true;
+            }
+
+            Current = default!;
+
+            return false;
         }
 
-        _isComplete = true;
-        _enumerator.Dispose();
-        _enumerator = null;
-        item = default!;
+        public void Reset()
+        {
+            _index = -1;
+            Current = default!;
+        }
 
-        return false;
+        public void Dispose()
+        {
+        }
     }
 
-    public void Dispose()
+    private sealed class ReadOnlyListSnapshot(IReadOnlyList<T> source) : CollectionSnapshot<T>
     {
-        _enumerator?.Dispose();
-        _enumerator = null;
+        public override bool IsComplete => true;
+
+        public override int ObservedCount => source.Count;
+
+        public override IReadOnlyList<T> Items => source;
+
+        public override bool TryGetItem(int index, out T item)
+        {
+            if (index < source.Count)
+            {
+                item = source[index];
+                return true;
+            }
+
+            item = default!;
+
+            return false;
+        }
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
+    private sealed class ListSnapshot(IList<T> source) : CollectionSnapshot<T>
     {
-        return GetEnumerator();
+        private readonly ListAdapter _items = new(source);
+
+        public override bool IsComplete => true;
+
+        public override int ObservedCount => _items.Count;
+
+        public override IReadOnlyList<T> Items => _items;
+
+        public override bool TryGetItem(int index, out T item)
+        {
+            if (index < source.Count)
+            {
+                item = source[index];
+                return true;
+            }
+
+            item = default!;
+
+            return false;
+        }
+
+        private sealed class ListAdapter(IList<T> source) : IReadOnlyList<T>
+        {
+            public int Count => source.Count;
+
+            public T this[int index] => source[index];
+
+            public IEnumerator<T> GetEnumerator() => source.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+    }
+
+    private sealed class LazySnapshot : CollectionSnapshot<T>
+    {
+        private readonly List<T> _cache;
+        private readonly IEnumerable<T> _source;
+        private IEnumerator<T>? _enumerator;
+        private bool _isComplete;
+
+        public LazySnapshot(IEnumerable<T> source)
+        {
+            _source = source;
+            _cache = Enumerable.TryGetNonEnumeratedCount(source, out var count) ? new List<T>(count) : [];
+        }
+
+        public override bool IsComplete => _isComplete;
+
+        public override int ObservedCount => _cache.Count;
+
+        public override IReadOnlyList<T> Items => _cache;
+
+        public override bool TryGetItem(int index, out T item)
+        {
+            if (index < _cache.Count)
+            {
+                item = _cache[index];
+                return true;
+            }
+
+            if (_isComplete)
+            {
+                item = default!;
+                return false;
+            }
+
+            _enumerator ??= _source.GetEnumerator();
+
+            Debug.Assert(_enumerator is not null);
+            while (_cache.Count <= index && _enumerator.MoveNext())
+            {
+                item = _enumerator.Current;
+                _cache.Add(item);
+            }
+
+            if (index < _cache.Count)
+            {
+                item = _cache[index];
+                return true;
+            }
+
+            CompleteEnumeration();
+            item = default!;
+
+            return false;
+        }
+
+        protected override void EnsureCompleteCore()
+        {
+            _enumerator ??= _source.GetEnumerator();
+
+            Debug.Assert(_enumerator is not null);
+            while (_enumerator.MoveNext())
+            {
+                _cache.Add(_enumerator.Current);
+            }
+
+            CompleteEnumeration();
+        }
+
+        public override void Dispose()
+        {
+            _enumerator?.Dispose();
+            _enumerator = null;
+            base.Dispose();
+        }
+
+        private void CompleteEnumeration()
+        {
+            _isComplete = true;
+            _enumerator?.Dispose();
+            _enumerator = null;
+        }
     }
 }

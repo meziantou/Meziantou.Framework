@@ -31,10 +31,9 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     public static void Empty<T>(IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        if (!actualEnumerator.MoveNext())
+        if (!actualSnapshot.TryGetItem(0, out _))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new CollectionEmptyAssertionError<T>(actualSnapshot, actualExpression, message)));
@@ -45,10 +44,9 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     public static void Empty(System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
 
-        if (!actualEnumerator.MoveNext())
+        if (!actualSnapshot.TryGetItem(0, out _))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new CollectionEmptyAssertionError<object?>(actualSnapshot, actualExpression, message)));
@@ -59,10 +57,9 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     public static async Task Empty<T>(IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        if (!await actualEnumerator.MoveNextAsync().ConfigureAwait(false))
+        if (await actualSnapshot.TryGetItem(0).ConfigureAwait(false) is (false, _))
             return;
 
         throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionEmptyAssertionError<T>(actualSnapshot, actualExpression, message)).ConfigureAwait(false));

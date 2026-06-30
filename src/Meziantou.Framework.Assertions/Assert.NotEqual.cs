@@ -117,8 +117,8 @@ public partial class Assert
         if (actual is null)
             return;
 
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
         if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, (IEqualityComparer<T>)EqualityComparer<T>.Default).ConfigureAwait(false))
             return;
 
@@ -130,8 +130,8 @@ public partial class Assert
         if (actual is null)
             return;
 
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
         if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, comparer).ConfigureAwait(false))
             return;
 
@@ -144,8 +144,8 @@ public partial class Assert
         if (actual is null)
             return;
 
-        await using var actualSnapshot = new AsyncCollectionSnapshot<TActual>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
+        await using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
+        await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
         if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, (System.Collections.IEqualityComparer?)null).ConfigureAwait(false))
             return;
 
@@ -190,86 +190,77 @@ public partial class Assert
 
     private static bool CollectionsEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
-        using var expectedEnumerator = expectedSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
         comparer ??= EqualityComparer<T>.Default;
 
-        while (true)
+        for (var index = 0; ; index++)
         {
-            var actualHasNext = actualEnumerator.MoveNext();
-            var expectedHasNext = expectedEnumerator.MoveNext();
+            var actualHasNext = actualSnapshot.TryGetItem(index, out var actualItem);
+            var expectedHasNext = expectedSnapshot.TryGetItem(index, out var expectedItem);
             if (!actualHasNext && !expectedHasNext)
                 return true;
 
             if (actualHasNext != expectedHasNext)
                 return false;
 
-            if (!comparer.Equals(expectedEnumerator.Current, actualEnumerator.Current))
+            if (!comparer.Equals(expectedItem, actualItem))
                 return false;
         }
     }
 
     private static bool CollectionsEqual<TExpected, TActual>(IEnumerable<TExpected> expected, IEnumerable<TActual> actual, System.Collections.IEqualityComparer? comparer)
     {
-        using var actualSnapshot = new CollectionSnapshot<TActual>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<TExpected>(expected);
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
-        using var expectedEnumerator = expectedSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
 
-        while (true)
+        for (var index = 0; ; index++)
         {
-            var actualHasNext = actualEnumerator.MoveNext();
-            var expectedHasNext = expectedEnumerator.MoveNext();
+            var actualHasNext = actualSnapshot.TryGetItem(index, out var actualItem);
+            var expectedHasNext = expectedSnapshot.TryGetItem(index, out var expectedItem);
             if (!actualHasNext && !expectedHasNext)
                 return true;
 
             if (actualHasNext != expectedHasNext)
                 return false;
 
-            if (!ValuesEqual(expectedEnumerator.Current, actualEnumerator.Current, comparer))
+            if (!ValuesEqual(expectedItem, actualItem, comparer))
                 return false;
         }
     }
 
     private static async Task<bool> AsyncCollectionsEqual<T>(AsyncCollectionSnapshot<T> expectedSnapshot, AsyncCollectionSnapshot<T> actualSnapshot, IEqualityComparer<T>? comparer)
     {
-        await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
-        await using var expectedEnumerator = expectedSnapshot.GetAsyncEnumerator();
         comparer ??= EqualityComparer<T>.Default;
 
-        while (true)
+        for (var index = 0; ; index++)
         {
-            var actualHasNext = await actualEnumerator.MoveNextAsync().ConfigureAwait(false);
-            var expectedHasNext = await expectedEnumerator.MoveNextAsync().ConfigureAwait(false);
+            var (actualHasNext, actualItem) = await actualSnapshot.TryGetItem(index).ConfigureAwait(false);
+            var (expectedHasNext, expectedItem) = await expectedSnapshot.TryGetItem(index).ConfigureAwait(false);
             if (!actualHasNext && !expectedHasNext)
                 return true;
 
             if (actualHasNext != expectedHasNext)
                 return false;
 
-            if (!comparer.Equals(expectedEnumerator.Current, actualEnumerator.Current))
+            if (!comparer.Equals(expectedItem, actualItem))
                 return false;
         }
     }
 
     private static async Task<bool> AsyncCollectionsEqual<TExpected, TActual>(AsyncCollectionSnapshot<TExpected> expectedSnapshot, AsyncCollectionSnapshot<TActual> actualSnapshot, System.Collections.IEqualityComparer? comparer)
     {
-        await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
-        await using var expectedEnumerator = expectedSnapshot.GetAsyncEnumerator();
-
-        while (true)
+        for (var index = 0; ; index++)
         {
-            var actualHasNext = await actualEnumerator.MoveNextAsync().ConfigureAwait(false);
-            var expectedHasNext = await expectedEnumerator.MoveNextAsync().ConfigureAwait(false);
+            var (actualHasNext, actualItem) = await actualSnapshot.TryGetItem(index).ConfigureAwait(false);
+            var (expectedHasNext, expectedItem) = await expectedSnapshot.TryGetItem(index).ConfigureAwait(false);
             if (!actualHasNext && !expectedHasNext)
                 return true;
 
             if (actualHasNext != expectedHasNext)
                 return false;
 
-            if (!ValuesEqual(expectedEnumerator.Current, actualEnumerator.Current, comparer))
+            if (!ValuesEqual(expectedItem, actualItem, comparer))
                 return false;
         }
     }

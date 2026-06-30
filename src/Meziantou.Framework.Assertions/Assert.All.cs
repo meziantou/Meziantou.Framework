@@ -51,17 +51,14 @@ public partial class Assert
     /// <param name="predicateExpression">The expression that produced the predicate.</param>
     public static void All<T>(IEnumerable<T> actual, Func<T, bool> predicate, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        var index = 0;
-        foreach (var item in actualSnapshot)
+        for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
         {
             if (!predicate(item))
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionAllPredicateAssertionError<T>(actualSnapshot, index, actualExpression, predicateExpression, message)));
             }
-
-            index++;
         }
     }
 
@@ -82,10 +79,9 @@ public partial class Assert
     /// <param name="assertionExpression">The expression that produced the assertion.</param>
     public static void All<T>(IEnumerable<T> actual, Action<T, int> assertion, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(assertion))] string? assertionExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        var index = 0;
-        foreach (var item in actualSnapshot)
+        for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
         {
             try
             {
@@ -95,8 +91,6 @@ public partial class Assert
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionAllAssertionError<T>(actualSnapshot, index, exception, actualExpression, assertionExpression, message)), exception);
             }
-
-            index++;
         }
     }
 
@@ -161,10 +155,9 @@ public partial class Assert
     /// <param name="assertionExpression">The expression that produced the assertion.</param>
     public static async Task All<T>(IAsyncEnumerable<T> actual, Func<T, int, Task> assertion, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(assertion))] string? assertionExpression = null)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        var index = 0;
-        await foreach (var item in ((IAsyncEnumerable<T>)actualSnapshot).ConfigureAwait(false))
+        for (var index = 0; await actualSnapshot.TryGetItem(index).ConfigureAwait(false) is (true, var item); index++)
         {
             try
             {
@@ -174,8 +167,6 @@ public partial class Assert
             {
                 throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionAllAssertionError<T>(actualSnapshot, index, exception, actualExpression, assertionExpression, message)).ConfigureAwait(false), exception);
             }
-
-            index++;
         }
     }
 }

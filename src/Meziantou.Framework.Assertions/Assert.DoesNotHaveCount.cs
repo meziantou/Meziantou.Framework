@@ -22,8 +22,8 @@ public partial class Assert
 
     public static void DoesNotHaveCount<T>(int expectedCount, IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        EnsureComplete(actualSnapshot);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        actualSnapshot.EnsureComplete();
         if (actualSnapshot.Items.Count != expectedCount)
             return;
 
@@ -32,8 +32,8 @@ public partial class Assert
 
     public static void DoesNotHaveCount(int expectedCount, System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        EnsureComplete(actualSnapshot);
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        actualSnapshot.EnsureComplete();
         if (actualSnapshot.Items.Count != expectedCount)
             return;
 
@@ -42,8 +42,8 @@ public partial class Assert
 
     public static async Task DoesNotHaveCount<T>(int expectedCount, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         if (actualSnapshot.Items.Count != expectedCount)
             return;
 

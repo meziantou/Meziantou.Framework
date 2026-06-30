@@ -29,6 +29,7 @@ builder.Services.AddHostedService<FilterEngineRefreshService>();
 builder.Services.AddSingleton<CustomDnsRecordProvider>();
 builder.Services.AddSingleton<UpstreamDnsClientFactory>();
 builder.Services.AddSingleton<DnsResponseCache>();
+builder.Services.AddSingleton<ClientRateLimiter>();
 builder.Services.AddSingleton<DnsProxyHandler>();
 
 var certificate = bootstrapOptions.HasSecureServerListenerConfigured ? GetRequiredCertificate(bootstrapOptions) : null;

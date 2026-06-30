@@ -21,10 +21,10 @@ public sealed class DnsResponseCacheTests
         var response = CreateResponse(DnsResponseCode.NoError);
         response.Answers.Add(CreateARecord(recordTtl));
 
-        cache.Store(question, response);
+        Store(cache, question, response);
 
         var cachedResponse = CreateResponse();
-        Assert.True(cache.TryGet(question, cachedResponse));
+        Assert.True(TryGet(cache, question, cachedResponse));
         Assert.Equal(expectedTtl, Assert.Single(cachedResponse.Answers).TimeToLive);
     }
 
@@ -39,10 +39,10 @@ public sealed class DnsResponseCacheTests
         response.Authorities.Add(CreateNsRecord(120));
         response.AdditionalRecords.Add(CreateOptRecord(1));
 
-        cache.Store(question, response);
+        Store(cache, question, response);
 
         var cachedResponse = CreateResponse();
-        Assert.True(cache.TryGet(question, cachedResponse));
+        Assert.True(TryGet(cache, question, cachedResponse));
         Assert.Equal(120u, Assert.Single(cachedResponse.Answers).TimeToLive);
         Assert.Equal(120u, Assert.Single(cachedResponse.Authorities).TimeToLive);
         Assert.Equal(1u, Assert.Single(cachedResponse.AdditionalRecords).TimeToLive);
@@ -56,11 +56,11 @@ public sealed class DnsResponseCacheTests
         var response = CreateResponse(DnsResponseCode.NoError);
         response.Answers.Add(CreateARecord(300));
 
-        cache.Store(new DnsQuestion("Example.COM.", DnsQueryType.A, DnsQueryClass.IN), response);
+        Store(cache, new DnsQuestion("Example.COM.", DnsQueryType.A, DnsQueryClass.IN), response);
 
-        Assert.True(cache.TryGet(new DnsQuestion("example.com", DnsQueryType.A, DnsQueryClass.IN), CreateResponse()));
-        Assert.False(cache.TryGet(new DnsQuestion("example.com", DnsQueryType.AAAA, DnsQueryClass.IN), CreateResponse()));
-        Assert.False(cache.TryGet(new DnsQuestion("example.com", DnsQueryType.A, DnsQueryClass.CH), CreateResponse()));
+        Assert.True(TryGet(cache, new DnsQuestion("example.com", DnsQueryType.A, DnsQueryClass.IN), CreateResponse()));
+        Assert.False(TryGet(cache, new DnsQuestion("example.com", DnsQueryType.AAAA, DnsQueryClass.IN), CreateResponse()));
+        Assert.False(TryGet(cache, new DnsQuestion("example.com", DnsQueryType.A, DnsQueryClass.CH), CreateResponse()));
     }
 
     [Fact]
@@ -72,9 +72,9 @@ public sealed class DnsResponseCacheTests
         var response = CreateResponse(DnsResponseCode.NoError);
         response.Answers.Add(CreateARecord(300));
 
-        cache.Store(question, response);
+        Store(cache, question, response);
 
-        Assert.False(cache.TryGet(question, CreateResponse()));
+        Assert.False(TryGet(cache, question, CreateResponse()));
     }
 
     [Fact]
@@ -86,9 +86,9 @@ public sealed class DnsResponseCacheTests
         var response = CreateResponse(DnsResponseCode.NameError);
         response.Authorities.Add(CreateSoaRecord(300));
 
-        cache.Store(question, response);
+        Store(cache, question, response);
 
-        Assert.False(cache.TryGet(question, CreateResponse()));
+        Assert.False(TryGet(cache, question, CreateResponse()));
     }
 
     [Fact]
@@ -99,12 +99,12 @@ public sealed class DnsResponseCacheTests
         var question = CreateQuestion();
         var response = CreateResponse(DnsResponseCode.NoError);
         response.Answers.Add(CreateARecord(300));
-        cache.Store(question, response);
+        Store(cache, question, response);
         timeProvider.Advance(TimeSpan.FromSeconds(42));
 
         var cachedResponse = CreateResponse();
 
-        Assert.True(cache.TryGet(question, cachedResponse));
+        Assert.True(TryGet(cache, question, cachedResponse));
         Assert.Equal(258u, Assert.Single(cachedResponse.Answers).TimeToLive);
     }
 
@@ -118,10 +118,10 @@ public sealed class DnsResponseCacheTests
         response.Authorities.Add(CreateSoaRecord(60));
         response.Authorities.Add(CreateSoaRecord(120));
 
-        cache.Store(question, response);
+        Store(cache, question, response);
 
         var cachedResponse = CreateResponse();
-        Assert.True(cache.TryGet(question, cachedResponse));
+        Assert.True(TryGet(cache, question, cachedResponse));
         Assert.All(cachedResponse.Authorities, authority => Assert.Equal(60u, authority.TimeToLive));
     }
 
@@ -134,10 +134,10 @@ public sealed class DnsResponseCacheTests
         var response = CreateResponse(DnsResponseCode.NoError);
         response.Authorities.Add(CreateNsRecord(300));
 
-        cache.Store(question, response);
+        Store(cache, question, response);
 
         var cachedResponse = CreateResponse();
-        Assert.True(cache.TryGet(question, cachedResponse));
+        Assert.True(TryGet(cache, question, cachedResponse));
         Assert.Equal(DnsResponseCode.NoError, cachedResponse.ResponseCode);
         Assert.Empty(cachedResponse.Answers);
         Assert.Equal(90u, Assert.Single(cachedResponse.Authorities).TimeToLive);
@@ -151,17 +151,53 @@ public sealed class DnsResponseCacheTests
         var question = CreateQuestion();
         var response = CreateResponse(DnsResponseCode.NoError);
         response.Answers.Add(CreateARecord(30));
-        cache.Store(question, response);
+        Store(cache, question, response);
         timeProvider.Advance(TimeSpan.FromSeconds(31));
 
-        Assert.False(cache.TryGet(question, CreateResponse()));
+        Assert.False(TryGet(cache, question, CreateResponse()));
+    }
+
+    [Fact]
+    public void TryGet_UsesEdnsStateAsPartOfCacheKey()
+    {
+        var timeProvider = new ManualTimeProvider();
+        var cache = CreateCache(timeProvider);
+        var question = CreateQuestion();
+        var response = CreateResponse(DnsResponseCode.NoError);
+        response.Answers.Add(CreateARecord(300));
+        var dnssecEdnsOptions = new DnsEdnsOptions { DnssecOk = true };
+
+        Store(cache, question, response, dnssecEdnsOptions);
+
+        Assert.True(TryGet(cache, question, CreateResponse(), dnssecEdnsOptions));
+        Assert.False(TryGet(cache, question, CreateResponse()));
+        Assert.False(TryGet(cache, question, CreateResponse(), new DnsEdnsOptions { DnssecOk = false }));
+    }
+
+    [Fact]
+    public void Store_WhenMaxCacheEntriesIsExceeded_EvictsOldestEntry()
+    {
+        var timeProvider = new ManualTimeProvider();
+        var cache = CreateCache(timeProvider, maxCacheEntries: 1);
+        var firstQuestion = new DnsQuestion("first.example.com", DnsQueryType.A);
+        var secondQuestion = new DnsQuestion("second.example.com", DnsQueryType.A);
+        var response = CreateResponse(DnsResponseCode.NoError);
+        response.Answers.Add(CreateARecord(300));
+
+        Store(cache, firstQuestion, response);
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        Store(cache, secondQuestion, response);
+
+        Assert.False(TryGet(cache, firstQuestion, CreateResponse()));
+        Assert.True(TryGet(cache, secondQuestion, CreateResponse()));
     }
 
     private static DnsResponseCache CreateCache(
         ManualTimeProvider timeProvider,
         TimeSpan? positiveCacheDuration = null,
         TimeSpan? negativeCacheDuration = null,
-        TimeSpan? maximumCacheDuration = null)
+        TimeSpan? maximumCacheDuration = null,
+        int maxCacheEntries = 10_000)
     {
         return new DnsResponseCache(
             Options.Create(new DnsProxyOptions
@@ -169,8 +205,19 @@ public sealed class DnsResponseCacheTests
                 PositiveCacheDuration = positiveCacheDuration ?? TimeSpan.FromMinutes(5),
                 NegativeCacheDuration = negativeCacheDuration ?? TimeSpan.FromMinutes(5),
                 MaximumCacheDuration = maximumCacheDuration ?? TimeSpan.FromHours(1),
+                MaxCacheEntries = maxCacheEntries,
             }),
             timeProvider);
+    }
+
+    private static void Store(DnsResponseCache cache, DnsQuestion question, DnsMessage response, DnsEdnsOptions? ednsOptions = null)
+    {
+        cache.Store(question, ednsOptions, response);
+    }
+
+    private static bool TryGet(DnsResponseCache cache, DnsQuestion question, DnsMessage response, DnsEdnsOptions? ednsOptions = null)
+    {
+        return cache.TryGet(question, ednsOptions, response);
     }
 
     private static DnsQuestion CreateQuestion()

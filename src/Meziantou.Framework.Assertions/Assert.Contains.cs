@@ -40,7 +40,7 @@ public partial class Assert
         if (actual.Contains(expected))
             return;
 
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         throw new AssertionException(ErrorFormatter.Format(new ValueCollectionContainsAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression, message)));
     }
 

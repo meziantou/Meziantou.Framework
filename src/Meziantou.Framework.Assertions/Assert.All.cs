@@ -51,17 +51,14 @@ public partial class Assert
     /// <param name="predicateExpression">The expression that produced the predicate.</param>
     public static void All<T>(IEnumerable<T> actual, Func<T, bool> predicate, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        var index = 0;
-        foreach (var item in actualSnapshot)
+        for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
         {
             if (!predicate(item))
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionAllPredicateAssertionError<T>(actualSnapshot, index, actualExpression, predicateExpression, message)));
             }
-
-            index++;
         }
     }
 

@@ -218,7 +218,7 @@ public partial class Assert
         if (actual is null)
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IAsyncEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
         }
 
@@ -230,7 +230,7 @@ public partial class Assert
         if (actual is null)
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IAsyncEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
         }
 
@@ -243,7 +243,7 @@ public partial class Assert
         if (actual is null)
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
-            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<TExpected>, IAsyncEnumerable<TActual>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
         }
 
@@ -271,7 +271,7 @@ public partial class Assert
         if (actual is null)
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
         }
 

@@ -40,23 +40,50 @@ internal sealed class AsyncCollectionSnapshot<T> : IAsyncEnumerable<T>, IAsyncDi
         _enumerator ??= _source.GetAsyncEnumerator(cancellationToken);
 
         Debug.Assert(_enumerator is not null);
-        if (await _enumerator.MoveNextAsync().ConfigureAwait(false))
+        while (_cache.Count <= index && await _enumerator.MoveNextAsync().ConfigureAwait(false))
         {
             var item = _enumerator.Current;
             _cache.Add(item);
-
-            return (true, item);
         }
 
-        _isComplete = true;
-        await _enumerator.DisposeAsync().ConfigureAwait(false);
-        _enumerator = null;
+        if (index < _cache.Count)
+        {
+            return (true, _cache[index]);
+        }
+
+        await CompleteEnumerationAsync().ConfigureAwait(false);
 
         return (false, default!);
     }
 
+    public async ValueTask EnsureCompleteAsync(CancellationToken cancellationToken = default)
+    {
+        if (_isComplete)
+            return;
+
+        _enumerator ??= _source.GetAsyncEnumerator(cancellationToken);
+
+        Debug.Assert(_enumerator is not null);
+        while (await _enumerator.MoveNextAsync().ConfigureAwait(false))
+        {
+            _cache.Add(_enumerator.Current);
+        }
+
+        await CompleteEnumerationAsync().ConfigureAwait(false);
+    }
+
     public async ValueTask DisposeAsync()
     {
+        if (_enumerator is not null)
+        {
+            await _enumerator.DisposeAsync().ConfigureAwait(false);
+            _enumerator = null;
+        }
+    }
+
+    private async ValueTask CompleteEnumerationAsync()
+    {
+        _isComplete = true;
         if (_enumerator is not null)
         {
             await _enumerator.DisposeAsync().ConfigureAwait(false);

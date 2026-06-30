@@ -7,7 +7,7 @@ public partial class Assert
     public static void Collection<T>(IEnumerable<T> actual, Action<T>[] inspectors, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
-        EnsureComplete(actualSnapshot);
+        actualSnapshot.EnsureComplete();
         if (actualSnapshot.Items.Count != inspectors.Length)
         {
             throw new AssertionException(ErrorFormatter.Format(new CollectionAssertionError<T>(actualSnapshot, inspectors.Length, actualExpression, message)));

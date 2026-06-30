@@ -20,7 +20,7 @@ public partial class Assert
 
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
-        EnsureComplete(actualSnapshot);
+        actualSnapshot.EnsureComplete();
         if (actualSnapshot.Items.Count is 0 || !comparer.Equals(expected, actualSnapshot.Items[^1]))
         {
             return;
@@ -35,7 +35,7 @@ public partial class Assert
             return;
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);
-        EnsureComplete(actualSnapshot);
+        actualSnapshot.EnsureComplete();
         if (actualSnapshot.Items.Count is 0 || !object.Equals(expected, actualSnapshot.Items[^1]))
         {
             return;
@@ -83,8 +83,8 @@ public partial class Assert
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
 
-        EnsureComplete(expectedSnapshot);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        expectedSnapshot.EnsureComplete();
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         if (GetFirstSuffixDifferenceIndex(expectedSnapshot.Items, actualSnapshot.Items, comparer) is not null)
             return;
 
@@ -98,8 +98,8 @@ public partial class Assert
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         using var expectedSnapshot = CollectionSnapshot.Create(expected);
-        EnsureComplete(expectedSnapshot);
-        EnsureComplete(actualSnapshot);
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
         if (GetFirstSuffixDifferenceIndex(expectedSnapshot.Items, actualSnapshot.Items, comparer) is not null)
             return;
 

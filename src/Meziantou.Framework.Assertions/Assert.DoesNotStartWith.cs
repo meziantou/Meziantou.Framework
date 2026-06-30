@@ -88,7 +88,7 @@ public partial class Assert
                 return;
         }
 
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         throw new AssertionException(ErrorFormatter.Format(new DoesNotStartWithAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected prefix", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 

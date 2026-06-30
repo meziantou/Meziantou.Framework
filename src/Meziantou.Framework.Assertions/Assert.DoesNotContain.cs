@@ -157,8 +157,8 @@ public partial class Assert
         comparer ??= EqualityComparer<T>.Default;
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-        EnsureComplete(expectedSnapshot);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        expectedSnapshot.EnsureComplete();
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         if (!ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
@@ -172,8 +172,8 @@ public partial class Assert
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         using var expectedSnapshot = CollectionSnapshot.Create(expected);
-        EnsureComplete(expectedSnapshot);
-        EnsureComplete(actualSnapshot);
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
         if (!ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 

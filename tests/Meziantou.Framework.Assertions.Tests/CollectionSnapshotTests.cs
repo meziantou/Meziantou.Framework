@@ -47,6 +47,18 @@ public sealed class CollectionSnapshotTests
     }
 
     [Fact]
+    public void EnsureComplete_ReadOnlyList_IsNoOp()
+    {
+        var source = new ThrowingEnumerableReadOnlyList<int>([1, 2, 3]);
+
+        using var snapshot = CollectionSnapshot.Create<int>(source);
+        snapshot.EnsureComplete();
+
+        AssertionsAssert.True(snapshot.IsComplete);
+        AssertionsAssert.Same(source, snapshot.Items);
+    }
+
+    [Fact]
     public void Create_LazyEnumerableCachesItemsIncrementally()
     {
         var source = new TrackingEnumerable<int>([1, 2, 3]);
@@ -83,6 +95,20 @@ public sealed class CollectionSnapshotTests
     }
 
     [Fact]
+    public void Create_LazyEnumerable_CanFetchSkippedIndex()
+    {
+        var source = new TrackingEnumerable<int>([1, 2, 3]);
+
+        using var snapshot = CollectionSnapshot.Create<int>(source);
+
+        AssertionsAssert.True(snapshot.TryGetItem(2, out var item));
+        AssertionsAssert.Equal(3, item);
+        AssertionsAssert.Equal(3, snapshot.ObservedCount);
+        AssertionsAssert.Equal(3, source.MoveNextCount);
+        AssertionsAssert.False(snapshot.IsComplete);
+    }
+
+    [Fact]
     public async Task Create_AsyncEnumerableCachesItemsIncrementally()
     {
         var source = new TrackingAsyncEnumerable<int>([1, 2, 3]);
@@ -104,6 +130,22 @@ public sealed class CollectionSnapshotTests
         await snapshot.DisposeAsync();
 
         AssertionsAssert.True(source.EnumeratorDisposed);
+    }
+
+    [Fact]
+    public async Task Create_AsyncEnumerable_CanFetchSkippedIndex()
+    {
+        var source = new TrackingAsyncEnumerable<int>([1, 2, 3]);
+
+        await using var snapshot = CollectionSnapshot.Create<int>(source);
+
+        var (success, item) = await snapshot.TryGetItem(2, TestContext.Current.CancellationToken);
+
+        AssertionsAssert.True(success);
+        AssertionsAssert.Equal(3, item);
+        AssertionsAssert.Equal(3, snapshot.ObservedCount);
+        AssertionsAssert.Equal(3, source.MoveNextCount);
+        AssertionsAssert.False(snapshot.IsComplete);
     }
 
     [Fact]

@@ -40,8 +40,8 @@ public partial class Assert
     {
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-        EnsureComplete(actualSnapshot);
-        EnsureComplete(expectedSnapshot);
+        actualSnapshot.EnsureComplete();
+        expectedSnapshot.EnsureComplete();
         comparer ??= EqualityComparer<T>.Default;
 
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
@@ -55,8 +55,8 @@ public partial class Assert
     {
         using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
         using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
-        EnsureComplete(actualSnapshot);
-        EnsureComplete(expectedSnapshot);
+        actualSnapshot.EnsureComplete();
+        expectedSnapshot.EnsureComplete();
 
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem, comparer));
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
@@ -70,7 +70,7 @@ public partial class Assert
         if (actual is null)
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression, message)));
         }
 
@@ -82,7 +82,7 @@ public partial class Assert
         if (actual is null)
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression, message)));
         }
 
@@ -95,7 +95,7 @@ public partial class Assert
         if (actual is null)
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
-            await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+            await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<TExpected>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression, message)));
         }
 
@@ -106,8 +106,8 @@ public partial class Assert
     {
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
-        await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
+        await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         comparer ??= EqualityComparer<T>.Default;
 
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
@@ -121,8 +121,8 @@ public partial class Assert
     {
         await using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
         await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
-        await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
+        await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
 
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem, comparer));
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)

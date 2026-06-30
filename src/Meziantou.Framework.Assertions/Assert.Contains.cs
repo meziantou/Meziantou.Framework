@@ -139,7 +139,7 @@ public partial class Assert
             return value;
 
         using var actualSnapshot = CollectionSnapshot.Create<KeyValuePair<TKey, TValue>>(actual);
-        EnsureComplete(actualSnapshot);
+        actualSnapshot.EnsureComplete();
         throw new AssertionException(ErrorFormatter.Format(new KeyValuePairCollectionContainsAssertionError<TKey, TValue>(expected, actualSnapshot, actualExpression, expectedExpression, message)));
     }
 
@@ -264,8 +264,8 @@ public partial class Assert
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
 
-        EnsureComplete(expectedSnapshot);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        expectedSnapshot.EnsureComplete();
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         if (ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
@@ -288,8 +288,8 @@ public partial class Assert
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         using var expectedSnapshot = CollectionSnapshot.Create(expected);
 
-        EnsureComplete(expectedSnapshot);
-        EnsureComplete(actualSnapshot);
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
         if (ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
@@ -375,19 +375,5 @@ public partial class Assert
         }
 
         return false;
-    }
-
-    private static void EnsureComplete<T>(CollectionSnapshot<T> snapshot)
-    {
-        for (var i = 0; snapshot.TryGetItem(i, out _); i++)
-        {
-        }
-    }
-
-    private static async Task EnsureCompleteAsync<T>(AsyncCollectionSnapshot<T> snapshot)
-    {
-        for (var i = 0; await snapshot.TryGetItem(i).ConfigureAwait(false) is (true, _); i++)
-        {
-        }
     }
 }

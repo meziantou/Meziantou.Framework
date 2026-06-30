@@ -94,6 +94,14 @@ internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
 
     public abstract bool TryGetItem(int index, out T item);
 
+    public void EnsureComplete()
+    {
+        if (IsComplete)
+            return;
+
+        EnsureCompleteCore();
+    }
+
     public Enumerator GetEnumerator()
     {
         return new Enumerator(this);
@@ -106,6 +114,13 @@ internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    protected virtual void EnsureCompleteCore()
+    {
+        for (var index = ObservedCount; TryGetItem(index, out _); index++)
+        {
+        }
+    }
 
     public sealed class Enumerator(CollectionSnapshot<T> snapshot) : IEnumerator<T>
     {
@@ -233,19 +248,35 @@ internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
             _enumerator ??= _source.GetEnumerator();
 
             Debug.Assert(_enumerator is not null);
-            if (_enumerator.MoveNext())
+            while (_cache.Count <= index && _enumerator.MoveNext())
             {
                 item = _enumerator.Current;
                 _cache.Add(item);
+            }
+
+            if (index < _cache.Count)
+            {
+                item = _cache[index];
                 return true;
             }
 
-            _isComplete = true;
-            _enumerator.Dispose();
-            _enumerator = null;
+            CompleteEnumeration();
             item = default!;
 
             return false;
+        }
+
+        protected override void EnsureCompleteCore()
+        {
+            _enumerator ??= _source.GetEnumerator();
+
+            Debug.Assert(_enumerator is not null);
+            while (_enumerator.MoveNext())
+            {
+                _cache.Add(_enumerator.Current);
+            }
+
+            CompleteEnumeration();
         }
 
         public override void Dispose()
@@ -253,6 +284,13 @@ internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
             _enumerator?.Dispose();
             _enumerator = null;
             base.Dispose();
+        }
+
+        private void CompleteEnumeration()
+        {
+            _isComplete = true;
+            _enumerator?.Dispose();
+            _enumerator = null;
         }
     }
 }

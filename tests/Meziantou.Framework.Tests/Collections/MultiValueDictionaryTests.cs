@@ -17,7 +17,7 @@ public sealed class MultiValueDictionaryTests
         dictionary.Add("a", 1);
         dictionary.Add("a", 2);
 
-        Assert.True(dictionary.ContainsKey("a"));
+        Assert.Contains("a", dictionary);
         Assert.Single(dictionary);
         Assert.Equal([1, 2], dictionary["a"]);
     }
@@ -67,7 +67,7 @@ public sealed class MultiValueDictionaryTests
         dictionary.Add("a", 1);
 
         Assert.True(dictionary.Remove("a", 1));
-        Assert.False(dictionary.ContainsKey("a"));
+        Assert.DoesNotContain("a", dictionary);
         Assert.Empty(dictionary);
     }
 
@@ -78,7 +78,7 @@ public sealed class MultiValueDictionaryTests
         dictionary.AddRange("a", [1, 2, 3]);
 
         Assert.True(dictionary.Remove("a"));
-        Assert.False(dictionary.ContainsKey("a"));
+        Assert.DoesNotContain("a", dictionary);
         Assert.Empty(dictionary);
     }
 

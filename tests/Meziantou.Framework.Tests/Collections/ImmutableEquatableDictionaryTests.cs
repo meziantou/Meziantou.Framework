@@ -12,7 +12,7 @@ public sealed class ImmutableEquatableDictionaryTests
         var empty = ImmutableEquatableDictionary<string, int>.Empty;
 
         Assert.Empty(empty);
-        Assert.False(empty.ContainsKey("test"));
+        Assert.DoesNotContain("test", empty);
     }
 
     [Fact]
@@ -89,9 +89,9 @@ public sealed class ImmutableEquatableDictionaryTests
     {
         var dict = new[] { ("a", 1), ("b", 2) }.ToImmutableEquatableDictionary();
 
-        Assert.True(dict.ContainsKey("a"));
-        Assert.True(dict.ContainsKey("b"));
-        Assert.False(dict.ContainsKey("c"));
+        Assert.Contains("a", dict);
+        Assert.Contains("b", dict);
+        Assert.DoesNotContain("c", dict);
     }
 
     [Fact]

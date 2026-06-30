@@ -4,6 +4,7 @@ namespace Meziantou.Framework.Assertions;
 
 public partial class Assert
 {
+    [OverloadResolutionPriority(1)]
     public static void DoesNotContain<T>(T expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
@@ -16,6 +17,7 @@ public partial class Assert
         }
     }
 
+    [OverloadResolutionPriority(1)]
     public static void DoesNotContain<T>(T expected, IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
@@ -31,6 +33,7 @@ public partial class Assert
         }
     }
 
+    [OverloadResolutionPriority(1)]
     public static void DoesNotContain<T>(IEnumerable<T>? actual, Func<T, bool> predicate, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
     {
         if (actual is null)
@@ -44,6 +47,7 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new CollectionDoesNotContainPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression, message)));
     }
 
+    [OverloadResolutionPriority(1)]
     public static void DoesNotContain<TKey, TValue>(TKey expected, IEnumerable<KeyValuePair<TKey, TValue>>? actual, IEqualityComparer<TKey>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
@@ -59,6 +63,7 @@ public partial class Assert
         }
     }
 
+    [OverloadResolutionPriority(1)]
     public static void DoesNotContain<TKey, TValue>(TKey expected, Dictionary<TKey, TValue>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
         where TKey : notnull
     {
@@ -71,6 +76,7 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<TKey, Dictionary<TKey, TValue>>("Not expected key", expected, actual, actualExpression, expectedExpression, message)));
     }
 
+    [OverloadResolutionPriority(-1)]
     public static void DoesNotContain(object? expected, System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
@@ -85,6 +91,7 @@ public partial class Assert
         }
     }
 
+    [OverloadResolutionPriority(-1)]
     public static void DoesNotContain(object? expected, System.Collections.IDictionary? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)

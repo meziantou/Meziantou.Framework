@@ -200,7 +200,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal(["new"], value.SettableValues);
         Assert.Equal(["new"], value.EnumerableValues);
         Assert.Equal(1, value.Lookup["existing"]);
-        Assert.False(value.Lookup.ContainsKey("new"));
+        Assert.DoesNotContain("new", value.Lookup);
         Assert.Equal(1, value.Dimensions.Width);
     }
 

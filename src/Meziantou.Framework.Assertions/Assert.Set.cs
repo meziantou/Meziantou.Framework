@@ -13,8 +13,8 @@ public partial class Assert
     public static void ProperSubset<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
         var expectedSet = CreateSet(expectedSnapshot, comparer);
         var actualSet = CreateSet(actualSnapshot, comparer);
@@ -45,8 +45,8 @@ public partial class Assert
     public static void ProperSuperset<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
         var expectedSet = CreateSet(expectedSnapshot, comparer);
         var actualSet = CreateSet(actualSnapshot, comparer);

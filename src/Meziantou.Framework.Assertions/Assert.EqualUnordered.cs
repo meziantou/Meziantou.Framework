@@ -38,8 +38,8 @@ public partial class Assert
 
     private static void EqualUnorderedCollections<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message, string? actualExpression, string? expectedExpression)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
         EnsureComplete(actualSnapshot);
         EnsureComplete(expectedSnapshot);
         comparer ??= EqualityComparer<T>.Default;
@@ -53,8 +53,8 @@ public partial class Assert
 
     private static void EqualUnorderedCollections<TExpected, TActual>(IEnumerable<TExpected> expected, IEnumerable<TActual> actual, System.Collections.IEqualityComparer? comparer, string? message, string? actualExpression, string? expectedExpression)
     {
-        using var actualSnapshot = new CollectionSnapshot<TActual>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<TExpected>(expected);
+        using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
         EnsureComplete(actualSnapshot);
         EnsureComplete(expectedSnapshot);
 
@@ -69,7 +69,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+            await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
             await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
         }
@@ -81,7 +81,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+            await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
             await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
         }
@@ -94,7 +94,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
+            await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
             await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<TExpected>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
         }
@@ -104,8 +104,8 @@ public partial class Assert
 
     private static async Task EqualUnorderedAsyncCollections<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer, string? message, string? actualExpression, string? expectedExpression)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
         await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
         await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
         comparer ??= EqualityComparer<T>.Default;
@@ -119,8 +119,8 @@ public partial class Assert
 
     private static async Task EqualUnorderedAsyncCollections<TExpected, TActual>(IAsyncEnumerable<TExpected> expected, IAsyncEnumerable<TActual> actual, System.Collections.IEqualityComparer? comparer, string? message, string? actualExpression, string? expectedExpression)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<TActual>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
+        await using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
+        await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
         await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
         await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
 

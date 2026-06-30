@@ -20,17 +20,12 @@ internal sealed class AsyncCollectionSnapshot<T> : IAsyncEnumerable<T>, IAsyncDi
 
     public IReadOnlyList<T> Items => _cache;
 
-    public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    public Enumerator GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
-        var index = 0;
-        while (await TryGetItem(index, cancellationToken).ConfigureAwait(false) is (true, var item))
-        {
-            yield return item;
-            index++;
-        }
+        return new Enumerator(this, cancellationToken);
     }
 
-    private async ValueTask<(bool Success, T Item)> TryGetItem(int index, CancellationToken cancellationToken)
+    public async ValueTask<(bool Success, T Item)> TryGetItem(int index, CancellationToken cancellationToken = default)
     {
         if (index < _cache.Count)
         {
@@ -66,6 +61,38 @@ internal sealed class AsyncCollectionSnapshot<T> : IAsyncEnumerable<T>, IAsyncDi
         {
             await _enumerator.DisposeAsync().ConfigureAwait(false);
             _enumerator = null;
+        }
+    }
+
+    IAsyncEnumerator<T> IAsyncEnumerable<T>.GetAsyncEnumerator(CancellationToken cancellationToken)
+    {
+        return GetAsyncEnumerator(cancellationToken);
+    }
+
+    public sealed class Enumerator(AsyncCollectionSnapshot<T> snapshot, CancellationToken cancellationToken) : IAsyncEnumerator<T>
+    {
+        private int _index = -1;
+
+        public T Current { get; private set; } = default!;
+
+        public async ValueTask<bool> MoveNextAsync()
+        {
+            _index++;
+            var (success, item) = await snapshot.TryGetItem(_index, cancellationToken).ConfigureAwait(false);
+            if (success)
+            {
+                Current = item;
+                return true;
+            }
+
+            Current = default!;
+
+            return false;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return default;
         }
     }
 }

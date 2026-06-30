@@ -22,7 +22,7 @@ public partial class Assert
 
     public static void HasCount<T>(int expectedCount, IEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         EnsureComplete(actualSnapshot);
         if (actualSnapshot.Items.Count == expectedCount)
             return;
@@ -32,7 +32,7 @@ public partial class Assert
 
     public static void HasCount(int expectedCount, System.Collections.IEnumerable actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
         EnsureComplete(actualSnapshot);
         if (actualSnapshot.Items.Count == expectedCount)
             return;
@@ -42,7 +42,7 @@ public partial class Assert
 
     public static async Task HasCount<T>(int expectedCount, IAsyncEnumerable<T> actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
         if (actualSnapshot.Items.Count == expectedCount)
             return;
@@ -176,7 +176,7 @@ public partial class Assert
 
     private static void AssertCount<T>(int expectedCount, IEnumerable<T> actual, CountComparison comparison, string assertionName, string expectedCountText, string? actualExpression)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         EnsureComplete(actualSnapshot);
         if (CompareCount(actualSnapshot.Items.Count, expectedCount, comparison))
             return;
@@ -186,7 +186,7 @@ public partial class Assert
 
     private static async Task AssertCountAsync<T>(int expectedCount, IAsyncEnumerable<T> actual, CountComparison comparison, string assertionName, string expectedCountText, string? actualExpression)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
         if (CompareCount(actualSnapshot.Items.Count, expectedCount, comparison))
             return;

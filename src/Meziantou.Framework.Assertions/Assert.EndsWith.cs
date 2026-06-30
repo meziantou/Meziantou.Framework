@@ -34,7 +34,7 @@ public partial class Assert
         }
 
         comparer ??= EqualityComparer<T>.Default;
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         EnsureComplete(actualSnapshot);
 
         if (actualSnapshot.Items.Count > 0 && comparer.Equals(expected, actualSnapshot.Items[^1]))
@@ -55,7 +55,7 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression)));
         }
 
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
         EnsureComplete(actualSnapshot);
 
         if (actualSnapshot.Items.Count > 0 && object.Equals(expected, actualSnapshot.Items[^1]))
@@ -130,8 +130,8 @@ public partial class Assert
 
         comparer ??= EqualityComparer<T>.Default;
 
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
 
         EnsureComplete(expectedSnapshot);
         await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
@@ -155,8 +155,8 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression)));
         }
 
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create(expected);
 
         EnsureComplete(expectedSnapshot);
         EnsureComplete(actualSnapshot);

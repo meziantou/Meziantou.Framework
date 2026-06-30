@@ -34,10 +34,9 @@ public partial class Assert
         }
 
         comparer ??= EqualityComparer<T>.Default;
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        if (!actualEnumerator.MoveNext() || !comparer.Equals(expected, actualEnumerator.Current))
+        if (!actualSnapshot.TryGetItem(0, out var item) || !comparer.Equals(expected, item))
         {
             throw new AssertionException(ErrorFormatter.Format(new ValueCollectionStartsWithAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
         }
@@ -55,10 +54,9 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression)));
         }
 
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
 
-        if (!actualEnumerator.MoveNext() || !object.Equals(expected, actualEnumerator.Current))
+        if (!actualSnapshot.TryGetItem(0, out var item) || !object.Equals(expected, item))
         {
             throw new AssertionException(ErrorFormatter.Format(new ValueCollectionStartsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
         }
@@ -130,21 +128,16 @@ public partial class Assert
 
         comparer ??= EqualityComparer<T>.Default;
 
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
-        await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
-        using var expectedEnumerator = expectedSnapshot.GetEnumerator();
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
 
-        var index = 0;
-        while (expectedEnumerator.MoveNext())
+        for (var index = 0; expectedSnapshot.TryGetItem(index, out var expectedItem); index++)
         {
-            var actualHasNext = await actualEnumerator.MoveNextAsync().ConfigureAwait(false);
-            if (!actualHasNext || !comparer.Equals(expectedEnumerator.Current, actualEnumerator.Current))
+            var (actualHasNext, actualItem) = await actualSnapshot.TryGetItem(index).ConfigureAwait(false);
+            if (!actualHasNext || !comparer.Equals(expectedItem, actualItem))
             {
                 throw new AssertionException(await ErrorFormatter.FormatAsync(new CollectionAsyncCollectionStartsWithAssertionError<T, T>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression)).ConfigureAwait(false));
             }
-
-            index++;
         }
     }
 
@@ -183,21 +176,16 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression)));
         }
 
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
-        using var expectedEnumerator = expectedSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create(expected);
 
-        var index = 0;
-        while (expectedEnumerator.MoveNext())
+        for (var index = 0; expectedSnapshot.TryGetItem(index, out var expectedItem); index++)
         {
-            var actualHasNext = actualEnumerator.MoveNext();
-            if (!actualHasNext || !Equals(expectedEnumerator.Current, actualEnumerator.Current, comparer))
+            var actualHasNext = actualSnapshot.TryGetItem(index, out var actualItem);
+            if (!actualHasNext || !Equals(expectedItem, actualItem, comparer))
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionStartsWithAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression)));
             }
-
-            index++;
         }
     }
 

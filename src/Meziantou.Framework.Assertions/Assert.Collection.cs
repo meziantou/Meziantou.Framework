@@ -6,7 +6,7 @@ public partial class Assert
 {
     public static void Collection<T>(IEnumerable<T> actual, Action<T>[] inspectors, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         EnsureComplete(actualSnapshot);
         if (actualSnapshot.Items.Count != inspectors.Length)
         {

@@ -37,11 +37,10 @@ public partial class Assert
     public static void Distinct<T>(IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        foreach (var item in actualSnapshot)
+        for (var duplicateIndex = 0; actualSnapshot.TryGetItem(duplicateIndex, out var item); duplicateIndex++)
         {
-            var duplicateIndex = actualSnapshot.Items.Count - 1;
             var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
             if (firstIndex >= 0)
             {
@@ -56,11 +55,10 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     public static void Distinct(System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
 
-        foreach (var item in actualSnapshot)
+        for (var duplicateIndex = 0; actualSnapshot.TryGetItem(duplicateIndex, out var item); duplicateIndex++)
         {
-            var duplicateIndex = actualSnapshot.Items.Count - 1;
             var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
             if (firstIndex >= 0)
             {
@@ -76,11 +74,10 @@ public partial class Assert
     public static async Task Distinct<T>(IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        await foreach (var item in ((IAsyncEnumerable<T>)actualSnapshot).ConfigureAwait(false))
+        for (var duplicateIndex = 0; await actualSnapshot.TryGetItem(duplicateIndex).ConfigureAwait(false) is (true, var item); duplicateIndex++)
         {
-            var duplicateIndex = actualSnapshot.Items.Count - 1;
             var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
             if (firstIndex >= 0)
             {

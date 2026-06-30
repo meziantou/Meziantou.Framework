@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -5,6 +7,8 @@ namespace Meziantou.Framework.Assertions;
 
 public partial class Assert
 {
+    private static readonly ConcurrentDictionary<StructuralMembersCacheKey, Dictionary<string, StructuralMember>> StructuralMembersCache = new();
+
     public static void Equivalent(object? expected, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         Equivalent(expected, actual, options: null, message, actualExpression, expectedExpression);
@@ -163,18 +167,23 @@ public partial class Assert
 
     private static Dictionary<string, StructuralMember> GetStructuralMembers(Type type, StringComparer comparer)
     {
-        var result = new Dictionary<string, StructuralMember>(comparer);
-        foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        return StructuralMembersCache.GetOrAdd(new StructuralMembersCacheKey(type, comparer), CreateStructuralMembers);
+    }
+
+    private static Dictionary<string, StructuralMember> CreateStructuralMembers(StructuralMembersCacheKey cacheKey)
+    {
+        var result = new Dictionary<string, StructuralMember>(cacheKey.Comparer);
+        foreach (var property in cacheKey.Type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             if (property.GetMethod is null || property.GetIndexParameters().Length != 0)
                 continue;
 
-            result.TryAdd(property.Name, new StructuralMember(property.Name, value => property.GetValue(value)));
+            result.TryAdd(property.Name, new StructuralMember(property.Name, property));
         }
 
-        foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+        foreach (var field in cacheKey.Type.GetFields(BindingFlags.Instance | BindingFlags.Public))
         {
-            result.TryAdd(field.Name, new StructuralMember(field.Name, value => field.GetValue(value)));
+            result.TryAdd(field.Name, new StructuralMember(field.Name, field));
         }
 
         return result;
@@ -233,13 +242,40 @@ public partial class Assert
         }
     }
 
-    private sealed class StructuralMember(string name, Func<object, object?> getValue)
+    private sealed class StructuralMember(string name, MemberInfo member)
     {
         public string Name { get; } = name;
 
         public object? GetValue(object obj)
         {
-            return getValue(obj);
+            return member switch
+            {
+                PropertyInfo property => property.GetValue(obj),
+                FieldInfo field => field.GetValue(obj),
+                _ => throw new UnreachableException(),
+            };
+        }
+    }
+
+    private readonly struct StructuralMembersCacheKey(Type type, StringComparer comparer) : IEquatable<StructuralMembersCacheKey>
+    {
+        public Type Type { get; } = type;
+        public StringComparer Comparer { get; } = comparer;
+
+        public bool Equals(StructuralMembersCacheKey other)
+        {
+            return Type == other.Type
+                && Comparer == other.Comparer;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is StructuralMembersCacheKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Type, Comparer);
         }
     }
 

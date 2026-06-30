@@ -7,20 +7,20 @@ public partial class Assert
     /// <summary>Asserts that an object is null.</summary>
     /// <param name="actual">The value to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Null(object? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Null(object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         if (actual is null)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NullAssertionError(actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new NullAssertionError(actual, actualExpression, message)));
     }
 
-    public static void Null<T>(T? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Null<T>(T? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
         where T : struct
     {
         if (!actual.HasValue)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NullAssertionError(actual, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new NullAssertionError(actual, actualExpression, message)));
     }
 }

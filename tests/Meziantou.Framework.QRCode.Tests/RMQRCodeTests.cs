@@ -175,9 +175,9 @@ public class RMQRCodeTests
         var qr = QRCode.CreateRMQR("AB", ErrorCorrectionLevel.M);
         var svg = qr.ToSvg(new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 });
 
-        Assert.StartsWith("<svg ", svg, StringComparison.Ordinal);
-        Assert.Contains($"viewBox=\"0 0 {qr.Width} {qr.Height}\"", svg, StringComparison.Ordinal);
-        Assert.EndsWith("</svg>", svg, StringComparison.Ordinal);
+        Assert.StartsWith("<svg ", svg);
+        Assert.Contains($"viewBox=\"0 0 {qr.Width} {qr.Height}\"", svg);
+        Assert.EndsWith("</svg>", svg);
     }
 
     [Fact]

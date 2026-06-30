@@ -1,7 +1,8 @@
 namespace Meziantou.Framework.Assertions;
 
-internal readonly struct NegativeCountAssertionError<TActual>(string assertionName, int notExpectedCount, int actualCount, TActual actualValue, string? actualExpression)
+internal readonly struct NegativeCountAssertionError<TActual>(string assertionName, int notExpectedCount, int actualCount, TActual actualValue, string? actualExpression, string? message = null)
 {
+    public string? Message { get; } = message;
     public string AssertionName { get; } = assertionName;
     public int NotExpectedCount { get; } = notExpectedCount;
     public int ActualCount { get; } = actualCount;

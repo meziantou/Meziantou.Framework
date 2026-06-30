@@ -35,7 +35,7 @@ public class ConcurrentHashSetTests
 
         Assert.True(set.Add("a"));
         Assert.False(set.Add("A")); // comparer treats "a" and "A" as equal
-        Assert.True(set.Contains("A"));
+        Assert.Contains("A", set);
 
         Assert.False(set.Remove("missing"));
         Assert.True(set.Remove("A"));

@@ -10,10 +10,10 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
-    public static T Throws<T>(Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static T Throws<T>(Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return (T)Throws(typeof(T), action, actionExpression);
+        return (T)Throws(typeof(T), action, message, actionExpression);
     }
 
     /// <summary>Asserts that the action throws an exception exactly of the specified type.</summary>
@@ -21,9 +21,9 @@ public partial class Assert
     /// <param name="action">The action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <returns>The thrown exception.</returns>
-    public static Exception Throws(Type expectedExceptionType, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static Exception Throws(Type expectedExceptionType, Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsCore(expectedExceptionType, allowDerivedTypes: false, action, actionExpression);
+        return ThrowsCore(expectedExceptionType, allowDerivedTypes: false, action, message, actionExpression);
     }
 
     /// <summary>Asserts that the function throws an exception exactly of the specified type.</summary>
@@ -31,10 +31,10 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
-    public static T Throws<T>(Func<object?> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static T Throws<T>(Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return (T)Throws(typeof(T), action, actionExpression);
+        return (T)Throws(typeof(T), action, message, actionExpression);
     }
 
     /// <summary>Asserts that the function throws an exception exactly of the specified type.</summary>
@@ -42,9 +42,9 @@ public partial class Assert
     /// <param name="action">The function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <returns>The thrown exception.</returns>
-    public static Exception Throws(Type expectedExceptionType, Func<object?> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static Exception Throws(Type expectedExceptionType, Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsCore(expectedExceptionType, allowDerivedTypes: false, () => _ = action(), actionExpression);
+        return ThrowsCore(expectedExceptionType, allowDerivedTypes: false, () => _ = action(), message, actionExpression);
     }
 
     /// <summary>Asserts that the asynchronous action throws an exception exactly of the specified type.</summary>
@@ -52,10 +52,10 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
-    public static async Task<T> Throws<T>(Func<Task> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<T> Throws<T>(Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return (T)await Throws(typeof(T), action, actionExpression).ConfigureAwait(false);
+        return (T)await Throws(typeof(T), action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Asserts that the asynchronous action throws an exception exactly of the specified type.</summary>
@@ -63,9 +63,9 @@ public partial class Assert
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <returns>The thrown exception.</returns>
-    public static Task<Exception> Throws(Type expectedExceptionType, Func<Task> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<Exception> Throws(Type expectedExceptionType, Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: false, action, actionExpression);
+        return await ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: false, action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Asserts that the asynchronous function throws an exception exactly of the specified type.</summary>
@@ -73,10 +73,10 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The exact expected exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
-    public static async Task<T> Throws<T>(Func<Task<object?>> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<T> Throws<T>(Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return (T)await Throws(typeof(T), action, actionExpression).ConfigureAwait(false);
+        return (T)await Throws(typeof(T), action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Asserts that the asynchronous function throws an exception exactly of the specified type.</summary>
@@ -84,9 +84,9 @@ public partial class Assert
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <returns>The thrown exception.</returns>
-    public static Task<Exception> Throws(Type expectedExceptionType, Func<Task<object?>> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<Exception> Throws(Type expectedExceptionType, Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: false, async () => _ = await action().ConfigureAwait(false), actionExpression);
+        return await ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: false, async () => _ = await action().ConfigureAwait(false), message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception exactly of the specified type.</summary>
@@ -95,10 +95,10 @@ public partial class Assert
     /// <typeparam name="T">The exact expected exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static Task<T> ThrowsAsync<T>(Func<Task> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<T> ThrowsAsync<T>(Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return Throws<T>(action, actionExpression);
+        return await Throws<T>(action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception exactly of the specified type.</summary>
@@ -107,9 +107,9 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <returns>The thrown exception.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static Task<Exception> ThrowsAsync(Type expectedExceptionType, Func<Task> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<Exception> ThrowsAsync(Type expectedExceptionType, Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return Throws(expectedExceptionType, action, actionExpression);
+        return await Throws(expectedExceptionType, action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception exactly of the specified type.</summary>
@@ -118,10 +118,10 @@ public partial class Assert
     /// <typeparam name="T">The exact expected exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static Task<T> ThrowsAsync<T>(Func<Task<object?>> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<T> ThrowsAsync<T>(Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return Throws<T>(action, actionExpression);
+        return await Throws<T>(action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception exactly of the specified type.</summary>
@@ -130,9 +130,9 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <returns>The thrown exception.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static Task<Exception> ThrowsAsync(Type expectedExceptionType, Func<Task<object?>> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<Exception> ThrowsAsync(Type expectedExceptionType, Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return Throws(expectedExceptionType, action, actionExpression);
+        return await Throws(expectedExceptionType, action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Asserts that the action throws an exception assignable to the specified type.</summary>
@@ -140,10 +140,10 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
-    public static T ThrowsAny<T>(Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static T ThrowsAny<T>(Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return (T)ThrowsAny(typeof(T), action, actionExpression);
+        return (T)ThrowsAny(typeof(T), action, message, actionExpression);
     }
 
     /// <summary>Asserts that the action throws an exception assignable to the specified type.</summary>
@@ -151,9 +151,9 @@ public partial class Assert
     /// <param name="action">The action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <returns>The thrown exception.</returns>
-    public static Exception ThrowsAny(Type expectedExceptionType, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static Exception ThrowsAny(Type expectedExceptionType, Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsCore(expectedExceptionType, allowDerivedTypes: true, action, actionExpression);
+        return ThrowsCore(expectedExceptionType, allowDerivedTypes: true, action, message, actionExpression);
     }
 
     /// <summary>Asserts that the function throws an exception assignable to the specified type.</summary>
@@ -161,10 +161,10 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
-    public static T ThrowsAny<T>(Func<object?> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static T ThrowsAny<T>(Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return (T)ThrowsAny(typeof(T), action, actionExpression);
+        return (T)ThrowsAny(typeof(T), action, message, actionExpression);
     }
 
     /// <summary>Asserts that the function throws an exception assignable to the specified type.</summary>
@@ -172,9 +172,9 @@ public partial class Assert
     /// <param name="action">The function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <returns>The thrown exception.</returns>
-    public static Exception ThrowsAny(Type expectedExceptionType, Func<object?> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static Exception ThrowsAny(Type expectedExceptionType, Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsCore(expectedExceptionType, allowDerivedTypes: true, () => _ = action(), actionExpression);
+        return ThrowsCore(expectedExceptionType, allowDerivedTypes: true, () => _ = action(), message, actionExpression);
     }
 
     /// <summary>Asserts that the asynchronous action throws an exception assignable to the specified type.</summary>
@@ -182,10 +182,10 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
-    public static async Task<T> ThrowsAny<T>(Func<Task> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<T> ThrowsAny<T>(Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return (T)await ThrowsAny(typeof(T), action, actionExpression).ConfigureAwait(false);
+        return (T)await ThrowsAny(typeof(T), action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Asserts that the asynchronous action throws an exception assignable to the specified type.</summary>
@@ -193,9 +193,9 @@ public partial class Assert
     /// <param name="action">The asynchronous action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <returns>The thrown exception.</returns>
-    public static Task<Exception> ThrowsAny(Type expectedExceptionType, Func<Task> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<Exception> ThrowsAny(Type expectedExceptionType, Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: true, action, actionExpression);
+        return await ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: true, action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Asserts that the asynchronous function throws an exception assignable to the specified type.</summary>
@@ -203,10 +203,10 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <typeparam name="T">The expected base exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
-    public static async Task<T> ThrowsAny<T>(Func<Task<object?>> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<T> ThrowsAny<T>(Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return (T)await ThrowsAny(typeof(T), action, actionExpression).ConfigureAwait(false);
+        return (T)await ThrowsAny(typeof(T), action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Asserts that the asynchronous function throws an exception assignable to the specified type.</summary>
@@ -214,9 +214,9 @@ public partial class Assert
     /// <param name="action">The asynchronous function expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <returns>The thrown exception.</returns>
-    public static Task<Exception> ThrowsAny(Type expectedExceptionType, Func<Task<object?>> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<Exception> ThrowsAny(Type expectedExceptionType, Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: true, async () => _ = await action().ConfigureAwait(false), actionExpression);
+        return await ThrowsCoreAsync(expectedExceptionType, allowDerivedTypes: true, async () => _ = await action().ConfigureAwait(false), message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception assignable to the specified type.</summary>
@@ -225,10 +225,10 @@ public partial class Assert
     /// <typeparam name="T">The expected base exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static Task<T> ThrowsAnyAsync<T>(Func<Task> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<T> ThrowsAnyAsync<T>(Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return ThrowsAny<T>(action, actionExpression);
+        return await ThrowsAny<T>(action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception assignable to the specified type.</summary>
@@ -237,9 +237,9 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the action.</param>
     /// <returns>The thrown exception.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static Task<Exception> ThrowsAnyAsync(Type expectedExceptionType, Func<Task> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<Exception> ThrowsAnyAsync(Type expectedExceptionType, Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsAny(expectedExceptionType, action, actionExpression);
+        return await ThrowsAny(expectedExceptionType, action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception assignable to the specified type.</summary>
@@ -248,10 +248,10 @@ public partial class Assert
     /// <typeparam name="T">The expected base exception type.</typeparam>
     /// <returns>The thrown exception.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static Task<T> ThrowsAnyAsync<T>(Func<Task<object?>> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<T> ThrowsAnyAsync<T>(Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where T : Exception
     {
-        return ThrowsAny<T>(action, actionExpression);
+        return await ThrowsAny<T>(action, message, actionExpression).ConfigureAwait(false);
     }
 
     /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous function throws an exception assignable to the specified type.</summary>
@@ -260,12 +260,12 @@ public partial class Assert
     /// <param name="actionExpression">The expression that produced the function.</param>
     /// <returns>The thrown exception.</returns>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static Task<Exception> ThrowsAnyAsync(Type expectedExceptionType, Func<Task<object?>> action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static async Task<Exception> ThrowsAnyAsync(Type expectedExceptionType, Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return ThrowsAny(expectedExceptionType, action, actionExpression);
+        return await ThrowsAny(expectedExceptionType, action, message, actionExpression).ConfigureAwait(false);
     }
 
-    private static Exception ThrowsCore(Type expectedExceptionType, bool allowDerivedTypes, Action action, string? actionExpression)
+    private static Exception ThrowsCore(Type expectedExceptionType, bool allowDerivedTypes, Action action, string? message, string? actionExpression)
     {
         try
         {
@@ -276,13 +276,13 @@ public partial class Assert
             if (IsExpectedException(expectedExceptionType, allowDerivedTypes, exception))
                 return exception;
 
-            throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, exception, actionExpression);
+            throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, exception, message, actionExpression);
         }
 
-        throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, actualException: null, actionExpression);
+        throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, actualException: null, message, actionExpression);
     }
 
-    private static async Task<Exception> ThrowsCoreAsync(Type expectedExceptionType, bool allowDerivedTypes, Func<Task> action, string? actionExpression)
+    private static async Task<Exception> ThrowsCoreAsync(Type expectedExceptionType, bool allowDerivedTypes, Func<Task> action, string? message, string? actionExpression)
     {
         try
         {
@@ -293,15 +293,15 @@ public partial class Assert
             if (IsExpectedException(expectedExceptionType, allowDerivedTypes, exception))
                 return exception;
 
-            throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, exception, actionExpression);
+            throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, exception, message, actionExpression);
         }
 
-        throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, actualException: null, actionExpression);
+        throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, actualException: null, message, actionExpression);
     }
 
-    private static AssertionException CreateThrowsException(Type expectedExceptionType, bool allowDerivedTypes, Exception? actualException, string? actionExpression)
+    private static AssertionException CreateThrowsException(Type expectedExceptionType, bool allowDerivedTypes, Exception? actualException, string? message, string? actionExpression)
     {
-        return new AssertionException(ErrorFormatter.Format(new ThrowsAssertionError(expectedExceptionType, actualException, allowDerivedTypes, actionExpression)), actualException);
+        return new AssertionException(ErrorFormatter.Format(new ThrowsAssertionError(expectedExceptionType, actualException, allowDerivedTypes, actionExpression, message)), actualException);
     }
 
     private static bool IsExpectedException(Type expectedExceptionType, bool allowDerivedTypes, Exception exception)

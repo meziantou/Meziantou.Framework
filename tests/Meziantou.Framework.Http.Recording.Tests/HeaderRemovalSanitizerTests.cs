@@ -27,13 +27,13 @@ public sealed class HeaderRemovalSanitizerTests
         sanitizer.Sanitize(entry);
 
         Assert.NotNull(entry.RequestHeaders);
-        Assert.False(entry.RequestHeaders.ContainsKey("Authorization"));
-        Assert.False(entry.RequestHeaders.ContainsKey("Cookie"));
-        Assert.True(entry.RequestHeaders.ContainsKey("Accept"));
+        Assert.DoesNotContain("Authorization", entry.RequestHeaders);
+        Assert.DoesNotContain("Cookie", entry.RequestHeaders);
+        Assert.Contains("Accept", entry.RequestHeaders);
 
         Assert.NotNull(entry.ResponseHeaders);
-        Assert.True(entry.ResponseHeaders.ContainsKey("Content-Type"));
-        Assert.True(entry.ResponseHeaders.ContainsKey("Set-Cookie"));
+        Assert.Contains("Content-Type", entry.ResponseHeaders);
+        Assert.Contains("Set-Cookie", entry.ResponseHeaders);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class HeaderRemovalSanitizerTests
         sanitizer.Sanitize(entry);
 
         Assert.NotNull(entry.RequestHeaders);
-        Assert.False(entry.RequestHeaders.ContainsKey("Authorization"));
+        Assert.DoesNotContain("Authorization", entry.RequestHeaders);
     }
 
     [Fact]

@@ -102,7 +102,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         using var client = mock.CreateHttpClient();
         var data = await client.GetFromJsonAsync<Dictionary<string, object>>("/", XunitCancellationToken);
         Assert.NotNull(data);
-        Assert.True(data.ContainsKey("id"));
+        Assert.Contains("id", data);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(400, (int)response.StatusCode);
         var data = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>(XunitCancellationToken);
         Assert.NotNull(data);
-        Assert.True(data.ContainsKey("id"));
+        Assert.Contains("id", data);
     }
 
     [Fact]

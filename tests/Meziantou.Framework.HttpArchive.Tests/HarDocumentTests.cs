@@ -216,8 +216,8 @@ public sealed class HarDocumentTests
         var doc = HarDocument.Parse(MinimalHar);
         var json = doc.ToJsonString(indented: true);
 
-        Assert.Contains("\n", json, StringComparison.Ordinal);
-        Assert.Contains("  ", json, StringComparison.Ordinal);
+        Assert.Contains("\n", json);
+        Assert.Contains("  ", json);
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public sealed class HarDocumentTests
         var doc = HarDocument.Parse(MinimalHar);
         var json = doc.ToJsonString(indented: false);
 
-        Assert.DoesNotContain("\n", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\n", json);
     }
 
     [Fact]
@@ -367,7 +367,7 @@ public sealed class HarDocumentTests
         Assert.Equal("https://www.example.com", doc.Log.Entries[0].Response.RedirectUrl);
 
         var json = doc.ToJsonString();
-        Assert.Contains("\"redirectURL\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"redirectURL\"", json);
     }
 
     [Fact]
@@ -417,7 +417,7 @@ public sealed class HarDocumentTests
         var entry = doc.Log.Entries[0];
 
         Assert.NotNull(entry.ExtensionData);
-        Assert.True(entry.ExtensionData.ContainsKey("_priority"));
+        Assert.Contains("_priority", entry.ExtensionData);
         Assert.Equal("High", entry.ExtensionData["_priority"].GetString());
         Assert.Equal("xhr", entry.ExtensionData["_resourceType"].GetString());
 
@@ -425,8 +425,8 @@ public sealed class HarDocumentTests
         Assert.Equal(1234, entry.Response.Content.ExtensionData["_transferSize"].GetInt32());
 
         var json = doc.ToJsonString();
-        Assert.Contains("_priority", json, StringComparison.Ordinal);
-        Assert.Contains("_transferSize", json, StringComparison.Ordinal);
+        Assert.Contains("_priority", json);
+        Assert.Contains("_transferSize", json);
     }
 
     [Fact]

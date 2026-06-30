@@ -295,7 +295,7 @@ public sealed class FullPathTests
         Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out var resolved1));
         Assert.Equal(symlink, resolved1);
         Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved2));
-        Assert.EndsWith(Path.Combine("a", "b.txt"), resolved2.Value.Value, StringComparison.Ordinal); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+        Assert.EndsWith(Path.Combine("a", "b.txt"), resolved2.Value.Value); // On GitHub Actions, path starts with a symlink, so resolved2 != file
     }
 
     [Fact]
@@ -308,7 +308,7 @@ public sealed class FullPathTests
         var file = temp.CreateEmptyFile("c/d.txt");
         Assert.True(file.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved));
 
-        Assert.EndsWith(Path.Combine("a", "b", "d.txt"), resolved.Value.Value, StringComparison.Ordinal); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+        Assert.EndsWith(Path.Combine("a", "b", "d.txt"), resolved.Value.Value); // On GitHub Actions, path starts with a symlink, so resolved2 != file
     }
 
     [Fact]
@@ -411,7 +411,7 @@ public sealed class FullPathTests
         {
             Assert.Equal(".txt", path.Extension);
             Assert.Equal(folder, path.Parent);
-            Assert.StartsWith("prefix-", path.Name, StringComparison.Ordinal);
+            Assert.StartsWith("prefix-", path.Name);
             Assert.True(File.Exists(path.Value));
             Assert.True(Directory.Exists(folder.Value));
         }
@@ -428,7 +428,7 @@ public sealed class FullPathTests
         try
         {
             Assert.Equal(string.Empty, path.Extension);
-            Assert.StartsWith("prefix-", path.Name, StringComparison.Ordinal);
+            Assert.StartsWith("prefix-", path.Name);
             Assert.True(File.Exists(path.Value));
         }
         finally
@@ -443,7 +443,7 @@ public sealed class FullPathTests
         var folder = FullPath.GetTempPath();
         var invalidSuffix = $"{Path.DirectorySeparatorChar}invalid";
         var exception = Assert.Throws<IOException>(() => FullPath.CreateTempFile(folder, prefix: null, suffix: invalidSuffix));
-        Assert.Contains("10 attempts", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("10 attempts", exception.Message);
     }
 
     [Fact]
@@ -599,8 +599,8 @@ public sealed class FullPathTests
         var longSegment = new string('a', 250);
         var path = FullPath.FromPath($@"C:\{longSegment}\test.txt");
         var extended = path.ToWindowsExtendedPath();
-        Assert.StartsWith(@"\\?\", extended, StringComparison.Ordinal);
-        Assert.Contains(longSegment, extended, StringComparison.Ordinal);
+        Assert.StartsWith(@"\\?\", extended);
+        Assert.Contains(longSegment, extended);
     }
 
     private static void CreateSymlink(string source, string target, bool isDirectory)

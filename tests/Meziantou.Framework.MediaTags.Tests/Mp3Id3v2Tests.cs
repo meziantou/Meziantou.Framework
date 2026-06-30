@@ -27,7 +27,7 @@ public sealed class Mp3Id3v2Tests
         Assert.True(result.IsSuccess);
 
         var tags = result.Value;
-        Assert.Contains("日本語テスト", tags.Title, StringComparison.Ordinal);
+        Assert.Contains("日本語テスト", tags.Title);
     }
 
     [Fact]

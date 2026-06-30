@@ -23,7 +23,7 @@ public sealed class SnapshotTests
 
         var files = Directory.GetFiles(directory.FullPath);
         Assert.Single(files);
-        Assert.Contains("A: 1", File.ReadAllText(files[0]), StringComparison.Ordinal);
+        Assert.Contains("A: 1", File.ReadAllText(files[0]));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class SnapshotTests
         };
 
         var exception = Assert.Throws<SnapshotAssertionException>(() => ValidateWithSerializerCount(validateSettings, 2));
-        Assert.Contains("Unexpected snapshot files:", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Unexpected snapshot files:", exception.Message);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class SnapshotTests
         var sourceFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "file.cs");
 
         var exception = Assert.Throws<SnapshotException>(() => SnapshotCallerContext.ResolveSourceFilePath(sourceFilePath));
-        Assert.Contains(sourceFilePath, exception.Message, StringComparison.Ordinal);
+        Assert.Contains(sourceFilePath, exception.Message);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class SnapshotTests
 
         var path = settings.SnapshotPathStrategy(context);
         Assert.Matches(new Regex("^[A-Za-z0-9._-]+\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
-        Assert.DoesNotContain("_0", path.Name, StringComparison.Ordinal);
+        Assert.DoesNotContain("_0", path.Name);
         Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
     }
 
@@ -881,14 +881,14 @@ public sealed class SnapshotTests
         var actualPath0 = directory.GetFullPath("snapshot_0.actual.txt");
         var actualPath1 = directory.GetFullPath("snapshot_1.actual.txt");
 
-        Assert.Contains("Snapshots do not match.", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("Verified: " + verifiedPath0.Value, exception.Message, StringComparison.Ordinal);
-        Assert.Contains("Actual:   " + actualPath0.Value, exception.Message, StringComparison.Ordinal);
-        Assert.Contains("Verified: " + verifiedPath1.Value, exception.Message, StringComparison.Ordinal);
-        Assert.Contains("Actual:   " + actualPath1.Value, exception.Message, StringComparison.Ordinal);
-        Assert.Contains("Resolution guidance:", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("If the new behavior is correct, copy each .actual file to its .verified file.", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Snapshots do not match.", exception.Message);
+        Assert.Contains("Verified: " + verifiedPath0.Value, exception.Message);
+        Assert.Contains("Actual:   " + actualPath0.Value, exception.Message);
+        Assert.Contains("Verified: " + verifiedPath1.Value, exception.Message);
+        Assert.Contains("Actual:   " + actualPath1.Value, exception.Message);
+        Assert.Contains("Resolution guidance:", exception.Message);
+        Assert.Contains("If the new behavior is correct, copy each .actual file to its .verified file.", exception.Message);
+        Assert.Contains("To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", exception.Message);
         Assert.True(File.Exists(actualPath0));
         Assert.True(File.Exists(actualPath1));
     }

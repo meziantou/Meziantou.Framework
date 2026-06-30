@@ -10,12 +10,12 @@ public partial class Assert
     /// <param name="high">The inclusive upper bound.</param>
     /// <param name="comparer">The comparer used to order values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void InRange<T>(T actual, T low, T high, IComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void InRange<T>(T actual, T low, T high, IComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         comparer ??= Comparer<T>.Default;
         if (comparer.Compare(actual, low) >= 0 && comparer.Compare(actual, high) <= 0)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new InRangeAssertionError<T>(actual, low, high, actualExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new InRangeAssertionError<T>(actual, low, high, actualExpression, message)));
     }
 }

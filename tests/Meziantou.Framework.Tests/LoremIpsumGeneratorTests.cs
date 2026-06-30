@@ -9,7 +9,7 @@ public class LoremIpsumGeneratorTests
     {
         var sentence = LoremIpsumGenerator.Sentence(wordCount: 4);
 
-        Assert.EndsWith(".", sentence, StringComparison.Ordinal);
+        Assert.EndsWith(".", sentence);
         var content = sentence[..^1];
         Assert.True(char.IsUpper(content[0]));
         Assert.HasCount(4, content.Split(' ', StringSplitOptions.RemoveEmptyEntries));
@@ -20,7 +20,7 @@ public class LoremIpsumGeneratorTests
     {
         var paragraph = LoremIpsumGenerator.Paragraph(wordCount: 5, sentenceCount: 3);
 
-        Assert.EndsWith(".", paragraph, StringComparison.Ordinal);
+        Assert.EndsWith(".", paragraph);
         var sentences = paragraph.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         Assert.HasCount(3, sentences);
 

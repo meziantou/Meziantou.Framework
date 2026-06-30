@@ -10,7 +10,7 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void ProperSubset<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void ProperSubset<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
         using var expectedSnapshot = new CollectionSnapshot<T>(expected);
@@ -22,7 +22,7 @@ public partial class Assert
         if (expectedSet.Count < actualSet.Count && expectedSet.IsSubsetOf(actualSet))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new CollectionSetAssertionError<T>(expectedSnapshot, actualSnapshot, isSuperset: false, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionSetAssertionError<T>(expectedSnapshot, actualSnapshot, isSuperset: false, actualExpression, expectedExpression, message)));
     }
 
     /// <summary>Asserts that a non-generic collection is a proper subset of another non-generic collection.</summary>
@@ -31,9 +31,9 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void ProperSubset(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void ProperSubset(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        ProperSubset(EnumerateObjects(expected), EnumerateObjects(actual), new ObjectEqualityComparer(comparer), actualExpression, expectedExpression);
+        ProperSubset(EnumerateObjects(expected), EnumerateObjects(actual), new ObjectEqualityComparer(comparer), message, actualExpression, expectedExpression);
     }
 
     /// <summary>Asserts that a collection is a proper superset of another collection.</summary>
@@ -42,7 +42,7 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void ProperSuperset<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void ProperSuperset<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
         using var expectedSnapshot = new CollectionSnapshot<T>(expected);
@@ -54,7 +54,7 @@ public partial class Assert
         if (expectedSet.Count > actualSet.Count && expectedSet.IsSupersetOf(actualSet))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new CollectionSetAssertionError<T>(expectedSnapshot, actualSnapshot, isSuperset: true, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionSetAssertionError<T>(expectedSnapshot, actualSnapshot, isSuperset: true, actualExpression, expectedExpression, message)));
     }
 
     /// <summary>Asserts that a non-generic collection is a proper superset of another non-generic collection.</summary>
@@ -63,9 +63,9 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void ProperSuperset(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void ProperSuperset(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        ProperSuperset(EnumerateObjects(expected), EnumerateObjects(actual), new ObjectEqualityComparer(comparer), actualExpression, expectedExpression);
+        ProperSuperset(EnumerateObjects(expected), EnumerateObjects(actual), new ObjectEqualityComparer(comparer), message, actualExpression, expectedExpression);
     }
 
     private static HashSet<T> CreateSet<T>(IEnumerable<T> items, IEqualityComparer<T> comparer)

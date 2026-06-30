@@ -24,9 +24,9 @@ public sealed class FileLoggerProviderTests
             Assert.True(File.Exists(logFilePath));
 
             var content = await File.ReadAllTextAsync(logFilePath);
-            Assert.Contains("Hello from test", content, StringComparison.Ordinal);
-            Assert.Contains("[INFO]", content, StringComparison.Ordinal);
-            Assert.Contains("[Category]", content, StringComparison.Ordinal);
+            Assert.Contains("Hello from test", content);
+            Assert.Contains("[INFO]", content);
+            Assert.Contains("[Category]", content);
         }
         finally
         {

@@ -5,32 +5,32 @@ namespace Meziantou.Framework.Assertions;
 public partial class Assert
 {
     [SuppressMessage("Design", "CA1030:Use events where appropriate")]
-    public static RaisedEvent<EventArgs> Raise(Action<EventHandler> attach, Action<EventHandler> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static RaisedEvent<EventArgs> Raise(Action<EventHandler> attach, Action<EventHandler> detach, Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return RaiseCore(attach, detach, action, allowDerivedTypes: false, actionExpression);
+        return RaiseCore(attach, detach, action, allowDerivedTypes: false, message, actionExpression);
     }
 
     [SuppressMessage("Design", "CA1030:Use events where appropriate")]
-    public static RaisedEvent<TEventArgs> Raise<TEventArgs>(Action<EventHandler<TEventArgs>> attach, Action<EventHandler<TEventArgs>> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static RaisedEvent<TEventArgs> Raise<TEventArgs>(Action<EventHandler<TEventArgs>> attach, Action<EventHandler<TEventArgs>> detach, Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where TEventArgs : EventArgs
     {
-        return RaiseCore(attach, detach, action, allowDerivedTypes: false, actionExpression);
+        return RaiseCore(attach, detach, action, allowDerivedTypes: false, message, actionExpression);
     }
 
     [SuppressMessage("Design", "CA1030:Use events where appropriate")]
-    public static RaisedEvent<EventArgs> RaiseAny(Action<EventHandler> attach, Action<EventHandler> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static RaisedEvent<EventArgs> RaiseAny(Action<EventHandler> attach, Action<EventHandler> detach, Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {
-        return RaiseCore(attach, detach, action, allowDerivedTypes: true, actionExpression);
+        return RaiseCore(attach, detach, action, allowDerivedTypes: true, message, actionExpression);
     }
 
     [SuppressMessage("Design", "CA1030:Use events where appropriate")]
-    public static RaisedEvent<TEventArgs> RaiseAny<TEventArgs>(Action<EventHandler<TEventArgs>> attach, Action<EventHandler<TEventArgs>> detach, Action action, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    public static RaisedEvent<TEventArgs> RaiseAny<TEventArgs>(Action<EventHandler<TEventArgs>> attach, Action<EventHandler<TEventArgs>> detach, Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
         where TEventArgs : EventArgs
     {
-        return RaiseCore(attach, detach, action, allowDerivedTypes: true, actionExpression);
+        return RaiseCore(attach, detach, action, allowDerivedTypes: true, message, actionExpression);
     }
 
-    private static RaisedEvent<EventArgs> RaiseCore(Action<EventHandler> attach, Action<EventHandler> detach, Action action, bool allowDerivedTypes, string? actionExpression)
+    private static RaisedEvent<EventArgs> RaiseCore(Action<EventHandler> attach, Action<EventHandler> detach, Action action, bool allowDerivedTypes, string? message, string? actionExpression)
     {
         EventArgs? arguments = null;
         object? sender = null;
@@ -56,13 +56,13 @@ public partial class Assert
             if (IsExpectedEventArgsType(typeof(EventArgs), actualEventArgsType, allowDerivedTypes))
                 return new RaisedEvent<EventArgs>(sender, arguments);
 
-            throw CreateRaiseException(typeof(EventArgs), actualEventArgsType, allowDerivedTypes, actionExpression);
+            throw CreateRaiseException(typeof(EventArgs), actualEventArgsType, allowDerivedTypes, message, actionExpression);
         }
 
-        throw CreateRaiseException(typeof(EventArgs), actualEventArgsType: null, allowDerivedTypes, actionExpression);
+        throw CreateRaiseException(typeof(EventArgs), actualEventArgsType: null, allowDerivedTypes, message, actionExpression);
     }
 
-    private static RaisedEvent<TEventArgs> RaiseCore<TEventArgs>(Action<EventHandler<TEventArgs>> attach, Action<EventHandler<TEventArgs>> detach, Action action, bool allowDerivedTypes, string? actionExpression)
+    private static RaisedEvent<TEventArgs> RaiseCore<TEventArgs>(Action<EventHandler<TEventArgs>> attach, Action<EventHandler<TEventArgs>> detach, Action action, bool allowDerivedTypes, string? message, string? actionExpression)
         where TEventArgs : EventArgs
     {
         TEventArgs? arguments = null;
@@ -89,10 +89,10 @@ public partial class Assert
             if (IsExpectedEventArgsType(typeof(TEventArgs), actualEventArgsType, allowDerivedTypes))
                 return new RaisedEvent<TEventArgs>(sender, arguments);
 
-            throw CreateRaiseException(typeof(TEventArgs), actualEventArgsType, allowDerivedTypes, actionExpression);
+            throw CreateRaiseException(typeof(TEventArgs), actualEventArgsType, allowDerivedTypes, message, actionExpression);
         }
 
-        throw CreateRaiseException(typeof(TEventArgs), actualEventArgsType: null, allowDerivedTypes, actionExpression);
+        throw CreateRaiseException(typeof(TEventArgs), actualEventArgsType: null, allowDerivedTypes, message, actionExpression);
     }
 
     private static bool IsExpectedEventArgsType(Type expectedEventArgsType, Type actualEventArgsType, bool allowDerivedTypes)
@@ -103,8 +103,8 @@ public partial class Assert
         return actualEventArgsType == expectedEventArgsType;
     }
 
-    private static AssertionException CreateRaiseException(Type expectedEventArgsType, Type? actualEventArgsType, bool allowDerivedTypes, string? actionExpression)
+    private static AssertionException CreateRaiseException(Type expectedEventArgsType, Type? actualEventArgsType, bool allowDerivedTypes, string? message, string? actionExpression)
     {
-        return new AssertionException(ErrorFormatter.Format(new RaiseAssertionError(expectedEventArgsType, actualEventArgsType, allowDerivedTypes, actionExpression)));
+        return new AssertionException(ErrorFormatter.Format(new RaiseAssertionError(expectedEventArgsType, actualEventArgsType, allowDerivedTypes, actionExpression, message)));
     }
 }

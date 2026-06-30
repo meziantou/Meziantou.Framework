@@ -39,9 +39,9 @@ public sealed class YamlishSerializerTests
 
         var result = YamlishSerializer.Serialize(new Product { Id = "abc", IsAvailable = true, Ignored = "secret" }, options);
 
-        Assert.Contains("product_id: abc", result, StringComparison.Ordinal);
-        Assert.Contains("is_available: true", result, StringComparison.Ordinal);
-        Assert.DoesNotContain("Ignored", result, StringComparison.Ordinal);
+        Assert.Contains("product_id: abc", result);
+        Assert.Contains("is_available: true", result);
+        Assert.DoesNotContain("Ignored", result);
     }
 
     [Theory]
@@ -77,7 +77,7 @@ public sealed class YamlishSerializerTests
 
         var result = YamlishSerializer.Serialize(new DefaultNamesProduct { Id = "abc", IsAvailable = true }, options);
 
-        Assert.Contains("is-available: true", result, StringComparison.Ordinal);
+        Assert.Contains("is-available: true", result);
     }
 
     [Fact]
@@ -91,9 +91,9 @@ public sealed class YamlishSerializerTests
         var content = YamlishSerializer.Serialize(new Product { Id = "abc", Ignored = "value" }, options);
         var result = YamlishSerializer.Deserialize<Product>("id_from_options: def\nIgnored: deserialized", options);
 
-        Assert.Contains("id_from_options: abc", content, StringComparison.Ordinal);
-        Assert.Contains("Ignored: value", content, StringComparison.Ordinal);
-        Assert.DoesNotContain("Price", content, StringComparison.Ordinal);
+        Assert.Contains("id_from_options: abc", content);
+        Assert.Contains("Ignored: value", content);
+        Assert.DoesNotContain("Price", content);
         Assert.Equal("def", result?.Id);
         Assert.Equal("deserialized", result?.Ignored);
     }
@@ -134,8 +134,8 @@ public sealed class YamlishSerializerTests
     {
         var value = new ReadOnlyMembers();
 
-        Assert.Contains("ReadOnlyProperty: property", YamlishSerializer.Serialize(value), StringComparison.Ordinal);
-        Assert.DoesNotContain("ReadOnlyProperty", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IgnoreReadOnlyProperties = true }), StringComparison.Ordinal);
+        Assert.Contains("ReadOnlyProperty: property", YamlishSerializer.Serialize(value));
+        Assert.DoesNotContain("ReadOnlyProperty", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IgnoreReadOnlyProperties = true }));
     }
 
     [Fact]
@@ -143,8 +143,8 @@ public sealed class YamlishSerializerTests
     {
         var value = new ReadOnlyMembers();
 
-        Assert.Contains("ReadOnlyField: field", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IncludeFields = true }), StringComparison.Ordinal);
-        Assert.DoesNotContain("ReadOnlyField", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IncludeFields = true, IgnoreReadOnlyFields = true }), StringComparison.Ordinal);
+        Assert.Contains("ReadOnlyField: field", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IncludeFields = true }));
+        Assert.DoesNotContain("ReadOnlyField", YamlishSerializer.Serialize(value, new YamlishSerializerOptions { IncludeFields = true, IgnoreReadOnlyFields = true }));
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal(["new"], value.SettableValues);
         Assert.Equal(["new"], value.EnumerableValues);
         Assert.Equal(1, value.Lookup["existing"]);
-        Assert.False(value.Lookup.ContainsKey("new"));
+        Assert.DoesNotContain("new", value.Lookup);
         Assert.Equal(1, value.Dimensions.Width);
     }
 
@@ -260,7 +260,7 @@ public sealed class YamlishSerializerTests
 
         var exception = Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<StringValue>("Value: first\nExtra: second", options));
 
-        Assert.Contains("Extra", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Extra", exception.Message);
     }
 
     [Fact]
@@ -310,7 +310,7 @@ public sealed class YamlishSerializerTests
 
         var exception = Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<ConstructorValue>("Name: value", options));
 
-        Assert.Contains("Id", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Id", exception.Message);
     }
 
     [Fact]
@@ -346,7 +346,7 @@ public sealed class YamlishSerializerTests
     {
         var exception = Assert.Throws<FormatException>(() => YamlishSerializer.Deserialize<RequiredPropertyValue>("Other: value"));
 
-        Assert.Contains("value", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("value", exception.Message);
     }
 
     [Fact]
@@ -921,7 +921,7 @@ public sealed class YamlishSerializerTests
             BaseValue: 1
             """));
 
-        Assert.Contains("unknown", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("unknown", exception.Message);
     }
 
     [Fact]

@@ -1,7 +1,8 @@
 namespace Meziantou.Framework.Assertions;
 
-internal readonly struct StringNullActualAssertionError(string assertionName, string expectedValueLabel, string expectedValue, StringComparison comparison, string? actualExpression, string? expectedExpression)
+internal readonly struct StringNullActualAssertionError(string assertionName, string expectedValueLabel, string expectedValue, StringComparison comparison, string? actualExpression, string? expectedExpression, string? message = null)
 {
+    public string? Message { get; } = message;
     public string AssertionName { get; } = assertionName;
     public string ExpectedValueLabel { get; } = expectedValueLabel;
     public string? ExpectedExpression { get; } = expectedExpression;

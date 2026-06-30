@@ -16,7 +16,7 @@ public sealed class DnsClientDnssecOptionsTests
             DnssecValidationMode = DnssecValidationMode.Local,
         }));
 
-        Assert.Contains("EDNS", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("EDNS", exception.Message);
     }
 
     [Fact]

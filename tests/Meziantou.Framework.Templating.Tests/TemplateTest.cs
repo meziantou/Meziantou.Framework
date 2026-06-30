@@ -102,7 +102,7 @@ public class TemplateTest
         template.Load("<%+ private static string Sample() => \"Sample\"; %>");
 
         var block = Assert.Single(template.Blocks.OfType<ClassMemberBlock>());
-        Assert.StartsWith(" private static string Sample()", block.Text, StringComparison.Ordinal);
+        Assert.StartsWith(" private static string Sample()", block.Text);
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class TemplateTest
         template.Load("<%= 1 %>");
 
         var block = Assert.Single(template.Blocks.OfType<CodeBlock>(), codeBlock => codeBlock.IsExpression);
-        Assert.StartsWith(" 1", block.Text, StringComparison.Ordinal);
+        Assert.StartsWith(" 1", block.Text);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public class TemplateTest
         template.Load("<%@ outputextension .cs %>");
 
         var block = Assert.Single(template.Blocks.OfType<DirectiveBlock>());
-        Assert.StartsWith(" outputextension .cs", block.Text, StringComparison.Ordinal);
+        Assert.StartsWith(" outputextension .cs", block.Text);
     }
 
     [Fact]
@@ -160,8 +160,8 @@ public class TemplateTest
 
         template.Build(CancellationToken.None);
 
-        Assert.Contains("private static string Sample() => \"Sample\";", template.SourceCode, StringComparison.Ordinal);
-        Assert.Contains("}" + Environment.NewLine + "#line ", template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("private static string Sample() => \"Sample\";", template.SourceCode);
+        Assert.Contains("}" + Environment.NewLine + "#line ", template.SourceCode);
     }
 
     [Fact]
@@ -434,8 +434,8 @@ public class TemplateTest
 
         template.Build(CancellationToken.None);
 
-        Assert.Contains("#line (1, 3) - (1, 19) 8 \"\"" + Environment.NewLine, template.SourceCode, StringComparison.Ordinal);
-        Assert.Contains("#line default", template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("#line (1, 3) - (1, 19) 8 \"\"" + Environment.NewLine, template.SourceCode);
+        Assert.Contains("#line default", template.SourceCode);
     }
 
     [Fact]
@@ -449,8 +449,8 @@ public class TemplateTest
 
         template.Build(CancellationToken.None);
 
-        Assert.Contains("#line (1, 4) - (1, 11) 32 \"template.cs\"", template.SourceCode, StringComparison.Ordinal);
-        Assert.Contains("#line (1, 16) - (1, 36) 4 \"template.cs\"", template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("#line (1, 4) - (1, 11) 32 \"template.cs\"", template.SourceCode);
+        Assert.Contains("#line (1, 16) - (1, 36) 4 \"template.cs\"", template.SourceCode);
     }
 
     [Theory]
@@ -473,7 +473,7 @@ public class TemplateTest
 
         var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
 
-        Assert.Contains($"{SourceFileName}({expectedLine},{expectedColumn}", exception.Message, StringComparison.Ordinal);
+        Assert.Contains($"{SourceFileName}({expectedLine},{expectedColumn}", exception.Message);
     }
 
     [Fact]
@@ -489,7 +489,7 @@ public class TemplateTest
         Assert.True(position1 < position3);
         Assert.True(position3 > position1);
         Assert.Equal(0, position1.CompareTo((object)position2));
-        Assert.Contains("L1", position1.ToString(), StringComparison.Ordinal);
+        Assert.Contains("L1", position1.ToString());
     }
 
     [Fact]
@@ -508,7 +508,7 @@ public class TemplateTest
         Assert.True(span1 < span3);
         Assert.True(span3 > span1);
         Assert.Equal(2, span1.Length);
-        Assert.Contains("..", span1.ToString(), StringComparison.Ordinal);
+        Assert.Contains("..", span1.ToString());
     }
 
     [Fact]
@@ -636,7 +636,7 @@ public class TemplateTest
 
         template.Build(CancellationToken.None);
 
-        Assert.Contains("public class Template : BaseClass, IFoo, IBar", template.SourceCode, StringComparison.Ordinal);
+        Assert.Contains("public class Template : BaseClass, IFoo, IBar", template.SourceCode);
     }
 
     private sealed class TemplateWithoutCompilation : Template

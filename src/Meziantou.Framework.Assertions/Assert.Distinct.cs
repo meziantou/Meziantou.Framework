@@ -8,7 +8,7 @@ public partial class Assert
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Distinct<T>(ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Distinct<T>(ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
 
@@ -17,7 +17,7 @@ public partial class Assert
             var firstIndex = IndexOf(actual[..duplicateIndex], actual[duplicateIndex], comparer);
             if (firstIndex >= 0)
             {
-                throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanDistinctAssertionError<T>(actual, duplicateIndex, firstIndex, actualExpression)));
+                throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanDistinctAssertionError<T>(actual, duplicateIndex, firstIndex, actualExpression, message)));
             }
         }
     }
@@ -25,16 +25,16 @@ public partial class Assert
     /// <summary>Asserts that a string does not contain duplicate characters.</summary>
     /// <param name="actual">The string to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Distinct(string actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Distinct(string actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        Distinct(actual.AsSpan(), comparer: null, actualExpression);
+        Distinct(actual.AsSpan(), comparer: null, message: message, actualExpression: actualExpression);
     }
 
     /// <summary>Asserts that an enumerable does not contain duplicate items.</summary>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Distinct<T>(IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Distinct<T>(IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = new CollectionSnapshot<T>(actual);
@@ -45,7 +45,7 @@ public partial class Assert
             var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
             if (firstIndex >= 0)
             {
-                throw new AssertionException(ErrorFormatter.Format(new CollectionDistinctAssertionError<T>(actualSnapshot, duplicateIndex, firstIndex, actualExpression)));
+                throw new AssertionException(ErrorFormatter.Format(new CollectionDistinctAssertionError<T>(actualSnapshot, duplicateIndex, firstIndex, actualExpression, message)));
             }
         }
     }
@@ -54,7 +54,7 @@ public partial class Assert
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Distinct(System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Distinct(System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
 
@@ -64,7 +64,7 @@ public partial class Assert
             var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
             if (firstIndex >= 0)
             {
-                throw new AssertionException(ErrorFormatter.Format(new CollectionDistinctAssertionError<object?>(actualSnapshot, duplicateIndex, firstIndex, actualExpression)));
+                throw new AssertionException(ErrorFormatter.Format(new CollectionDistinctAssertionError<object?>(actualSnapshot, duplicateIndex, firstIndex, actualExpression, message)));
             }
         }
     }
@@ -73,7 +73,7 @@ public partial class Assert
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static async Task Distinct<T>(IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static async Task Distinct<T>(IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
         await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
@@ -84,7 +84,7 @@ public partial class Assert
             var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
             if (firstIndex >= 0)
             {
-                throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionDistinctAssertionError<T>(actualSnapshot, duplicateIndex, firstIndex, actualExpression)).ConfigureAwait(false));
+                throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionDistinctAssertionError<T>(actualSnapshot, duplicateIndex, firstIndex, actualExpression, message)).ConfigureAwait(false));
             }
         }
     }

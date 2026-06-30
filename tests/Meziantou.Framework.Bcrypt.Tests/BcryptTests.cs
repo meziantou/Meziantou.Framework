@@ -54,7 +54,7 @@ public sealed class BcryptTests
     {
         var hash = Bcrypt.HashPassword("password", workFactor: 4, version);
 
-        Assert.StartsWith(expectedPrefix + "04$", hash, StringComparison.Ordinal);
+        Assert.StartsWith(expectedPrefix + "04$", hash);
         Assert.True(Bcrypt.Verify("password", hash));
     }
 

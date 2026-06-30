@@ -1,7 +1,14 @@
+using System.Collections.Concurrent;
+using System.Reflection;
+
 namespace Meziantou.Framework.Assertions;
 
 public partial class Assert
 {
+    private static readonly ConcurrentDictionary<Type, MemoryToArrayMethod> MemoryToArrayMethods = new();
+    private static readonly ConcurrentDictionary<ImplicitConversionCacheKey, MethodInfo[]> ImplicitConversionMethods = new();
+    private const BindingFlags PublicStatic = BindingFlags.Public | BindingFlags.Static;
+
     private static bool TryEqualMemory<TExpected, TActual>(TExpected expected, TActual actual, string? message, string? actualExpression, string? expectedExpression)
     {
         if (TryGetMemoryItems(expected, out var expectedItems) && TryGetMemoryItems(actual, out var actualItems))
@@ -16,19 +23,34 @@ public partial class Assert
     private static bool TryGetMemoryItems<T>(T value, [NotNullWhen(true)] out System.Collections.IEnumerable? items)
     {
         items = null;
+        var declaredType = typeof(T);
+        if (declaredType != typeof(object) && !declaredType.IsInterface && !declaredType.IsAbstract && !IsMemoryType(declaredType))
+            return false;
+
         if (value is null)
             return false;
 
         var type = value.GetType();
-        if (!type.IsConstructedGenericType)
+        var toArrayMethod = MemoryToArrayMethods.GetOrAdd(type, GetMemoryToArrayMethod).Method;
+        if (toArrayMethod is null)
             return false;
 
-        var genericTypeDefinition = type.GetGenericTypeDefinition();
-        if (genericTypeDefinition != typeof(Memory<>) && genericTypeDefinition != typeof(ReadOnlyMemory<>))
-            return false;
-
-        items = (System.Collections.IEnumerable?)type.GetMethod(nameof(Memory<int>.ToArray), Type.EmptyTypes)?.Invoke(value, parameters: null);
+        items = (System.Collections.IEnumerable?)toArrayMethod.Invoke(value, parameters: null);
         return items is not null;
+    }
+
+    private static bool IsMemoryType(Type type)
+    {
+        return type.IsConstructedGenericType
+            && (type.GetGenericTypeDefinition() == typeof(Memory<>) || type.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>));
+    }
+
+    private static MemoryToArrayMethod GetMemoryToArrayMethod(Type type)
+    {
+        if (!IsMemoryType(type))
+            return default;
+
+        return new MemoryToArrayMethod(type.GetMethod(nameof(Memory<int>.ToArray), Type.EmptyTypes));
     }
 
     private static bool ValuesEqual<TExpected, TActual>(TExpected expected, TActual actual, System.Collections.IEqualityComparer? comparer = null)
@@ -165,7 +187,31 @@ public partial class Assert
         if (sourceType is null || sourceType == targetType)
             return false;
 
-        foreach (var method in sourceType.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Concat(targetType.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)))
+        foreach (var method in ImplicitConversionMethods.GetOrAdd(new ImplicitConversionCacheKey(sourceType, targetType), GetImplicitConversionMethods))
+        {
+            var convertedValue = method.Invoke(obj: null, [source]);
+            if (object.Equals(convertedValue, target))
+            {
+                result = true;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static MethodInfo[] GetImplicitConversionMethods(ImplicitConversionCacheKey key)
+    {
+        var methods = new List<MethodInfo>();
+        AddImplicitConversionMethods(methods, key.SourceType.GetMethods(PublicStatic), key.SourceType, key.TargetType);
+        AddImplicitConversionMethods(methods, key.TargetType.GetMethods(PublicStatic), key.SourceType, key.TargetType);
+
+        return methods.Count == 0 ? [] : methods.ToArray();
+    }
+
+    private static void AddImplicitConversionMethods(List<MethodInfo> methods, MethodInfo[] candidateMethods, Type sourceType, Type targetType)
+    {
+        foreach (var method in candidateMethods)
         {
             if (method.Name != "op_Implicit" || method.ReturnType != targetType)
                 continue;
@@ -173,15 +219,34 @@ public partial class Assert
             var parameters = method.GetParameters();
             if (parameters.Length == 1 && parameters[0].ParameterType.IsAssignableFrom(sourceType))
             {
-                var convertedValue = method.Invoke(obj: null, [source]);
-                if (object.Equals(convertedValue, target))
-                {
-                    result = true;
-                    return true;
-                }
+                methods.Add(method);
             }
         }
+    }
 
-        return false;
+    private readonly struct MemoryToArrayMethod(MethodInfo? method)
+    {
+        public MethodInfo? Method { get; } = method;
+    }
+
+    private readonly struct ImplicitConversionCacheKey(Type sourceType, Type targetType) : IEquatable<ImplicitConversionCacheKey>
+    {
+        public Type SourceType { get; } = sourceType;
+        public Type TargetType { get; } = targetType;
+
+        public bool Equals(ImplicitConversionCacheKey other)
+        {
+            return SourceType == other.SourceType && TargetType == other.TargetType;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is ImplicitConversionCacheKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(SourceType, TargetType);
+        }
     }
 }

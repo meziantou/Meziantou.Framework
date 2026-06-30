@@ -22,6 +22,12 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
+        if (comparer is null)
+        {
+            EqualUnorderedCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression);
+            return;
+        }
+
         EqualUnorderedCollections(expected, actual, comparer, message, actualExpression, expectedExpression);
     }
 
@@ -44,7 +50,10 @@ public partial class Assert
         expectedSnapshot.EnsureComplete();
         comparer ??= EqualityComparer<T>.Default;
 
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
+        if (comparer == EqualityComparer<T>.Default && EqualUnorderedUsingDefaultComparer(expectedSnapshot.Items, actualSnapshot.Items))
+            return;
+
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
             throw new AssertionException(ErrorFormatter.Format(new CollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)));
@@ -58,7 +67,7 @@ public partial class Assert
         actualSnapshot.EnsureComplete();
         expectedSnapshot.EnsureComplete();
 
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem, comparer));
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
             throw new AssertionException(ErrorFormatter.Format(new CollectionEqualUnorderedAssertionError<TExpected, TActual>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)));
@@ -86,6 +95,12 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression, message)));
         }
 
+        if (comparer is null)
+        {
+            await EqualUnorderedAsyncCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression).ConfigureAwait(false);
+            return;
+        }
+
         await EqualUnorderedAsyncCollections(expected, actual, comparer, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
@@ -110,7 +125,10 @@ public partial class Assert
         await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         comparer ??= EqualityComparer<T>.Default;
 
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
+        if (comparer == EqualityComparer<T>.Default && EqualUnorderedUsingDefaultComparer(expectedSnapshot.Items, actualSnapshot.Items))
+            return;
+
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
             throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionEqualUnorderedAssertionError<T, T>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)).ConfigureAwait(false));
@@ -124,7 +142,7 @@ public partial class Assert
         await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
 
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem, comparer));
+        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
         {
             throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionEqualUnorderedAssertionError<TExpected, TActual>(expectedSnapshot, actualSnapshot, missingExpectedIndex, unexpectedActualIndex, message, actualExpression, expectedExpression)).ConfigureAwait(false));
@@ -151,7 +169,39 @@ public partial class Assert
         EqualUnorderedCollections(EnumerateObjects(expected), EnumerateObjects(actual), comparer, message, actualExpression, expectedExpression);
     }
 
-    private static (int? MissingExpectedIndex, int? UnexpectedActualIndex) GetEqualUnorderedMismatch<TExpected, TActual>(IReadOnlyList<TExpected> expected, IReadOnlyList<TActual> actual, Func<TExpected, TActual, bool> equals)
+    private static bool EqualUnorderedUsingDefaultComparer<T>(IReadOnlyList<T> expected, IReadOnlyList<T> actual)
+    {
+        if (expected.Count != actual.Count)
+            return false;
+
+        var counts = new Dictionary<DefaultComparerKey<T>, int>(expected.Count);
+        for (var index = 0; index < expected.Count; index++)
+        {
+            var key = new DefaultComparerKey<T>(expected[index]);
+            counts.TryGetValue(key, out var count);
+            counts[key] = count + 1;
+        }
+
+        for (var index = 0; index < actual.Count; index++)
+        {
+            var key = new DefaultComparerKey<T>(actual[index]);
+            if (!counts.TryGetValue(key, out var count))
+                return false;
+
+            if (count == 1)
+            {
+                counts.Remove(key);
+            }
+            else
+            {
+                counts[key] = count - 1;
+            }
+        }
+
+        return counts.Count == 0;
+    }
+
+    private static (int? MissingExpectedIndex, int? UnexpectedActualIndex) GetEqualUnorderedMismatch<T>(IReadOnlyList<T> expected, IReadOnlyList<T> actual, IEqualityComparer<T> comparer)
     {
         var matchedActualIndexes = new bool[actual.Count];
         int? missingExpectedIndex = null;
@@ -164,7 +214,67 @@ public partial class Assert
                 if (matchedActualIndexes[actualIndex])
                     continue;
 
-                if (!equals(expected[expectedIndex], actual[actualIndex]))
+                if (!comparer.Equals(expected[expectedIndex], actual[actualIndex]))
+                    continue;
+
+                matchedActualIndexes[actualIndex] = true;
+                found = true;
+                break;
+            }
+
+            if (!found && missingExpectedIndex is null)
+            {
+                missingExpectedIndex = expectedIndex;
+            }
+        }
+
+        int? unexpectedActualIndex = null;
+        for (var actualIndex = 0; actualIndex < matchedActualIndexes.Length; actualIndex++)
+        {
+            if (!matchedActualIndexes[actualIndex])
+            {
+                unexpectedActualIndex = actualIndex;
+                break;
+            }
+        }
+
+        return (missingExpectedIndex, unexpectedActualIndex);
+    }
+
+    private readonly struct DefaultComparerKey<T>(T value) : IEquatable<DefaultComparerKey<T>>
+    {
+        private T Value { get; } = value;
+
+        public bool Equals(DefaultComparerKey<T> other)
+        {
+            return EqualityComparer<T>.Default.Equals(Value, other.Value);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is DefaultComparerKey<T> other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return Value is null ? 0 : EqualityComparer<T>.Default.GetHashCode(Value);
+        }
+    }
+
+    private static (int? MissingExpectedIndex, int? UnexpectedActualIndex) GetEqualUnorderedMismatch<TExpected, TActual>(IReadOnlyList<TExpected> expected, IReadOnlyList<TActual> actual, System.Collections.IEqualityComparer? comparer)
+    {
+        var matchedActualIndexes = new bool[actual.Count];
+        int? missingExpectedIndex = null;
+
+        for (var expectedIndex = 0; expectedIndex < expected.Count; expectedIndex++)
+        {
+            var found = false;
+            for (var actualIndex = 0; actualIndex < actual.Count; actualIndex++)
+            {
+                if (matchedActualIndexes[actualIndex])
+                    continue;
+
+                if (!ValuesEqual(expected[expectedIndex], actual[actualIndex], comparer))
                     continue;
 
                 matchedActualIndexes[actualIndex] = true;

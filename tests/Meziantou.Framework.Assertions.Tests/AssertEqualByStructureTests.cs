@@ -106,6 +106,44 @@ public sealed class AssertEqualByStructureTests
     }
 
     [Fact]
+    public void Equivalent_IgnoresCollectionOrderWithSharedCyclicReferences()
+    {
+        var expectedShared = new GraphNode { Name = "shared" };
+        expectedShared.Next = expectedShared;
+        var expectedFirst = new GraphNode { Name = "first", Next = expectedShared };
+        var expectedSecond = new GraphNode { Name = "second", Next = expectedShared };
+
+        var actualShared = new GraphNode { Name = "shared" };
+        actualShared.Next = actualShared;
+        var actualFirst = new GraphNode { Name = "first", Next = actualShared };
+        var actualSecond = new GraphNode { Name = "second", Next = actualShared };
+
+        AssertionsAssert.Equivalent(new[] { expectedFirst, expectedSecond }, new[] { actualSecond, actualFirst }, new EquivalentOptions { IgnoreCollectionOrder = true });
+    }
+
+    [Fact]
+    public void Equivalent_FailsWithIgnoredCollectionOrderAndSharedCyclicReferences()
+    {
+        var expectedShared = new GraphNode { Name = "shared" };
+        expectedShared.Next = expectedShared;
+        var expected = new[] { new GraphNode { Name = "first", Next = expectedShared } };
+
+        var actualShared = new GraphNode { Name = "shared" };
+        actualShared.Next = actualShared;
+        var actual = new[] { new GraphNode { Name = "second", Next = actualShared } };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual, new EquivalentOptions { IgnoreCollectionOrder = true }), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $[0]
+            Reason: Actual collection is missing an equivalent item.
+            Expected: Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+GraphNode
+            Actual:   <missing>
+            """);
+    }
+
+    [Fact]
     public void Equivalent_FailsWhenMemberNameCaseDiffersByDefault()
     {
         var expected = new ZipCodeContainerExpected { ZipCode = 75000 };
@@ -430,6 +468,12 @@ public sealed class AssertEqualByStructureTests
     private sealed class NullablePerson
     {
         public string? Name { get; set; }
+    }
+
+    private sealed class GraphNode
+    {
+        public string? Name { get; set; }
+        public GraphNode? Next { get; set; }
     }
 
     private sealed class Node

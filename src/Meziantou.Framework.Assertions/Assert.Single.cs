@@ -46,16 +46,14 @@ public partial class Assert
     [SuppressMessage("Naming", "CA1720:Identifier contains type name")]
     public static T Single<T>(IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        if (!actualEnumerator.MoveNext())
+        if (!actualSnapshot.TryGetItem(0, out var result))
         {
             throw new AssertionException(ErrorFormatter.Format(new CollectionSingleAssertionError<T>(actualSnapshot, actualExpression, message)));
         }
 
-        var result = actualEnumerator.Current;
-        if (!actualEnumerator.MoveNext())
+        if (!actualSnapshot.TryGetItem(1, out _))
             return result;
 
         throw new AssertionException(ErrorFormatter.Format(new CollectionSingleAssertionError<T>(actualSnapshot, actualExpression, message)));
@@ -69,16 +67,14 @@ public partial class Assert
     [SuppressMessage("Naming", "CA1720:Identifier contains type name")]
     public static T Single<T>(IEnumerable<T> actual, Func<T, bool> predicate, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
     {
-        using var matchingSnapshot = new CollectionSnapshot<T>(EnumerateMatchingItems(actual, predicate));
-        using var matchingEnumerator = matchingSnapshot.GetEnumerator();
+        using var matchingSnapshot = CollectionSnapshot.Create<T>(EnumerateMatchingItems(actual, predicate));
 
-        if (!matchingEnumerator.MoveNext())
+        if (!matchingSnapshot.TryGetItem(0, out var result))
         {
             throw new AssertionException(ErrorFormatter.Format(new CollectionSinglePredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression, message)));
         }
 
-        var result = matchingEnumerator.Current;
-        if (!matchingEnumerator.MoveNext())
+        if (!matchingSnapshot.TryGetItem(1, out _))
             return result;
 
         throw new AssertionException(ErrorFormatter.Format(new CollectionSinglePredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression, message)));
@@ -90,16 +86,14 @@ public partial class Assert
     [SuppressMessage("Naming", "CA1720:Identifier contains type name")]
     public static object? Single(System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
 
-        if (!actualEnumerator.MoveNext())
+        if (!actualSnapshot.TryGetItem(0, out var result))
         {
             throw new AssertionException(ErrorFormatter.Format(new CollectionSingleAssertionError<object?>(actualSnapshot, actualExpression, message)));
         }
 
-        var result = actualEnumerator.Current;
-        if (!actualEnumerator.MoveNext())
+        if (!actualSnapshot.TryGetItem(1, out _))
             return result;
 
         throw new AssertionException(ErrorFormatter.Format(new CollectionSingleAssertionError<object?>(actualSnapshot, actualExpression, message)));
@@ -111,16 +105,14 @@ public partial class Assert
     [SuppressMessage("Naming", "CA1720:Identifier contains type name")]
     public static async Task<T> Single<T>(IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        if (!await actualEnumerator.MoveNextAsync().ConfigureAwait(false))
+        if (await actualSnapshot.TryGetItem(0).ConfigureAwait(false) is not (true, var result))
         {
             throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionSingleAssertionError<T>(actualSnapshot, actualExpression, message)).ConfigureAwait(false));
         }
 
-        var result = actualEnumerator.Current;
-        if (!await actualEnumerator.MoveNextAsync().ConfigureAwait(false))
+        if (await actualSnapshot.TryGetItem(1).ConfigureAwait(false) is (false, _))
             return result;
 
         throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionSingleAssertionError<T>(actualSnapshot, actualExpression, message)).ConfigureAwait(false));

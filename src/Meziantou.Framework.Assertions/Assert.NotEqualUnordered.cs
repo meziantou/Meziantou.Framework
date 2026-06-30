@@ -9,10 +9,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
-        EnsureComplete(actualSnapshot);
-        EnsureComplete(expectedSnapshot);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        actualSnapshot.EnsureComplete();
+        expectedSnapshot.EnsureComplete();
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, EqualityComparer<T>.Default.Equals);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
             return;
@@ -25,10 +25,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
-        EnsureComplete(actualSnapshot);
-        EnsureComplete(expectedSnapshot);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        actualSnapshot.EnsureComplete();
+        expectedSnapshot.EnsureComplete();
         comparer ??= EqualityComparer<T>.Default;
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
@@ -43,10 +43,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        using var actualSnapshot = new CollectionSnapshot<TActual>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<TExpected>(expected);
-        EnsureComplete(actualSnapshot);
-        EnsureComplete(expectedSnapshot);
+        using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
+        actualSnapshot.EnsureComplete();
+        expectedSnapshot.EnsureComplete();
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem));
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
             return;
@@ -59,10 +59,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
-        await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
+        await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, EqualityComparer<T>.Default.Equals);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
             return;
@@ -75,10 +75,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<T>(expected);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
-        await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
+        await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         comparer ??= EqualityComparer<T>.Default;
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer.Equals);
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
@@ -93,10 +93,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        await using var actualSnapshot = new AsyncCollectionSnapshot<TActual>(actual);
-        await using var expectedSnapshot = new AsyncCollectionSnapshot<TExpected>(expected);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
-        await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
+        await using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
+        await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
+        await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem));
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
             return;
@@ -109,10 +109,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        EnsureComplete(expectedSnapshot);
-        EnsureComplete(actualSnapshot);
+        using var expectedSnapshot = CollectionSnapshot.Create(expected);
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem));
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
             return;
@@ -125,10 +125,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        EnsureComplete(expectedSnapshot);
-        EnsureComplete(actualSnapshot);
+        using var expectedSnapshot = CollectionSnapshot.Create(expected);
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
         var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (expectedItem, actualItem) => ValuesEqual(expectedItem, actualItem, comparer));
         if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
             return;

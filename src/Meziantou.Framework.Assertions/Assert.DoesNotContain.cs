@@ -51,9 +51,8 @@ public partial class Assert
         if (actual is null)
             return;
 
-        using var matchingSnapshot = new CollectionSnapshot<T>(EnumerateMatchingItems(actual, predicate));
-        using var matchingEnumerator = matchingSnapshot.GetEnumerator();
-        if (!matchingEnumerator.MoveNext())
+        using var matchingSnapshot = CollectionSnapshot.Create<T>(EnumerateMatchingItems(actual, predicate));
+        if (!matchingSnapshot.TryGetItem(0, out _))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new CollectionDoesNotContainPredicateAssertionError<T>(matchingSnapshot, actualExpression, predicateExpression, message)));
@@ -156,10 +155,10 @@ public partial class Assert
             return;
 
         comparer ??= EqualityComparer<T>.Default;
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        using var expectedSnapshot = new CollectionSnapshot<T>(expected);
-        EnsureComplete(expectedSnapshot);
-        await EnsureCompleteAsync(actualSnapshot).ConfigureAwait(false);
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        expectedSnapshot.EnsureComplete();
+        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         if (!ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
@@ -171,10 +170,10 @@ public partial class Assert
         if (actual is null)
             return;
 
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        using var expectedSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(expected));
-        EnsureComplete(expectedSnapshot);
-        EnsureComplete(actualSnapshot);
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create(expected);
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
         if (!ContainsSubsequence(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 

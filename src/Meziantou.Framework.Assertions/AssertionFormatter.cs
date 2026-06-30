@@ -1512,8 +1512,7 @@ internal class AssertionFormatter
         if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
             return;
 
-        using var enumerator = snapshot.GetEnumerator();
-        while (!snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && enumerator.MoveNext())
+        for (var index = snapshot.ObservedCount; !snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && snapshot.TryGetItem(index, out _); index++)
         {
         }
     }
@@ -1523,8 +1522,7 @@ internal class AssertionFormatter
         if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
             return;
 
-        await using var enumerator = snapshot.GetAsyncEnumerator();
-        while (!snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && await enumerator.MoveNextAsync().ConfigureAwait(false))
+        for (var index = snapshot.ObservedCount; !snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && await snapshot.TryGetItem(index).ConfigureAwait(false) is (true, _); index++)
         {
         }
     }

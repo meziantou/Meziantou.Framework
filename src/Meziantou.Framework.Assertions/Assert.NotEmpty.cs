@@ -22,10 +22,9 @@ public partial class Assert
 
     public static void NotEmpty<T>(IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<T>(actual);
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        if (actualEnumerator.MoveNext())
+        if (actualSnapshot.TryGetItem(0, out _))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IEnumerable<T>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message)));
@@ -33,10 +32,9 @@ public partial class Assert
 
     public static void NotEmpty(System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
-        using var actualEnumerator = actualSnapshot.GetEnumerator();
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
 
-        if (actualEnumerator.MoveNext())
+        if (actualSnapshot.TryGetItem(0, out _))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<object?>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message)));
@@ -44,10 +42,9 @@ public partial class Assert
 
     public static async Task NotEmpty<T>(IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        await using var actualSnapshot = new AsyncCollectionSnapshot<T>(actual);
-        await using var actualEnumerator = actualSnapshot.GetAsyncEnumerator();
+        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
-        if (await actualEnumerator.MoveNextAsync().ConfigureAwait(false))
+        if (await actualSnapshot.TryGetItem(0).ConfigureAwait(false) is (true, _))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<T>>(nameof(NotEmpty), "empty", actualSnapshot.Items, actualExpression, message)));

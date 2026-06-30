@@ -12,7 +12,7 @@ namespace Meziantou.DnsProxy.Proxy;
 internal sealed class CustomDnsRecordProvider
 {
     private const uint CustomRecordTimeToLive = 60;
-    private readonly IReadOnlyList<CustomDnsRecord> _records;
+    private readonly List<CustomDnsRecord> _records;
 
     public CustomDnsRecordProvider(IOptions<DnsProxyOptions> options, ILogger<CustomDnsRecordProvider> logger)
     {
@@ -21,19 +21,21 @@ internal sealed class CustomDnsRecordProvider
 
     public bool TryApply(DnsQuestion question, DnsMessage response)
     {
-        var normalizedQuestionName = NormalizeDomain(question.Name);
-        var matchingRecords = _records
-            .Where(record => record.Domain.Equals(normalizedQuestionName, StringComparison.OrdinalIgnoreCase) && (question.Type == DnsQueryType.ANY || record.Type == question.Type))
-            .ToArray();
-
-        if (matchingRecords.Length == 0)
+        if (_records.Count == 0)
         {
             return false;
         }
 
-        response.ResponseCode = DnsResponseCode.NoError;
-        foreach (var record in matchingRecords)
+        var normalizedQuestionName = NormalizeDomain(question.Name);
+        var hasMatchingRecords = false;
+        foreach (var record in _records)
         {
+            if (!record.Domain.Equals(normalizedQuestionName, StringComparison.OrdinalIgnoreCase) || question.Type != DnsQueryType.ANY && record.Type != question.Type)
+            {
+                continue;
+            }
+
+            hasMatchingRecords = true;
             response.Answers.Add(new DnsResourceRecord
             {
                 Name = question.Name,
@@ -44,6 +46,12 @@ internal sealed class CustomDnsRecordProvider
             });
         }
 
+        if (!hasMatchingRecords)
+        {
+            return false;
+        }
+
+        response.ResponseCode = DnsResponseCode.NoError;
         return true;
     }
 

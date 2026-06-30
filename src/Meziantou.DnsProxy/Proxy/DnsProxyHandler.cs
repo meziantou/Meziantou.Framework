@@ -17,17 +17,19 @@ internal sealed class DnsProxyHandler
     private readonly CustomDnsRecordProvider _customDnsRecordProvider;
     private readonly UpstreamDnsClientFactory _upstreamDnsClientFactory;
     private readonly DnsResponseCache _dnsResponseCache;
+    private readonly ClientRateLimiter _clientRateLimiter;
     private readonly RequestHistoryStore _requestHistoryStore;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<DnsProxyHandler> _logger;
 
-    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, CustomDnsRecordProvider customDnsRecordProvider, UpstreamDnsClientFactory upstreamDnsClientFactory, DnsResponseCache dnsResponseCache, RequestHistoryStore requestHistoryStore, TimeProvider timeProvider, ILogger<DnsProxyHandler> logger)
+    public DnsProxyHandler(FilterEngineProvider filterEngineProvider, FilteringPauseState filteringPauseState, CustomDnsRecordProvider customDnsRecordProvider, UpstreamDnsClientFactory upstreamDnsClientFactory, DnsResponseCache dnsResponseCache, ClientRateLimiter clientRateLimiter, RequestHistoryStore requestHistoryStore, TimeProvider timeProvider, ILogger<DnsProxyHandler> logger)
     {
         _filterEngineProvider = filterEngineProvider;
         _filteringPauseState = filteringPauseState;
         _customDnsRecordProvider = customDnsRecordProvider;
         _upstreamDnsClientFactory = upstreamDnsClientFactory;
         _dnsResponseCache = dnsResponseCache;
+        _clientRateLimiter = clientRateLimiter;
         _requestHistoryStore = requestHistoryStore;
         _timeProvider = timeProvider;
         _logger = logger;
@@ -50,6 +52,15 @@ internal sealed class DnsProxyHandler
                 Result = "Forwarded",
                 Upstream = "-",
             };
+            var clientAddress = context.RemoteEndPoint is IPEndPoint endpoint ? endpoint.Address : null;
+            if (!_clientRateLimiter.TryAcquire(clientAddress))
+            {
+                response.ResponseCode = DnsResponseCode.Refused;
+                historyEntryBuilder.Result = "RateLimited";
+                historyEntryBuilder.ResponseCode = response.ResponseCode.ToString();
+                _requestHistoryStore.Add(historyEntryBuilder.Build(response));
+                continue;
+            }
 
             if (_customDnsRecordProvider.TryApply(question, response))
             {
@@ -67,7 +78,7 @@ internal sealed class DnsProxyHandler
                     ConvertToFilterQueryType(question.Type),
                     new DnsClientInfo
                     {
-                        Address = context.RemoteEndPoint is IPEndPoint endpoint ? endpoint.Address : null,
+                        Address = clientAddress,
                     });
 
                 if (filterResult.IsMatched && filterResult.Action == DnsFilterAction.Block)
@@ -80,7 +91,7 @@ internal sealed class DnsProxyHandler
                 }
             }
 
-            if (_dnsResponseCache.TryGet(question, response))
+            if (_dnsResponseCache.TryGet(question, context.Query.EdnsOptions, response))
             {
                 ApplyQueryEdnsOptions(context, response);
                 historyEntryBuilder.Result = "CacheHit";
@@ -90,13 +101,13 @@ internal sealed class DnsProxyHandler
                 continue;
             }
 
-            var forwardResult = await ForwardToFastestUpstreamAsync(question, cancellationToken).ConfigureAwait(false);
+            var forwardResult = await ForwardToUpstreamAsync(question, cancellationToken).ConfigureAwait(false);
             if (forwardResult.IsSuccess)
             {
                 var upstreamResponse = forwardResult.Response!;
                 var forwardedResponse = context.CreateResponse();
                 ApplyUpstreamResponse(context, upstreamResponse, forwardedResponse);
-                _dnsResponseCache.Store(question, forwardedResponse);
+                _dnsResponseCache.Store(question, context.Query.EdnsOptions, forwardedResponse);
                 AppendResponse(forwardedResponse, response);
 
                 historyEntryBuilder.Upstream = forwardResult.UpstreamEndpoint;
@@ -183,12 +194,12 @@ internal sealed class DnsProxyHandler
 
     private static DnsFilterQueryType ConvertToFilterQueryType(DnsQueryType queryType)
     {
-        return Enum.IsDefined(typeof(DnsFilterQueryType), (ushort)queryType)
+        return Enum.IsDefined((DnsFilterQueryType)queryType)
             ? (DnsFilterQueryType)queryType
             : DnsFilterQueryType.ANY;
     }
 
-    private async Task<ForwardResult> ForwardToFastestUpstreamAsync(Meziantou.Framework.DnsServer.Protocol.DnsQuestion question, CancellationToken cancellationToken)
+    private async Task<ForwardResult> ForwardToUpstreamAsync(Meziantou.Framework.DnsServer.Protocol.DnsQuestion question, CancellationToken cancellationToken)
     {
         var upstreams = _upstreamDnsClientFactory.GetUpstreams();
         if (upstreams.Count == 0)
@@ -196,32 +207,24 @@ internal sealed class DnsProxyHandler
             return ForwardResult.Failure();
         }
 
-        using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var queryTasks = upstreams.Select(upstream => QueryUpstreamAsync(upstream, question, linkedCancellationTokenSource.Token)).ToList();
-        while (queryTasks.Count > 0)
+        foreach (var upstream in upstreams)
         {
-            var completedTask = await Task.WhenAny(queryTasks).ConfigureAwait(false);
-            queryTasks.Remove(completedTask);
-
-            ForwardResult result;
             try
             {
-                result = await completedTask.ConfigureAwait(false);
+                var result = await QueryUpstreamAsync(upstream, question, cancellationToken).ConfigureAwait(false);
+                if (result.IsSuccess)
+                {
+                    return result;
+                }
             }
-            catch (OperationCanceledException) when (linkedCancellationTokenSource.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                continue;
+                throw;
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "An upstream query failed unexpectedly");
                 continue;
-            }
-
-            if (result.IsSuccess)
-            {
-                linkedCancellationTokenSource.Cancel();
-                return result;
             }
         }
 
@@ -230,7 +233,7 @@ internal sealed class DnsProxyHandler
 
     private static async Task<ForwardResult> QueryUpstreamAsync(UpstreamDnsClientInfo upstream, Meziantou.Framework.DnsServer.Protocol.DnsQuestion question, CancellationToken cancellationToken)
     {
-        var stopwatch = Stopwatch.StartNew();
+        var startTimestamp = Stopwatch.GetTimestamp();
         try
         {
             var query = new Meziantou.Framework.DnsClient.Query.DnsQueryMessage
@@ -243,22 +246,18 @@ internal sealed class DnsProxyHandler
                 (Meziantou.Framework.DnsClient.Query.DnsQueryClass)question.QueryClass));
 
             var response = await upstream.Client.SendAsync(query, cancellationToken).ConfigureAwait(false);
-            stopwatch.Stop();
-            return ForwardResult.Success(upstream.DisplayName, response, stopwatch.ElapsedMilliseconds);
+            return ForwardResult.Success(upstream.DisplayName, response, (long)Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            stopwatch.Stop();
             return ForwardResult.Failure();
         }
         catch (Meziantou.Framework.DnsClient.DnsProtocolException)
         {
-            stopwatch.Stop();
             return ForwardResult.Failure();
         }
         catch (HttpRequestException)
         {
-            stopwatch.Stop();
             return ForwardResult.Failure();
         }
     }

@@ -7,6 +7,7 @@ using Meziantou.Framework.DnsServer.Protocol;
 using Meziantou.Framework.DnsServer.Protocol.Records;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 using DnsServerQuestion = Meziantou.Framework.DnsServer.Protocol.DnsQuestion;
 
 namespace Meziantou.Framework.DnsProxy.Tests;
@@ -33,6 +34,8 @@ public sealed class DnsProxyOptionsTests
         Assert.Equal(TimeSpan.FromMinutes(5), options.PositiveCacheDuration);
         Assert.Equal(TimeSpan.FromMinutes(5), options.NegativeCacheDuration);
         Assert.Equal(TimeSpan.FromHours(1), options.MaximumCacheDuration);
+        Assert.Equal(10_000, options.MaxCacheEntries);
+        Assert.Equal(600, options.MaxDnsQueriesPerClientPerMinute);
         Assert.Equal(DnssecValidationMode.None, options.DnssecValidationMode);
         Assert.Empty(options.CustomRecords);
         Assert.Collection(options.BootstrapDnsServers,
@@ -239,6 +242,38 @@ public sealed class DnsProxyOptionsTests
         var snapshot = store.GetSnapshot();
         Assert.Equal(2, snapshot.Count);
         Assert.DoesNotContain(snapshot, item => item.QuestionName == "example0.com");
+        Assert.Equal(["example2.com", "example1.com"], snapshot.Select(item => item.QuestionName).ToArray());
+    }
+
+    [Fact]
+    public void ClientRateLimiter_EnforcesConfiguredLimitPerClient()
+    {
+        using var limiter = new ClientRateLimiter(
+            Options.Create(new DnsProxyOptions
+            {
+                MaxDnsQueriesPerClientPerMinute = 2,
+            }));
+        var clientAddress = IPAddress.Parse("192.0.2.1");
+
+        Assert.True(limiter.TryAcquire(clientAddress));
+        Assert.True(limiter.TryAcquire(clientAddress));
+        Assert.False(limiter.TryAcquire(clientAddress));
+        Assert.True(limiter.TryAcquire(IPAddress.Parse("192.0.2.2")));
+    }
+
+    [Fact]
+    public void ClientRateLimiter_WhenDisabled_AllowsRequests()
+    {
+        using var limiter = new ClientRateLimiter(
+            Options.Create(new DnsProxyOptions
+            {
+                MaxDnsQueriesPerClientPerMinute = 0,
+            }));
+        var clientAddress = IPAddress.Parse("192.0.2.1");
+
+        Assert.True(limiter.TryAcquire(clientAddress));
+        Assert.True(limiter.TryAcquire(clientAddress));
+        Assert.True(limiter.TryAcquire(clientAddress));
     }
 
     private static CustomDnsRecordProvider CreateCustomDnsRecordProvider(params CustomDnsRecordOption[] customRecords)

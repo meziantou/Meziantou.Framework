@@ -195,7 +195,7 @@ public class ProcessWrapperTests
 
         await process;
 
-        Assert.Contains("test", sb.ToString(), StringComparison.Ordinal);
+        Assert.Contains("test", sb.ToString());
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public class ProcessWrapperTests
 
         await process;
 
-        Assert.Contains("test", writer.ToString(), StringComparison.Ordinal);
+        Assert.Contains("test", writer.ToString());
     }
 
     [Fact]
@@ -269,7 +269,7 @@ public class ProcessWrapperTests
         await process;
 
         var capturedText = Encoding.UTF8.GetString(output.ToArray());
-        Assert.Contains("test", capturedText, StringComparison.Ordinal);
+        Assert.Contains("test", capturedText);
     }
 
     [Fact]
@@ -296,7 +296,7 @@ public class ProcessWrapperTests
 
         Assert.NotEmpty(allBytes);
         var capturedText = Encoding.UTF8.GetString(allBytes);
-        Assert.Contains("test", capturedText, StringComparison.Ordinal);
+        Assert.Contains("test", capturedText);
     }
 
     [Fact]
@@ -316,7 +316,7 @@ public class ProcessWrapperTests
         Assert.Equal("test", lines[0]);
 
         var capturedText = Encoding.UTF8.GetString(output.ToArray());
-        Assert.Contains("test", capturedText, StringComparison.Ordinal);
+        Assert.Contains("test", capturedText);
     }
 
     [Fact]
@@ -335,7 +335,7 @@ public class ProcessWrapperTests
         Assert.Empty(lines);
 
         var capturedText = Encoding.UTF8.GetString(output.ToArray());
-        Assert.Contains("test", capturedText, StringComparison.Ordinal);
+        Assert.Contains("test", capturedText);
     }
 
     [Fact]
@@ -444,7 +444,7 @@ public class ProcessWrapperTests
             Assert.Single(createdProcesses);
             var expectedCommandLine = ProcessWrapper.Create(createdProcesses[0].FileName).ToString();
             Assert.Equal($"{expectedCommandLine} (ExitCode: {processResult.ExitCode})", processResult.ToString());
-            Assert.DoesNotContain("ignored", processResult.ToString(), StringComparison.Ordinal);
+            Assert.DoesNotContain("ignored", processResult.ToString());
         });
     }
 
@@ -461,7 +461,7 @@ public class ProcessWrapperTests
                 .ExecuteAsync();
         });
 
-        Assert.Contains("argument-marker", processResult.ToString(), StringComparison.Ordinal);
+        Assert.Contains("argument-marker", processResult.ToString());
     }
 
     [Fact]
@@ -719,8 +719,8 @@ public class ProcessWrapperTests
 
             var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
             Assert.Single(createdProcesses);
-            Assert.Contains(createdProcesses[0].FileName, ex.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain("sensitive-argument", ex.Message, StringComparison.Ordinal);
+            Assert.Contains(createdProcesses[0].FileName, ex.Message);
+            Assert.DoesNotContain("sensitive-argument", ex.Message);
         });
     }
 
@@ -737,7 +737,7 @@ public class ProcessWrapperTests
                 .ExecuteAsync();
 
             var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
-            Assert.Contains("sensitive-argument", ex.Message, StringComparison.Ordinal);
+            Assert.Contains("sensitive-argument", ex.Message);
         });
     }
 
@@ -755,7 +755,7 @@ public class ProcessWrapperTests
                     .ExecuteAsync();
 
                 var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
-                Assert.Contains("global-sensitive-argument", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("global-sensitive-argument", ex.Message);
             });
         });
     }
@@ -787,8 +787,8 @@ public class ProcessWrapperTests
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
         var processPath = Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
         Assert.NotNull(activity.StatusDescription);
-        Assert.StartsWith("Process exited with code 1.", activity.StatusDescription, StringComparison.Ordinal);
-        Assert.Contains(processPath, activity.StatusDescription, StringComparison.Ordinal);
+        Assert.StartsWith("Process exited with code 1.", activity.StatusDescription);
+        Assert.Contains(processPath, activity.StatusDescription);
         Assert.Equal(1, activity.GetTagItem("process.exit.code"));
     }
 
@@ -835,7 +835,7 @@ public class ProcessWrapperTests
             .ExecuteAsync();
 
         var ex = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await process);
-        Assert.StartsWith("Process wrote to standard error.", ex.Message, StringComparison.Ordinal);
+        Assert.StartsWith("Process wrote to standard error.", ex.Message);
     }
 
     [Fact]
@@ -862,7 +862,7 @@ public class ProcessWrapperTests
         await process;
 
         var capturedText = Encoding.UTF8.GetString(error.ToArray());
-        Assert.Contains("error", capturedText, StringComparison.Ordinal);
+        Assert.Contains("error", capturedText);
     }
 
     [Fact]
@@ -890,8 +890,8 @@ public class ProcessWrapperTests
         await process;
 
         var capturedText = Encoding.UTF8.GetString(stream.ToArray());
-        Assert.Contains("out1", capturedText, StringComparison.Ordinal);
-        Assert.Contains("err1", capturedText, StringComparison.Ordinal);
+        Assert.Contains("out1", capturedText);
+        Assert.Contains("err1", capturedText);
     }
 
     [Fact]
@@ -1001,7 +1001,7 @@ public class ProcessWrapperTests
 
         var processResult = await result;
 
-        Assert.Contains("hello from stdin", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+        Assert.Contains("hello from stdin", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -1024,7 +1024,7 @@ public class ProcessWrapperTests
 
         var processResult = await result;
 
-        Assert.Contains("hello from bytes", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+        Assert.Contains("hello from bytes", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -1048,7 +1048,7 @@ public class ProcessWrapperTests
 
         var processResult = await result;
 
-        Assert.Contains("hello from text reader", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+        Assert.Contains("hello from text reader", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -1075,7 +1075,7 @@ public class ProcessWrapperTests
 
             var processResult = await result;
 
-            Assert.Contains("hello from file", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+            Assert.Contains("hello from file", processResult.Output.StandardOutput.First().Text);
         }
         finally
         {
@@ -1099,7 +1099,7 @@ public class ProcessWrapperTests
         await sourceProcess;
         var processResult = await destinationProcess;
 
-        Assert.Contains("hello from pipe", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+        Assert.Contains("hello from pipe", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -1108,7 +1108,7 @@ public class ProcessWrapperTests
         var processResult = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand())
             .ExecuteBufferedAsync();
 
-        Assert.Contains("hello from operator", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+        Assert.Contains("hello from operator", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -1117,7 +1117,7 @@ public class ProcessWrapperTests
         var processResult = await (CreateEchoCommand("hello from operator") | CreatePassthroughCommand() | CreatePassthroughCommand())
             .ExecuteBufferedAsync();
 
-        Assert.Contains("hello from operator", processResult.Output.StandardOutput.First().Text, StringComparison.Ordinal);
+        Assert.Contains("hello from operator", processResult.Output.StandardOutput.First().Text);
     }
 
     [Fact]
@@ -1425,7 +1425,7 @@ public class ProcessWrapperTests
             Assert.Single(createdProcesses);
             var expectedCommandLine = ProcessWrapper.Create(createdProcesses[0].FileName).ToString();
             Assert.Equal($"{expectedCommandLine} (ExitCode: {processResult.ExitCode})", processResult.ToString());
-            Assert.DoesNotContain("ignored", processResult.ToString(), StringComparison.Ordinal);
+            Assert.DoesNotContain("ignored", processResult.ToString());
         });
     }
 
@@ -1461,7 +1461,7 @@ public class ProcessWrapperTests
                 .ExecuteBufferedAsync();
 
             Assert.Equal("final output", processResult.Output.StandardOutput.First().Text);
-            Assert.Contains("hello from custom pipe", downstreamProcess.ReadInputAsText(), StringComparison.Ordinal);
+            Assert.Contains("hello from custom pipe", downstreamProcess.ReadInputAsText());
         });
     }
 

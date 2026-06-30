@@ -115,11 +115,11 @@ public sealed class ResxGeneratorTest
         });
         Assert.Equal("test.resx.g.cs", Path.GetFileName(result.GeneratedFilePath));
         var fileContent = result.GeneratedFileRoot.ToFullString();
-        Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
-        Assert.DoesNotContain("FormatSample", fileContent, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("HelloWorld", fileContent, StringComparison.Ordinal);
-        Assert.Contains("FormatHelloWorld(object? arg0)", fileContent, StringComparison.Ordinal);
-        Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent, StringComparison.Ordinal);
+        Assert.Contains("Sample", fileContent);
+        Assert.DoesNotContain("FormatSample", fileContent, ignoreCase: true);
+        Assert.Contains("HelloWorld", fileContent);
+        Assert.Contains("FormatHelloWorld(object? arg0)", fileContent);
+        Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent);
     }
 
     [Fact]
@@ -160,15 +160,15 @@ public sealed class ResxGeneratorTest
             {
                 var fileContent = tree.GetRoot(XunitCancellationToken).ToFullString();
                 Assert.Equal("test.NewResource.resx.g.cs", Path.GetFileName(tree.FilePath));
-                Assert.Contains("BBB", fileContent, StringComparison.Ordinal);
+                Assert.Contains("BBB", fileContent);
             },
             tree =>
             {
                 var fileContent = tree.GetRoot(XunitCancellationToken).ToFullString();
                 Assert.Equal("test.resx.g.cs", Path.GetFileName(tree.FilePath));
-                Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
-                Assert.Contains("HelloWorld", fileContent, StringComparison.Ordinal);
-                Assert.Contains("AAA", fileContent, StringComparison.Ordinal);
+                Assert.Contains("Sample", fileContent);
+                Assert.Contains("HelloWorld", fileContent);
+                Assert.Contains("AAA", fileContent);
             });
     }
 

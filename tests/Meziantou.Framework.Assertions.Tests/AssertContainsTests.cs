@@ -317,7 +317,7 @@ public sealed class AssertContainsTests
     public void String_Success()
     {
         AssertionsAssert.Contains("ell", "Hello");
-        AssertionsAssert.Contains("ELL", "Hello", StringComparison.OrdinalIgnoreCase);
+        AssertionsAssert.Contains("ELL", "Hello", ignoreCase: true);
     }
 
     [Fact]

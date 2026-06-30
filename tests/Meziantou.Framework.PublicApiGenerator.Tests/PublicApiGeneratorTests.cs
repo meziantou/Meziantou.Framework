@@ -375,10 +375,10 @@ public sealed class PublicApiGeneratorTests
 
         var file = Assert.Single(files);
         Assert.Equal("Source.cs", file.RelativePath);
-        Assert.Contains("public class GlobalType", file.Content, StringComparison.Ordinal);
-        Assert.Contains("namespace Demo", file.Content, StringComparison.Ordinal);
-        Assert.Contains("public class Other", file.Content, StringComparison.Ordinal);
-        Assert.Contains("public class Sample", file.Content, StringComparison.Ordinal);
+        Assert.Contains("public class GlobalType", file.Content);
+        Assert.Contains("namespace Demo", file.Content);
+        Assert.Contains("public class Other", file.Content);
+        Assert.Contains("public class Sample", file.Content);
     }
 
     [Fact]
@@ -408,9 +408,9 @@ public sealed class PublicApiGeneratorTests
         Assert.Equal(["Demo.g.cs", "GlobalNamespace.g.cs"], files.Select(static file => file.RelativePath).OrderBy(static value => value, StringComparer.Ordinal));
         var demoFile = files.Single(file => file.RelativePath == "Demo.g.cs");
         var globalNamespaceFile = files.Single(file => file.RelativePath == "GlobalNamespace.g.cs");
-        Assert.Contains("public class Other", demoFile.Content, StringComparison.Ordinal);
-        Assert.Contains("public class Sample", demoFile.Content, StringComparison.Ordinal);
-        Assert.Contains("public class GlobalType", globalNamespaceFile.Content, StringComparison.Ordinal);
+        Assert.Contains("public class Other", demoFile.Content);
+        Assert.Contains("public class Sample", demoFile.Content);
+        Assert.Contains("public class GlobalType", globalNamespaceFile.Content);
     }
 
     [Fact]
@@ -438,9 +438,9 @@ public sealed class PublicApiGeneratorTests
         });
 
         Assert.Equal(["Demo.Other.g.cs", "Demo.Sample.g.cs", "GlobalType.g.cs"], files.Select(static file => file.RelativePath));
-        Assert.Contains("public class Other", files.Single(static file => file.RelativePath == "Demo.Other.g.cs").Content, StringComparison.Ordinal);
-        Assert.Contains("public class Sample", files.Single(static file => file.RelativePath == "Demo.Sample.g.cs").Content, StringComparison.Ordinal);
-        Assert.Contains("public class GlobalType", files.Single(static file => file.RelativePath == "GlobalType.g.cs").Content, StringComparison.Ordinal);
+        Assert.Contains("public class Other", files.Single(static file => file.RelativePath == "Demo.Other.g.cs").Content);
+        Assert.Contains("public class Sample", files.Single(static file => file.RelativePath == "Demo.Sample.g.cs").Content);
+        Assert.Contains("public class GlobalType", files.Single(static file => file.RelativePath == "GlobalType.g.cs").Content);
     }
 
     [Fact]
@@ -579,8 +579,8 @@ public sealed class PublicApiGeneratorTests
             });
 
         var content = Assert.Single(files).Content;
-        Assert.Contains($"#if {expectedSymbol}", content, StringComparison.Ordinal);
-        Assert.Contains("public void B() { }", content, StringComparison.Ordinal);
+        Assert.Contains($"#if {expectedSymbol}", content);
+        Assert.Contains("public void B() { }", content);
     }
 
     [Fact]
@@ -1871,9 +1871,9 @@ public sealed class PublicApiGeneratorTests
 
         Assert.Equal(["AssemblyInfo.g.cs", "A.g.cs", "B.g.cs"], files.Select(file => file.RelativePath));
         var assemblyInfo = files[0].Content;
-        Assert.Contains("[assembly: System.Runtime.Versioning.RequiresPreviewFeatures]", assemblyInfo, StringComparison.Ordinal);
-        Assert.DoesNotContain("[assembly:", files[1].Content, StringComparison.Ordinal);
-        Assert.DoesNotContain("[assembly:", files[2].Content, StringComparison.Ordinal);
+        Assert.Contains("[assembly: System.Runtime.Versioning.RequiresPreviewFeatures]", assemblyInfo);
+        Assert.DoesNotContain("[assembly:", files[1].Content);
+        Assert.DoesNotContain("[assembly:", files[2].Content);
     }
 
     [Fact]
@@ -1949,10 +1949,10 @@ public sealed class PublicApiGeneratorTests
             });
 
         var content = Assert.Single(files).Content;
-        Assert.Contains("[System.AttributeUsage(System.AttributeTargets.", content, StringComparison.Ordinal);
-        Assert.Contains("System.AttributeTargets.Property", content, StringComparison.Ordinal);
-        Assert.Contains("System.AttributeTargets.Field", content, StringComparison.Ordinal);
-        Assert.DoesNotContain("[System.AttributeUsage((System.AttributeTargets)", content, StringComparison.Ordinal);
+        Assert.Contains("[System.AttributeUsage(System.AttributeTargets.", content);
+        Assert.Contains("System.AttributeTargets.Property", content);
+        Assert.Contains("System.AttributeTargets.Field", content);
+        Assert.DoesNotContain("[System.AttributeUsage((System.AttributeTargets)", content);
     }
 
     [Fact]
@@ -1980,8 +1980,8 @@ public sealed class PublicApiGeneratorTests
             });
 
         var content = Assert.Single(files).Content;
-        Assert.Contains("typeof(System.Collections.Generic.IEnumerable<SampleType>)", content, StringComparison.Ordinal);
-        Assert.DoesNotContain("`1[", content, StringComparison.Ordinal);
+        Assert.Contains("typeof(System.Collections.Generic.IEnumerable<SampleType>)", content);
+        Assert.DoesNotContain("`1[", content);
     }
 
     [Fact]

@@ -9,7 +9,7 @@ public partial class Assert
     /// <param name="predicate">The predicate that at least one item must not satisfy.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="predicateExpression">The expression that produced the predicate.</param>
-    public static void DoesNotAll<T>(IEnumerable<T> actual, Func<T, bool> predicate, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
+    public static void DoesNotAll<T>(IEnumerable<T> actual, Func<T, bool> predicate, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
     {
         using var actualSnapshot = new CollectionSnapshot<T>(actual);
 
@@ -19,6 +19,6 @@ public partial class Assert
                 return;
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new CollectionDoesNotAllPredicateAssertionError<T>(actualSnapshot, actualExpression, predicateExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new CollectionDoesNotAllPredicateAssertionError<T>(actualSnapshot, actualExpression, predicateExpression, message)));
     }
 }

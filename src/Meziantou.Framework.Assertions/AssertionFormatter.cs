@@ -8,6 +8,14 @@ internal class AssertionFormatter
 
     public static AssertionFormatter Default { get; } = new AssertionFormatter();
 
+    internal static string AppendMessage(string formattedMessage, string? message)
+    {
+        if (string.IsNullOrEmpty(message) || formattedMessage.Contains(NewLine + "Message: ", StringComparison.Ordinal))
+            return formattedMessage;
+
+        return formattedMessage + NewLine + "Message: " + message;
+    }
+
     internal FormatterOptions Options
     {
         get;
@@ -68,7 +76,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format(TrueAssertionError error)
@@ -85,7 +93,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format(FalseAssertionError error)
@@ -102,7 +110,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     private static string FormatBoolean(bool? value)
@@ -128,7 +136,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format(NegativeExpressionAssertionError error)
@@ -144,7 +152,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format(NegativeExceptionAssertionError error)
@@ -161,7 +169,7 @@ internal class AssertionFormatter
             result += NewLine + "Exception message: " + error.ExceptionMessage;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<T>(NegativeReadOnlySpanActualValueAssertionError<T> error)
@@ -178,7 +186,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<TExpected, TActual>(NegativeReadOnlySpanValueAssertionError<TExpected, TActual> error)
@@ -196,7 +204,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<TExpected, TActual>(NegativeReadOnlySpanExpectedActualValueAssertionError<TExpected, TActual> error)
@@ -214,18 +222,18 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<T>(NegativeReadOnlySpanCountAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{error.AssertionName}() assertion failed.
             Expression: {error.ActualExpression}
             Not expected count: {error.NotExpectedCount}
             Actual count:       {error.ActualCount}
             Actual:             {FormatReadOnlySpanValue(error.ActualValue.Span)}
-            """);
+            """), error.Message);
     }
 
     private string FormatNegativeValue(string assertionName, string? expectedExpression, string? actualExpression, string notExpectedLabel, object? expectedValue, object? actualValue, string? message)
@@ -295,39 +303,39 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format(NegativeSameAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.NotSame() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Not expected: same instance as {FormatValue(error.ExpectedValue)}
             Actual:       {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format<T>(NegativeRangeAssertionError<T> error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.{error.AssertionName}() assertion failed.
             Expression: {error.ActualExpression}
             Not expected: in range [{FormatValue(error.LowValue)}, {FormatValue(error.HighValue)}]
             Actual:       {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format(NegativeTypeAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.{error.AssertionName}() assertion failed.
             Expression:          {error.ActualExpression}
             {error.NotExpectedTypeLabel}: {FormatType(error.ExpectedType)}
             Actual type:         {FormatType(error.ActualValue?.GetType())}
             Actual value:        {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format(NegativeSetAssertionError error)
@@ -338,24 +346,24 @@ internal class AssertionFormatter
         var notExpectedValueLabel = $"Not expected {setName}:";
         var actualValueLabel = "Actual:";
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.NotProper{(error.IsSuperset ? "Superset" : "Subset")}() assertion failed.
             {expectedExpressionLabel} {error.ExpectedExpression}
             {actualExpressionLabel.PadRight(expectedExpressionLabel.Length)} {error.ActualExpression}
             {notExpectedValueLabel} {FormatValue(error.ExpectedValue)}
             {actualValueLabel.PadRight(notExpectedValueLabel.Length)} {FormatValue(error.ActualValue)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(NegativeCountAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{error.AssertionName}() assertion failed.
             Expression: {error.ActualExpression}
             Not expected count: {error.NotExpectedCount}
             Actual count:       {error.ActualCount}
             Actual:             {FormatValue(error.ActualValue)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(NegativeEqualWithToleranceAssertionError<T> error)
@@ -374,92 +382,92 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format(NullAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.Null() assertion failed.
             Expression: {error.ActualExpression}
             Expected: <null>
             Actual:   {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format(IsTypeAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.IsType() assertion failed.
             Expression:    {error.ActualExpression}
             Expected type: {FormatType(error.ExpectedType)}
             Actual type:   {FormatType(error.ActualValue?.GetType())}
             Actual value:  {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format(IsAssignableToAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.IsAssignableTo() assertion failed.
             Expression:    {error.ActualExpression}
             Expected type: {FormatType(error.ExpectedType)}
             Actual type:   {FormatType(error.ActualValue?.GetType())}
             Actual value:  {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format(SameAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.Same() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected: same instance as {FormatValue(error.ExpectedValue)}
             Actual:   {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format<T>(InRangeAssertionError<T> error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.InRange() assertion failed.
             Expression: {error.ActualExpression}
             Expected:   in range [{FormatValue(error.LowValue)}, {FormatValue(error.HighValue)}]
             Actual:     {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format(ThrowsAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.{(error.AllowDerivedTypes ? "ThrowsAny" : "Throws")}() assertion failed.
             Expression:              {error.ActionExpression}
             Expected exception type: {FormatType(error.ExpectedExceptionType)}
             Actual exception type:   {FormatType(error.ActualException?.GetType())}
             Exception:               {FormatException(error.ActualException)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format(RegexMatchesAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.Match() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected pattern: {FormatValue(error.ExpectedPattern)}
             Actual:           {FormatValue(error.ActualValue)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format(RaiseAssertionError error)
     {
-        return $"""
+        return AppendMessage($"""
             Assert.{(error.AllowDerivedTypes ? "RaiseAny" : "Raise")}() assertion failed.
             Expression:               {error.ActionExpression}
             Expected event args type: {FormatType(error.ExpectedEventArgsType)}
             Actual event args type:   {FormatType(error.ActualEventArgsType)}
-            """;
+            """, error.Message);
     }
 
     public virtual string Format<T>(CollectionSetAssertionError<T> error)
@@ -470,13 +478,13 @@ internal class AssertionFormatter
         var expectedValueLabel = $"Expected {setName}:";
         var actualValueLabel = "Actual:";
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{(error.IsSuperset ? "ProperSuperset" : "ProperSubset")}() assertion failed.
             {expectedExpressionLabel} {error.ExpectedExpression}
             {actualExpressionLabel.PadRight(expectedExpressionLabel.Length)} {error.ActualExpression}
             {expectedValueLabel} {FormatValue(error.ExpectedValue.Items)}
             {actualValueLabel.PadRight(expectedValueLabel.Length)} {FormatValue(error.ActualValue.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
@@ -495,7 +503,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<T>(EqualWithToleranceAssertionError<T> error)
@@ -515,7 +523,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format(EquivalentAssertionError error)
@@ -536,7 +544,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<TExpected, TActual>(ReadOnlySpanEqualAssertionError<TExpected, TActual> error)
@@ -555,7 +563,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<TExpected, TActual>(ReadOnlySpanLengthAssertionError<TExpected, TActual> error)
@@ -575,60 +583,60 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<T>(ValueStartsWithAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.StartsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected prefix: {FormatValue(error.ExpectedValue)}
             Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ValueCollectionStartsWithAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.StartsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected prefix: {FormatValue(error.ExpectedValue)}
             Actual:          {FormatValue(error.ActualValue.Items, error.ActualValue.Items.Count > 0 ? 0 : null)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ReadOnlySpanEmptyAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Empty() assertion failed.
             Expression: {error.ActualExpression}
             Actual:     {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(StringEmptyAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Empty() assertion failed.
             Expression: {error.ActualExpression}
             Actual:     {FormatStringValue(error.ActualValue, error.ActualValue.IsEmpty ? null : 0)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionEmptyAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Empty() assertion failed.
             Expression: {error.ActualExpression}
             Actual:     {FormatValue(error.ActualValue.Items, error.ActualValue.Items.Count > 0 ? 0 : null)}
-            """);
+            """), error.Message);
     }
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionEmptyAssertionError<T> error)
@@ -644,78 +652,78 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(ReadOnlySpanSingleAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Single() assertion failed.
             Expression: {error.ActualExpression}
             Actual:     {FormatReadOnlySpanValue(error.ActualValue, GetSingleFailureHighlightedIndex(error.ActualValue.Length))}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(StringSingleAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Single() assertion failed.
             Expression: {error.ActualExpression}
             Actual:     {FormatStringValue(error.ActualValue, GetSingleFailureHighlightedIndex(error.ActualValue.Length))}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionSingleAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Single() assertion failed.
             Expression: {error.ActualExpression}
             Actual:     {FormatValue(error.ActualValue.Items, GetSingleFailureHighlightedIndex(error.ActualValue.Items.Count))}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionSinglePredicateAssertionError<T> error)
     {
         EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Single() assertion failed.
             Expression: {error.ActualExpression}
             Predicate expression: {error.PredicateExpression}
             Matching items:       {FormatValue(error.MatchingValues.Items, GetSingleFailureHighlightedIndex(error.MatchingValues.Items.Count))}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionContainsPredicateAssertionError<T> error)
     {
         EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expression: {error.ActualExpression}
             Predicate expression: {error.PredicateExpression}
             Matching items:       {FormatValue(error.MatchingValues.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(ContainsPredicateNullActualAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expression: {error.ActualExpression}
             Predicate expression: {error.PredicateExpression}
             Actual: <null>
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionDoesNotContainPredicateAssertionError<T> error)
     {
         EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.DoesNotContain() assertion failed.
             Expression: {error.ActualExpression}
             Predicate expression: {error.PredicateExpression}
             Not expected: any matching item
             Matching items: {FormatValue(error.MatchingValues.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionSingleAssertionError<T> error)
@@ -733,73 +741,73 @@ internal class AssertionFormatter
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Collection() assertion failed: Collection count does not match inspector count.
             Expression: {error.ActualExpression}
             Expected count: {error.ExpectedCount}
             Actual count:   {error.ActualValue.Items.Count}
             Actual:         {FormatValue(error.ActualValue.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionInspectorAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Collection() assertion failed: Item at index {error.Index} failed.
             Expression: {error.ActualExpression}
             Actual:     {FormatValue(error.ActualValue.Items, error.Index)}
             Exception:  {FormatException(error.Exception)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ReadOnlySpanAllAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.All() assertion failed: Item at index {error.Index} failed.
             Expression: {error.ActualExpression}
             Assertion expression: {error.AssertionExpression}
             Actual:     {FormatReadOnlySpanValue(error.ActualValue, error.Index)}
             Exception:  {FormatException(error.Exception)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionAllPredicateAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.All() assertion failed: Item at index {error.Index} did not satisfy the predicate.
             Expression:          {error.ActualExpression}
             Predicate expression: {error.PredicateExpression}
             Actual:              {FormatValue(error.ActualValue.Items, error.Index)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionDoesNotAllPredicateAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.DoesNotAll() assertion failed: All items satisfy the predicate, but expected at least one that does not.
             Expression:           {error.ActualExpression}
             Predicate expression: {error.PredicateExpression}
             Actual:               {FormatValue(error.ActualValue.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionAllAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.Index));
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.All() assertion failed: Item at index {error.Index} failed.
             Expression: {error.ActualExpression}
             Assertion expression: {error.AssertionExpression}
             Actual:     {FormatValue(error.ActualValue.Items, error.Index)}
             Exception:  {FormatException(error.Exception)}
-            """);
+            """), error.Message);
     }
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionAllAssertionError<T> error)
@@ -817,26 +825,26 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(ReadOnlySpanDistinctAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Distinct() assertion failed: Duplicate item found at index {error.DuplicateIndex}.
             Expression: {error.ActualExpression}
             First index:     {error.FirstIndex}
             Duplicate index: {error.DuplicateIndex}
             Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.DuplicateIndex)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionDistinctAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.DuplicateIndex));
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Distinct() assertion failed: Duplicate item found at index {error.DuplicateIndex}.
             Expression: {error.ActualExpression}
             First index:     {error.FirstIndex}
             Duplicate index: {error.DuplicateIndex}
             Actual:          {FormatValue(error.ActualValue.Items, error.DuplicateIndex)}
-            """);
+            """), error.Message);
     }
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionDistinctAssertionError<T> error)
@@ -854,37 +862,37 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(ReadOnlySpanCountAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{error.AssertionName}() assertion failed.
             Expression: {error.ActualExpression}
             Expected count: {error.ExpectedCount}
             Actual count:   {error.ActualCount}
             Actual:         {FormatReadOnlySpanValue(error.ActualValue)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(StringCountAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{error.AssertionName}() assertion failed.
             Expression: {error.ActualExpression}
             Expected count: {error.ExpectedCount}
             Actual count:   {error.ActualCount}
             Actual:         {FormatStringValue(error.ActualValue, highlightedIndex: null)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(CollectionCountAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{error.AssertionName}() assertion failed.
             Expression: {error.ActualExpression}
             Expected count: {error.ExpectedCount}
             Actual count:   {error.ActualCount}
             Actual:         {FormatValue(error.ActualValue.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionCountAssertionError<T> error)
@@ -902,26 +910,26 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(ValueContainsAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected item: {FormatValue(error.ExpectedValue)}
             Actual:        {FormatReadOnlySpanValue(error.ActualValue)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ValueCollectionContainsAssertionError<T> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected item: {FormatValue(error.ExpectedValue)}
             Actual:        {FormatValue(error.ActualValue.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<TExpected>(ContainsNullActualAssertionError<TExpected> error)
@@ -929,13 +937,13 @@ internal class AssertionFormatter
         var actualExpressionPadding = new string(' ', error.ExpectedExpressionLabel.Length - "Actual expression".Length + 1);
         var actualValuePadding = new string(' ', error.ExpectedValueLabel.Length - "Actual".Length + 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             {error.ExpectedExpressionLabel}: {error.ExpectedExpression}
             Actual expression:{actualExpressionPadding}{error.ActualExpression}
             {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
             Actual:{actualValuePadding}<null>
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<TExpected>(NullActualAssertionError<TExpected> error)
@@ -943,84 +951,84 @@ internal class AssertionFormatter
         var actualExpressionPadding = new string(' ', error.ExpectedExpressionLabel.Length - "Actual expression".Length + 1);
         var actualValuePadding = new string(' ', error.ExpectedValueLabel.Length - "Actual".Length + 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{error.AssertionName}() assertion failed.
             {error.ExpectedExpressionLabel}: {error.ExpectedExpression}
             Actual expression:{actualExpressionPadding}{error.ActualExpression}
             {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
             Actual:{actualValuePadding}<null>
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<TKey, TValue>(KeyValuePairCollectionContainsAssertionError<TKey, TValue> error)
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expected key expression: {error.ExpectedExpression}
             Actual expression:       {error.ActualExpression}
             Expected key: {FormatValue(error.ExpectedKey)}
             Actual:       {FormatKeyValuePairs(error.ActualValue.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(DictionaryContainsAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expected key expression: {error.ExpectedExpression}
             Actual expression:       {error.ActualExpression}
             Expected key: {FormatValue(error.ExpectedKey)}
             Actual:       {FormatDictionary(error.ActualValue)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ReadOnlySpanContainsAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected: {FormatReadOnlySpanValue(error.ExpectedValue)}
             Actual:   {FormatReadOnlySpanValue(error.ActualValue)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(ReadOnlySpanCharContainsAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Comparison: {error.Comparison}
             Expected: {FormatStringValue(error.ExpectedValue, highlightedIndex: null)}
             Actual:   {FormatStringValue(error.ActualValue, highlightedIndex: null)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(StringContainsNullActualAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Comparison: {error.Comparison}
             Expected: {FormatValue(error.ExpectedValue)}
             Actual:   <null>
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(StringNullActualAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.{error.AssertionName}() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Comparison: {error.Comparison}
             {error.ExpectedValueLabel}: {FormatValue(error.ExpectedValue)}
             Actual:          <null>
-            """);
+            """), error.Message);
     }
 
     public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionContainsAssertionError<TExpected, TActual> error)
@@ -1040,58 +1048,58 @@ internal class AssertionFormatter
     {
         EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.Contains() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected: {FormatValue(error.ExpectedValue.Items)}
             Actual:   {FormatValue(error.ActualValue.Items)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ValueEndsWithAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.EndsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected suffix: {FormatValue(error.ExpectedValue)}
             Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.ActualValue.IsEmpty ? null : error.ActualValue.Length - 1)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ValueCollectionEndsWithAssertionError<T> error)
     {
         var highlightedIndex = error.ActualValue.Items.Count > 0 ? error.ActualValue.Items.Count - 1 : (int?)null;
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.EndsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Expected suffix: {FormatValue(error.ExpectedValue)}
             Actual:          {FormatValue(error.ActualValue.Items, highlightedIndex)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ReadOnlySpanEndsWithAssertionError<T> error)
     {
         var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Length, error.ActualValue.Length, error.FirstDifferenceIndex);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.EndsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Index of first difference: {error.FirstDifferenceIndex}
             Expected suffix: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex < error.ExpectedValue.Length ? error.FirstDifferenceIndex : null)}
             Actual:          {FormatReadOnlySpanValue(error.ActualValue, actualIndex)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(ReadOnlySpanCharEndsWithAssertionError error)
     {
         var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Length, error.ActualValue.Length, error.FirstDifferenceIndex);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.EndsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
@@ -1099,7 +1107,7 @@ internal class AssertionFormatter
             Index of first difference: {error.FirstDifferenceIndex}
             Expected suffix: {FormatStringValue(error.ExpectedValue, error.FirstDifferenceIndex < error.ExpectedValue.Length ? error.FirstDifferenceIndex : null)}
             Actual:          {FormatStringValue(error.ActualValue, actualIndex)}
-            """);
+            """), error.Message);
     }
 
     public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionEndsWithAssertionError<TExpected, TActual> error)
@@ -1121,31 +1129,31 @@ internal class AssertionFormatter
     {
         var actualIndex = GetActualSuffixIndex(error.ExpectedValue.Items.Count, error.ActualValue.Items.Count, error.FirstDifferenceIndex);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.EndsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Index of first difference: {error.FirstDifferenceIndex}
             Expected suffix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex < error.ExpectedValue.Items.Count ? error.FirstDifferenceIndex : null)}
             Actual:          {FormatValue(error.ActualValue.Items, actualIndex)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<T>(ReadOnlySpanStartsWithAssertionError<T> error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.StartsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Index of first difference: {error.FirstDifferenceIndex}
             Expected prefix: {FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex)}
             Actual:          {FormatReadOnlySpanValue(error.ActualValue, error.FirstDifferenceIndex < error.ActualValue.Length ? error.FirstDifferenceIndex : null)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format(ReadOnlySpanCharStartsWithAssertionError error)
     {
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.StartsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
@@ -1153,7 +1161,7 @@ internal class AssertionFormatter
             Index of first difference: {error.FirstDifferenceIndex}
             Expected prefix: {FormatStringValue(error.ExpectedValue, error.FirstDifferenceIndex)}
             Actual:          {FormatStringValue(error.ActualValue, error.FirstDifferenceIndex < error.ActualValue.Length ? error.FirstDifferenceIndex : null)}
-            """);
+            """), error.Message);
     }
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionStartsWithAssertionError<T> error)
@@ -1194,14 +1202,14 @@ internal class AssertionFormatter
         EnsureObservedItems(error.ExpectedValue, maxIndex);
         EnsureObservedItems(error.ActualValue, maxIndex);
 
-        return string.Create(CultureInfo.InvariantCulture, $"""
+        return AppendMessage(string.Create(CultureInfo.InvariantCulture, $"""
             Assert.StartsWith() assertion failed.
             Expected expression: {error.ExpectedExpression}
             Actual expression:   {error.ActualExpression}
             Index of first difference: {error.FirstDifferenceIndex}
             Expected prefix: {FormatValue(error.ExpectedValue.Items, error.FirstDifferenceIndex)}
             Actual:          {FormatValue(error.ActualValue.Items, error.FirstDifferenceIndex < error.ActualValue.Items.Count ? error.FirstDifferenceIndex : null)}
-            """);
+            """), error.Message);
     }
 
     public virtual string Format<TExpected, TActual>(CollectionEqualAssertionError<TExpected, TActual> error)
@@ -1220,7 +1228,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual string Format<TExpected, TActual>(CollectionEqualUnorderedAssertionError<TExpected, TActual> error)
@@ -1249,7 +1257,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return result;
+        return AppendMessage(result, error.Message);
     }
 
     public virtual async Task<string> FormatAsync<TExpected, TActual>(AsyncCollectionEqualAssertionError<TExpected, TActual> error)
@@ -1301,7 +1309,7 @@ internal class AssertionFormatter
             result += NewLine + "Message: " + error.Message;
         }
 
-        return Task.FromResult(result);
+        return Task.FromResult(AppendMessage(result, error.Message));
     }
 
     protected virtual string FormatValue(object? value, int? highlightedIndex = null)

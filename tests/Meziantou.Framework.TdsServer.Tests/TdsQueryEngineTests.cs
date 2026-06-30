@@ -3276,7 +3276,7 @@ public sealed class TdsQueryEngineTests
         Assert.Equal(expectedErrorNumber, exception.Number);
         if (!string.IsNullOrEmpty(expectedMessageContains))
         {
-            Assert.Contains(expectedMessageContains, exception.Message, StringComparison.Ordinal);
+            Assert.Contains(expectedMessageContains, exception.Message);
         }
     }
 

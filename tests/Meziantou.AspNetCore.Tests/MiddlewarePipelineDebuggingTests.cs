@@ -115,10 +115,10 @@ public sealed class MiddlewarePipelineDebuggingTests
         var snapshot = app.GetMiddlewarePipelineDebugSnapshot();
         var text = snapshot.ToString();
 
-        Assert.Contains("Pipeline:", text, StringComparison.Ordinal);
-        Assert.Contains("Endpoints:", text, StringComparison.Ordinal);
-        Assert.Contains("/hello", text, StringComparison.Ordinal);
-        Assert.Contains("::", text, StringComparison.Ordinal);
+        Assert.Contains("Pipeline:", text);
+        Assert.Contains("Endpoints:", text);
+        Assert.Contains("/hello", text);
+        Assert.Contains("::", text);
     }
 
     [Fact]
@@ -185,6 +185,6 @@ public sealed class MiddlewarePipelineDebuggingTests
         await using var app = builder.Build();
 
         var exception = Assert.Throws<InvalidOperationException>(() => app.MapMiddlewarePipelineDebugEndpoint(developmentOnly: false));
-        Assert.Contains(nameof(MiddlewarePipelineDebuggingServiceCollectionExtensions.AddMiddlewarePipelineDebugging), exception.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(MiddlewarePipelineDebuggingServiceCollectionExtensions.AddMiddlewarePipelineDebugging), exception.Message);
     }
 }

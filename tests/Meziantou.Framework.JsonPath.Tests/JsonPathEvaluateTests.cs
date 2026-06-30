@@ -60,7 +60,7 @@ public sealed class JsonPathEvaluateTests
         var doc = JsonNode.Parse("""{"a": 1}""");
         var path = JsonPath.Parse("$.b");
         var exception = Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(doc, JsonPathEvaluationMode.Strict));
-        Assert.Contains("$", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("$", exception.Message);
     }
 
     [Fact]

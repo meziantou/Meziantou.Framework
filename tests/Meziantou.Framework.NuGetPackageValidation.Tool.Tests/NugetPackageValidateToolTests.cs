@@ -84,7 +84,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
     {
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "Unknown");
         Assert.Equal(1, result.ExitCode);
-        Assert.Contains("Invalid rule 'Unknown'", result.StdError, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Invalid rule 'Unknown'", result.StdError, ignoreCase: true);
         Assert.Null(result.ValidationResult);
     }
 

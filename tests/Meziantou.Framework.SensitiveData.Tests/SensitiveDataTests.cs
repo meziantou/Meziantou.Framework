@@ -98,7 +98,7 @@ public sealed class SensitiveDataTests
     {
         using var data = SensitiveData.Create("foo");
         var text = data.ToString();
-        Assert.DoesNotContain("foo", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("foo", text, ignoreCase: true);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public sealed class SensitiveDataTests
     {
         using var data = SensitiveData.Create("foo");
         var text = JsonSerializer.Serialize(data);
-        Assert.DoesNotContain("foo", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("foo", text, ignoreCase: true);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public sealed class SensitiveDataTests
     {
         using var data = SensitiveData.Create("foo");
         var text = JsonSerializer.Serialize(data, new JsonSerializerOptions { IncludeFields = true });
-        Assert.DoesNotContain("foo", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("foo", text, ignoreCase: true);
     }
 
 #pragma warning disable SYSLIB0011 // Type or member is obsolete

@@ -1991,7 +1991,7 @@ public sealed class HtmlToMarkdownConverterTests
     public void MalformedHtml_NestedParagraphs()
     {
         var result = HtmlToMarkdown.Convert("<p><p>nested</p></p>");
-        Assert.Contains("nested", result, StringComparison.Ordinal);
+        Assert.Contains("nested", result);
     }
 
     // --- Sub/Sup (pass-through by default) ---
@@ -3352,8 +3352,8 @@ public sealed class HtmlToMarkdownConverterTests
     public void NonBreakingSpace()
     {
         var result = HtmlToMarkdown.Convert("<p>hello&nbsp;world</p>");
-        Assert.Contains("hello", result, StringComparison.Ordinal);
-        Assert.Contains("world", result, StringComparison.Ordinal);
+        Assert.Contains("hello", result);
+        Assert.Contains("world", result);
     }
 
     // --- Simple punctuation ---

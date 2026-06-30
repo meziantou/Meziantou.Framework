@@ -11,12 +11,12 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith<T>(T expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void StartsWith<T>(T expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
         if (actual.IsEmpty || !comparer.Equals(expected, actual[0]))
         {
-            throw new AssertionException(ErrorFormatter.Format(new ValueStartsWithAssertionError<T>(expected, actual, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ValueStartsWithAssertionError<T>(expected, actual, actualExpression, expectedExpression, message)));
         }
     }
 
@@ -26,11 +26,11 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith<T>(T expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void StartsWith<T>(T expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression, message)));
         }
 
         comparer ??= EqualityComparer<T>.Default;
@@ -39,7 +39,7 @@ public partial class Assert
 
         if (!actualEnumerator.MoveNext() || !comparer.Equals(expected, actualEnumerator.Current))
         {
-            throw new AssertionException(ErrorFormatter.Format(new ValueCollectionStartsWithAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ValueCollectionStartsWithAssertionError<T>(expected, actualSnapshot, actualExpression, expectedExpression, message)));
         }
     }
 
@@ -48,11 +48,11 @@ public partial class Assert
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith(object? expected, [NotNull] System.Collections.IEnumerable? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void StartsWith(object? expected, [NotNull] System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression, message)));
         }
 
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
@@ -60,7 +60,7 @@ public partial class Assert
 
         if (!actualEnumerator.MoveNext() || !object.Equals(expected, actualEnumerator.Current))
         {
-            throw new AssertionException(ErrorFormatter.Format(new ValueCollectionStartsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ValueCollectionStartsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression, message)));
         }
     }
 
@@ -70,13 +70,13 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void StartsWith<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
         var firstDifferenceIndex = GetFirstDifferenceIndex(expected, actual, comparer);
         if (firstDifferenceIndex is not null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanStartsWithAssertionError<T>(expected, actual, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanStartsWithAssertionError<T>(expected, actual, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression, message)));
         }
     }
 
@@ -86,14 +86,14 @@ public partial class Assert
     /// <param name="ignoreCase">When <see langword="true"/>, the comparison ignores casing (OrdinalIgnoreCase); otherwise, it is case-sensitive (Ordinal).</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, bool ignoreCase = false, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void StartsWith(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (actual.StartsWith(expected, comparison))
             return;
 
         var firstDifferenceIndex = GetFirstDifferenceIndex(expected, actual, comparison);
-        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression, message)));
     }
 
     /// <summary>Asserts that a string starts with the specified prefix.</summary>
@@ -102,19 +102,19 @@ public partial class Assert
     /// <param name="ignoreCase">When <see langword="true"/>, the comparison ignores casing (OrdinalIgnoreCase); otherwise, it is case-sensitive (Ordinal).</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith(string expected, [NotNull] string? actual, bool ignoreCase = false, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void StartsWith(string expected, [NotNull] string? actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(StartsWith), "Expected prefix", expected, comparison, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(StartsWith), "Expected prefix", expected, comparison, actualExpression, expectedExpression, message)));
         }
 
         if (actual.StartsWith(expected, comparison))
             return;
 
         var firstDifferenceIndex = GetFirstDifferenceIndex(expected, actual, comparison);
-        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression, message)));
     }
 
     /// <summary>Asserts that an asynchronous sequence starts with the specified prefix.</summary>
@@ -123,11 +123,11 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static async Task StartsWith<T>(IEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task StartsWith<T>(IEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression, message)));
         }
 
         comparer ??= EqualityComparer<T>.Default;
@@ -143,7 +143,7 @@ public partial class Assert
             var actualHasNext = await actualEnumerator.MoveNextAsync().ConfigureAwait(false);
             if (!actualHasNext || !comparer.Equals(expectedEnumerator.Current, actualEnumerator.Current))
             {
-                throw new AssertionException(await ErrorFormatter.FormatAsync(new CollectionAsyncCollectionStartsWithAssertionError<T, T>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression)).ConfigureAwait(false));
+                throw new AssertionException(await ErrorFormatter.FormatAsync(new CollectionAsyncCollectionStartsWithAssertionError<T, T>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression, message)).ConfigureAwait(false));
             }
 
             index++;
@@ -178,11 +178,11 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void StartsWith(System.Collections.IEnumerable expected, [NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void StartsWith(System.Collections.IEnumerable expected, [NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(StartsWith), "Expected expression", "Expected prefix", expected, actualExpression, expectedExpression, message)));
         }
 
         using var actualSnapshot = new CollectionSnapshot<object?>(EnumerateObjects(actual));
@@ -196,7 +196,7 @@ public partial class Assert
             var actualHasNext = actualEnumerator.MoveNext();
             if (!actualHasNext || !Equals(expectedEnumerator.Current, actualEnumerator.Current, comparer))
             {
-                throw new AssertionException(ErrorFormatter.Format(new CollectionStartsWithAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression)));
+                throw new AssertionException(ErrorFormatter.Format(new CollectionStartsWithAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, index, actualExpression, expectedExpression, message)));
             }
 
             index++;

@@ -9,11 +9,11 @@ public partial class Assert
     /// <param name="actual">The actual object instance.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
-    public static void Same(object? expected, object? actual, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void Same(object? expected, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (object.ReferenceEquals(expected, actual))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new SameAssertionError(expected, actual, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new SameAssertionError(expected, actual, actualExpression, expectedExpression, message)));
     }
 }

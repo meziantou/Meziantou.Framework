@@ -90,7 +90,7 @@ public sealed class CollectionContainsRuleTests : AssertionsAnalyzerTestBase
             {
                 public static void M(Dictionary<string, int> dict, string key)
                 {
-                    Assert.True({|MFAS0022:dict.ContainsKey(key)|});
+                    Assert.True({|MFAS0022:dict.ContainsKey(key)|}, "should contain key");
                 }
             }
             """;
@@ -105,7 +105,7 @@ public sealed class CollectionContainsRuleTests : AssertionsAnalyzerTestBase
             {
                 public static void M(Dictionary<string, int> dict, string key)
                 {
-                    Assert.Contains(key, dict);
+                    Assert.Contains(key, dict, message: "should contain key");
                 }
             }
             """;
@@ -126,7 +126,7 @@ public sealed class CollectionContainsRuleTests : AssertionsAnalyzerTestBase
             {
                 public static void M(Dictionary<string, int> dict, string key)
                 {
-                    Assert.False({|MFAS0023:dict.ContainsKey(key)|});
+                    Assert.False({|MFAS0023:dict.ContainsKey(key)|}, "should not contain key");
                 }
             }
             """;
@@ -141,7 +141,7 @@ public sealed class CollectionContainsRuleTests : AssertionsAnalyzerTestBase
             {
                 public static void M(Dictionary<string, int> dict, string key)
                 {
-                    Assert.DoesNotContain(key, dict);
+                    Assert.DoesNotContain(key, dict, message: "should not contain key");
                 }
             }
             """;

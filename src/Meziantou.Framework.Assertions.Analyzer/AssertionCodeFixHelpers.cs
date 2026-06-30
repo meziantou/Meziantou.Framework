@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -89,35 +90,66 @@ internal static class AssertionCodeFixHelpers
         TrueFalseConditionMethodSelectionAnalyzerCommon.TrueFalseConditionMatch match,
         out InvocationExpressionSyntax fixedInvocation)
     {
-        var argExpressions = new SyntaxNodeOrToken[match.Arguments.Length * 2 - 1];
-        for (var i = 0; i < match.Arguments.Length; i++)
+        var arguments = new List<ArgumentSyntax>(match.Arguments.Length + 2);
+        foreach (var argument in match.Arguments)
         {
-            if (i > 0)
-                argExpressions[i * 2 - 1] = SyntaxFactory.Token(SyntaxKind.CommaToken).WithTrailingTrivia(SyntaxFactory.Space);
-
-            if (!TryGetExpressionSyntax(match.Arguments[i], out var argExpr))
+            if (!TryGetExpressionSyntax(argument, out var argumentExpression))
             {
                 fixedInvocation = null!;
                 return false;
             }
 
-            argExpressions[i * 2] = SyntaxFactory.Argument(argExpr.WithoutTrivia());
+            arguments.Add(SyntaxFactory.Argument(argumentExpression.WithoutTrivia()));
         }
-
-        var argumentList = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList<ArgumentSyntax>(argExpressions));
 
         if (match.HasIgnoreCase)
         {
-            var ignoreCaseExpr = match.IgnoreCaseValue == true
+            var ignoreCaseExpression = match.IgnoreCaseValue == true
                 ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)
                 : (ExpressionSyntax)SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
 
-            argumentList = argumentList.AddArguments(SyntaxFactory.Argument(ignoreCaseExpr));
+            arguments.Add(SyntaxFactory.Argument(ignoreCaseExpression));
         }
 
+        if (TryGetMessageArgument(outerInvocation, out var messageArgument))
+        {
+            arguments.Add(SyntaxFactory.Argument(
+                SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("message")),
+                refKindKeyword: default,
+                messageArgument.Expression.WithoutTrivia()));
+        }
+
+        var argumentList = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments));
         fixedInvocation = outerInvocation
             .WithExpression(ReplaceMethodName(outerInvocation.Expression, match.AssertionMethodName))
             .WithArgumentList(argumentList);
         return true;
+    }
+
+    private static bool TryGetMessageArgument(InvocationExpressionSyntax invocation, out ArgumentSyntax messageArgument)
+    {
+        var positionalArgumentIndex = 0;
+        foreach (var argument in invocation.ArgumentList.Arguments)
+        {
+            if (argument.NameColon is { Name.Identifier.ValueText: "message" })
+            {
+                messageArgument = argument;
+                return true;
+            }
+
+            if (argument.NameColon is not null)
+                continue;
+
+            if (positionalArgumentIndex == 1)
+            {
+                messageArgument = argument;
+                return true;
+            }
+
+            positionalArgumentIndex++;
+        }
+
+        messageArgument = null!;
+        return false;
     }
 }

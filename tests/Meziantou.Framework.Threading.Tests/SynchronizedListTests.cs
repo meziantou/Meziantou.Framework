@@ -96,8 +96,8 @@ public sealed class SynchronizedListTests
     public void Contains_ShouldReturnTrueIfItemExists()
     {
         var list = new SynchronizedList<int>([1, 2, 3]);
-        Assert.True(list.Contains(2));
-        Assert.False(list.Contains(4));
+        Assert.Contains(2, list);
+        Assert.DoesNotContain(4, list);
     }
 
     [Fact]

@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// }
 /// ]]></code>
 /// </example>
-public sealed class ConcurrentHashSet<T> : ICollection<T>, IReadOnlyCollection<T>
+public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     where T : notnull
 {
     private readonly ConcurrentDictionary<T, byte> _dictionary;
@@ -84,6 +84,121 @@ public sealed class ConcurrentHashSet<T> : ICollection<T>, IReadOnlyCollection<T
 
     /// <summary>Removes all elements from the <see cref="ConcurrentHashSet{T}"/>.</summary>
     public void Clear() => _dictionary.Clear();
+
+    /// <summary>Modifies the current <see cref="ConcurrentHashSet{T}"/> to contain all elements that are present in itself, the specified collection, or both.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    public void UnionWith(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        foreach (var item in other)
+        {
+            Add(item);
+        }
+    }
+
+    /// <summary>Modifies the current <see cref="ConcurrentHashSet{T}"/> to contain only elements that are present in itself and in the specified collection.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    public void IntersectWith(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        var otherSet = CreateSet(other);
+        foreach (var item in this)
+        {
+            if (!otherSet.Contains(item))
+            {
+                Remove(item);
+            }
+        }
+    }
+
+    /// <summary>Removes all elements in the specified collection from the current <see cref="ConcurrentHashSet{T}"/>.</summary>
+    /// <param name="other">The collection to remove from the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    public void ExceptWith(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        foreach (var item in other)
+        {
+            Remove(item);
+        }
+    }
+
+    /// <summary>Modifies the current <see cref="ConcurrentHashSet{T}"/> to contain only elements that are present either in itself or in the specified collection, but not both.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    public void SymmetricExceptWith(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        foreach (var item in CreateSet(other))
+        {
+            if (!Remove(item))
+            {
+                Add(item);
+            }
+        }
+    }
+
+    /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a subset of a specified collection.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is a subset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    public bool IsSubsetOf(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        return CreateSet(this).IsSubsetOf(other);
+    }
+
+    /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a superset of a specified collection.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is a superset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    public bool IsSupersetOf(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        return CreateSet(this).IsSupersetOf(other);
+    }
+
+    /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a proper subset of a specified collection.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is a proper subset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    public bool IsProperSubsetOf(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        return CreateSet(this).IsProperSubsetOf(other);
+    }
+
+    /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a proper superset of a specified collection.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is a proper superset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    public bool IsProperSupersetOf(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        return CreateSet(this).IsProperSupersetOf(other);
+    }
+
+    /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> overlaps with the specified collection.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> and <paramref name="other"/> share at least one common element; otherwise, <see langword="false"/>.</returns>
+    public bool Overlaps(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        return CreateSet(this).Overlaps(other);
+    }
+
+    /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> and the specified collection contain the same elements.</summary>
+    /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
+    /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is equal to <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    public bool SetEquals(IEnumerable<T> other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+
+        return CreateSet(this).SetEquals(other);
+    }
 
     /// <summary>Enumerates the elements of a <see cref="ConcurrentHashSet{T}"/>.</summary>
     public readonly struct KeyEnumerator : IEnumerator<T>
@@ -155,4 +270,6 @@ public sealed class ConcurrentHashSet<T> : ICollection<T>, IReadOnlyCollection<T
             array[arrayIndex++] = element;
         }
     }
+
+    private HashSet<T> CreateSet(IEnumerable<T> values) => new(values, _dictionary.Comparer);
 }

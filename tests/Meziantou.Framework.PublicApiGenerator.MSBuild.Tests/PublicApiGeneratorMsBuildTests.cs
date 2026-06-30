@@ -39,8 +39,8 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
         var generatedFilePath = projectDirectory / "PublicApi" / "PublicApi.g.cs";
         Assert.True(File.Exists(generatedFilePath));
         var content = await File.ReadAllTextAsync(generatedFilePath, XunitCancellationToken);
-        Assert.Contains("public class Sample", content, StringComparison.Ordinal);
-        Assert.Contains("public void A() { }", content, StringComparison.Ordinal);
+        Assert.Contains("public class Sample", content);
+        Assert.Contains("public void A() { }", content);
     }
 
     [Theory]
@@ -96,9 +96,9 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
                     var generatedFilePath = projectDirectory / "PublicApi" / "PublicApi.g.cs";
                     Assert.True(File.Exists(generatedFilePath));
                     var content = await File.ReadAllTextAsync(generatedFilePath, XunitCancellationToken);
-                    Assert.Contains("public class GlobalType", content, StringComparison.Ordinal);
-                    Assert.Contains("public class Other", content, StringComparison.Ordinal);
-                    Assert.Contains("public class Sample", content, StringComparison.Ordinal);
+                    Assert.Contains("public class GlobalType", content);
+                    Assert.Contains("public class Other", content);
+                    Assert.Contains("public class Sample", content);
                     break;
                 }
             case "OneFilePerNamespace":
@@ -156,10 +156,10 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
         var generatedFilePath = projectDirectory / "obj" / "PublicApi" / "PublicApi.g.cs";
         Assert.True(File.Exists(generatedFilePath));
         var content = await File.ReadAllTextAsync(generatedFilePath, XunitCancellationToken);
-        Assert.Contains("public class Sample", content, StringComparison.Ordinal);
-        Assert.Contains("public void A() { }", content, StringComparison.Ordinal);
-        Assert.Contains("#if NET10_0", content, StringComparison.Ordinal);
-        Assert.Contains("public void B() { }", content, StringComparison.Ordinal);
+        Assert.Contains("public class Sample", content);
+        Assert.Contains("public void A() { }", content);
+        Assert.Contains("#if NET10_0", content);
+        Assert.Contains("public void B() { }", content);
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
         var buildResult = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 1);
         var buildOutput = string.Join('\n', buildResult.Output);
-        Assert.Contains("PublicApiGeneratorOutputPath", buildOutput, StringComparison.Ordinal);
+        Assert.Contains("PublicApiGeneratorOutputPath", buildOutput);
     }
 
     [Fact]
@@ -266,7 +266,7 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
 
         var buildResult = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "/p:PublicApiGeneratorVerifyNoChangeOnBuild=true"], expectedExitCode: 1);
         var buildOutput = string.Join('\n', buildResult.Output);
-        Assert.Contains("out of date", buildOutput, StringComparison.Ordinal);
+        Assert.Contains("out of date", buildOutput);
         Assert.Equal("// stale", await File.ReadAllTextAsync(generatedFilePath, XunitCancellationToken));
     }
 

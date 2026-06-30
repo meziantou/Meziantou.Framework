@@ -6,7 +6,7 @@ public sealed class InlineDiffAssertionMessageFormatterTests
         var message = InlineDiffAssertionMessageFormatter.Instance.FormatMessage(left, right);
         message = message.ReplaceLineEndings("\n");
         const string ExpectedStartString = "- Snapshot\n+ Received\n\n\n";
-        Assert.StartsWith(ExpectedStartString, message, StringComparison.Ordinal);
+        Assert.StartsWith(ExpectedStartString, message);
         Assert.Equal(expected, message[ExpectedStartString.Length..]);
     }
 

@@ -131,7 +131,7 @@ public sealed class AssertEndsWithTests
     public void String_Success()
     {
         AssertionsAssert.EndsWith("llo", "Hello");
-        AssertionsAssert.EndsWith("LLO", "Hello", StringComparison.OrdinalIgnoreCase);
+        AssertionsAssert.EndsWith("LLO", "Hello", ignoreCase: true);
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public sealed class AssertEndsWithTests
     public void DoesNotEndWith_Success()
     {
         AssertionsAssert.DoesNotEndWith(2, [1, 2, 3]);
-        AssertionsAssert.DoesNotEndWith("He", "hello", StringComparison.Ordinal);
+        AssertionsAssert.DoesNotEndWith("He", "hello");
 
         IEnumerable<int>? enumerable = null;
         System.Collections.IEnumerable? nonGenericEnumerable = null;

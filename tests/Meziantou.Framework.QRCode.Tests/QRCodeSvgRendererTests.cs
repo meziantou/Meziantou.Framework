@@ -24,9 +24,9 @@ public class QRCodeSvgRendererTests
         var svg = qr.ToSvg();
 
         // Default: ModuleSize=10, QuietZoneModules=4 -> (21 + 8) * 10 = 290
-        Assert.Contains("viewBox=\"0 0 290 290\"", svg, StringComparison.Ordinal);
-        Assert.Contains("fill=\"#000000\"", svg, StringComparison.Ordinal);
-        Assert.Contains("fill=\"#ffffff\"", svg, StringComparison.Ordinal);
+        Assert.Contains("viewBox=\"0 0 290 290\"", svg);
+        Assert.Contains("fill=\"#000000\"", svg);
+        Assert.Contains("fill=\"#ffffff\"", svg);
     }
 
     [Fact]

@@ -47,12 +47,12 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Equal(3, runResult.Results[0].GeneratedSources.Length);
 
         var allGeneratedSources = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
-        Assert.Contains("internal partial class FixedStringBuilderAttribute", allGeneratedSources, StringComparison.Ordinal);
-        Assert.Contains("internal sealed partial class EmbeddedAttribute", allGeneratedSources, StringComparison.Ordinal);
-        Assert.Contains("public static int MaxLength => 10;", allGeneratedSources, StringComparison.Ordinal);
-        Assert.Contains("private char _c0;", allGeneratedSources, StringComparison.Ordinal);
-        Assert.Contains("public readonly ReadOnlySpan<char> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in _c0), _length);", allGeneratedSources, StringComparison.Ordinal);
-        Assert.Contains("public bool Equals(FixedStringBuilder10 other, StringComparison comparison)", allGeneratedSources, StringComparison.Ordinal);
+        Assert.Contains("internal partial class FixedStringBuilderAttribute", allGeneratedSources);
+        Assert.Contains("internal sealed partial class EmbeddedAttribute", allGeneratedSources);
+        Assert.Contains("public static int MaxLength => 10;", allGeneratedSources);
+        Assert.Contains("private char _c0;", allGeneratedSources);
+        Assert.Contains("public readonly ReadOnlySpan<char> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in _c0), _length);", allGeneratedSources);
+        Assert.Contains("public bool Equals(FixedStringBuilder10 other, StringComparison comparison)", allGeneratedSources);
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);
@@ -115,8 +115,8 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Empty(runResult.Diagnostics);
 
         var generatedCode = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
-        Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString<global::FixedStringBuilder4>", generatedCode, StringComparison.Ordinal);
-        Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => AsUnsafeFullSpan();", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString<global::FixedStringBuilder4>", generatedCode);
+        Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => AsUnsafeFullSpan();", generatedCode);
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);

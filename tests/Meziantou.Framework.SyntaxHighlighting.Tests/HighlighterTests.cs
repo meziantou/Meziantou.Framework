@@ -36,10 +36,10 @@ public class HighlighterTests
         var customResult = SyntaxHighlighter.Highlight(Code, "csharp", new HighlightOptions { ClassPrefix = "x-" });
         var defaultResult2 = SyntaxHighlighter.Highlight(Code, "csharp");
 
-        Assert.Contains("hljs-keyword", defaultResult, StringComparison.Ordinal);
-        Assert.DoesNotContain("x-keyword", defaultResult, StringComparison.Ordinal);
-        Assert.Contains("x-keyword", customResult, StringComparison.Ordinal);
-        Assert.DoesNotContain("hljs-keyword", customResult, StringComparison.Ordinal);
+        Assert.Contains("hljs-keyword", defaultResult);
+        Assert.DoesNotContain("x-keyword", defaultResult);
+        Assert.Contains("x-keyword", customResult);
+        Assert.DoesNotContain("hljs-keyword", customResult);
         Assert.Equal(defaultResult, defaultResult2);
     }
 }

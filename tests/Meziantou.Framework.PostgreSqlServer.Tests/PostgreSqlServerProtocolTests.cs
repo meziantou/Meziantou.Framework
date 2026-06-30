@@ -175,7 +175,7 @@ public sealed class PostgreSqlServerProtocolTests
         var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(123, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.True(capturedContext.RequestType is PostgreSqlQueryRequestType.SimpleQuery or PostgreSqlQueryRequestType.ExtendedQuery);
-        Assert.Contains(Marker, capturedContext.CommandText, StringComparison.Ordinal);
+        Assert.Contains(Marker, capturedContext.CommandText);
     }
 
     [Fact]

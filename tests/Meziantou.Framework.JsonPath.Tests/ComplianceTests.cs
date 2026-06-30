@@ -113,7 +113,7 @@ public sealed class ComplianceTests
                 Assert.HasCount(expectedObj.Count, actualObj);
                 foreach (var prop in expectedObj)
                 {
-                    Assert.True(actualObj.ContainsKey(prop.Key), $"{context}: missing property '{prop.Key}'");
+                    Assert.Contains(prop.Key, actualObj, message: $"{context}: missing property '{prop.Key}'");
                     AssertJsonNodesEqual(prop.Value, actualObj[prop.Key], $"{context}.{prop.Key}");
                 }
 

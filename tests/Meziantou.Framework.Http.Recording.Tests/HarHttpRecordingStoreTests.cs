@@ -49,9 +49,9 @@ public sealed class HarHttpRecordingStoreTests
 
         // Verify it's valid HAR
         var content = await File.ReadAllTextAsync(filePath);
-        Assert.Contains("\"log\"", content, StringComparison.Ordinal);
-        Assert.Contains("\"version\"", content, StringComparison.Ordinal);
-        Assert.Contains("\"entries\"", content, StringComparison.Ordinal);
+        Assert.Contains("\"log\"", content);
+        Assert.Contains("\"version\"", content);
+        Assert.Contains("\"entries\"", content);
 
         var loaded = await store.LoadAsync(CancellationToken.None);
         Assert.Single(loaded);
@@ -96,7 +96,7 @@ public sealed class HarHttpRecordingStoreTests
         Assert.Equal("POST", loaded[0].Method);
         Assert.Equal(201, loaded[0].StatusCode);
         Assert.NotNull(loaded[0].RequestHeaders);
-        Assert.True(loaded[0].RequestHeaders!.ContainsKey("Content-Type"));
+        Assert.Contains("Content-Type", loaded[0].RequestHeaders!);
         Assert.NotNull(loaded[0].RequestBody);
     }
 

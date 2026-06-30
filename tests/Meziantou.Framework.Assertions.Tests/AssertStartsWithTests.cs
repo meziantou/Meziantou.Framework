@@ -131,7 +131,7 @@ public sealed class AssertStartsWithTests
     public void CharSpan_Success()
     {
         AssertionsAssert.StartsWith("Hel".AsSpan(), "Hello".AsSpan());
-        AssertionsAssert.StartsWith("hel".AsSpan(), "Hello".AsSpan(), StringComparison.OrdinalIgnoreCase);
+        AssertionsAssert.StartsWith("hel".AsSpan(), "Hello".AsSpan(), ignoreCase: true);
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public sealed class AssertStartsWithTests
     public void String_Success()
     {
         AssertionsAssert.StartsWith("Hel", "Hello");
-        AssertionsAssert.StartsWith("hel", "Hello", StringComparison.OrdinalIgnoreCase);
+        AssertionsAssert.StartsWith("hel", "Hello", ignoreCase: true);
     }
 
     [Fact]
@@ -274,7 +274,7 @@ public sealed class AssertStartsWithTests
     public void DoesNotStartWith_Success()
     {
         AssertionsAssert.DoesNotStartWith(2, [1, 2, 3]);
-        AssertionsAssert.DoesNotStartWith("He", "hello", StringComparison.Ordinal);
+        AssertionsAssert.DoesNotStartWith("He", "hello");
 
         IEnumerable<int>? enumerable = null;
         System.Collections.IEnumerable? nonGenericEnumerable = null;

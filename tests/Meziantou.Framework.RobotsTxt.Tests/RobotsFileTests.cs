@@ -440,9 +440,9 @@ public sealed class RobotsFileTests
     {
         var error = new RobotsParseError(5, "bad line", RobotsParseErrorKind.MalformedLine);
         var s = error.ToString();
-        Assert.Contains("5", s, StringComparison.Ordinal);
-        Assert.Contains("MalformedLine", s, StringComparison.Ordinal);
-        Assert.Contains("bad line", s, StringComparison.Ordinal);
+        Assert.Contains("5", s);
+        Assert.Contains("MalformedLine", s);
+        Assert.Contains("bad line", s);
     }
 
     // -------------------------------------------------------------------------

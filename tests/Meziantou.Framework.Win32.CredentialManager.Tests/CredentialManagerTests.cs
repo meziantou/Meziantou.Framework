@@ -170,7 +170,7 @@ public sealed class CredentialManagerTests
         {
             var creds = CredentialManager.EnumerateCredentials(context.GetCredentialName("*"));
             Assert.Equal(2, creds.Count);
-            Assert.True(creds.All(cred => cred.CredentialType == credType));
+            Assert.All(creds, cred => Assert.Equal(credType, cred.CredentialType));
         }
         finally
         {
@@ -184,7 +184,7 @@ public sealed class CredentialManagerTests
     {
         using var context = new IsolatedContext();
         var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(context.GetCredentialName(), "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainCertificate));
-        Assert.StartsWith("Only CredentialType.Generic and CredentialType.DomainPassword is supported", ex.Message, StringComparison.Ordinal);
+        Assert.StartsWith("Only CredentialType.Generic and CredentialType.DomainPassword is supported", ex.Message);
     }
 
     private sealed class IsolatedContext : IDisposable

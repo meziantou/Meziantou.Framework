@@ -21,7 +21,7 @@ public sealed class ReservedDeviceNameTests
         var path = FullPath.FromPath(pathStr);
         var value = path.Value;
 
-        Assert.StartsWith(@"\\?\", value, StringComparison.Ordinal);
+        Assert.StartsWith(@"\\?\", value);
     }
 
     [Theory]
@@ -35,6 +35,6 @@ public sealed class ReservedDeviceNameTests
         var path = FullPath.FromPath(pathStr);
         var value = path.Value;
 
-        Assert.False(value.StartsWith(@"\\?\", StringComparison.Ordinal));
+        Assert.DoesNotStartWith(@"\\?\", value);
     }
 }

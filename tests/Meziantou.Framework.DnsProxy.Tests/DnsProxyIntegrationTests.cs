@@ -48,9 +48,9 @@ public sealed class DnsProxyIntegrationTests
             var webClient = factory.CreateClient();
             var html = await webClient.GetStringAsync("/");
 
-            Assert.Contains($"<span class='mono'>DnsPort</span>: {DnsPort}", html, StringComparison.Ordinal);
-            Assert.Contains($"<span class='mono'>HttpPort</span>: {HttpPort}", html, StringComparison.Ordinal);
-            Assert.Contains($"<span class='mono'>FilterRefreshInterval</span>: {FilterRefreshInterval}", html, StringComparison.Ordinal);
+            Assert.Contains($"<span class='mono'>DnsPort</span>: {DnsPort}", html);
+            Assert.Contains($"<span class='mono'>HttpPort</span>: {HttpPort}", html);
+            Assert.Contains($"<span class='mono'>FilterRefreshInterval</span>: {FilterRefreshInterval}", html);
 
             var query = CreateAQuery("localhost", id: 0x1234);
             using var request = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
@@ -65,8 +65,8 @@ public sealed class DnsProxyIntegrationTests
             AssertDnsResponseHasARecord(responseBytes, expectedId: 0x1234, expectedAddress: IPAddress.Parse("127.0.0.1"));
 
             var htmlAfterQuery = await webClient.GetStringAsync("/");
-            Assert.Contains("localhost A", htmlAfterQuery, StringComparison.Ordinal);
-            Assert.Contains("CustomRecord", htmlAfterQuery, StringComparison.Ordinal);
+            Assert.Contains("localhost A", htmlAfterQuery);
+            Assert.Contains("CustomRecord", htmlAfterQuery);
         }
         finally
         {
@@ -128,7 +128,7 @@ public sealed class DnsProxyIntegrationTests
         Assert.Equal("/", disableResponse.Headers.Location?.ToString());
 
         var html = await webClient.GetStringAsync("/");
-        Assert.Contains("Filtering is disabled until", html, StringComparison.Ordinal);
+        Assert.Contains("Filtering is disabled until", html);
 
         using var requestAfterPause = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
         {
@@ -142,7 +142,7 @@ public sealed class DnsProxyIntegrationTests
         AssertDnsResponseHasARecord(responseAfterPauseBytes, expectedId: 0x1234, expectedAddress: customRecordAddress);
 
         var htmlAfterQuery = await webClient.GetStringAsync("/");
-        Assert.Contains("CustomRecord", htmlAfterQuery, StringComparison.Ordinal);
+        Assert.Contains("CustomRecord", htmlAfterQuery);
     }
 
     [Fact]
@@ -184,7 +184,7 @@ public sealed class DnsProxyIntegrationTests
         var webClient = factory.CreateClient();
 
         var html = await WaitForLoadedFilterRuleAsync(webClient);
-        Assert.DoesNotContain("<span class='mono'>LoadedFilterRules</span>: 0", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("<span class='mono'>LoadedFilterRules</span>: 0", html);
 
         var query = CreateAQuery(CustomRecordDomain, id: 0x1234);
         using var request = new HttpRequestMessage(HttpMethod.Post, "/dns-query")
@@ -199,8 +199,8 @@ public sealed class DnsProxyIntegrationTests
         AssertDnsResponseHasARecord(responseBytes, expectedId: 0x1234, expectedAddress: IPAddress.Parse(CustomRecordAddress));
 
         var htmlAfterQuery = await webClient.GetStringAsync("/");
-        Assert.Contains("CustomRecord", htmlAfterQuery, StringComparison.Ordinal);
-        Assert.DoesNotContain("Blocked", htmlAfterQuery, StringComparison.Ordinal);
+        Assert.Contains("CustomRecord", htmlAfterQuery);
+        Assert.DoesNotContain("Blocked", htmlAfterQuery);
     }
 
     private static byte[] CreateAQuery(string domain, ushort id)

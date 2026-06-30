@@ -130,7 +130,7 @@ public sealed class TdsServerProtocolTests
 
         Assert.Equal(123, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
-        Assert.Contains(Marker, capturedContext.CommandText, StringComparison.Ordinal);
+        Assert.Contains(Marker, capturedContext.CommandText);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class TdsServerProtocolTests
 
         Assert.Equal(456, Convert.ToInt32(result, CultureInfo.InvariantCulture));
         Assert.Equal(TdsQueryRequestType.SqlBatch, capturedContext.RequestType);
-        Assert.Contains(Marker, capturedContext.CommandText, StringComparison.Ordinal);
+        Assert.Contains(Marker, capturedContext.CommandText);
         Assert.True((capturedContext.CommandText?.Length ?? 0) > 6000);
     }
 
@@ -363,7 +363,7 @@ public sealed class TdsServerProtocolTests
 
         var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
         Assert.Equal(50001, exception.Number);
-        Assert.Contains("Invalid query", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Invalid query", exception.Message);
         Assert.True(await invalidQueryTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
     }
 

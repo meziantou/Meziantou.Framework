@@ -487,7 +487,7 @@ public sealed class YamlishConverterTests
               Name: Rex
             """));
 
-        Assert.Contains("Unknown", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("Unknown", exception.Message);
     }
 #endif
 

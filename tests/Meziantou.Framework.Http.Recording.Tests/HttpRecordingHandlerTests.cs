@@ -41,7 +41,7 @@ public sealed class HttpRecordingHandlerTests
         await handler.SaveAsync();
         Assert.Single(store.SavedEntries);
         Assert.Equal("GET", store.SavedEntries[0].Method);
-        Assert.Contains("/api/test", store.SavedEntries[0].RequestUri, StringComparison.Ordinal);
+        Assert.Contains("/api/test", store.SavedEntries[0].RequestUri);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class HttpRecordingHandlerTests
 
         var ex = await Assert.ThrowsAsync<HttpRecordingMissException>(() => client.GetAsync("/api/missing"));
         Assert.Equal("GET", ex.Method);
-        Assert.Contains("/api/missing", ex.RequestUri, StringComparison.Ordinal);
+        Assert.Contains("/api/missing", ex.RequestUri);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class HttpRecordingHandlerTests
 
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("No recorded response found", body, StringComparison.Ordinal);
+        Assert.Contains("No recorded response found", body);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public sealed class HttpRecordingHandlerTests
         await handler.SaveAsync();
         var entry = Assert.Single(store.SavedEntries);
         Assert.NotNull(entry.RequestHeaders);
-        Assert.False(entry.RequestHeaders.ContainsKey("Authorization"));
+        Assert.DoesNotContain("Authorization", entry.RequestHeaders);
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public sealed class HttpRecordingHandlerTests
         var entry = Assert.Single(store.SavedEntries);
         Assert.Equal("POST", entry.Method);
         Assert.NotNull(entry.RequestBody);
-        Assert.Contains("test", System.Text.Encoding.UTF8.GetString(entry.RequestBody), StringComparison.Ordinal);
+        Assert.Contains("test", System.Text.Encoding.UTF8.GetString(entry.RequestBody));
     }
 
     [Fact]

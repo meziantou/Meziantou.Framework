@@ -1,7 +1,8 @@
 namespace Meziantou.Framework.Assertions;
 
-internal readonly struct AsyncCollectionSingleAssertionError<T>(AsyncCollectionSnapshot<T> actualValue, string? actualExpression)
+internal readonly struct AsyncCollectionSingleAssertionError<T>(AsyncCollectionSnapshot<T> actualValue, string? actualExpression, string? message = null)
 {
+    public string? Message { get; } = message;
     public string? ActualExpression { get; } = actualExpression;
     public AsyncCollectionSnapshot<T> ActualValue { get; } = actualValue;
 }

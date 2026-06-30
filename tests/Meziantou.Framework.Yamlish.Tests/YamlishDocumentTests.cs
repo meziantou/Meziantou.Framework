@@ -208,7 +208,7 @@ public sealed class YamlishDocumentTests
             name: second
             """));
 
-        Assert.Contains("line 2", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("line 2", exception.Message);
     }
 
     [Fact]
@@ -285,7 +285,7 @@ public sealed class YamlishDocumentTests
         Assert.Equal("line 1\n", Assert.IsType<YamlishScalar>(mapping["trailingNewLine"]).Value);
         Assert.Equal("value # not a comment", Assert.IsType<YamlishScalar>(mapping["commentLike"]).Value);
         Assert.Equal(["one", "two"], Assert.IsType<YamlishSequence>(mapping["tags"]).Cast<YamlishScalar>().Select(item => item.Value));
-        Assert.Contains("description: |-", content, StringComparison.Ordinal);
+        Assert.Contains("description: |-", content);
     }
 
     [Fact]
@@ -343,7 +343,7 @@ public sealed class YamlishDocumentTests
         var content = new YamlishDocument(new YamlishScalar("first\nsecond")).ToString();
         var document = YamlishDocument.Parse(content);
 
-        Assert.StartsWith("|-" + Environment.NewLine, content, StringComparison.Ordinal);
+        Assert.StartsWith("|-" + Environment.NewLine, content);
         Assert.Equal("first\nsecond", Assert.IsType<YamlishScalar>(document.Root).Value);
     }
 }

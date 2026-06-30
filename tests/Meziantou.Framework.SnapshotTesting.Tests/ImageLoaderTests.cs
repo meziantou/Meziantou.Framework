@@ -6,6 +6,6 @@ public sealed class ImageLoaderTests
     public async Task Image_LoadAsync_ThrowsWhenFormatIsNotSupported()
     {
         var ex = await Assert.ThrowsAsync<NotSupportedException>(() => Image.LoadAsync(new MemoryStream("not-a-bmp"u8.ToArray())));
-        Assert.Contains("Only BMP, PNG, JPEG, and TIFF are currently supported.", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("Only BMP, PNG, JPEG, and TIFF are currently supported.", ex.Message);
     }
 }

@@ -9,7 +9,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
         EqualUnorderedCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression);
@@ -19,7 +19,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
         EqualUnorderedCollections(expected, actual, comparer, message, actualExpression, expectedExpression);
@@ -30,7 +30,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<TExpected>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<TExpected>>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
         EqualUnorderedCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression);
@@ -71,7 +71,7 @@ public partial class Assert
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
             await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression, message)));
         }
 
         await EqualUnorderedAsyncCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression).ConfigureAwait(false);
@@ -83,7 +83,7 @@ public partial class Assert
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
             await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<T>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression, message)));
         }
 
         await EqualUnorderedAsyncCollections(expected, actual, comparer, message, actualExpression, expectedExpression).ConfigureAwait(false);
@@ -96,7 +96,7 @@ public partial class Assert
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
             await EnsureCompleteAsync(expectedSnapshot).ConfigureAwait(false);
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<TExpected>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IReadOnlyList<TExpected>>(nameof(EqualUnordered), "Expected expression", "Expected", expectedSnapshot.Items, actualExpression, expectedExpression, message)));
         }
 
         await EqualUnorderedAsyncCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression).ConfigureAwait(false);
@@ -135,7 +135,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
         EqualUnordered(expected, actual, comparer: null, message, actualExpression, expectedExpression);
@@ -145,7 +145,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EqualUnordered), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
         EqualUnorderedCollections(EnumerateObjects(expected), EnumerateObjects(actual), comparer, message, actualExpression, expectedExpression);

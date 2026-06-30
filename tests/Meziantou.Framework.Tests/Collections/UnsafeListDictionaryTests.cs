@@ -43,7 +43,7 @@ public class UnsafeListDictionaryTests
         };
 
         var json = JsonSerializer.Serialize(dict);
-        Assert.StartsWith(['{'], json, StringComparison.Ordinal);
+        Assert.StartsWith(['{'], json);
         var deserialized = JsonSerializer.Deserialize<UnsafeListDictionary<int, string>>(json);
         Assert.Equal(dict, deserialized);
     }

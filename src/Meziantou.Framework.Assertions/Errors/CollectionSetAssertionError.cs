@@ -1,7 +1,8 @@
 namespace Meziantou.Framework.Assertions;
 
-internal readonly ref struct CollectionSetAssertionError<T>(CollectionSnapshot<T> expectedValue, CollectionSnapshot<T> actualValue, bool isSuperset, string? actualExpression, string? expectedExpression)
+internal readonly ref struct CollectionSetAssertionError<T>(CollectionSnapshot<T> expectedValue, CollectionSnapshot<T> actualValue, bool isSuperset, string? actualExpression, string? expectedExpression, string? message = null)
 {
+    public string? Message { get; } = message;
     public CollectionSnapshot<T> ExpectedValue { get; } = expectedValue;
     public CollectionSnapshot<T> ActualValue { get; } = actualValue;
     public bool IsSuperset { get; } = isSuperset;

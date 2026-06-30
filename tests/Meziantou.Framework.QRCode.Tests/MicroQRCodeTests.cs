@@ -140,9 +140,9 @@ public class MicroQRCodeTests
         var qr = QRCode.CreateMicroQR("123", ErrorCorrectionLevel.L);
         var svg = qr.ToSvg(new QRCodeSvgOptions { ModuleSize = 1, QuietZoneModules = 0 });
 
-        Assert.StartsWith("<svg ", svg, StringComparison.Ordinal);
-        Assert.Contains("viewBox=\"0 0 11 11\"", svg, StringComparison.Ordinal);
-        Assert.EndsWith("</svg>", svg, StringComparison.Ordinal);
+        Assert.StartsWith("<svg ", svg);
+        Assert.Contains("viewBox=\"0 0 11 11\"", svg);
+        Assert.EndsWith("</svg>", svg);
     }
 
     [Fact]

@@ -49,13 +49,13 @@ public sealed class InlineSnapshotSettingsTests
         var settings = new InlineSnapshotSettings();
 
         var exception = Assert.ThrowsAny<Exception>(() => settings.AssertSnapshot("old", "new"));
-        Assert.StartsWith("Snapshots do not match:\n", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("Resolution guidance:", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("- If the new behavior is correct, update the inline snapshot in source code:", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("  - remove lines starting with '-' from the snapshot", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("  - add lines starting with '+' to the snapshot", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("  - To update snapshots automatically, re-run the test with INLINESNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("- Re-run the test.", exception.Message, StringComparison.Ordinal);
+        Assert.StartsWith("Snapshots do not match:\n", exception.Message);
+        Assert.Contains("Resolution guidance:", exception.Message);
+        Assert.Contains("- If the new behavior is correct, update the inline snapshot in source code:", exception.Message);
+        Assert.Contains("  - remove lines starting with '-' from the snapshot", exception.Message);
+        Assert.Contains("  - add lines starting with '+' to the snapshot", exception.Message);
+        Assert.Contains("  - To update snapshots automatically, re-run the test with INLINESNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", exception.Message);
+        Assert.Contains("- Re-run the test.", exception.Message);
     }
 
     [Theory]

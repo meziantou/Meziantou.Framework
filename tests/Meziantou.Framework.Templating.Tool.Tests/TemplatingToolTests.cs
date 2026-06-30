@@ -124,7 +124,7 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
             console.ConfigureConsole);
 
         Assert.Equal(1, result);
-        Assert.Contains("Invalid line ending", console.Error, StringComparison.Ordinal);
+        Assert.Contains("Invalid line ending", console.Error);
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
             console.ConfigureConsole);
 
         Assert.Equal(1, result);
-        Assert.Contains("Invalid output encoding", console.Error, StringComparison.Ordinal);
+        Assert.Contains("Invalid output encoding", console.Error);
     }
 
     [Fact]
@@ -208,7 +208,7 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
             console.ConfigureConsole);
 
         Assert.Equal(1, result);
-        Assert.Contains("cannot be empty", console.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cannot be empty", console.Error, ignoreCase: true);
     }
 
     [Fact]
@@ -221,6 +221,6 @@ public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
         var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
 
         Assert.Equal(1, result);
-        Assert.Contains("template.txt(2,4)", console.Error, StringComparison.Ordinal);
+        Assert.Contains("template.txt(2,4)", console.Error);
     }
 }

@@ -18,7 +18,7 @@ public sealed class AssertDistinctTests
             Expression: [1, 2, 1]
             First index:     0
             Duplicate index: 2
-            Actual:          [1, 2, 1̲]
+            Actual: [1, 2, 1̲]
             """);
     }
 
@@ -30,7 +30,7 @@ public sealed class AssertDistinctTests
             Expression: ["a", "A"]
             First index:     0
             Duplicate index: 1
-            Actual:          ["a", "̲A̲"̲]
+            Actual: ["a", "̲A̲"̲]
             """);
     }
 
@@ -42,7 +42,7 @@ public sealed class AssertDistinctTests
             Expression: "aba".AsSpan()
             First index:     0
             Duplicate index: 2
-            Actual:          "aba̲"
+            Actual: "aba̲"
             """);
     }
 
@@ -56,7 +56,7 @@ public sealed class AssertDistinctTests
             Expression: actual
             First index:     0
             Duplicate index: 2
-            Actual:          "aba̲"
+            Actual: "aba̲"
             """);
     }
 
@@ -78,7 +78,7 @@ public sealed class AssertDistinctTests
             Expression: actual
             First index:     0
             Duplicate index: 2
-            Actual:          [1, 2, 1̲]
+            Actual: [1, 2, 1̲]
             """);
     }
 
@@ -92,7 +92,7 @@ public sealed class AssertDistinctTests
             Expression: actual
             First index:     0
             Duplicate index: 1
-            Actual:          ["a", "̲A̲"̲]
+            Actual: ["a", "̲A̲"̲]
             """);
     }
 
@@ -106,7 +106,7 @@ public sealed class AssertDistinctTests
             Expression: actual
             First index:     1
             Duplicate index: 2
-            Actual:          ["a", <null>, <̲n̲u̲l̲l̲>̲]
+            Actual: ["a", <null>, <̲n̲u̲l̲l̲>̲]
             """);
     }
 
@@ -120,7 +120,7 @@ public sealed class AssertDistinctTests
             Expression: actual
             First index:     0
             Duplicate index: 2
-            Actual:          [1, 2, 1̲]
+            Actual: [1, 2, 1̲]
             """);
     }
 
@@ -142,7 +142,7 @@ public sealed class AssertDistinctTests
             Expression: actual
             First index:     0
             Duplicate index: 2
-            Actual:          [1, 2, 1̲]
+            Actual: [1, 2, 1̲]
             """);
     }
 

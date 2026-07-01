@@ -49,7 +49,7 @@ public sealed class AssertRaiseTests
             handler => source.Raised -= handler,
             () => { }), """
             Assert.Raise() assertion failed.
-            Expression:               () => { }
+            Expression: () => { }
             Expected event args type: Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
             Actual event args type:   <null>
             """);
@@ -66,7 +66,7 @@ public sealed class AssertRaiseTests
             handler => source.Raised -= handler,
             () => source.Raise(source, arguments)), """
             Assert.Raise() assertion failed.
-            Expression:               () => source.Raise(source, arguments)
+            Expression: () => source.Raise(source, arguments)
             Expected event args type: Meziantou.Framework.Assertions.Tests.AssertRaiseTests+BaseEventArgs
             Actual event args type:   Meziantou.Framework.Assertions.Tests.AssertRaiseTests+DerivedEventArgs
             """);
@@ -112,7 +112,7 @@ public sealed class AssertRaiseTests
             handler => source.Raised -= handler,
             () => { }), """
             Assert.RaiseAny() assertion failed.
-            Expression:               () => { }
+            Expression: () => { }
             Expected event args type: Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
             Actual event args type:   <null>
             """);

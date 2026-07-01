@@ -239,13 +239,13 @@ public sealed class AssertEqualByStructureTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual, "custom message"), """
             Assert.Equivalent() assertion failed.
+            Message: custom message
             Expected expression: expected
             Actual expression:   actual
             Path: $.Address.ZipCode
             Reason: Values differ.
             Expected: 75000
             Actual:   69000
-            Message: custom message
             """);
     }
 
@@ -371,7 +371,7 @@ public sealed class AssertEqualByStructureTests
             Expected expression: expected
             Actual expression:   actual
             Not expected: Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+ExpectedPerson
-            Actual:              Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+ActualPerson
+            Actual:       Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+ActualPerson
             """);
     }
 
@@ -386,7 +386,7 @@ public sealed class AssertEqualByStructureTests
             Expected expression: expected
             Actual expression:   actual
             Not expected: Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+PersonWithScores
-            Actual:              Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+PersonWithScores
+            Actual:       Meziantou.Framework.Assertions.Tests.AssertEqualByStructureTests+PersonWithScores
             """);
     }
 

@@ -23,13 +23,12 @@ public sealed class AssertTrueTests
             Expected: true
             Actual:   false
             """);
-
         AssertionTestHelpers.Validate(() => AssertionsAssert.True(false, "custom message"), """
             Assert.True() assertion failed.
+            Message: custom message
             Expression: false
             Expected: true
             Actual:   false
-            Message: custom message
             """);
 
         bool? nullableFalse = false;

@@ -31,10 +31,10 @@ public sealed class AssertIsAssignableToTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.IsAssignableTo<int>(actual), """
             Assert.IsAssignableTo() assertion failed.
-            Expression:    actual
+            Expression: actual
             Expected type: System.Int32
             Actual type:   System.String
-            Actual value:  "Hello"
+            Actual value: "Hello"
             """);
     }
 
@@ -45,10 +45,10 @@ public sealed class AssertIsAssignableToTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.IsAssignableTo<string>(actual), """
             Assert.IsAssignableTo() assertion failed.
-            Expression:    actual
+            Expression: actual
             Expected type: System.String
             Actual type:   <null>
-            Actual value:  <null>
+            Actual value: <null>
             """);
     }
 
@@ -67,10 +67,10 @@ public sealed class AssertIsAssignableToTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.IsNotAssignableTo<object>(actual), """
             Assert.IsNotAssignableTo() assertion failed.
-            Expression:          actual
+            Expression: actual
             Not expected assignable type: System.Object
-            Actual type:         System.String
-            Actual value:        "Hello"
+            Actual type:                  System.String
+            Actual value: "Hello"
             """);
     }
 }

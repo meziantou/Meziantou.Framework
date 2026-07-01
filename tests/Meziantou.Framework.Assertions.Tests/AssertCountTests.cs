@@ -22,7 +22,7 @@ public sealed class AssertCountTests
             Expression: actual
             Expected count: 2
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -36,7 +36,7 @@ public sealed class AssertCountTests
             Expression: actual
             Expected count: 2
             Actual count:   3
-            Actual:         "abc"
+            Actual: "abc"
             """);
     }
 
@@ -50,7 +50,7 @@ public sealed class AssertCountTests
             Expression: actual
             Expected count: 2
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -64,7 +64,7 @@ public sealed class AssertCountTests
             Expression: actual
             Expected count: 2
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -84,7 +84,7 @@ public sealed class AssertCountTests
             Expression: [1, 2, 3]
             Expected count: > 3
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -98,7 +98,7 @@ public sealed class AssertCountTests
             Expression: actual
             Expected count: > 3
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -120,7 +120,7 @@ public sealed class AssertCountTests
             Expression: actual
             Expected count: >= 4
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -142,7 +142,7 @@ public sealed class AssertCountTests
             Expression: actual
             Expected count: < 3
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -164,7 +164,7 @@ public sealed class AssertCountTests
             Expression: actual
             Expected count: <= 2
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -185,7 +185,7 @@ public sealed class AssertCountTests
             Expression: actual
             Not expected count: 3
             Actual count:       3
-            Actual:             [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 }

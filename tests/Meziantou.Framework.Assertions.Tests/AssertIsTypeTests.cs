@@ -31,10 +31,10 @@ public sealed class AssertIsTypeTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.IsType<object>(actual), """
             Assert.IsType() assertion failed.
-            Expression:    actual
+            Expression: actual
             Expected type: System.Object
             Actual type:   System.String
-            Actual value:  "Hello"
+            Actual value: "Hello"
             """);
     }
 
@@ -45,10 +45,10 @@ public sealed class AssertIsTypeTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.IsType<string>(actual), """
             Assert.IsType() assertion failed.
-            Expression:    actual
+            Expression: actual
             Expected type: System.String
             Actual type:   <null>
-            Actual value:  <null>
+            Actual value: <null>
             """);
     }
 
@@ -67,10 +67,10 @@ public sealed class AssertIsTypeTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.IsNotType<string>(actual), """
             Assert.IsNotType() assertion failed.
-            Expression:          actual
+            Expression: actual
             Not expected type: System.String
-            Actual type:         System.String
-            Actual value:        "Hello"
+            Actual type:       System.String
+            Actual value: "Hello"
             """);
     }
 }

@@ -1369,7 +1369,7 @@ internal class AssertionFormatter
         if (string.IsNullOrEmpty(message))
             return exception.GetType().FullName ?? exception.GetType().Name;
 
-        return message.Replace(Environment.NewLine, Environment.NewLine + "           ", StringComparison.Ordinal);
+        return message.Replace("\n", "\n           ", StringComparison.Ordinal);
     }
 
     private static void EnsureObservedItems<T>(CollectionSnapshot<T> snapshot, int maxIndex)

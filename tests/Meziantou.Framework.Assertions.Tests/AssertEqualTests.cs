@@ -84,6 +84,15 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void Scalar_SucceedsWhenExpectedConvertsToActualTypeRepeatedly()
+    {
+        var actual = new ImplicitlyConvertibleValue(42);
+
+        AssertionsAssert.Equal(42, actual);
+        AssertionsAssert.Equal(42, actual);
+    }
+
+    [Fact]
     public void HalfTolerance_Success()
     {
         Half expected = (Half)1;
@@ -399,6 +408,16 @@ public sealed class AssertEqualTests
         var expected = new[] { 1, 2, 3 }.AsMemory();
         var actual = new[] { 1L, 2L, 3L }.AsMemory();
 
+        AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DifferentMemoryTypes_BoxedValuesSuccessRepeatedly()
+    {
+        object expected = new[] { 1, 2, 3 }.AsMemory();
+        object actual = new[] { 1L, 2L, 3L }.AsMemory();
+
+        AssertionsAssert.Equal(expected, actual);
         AssertionsAssert.Equal(expected, actual);
     }
 

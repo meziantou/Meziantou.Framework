@@ -16,14 +16,14 @@ public partial class Assert
 
     public static void Equivalent(object? expected, object? actual, EquivalentOptions? options, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        var failure = GetStructuralDifference(expected, actual, "$", new HashSet<StructuralReferencePair>(), StructuralComparisonOptions.Create(options));
+        var failure = GetStructuralDifference(expected, actual, "$", new HashSet<StructuralReferencePair>(), [], StructuralComparisonOptions.Create(options));
         if (failure is null)
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new EquivalentAssertionError(failure.Value.ExpectedValue, failure.Value.ActualValue, failure.Value.Path, failure.Value.Reason, message, actualExpression, expectedExpression)));
     }
 
-    private static StructuralDifference? GetStructuralDifference(object? expected, object? actual, string path, HashSet<StructuralReferencePair> visited, StructuralComparisonOptions options)
+    private static StructuralDifference? GetStructuralDifference(object? expected, object? actual, string path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
     {
         if (object.ReferenceEquals(expected, actual))
             return null;
@@ -41,23 +41,25 @@ public partial class Assert
             var pair = new StructuralReferencePair(expected, actual);
             if (!visited.Add(pair))
                 return null;
+
+            visitedAdditions.Add(pair);
         }
 
         if (expected is System.Collections.IEnumerable expectedEnumerable && actual is System.Collections.IEnumerable actualEnumerable)
-            return GetStructuralEnumerableDifference(expectedEnumerable, actualEnumerable, path, visited, options);
+            return GetStructuralEnumerableDifference(expectedEnumerable, actualEnumerable, path, visited, visitedAdditions, options);
 
-        return GetStructuralMemberDifference(expected, actual, path, visited, options);
+        return GetStructuralMemberDifference(expected, actual, path, visited, visitedAdditions, options);
     }
 
-    private static StructuralDifference? GetStructuralEnumerableDifference(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string path, HashSet<StructuralReferencePair> visited, StructuralComparisonOptions options)
+    private static StructuralDifference? GetStructuralEnumerableDifference(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
     {
         if (options.IgnoreCollectionOrder)
-            return GetStructuralUnorderedEnumerableDifference(expected, actual, path, visited, options);
+            return GetStructuralUnorderedEnumerableDifference(expected, actual, path, visited, visitedAdditions, options);
 
-        return GetStructuralOrderedEnumerableDifference(expected, actual, path, visited, options);
+        return GetStructuralOrderedEnumerableDifference(expected, actual, path, visited, visitedAdditions, options);
     }
 
-    private static StructuralDifference? GetStructuralOrderedEnumerableDifference(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string path, HashSet<StructuralReferencePair> visited, StructuralComparisonOptions options)
+    private static StructuralDifference? GetStructuralOrderedEnumerableDifference(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
     {
         var index = 0;
         var expectedEnumerator = expected.GetEnumerator();
@@ -80,7 +82,7 @@ public partial class Assert
                 if (!actualHasNext)
                     return new StructuralDifference(itemPath, expectedEnumerator.Current, StructuralMissingValue.Instance, "Actual collection is missing an item.");
 
-                var difference = GetStructuralDifference(expectedEnumerator.Current, actualEnumerator.Current, itemPath, visited, options);
+                var difference = GetStructuralDifference(expectedEnumerator.Current, actualEnumerator.Current, itemPath, visited, visitedAdditions, options);
                 if (difference is not null)
                     return difference;
 
@@ -94,7 +96,7 @@ public partial class Assert
         }
     }
 
-    private static StructuralDifference? GetStructuralUnorderedEnumerableDifference(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string path, HashSet<StructuralReferencePair> visited, StructuralComparisonOptions options)
+    private static StructuralDifference? GetStructuralUnorderedEnumerableDifference(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, string path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
     {
         var expectedItems = new List<object?>(EnumerateObjects(expected));
         var actualItems = new List<object?>(EnumerateObjects(actual));
@@ -111,8 +113,9 @@ public partial class Assert
                 if (matchedActualIndexes[actualIndex])
                     continue;
 
-                var candidateVisited = new HashSet<StructuralReferencePair>(visited);
-                var difference = GetStructuralDifference(expectedItem, actualItems[actualIndex], itemPath, candidateVisited, options);
+                var visitedAdditionsCount = visitedAdditions.Count;
+                var difference = GetStructuralDifference(expectedItem, actualItems[actualIndex], itemPath, visited, visitedAdditions, options);
+                RollbackStructuralVisitedAdditions(visited, visitedAdditions, visitedAdditionsCount);
                 if (difference is not null)
                     continue;
 
@@ -137,7 +140,16 @@ public partial class Assert
         return null;
     }
 
-    private static StructuralDifference? GetStructuralMemberDifference(object expected, object actual, string path, HashSet<StructuralReferencePair> visited, StructuralComparisonOptions options)
+    private static void RollbackStructuralVisitedAdditions(HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, int count)
+    {
+        for (var index = visitedAdditions.Count - 1; index >= count; index--)
+        {
+            visited.Remove(visitedAdditions[index]);
+            visitedAdditions.RemoveAt(index);
+        }
+    }
+
+    private static StructuralDifference? GetStructuralMemberDifference(object expected, object actual, string path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
     {
         var expectedMembers = GetStructuralMembers(expected.GetType(), options.MemberNameComparer);
         var actualMembers = GetStructuralMembers(actual.GetType(), options.MemberNameComparer);
@@ -148,7 +160,7 @@ public partial class Assert
             if (!actualMembers.TryGetValue(expectedMember.Name, out var actualMember))
                 return new StructuralDifference(memberPath, expectedMember.GetValue(expected), StructuralMissingValue.Instance, "Actual member is missing.");
 
-            var difference = GetStructuralDifference(expectedMember.GetValue(expected), actualMember.GetValue(actual), memberPath, visited, options);
+            var difference = GetStructuralDifference(expectedMember.GetValue(expected), actualMember.GetValue(actual), memberPath, visited, visitedAdditions, options);
             if (difference is not null)
                 return difference;
         }

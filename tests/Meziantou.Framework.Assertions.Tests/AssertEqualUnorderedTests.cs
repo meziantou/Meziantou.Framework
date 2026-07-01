@@ -23,6 +23,15 @@ public sealed class AssertEqualUnorderedTests
     }
 
     [Fact]
+    public void EnumerableWithDuplicatesAndNulls_Success()
+    {
+        IEnumerable<string?> expected = ["a", null, "a", "b"];
+        IEnumerable<string?> actual = ["b", "a", null, "a"];
+
+        AssertionsAssert.EqualUnordered(expected, actual);
+    }
+
+    [Fact]
     public void EnumerableWithDuplicates_Fails()
     {
         IEnumerable<int> expected = [1, 1, 2];

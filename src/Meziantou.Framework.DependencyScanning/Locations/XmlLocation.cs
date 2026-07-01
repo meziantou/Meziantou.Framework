@@ -1,7 +1,7 @@
 using System.Text;
 using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
-using Meziantou.Framework.Xml;
+using Meziantou.Framework.Language.Xml;
 
 namespace Meziantou.Framework.DependencyScanning;
 

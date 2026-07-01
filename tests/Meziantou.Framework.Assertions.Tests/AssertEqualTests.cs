@@ -165,12 +165,12 @@ public sealed class AssertEqualTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, tolerance, "custom message"), """
             Assert.Equal() assertion failed.
+            Message: custom message
             Expected expression: expected
             Actual expression:   actual
             Expected: 1
             Actual:   1.3
             Tolerance: 0.2
-            Message: custom message
             """);
     }
 
@@ -480,12 +480,12 @@ public sealed class AssertEqualTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase, "custom message"), """
             Assert.Equal() assertion failed: Lengths differ.
+            Message: custom message
             Expected expression: expected
             Actual expression:   actual
             Index of first difference: 1
             Expected: ["a", "̲b̲"̲]
             Actual:   ["A", "̲c̲"̲]
-            Message: custom message
             """);
     }
 
@@ -662,7 +662,7 @@ public sealed class AssertEqualTests
             Expected expression: expected
             Actual expression:   actual
             Not expected: <null>
-            Actual:              <null>
+            Actual:       <null>
             """);
     }
 
@@ -677,7 +677,7 @@ public sealed class AssertEqualTests
             Expected expression: expected
             Actual expression:   actual
             Not expected: 42
-            Actual:              42
+            Actual:       42
             """);
     }
 
@@ -692,7 +692,7 @@ public sealed class AssertEqualTests
             Expected expression: expected
             Actual expression:   actual
             Not expected: [1, 2]
-            Actual:              [1, 2]
+            Actual:       [1, 2]
             """);
     }
 
@@ -705,12 +705,12 @@ public sealed class AssertEqualTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqual(expected, actual, tolerance, "custom message"), """
             Assert.NotEqual() assertion failed.
+            Message: custom message
             Expected expression: expected
             Actual expression:   actual
             Not expected: 1
             Actual:       1.1
-            Tolerance:    0.2
-            Message: custom message
+            Tolerance: 0.2
             """);
     }
 

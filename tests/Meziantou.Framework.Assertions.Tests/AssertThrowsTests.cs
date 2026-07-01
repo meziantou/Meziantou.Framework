@@ -42,10 +42,10 @@ public sealed class AssertThrowsTests
     {
         AssertionTestHelpers.Validate(() => AssertionsAssert.Throws<InvalidOperationException>(() => { }), """
             Assert.Throws() assertion failed.
-            Expression:              () => { }
+            Expression: () => { }
             Expected exception type: System.InvalidOperationException
             Actual exception type:   <null>
-            Exception:               <none>
+            Exception: <none>
             """);
     }
 
@@ -56,10 +56,10 @@ public sealed class AssertThrowsTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Throws<Exception>(action), """
             Assert.Throws() assertion failed.
-            Expression:              action
+            Expression: action
             Expected exception type: System.Exception
             Actual exception type:   System.InvalidOperationException
-            Exception:               Failure
+            Exception: Failure
             """);
     }
 
@@ -101,10 +101,10 @@ public sealed class AssertThrowsTests
     {
         AssertionTestHelpers.Validate(() => AssertionsAssert.ThrowsAny<InvalidOperationException>(() => { }), """
             Assert.ThrowsAny() assertion failed.
-            Expression:              () => { }
+            Expression: () => { }
             Expected exception type: System.InvalidOperationException
             Actual exception type:   <null>
-            Exception:               <none>
+            Exception: <none>
             """);
     }
 
@@ -115,10 +115,10 @@ public sealed class AssertThrowsTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.ThrowsAny<ArgumentException>(action), """
             Assert.ThrowsAny() assertion failed.
-            Expression:              action
+            Expression: action
             Expected exception type: System.ArgumentException
             Actual exception type:   System.InvalidOperationException
-            Exception:               Failure
+            Exception: Failure
             """);
     }
 
@@ -158,10 +158,10 @@ public sealed class AssertThrowsTests
     {
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.ThrowsAsync<InvalidOperationException>(() => Task.CompletedTask), """
             Assert.Throws() assertion failed.
-            Expression:              () => Task.CompletedTask
+            Expression: () => Task.CompletedTask
             Expected exception type: System.InvalidOperationException
             Actual exception type:   <null>
-            Exception:               <none>
+            Exception: <none>
             """);
     }
 
@@ -201,10 +201,10 @@ public sealed class AssertThrowsTests
     {
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.ThrowsAnyAsync<ArgumentException>(() => ThrowAsync(new InvalidOperationException("Failure"))), """
             Assert.ThrowsAny() assertion failed.
-            Expression:              () => ThrowAsync(new InvalidOperationException("Failure"))
+            Expression: () => ThrowAsync(new InvalidOperationException("Failure"))
             Expected exception type: System.ArgumentException
             Actual exception type:   System.InvalidOperationException
-            Exception:               Failure
+            Exception: Failure
             """);
     }
 

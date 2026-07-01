@@ -18,7 +18,7 @@ public sealed class AssertSingleTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single<int>([]), """
             Assert.Single() assertion failed.
             Expression: []
-            Actual:     []
+            Actual: []
             """);
     }
 
@@ -28,7 +28,7 @@ public sealed class AssertSingleTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single<int>([1, 2, 3]), """
             Assert.Single() assertion failed.
             Expression: [1, 2, 3]
-            Actual:     [1, 2̲, 3]
+            Actual: [1, 2̲, 3]
             """);
     }
 
@@ -46,7 +46,7 @@ public sealed class AssertSingleTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single("ab".AsSpan()), """
             Assert.Single() assertion failed.
             Expression: "ab".AsSpan()
-            Actual:     "ab̲"
+            Actual: "ab̲"
             """);
     }
 
@@ -66,7 +66,7 @@ public sealed class AssertSingleTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single(actual), """
             Assert.Single() assertion failed.
             Expression: actual
-            Actual:     "ab̲"
+            Actual: "ab̲"
             """);
     }
 
@@ -86,7 +86,7 @@ public sealed class AssertSingleTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single(actual), """
             Assert.Single() assertion failed.
             Expression: actual
-            Actual:     []
+            Actual: []
             """);
     }
 
@@ -98,7 +98,7 @@ public sealed class AssertSingleTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single(actual), """
             Assert.Single() assertion failed.
             Expression: actual
-            Actual:     [1, 2̲, 3]
+            Actual: [1, 2̲, 3]
             """);
     }
 
@@ -119,9 +119,9 @@ public sealed class AssertSingleTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single(actual, item => item > 3), """
             Assert.Single() assertion failed.
-            Expression: actual
+            Expression:           actual
             Predicate expression: item => item > 3
-            Matching items:       []
+            Matching items: []
             """);
     }
 
@@ -132,9 +132,9 @@ public sealed class AssertSingleTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single(actual, item => item > 1), """
             Assert.Single() assertion failed.
-            Expression: actual
+            Expression:           actual
             Predicate expression: item => item > 1
-            Matching items:       [2, 3̲]
+            Matching items: [2, 3̲]
             """);
     }
 
@@ -156,7 +156,7 @@ public sealed class AssertSingleTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Single(actual), """
             Assert.Single() assertion failed.
             Expression: actual
-            Actual:     [1, 2̲, 3]
+            Actual: [1, 2̲, 3]
             """);
     }
 
@@ -178,7 +178,7 @@ public sealed class AssertSingleTests
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Single(actual), """
             Assert.Single() assertion failed.
             Expression: actual
-            Actual:     [1, 2̲, 3]
+            Actual: [1, 2̲, 3]
             """);
     }
 

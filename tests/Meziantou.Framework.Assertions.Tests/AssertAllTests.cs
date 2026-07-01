@@ -15,13 +15,13 @@ public sealed class AssertAllTests
     {
         AssertionTestHelpers.Validate(() => AssertionsAssert.All<int>([1, -2, 3], item => AssertionsAssert.True(item > 0)), """
             Assert.All() assertion failed: Item at index 1 failed.
-            Expression: [1, -2, 3]
+            Expression:           [1, -2, 3]
             Assertion expression: item => AssertionsAssert.True(item > 0)
-            Actual:     [1, -̲2̲, 3]
-            Exception:  Assert.True() assertion failed.
-                        Expression: item > 0
-                        Expected: true
-                        Actual:   false
+            Actual: [1, -̲2̲, 3]
+            Exception: Assert.True() assertion failed.
+                       Expression: item > 0
+                       Expected: true
+                       Actual:   false
             """);
     }
 
@@ -30,13 +30,13 @@ public sealed class AssertAllTests
     {
         AssertionTestHelpers.Validate(() => AssertionsAssert.All("aBc".AsSpan(), item => AssertionsAssert.True(char.IsLower(item))), """
             Assert.All() assertion failed: Item at index 1 failed.
-            Expression: "aBc".AsSpan()
+            Expression:           "aBc".AsSpan()
             Assertion expression: item => AssertionsAssert.True(char.IsLower(item))
-            Actual:     "aB̲c"
-            Exception:  Assert.True() assertion failed.
-                        Expression: char.IsLower(item)
-                        Expected: true
-                        Actual:   false
+            Actual: "aB̲c"
+            Exception: Assert.True() assertion failed.
+                       Expression: char.IsLower(item)
+                       Expected: true
+                       Actual:   false
             """);
     }
 
@@ -55,13 +55,13 @@ public sealed class AssertAllTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.All(actual, item => AssertionsAssert.True(item > 0)), """
             Assert.All() assertion failed: Item at index 1 failed.
-            Expression: actual
+            Expression:           actual
             Assertion expression: item => AssertionsAssert.True(item > 0)
-            Actual:     [1, -̲2̲, 3]
-            Exception:  Assert.True() assertion failed.
-                        Expression: item > 0
-                        Expected: true
-                        Actual:   false
+            Actual: [1, -̲2̲, 3]
+            Exception: Assert.True() assertion failed.
+                       Expression: item > 0
+                       Expected: true
+                       Actual:   false
             """);
     }
 
@@ -72,14 +72,14 @@ public sealed class AssertAllTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.All(actual, (item, index) => AssertionsAssert.Equal(index, item)), """
             Assert.All() assertion failed: Item at index 2 failed.
-            Expression: actual
+            Expression:           actual
             Assertion expression: (item, index) => AssertionsAssert.Equal(index, item)
-            Actual:     [0, 1, 3̲]
-            Exception:  Assert.Equal() assertion failed.
-                        Expected expression: index
-                        Actual expression:   item
-                        Expected: 2
-                        Actual:   3
+            Actual: [0, 1, 3̲]
+            Exception: Assert.Equal() assertion failed.
+                       Expected expression: index
+                       Actual expression:   item
+                       Expected: 2
+                       Actual:   3
             """);
     }
 
@@ -90,13 +90,13 @@ public sealed class AssertAllTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.All(actual, item => AssertionsAssert.True((int)item! > 0)), """
             Assert.All() assertion failed: Item at index 1 failed.
-            Expression: actual
+            Expression:           actual
             Assertion expression: item => AssertionsAssert.True((int)item! > 0)
-            Actual:     [1, -̲2̲, 3]
-            Exception:  Assert.True() assertion failed.
-                        Expression: (int)item! > 0
-                        Expected: true
-                        Actual:   false
+            Actual: [1, -̲2̲, 3]
+            Exception: Assert.True() assertion failed.
+                       Expression: (int)item! > 0
+                       Expected: true
+                       Actual:   false
             """);
     }
 
@@ -115,13 +115,13 @@ public sealed class AssertAllTests
 
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.All(actual, item => AssertionsAssert.True(item > 0)), """
             Assert.All() assertion failed: Item at index 1 failed.
-            Expression: actual
+            Expression:           actual
             Assertion expression: item => AssertionsAssert.True(item > 0)
-            Actual:     [1, -̲2̲, 3]
-            Exception:  Assert.True() assertion failed.
-                        Expression: item > 0
-                        Expected: true
-                        Actual:   false
+            Actual: [1, -̲2̲, 3]
+            Exception: Assert.True() assertion failed.
+                       Expression: item > 0
+                       Expected: true
+                       Actual:   false
             """);
     }
 
@@ -137,14 +137,14 @@ public sealed class AssertAllTests
 
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.All(actual, Assertion), """
             Assert.All() assertion failed: Item at index 2 failed.
-            Expression: actual
+            Expression:           actual
             Assertion expression: Assertion
-            Actual:     [0, 1, 3̲]
-            Exception:  Assert.Equal() assertion failed.
-                        Expected expression: index
-                        Actual expression:   item
-                        Expected: 2
-                        Actual:   3
+            Actual: [0, 1, 3̲]
+            Exception: Assert.Equal() assertion failed.
+                       Expected expression: index
+                       Actual expression:   item
+                       Expected: 2
+                       Actual:   3
             """);
     }
 }

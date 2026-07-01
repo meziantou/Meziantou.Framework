@@ -82,9 +82,9 @@ public sealed class AssertContainsTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Contains(collection, item => item == "sample"), """
             Assert.Contains() assertion failed.
-            Expression: collection
+            Expression:           collection
             Predicate expression: item => item == "sample"
-            Matching items:       []
+            Matching items: []
             """);
     }
 
@@ -95,7 +95,7 @@ public sealed class AssertContainsTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Contains(collection, item => item == "sample"), """
             Assert.Contains() assertion failed.
-            Expression: collection
+            Expression:           collection
             Predicate expression: item => item == "sample"
             Actual: <null>
             """);
@@ -480,7 +480,7 @@ public sealed class AssertContainsTests
             Expected expression: expected
             Actual expression:   actual
             Not expected item: 2
-            Actual:              [1, 2, 3]
+            Actual:            [1, 2, 3]
             """);
     }
 
@@ -495,7 +495,7 @@ public sealed class AssertContainsTests
             Expected expression: expected
             Actual expression:   actual
             Not expected: [2, 3]
-            Actual:              [1, 2, 3, 4]
+            Actual:       [1, 2, 3, 4]
             """);
     }
 
@@ -514,9 +514,9 @@ public sealed class AssertContainsTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(collection, item => item == "sample"), """
             Assert.DoesNotContain() assertion failed.
-            Expression: collection
+            Expression:           collection
             Predicate expression: item => item == "sample"
-            Not expected: any matching item
+            Not expected:   any matching item
             Matching items: ["sample", "sample"]
             """);
     }
@@ -531,7 +531,7 @@ public sealed class AssertContainsTests
             Expected expression: "a"
             Actual expression:   actual
             Not expected key: "a"
-            Actual:              [[a, 1]]
+            Actual:           [[a, 1]]
             """);
     }
 }

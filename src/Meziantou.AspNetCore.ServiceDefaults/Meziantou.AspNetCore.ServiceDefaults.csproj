@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);net10.0</TargetFrameworks>
-    <Version>1.0.42</Version>
+    <Version>1.0.43</Version>
     <Description>Default configuration for meziantou applications</Description>
   </PropertyGroup>
   <ItemGroup>
@@ -19,9 +19,13 @@
 
   <ItemGroup Condition="$(TargetFramework) == 'net10.0'">
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <!-- Force Microsoft.OpenApi to a non-vulnerable (transitive: Microsoft.AspNetCore.OpenApi) -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net11.0'">
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0-preview.5.26302.115" />
+    <!-- Force Microsoft.OpenApi to a non-vulnerable (transitive: Microsoft.AspNetCore.OpenApi) -->
+    <PackageReference Include="Microsoft.OpenApi" Version="3.7.0" />
   </ItemGroup>
 </Project>

@@ -75,7 +75,7 @@ public sealed class AssertMatchTests
             Expected expression: regex
             Actual expression:   actual
             Not expected pattern: "^sam"
-            Actual:              "sample"
+            Actual:               "sample"
             """);
     }
 
@@ -99,7 +99,7 @@ public sealed class AssertMatchTests
             Expected expression: pattern
             Actual expression:   actual
             Not expected pattern: "^sam"
-            Actual:              "sample"
+            Actual:               "sample"
             """);
     }
 }

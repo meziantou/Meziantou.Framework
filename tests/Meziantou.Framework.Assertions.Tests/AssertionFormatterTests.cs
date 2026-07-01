@@ -58,6 +58,58 @@ public sealed class AssertionFormatterTests
         AssertionsAssert.Equal("[0, 1̲, 2, 3, 4, ...]", value);
     }
 
+    [Fact]
+    public void UserMessageIsWrittenBeforeDetails()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Null("Hello", "custom message"), """
+            Assert.Null() assertion failed.
+            Message: custom message
+            Expression: "Hello"
+            Expected: <null>
+            Actual:   "Hello"
+            """);
+    }
+
+    [Fact]
+    public void EmptyUserMessageIsOmitted()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.True(false, ""), """
+            Assert.True() assertion failed.
+            Expression: false
+            Expected: true
+            Actual:   false
+            """);
+    }
+
+    [Fact]
+    public void GroupsAlignLabels()
+    {
+        var message = new AssertionMessageBuilder("Header")
+            .AppendGroup(
+                ("Short", "1"),
+                ("Long label", "2"))
+            .ToString();
+
+        AssertionsAssert.Equal("""
+            Header
+            Short:      1
+            Long label: 2
+            """, message);
+    }
+
+    [Fact]
+    public async Task AsyncUserMessageIsWrittenBeforeDetails()
+    {
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Empty(actual, "custom message"), """
+            Assert.Empty() assertion failed.
+            Message: custom message
+            Expression: actual
+            Actual: [1̲, 2, 3]
+            """);
+    }
+
     private sealed class TestAssertionFormatter : AssertionFormatter
     {
         public string FormatValueForTest(object? value, int? highlightedIndex = null)

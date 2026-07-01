@@ -77,7 +77,7 @@ public sealed class AssertCollectionTests
             Expression: actual
             Expected count: 3
             Actual count:   2
-            Actual:         [1, 2]
+            Actual: [1, 2]
             """);
     }
 
@@ -94,7 +94,7 @@ public sealed class AssertCollectionTests
             Expression: actual
             Expected count: 2
             Actual count:   3
-            Actual:         [1, 2, 3]
+            Actual: [1, 2, 3]
             """);
     }
 
@@ -110,12 +110,12 @@ public sealed class AssertCollectionTests
             item => AssertionsAssert.Equal(3, item)), """
             Assert.Collection() assertion failed: Item at index 1 failed.
             Expression: actual
-            Actual:     [1, 2̲, 3]
-            Exception:  Assert.Equal() assertion failed.
-                        Expected expression: 42
-                        Actual expression:   item
-                        Expected: 42
-                        Actual:   2
+            Actual: [1, 2̲, 3]
+            Exception: Assert.Equal() assertion failed.
+                       Expected expression: 42
+                       Actual expression:   item
+                       Expected: 42
+                       Actual:   2
             """);
     }
 }

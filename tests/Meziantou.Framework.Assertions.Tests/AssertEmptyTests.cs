@@ -16,7 +16,7 @@ public sealed class AssertEmptyTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Empty<int>([1, 2, 3]), """
             Assert.Empty() assertion failed.
             Expression: [1, 2, 3]
-            Actual:     [1̲, 2, 3]
+            Actual: [1̲, 2, 3]
             """);
     }
 
@@ -32,7 +32,7 @@ public sealed class AssertEmptyTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Empty("Hello".AsSpan()), """
             Assert.Empty() assertion failed.
             Expression: "Hello".AsSpan()
-            Actual:     "H̲ello"
+            Actual: "H̲ello"
             """);
     }
 
@@ -50,7 +50,7 @@ public sealed class AssertEmptyTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(actual), """
             Assert.Empty() assertion failed.
             Expression: actual
-            Actual:     "H̲ello"
+            Actual: "H̲ello"
             """);
     }
 
@@ -68,7 +68,7 @@ public sealed class AssertEmptyTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(actual), """
             Assert.Empty() assertion failed.
             Expression: actual
-            Actual:     [1̲, 2, 3]
+            Actual: [1̲, 2, 3]
             """);
     }
 
@@ -88,7 +88,7 @@ public sealed class AssertEmptyTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(actual), """
             Assert.Empty() assertion failed.
             Expression: actual
-            Actual:     [1̲, 2, 3]
+            Actual: [1̲, 2, 3]
             """);
     }
 
@@ -108,7 +108,7 @@ public sealed class AssertEmptyTests
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Empty(actual), """
             Assert.Empty() assertion failed.
             Expression: actual
-            Actual:     [1̲, 2, 3]
+            Actual: [1̲, 2, 3]
             """);
     }
 

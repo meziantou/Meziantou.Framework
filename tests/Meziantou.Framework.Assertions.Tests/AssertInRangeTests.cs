@@ -28,8 +28,8 @@ public sealed class AssertInRangeTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.InRange(actual, low, high), """
             Assert.InRange() assertion failed.
             Expression: actual
-            Expected:   in range [1, 3]
-            Actual:     0
+            Expected: in range [1, 3]
+            Actual:   0
             """);
     }
 
@@ -43,8 +43,8 @@ public sealed class AssertInRangeTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.InRange(actual, low, high), """
             Assert.InRange() assertion failed.
             Expression: actual
-            Expected:   in range [1, 3]
-            Actual:     4
+            Expected: in range [1, 3]
+            Actual:   4
             """);
     }
 
@@ -58,8 +58,8 @@ public sealed class AssertInRangeTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.InRange(actual, low, high, StringComparer.OrdinalIgnoreCase), """
             Assert.InRange() assertion failed.
             Expression: actual
-            Expected:   in range ["A", "C"]
-            Actual:     "d"
+            Expected: in range ["A", "C"]
+            Actual:   "d"
             """);
     }
 

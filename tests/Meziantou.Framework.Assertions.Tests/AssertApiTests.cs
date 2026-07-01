@@ -34,10 +34,10 @@ public sealed class AssertApiTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Null(actual, "custom message"), """
             Assert.Null() assertion failed.
+            Message: custom message
             Expression: actual
             Expected: <null>
             Actual:   "Hello"
-            Message: custom message
             """);
     }
 

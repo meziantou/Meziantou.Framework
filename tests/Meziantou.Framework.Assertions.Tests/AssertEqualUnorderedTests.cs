@@ -112,13 +112,13 @@ public sealed class AssertEqualUnorderedTests
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered(expected, actual, StringComparer.OrdinalIgnoreCase, "custom message"), """
             Assert.EqualUnordered() assertion failed.
+            Message: custom message
             Expected expression: expected
             Actual expression:   actual
             Missing expected item index: 0
             Unexpected actual item index: 1
             Expected: ["̲a̲"̲, "b"]
             Actual:   ["B", "̲c̲"̲]
-            Message: custom message
             """);
     }
 
@@ -230,7 +230,7 @@ public sealed class AssertEqualUnorderedTests
             Expected expression: expected
             Actual expression:   actual
             Not expected: [1, 2]
-            Actual:              [2, 1]
+            Actual:       [2, 1]
             """);
     }
 
@@ -245,7 +245,7 @@ public sealed class AssertEqualUnorderedTests
             Expected expression: expected
             Actual expression:   actual
             Not expected: [1, 2]
-            Actual:              [2, 1]
+            Actual:       [2, 1]
             """);
     }
 }

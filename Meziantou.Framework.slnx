@@ -82,6 +82,7 @@
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <Project Path="src/Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
     <Project Path="src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
     <Project Path="src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
     <Project Path="src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
@@ -141,7 +142,6 @@
     <Project Path="src/Meziantou.Framework.Win32.RecentDocuments/Meziantou.Framework.Win32.RecentDocuments.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.RestartManager/Meziantou.Framework.Win32.RestartManager.csproj" />
     <Project Path="src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
-    <Project Path="src/Meziantou.Framework.Xml/Meziantou.Framework.Xml.csproj" />
     <Project Path="src/Meziantou.Framework.Yamlish/Meziantou.Framework.Yamlish.csproj" />
     <Project Path="src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Project Path="src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
@@ -202,6 +202,7 @@
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.Tests/Meziantou.Framework.HumanReadableSerializer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Language.Xml.Tests/Meziantou.Framework.Language.Xml.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.LLMContext.Tests/Meziantou.Framework.LLMContext.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.MediaTags.Tests/Meziantou.Framework.MediaTags.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NtpClient.Tests/Meziantou.Framework.NtpClient.Tests.csproj" />
@@ -256,7 +257,6 @@
     <Project Path="tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.RestartManager.Tests/Meziantou.Framework.Win32.RestartManager.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Xml.Tests/Meziantou.Framework.Xml.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Yamlish.Tests/Meziantou.Framework.Yamlish.Tests.csproj" />
     <Project Path="tests/Trimmable.Wpf/Trimmable.Wpf.csproj" />
     <Project Path="tests/Trimmable/Trimmable.csproj" />

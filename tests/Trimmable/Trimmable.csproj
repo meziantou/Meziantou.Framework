@@ -44,6 +44,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.HttpArchive\Meziantou.Framework.HttpArchive.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.LLMContext\Meziantou.Framework.LLMContext.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Xml\Meziantou.Framework.Language.Xml.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
@@ -65,7 +66,6 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStringBuilder\Meziantou.Framework.ValueStringBuilder.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Xml\Meziantou.Framework.Xml.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -100,6 +100,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.HttpArchive" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.LLMContext" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Language.Xml" />
     <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
@@ -121,6 +122,5 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStopwatch" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStringBuilder" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
-    <TrimmerRootAssembly Include="Meziantou.Framework.Xml" />
   </ItemGroup>
 </Project>

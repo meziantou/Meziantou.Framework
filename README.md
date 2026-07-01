@@ -62,6 +62,7 @@
 | Meziantou.Framework.HumanReadableSerializer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HumanReadableSerializer.svg)](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer/) | [readme](src/Meziantou.Framework.HumanReadableSerializer/readme.md) |
 | Meziantou.Framework.InlineSnapshotTesting | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.InlineSnapshotTesting.svg)](https://www.nuget.org/packages/Meziantou.Framework.InlineSnapshotTesting/) | [readme](src/Meziantou.Framework.InlineSnapshotTesting/readme.md) |
 | Meziantou.Framework.JsonPath | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.JsonPath.svg)](https://www.nuget.org/packages/Meziantou.Framework.JsonPath/) | [readme](src/Meziantou.Framework.JsonPath/readme.md) |
+| Meziantou.Framework.Language.Xml | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Language.Xml.svg)](https://www.nuget.org/packages/Meziantou.Framework.Language.Xml/) | [readme](src/Meziantou.Framework.Language.Xml/readme.md) |
 | Meziantou.Framework.LLMContext | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.LLMContext.svg)](https://www.nuget.org/packages/Meziantou.Framework.LLMContext/) | [readme](src/Meziantou.Framework.LLMContext/readme.md) |
 | Meziantou.Framework.MediaTags | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.MediaTags.svg)](https://www.nuget.org/packages/Meziantou.Framework.MediaTags/) | [readme](src/Meziantou.Framework.MediaTags/readme.md) |
 | Meziantou.Framework.NtpClient | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.NtpClient.svg)](https://www.nuget.org/packages/Meziantou.Framework.NtpClient/) | [readme](src/Meziantou.Framework.NtpClient/readme.md) |
@@ -120,7 +121,6 @@
 | Meziantou.Framework.Win32.RecentDocuments | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.RecentDocuments.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.RecentDocuments/) | [readme](src/Meziantou.Framework.Win32.RecentDocuments/readme.md) |
 | Meziantou.Framework.Win32.RestartManager | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.RestartManager.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.RestartManager/) | [readme](src/Meziantou.Framework.Win32.RestartManager/readme.md) |
 | Meziantou.Framework.WPF | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.WPF.svg)](https://www.nuget.org/packages/Meziantou.Framework.WPF/) | [readme](src/Meziantou.Framework.WPF/readme.md) |
-| Meziantou.Framework.Xml | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Xml.svg)](https://www.nuget.org/packages/Meziantou.Framework.Xml/) | [readme](src/Meziantou.Framework.Xml/readme.md) |
 | Meziantou.Framework.Yamlish | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Yamlish.svg)](https://www.nuget.org/packages/Meziantou.Framework.Yamlish/) | [readme](src/Meziantou.Framework.Yamlish/readme.md) |
 | Meziantou.Xunit | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Xunit.svg)](https://www.nuget.org/packages/Meziantou.Xunit/) | [readme](src/Meziantou.Xunit/readme.md) |
 

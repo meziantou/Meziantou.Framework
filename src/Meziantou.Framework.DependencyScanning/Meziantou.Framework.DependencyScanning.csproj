@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.Xml/Meziantou.Framework.Xml.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
   </ItemGroup>
 
 </Project>

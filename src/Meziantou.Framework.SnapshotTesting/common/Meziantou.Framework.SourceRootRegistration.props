@@ -2,7 +2,7 @@
   <Target Name="_MeziantouGenerateSourceRootsCore">
 
     <PropertyGroup>
-      <_MeziantouSourceRootFile>$(IntermediateOutputPath)$(_MeziantouSourceRootGeneratedFileName)</_MeziantouSourceRootFile>
+      <_MeziantouSourceRootFile>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(_MeziantouSourceRootGeneratedFileName)'))</_MeziantouSourceRootFile>
       <_MeziantouSourceRootNamespace Condition="'$(RootNamespace)' != ''">$(RootNamespace)</_MeziantouSourceRootNamespace>
       <_MeziantouSourceRootNamespace Condition="'$(_MeziantouSourceRootNamespace)' == ''">$(MSBuildProjectName)</_MeziantouSourceRootNamespace>
     </PropertyGroup>

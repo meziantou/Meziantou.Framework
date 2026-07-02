@@ -24,16 +24,6 @@ namespace Meziantou.AspNetCore.Components
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddClipboard(this Microsoft.Extensions.DependencyInjection.IServiceCollection serviceCollection) => throw null;
     }
 
-    public class DataGrid<TRowData> : Microsoft.AspNetCore.Components.ComponentBase
-    {
-        public System.Collections.Generic.Dictionary<string, object>? TableAttributes { get => throw null; set { } }
-        public System.Collections.Generic.IEnumerable<TRowData>? Items { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.RenderFragment? ChildContent { get => throw null; set { } }
-        public System.Func<TRowData, int, string?>? RowClass { get => throw null; set { } }
-        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
-        protected override void OnAfterRender(bool firstRender) { }
-    }
-
     public class DataGridColumn<TRowData> : Microsoft.AspNetCore.Components.ComponentBase
     {
         public Meziantou.AspNetCore.Components.DataGrid<TRowData>? OwnerGrid { get => throw null; set { } }
@@ -46,15 +36,14 @@ namespace Meziantou.AspNetCore.Components
         protected override void OnParametersSet() { }
     }
 
-    public class GenericForm<TModel> : Microsoft.AspNetCore.Components.ComponentBase
+    public class DataGrid<TRowData> : Microsoft.AspNetCore.Components.ComponentBase
     {
-        public TModel Model { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.EventCallback<TModel> ModelChanged { get => throw null; set { } }
-        public bool EnableFieldValidation { get => throw null; set { } }
-        public string? EditorClass { get => throw null; set { } }
-        public Microsoft.AspNetCore.Components.RenderFragment<Meziantou.AspNetCore.Components.GenericFormField<TModel>>? FieldTemplate { get => throw null; set { } }
+        public System.Collections.Generic.Dictionary<string, object>? TableAttributes { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<TRowData>? Items { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.RenderFragment? ChildContent { get => throw null; set { } }
+        public System.Func<TRowData, int, string?>? RowClass { get => throw null; set { } }
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
-        protected override void OnParametersSet() { }
+        protected override void OnAfterRender(bool firstRender) { }
     }
 
     public sealed class GenericFormField<TModel>
@@ -73,6 +62,26 @@ namespace Meziantou.AspNetCore.Components
         public event System.EventHandler? ValueChanged;
     }
 
+    public class GenericForm<TModel> : Microsoft.AspNetCore.Components.ComponentBase
+    {
+        public TModel Model { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.EventCallback<TModel> ModelChanged { get => throw null; set { } }
+        public bool EnableFieldValidation { get => throw null; set { } }
+        public string? EditorClass { get => throw null; set { } }
+        public Microsoft.AspNetCore.Components.RenderFragment<Meziantou.AspNetCore.Components.GenericFormField<TModel>>? FieldTemplate { get => throw null; set { } }
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder? __builder) { }
+        protected override void OnParametersSet() { }
+    }
+
+    public sealed class InfiniteScrollingItemsProviderRequest
+    {
+        public int StartIndex { get => throw null; }
+        public System.Threading.CancellationToken CancellationToken { get => throw null; }
+        public InfiniteScrollingItemsProviderRequest(int startIndex, System.Threading.CancellationToken cancellationToken) { }
+    }
+
+    public delegate System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> InfiniteScrollingItemsProviderRequestDelegate<T>(Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest context);
+
     public class InfiniteScrolling<T> : Microsoft.AspNetCore.Components.ComponentBase, System.IAsyncDisposable
     {
         public Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequestDelegate<T>? ItemsProvider { get => throw null; set { } }
@@ -86,15 +95,6 @@ namespace Meziantou.AspNetCore.Components
         protected override System.Threading.Tasks.Task OnAfterRenderAsync(bool firstRender) => throw null;
         public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
-
-    public sealed class InfiniteScrollingItemsProviderRequest
-    {
-        public int StartIndex { get => throw null; }
-        public System.Threading.CancellationToken CancellationToken { get => throw null; }
-        public InfiniteScrollingItemsProviderRequest(int startIndex, System.Threading.CancellationToken cancellationToken) { }
-    }
-
-    public delegate System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> InfiniteScrollingItemsProviderRequestDelegate<T>(Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest context);
 
     public class InputDateTime<TValue> : Microsoft.AspNetCore.Components.Forms.InputDate<TValue>
     {

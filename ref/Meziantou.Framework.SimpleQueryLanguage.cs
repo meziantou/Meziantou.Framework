@@ -4,13 +4,6 @@
 
 namespace Meziantou.Framework.SimpleQueryLanguage
 {
-    public sealed class ExpressionQuery<T>
-    {
-        public string Text { get => throw null; }
-        public System.Linq.Expressions.Expression<System.Func<T, bool>>? Predicate { get => throw null; }
-        public System.Linq.IQueryable<T> Apply(System.Linq.IQueryable<T> queryable) => throw null;
-    }
-
     public sealed class ExpressionQueryBuilder<T>
     {
         public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, System.StringComparison comparisonType = 5) { }
@@ -20,6 +13,13 @@ namespace Meziantou.Framework.SimpleQueryLanguage
         public void SetFreeTextHandler(Meziantou.Framework.SimpleQueryLanguage.FreeTextExpressionHandler<T>? handler) { }
         public void SetUnhandledPropertyHandler(Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyExpressionHandler<T>? handler) { }
         public Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T> Build(string query) => throw null;
+    }
+
+    public sealed class ExpressionQuery<T>
+    {
+        public string Text { get => throw null; }
+        public System.Linq.Expressions.Expression<System.Func<T, bool>>? Predicate { get => throw null; }
+        public System.Linq.IQueryable<T> Apply(System.Linq.IQueryable<T> queryable) => throw null;
     }
 
     public delegate System.Linq.Expressions.Expression<System.Func<T, bool>> FreeTextExpressionHandler<T>(string text);
@@ -32,12 +32,6 @@ namespace Meziantou.Framework.SimpleQueryLanguage
         LessThanOrEqual = 3,
         GreaterThan = 4,
         GreaterThanOrEqual = 5
-    }
-
-    public sealed class Query<T>
-    {
-        public string Text { get => throw null; }
-        public bool Evaluate(T value) => throw null;
     }
 
     public sealed class QueryBuilder<T>
@@ -56,6 +50,12 @@ namespace Meziantou.Framework.SimpleQueryLanguage
         public void SetTextFilterHandler(System.Func<T, string, bool> predicate) { }
         public void SetUnhandledPropertyHandler(Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyDelegate<T>? predicate) { }
         public Meziantou.Framework.SimpleQueryLanguage.Query<T> Build(string query) => throw null;
+    }
+
+    public sealed class Query<T>
+    {
+        public string Text { get => throw null; }
+        public bool Evaluate(T value) => throw null;
     }
 
     public delegate bool ScalarParser<T>(string value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result);

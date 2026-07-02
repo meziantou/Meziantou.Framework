@@ -119,12 +119,20 @@ namespace Meziantou.Framework.Language.Json
     {
         public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root) => throw null;
         public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root) => throw null;
         public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPath path) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
     }
 
     public sealed class JsonSkippedTextSyntax : Meziantou.Framework.Language.Json.JsonValueSyntax

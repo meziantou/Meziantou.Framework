@@ -390,6 +390,23 @@ namespace Meziantou.Framework.Language.Xml
         public Meziantou.Framework.Language.Xml.XmlSyntaxTrivia WithText(string text) => throw null;
     }
 
+    public abstract class XmlSyntaxVisitor
+    {
+        public virtual void Visit(Meziantou.Framework.Language.Xml.XmlSyntaxNode? node) { }
+        protected virtual void DefaultVisit(Meziantou.Framework.Language.Xml.XmlSyntaxNode node) { }
+        public virtual void VisitDocument(Meziantou.Framework.Language.Xml.XmlDocumentSyntax node) { }
+        public virtual void VisitElement(Meziantou.Framework.Language.Xml.XmlElementSyntax node) { }
+        public virtual void VisitEndTag(Meziantou.Framework.Language.Xml.XmlEndTagSyntax node) { }
+        public virtual void VisitAttribute(Meziantou.Framework.Language.Xml.XmlAttributeSyntax node) { }
+        public virtual void VisitText(Meziantou.Framework.Language.Xml.XmlTextSyntax node) { }
+        public virtual void VisitComment(Meziantou.Framework.Language.Xml.XmlCommentSyntax node) { }
+        public virtual void VisitCDataSection(Meziantou.Framework.Language.Xml.XmlCDataSectionSyntax node) { }
+        public virtual void VisitDeclaration(Meziantou.Framework.Language.Xml.XmlDeclarationSyntax node) { }
+        public virtual void VisitProcessingInstruction(Meziantou.Framework.Language.Xml.XmlProcessingInstructionSyntax node) { }
+        public virtual void VisitDocumentType(Meziantou.Framework.Language.Xml.XmlDocumentTypeSyntax node) { }
+        public virtual void VisitSkippedText(Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax node) { }
+    }
+
     public abstract class XmlSyntaxVisitor<TResult>
     {
         public virtual TResult Visit(Meziantou.Framework.Language.Xml.XmlSyntaxNode? node) => throw null;

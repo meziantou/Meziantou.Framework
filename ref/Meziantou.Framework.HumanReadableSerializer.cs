@@ -14,11 +14,11 @@ namespace Meziantou.Framework.HumanReadable
     {
     }
 
-    public abstract class HumanReadableConverter<T> : Meziantou.Framework.HumanReadable.HumanReadableConverter
+    public abstract class HumanReadableConverter
     {
-        public sealed override bool CanConvert(System.Type type) => throw null;
-        public sealed override void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
-        protected abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
+        public bool HandleNull { get => throw null; }
+        public abstract bool CanConvert(System.Type type);
+        public abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
 
     [System.AttributeUsage(System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Class, AllowMultiple = false)]
@@ -34,6 +34,13 @@ namespace Meziantou.Framework.HumanReadable
     {
         public abstract Meziantou.Framework.HumanReadable.HumanReadableConverter? CreateConverter(System.Type typeToConvert, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
         public sealed override void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+    }
+
+    public abstract class HumanReadableConverter<T> : Meziantou.Framework.HumanReadable.HumanReadableConverter
+    {
+        public sealed override bool CanConvert(System.Type type) => throw null;
+        public sealed override void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
+        protected abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, T value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]

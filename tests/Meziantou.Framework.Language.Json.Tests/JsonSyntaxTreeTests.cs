@@ -377,7 +377,7 @@ public sealed class JsonSyntaxTreeTests
             var nameMember = item.GetMember("name");
 
             Assert.NotNull(nameMember);
-            Assert.Equal(expectedNames[i], Assert.IsType<JsonStringSyntax>(nameMember!.Value).Value);
+            Assert.Equal(expectedNames[i], Assert.IsType<JsonStringSyntax>(nameMember.Value).Value);
         }
     }
 

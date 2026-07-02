@@ -4,6 +4,11 @@
 
 namespace Meziantou.Extensions.Logging.InMemory
 {
+    public interface IInMemoryLogger : Microsoft.Extensions.Logging.ILogger
+    {
+        Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection Logs { get; }
+    }
+
     public interface IInMemoryLogger<T> : Microsoft.Extensions.Logging.ILogger, Microsoft.Extensions.Logging.ILogger<T>
     {
         Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection Logs { get; }

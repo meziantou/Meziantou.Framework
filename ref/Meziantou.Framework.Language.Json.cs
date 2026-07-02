@@ -115,6 +115,18 @@ namespace Meziantou.Framework.Language.Json
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Json.JsonSyntaxVisitor<TResult> visitor) => throw null;
     }
 
+    public static class JsonPathExtensions
+    {
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root) => throw null;
+        public static Meziantou.Framework.Json.JsonPathResult<Meziantou.Framework.Language.Json.JsonSyntaxNode> Evaluate(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxTree? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root) => throw null;
+        public static Meziantou.Framework.Language.Json.JsonSyntaxNode? EvaluateValue(this Meziantou.Framework.Json.JsonPath path, Meziantou.Framework.Language.Json.JsonSyntaxNode? root, Meziantou.Framework.Json.JsonPathEvaluationMode mode) => throw null;
+    }
+
     public sealed class JsonSkippedTextSyntax : Meziantou.Framework.Language.Json.JsonValueSyntax
     {
         public string Text { get => throw null; }
@@ -262,6 +274,21 @@ namespace Meziantou.Framework.Language.Json
         public Meziantou.Framework.Language.Json.TextSpan FullSpan { get => throw null; }
         public JsonSyntaxTrivia(Meziantou.Framework.Language.Json.JsonSyntaxKind kind, string text, int start = 0) { }
         public Meziantou.Framework.Language.Json.JsonSyntaxTrivia WithText(string text) => throw null;
+    }
+
+    public abstract class JsonSyntaxVisitor
+    {
+        public virtual void Visit(Meziantou.Framework.Language.Json.JsonSyntaxNode? node) { }
+        protected virtual void DefaultVisit(Meziantou.Framework.Language.Json.JsonSyntaxNode node) { }
+        public virtual void VisitDocument(Meziantou.Framework.Language.Json.JsonDocumentSyntax node) { }
+        public virtual void VisitObject(Meziantou.Framework.Language.Json.JsonObjectSyntax node) { }
+        public virtual void VisitMember(Meziantou.Framework.Language.Json.JsonMemberSyntax node) { }
+        public virtual void VisitArray(Meziantou.Framework.Language.Json.JsonArraySyntax node) { }
+        public virtual void VisitArrayElement(Meziantou.Framework.Language.Json.JsonArrayElementSyntax node) { }
+        public virtual void VisitString(Meziantou.Framework.Language.Json.JsonStringSyntax node) { }
+        public virtual void VisitNumber(Meziantou.Framework.Language.Json.JsonNumberSyntax node) { }
+        public virtual void VisitLiteral(Meziantou.Framework.Language.Json.JsonLiteralSyntax node) { }
+        public virtual void VisitSkippedText(Meziantou.Framework.Language.Json.JsonSkippedTextSyntax node) { }
     }
 
     public abstract class JsonSyntaxVisitor<TResult>

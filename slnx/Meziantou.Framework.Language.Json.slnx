@@ -4,7 +4,6 @@
     <Project Path="../src/Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="../tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Language.Json.Tests/Meziantou.Framework.Language.Json.Tests.csproj" />
   </Folder>
 </Solution>

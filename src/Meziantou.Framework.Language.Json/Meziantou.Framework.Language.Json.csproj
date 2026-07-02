@@ -12,4 +12,8 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Json.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+  </ItemGroup>
+
 </Project>

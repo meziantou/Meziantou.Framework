@@ -8,16 +8,12 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets"
-          Condition="'$(_MeziantouSnapshotTestingTargetsImported)' != 'true' and Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
+          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
   <Import Project="$(_MeziantouSharedSourceRootTargetsPath)"
-          Condition="'$(_MeziantouSnapshotTestingTargetsImported)' != 'true' and !Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSharedSourceRootTargetsPath)')" />
+          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSharedSourceRootTargetsPath)')" />
 
   <Target Name="GenerateSnapshotTestingSourceRoots"
           DependsOnTargets="InitializeSourceRootMappedPaths;_MeziantouGenerateSourceRootsCore"
           BeforeTargets="CoreCompile"
           Condition="'$(SnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'" />
-
-  <PropertyGroup>
-    <_MeziantouSnapshotTestingTargetsImported>true</_MeziantouSnapshotTestingTargetsImported>
-  </PropertyGroup>
 </Project>

@@ -1,10 +1,9 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Json.Internals;
 
-/// <summary>Evaluates a parsed JSONPath AST against a JsonNode tree.</summary>
+/// <summary>Evaluates a parsed JSONPath AST against a JSON value tree.</summary>
 internal static class JsonPathEvaluator
 {
     public static JsonPathResult Evaluate(JsonPathExpression expression, JsonNode? root)
@@ -14,158 +13,187 @@ internal static class JsonPathEvaluator
 
     public static JsonPathResult Evaluate(JsonPathExpression expression, JsonNode? root, JsonPathEvaluationMode mode)
     {
-        // Start with the root node
-        var currentNodes = new List<(JsonNode? Node, List<PathComponent> Path)>
+        var result = Evaluate(expression, root, JsonNodeNavigator.Instance, mode);
+        var matches = new List<JsonPathMatch>(result.Count);
+        foreach (var match in result)
         {
-            (root, []),
-        };
-
-        // Apply each segment in sequence
-        foreach (var segment in expression.Segments)
-        {
-            currentNodes = ApplySegment(segment, currentNodes, root, mode);
-        }
-
-        // Build results
-        var matches = new List<JsonPathMatch>(currentNodes.Count);
-        foreach (var (node, path) in currentNodes)
-        {
-            matches.Add(new JsonPathMatch(node, NormalizedPathBuilder.Build(path)));
+            matches.Add(new JsonPathMatch(match.Value, match.Path));
         }
 
         return new JsonPathResult(matches);
     }
 
-    private static List<(JsonNode? Node, List<PathComponent> Path)> ApplySegment(
-        Segment segment,
-        List<(JsonNode? Node, List<PathComponent> Path)> inputNodes,
-        JsonNode? root,
+    public static JsonPathResult<TValue> Evaluate<TValue>(
+        JsonPathExpression expression,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode)
+        where TValue : class
     {
-        var result = new List<(JsonNode? Node, List<PathComponent> Path)>();
+        var currentNodes = new List<(TValue? Node, List<PathComponent> Path)>
+        {
+            (root, []),
+        };
+
+        foreach (var segment in expression.Segments)
+        {
+            currentNodes = ApplySegment(segment, currentNodes, root, navigator, mode);
+        }
+
+        var matches = new List<JsonPathMatch<TValue>>(currentNodes.Count);
+        foreach (var (node, path) in currentNodes)
+        {
+            matches.Add(new JsonPathMatch<TValue>(node, NormalizedPathBuilder.Build(path)));
+        }
+
+        return new JsonPathResult<TValue>(matches);
+    }
+
+    private static List<(TValue? Node, List<PathComponent> Path)> ApplySegment<TValue>(
+        Segment segment,
+        List<(TValue? Node, List<PathComponent> Path)> inputNodes,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator,
+        JsonPathEvaluationMode mode)
+        where TValue : class
+    {
+        var result = new List<(TValue? Node, List<PathComponent> Path)>();
 
         foreach (var (node, path) in inputNodes)
         {
             if (segment.Kind is SegmentKind.Child)
             {
-                ApplyChildSegment(segment.Selectors, node, path, root, mode, result, strictFailure: true);
+                ApplyChildSegment(segment.Selectors, node, path, root, navigator, mode, result, strictFailure: true);
             }
             else
             {
-                ApplyDescendantSegment(segment.Selectors, node, path, root, mode, result);
+                ApplyDescendantSegment(segment.Selectors, node, path, root, navigator, mode, result);
             }
         }
 
         return result;
     }
 
-    private static void ApplyChildSegment(
+    private static void ApplyChildSegment<TValue>(
         Selector[] selectors,
-        JsonNode? node,
+        TValue? node,
         List<PathComponent> path,
-        JsonNode? root,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
+        where TValue : class
     {
         foreach (var selector in selectors)
         {
-            ApplySelector(selector, node, path, root, mode, result, strictFailure);
+            ApplySelector(selector, node, path, root, navigator, mode, result, strictFailure);
         }
     }
 
-    private static void ApplyDescendantSegment(
+    private static void ApplyDescendantSegment<TValue>(
         Selector[] selectors,
-        JsonNode? node,
+        TValue? node,
         List<PathComponent> path,
-        JsonNode? root,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        List<(TValue? Node, List<PathComponent> Path)> result)
+        where TValue : class
     {
-        // Visit nodes in pre-order: node first, then descendants
-        // For each visited node, apply the selectors as a child segment
-        VisitDescendants(node, path, selectors, root, mode, result);
+        VisitDescendants(node, path, selectors, root, navigator, mode, result);
     }
 
-    private static void VisitDescendants(
-        JsonNode? node,
+    private static void VisitDescendants<TValue>(
+        TValue? node,
         List<PathComponent> path,
         Selector[] selectors,
-        JsonNode? root,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result)
+        List<(TValue? Node, List<PathComponent> Path)> result)
+        where TValue : class
     {
-        // Apply selectors to current node
-        ApplyChildSegment(selectors, node, path, root, mode, result, strictFailure: false);
+        ApplyChildSegment(selectors, node, path, root, navigator, mode, result, strictFailure: false);
 
-        // Recurse into children
-        switch (node)
+        switch (navigator.GetKind(node))
         {
-            case JsonObject obj:
-                foreach (var property in obj)
+            case JsonPathNodeKind.Object:
+                foreach (var property in navigator.GetProperties(node))
                 {
                     var childPath = new List<PathComponent>(path)
                     {
-                        PathComponent.FromName(property.Key),
+                        PathComponent.FromName(property.Name),
                     };
-                    VisitDescendants(property.Value, childPath, selectors, root, mode, result);
+                    VisitDescendants(property.Value, childPath, selectors, root, navigator, mode, result);
                 }
 
                 break;
-            case JsonArray array:
-                for (var i = 0; i < array.Count; i++)
+
+            case JsonPathNodeKind.Array:
+                var length = navigator.GetArrayLength(node);
+                for (var i = 0; i < length; i++)
                 {
+                    if (!navigator.TryGetElement(node, i, out var value))
+                    {
+                        continue;
+                    }
+
                     var childPath = new List<PathComponent>(path)
                     {
                         PathComponent.FromIndex(i),
                     };
-                    VisitDescendants(array[i], childPath, selectors, root, mode, result);
+                    VisitDescendants(value, childPath, selectors, root, navigator, mode, result);
                 }
 
                 break;
         }
     }
 
-    private static void ApplySelector(
+    private static void ApplySelector<TValue>(
         Selector selector,
-        JsonNode? node,
+        TValue? node,
         List<PathComponent> path,
-        JsonNode? root,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
+        where TValue : class
     {
         switch (selector)
         {
             case NameSelector nameSelector:
-                ApplyNameSelector(nameSelector, node, path, mode, result, strictFailure);
+                ApplyNameSelector(nameSelector, node, path, navigator, mode, result, strictFailure);
                 break;
             case WildcardSelector:
-                ApplyWildcardSelector(node, path, mode, result, strictFailure);
+                ApplyWildcardSelector(node, path, navigator, mode, result, strictFailure);
                 break;
             case IndexSelector indexSelector:
-                ApplyIndexSelector(indexSelector, node, path, mode, result, strictFailure);
+                ApplyIndexSelector(indexSelector, node, path, navigator, mode, result, strictFailure);
                 break;
             case SliceSelector sliceSelector:
-                ApplySliceSelector(sliceSelector, node, path, mode, result, strictFailure);
+                ApplySliceSelector(sliceSelector, node, path, navigator, mode, result, strictFailure);
                 break;
             case FilterSelector filterSelector:
-                ApplyFilterSelector(filterSelector, node, path, root, mode, result, strictFailure);
+                ApplyFilterSelector(filterSelector, node, path, root, navigator, mode, result, strictFailure);
                 break;
         }
     }
 
-    private static void ApplyNameSelector(
+    private static void ApplyNameSelector<TValue>(
         NameSelector selector,
-        JsonNode? node,
+        TValue? node,
         List<PathComponent> path,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
+        where TValue : class
     {
-        if (node is JsonObject obj)
+        if (navigator.GetKind(node) is JsonPathNodeKind.Object)
         {
-            if (!obj.TryGetPropertyValue(selector.Name, out var value))
+            if (!navigator.TryGetPropertyValue(node, selector.Name, out var value))
             {
                 ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Object member '{selector.Name}' does not exist");
                 return;
@@ -182,91 +210,106 @@ internal static class JsonPathEvaluator
         ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Name selector '{selector.Name}' requires an object");
     }
 
-    private static void ApplyWildcardSelector(
-        JsonNode? node,
+    private static void ApplyWildcardSelector<TValue>(
+        TValue? node,
         List<PathComponent> path,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
+        where TValue : class
     {
-        switch (node)
+        switch (navigator.GetKind(node))
         {
-            case JsonObject obj:
-                foreach (var property in obj)
+            case JsonPathNodeKind.Object:
+                foreach (var property in navigator.GetProperties(node))
                 {
                     var newPath = new List<PathComponent>(path)
                     {
-                        PathComponent.FromName(property.Key),
+                        PathComponent.FromName(property.Name),
                     };
                     result.Add((property.Value, newPath));
                 }
 
                 break;
-            case JsonArray array:
-                for (var i = 0; i < array.Count; i++)
+
+            case JsonPathNodeKind.Array:
+                var length = navigator.GetArrayLength(node);
+                for (var i = 0; i < length; i++)
                 {
+                    if (!navigator.TryGetElement(node, i, out var value))
+                    {
+                        continue;
+                    }
+
                     var newPath = new List<PathComponent>(path)
                     {
                         PathComponent.FromIndex(i),
                     };
-                    result.Add((array[i], newPath));
+                    result.Add((value, newPath));
                 }
 
                 break;
+
             default:
                 ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Wildcard selector requires an object or an array");
                 break;
         }
     }
 
-    private static void ApplyIndexSelector(
+    private static void ApplyIndexSelector<TValue>(
         IndexSelector selector,
-        JsonNode? node,
+        TValue? node,
         List<PathComponent> path,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
+        where TValue : class
     {
-        if (node is not JsonArray array)
+        if (navigator.GetKind(node) is not JsonPathNodeKind.Array)
         {
             ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Index selector [{selector.Index}] requires an array");
             return;
         }
 
-        var index = NormalizeIndex(selector.Index, array.Count);
-        if (index >= 0 && index < array.Count)
+        var length = navigator.GetArrayLength(node);
+        var index = NormalizeIndex(selector.Index, length);
+        if (index >= 0 && index < length && navigator.TryGetElement(node, (int)index, out var value))
         {
             var newPath = new List<PathComponent>(path)
             {
                 PathComponent.FromIndex(index),
             };
-            result.Add((array[(int)index], newPath));
+            result.Add((value, newPath));
             return;
         }
 
         ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Array index [{selector.Index}] is out of range");
     }
 
-    private static void ApplySliceSelector(
+    private static void ApplySliceSelector<TValue>(
         SliceSelector selector,
-        JsonNode? node,
+        TValue? node,
         List<PathComponent> path,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
+        where TValue : class
     {
-        if (node is not JsonArray array)
+        if (navigator.GetKind(node) is not JsonPathNodeKind.Array)
         {
             ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Slice selector requires an array");
             return;
         }
 
-        var len = array.Count;
+        var len = navigator.GetArrayLength(node);
         var step = selector.Step ?? 1;
 
         if (step == 0)
         {
-            return; // step=0 selects nothing
+            return;
         }
 
         var start = selector.Start ?? (step >= 0 ? 0 : len - 1);
@@ -291,65 +334,85 @@ internal static class JsonPathEvaluator
         {
             for (var i = lower; i < upper; i += step)
             {
+                if (!navigator.TryGetElement(node, (int)i, out var value))
+                {
+                    continue;
+                }
+
                 var newPath = new List<PathComponent>(path)
                 {
                     PathComponent.FromIndex(i),
                 };
-                result.Add((array[(int)i], newPath));
+                result.Add((value, newPath));
             }
         }
         else
         {
             for (var i = upper; lower < i; i += step)
             {
+                if (!navigator.TryGetElement(node, (int)i, out var value))
+                {
+                    continue;
+                }
+
                 var newPath = new List<PathComponent>(path)
                 {
                     PathComponent.FromIndex(i),
                 };
-                result.Add((array[(int)i], newPath));
+                result.Add((value, newPath));
             }
         }
     }
 
-    private static void ApplyFilterSelector(
+    private static void ApplyFilterSelector<TValue>(
         FilterSelector selector,
-        JsonNode? node,
+        TValue? node,
         List<PathComponent> path,
-        JsonNode? root,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
-        List<(JsonNode? Node, List<PathComponent> Path)> result,
+        List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
+        where TValue : class
     {
-        switch (node)
+        switch (navigator.GetKind(node))
         {
-            case JsonObject obj:
-                foreach (var property in obj)
+            case JsonPathNodeKind.Object:
+                foreach (var property in navigator.GetProperties(node))
                 {
-                    if (EvaluateLogicalExpression(selector.Expression, property.Value, root))
+                    if (EvaluateLogicalExpression(selector.Expression, property.Value, root, navigator))
                     {
                         var newPath = new List<PathComponent>(path)
                         {
-                            PathComponent.FromName(property.Key),
+                            PathComponent.FromName(property.Name),
                         };
                         result.Add((property.Value, newPath));
                     }
                 }
 
                 break;
-            case JsonArray array:
-                for (var i = 0; i < array.Count; i++)
+
+            case JsonPathNodeKind.Array:
+                var length = navigator.GetArrayLength(node);
+                for (var i = 0; i < length; i++)
                 {
-                    if (EvaluateLogicalExpression(selector.Expression, array[i], root))
+                    if (!navigator.TryGetElement(node, i, out var value))
+                    {
+                        continue;
+                    }
+
+                    if (EvaluateLogicalExpression(selector.Expression, value, root, navigator))
                     {
                         var newPath = new List<PathComponent>(path)
                         {
                             PathComponent.FromIndex(i),
                         };
-                        result.Add((array[i], newPath));
+                        result.Add((value, newPath));
                     }
                 }
 
                 break;
+
             default:
                 ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Filter selector requires an object or an array");
                 break;
@@ -366,192 +429,317 @@ internal static class JsonPathEvaluator
         throw new JsonPathEvaluationException($"Path error at {NormalizedPathBuilder.Build(path)}: {error}");
     }
 
-    // ---- Filter Expression Evaluation ----
-
-    private static bool EvaluateLogicalExpression(LogicalExpression expr, JsonNode? currentNode, JsonNode? root)
+    private static bool EvaluateLogicalExpression<TValue>(
+        LogicalExpression expr,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
         return expr switch
         {
-            OrExpression or => EvaluateLogicalExpression(or.Left, currentNode, root)
-                               || EvaluateLogicalExpression(or.Right, currentNode, root),
-            AndExpression and => EvaluateLogicalExpression(and.Left, currentNode, root)
-                                && EvaluateLogicalExpression(and.Right, currentNode, root),
-            NotExpression not => !EvaluateLogicalExpression(not.Operand, currentNode, root),
-            ComparisonExpression comp => EvaluateComparison(comp, currentNode, root),
-            ExistenceTestExpression existence => EvaluateExistenceTest(existence, currentNode, root),
-            FunctionCallExpression func => EvaluateFunctionAsLogical(func, currentNode, root),
+            OrExpression or => EvaluateLogicalExpression(or.Left, currentNode, root, navigator)
+                               || EvaluateLogicalExpression(or.Right, currentNode, root, navigator),
+            AndExpression and => EvaluateLogicalExpression(and.Left, currentNode, root, navigator)
+                                && EvaluateLogicalExpression(and.Right, currentNode, root, navigator),
+            NotExpression not => !EvaluateLogicalExpression(not.Operand, currentNode, root, navigator),
+            ComparisonExpression comp => EvaluateComparison(comp, currentNode, root, navigator),
+            ExistenceTestExpression existence => EvaluateExistenceTest(existence, currentNode, root, navigator),
+            FunctionCallExpression func => EvaluateFunctionAsLogical(func, currentNode, root, navigator),
             _ => false,
         };
     }
 
-    private static bool EvaluateExistenceTest(ExistenceTestExpression test, JsonNode? currentNode, JsonNode? root)
+    private static bool EvaluateExistenceTest<TValue>(
+        ExistenceTestExpression test,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        var nodes = EvaluateFilterQuery(test.Query, currentNode, root);
+        var nodes = EvaluateFilterQuery(test.Query, currentNode, root, navigator);
         return nodes.Count > 0;
     }
 
-    private static bool EvaluateComparison(ComparisonExpression comp, JsonNode? currentNode, JsonNode? root)
+    private static bool EvaluateComparison<TValue>(
+        ComparisonExpression comp,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        var left = ResolveComparable(comp.Left, currentNode, root);
-        var right = ResolveComparable(comp.Right, currentNode, root);
+        var left = ResolveComparable(comp.Left, currentNode, root, navigator);
+        var right = ResolveComparable(comp.Right, currentNode, root, navigator);
 
         return comp.Operator switch
         {
-            ComparisonOperator.Equal => CompareEqual(left, right),
-            ComparisonOperator.NotEqual => !CompareEqual(left, right),
-            ComparisonOperator.LessThan => CompareLessThan(left, right),
-            ComparisonOperator.LessThanOrEqual => CompareLessThan(left, right) || CompareEqual(left, right),
-            ComparisonOperator.GreaterThan => CompareLessThan(right, left),
-            ComparisonOperator.GreaterThanOrEqual => CompareLessThan(right, left) || CompareEqual(left, right),
+            ComparisonOperator.Equal => CompareEqual(left, right, navigator),
+            ComparisonOperator.NotEqual => !CompareEqual(left, right, navigator),
+            ComparisonOperator.LessThan => CompareLessThan(left, right, navigator),
+            ComparisonOperator.LessThanOrEqual => CompareLessThan(left, right, navigator) || CompareEqual(left, right, navigator),
+            ComparisonOperator.GreaterThan => CompareLessThan(right, left, navigator),
+            ComparisonOperator.GreaterThanOrEqual => CompareLessThan(right, left, navigator) || CompareEqual(left, right, navigator),
             _ => false,
         };
     }
 
-    /// <summary>
-    /// Represents a resolved comparable value for filter expression evaluation.
-    /// Nothing represents the absence of a value (empty nodelist or Nothing from functions).
-    /// </summary>
-    private sealed class ResolvedValue
+    private enum ResolvedValueKind
     {
-        public static readonly ResolvedValue Nothing = new() { IsNothing = true };
-
-        public JsonNode? Node { get; private init; }
-
-        public bool IsNothing { get; private init; }
-
-        public static ResolvedValue FromNode(JsonNode? node) => new() { Node = node, IsNothing = false };
-
-        public static ResolvedValue FromNothing() => Nothing;
+        Nothing,
+        Node,
+        Scalar,
     }
 
-    private static ResolvedValue ResolveComparable(Comparable comparable, JsonNode? currentNode, JsonNode? root)
+    private readonly struct ResolvedValue<TValue>
+        where TValue : class
+    {
+        private ResolvedValue(TValue? node)
+        {
+            Kind = ResolvedValueKind.Node;
+            Node = node;
+            Scalar = default;
+        }
+
+        private ResolvedValue(ScalarValue scalar)
+        {
+            Kind = ResolvedValueKind.Scalar;
+            Node = null;
+            Scalar = scalar;
+        }
+
+        public ResolvedValueKind Kind { get; }
+
+        public TValue? Node { get; }
+
+        public ScalarValue Scalar { get; }
+
+        public bool IsNothing => Kind is ResolvedValueKind.Nothing;
+
+        public static ResolvedValue<TValue> FromNode(TValue? node) => new(node);
+
+        public static ResolvedValue<TValue> FromScalar(ScalarValue scalar) => new(scalar);
+
+        public static ResolvedValue<TValue> FromNothing() => default;
+    }
+
+    private readonly struct ScalarValue
+    {
+        private ScalarValue(JsonPathNodeKind kind, string? stringValue, double numberValue, bool booleanValue)
+        {
+            Kind = kind;
+            StringValue = stringValue;
+            NumberValue = numberValue;
+            BooleanValue = booleanValue;
+        }
+
+        public JsonPathNodeKind Kind { get; }
+
+        public string? StringValue { get; }
+
+        public double NumberValue { get; }
+
+        public bool BooleanValue { get; }
+
+        public static ScalarValue Null() => new(JsonPathNodeKind.Null, stringValue: null, numberValue: 0, booleanValue: false);
+
+        public static ScalarValue FromBoolean(bool value) => new(JsonPathNodeKind.Boolean, stringValue: null, numberValue: 0, booleanValue: value);
+
+        public static ScalarValue FromNumber(double value) => new(JsonPathNodeKind.Number, stringValue: null, numberValue: value, booleanValue: false);
+
+        public static ScalarValue FromString(string value) => new(JsonPathNodeKind.String, value, numberValue: 0, booleanValue: false);
+    }
+
+    private static ResolvedValue<TValue> ResolveComparable<TValue>(
+        Comparable comparable,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
         switch (comparable)
         {
             case LiteralComparable literal:
                 return literal.Value switch
                 {
-                    null => ResolvedValue.FromNode(node: null),
-                    true => ResolvedValue.FromNode(JsonValue.Create(value: true)),
-                    false => ResolvedValue.FromNode(JsonValue.Create(value: false)),
-                    string s => ResolvedValue.FromNode(JsonValue.Create(s)),
-                    double d => ResolvedValue.FromNode(JsonValue.Create(d)),
-                    _ => ResolvedValue.FromNothing(),
+                    null => ResolvedValue<TValue>.FromScalar(ScalarValue.Null()),
+                    true => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: true)),
+                    false => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: false)),
+                    string s => ResolvedValue<TValue>.FromScalar(ScalarValue.FromString(s)),
+                    double d => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(d)),
+                    _ => ResolvedValue<TValue>.FromNothing(),
                 };
 
             case SingularQueryComparable sq:
                 {
-                    var nodes = EvaluateSingularQuery(sq.Query, currentNode, root);
+                    var nodes = EvaluateSingularQuery(sq.Query, currentNode, root, navigator);
                     if (nodes.Count is 1)
                     {
-                        return ResolvedValue.FromNode(nodes[0]);
+                        return ResolvedValue<TValue>.FromNode(nodes[0]);
                     }
 
-                    return ResolvedValue.FromNothing();
+                    return ResolvedValue<TValue>.FromNothing();
                 }
 
             case FunctionCallComparable fc:
-                {
-                    var result = EvaluateFunction(fc.FunctionCall, currentNode, root);
-                    return result;
-                }
+                return EvaluateFunction(fc.FunctionCall, currentNode, root, navigator);
 
             default:
-                return ResolvedValue.FromNothing();
+                return ResolvedValue<TValue>.FromNothing();
         }
     }
 
-    // RFC 9535 §2.3.5.2.2: Comparison semantics
-    private static bool CompareEqual(ResolvedValue left, ResolvedValue right)
+    private static bool CompareEqual<TValue>(
+        ResolvedValue<TValue> left,
+        ResolvedValue<TValue> right,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        // Both Nothing/empty → true
         if (left.IsNothing && right.IsNothing)
         {
             return true;
         }
 
-        // One Nothing/empty → false
         if (left.IsNothing || right.IsNothing)
         {
             return false;
         }
 
-        return JsonNodesEqual(left.Node, right.Node);
+        if (left.Kind is ResolvedValueKind.Scalar && right.Kind is ResolvedValueKind.Scalar)
+        {
+            return ScalarValuesEqual(left.Scalar, right.Scalar);
+        }
+
+        if (left.Kind is ResolvedValueKind.Scalar)
+        {
+            return ScalarAndNodeEqual(left.Scalar, right.Node, navigator);
+        }
+
+        if (right.Kind is ResolvedValueKind.Scalar)
+        {
+            return ScalarAndNodeEqual(right.Scalar, left.Node, navigator);
+        }
+
+        return NodesEqual(left.Node, right.Node, navigator);
     }
 
-    private static bool CompareLessThan(ResolvedValue left, ResolvedValue right)
+    private static bool CompareLessThan<TValue>(
+        ResolvedValue<TValue> left,
+        ResolvedValue<TValue> right,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        // Any Nothing → false
         if (left.IsNothing || right.IsNothing)
         {
             return false;
         }
 
-        return JsonNodeLessThan(left.Node, right.Node);
-    }
-
-    private static bool JsonNodesEqual(JsonNode? left, JsonNode? right)
-    {
-        // Both null → equal
-        if (left is null && right is null)
+        if (TryGetNumber(left, navigator, out var leftNumber) && TryGetNumber(right, navigator, out var rightNumber))
         {
-            return true;
+            return leftNumber < rightNumber;
         }
 
-        if (left is null || right is null)
+        if (TryGetString(left, navigator, out var leftString) && TryGetString(right, navigator, out var rightString))
         {
-            return false;
-        }
-
-        // Compare by kind
-        if (left is JsonValue leftVal && right is JsonValue rightVal)
-        {
-            return JsonValuesEqual(leftVal, rightVal);
-        }
-
-        if (left is JsonArray leftArr && right is JsonArray rightArr)
-        {
-            return JsonArraysEqual(leftArr, rightArr);
-        }
-
-        if (left is JsonObject leftObj && right is JsonObject rightObj)
-        {
-            return JsonObjectsEqual(leftObj, rightObj);
+            return string.Compare(leftString, rightString, StringComparison.Ordinal) < 0;
         }
 
         return false;
     }
 
-    private static bool JsonValuesEqual(JsonValue left, JsonValue right)
+    private static bool ScalarValuesEqual(ScalarValue left, ScalarValue right)
     {
-        var leftKind = left.GetValueKind();
-        var rightKind = right.GetValueKind();
+        if (left.Kind != right.Kind)
+        {
+            return false;
+        }
 
+        return left.Kind switch
+        {
+            JsonPathNodeKind.Null => true,
+            JsonPathNodeKind.Boolean => left.BooleanValue == right.BooleanValue,
+            JsonPathNodeKind.Number => left.NumberValue.CompareTo(right.NumberValue) is 0,
+            JsonPathNodeKind.String => left.StringValue == right.StringValue,
+            _ => false,
+        };
+    }
+
+    private static bool ScalarAndNodeEqual<TValue>(ScalarValue scalar, TValue? node, JsonPathNavigator<TValue> navigator)
+        where TValue : class
+    {
+        var kind = navigator.GetKind(node);
+        if (scalar.Kind != kind)
+        {
+            return false;
+        }
+
+        return scalar.Kind switch
+        {
+            JsonPathNodeKind.Null => true,
+            JsonPathNodeKind.Boolean => navigator.TryGetBoolean(node, out var value) && scalar.BooleanValue == value,
+            JsonPathNodeKind.Number => navigator.TryGetNumber(node, out var value) && scalar.NumberValue.CompareTo(value) is 0,
+            JsonPathNodeKind.String => navigator.TryGetString(node, out var value) && scalar.StringValue == value,
+            _ => false,
+        };
+    }
+
+    private static bool NodesEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
+        where TValue : class
+    {
+        var leftKind = navigator.GetKind(left);
+        var rightKind = navigator.GetKind(right);
         if (leftKind != rightKind)
         {
             return false;
         }
 
-        return leftKind switch
+        switch (leftKind)
         {
-            JsonValueKind.True or JsonValueKind.False => true,
-            JsonValueKind.Null => true,
-            JsonValueKind.String => GetStringValue(left) == GetStringValue(right),
-            JsonValueKind.Number => CompareNumberValues(left, right) is 0,
-            _ => false,
-        };
+            case JsonPathNodeKind.Null:
+                return true;
+
+            case JsonPathNodeKind.Boolean:
+                return navigator.TryGetBoolean(left, out var leftBoolean)
+                       && navigator.TryGetBoolean(right, out var rightBoolean)
+                       && leftBoolean == rightBoolean;
+
+            case JsonPathNodeKind.Number:
+                return navigator.TryGetNumber(left, out var leftNumber)
+                       && navigator.TryGetNumber(right, out var rightNumber)
+                       && leftNumber.CompareTo(rightNumber) is 0;
+
+            case JsonPathNodeKind.String:
+                return navigator.TryGetString(left, out var leftString)
+                       && navigator.TryGetString(right, out var rightString)
+                       && leftString == rightString;
+
+            case JsonPathNodeKind.Array:
+                return ArraysEqual(left, right, navigator);
+
+            case JsonPathNodeKind.Object:
+                return ObjectsEqual(left, right, navigator);
+
+            default:
+                return false;
+        }
     }
 
-    private static bool JsonArraysEqual(JsonArray left, JsonArray right)
+    private static bool ArraysEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        if (left.Count != right.Count)
+        var length = navigator.GetArrayLength(left);
+        if (navigator.GetArrayLength(right) != length)
         {
             return false;
         }
 
-        for (var i = 0; i < left.Count; i++)
+        for (var i = 0; i < length; i++)
         {
-            if (!JsonNodesEqual(left[i], right[i]))
+            if (!navigator.TryGetElement(left, i, out var leftValue) || !navigator.TryGetElement(right, i, out var rightValue))
+            {
+                return false;
+            }
+
+            if (!NodesEqual(leftValue, rightValue, navigator))
             {
                 return false;
             }
@@ -560,160 +748,94 @@ internal static class JsonPathEvaluator
         return true;
     }
 
-    private static bool JsonObjectsEqual(JsonObject left, JsonObject right)
+    private static bool ObjectsEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        if (left.Count != right.Count)
+        var leftCount = 0;
+        foreach (var property in navigator.GetProperties(left))
         {
-            return false;
-        }
-
-        foreach (var property in left)
-        {
-            if (!right.TryGetPropertyValue(property.Key, out var rightValue))
+            leftCount++;
+            if (!navigator.TryGetPropertyValue(right, property.Name, out var rightValue))
             {
                 return false;
             }
 
-            if (!JsonNodesEqual(property.Value, rightValue))
+            if (!NodesEqual(property.Value, rightValue, navigator))
             {
                 return false;
             }
         }
 
-        return true;
+        return leftCount == CountProperties(right, navigator);
     }
 
-    private static bool JsonNodeLessThan(JsonNode? left, JsonNode? right)
+    private static bool TryGetNumber<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out double result)
+        where TValue : class
     {
-        if (left is null || right is null)
+        if (value.Kind is ResolvedValueKind.Scalar)
         {
+            if (value.Scalar.Kind is JsonPathNodeKind.Number)
+            {
+                result = value.Scalar.NumberValue;
+                return true;
+            }
+
+            result = 0;
             return false;
         }
 
-        if (left is not JsonValue leftVal || right is not JsonValue rightVal)
+        if (navigator.GetKind(value.Node) is JsonPathNodeKind.Number)
         {
-            return false;
+            return navigator.TryGetNumber(value.Node, out result);
         }
 
-        var leftKind = leftVal.GetValueKind();
-        var rightKind = rightVal.GetValueKind();
-
-        if (leftKind is JsonValueKind.Number && rightKind is JsonValueKind.Number)
-        {
-            return CompareNumberValues(leftVal, rightVal) < 0;
-        }
-
-        if (leftKind is JsonValueKind.String && rightKind is JsonValueKind.String)
-        {
-            return string.Compare(GetStringValue(leftVal), GetStringValue(rightVal), StringComparison.Ordinal) < 0;
-        }
-
+        result = 0;
         return false;
     }
 
-    private static int CompareNumberValues(JsonValue left, JsonValue right)
+    private static bool TryGetString<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out string? result)
+        where TValue : class
     {
-        var leftDouble = GetDoubleValue(left);
-        var rightDouble = GetDoubleValue(right);
-        return leftDouble.CompareTo(rightDouble);
+        if (value.Kind is ResolvedValueKind.Scalar)
+        {
+            if (value.Scalar.Kind is JsonPathNodeKind.String)
+            {
+                result = value.Scalar.StringValue;
+                return true;
+            }
+
+            result = null;
+            return false;
+        }
+
+        if (navigator.GetKind(value.Node) is JsonPathNodeKind.String)
+        {
+            return navigator.TryGetString(value.Node, out result);
+        }
+
+        result = null;
+        return false;
     }
 
-    private static double GetDoubleValue(JsonValue value)
-    {
-        if (value.TryGetValue<JsonElement>(out var element))
-        {
-            return element.GetDouble();
-        }
-
-        if (value.TryGetValue<double>(out var d))
-        {
-            return d;
-        }
-
-        if (value.TryGetValue<float>(out var f))
-        {
-            return f;
-        }
-
-        if (value.TryGetValue<decimal>(out var dec))
-        {
-            return (double)dec;
-        }
-
-        if (value.TryGetValue<long>(out var l))
-        {
-            return l;
-        }
-
-        if (value.TryGetValue<ulong>(out var ul))
-        {
-            return ul;
-        }
-
-        if (value.TryGetValue<int>(out var i))
-        {
-            return i;
-        }
-
-        if (value.TryGetValue<uint>(out var ui))
-        {
-            return ui;
-        }
-
-        if (value.TryGetValue<short>(out var s))
-        {
-            return s;
-        }
-
-        if (value.TryGetValue<ushort>(out var us))
-        {
-            return us;
-        }
-
-        if (value.TryGetValue<byte>(out var b))
-        {
-            return b;
-        }
-
-        if (value.TryGetValue<sbyte>(out var sb))
-        {
-            return sb;
-        }
-
-        return 0;
-    }
-
-    private static string? GetStringValue(JsonValue value)
-    {
-        if (value.TryGetValue<JsonElement>(out var element))
-        {
-            return element.GetString();
-        }
-
-        if (value.TryGetValue<string>(out var s))
-        {
-            return s;
-        }
-
-        return value.ToString();
-    }
-
-    // ---- Query Evaluation ----
-
-    private static List<JsonNode?> EvaluateFilterQuery(FilterQuery query, JsonNode? currentNode, JsonNode? root)
+    private static List<TValue?> EvaluateFilterQuery<TValue>(
+        FilterQuery query,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
         var startNode = query.Kind is FilterQueryKind.Relative ? currentNode : root;
-        var nodes = new List<(JsonNode? Node, List<PathComponent> Path)>
+        var nodes = new List<(TValue? Node, List<PathComponent> Path)>
         {
             (startNode, []),
         };
 
         foreach (var segment in query.Segments)
         {
-            nodes = ApplySegment(segment, nodes, root, JsonPathEvaluationMode.Lax);
+            nodes = ApplySegment(segment, nodes, root, navigator, JsonPathEvaluationMode.Lax);
         }
 
-        var result = new List<JsonNode?>(nodes.Count);
+        var result = new List<TValue?>(nodes.Count);
         foreach (var (node, _) in nodes)
         {
             result.Add(node);
@@ -722,23 +844,24 @@ internal static class JsonPathEvaluator
         return result;
     }
 
-    private static List<JsonNode?> EvaluateSingularQuery(SingularQuery query, JsonNode? currentNode, JsonNode? root)
+    private static List<TValue?> EvaluateSingularQuery<TValue>(
+        SingularQuery query,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
         var node = query.IsRelative ? currentNode : root;
 
         foreach (var segment in query.Segments)
         {
-            if (node is null && segment.Kind is SingularQuerySegmentKind.Name)
-            {
-                return [];
-            }
-
             switch (segment.Kind)
             {
                 case SingularQuerySegmentKind.Name:
-                    if (node is JsonObject obj && obj.TryGetPropertyValue(segment.Name!, out var value))
+                    if (navigator.GetKind(node) is JsonPathNodeKind.Object
+                        && navigator.TryGetPropertyValue(node, segment.Name!, out var propertyValue))
                     {
-                        node = value;
+                        node = propertyValue;
                     }
                     else
                     {
@@ -746,13 +869,15 @@ internal static class JsonPathEvaluator
                     }
 
                     break;
+
                 case SingularQuerySegmentKind.Index:
-                    if (node is JsonArray array)
+                    if (navigator.GetKind(node) is JsonPathNodeKind.Array)
                     {
-                        var idx = NormalizeIndex(segment.Index, array.Count);
-                        if (idx >= 0 && idx < array.Count)
+                        var length = navigator.GetArrayLength(node);
+                        var index = NormalizeIndex(segment.Index, length);
+                        if (index >= 0 && index < length && navigator.TryGetElement(node, (int)index, out var elementValue))
                         {
-                            node = array[(int)idx];
+                            node = elementValue;
                         }
                         else
                         {
@@ -771,104 +896,138 @@ internal static class JsonPathEvaluator
         return [node];
     }
 
-    // ---- Built-in Functions ----
-
-    private static bool EvaluateFunctionAsLogical(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
+    private static bool EvaluateFunctionAsLogical<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
         if (func.ResultType is FunctionExpressionType.LogicalType)
         {
             return func.Name switch
             {
-                "match" => EvaluateMatchFunction(func, currentNode, root),
-                "search" => EvaluateSearchFunction(func, currentNode, root),
+                "match" => EvaluateMatchFunction(func, currentNode, root, navigator),
+                "search" => EvaluateSearchFunction(func, currentNode, root, navigator),
                 _ => false,
             };
         }
 
-        // NodesType → convert to logical (non-empty = true)
         if (func.ResultType is FunctionExpressionType.NodesType)
         {
-            var nodes = EvaluateFunctionAsNodes(func, currentNode, root);
+            var nodes = EvaluateFunctionAsNodes(func, currentNode, root, navigator);
             return nodes.Count > 0;
         }
 
         return false;
     }
 
-    private static ResolvedValue EvaluateFunction(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
+    private static ResolvedValue<TValue> EvaluateFunction<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
         return func.Name switch
         {
-            "length" => EvaluateLengthFunction(func, currentNode, root),
-            "count" => EvaluateCountFunction(func, currentNode, root),
-            "value" => EvaluateValueFunction(func, currentNode, root),
-            "match" => EvaluateMatchFunction(func, currentNode, root)
-                ? ResolvedValue.FromNode(JsonValue.Create(value: true))
-                : ResolvedValue.FromNode(JsonValue.Create(value: false)),
-            "search" => EvaluateSearchFunction(func, currentNode, root)
-                ? ResolvedValue.FromNode(JsonValue.Create(value: true))
-                : ResolvedValue.FromNode(JsonValue.Create(value: false)),
-            _ => ResolvedValue.FromNothing(),
+            "length" => EvaluateLengthFunction(func, currentNode, root, navigator),
+            "count" => EvaluateCountFunction(func, currentNode, root, navigator),
+            "value" => EvaluateValueFunction(func, currentNode, root, navigator),
+            "match" => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(EvaluateMatchFunction(func, currentNode, root, navigator))),
+            "search" => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(EvaluateSearchFunction(func, currentNode, root, navigator))),
+            _ => ResolvedValue<TValue>.FromNothing(),
         };
     }
 
-    private static List<JsonNode?> EvaluateFunctionAsNodes(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
+    private static List<TValue?> EvaluateFunctionAsNodes<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        // Currently no built-in functions return NodesType
         _ = func;
         _ = currentNode;
         _ = root;
+        _ = navigator;
         return [];
     }
 
-    private static ResolvedValue EvaluateLengthFunction(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
+    private static ResolvedValue<TValue> EvaluateLengthFunction<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        var argValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root);
+        var argValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
         if (argValue.IsNothing)
         {
-            return ResolvedValue.FromNothing();
+            return ResolvedValue<TValue>.FromNothing();
         }
 
-        var node = argValue.Node;
-        return node switch
+        if (argValue.Kind is ResolvedValueKind.Scalar)
         {
-            JsonArray array => ResolvedValue.FromNode(JsonValue.Create(array.Count)),
-            JsonObject obj => ResolvedValue.FromNode(JsonValue.Create(obj.Count)),
-            JsonValue val when val.GetValueKind() is JsonValueKind.String =>
-                ResolvedValue.FromNode(JsonValue.Create(CountUnicodeScalarValues(GetStringValue(val)!))),
-            _ => ResolvedValue.FromNothing(),
+            return argValue.Scalar.Kind is JsonPathNodeKind.String
+                ? ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(CountUnicodeScalarValues(argValue.Scalar.StringValue!)))
+                : ResolvedValue<TValue>.FromNothing();
+        }
+
+        return navigator.GetKind(argValue.Node) switch
+        {
+            JsonPathNodeKind.Array => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(navigator.GetArrayLength(argValue.Node))),
+            JsonPathNodeKind.Object => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(CountProperties(argValue.Node, navigator))),
+            JsonPathNodeKind.String when navigator.TryGetString(argValue.Node, out var value) =>
+                ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(CountUnicodeScalarValues(value!))),
+            _ => ResolvedValue<TValue>.FromNothing(),
         };
     }
 
-    private static ResolvedValue EvaluateCountFunction(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
+    private static ResolvedValue<TValue> EvaluateCountFunction<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root);
-        return ResolvedValue.FromNode(JsonValue.Create(nodes.Count));
+        var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator);
+        return ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(nodes.Count));
     }
 
-    private static ResolvedValue EvaluateValueFunction(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
+    private static ResolvedValue<TValue> EvaluateValueFunction<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root);
+        var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator);
         if (nodes.Count is 1)
         {
-            return ResolvedValue.FromNode(nodes[0]);
+            return ResolvedValue<TValue>.FromNode(nodes[0]);
         }
 
-        return ResolvedValue.FromNothing();
+        return ResolvedValue<TValue>.FromNothing();
     }
 
-    private static bool EvaluateMatchFunction(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
+    private static bool EvaluateMatchFunction<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        var strValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root);
-        var patternValue = ResolveFunctionArgumentAsValue(func.Arguments[1], currentNode, root);
+        var strValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
+        var patternValue = ResolveFunctionArgumentAsValue(func.Arguments[1], currentNode, root, navigator);
 
         if (strValue.IsNothing || patternValue.IsNothing)
         {
             return false;
         }
 
-        var str = GetStringFromNode(strValue.Node);
-        var pattern = GetStringFromNode(patternValue.Node);
+        var str = GetStringFromValue(strValue, navigator);
+        var pattern = GetStringFromValue(patternValue, navigator);
 
         if (str is null || pattern is null)
         {
@@ -877,7 +1036,6 @@ internal static class JsonPathEvaluator
 
         try
         {
-            // match() requires the ENTIRE string to match (anchored)
             var regex = ConvertIRegexpToRegex(pattern);
             var fullPattern = $"^(?:{regex})$";
             return Regex.IsMatch(str, fullPattern, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
@@ -888,18 +1046,23 @@ internal static class JsonPathEvaluator
         }
     }
 
-    private static bool EvaluateSearchFunction(FunctionCallExpression func, JsonNode? currentNode, JsonNode? root)
+    private static bool EvaluateSearchFunction<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
-        var strValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root);
-        var patternValue = ResolveFunctionArgumentAsValue(func.Arguments[1], currentNode, root);
+        var strValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
+        var patternValue = ResolveFunctionArgumentAsValue(func.Arguments[1], currentNode, root, navigator);
 
         if (strValue.IsNothing || patternValue.IsNothing)
         {
             return false;
         }
 
-        var str = GetStringFromNode(strValue.Node);
-        var pattern = GetStringFromNode(patternValue.Node);
+        var str = GetStringFromValue(strValue, navigator);
+        var pattern = GetStringFromValue(patternValue, navigator);
 
         if (str is null || pattern is null)
         {
@@ -908,7 +1071,6 @@ internal static class JsonPathEvaluator
 
         try
         {
-            // search() checks if any substring matches (unanchored)
             var regex = ConvertIRegexpToRegex(pattern);
             return Regex.IsMatch(str, regex, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(5));
         }
@@ -918,62 +1080,96 @@ internal static class JsonPathEvaluator
         }
     }
 
-    private static ResolvedValue ResolveFunctionArgumentAsValue(FunctionArgument arg, JsonNode? currentNode, JsonNode? root)
+    private static ResolvedValue<TValue> ResolveFunctionArgumentAsValue<TValue>(
+        FunctionArgument arg,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
         switch (arg.Kind)
         {
             case FunctionArgumentKind.Literal:
                 return arg.Value switch
                 {
-                    null => ResolvedValue.FromNode(node: null),
-                    true => ResolvedValue.FromNode(JsonValue.Create(value: true)),
-                    false => ResolvedValue.FromNode(JsonValue.Create(value: false)),
-                    string s => ResolvedValue.FromNode(JsonValue.Create(s)),
-                    double d => ResolvedValue.FromNode(JsonValue.Create(d)),
-                    _ => ResolvedValue.FromNothing(),
+                    null => ResolvedValue<TValue>.FromScalar(ScalarValue.Null()),
+                    true => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: true)),
+                    false => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: false)),
+                    string s => ResolvedValue<TValue>.FromScalar(ScalarValue.FromString(s)),
+                    double d => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(d)),
+                    _ => ResolvedValue<TValue>.FromNothing(),
                 };
 
             case FunctionArgumentKind.FilterQuery:
                 {
                     var query = (FilterQuery)arg.Value!;
-                    var nodes = EvaluateFilterQuery(query, currentNode, root);
+                    var nodes = EvaluateFilterQuery(query, currentNode, root, navigator);
                     if (nodes.Count is 1)
                     {
-                        return ResolvedValue.FromNode(nodes[0]);
+                        return ResolvedValue<TValue>.FromNode(nodes[0]);
                     }
 
-                    return ResolvedValue.FromNothing();
+                    return ResolvedValue<TValue>.FromNothing();
                 }
 
             case FunctionArgumentKind.FunctionCall:
                 {
                     var func = (FunctionCallExpression)arg.Value!;
-                    return EvaluateFunction(func, currentNode, root);
+                    return EvaluateFunction(func, currentNode, root, navigator);
                 }
 
             default:
-                return ResolvedValue.FromNothing();
+                return ResolvedValue<TValue>.FromNothing();
         }
     }
 
-    private static List<JsonNode?> ResolveFunctionArgumentAsNodes(FunctionArgument arg, JsonNode? currentNode, JsonNode? root)
+    private static List<TValue?> ResolveFunctionArgumentAsNodes<TValue>(
+        FunctionArgument arg,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+        where TValue : class
     {
         if (arg.Kind is FunctionArgumentKind.FilterQuery)
         {
             var query = (FilterQuery)arg.Value!;
-            return EvaluateFilterQuery(query, currentNode, root);
+            return EvaluateFilterQuery(query, currentNode, root, navigator);
         }
 
         if (arg.Kind is FunctionArgumentKind.FunctionCall)
         {
             var func = (FunctionCallExpression)arg.Value!;
-            return EvaluateFunctionAsNodes(func, currentNode, root);
+            return EvaluateFunctionAsNodes(func, currentNode, root, navigator);
         }
 
         return [];
     }
 
-    // ---- Helpers ----
+    private static string? GetStringFromValue<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator)
+        where TValue : class
+    {
+        if (value.Kind is ResolvedValueKind.Scalar)
+        {
+            return value.Scalar.Kind is JsonPathNodeKind.String ? value.Scalar.StringValue : null;
+        }
+
+        return navigator.GetKind(value.Node) is JsonPathNodeKind.String && navigator.TryGetString(value.Node, out var result)
+            ? result
+            : null;
+    }
+
+    private static int CountProperties<TValue>(TValue? value, JsonPathNavigator<TValue> navigator)
+        where TValue : class
+    {
+        var count = 0;
+        foreach (var property in navigator.GetProperties(value))
+        {
+            _ = property;
+            count++;
+        }
+
+        return count;
+    }
 
     private static long NormalizeIndex(long index, int length)
     {
@@ -995,16 +1191,6 @@ internal static class JsonPathEvaluator
         return length + value;
     }
 
-    private static string? GetStringFromNode(JsonNode? node)
-    {
-        if (node is JsonValue val && val.GetValueKind() is JsonValueKind.String)
-        {
-            return GetStringValue(val);
-        }
-
-        return null;
-    }
-
     private static int CountUnicodeScalarValues(string s)
     {
         var count = 0;
@@ -1013,20 +1199,13 @@ internal static class JsonPathEvaluator
             count++;
             if (char.IsHighSurrogate(s[i]) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1]))
             {
-                i++; // Skip the low surrogate
+                i++;
             }
         }
 
         return count;
     }
 
-    /// <summary>
-    /// Converts I-Regexp (RFC 9485) to .NET Regex pattern.
-    /// I-Regexp '.' matches any single Unicode code point except U+000A and U+000D.
-    /// .NET Regex '.' matches any char except '\n', so we need to:
-    /// 1. Exclude '\r' (which .NET '.' matches)
-    /// 2. Handle surrogate pairs as single code points
-    /// </summary>
     private static string ConvertIRegexpToRegex(string iregexp)
     {
         var sb = new StringBuilder(iregexp.Length * 2);
@@ -1038,7 +1217,6 @@ internal static class JsonPathEvaluator
 
             if (ch == '\\' && i + 1 < iregexp.Length)
             {
-                // Escaped character — pass through as-is
                 sb.Append(ch);
                 sb.Append(iregexp[i + 1]);
                 i++;
@@ -1061,8 +1239,6 @@ internal static class JsonPathEvaluator
 
             if (ch == '.' && !inCharClass)
             {
-                // I-Regexp dot: any Unicode code point except \n and \r
-                // Must handle surrogate pairs as single code points
                 sb.Append(@"(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\n\r])");
                 continue;
             }

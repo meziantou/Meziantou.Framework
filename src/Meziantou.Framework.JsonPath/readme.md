@@ -1,6 +1,6 @@
 # Meziantou.Framework.JsonPath
 
-An implementation of [JSONPath (RFC 9535)](https://datatracker.ietf.org/doc/html/rfc9535) for `System.Text.Json`.
+An implementation of [JSONPath (RFC 9535)](https://datatracker.ietf.org/doc/html/rfc9535) for `System.Text.Json` and custom object models.
 
 ## Usage
 
@@ -38,6 +38,23 @@ var laxValue = path.EvaluateValue(doc, JsonPathEvaluationMode.Lax); // null
 
 var strictValue = path.EvaluateValue(doc, JsonPathEvaluationMode.Strict); // throws JsonPathEvaluationException
 ```
+
+## Custom object models
+
+Use `JsonPathNavigator<TValue>` to evaluate JSONPath expressions against a custom tree without converting it to `JsonNode`.
+
+```csharp
+var path = JsonPath.Parse("$.items[?@.enabled == true]");
+var result = path.Evaluate(root: myRoot, navigator: MyNodeNavigator.Instance);
+
+foreach (var match in result)
+{
+    MyNode? node = match.Value;
+    Console.WriteLine(match.Path);
+}
+```
+
+Navigator implementations expose JSON-like semantics for the custom node type. A `null` node represents JSON `null`; a `false` return value from `TryGetPropertyValue` or `TryGetElement` means the member or element is missing. Arrays are zero-based, and object property order follows the navigator's `GetProperties` enumeration order.
 
 ## Supported Features
 

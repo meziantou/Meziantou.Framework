@@ -103,8 +103,9 @@ internal static class PublicApiModelReader
     private static PublicApiTypeModel BuildTypeModel(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
     {
         var namespaceName = typeDefinition.Namespace.IsNil ? string.Empty : metadataReader.GetString(typeDefinition.Namespace);
-        var name = RemoveGenericArity(metadataReader.GetString(typeDefinition.Name));
-        var qualifiedName = string.IsNullOrEmpty(namespaceName) ? name : namespaceName + "." + name;
+        var metadataName = metadataReader.GetString(typeDefinition.Name);
+        var name = RemoveGenericArity(metadataName);
+        var qualifiedName = string.IsNullOrEmpty(namespaceName) ? metadataName : namespaceName + "." + metadataName;
         var source = BuildTypeSource(metadataReader, typeDefinitionHandle, typeDefinition, name);
         return new PublicApiTypeModel(namespaceName, name, qualifiedName, source);
     }

@@ -1113,11 +1113,11 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         await using var directory = TemporaryDirectory.Create();
         var repositoryRoot = GetRepositoryRoot();
         var projectPath = repositoryRoot / "src" / "Meziantou.Framework.InlineSnapshotTesting" / "Meziantou.Framework.InlineSnapshotTesting.csproj";
-        var propsPath = repositoryRoot / "src" / "Meziantou.Framework.InlineSnapshotTesting" / "build" / "Meziantou.Framework.InlineSnapshotTesting.props";
+        var targetsPath = repositoryRoot / "src" / "Meziantou.Framework.InlineSnapshotTesting" / "build" / "Meziantou.Framework.InlineSnapshotTesting.targets";
 
         CreateTextFile("Project.csproj", $$"""
             <Project Sdk="Microsoft.NET.Sdk">
-              <Import Project="{{propsPath}}" />
+              <Import Project="{{targetsPath}}" />
               <PropertyGroup>
                 <TargetFramework>{{TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <DeterministicSourcePaths>true</DeterministicSourcePaths>
@@ -1319,8 +1319,8 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var propsPath = Path.Combine(directory.FullName, "src", "Meziantou.Framework.InlineSnapshotTesting", "build", "Meziantou.Framework.InlineSnapshotTesting.props");
-            if (File.Exists(propsPath))
+            var targetsPath = Path.Combine(directory.FullName, "src", "Meziantou.Framework.InlineSnapshotTesting", "build", "Meziantou.Framework.InlineSnapshotTesting.targets");
+            if (File.Exists(targetsPath))
                 return FullPath.FromPath(directory.FullName);
 
             directory = directory.Parent;

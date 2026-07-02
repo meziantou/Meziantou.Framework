@@ -1,11 +1,23 @@
 <Project>
+  <PropertyGroup Condition="'$(_MeziantouInlineSnapshotTestingTargetsImported)' != 'true'">
+    <_MeziantouSharedSourceRootTargetsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', '..', 'Meziantou.Framework.SnapshotTesting', 'common', 'Meziantou.Framework.SourceRootRegistration.targets'))</_MeziantouSharedSourceRootTargetsPath>
+    <_MeziantouSourceRootGeneratedFileName>InlineSnapshotTestingSourceRoot.g.cs</_MeziantouSourceRootGeneratedFileName>
+    <_MeziantouSourceRootRegistrationMethod>global::Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.RegisterSourceRootMapping</_MeziantouSourceRootRegistrationMethod>
+    <_MeziantouSourceRootAssemblyMetadataName>InlineSnapshotTestingSourceRootMappings</_MeziantouSourceRootAssemblyMetadataName>
+    <_MeziantouSourceRootInitializerClassName>InlineSnapshotTestingSourceRootInitializer</_MeziantouSourceRootInitializerClassName>
+  </PropertyGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets"
-          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
+          Condition="'$(_MeziantouInlineSnapshotTestingTargetsImported)' != 'true' and Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
   <Import Project="$(_MeziantouSharedSourceRootTargetsPath)"
-          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSharedSourceRootTargetsPath)')" />
+          Condition="'$(_MeziantouInlineSnapshotTestingTargetsImported)' != 'true' and !Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSharedSourceRootTargetsPath)')" />
 
   <Target Name="GenerateInlineSnapshotTestingSourceRoots"
           DependsOnTargets="InitializeSourceRootMappedPaths;_MeziantouGenerateSourceRootsCore"
           BeforeTargets="CoreCompile"
           Condition="'$(InlineSnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'" />
+
+  <PropertyGroup>
+    <_MeziantouInlineSnapshotTestingTargetsImported>true</_MeziantouInlineSnapshotTestingTargetsImported>
+  </PropertyGroup>
 </Project>

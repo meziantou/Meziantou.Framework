@@ -1,0 +1,36 @@
+namespace Meziantou.Framework.Language.Json;
+
+/// <summary>Identifies the kind of JSON syntax node, token, or trivia.</summary>
+public enum JsonSyntaxKind
+{
+    None,
+    JsonDocument,
+    JsonObject,
+    JsonMember,
+    JsonArray,
+    JsonArrayElement,
+    JsonString,
+    JsonNumber,
+    JsonTrueLiteral,
+    JsonFalseLiteral,
+    JsonNullLiteral,
+    JsonSkippedText,
+    OpenBraceToken,
+    CloseBraceToken,
+    OpenBracketToken,
+    CloseBracketToken,
+    ColonToken,
+    CommaToken,
+    StringToken,
+    NumberToken,
+    TrueKeyword,
+    FalseKeyword,
+    NullKeyword,
+    BadToken,
+    EndOfFileToken,
+    WhitespaceTrivia,
+    EndOfLineTrivia,
+    SingleLineCommentTrivia,
+    MultiLineCommentTrivia,
+    SkippedTextTrivia,
+}

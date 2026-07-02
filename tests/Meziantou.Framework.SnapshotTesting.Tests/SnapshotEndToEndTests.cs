@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Buffers.Binary;
 using System.Globalization;
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using TestUtilities;
 
@@ -59,6 +61,28 @@ public sealed class SnapshotEndToEndTests
                 }
             }
             """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_EmbedsGeneratedSourceRootFileInBinlog()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact]
+                public void SampleTest()
+                {
+                    Snapshot.Validate("sample", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            assertGeneratedSourceRootFileIsEmbeddedInBinlog: true);
 
         AssertSnapshotContent(snapshotFiles,
         [
@@ -1126,7 +1150,8 @@ public sealed class SnapshotEndToEndTests
         IReadOnlyList<SnapshotFile>? existingFiles = null,
         string? testFilter = null,
         string? directoryBuildPropsContent = null,
-        int buildRetryCount = 0)
+        int buildRetryCount = 0,
+        bool assertGeneratedSourceRootFileIsEmbeddedInBinlog = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(buildRetryCount);
         await using var directory = TemporaryDirectory.Create();
@@ -1142,6 +1167,7 @@ public sealed class SnapshotEndToEndTests
                 <TargetFramework>{{targetFramework ?? TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <Nullable>disable</Nullable>
                 <IsPackable>false</IsPackable>
+                {{(assertGeneratedSourceRootFileIsEmbeddedInBinlog ? "<DeterministicSourcePaths>true</DeterministicSourcePaths>" : "")}}
                 {{GetAdditionalProjectProperties(testFramework)}}
               </PropertyGroup>
               <ItemGroup>
@@ -1180,7 +1206,25 @@ public sealed class SnapshotEndToEndTests
         }
 
         await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, ["restore", "--disable-build-servers"], expectedExitCode: 0);
-        await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, ["build", "--no-restore", "--disable-build-servers"], expectedExitCode: 0);
+        var buildArguments = new List<string>
+        {
+            "build",
+            "--no-restore",
+            "--disable-build-servers",
+        };
+
+        var binlogPath = directory.GetFullPath("build.binlog");
+        if (assertGeneratedSourceRootFileIsEmbeddedInBinlog)
+        {
+            buildArguments.Add("/bl:" + binlogPath);
+        }
+
+        await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, buildArguments, expectedExitCode: 0);
+        if (assertGeneratedSourceRootFileIsEmbeddedInBinlog)
+        {
+            AssertBinlogContains(binlogPath, "SnapshotTestingSourceRoot.g.cs");
+        }
+
         await ExecuteDotNet(directory.FullPath, dotnetPath, GetDotNetTestArguments(testFramework, testFilter), expectedExitCode: expectFailure ? 1 : 0);
 
         return GetGeneratedSnapshotFiles(directory.FullPath);
@@ -1243,6 +1287,17 @@ public sealed class SnapshotEndToEndTests
             .OrderBy(path => path.RelativePath, StringComparer.Ordinal)
             .Select(file => new SnapshotFile(file.RelativePath, File.ReadAllBytes(file.AbsolutePath)))
             .ToArray();
+    }
+
+    private static void AssertBinlogContains(FullPath binlogPath, string value)
+    {
+        using var fileStream = File.OpenRead(binlogPath);
+        using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
+        using var memoryStream = new MemoryStream();
+        gzipStream.CopyTo(memoryStream);
+
+        var bytes = memoryStream.ToArray();
+        Assert.True(bytes.AsSpan().IndexOf(Encoding.UTF8.GetBytes(value)) >= 0, $"The binlog does not contain '{value}'.");
     }
 
     private static string GetGlobalUsings(SnapshotTestFramework testFramework)

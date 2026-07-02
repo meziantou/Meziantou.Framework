@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup Condition="'$(_MeziantouSnapshotTestingTargetsImported)' != 'true'">
+  <PropertyGroup>
     <_MeziantouSharedSourceRootTargetsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'common', 'Meziantou.Framework.SourceRootRegistration.targets'))</_MeziantouSharedSourceRootTargetsPath>
     <_MeziantouSourceRootGeneratedFileName>SnapshotTestingSourceRoot.g.cs</_MeziantouSourceRootGeneratedFileName>
     <_MeziantouSourceRootRegistrationMethod>global::Meziantou.Framework.SnapshotTesting.Snapshot.RegisterSourceRootMapping</_MeziantouSourceRootRegistrationMethod>

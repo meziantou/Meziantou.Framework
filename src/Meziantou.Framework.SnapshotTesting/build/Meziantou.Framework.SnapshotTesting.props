@@ -1,3 +1,0 @@
-<Project>
-  <Import Project="Meziantou.Framework.SnapshotTesting.targets" />
-</Project>

@@ -29,7 +29,7 @@
       <_MeziantouSourceRootFileLines Include="namespace $(_MeziantouSourceRootNamespace)%3B" />
       <_MeziantouSourceRootFileLines Include=" " />
       <_MeziantouSourceRootFileLines Include="[System.CodeDom.Compiler.GeneratedCode(%22Meziantou.Framework.SourceRootRegistration%22, %22%22)]" />
-      <_MeziantouSourceRootFileLines Include="internal static class $(_MeziantouSourceRootInitializerClassName)" />
+      <_MeziantouSourceRootFileLines Include="internal static partial class $(_MeziantouSourceRootInitializerClassName)" />
       <_MeziantouSourceRootFileLines Include="{" />
       <_MeziantouSourceRootFileLines Include="    [ModuleInitializer]" />
       <_MeziantouSourceRootFileLines Include="    internal static void Initialize()" />

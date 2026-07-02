@@ -4,7 +4,7 @@
     <PropertyGroup>
       <_MeziantouSourceRootFile>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(_MeziantouSourceRootGeneratedFileName)'))</_MeziantouSourceRootFile>
       <_MeziantouSourceRootNamespaceHash>$([MSBuild]::StableStringHash('$(MSBuildProjectFullPath)|$(_MeziantouSourceRootGeneratedFileName)|$(_MeziantouSourceRootAssemblyMetadataName)|$(_MeziantouSourceRootInitializerClassName)', 'SHA256'))</_MeziantouSourceRootNamespaceHash>
-      <_MeziantouSourceRootNamespace>Meziantou.Framework.SourceRootRegistration.$(_MeziantouSourceRootNamespaceHash)</_MeziantouSourceRootNamespace>
+      <_MeziantouSourceRootNamespace>Meziantou.Framework.SourceRootRegistration.N$(_MeziantouSourceRootNamespaceHash)</_MeziantouSourceRootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

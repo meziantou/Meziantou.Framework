@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Meziantou.Framework.Json;
 
@@ -24,6 +25,112 @@ public sealed class JsonPathEvaluateTests
         Assert.Single(result);
         Assert.Equal("hello", result[0].Value!.GetValue<string>());
         Assert.Equal("$['a']", result[0].Path);
+    }
+
+    [Fact]
+    public void Evaluate_JsonNode_CanEvaluateFromRoot()
+    {
+        var doc = JsonNode.Parse("""{"a": {"b": "hello"}}""");
+        var path = JsonPath.Parse("$.a.b");
+
+        var result = doc.Evaluate(path);
+        var value = doc.EvaluateValue(path);
+
+        Assert.Single(result);
+        Assert.Equal("$['a']['b']", result[0].Path);
+        Assert.Equal("hello", result[0].Value!.GetValue<string>());
+        Assert.Equal("hello", value!.GetValue<string>());
+        Assert.Throws<JsonPathEvaluationException>(() => doc.Evaluate(JsonPath.Parse("$.missing"), JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void Evaluate_JsonDocument_CanEvaluateFromRoot()
+    {
+        using var doc = JsonDocument.Parse("""{"a": ["x", "y"]}""");
+        var path = JsonPath.Parse("$.a[1]");
+
+        var result = doc.Evaluate(path);
+        var value = doc.EvaluateValue(path);
+
+        Assert.Single(result);
+        Assert.Equal("$['a'][1]", result[0].Path);
+        Assert.Equal("y", result[0].Value.GetString());
+        Assert.Equal("y", value?.GetString());
+    }
+
+    [Fact]
+    public void Evaluate_JsonElement_CanEvaluateFromPathAndRoot()
+    {
+        using var doc = JsonDocument.Parse("""{"a": [{"b": "x"}, {"b": "y"}]}""");
+        var root = doc.RootElement;
+        var path = JsonPath.Parse("$.a[1].b");
+
+        var pathResult = path.Evaluate(root);
+        var rootResult = root.Evaluate(path);
+        var pathValue = path.EvaluateValue(root);
+        var rootValue = root.EvaluateValue(path);
+
+        Assert.Single(pathResult);
+        Assert.Single(rootResult);
+        Assert.Equal("$['a'][1]['b']", pathResult[0].Path);
+        Assert.Equal("$['a'][1]['b']", rootResult[0].Path);
+        Assert.Equal("y", pathResult[0].Value.GetString());
+        Assert.Equal("y", rootResult[0].Value.GetString());
+        Assert.Equal("y", pathValue?.GetString());
+        Assert.Equal("y", rootValue?.GetString());
+        Assert.Throws<JsonPathEvaluationException>(() => root.Evaluate(JsonPath.Parse("$.missing"), JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void Evaluate_JsonElement_NullValueReturnsJsonNullElement()
+    {
+        using var doc = JsonDocument.Parse("""{"a": null}""");
+        var path = JsonPath.Parse("$.a");
+
+        var value = doc.RootElement.EvaluateValue(path);
+
+        Assert.True(value.HasValue);
+        Assert.Equal(JsonValueKind.Null, value.Value.ValueKind);
+    }
+
+    [Fact]
+    public void Evaluate_JsonElement_SelectorsFiltersAndFunctions()
+    {
+        using var doc = JsonDocument.Parse("""
+            {
+              "items": [
+                { "name": "foo", "price": 8, "tags": ["a", "b"] },
+                { "name": "bar", "price": 12, "tags": ["c"] },
+                { "name": "foobar", "price": 7, "tags": ["d"] }
+              ],
+              "metadata": { "title": "Catalog" }
+            }
+            """);
+
+        var root = doc.RootElement;
+
+        var wildcardResult = JsonPath.Parse("$.items[*].name").Evaluate(root);
+        Assert.Equal(3, wildcardResult.Count);
+        Assert.Equal("foo", wildcardResult[0].Value.GetString());
+        Assert.Equal("bar", wildcardResult[1].Value.GetString());
+        Assert.Equal("foobar", wildcardResult[2].Value.GetString());
+
+        var descendantValue = root.EvaluateValue(JsonPath.Parse("$..title"));
+        Assert.Equal("Catalog", descendantValue?.GetString());
+
+        var sliceResult = JsonPath.Parse("$.items[0:3:2].name").Evaluate(root);
+        Assert.Equal(2, sliceResult.Count);
+        Assert.Equal("foo", sliceResult[0].Value.GetString());
+        Assert.Equal("foobar", sliceResult[1].Value.GetString());
+
+        var filterResult = JsonPath.Parse("$.items[?@.price < 10].name").Evaluate(root);
+        Assert.Equal(2, filterResult.Count);
+        Assert.Equal("foo", filterResult[0].Value.GetString());
+        Assert.Equal("foobar", filterResult[1].Value.GetString());
+
+        var functionResult = JsonPath.Parse("$.items[?length(@.tags) > 1].name").Evaluate(root);
+        Assert.Single(functionResult);
+        Assert.Equal("foo", functionResult[0].Value.GetString());
     }
 
     [Fact]

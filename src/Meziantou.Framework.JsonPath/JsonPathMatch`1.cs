@@ -3,7 +3,6 @@ namespace Meziantou.Framework.Json;
 /// <summary>Represents a single value matched by a JSONPath evaluation.</summary>
 /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
 public readonly struct JsonPathMatch<TValue>
-    where TValue : class
 {
     internal JsonPathMatch(TValue? value, string path)
     {
@@ -12,7 +11,7 @@ public readonly struct JsonPathMatch<TValue>
     }
 
     /// <summary>
-    /// Gets the value of the matched node. May be <see langword="null"/> when the matched value is JSON <c>null</c>.
+    /// Gets the value of the matched node. May be <see langword="null"/> when the navigator represents JSON <c>null</c> as <see langword="null"/>.
     /// </summary>
     public TValue? Value { get; }
 

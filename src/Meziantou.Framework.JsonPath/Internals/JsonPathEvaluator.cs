@@ -28,7 +28,6 @@ internal static class JsonPathEvaluator
         TValue? root,
         JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode)
-        where TValue : class
     {
         var currentNodes = new List<(TValue? Node, List<PathComponent> Path)>
         {
@@ -55,7 +54,6 @@ internal static class JsonPathEvaluator
         TValue? root,
         JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode)
-        where TValue : class
     {
         var result = new List<(TValue? Node, List<PathComponent> Path)>();
 
@@ -83,7 +81,6 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
-        where TValue : class
     {
         foreach (var selector in selectors)
         {
@@ -99,7 +96,6 @@ internal static class JsonPathEvaluator
         JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result)
-        where TValue : class
     {
         VisitDescendants(node, path, selectors, root, navigator, mode, result);
     }
@@ -112,7 +108,6 @@ internal static class JsonPathEvaluator
         JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result)
-        where TValue : class
     {
         ApplyChildSegment(selectors, node, path, root, navigator, mode, result, strictFailure: false);
 
@@ -159,7 +154,6 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
-        where TValue : class
     {
         switch (selector)
         {
@@ -189,7 +183,6 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
-        where TValue : class
     {
         if (navigator.GetKind(node) is JsonPathNodeKind.Object)
         {
@@ -217,7 +210,6 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
-        where TValue : class
     {
         switch (navigator.GetKind(node))
         {
@@ -265,7 +257,6 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
-        where TValue : class
     {
         if (navigator.GetKind(node) is not JsonPathNodeKind.Array)
         {
@@ -296,7 +287,6 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
-        where TValue : class
     {
         if (navigator.GetKind(node) is not JsonPathNodeKind.Array)
         {
@@ -373,7 +363,6 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         List<(TValue? Node, List<PathComponent> Path)> result,
         bool strictFailure)
-        where TValue : class
     {
         switch (navigator.GetKind(node))
         {
@@ -434,7 +423,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         return expr switch
         {
@@ -455,7 +443,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var nodes = EvaluateFilterQuery(test.Query, currentNode, root, navigator);
         return nodes.Count > 0;
@@ -466,7 +453,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var left = ResolveComparable(comp.Left, currentNode, root, navigator);
         var right = ResolveComparable(comp.Right, currentNode, root, navigator);
@@ -491,7 +477,6 @@ internal static class JsonPathEvaluator
     }
 
     private readonly struct ResolvedValue<TValue>
-        where TValue : class
     {
         private ResolvedValue(TValue? node)
         {
@@ -503,7 +488,7 @@ internal static class JsonPathEvaluator
         private ResolvedValue(ScalarValue scalar)
         {
             Kind = ResolvedValueKind.Scalar;
-            Node = null;
+            Node = default;
             Scalar = scalar;
         }
 
@@ -554,7 +539,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         switch (comparable)
         {
@@ -592,7 +576,6 @@ internal static class JsonPathEvaluator
         ResolvedValue<TValue> left,
         ResolvedValue<TValue> right,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         if (left.IsNothing && right.IsNothing)
         {
@@ -626,7 +609,6 @@ internal static class JsonPathEvaluator
         ResolvedValue<TValue> left,
         ResolvedValue<TValue> right,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         if (left.IsNothing || right.IsNothing)
         {
@@ -664,7 +646,6 @@ internal static class JsonPathEvaluator
     }
 
     private static bool ScalarAndNodeEqual<TValue>(ScalarValue scalar, TValue? node, JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var kind = navigator.GetKind(node);
         if (scalar.Kind != kind)
@@ -683,7 +664,6 @@ internal static class JsonPathEvaluator
     }
 
     private static bool NodesEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var leftKind = navigator.GetKind(left);
         var rightKind = navigator.GetKind(right);
@@ -724,7 +704,6 @@ internal static class JsonPathEvaluator
     }
 
     private static bool ArraysEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var length = navigator.GetArrayLength(left);
         if (navigator.GetArrayLength(right) != length)
@@ -749,7 +728,6 @@ internal static class JsonPathEvaluator
     }
 
     private static bool ObjectsEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var leftCount = 0;
         foreach (var property in navigator.GetProperties(left))
@@ -770,7 +748,6 @@ internal static class JsonPathEvaluator
     }
 
     private static bool TryGetNumber<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out double result)
-        where TValue : class
     {
         if (value.Kind is ResolvedValueKind.Scalar)
         {
@@ -794,7 +771,6 @@ internal static class JsonPathEvaluator
     }
 
     private static bool TryGetString<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out string? result)
-        where TValue : class
     {
         if (value.Kind is ResolvedValueKind.Scalar)
         {
@@ -822,7 +798,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var startNode = query.Kind is FilterQueryKind.Relative ? currentNode : root;
         var nodes = new List<(TValue? Node, List<PathComponent> Path)>
@@ -849,7 +824,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var node = query.IsRelative ? currentNode : root;
 
@@ -901,7 +875,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         if (func.ResultType is FunctionExpressionType.LogicalType)
         {
@@ -927,7 +900,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         return func.Name switch
         {
@@ -945,7 +917,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         _ = func;
         _ = currentNode;
@@ -959,7 +930,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var argValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
         if (argValue.IsNothing)
@@ -989,7 +959,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator);
         return ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(nodes.Count));
@@ -1000,7 +969,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator);
         if (nodes.Count is 1)
@@ -1016,7 +984,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var strValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
         var patternValue = ResolveFunctionArgumentAsValue(func.Arguments[1], currentNode, root, navigator);
@@ -1051,7 +1018,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var strValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
         var patternValue = ResolveFunctionArgumentAsValue(func.Arguments[1], currentNode, root, navigator);
@@ -1085,7 +1051,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         switch (arg.Kind)
         {
@@ -1128,7 +1093,6 @@ internal static class JsonPathEvaluator
         TValue? currentNode,
         TValue? root,
         JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         if (arg.Kind is FunctionArgumentKind.FilterQuery)
         {
@@ -1146,7 +1110,6 @@ internal static class JsonPathEvaluator
     }
 
     private static string? GetStringFromValue<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         if (value.Kind is ResolvedValueKind.Scalar)
         {
@@ -1159,7 +1122,6 @@ internal static class JsonPathEvaluator
     }
 
     private static int CountProperties<TValue>(TValue? value, JsonPathNavigator<TValue> navigator)
-        where TValue : class
     {
         var count = 0;
         foreach (var property in navigator.GetProperties(value))

@@ -215,6 +215,28 @@ public sealed class JsonSyntaxTreeTests
     }
 
     [Fact]
+    public void EvaluateJsonPath_JsonSyntaxTree_CanEvaluateFromRoot()
+    {
+        var tree = CreateJsonPathSyntaxTree();
+        var path = JsonPath.Parse("$.items[1].name");
+
+        var treeResult = tree.Evaluate(path);
+        var nodeResult = tree.Root.Evaluate(path);
+        var treeValue = tree.EvaluateValue(path);
+        var nodeValue = tree.Root.EvaluateValue(path);
+
+        Assert.Single(treeResult);
+        Assert.Single(nodeResult);
+        Assert.Equal("$['items'][1]['name']", treeResult[0].Path);
+        Assert.Equal("$['items'][1]['name']", nodeResult[0].Path);
+        Assert.Equal("bar", Assert.IsType<JsonStringSyntax>(treeResult[0].Value).Value);
+        Assert.Equal("bar", Assert.IsType<JsonStringSyntax>(nodeResult[0].Value).Value);
+        Assert.Equal("bar", Assert.IsType<JsonStringSyntax>(treeValue).Value);
+        Assert.Equal("bar", Assert.IsType<JsonStringSyntax>(nodeValue).Value);
+        Assert.Throws<JsonPathEvaluationException>(() => tree.Evaluate(JsonPath.Parse("$.missing"), JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
     public void EvaluateJsonPath_JsonSyntaxNode_NormalizesDocumentRoot()
     {
         var tree = CreateJsonPathSyntaxTree();

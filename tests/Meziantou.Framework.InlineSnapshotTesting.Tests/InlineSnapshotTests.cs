@@ -1,5 +1,8 @@
 using System.Collections;
 using System.Diagnostics;
+using System.IO.Compression;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -1104,6 +1107,50 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             environmentVariables: new[] { new KeyValuePair<string, string>(key, value) });
     }
 
+    [Fact]
+    public async Task GeneratedSourceRootFile_IsEmbeddedInBinlog()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var repositoryRoot = GetRepositoryRoot();
+        var projectPath = repositoryRoot / "src" / "Meziantou.Framework.InlineSnapshotTesting" / "Meziantou.Framework.InlineSnapshotTesting.csproj";
+        var propsPath = repositoryRoot / "src" / "Meziantou.Framework.InlineSnapshotTesting" / "build" / "Meziantou.Framework.InlineSnapshotTesting.props";
+
+        CreateTextFile("Project.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <Import Project="{{propsPath}}" />
+              <PropertyGroup>
+                <TargetFramework>{{TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
+                <DeterministicSourcePaths>true</DeterministicSourcePaths>
+              </PropertyGroup>
+              <ItemGroup>
+                <ProjectReference Include="{{projectPath}}" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        CreateTextFile("Class1.cs", """
+            public static class Class1
+            {
+                public static int Value => 42;
+            }
+            """);
+
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        Assert.NotNull(dotnetPath);
+
+        var binlogPath = directory.GetFullPath("build.binlog");
+        await ExecuteDotNet(dotnetPath, directory.FullPath, ["build", "--disable-build-servers", "/bl:" + binlogPath], expectedExitCode: 0);
+
+        AssertBinlogContains(binlogPath, "InlineSnapshotTestingSourceRoot.g.cs");
+
+        FullPath CreateTextFile(string path, string content)
+        {
+            var fullPath = directory.GetFullPath(path);
+            File.WriteAllText(fullPath, content);
+            return fullPath;
+        }
+    }
+
     [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Not supported on .NET Framework")]
     [SuppressMessage("Performance", "CA1849:Call async methods when in an async method", Justification = "Not supported on .NET Framework")]
     private async Task AssertSnapshot([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string? expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>>? environmentVariables = null, string[]? preprocessorSymbols = null)
@@ -1258,6 +1305,91 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             if (expectedExitCode.HasValue)
             {
                 Assert.Equal(expectedExitCode.Value, process.ExitCode);
+            }
+        }
+    }
+
+    private static FullPath GetRepositoryRoot([CallerFilePath] string? filePath = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        var sourceFilePath = FullPath.FromPath(filePath);
+        if (File.Exists(sourceFilePath))
+            return sourceFilePath.Parent.Parent.Parent;
+
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var propsPath = Path.Combine(directory.FullName, "src", "Meziantou.Framework.InlineSnapshotTesting", "build", "Meziantou.Framework.InlineSnapshotTesting.props");
+            if (File.Exists(propsPath))
+                return FullPath.FromPath(directory.FullName);
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Cannot find the repository root.");
+    }
+
+    private static void AssertBinlogContains(FullPath binlogPath, string value)
+    {
+        using var fileStream = File.OpenRead(binlogPath);
+        using var gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
+        using var memoryStream = new MemoryStream();
+        gzipStream.CopyTo(memoryStream);
+
+        var bytes = memoryStream.ToArray();
+        Assert.True(bytes.AsSpan().IndexOf(Encoding.UTF8.GetBytes(value)) >= 0, $"The binlog does not contain '{value}'.");
+    }
+
+    private static async Task ExecuteDotNet(string dotnetPath, FullPath workingDirectory, IReadOnlyList<string> arguments, int expectedExitCode)
+    {
+        var psi = new ProcessStartInfo(dotnetPath)
+        {
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+
+        foreach (var argument in arguments)
+        {
+            psi.ArgumentList.Add(argument);
+        }
+
+        psi.EnvironmentVariables.Remove("CI");
+        foreach (var entry in psi.EnvironmentVariables.Cast<DictionaryEntry>().ToArray())
+        {
+            var key = (string)entry.Key;
+            if (key == "GITHUB_WORKSPACE")
+                continue;
+
+            if (key.StartsWith("GITHUB", StringComparison.Ordinal))
+            {
+                psi.EnvironmentVariables.Remove(key);
+            }
+        }
+
+        psi.EnvironmentVariables["DiffEngine_Disabled"] = "true";
+        psi.EnvironmentVariables["MSBUILDDISABLENODEREUSE"] = "1";
+        psi.EnvironmentVariables["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
+
+        using var process = Process.Start(psi);
+        Assert.NotNull(process);
+        var output = new StringBuilder();
+        process.OutputDataReceived += (_, e) => AppendLine(output, e.Data);
+        process.ErrorDataReceived += (_, e) => AppendLine(output, e.Data);
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        await process.WaitForExitAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(
+            expectedExitCode == process.ExitCode,
+            $"dotnet {string.Join(' ', arguments)} returned exit code {process.ExitCode} but {expectedExitCode} was expected.{Environment.NewLine}{output}");
+
+        static void AppendLine(StringBuilder builder, string? line)
+        {
+            lock (builder)
+            {
+                builder.AppendLine(line);
             }
         }
     }

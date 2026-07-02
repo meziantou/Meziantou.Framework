@@ -13,9 +13,7 @@
           Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.props') and Exists('$(_MeziantouSharedSourceRootPropsPath)')" />
 
   <Target Name="GenerateInlineSnapshotTestingSourceRoots"
-          DependsOnTargets="InitializeSourceRootMappedPaths"
+          DependsOnTargets="InitializeSourceRootMappedPaths;_MeziantouGenerateSourceRootsCore"
           BeforeTargets="CoreCompile"
-          Condition="'$(InlineSnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'">
-    <CallTarget Targets="_MeziantouGenerateSourceRootsCore" />
-  </Target>
+          Condition="'$(InlineSnapshotTestingGenerateSourceRoot)' != 'false' and '$(DeterministicSourcePaths)' == 'true'" />
 </Project>

@@ -14,9 +14,9 @@
     <None Include="build/**" Pack="true" PackagePath="build" />
     <None Include="buildTransitive/**" Pack="true" PackagePath="buildTransitive" />
     <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting" />
-    <None Include="common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="build/Meziantou.Framework.SourceRootRegistration.props" />
-    <None Include="common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SourceRootRegistration.props" />
-    <None Include="common/Meziantou.Framework.SourceRootRegistration.props" Pack="true" PackagePath="buildMultiTargeting/Meziantou.Framework.SourceRootRegistration.props" />
+    <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="build/Meziantou.Framework.SourceRootRegistration.targets" />
+    <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.SourceRootRegistration.targets" />
+    <None Include="common/Meziantou.Framework.SourceRootRegistration.targets" Pack="true" PackagePath="buildMultiTargeting/Meziantou.Framework.SourceRootRegistration.targets" />
   </ItemGroup>
 
   <ItemGroup>

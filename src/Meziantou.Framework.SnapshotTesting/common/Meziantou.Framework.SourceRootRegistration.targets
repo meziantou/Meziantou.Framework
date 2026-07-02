@@ -3,8 +3,8 @@
 
     <PropertyGroup>
       <_MeziantouSourceRootFile>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(_MeziantouSourceRootGeneratedFileName)'))</_MeziantouSourceRootFile>
-      <_MeziantouSourceRootNamespace Condition="'$(RootNamespace)' != ''">$(RootNamespace)</_MeziantouSourceRootNamespace>
-      <_MeziantouSourceRootNamespace Condition="'$(_MeziantouSourceRootNamespace)' == ''">$(MSBuildProjectName)</_MeziantouSourceRootNamespace>
+      <_MeziantouSourceRootNamespaceHash>$([MSBuild]::StableStringHash('$(MSBuildProjectFullPath)|$(_MeziantouSourceRootGeneratedFileName)|$(_MeziantouSourceRootAssemblyMetadataName)|$(_MeziantouSourceRootInitializerClassName)', 'SHA256'))</_MeziantouSourceRootNamespaceHash>
+      <_MeziantouSourceRootNamespace>Meziantou.Framework.SourceRootRegistration.$(_MeziantouSourceRootNamespaceHash)</_MeziantouSourceRootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,6 +21,7 @@
 
     <ItemGroup Condition="'@(_MeziantouSourceRootRegistrationLines)' != ''">
       <_MeziantouSourceRootFileLines Include="// &lt;auto-generated/&gt;" />
+      <_MeziantouSourceRootFileLines Include="#pragma warning disable" />
       <_MeziantouSourceRootFileLines Include="using System.Runtime.CompilerServices%3B" />
       <_MeziantouSourceRootFileLines Include=" " />
       <_MeziantouSourceRootFileLines Include="[assembly: System.Reflection.AssemblyMetadata(%22$(_MeziantouSourceRootAssemblyMetadataName)%22, %22generated%22)]" />

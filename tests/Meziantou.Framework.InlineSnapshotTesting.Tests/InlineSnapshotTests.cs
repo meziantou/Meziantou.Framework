@@ -1312,7 +1312,21 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     private static FullPath GetRepositoryRoot([CallerFilePath] string? filePath = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        return FullPath.FromPath(filePath).Parent.Parent.Parent;
+        var sourceFilePath = FullPath.FromPath(filePath);
+        if (File.Exists(sourceFilePath))
+            return sourceFilePath.Parent.Parent.Parent;
+
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var propsPath = Path.Combine(directory.FullName, "src", "Meziantou.Framework.InlineSnapshotTesting", "build", "Meziantou.Framework.InlineSnapshotTesting.props");
+            if (File.Exists(propsPath))
+                return FullPath.FromPath(directory.FullName);
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Cannot find the repository root.");
     }
 
     private static void AssertBinlogContains(FullPath binlogPath, string value)
@@ -1342,14 +1356,41 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         }
 
         psi.EnvironmentVariables.Remove("CI");
+        foreach (var entry in psi.EnvironmentVariables.Cast<DictionaryEntry>().ToArray())
+        {
+            var key = (string)entry.Key;
+            if (key == "GITHUB_WORKSPACE")
+                continue;
+
+            if (key.StartsWith("GITHUB", StringComparison.Ordinal))
+            {
+                psi.EnvironmentVariables.Remove(key);
+            }
+        }
+
         psi.EnvironmentVariables["DiffEngine_Disabled"] = "true";
         psi.EnvironmentVariables["MSBUILDDISABLENODEREUSE"] = "1";
         psi.EnvironmentVariables["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
 
         using var process = Process.Start(psi);
         Assert.NotNull(process);
+        var output = new StringBuilder();
+        process.OutputDataReceived += (_, e) => AppendLine(output, e.Data);
+        process.ErrorDataReceived += (_, e) => AppendLine(output, e.Data);
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         await process.WaitForExitAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(expectedExitCode, process.ExitCode);
+        Assert.True(
+            expectedExitCode == process.ExitCode,
+            $"dotnet {string.Join(' ', arguments)} returned exit code {process.ExitCode} but {expectedExitCode} was expected.{Environment.NewLine}{output}");
+
+        static void AppendLine(StringBuilder builder, string? line)
+        {
+            lock (builder)
+            {
+                builder.AppendLine(line);
+            }
+        }
     }
 }

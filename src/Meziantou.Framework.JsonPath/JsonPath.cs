@@ -64,6 +64,34 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
         return TryParse(expression, originalString: null, out result);
     }
 
+    /// <summary>Evaluates this JSONPath expression against a custom object model.</summary>
+    /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
+    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c>null</c>.</param>
+    /// <param name="navigator">The navigator used to inspect values.</param>
+    /// <returns>A <see cref="JsonPathResult{TValue}"/> containing all matched nodes.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="navigator"/> is <see langword="null"/>.</exception>
+    public JsonPathResult<TValue> Evaluate<TValue>(TValue? root, JsonPathNavigator<TValue> navigator)
+        where TValue : class
+    {
+        return Evaluate(root, navigator, JsonPathEvaluationMode.Lax);
+    }
+
+    /// <summary>Evaluates this JSONPath expression against a custom object model.</summary>
+    /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
+    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c>null</c>.</param>
+    /// <param name="navigator">The navigator used to inspect values.</param>
+    /// <param name="mode">The evaluation mode.</param>
+    /// <returns>A <see cref="JsonPathResult{TValue}"/> containing all matched nodes.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="navigator"/> is <see langword="null"/>.</exception>
+    /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
+    public JsonPathResult<TValue> Evaluate<TValue>(TValue? root, JsonPathNavigator<TValue> navigator, JsonPathEvaluationMode mode)
+        where TValue : class
+    {
+        ArgumentNullException.ThrowIfNull(navigator);
+
+        return JsonPathEvaluator.Evaluate(_ast, root, navigator, mode);
+    }
+
     /// <summary>Evaluates this JSONPath expression against a JSON value.</summary>
     /// <param name="root">The root JSON value to query. May be <see langword="null"/>.</param>
     /// <returns>A <see cref="JsonPathResult"/> containing all matched nodes.</returns>
@@ -105,6 +133,37 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
         }
 
         return JsonPathEvaluator.Evaluate(_ast, node, mode);
+    }
+
+    /// <summary>
+    /// Evaluates this JSONPath expression and returns the first matched custom value, or <see langword="null"/> when there is no match.
+    /// </summary>
+    /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
+    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c>null</c>.</param>
+    /// <param name="navigator">The navigator used to inspect values.</param>
+    /// <returns>The first matched value, or <see langword="null"/> when there is no match.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="navigator"/> is <see langword="null"/>.</exception>
+    public TValue? EvaluateValue<TValue>(TValue? root, JsonPathNavigator<TValue> navigator)
+        where TValue : class
+    {
+        return EvaluateValue(root, navigator, JsonPathEvaluationMode.Lax);
+    }
+
+    /// <summary>
+    /// Evaluates this JSONPath expression and returns the first matched custom value, or <see langword="null"/> when there is no match.
+    /// </summary>
+    /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
+    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c>null</c>.</param>
+    /// <param name="navigator">The navigator used to inspect values.</param>
+    /// <param name="mode">The evaluation mode.</param>
+    /// <returns>The first matched value, or <see langword="null"/> when there is no match.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="navigator"/> is <see langword="null"/>.</exception>
+    /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
+    public TValue? EvaluateValue<TValue>(TValue? root, JsonPathNavigator<TValue> navigator, JsonPathEvaluationMode mode)
+        where TValue : class
+    {
+        var result = Evaluate(root, navigator, mode);
+        return result.Count > 0 ? result[0].Value : null;
     }
 
     /// <summary>

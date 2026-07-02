@@ -2185,6 +2185,35 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task GenericClass_WithNonGenericTypeOfSameName()
+    {
+        await Validate("""
+            public class Sample
+            {
+                public int Value => 0;
+            }
+
+            public class Sample<T0>
+            {
+                public T0 Value => default;
+            }
+            """, """
+            #nullable enable
+
+            public class Sample
+            {
+                public int Value { get => throw null; }
+            }
+
+
+            public class Sample<T0>
+            {
+                public T0 Value { get => throw null; }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task GenericClass_ImplementsGenericInterface()
     {
         await Validate("""

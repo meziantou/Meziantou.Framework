@@ -43,7 +43,7 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
             {
                 context.ReportDependency(this, sdk.Name, sdkVersion, DependencyType.NuGet,
                     nameLocation: new NonUpdatableLocation(context),
-                    versionLocation: new JsonLocation(context, sdk.Value.GetPath()));
+                    versionLocation: new JsonLocation(context, JsonNodeDocument.GetPath(sdk.Value)));
             }
         }
     }
@@ -64,6 +64,6 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
 
         context.ReportDependency(this, name: null, version, DependencyType.DotNetSdk,
             nameLocation: null,
-            versionLocation: new JsonLocation(context, versionNode.GetPath()));
+            versionLocation: new JsonLocation(context, JsonNodeDocument.GetPath(versionNode)));
     }
 }

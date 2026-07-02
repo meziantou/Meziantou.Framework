@@ -1,6 +1,8 @@
+using System.Globalization;
+using System.Text;
 using Meziantou.Framework.DependencyScanning.Internals;
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using Meziantou.Framework.Language.Json;
+using JsonPathExpression = Meziantou.Framework.Json.JsonPath;
 
 namespace Meziantou.Framework.DependencyScanning;
 
@@ -36,40 +38,24 @@ internal sealed class JsonLocation : Location
         var stream = FileSystem.OpenReadWrite(FilePath);
         try
         {
-            var encoding = await StreamUtilities.GetEncodingAsync(stream, cancellationToken).ConfigureAwait(false);
-            stream.Seek(0, SeekOrigin.Begin);
-
             string text;
-            using (var textReader = StreamUtilities.CreateReader(stream, encoding))
+            Encoding encoding;
+            using (var textReader = await StreamUtilities.CreateReaderAsync(stream, cancellationToken).ConfigureAwait(false))
             {
                 text = await textReader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                encoding = textReader.CurrentEncoding;
             }
 
-            var root = JsonNodeDocument.ParseNode(text);
-            if (FindNodeByPath(root, JsonPath) is JsonValue token && token.TryGetValue<string>(out var tokenValue))
-            {
-                token.ReplaceWith(JsonValue.Create(UpdateTextValue(tokenValue, oldValue, newValue)));
+            var syntaxTree = JsonSyntaxTree.ParseText(text);
+            var updatedRoot = ReplaceValue(syntaxTree, oldValue, newValue);
+            var updatedContent = updatedRoot.ToFullString();
 
-                stream.SetLength(0);
+            stream.SetLength(0);
+            stream.Seek(0, SeekOrigin.Begin);
 
-                var textWriter = StreamUtilities.CreateWriter(stream, encoding);
-                try
-                {
-                    await textWriter.WriteAsync(root.ToJsonString(new JsonSerializerOptions
-                    {
-                        WriteIndented = true,
-                    })).ConfigureAwait(false);
-
-                }
-                finally
-                {
-                    await textWriter.DisposeAsync().ConfigureAwait(false);
-                }
-            }
-            else
-            {
-                throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
-            }
+            await using var textWriter = StreamUtilities.CreateWriter(stream, encoding);
+            await textWriter.WriteAsync(updatedContent.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await textWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -86,7 +72,7 @@ internal sealed class JsonLocation : Location
     {
         if (StartPosition < 0)
         {
-            if (oldValue is not null && currentValue != oldValue)
+            if (oldValue is not null && !string.Equals(currentValue, oldValue, StringComparison.Ordinal))
                 throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{currentValue}'. The file was probably modified since last scan.");
 
             return newValue;
@@ -118,7 +104,7 @@ internal sealed class JsonLocation : Location
             if (StartPosition < 0 || Length < 0)
                 return false;
 
-            if (StartPosition > sourceValue.Length || StartPosition + Length > sourceValue.Length)
+            if (StartPosition > sourceValue.Length || Length > sourceValue.Length - StartPosition)
                 return false;
 
             var slicedCurrentValue = sourceValue.AsSpan().Slice(StartPosition, Length);
@@ -130,28 +116,23 @@ internal sealed class JsonLocation : Location
         }
     }
 
-    private static JsonNode? FindNodeByPath(JsonNode root, string path)
+    private JsonDocumentSyntax ReplaceValue(JsonSyntaxTree syntaxTree, string? oldValue, string newValue)
     {
-        if (string.Equals(root.GetPath(), path, StringComparison.Ordinal))
-            return root;
+        if (!JsonPathExpression.TryParse(JsonPath, out var path))
+            throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 
-        if (root is JsonObject jsonObject)
-        {
-            foreach (var property in jsonObject)
-            {
-                if (property.Value is not null && FindNodeByPath(property.Value, path) is JsonNode node)
-                    return node;
-            }
-        }
-        else if (root is JsonArray jsonArray)
-        {
-            foreach (var item in jsonArray)
-            {
-                if (item is not null && FindNodeByPath(item, path) is JsonNode node)
-                    return node;
-            }
-        }
+        var node = path.EvaluateValue(syntaxTree);
+        if (node is not JsonStringSyntax stringNode)
+            throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 
-        return null;
+        var updatedValue = UpdateTextValue(stringNode.Value, oldValue, newValue);
+        if (string.Equals(updatedValue, stringNode.Value, StringComparison.Ordinal))
+            return syntaxTree.Root;
+
+        var updatedToken = SyntaxFactory.StringToken(updatedValue)
+            .WithLeadingTrivia(stringNode.StringToken.LeadingTrivia)
+            .WithTrailingTrivia(stringNode.StringToken.TrailingTrivia);
+
+        return syntaxTree.Root.ReplaceNode(stringNode, new JsonStringSyntax(updatedToken));
     }
 }

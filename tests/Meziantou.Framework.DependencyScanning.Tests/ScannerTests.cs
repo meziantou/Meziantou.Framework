@@ -544,7 +544,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
     "rollForward": "disable"
   },
   "msbuild-sdks": {
-    "My.Custom.Sdk": "3.1.400",
+    "My.Custom.Sdk" : "3.1.400",
     "My.Other.Sdk": "3.1.400"
   }
 }
@@ -1380,7 +1380,7 @@ jobs:
                 "dummy4",
                 "dummy5#2.0.0",
                 "dummy6",
-                "dummy7#2.0.0"
+                "dummy7#2.0.0",
               ],
               "packageRules": [
                 {

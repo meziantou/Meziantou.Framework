@@ -35,7 +35,7 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
                 if (dep.Value is not null && JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
                 {
                     version = stringVersion;
-                    versionPath = dep.Value.GetPath();
+                    versionPath = JsonNodeDocument.GetPath(dep.Value);
                 }
                 else if (dep.Value is JsonObject dependencyObject)
                 {
@@ -50,7 +50,7 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
                     }
 
                     version = objectVersion;
-                    versionPath = versionNode.GetPath();
+                    versionPath = JsonNodeDocument.GetPath(versionNode);
                 }
                 else
                 {

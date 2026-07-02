@@ -209,6 +209,51 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task JsonLocation_UpdateString_PreservesFormattingAndStringEscaping()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("package.json");
+        const string Original = """
+            {
+              // keep comments and spacing
+              "dependencies"  : {
+                "dummy":   "1.2.3",
+                "condition": "a && b",
+                "escaped": "a \u0026\u0026 b",
+              },
+            }
+            """;
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
+
+        var location = new JsonLocation(FileSystem.Instance, filePath, "$['dependencies']['dummy']", -1, -1);
+        await location.UpdateAsync("1.2.3", "2.0.0", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal(Original.Replace("\"1.2.3\"", "\"2.0.0\"", StringComparison.Ordinal), updatedContent);
+    }
+
+    [Fact]
+    public async Task JsonLocation_UpdateString_DoesNotEscapeAmpersands()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("package.json");
+        const string Original = """
+            {
+              "dependencies": {
+                "dummy": "1.2.3"
+              }
+            }
+            """;
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
+
+        var location = new JsonLocation(FileSystem.Instance, filePath, "$['dependencies']['dummy']", -1, -1);
+        await location.UpdateAsync("1.2.3", "a && b", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal(Original.Replace("\"1.2.3\"", "\"a && b\"", StringComparison.Ordinal), updatedContent);
+    }
+
+    [Fact]
     public async Task AssemblyVersionXmlLocation_UpdateAttribute_PreservesFormatting()
     {
         await using var directory = TemporaryDirectory.Create();

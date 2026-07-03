@@ -263,7 +263,6 @@ void RunUpdateTrimmableStep(FullPath rootPath)
     sb.Append($"  <PropertyGroup>{lf}");
     sb.Append($"    <OutputType>Exe</OutputType>{lf}");
     sb.Append($"    <TargetFramework>$(LatestTargetFramework)</TargetFramework>{lf}");
-    sb.Append($"    <ImplicitUsings>enable</ImplicitUsings>{lf}");
     sb.Append($"    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>{lf}");
     sb.Append(lf);
     sb.Append($"    <TrimmerSingleWarn>false</TrimmerSingleWarn>{lf}");

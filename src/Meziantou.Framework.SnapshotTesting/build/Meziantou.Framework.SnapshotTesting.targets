@@ -1,16 +1,16 @@
 <Project>
   <PropertyGroup>
-    <_MeziantouSharedSourceRootPropsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'common', 'Meziantou.Framework.SourceRootRegistration.props'))</_MeziantouSharedSourceRootPropsPath>
+    <_MeziantouSharedSourceRootTargetsPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'common', 'Meziantou.Framework.SourceRootRegistration.targets'))</_MeziantouSharedSourceRootTargetsPath>
     <_MeziantouSourceRootGeneratedFileName>SnapshotTestingSourceRoot.g.cs</_MeziantouSourceRootGeneratedFileName>
     <_MeziantouSourceRootRegistrationMethod>global::Meziantou.Framework.SnapshotTesting.Snapshot.RegisterSourceRootMapping</_MeziantouSourceRootRegistrationMethod>
     <_MeziantouSourceRootAssemblyMetadataName>SnapshotTestingSourceRootMappings</_MeziantouSourceRootAssemblyMetadataName>
     <_MeziantouSourceRootInitializerClassName>SnapshotTestingSourceRootInitializer</_MeziantouSourceRootInitializerClassName>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.props"
-          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.props')" />
-  <Import Project="$(_MeziantouSharedSourceRootPropsPath)"
-          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.props') and Exists('$(_MeziantouSharedSourceRootPropsPath)')" />
+  <Import Project="$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets')" />
+  <Import Project="$(_MeziantouSharedSourceRootTargetsPath)"
+          Condition="!Exists('$(MSBuildThisFileDirectory)Meziantou.Framework.SourceRootRegistration.targets') and Exists('$(_MeziantouSharedSourceRootTargetsPath)')" />
 
   <Target Name="GenerateSnapshotTestingSourceRoots"
           DependsOnTargets="InitializeSourceRootMappedPaths;_MeziantouGenerateSourceRootsCore"

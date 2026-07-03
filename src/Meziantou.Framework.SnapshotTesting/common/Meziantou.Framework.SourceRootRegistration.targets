@@ -3,8 +3,9 @@
 
     <PropertyGroup>
       <_MeziantouSourceRootFile>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(_MeziantouSourceRootGeneratedFileName)'))</_MeziantouSourceRootFile>
-      <_MeziantouSourceRootNamespace Condition="'$(RootNamespace)' != ''">$(RootNamespace)</_MeziantouSourceRootNamespace>
-      <_MeziantouSourceRootNamespace Condition="'$(_MeziantouSourceRootNamespace)' == ''">$(MSBuildProjectName)</_MeziantouSourceRootNamespace>
+      <_MeziantouSourceRootNamespaceHash>$([MSBuild]::StableStringHash('$(MSBuildProjectFullPath)|$(_MeziantouSourceRootGeneratedFileName)|$(_MeziantouSourceRootAssemblyMetadataName)|$(_MeziantouSourceRootInitializerClassName)', 'SHA256'))</_MeziantouSourceRootNamespaceHash>
+      <_MeziantouSourceRootNamespace>Meziantou.Framework.SourceRootRegistration.N$(_MeziantouSourceRootNamespaceHash)</_MeziantouSourceRootNamespace>
+      <_MeziantouSourceRootInitializerMethodName>Initialize$(_MeziantouSourceRootNamespaceHash)</_MeziantouSourceRootInitializerMethodName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,6 +22,7 @@
 
     <ItemGroup Condition="'@(_MeziantouSourceRootRegistrationLines)' != ''">
       <_MeziantouSourceRootFileLines Include="// &lt;auto-generated/&gt;" />
+      <_MeziantouSourceRootFileLines Include="#pragma warning disable" />
       <_MeziantouSourceRootFileLines Include="using System.Runtime.CompilerServices%3B" />
       <_MeziantouSourceRootFileLines Include=" " />
       <_MeziantouSourceRootFileLines Include="[assembly: System.Reflection.AssemblyMetadata(%22$(_MeziantouSourceRootAssemblyMetadataName)%22, %22generated%22)]" />
@@ -28,10 +30,10 @@
       <_MeziantouSourceRootFileLines Include="namespace $(_MeziantouSourceRootNamespace)%3B" />
       <_MeziantouSourceRootFileLines Include=" " />
       <_MeziantouSourceRootFileLines Include="[System.CodeDom.Compiler.GeneratedCode(%22Meziantou.Framework.SourceRootRegistration%22, %22%22)]" />
-      <_MeziantouSourceRootFileLines Include="internal static class $(_MeziantouSourceRootInitializerClassName)" />
+      <_MeziantouSourceRootFileLines Include="internal static partial class $(_MeziantouSourceRootInitializerClassName)" />
       <_MeziantouSourceRootFileLines Include="{" />
       <_MeziantouSourceRootFileLines Include="    [ModuleInitializer]" />
-      <_MeziantouSourceRootFileLines Include="    internal static void Initialize()" />
+      <_MeziantouSourceRootFileLines Include="    internal static void $(_MeziantouSourceRootInitializerMethodName)()" />
       <_MeziantouSourceRootFileLines Include="    {" />
       <_MeziantouSourceRootFileLines Include="@(_MeziantouSourceRootRegistrationLines)" />
       <_MeziantouSourceRootFileLines Include="    }" />

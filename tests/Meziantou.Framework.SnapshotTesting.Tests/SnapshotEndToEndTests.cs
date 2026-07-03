@@ -1159,10 +1159,10 @@ public sealed class SnapshotEndToEndTests
         Assert.NotNull(dotnetPath);
 
         var snapshotProjectPath = GetRepositoryRoot() / "src" / "Meziantou.Framework.SnapshotTesting" / "Meziantou.Framework.SnapshotTesting.csproj";
-        var snapshotPropsPath = GetRepositoryRoot() / "src" / "Meziantou.Framework.SnapshotTesting" / "build" / "Meziantou.Framework.SnapshotTesting.props";
+        var snapshotTargetsPath = GetRepositoryRoot() / "src" / "Meziantou.Framework.SnapshotTesting" / "build" / "Meziantou.Framework.SnapshotTesting.targets";
         CreateTextFile("Project.csproj", $$"""
             <Project Sdk="Microsoft.NET.Sdk">
-              <Import Project="{{snapshotPropsPath}}" />
+              <Import Project="{{snapshotTargetsPath}}" />
               <PropertyGroup>
                 <TargetFramework>{{targetFramework ?? TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <Nullable>disable</Nullable>

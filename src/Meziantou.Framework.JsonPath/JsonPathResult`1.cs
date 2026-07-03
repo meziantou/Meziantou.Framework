@@ -8,7 +8,6 @@ namespace Meziantou.Framework.Json;
 /// </summary>
 /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
 public sealed class JsonPathResult<TValue> : IReadOnlyList<JsonPathMatch<TValue>>
-    where TValue : class
 {
     internal static readonly JsonPathResult<TValue> Empty = new([]);
 

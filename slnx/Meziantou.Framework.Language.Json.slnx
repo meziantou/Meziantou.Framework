@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Language.Json.Tests/Meziantou.Framework.Language.Json.Tests.csproj" />
+  </Folder>
+</Solution>

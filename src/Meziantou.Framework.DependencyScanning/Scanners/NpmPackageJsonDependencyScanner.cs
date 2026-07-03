@@ -57,14 +57,14 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
             if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion))
             {
                 version = stringVersion;
-                valuePath = dep.Value.GetPath();
+                valuePath = JsonNodeDocument.GetPath(dep.Value);
             }
             else if (dep.Value is JsonObject dependencyObject)
             {
                 if (JsonNodeDocument.TryGetProperty(dependencyObject, "version", out var versionNode) && versionNode is not null && JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
                 {
                     version = objectVersion;
-                    valuePath = versionNode.GetPath();
+                    valuePath = JsonNodeDocument.GetPath(versionNode);
                 }
             }
             else

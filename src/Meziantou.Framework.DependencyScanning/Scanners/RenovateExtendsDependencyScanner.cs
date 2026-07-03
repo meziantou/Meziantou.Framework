@@ -72,7 +72,7 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
 
                 if (!string.IsNullOrEmpty(value))
                 {
-                    var itemPath = item.GetPath();
+                    var itemPath = JsonNodeDocument.GetPath(item);
 
                     // parse name#ref
                     var hashIndex = value.IndexOf('#', StringComparison.Ordinal);

@@ -54,6 +54,13 @@ namespace Meziantou.Framework.Globbing
         protected override string TransformEntry(ref System.IO.Enumeration.FileSystemEntry entry) => throw null;
     }
 
+    public abstract class GlobFileSystemEnumerator<T> : System.IO.Enumeration.FileSystemEnumerator<T>
+    {
+        protected GlobFileSystemEnumerator(Meziantou.Framework.Globbing.IGlobEvaluatable glob, string directory, System.IO.EnumerationOptions? options = null) { }
+        protected override bool ShouldRecurseIntoEntry(ref System.IO.Enumeration.FileSystemEntry entry) => throw null;
+        protected override bool ShouldIncludeEntry(ref System.IO.Enumeration.FileSystemEntry entry) => throw null;
+    }
+
     public enum GlobMode
     {
         Include = 0,

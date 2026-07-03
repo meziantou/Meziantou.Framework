@@ -518,6 +518,11 @@ namespace Meziantou.Framework
         public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
     }
 
+    public static class Range
+    {
+        public static Meziantou.Framework.Range<T> Create<T>(T from, T to) where T : System.IComparable<T> => throw null;
+    }
+
     public readonly struct Range<T> : System.IEquatable<Meziantou.Framework.Range<T>> where T : System.IComparable<T>
     {
         public T From { get => throw null; }
@@ -917,6 +922,36 @@ namespace Meziantou.Framework.Collections
         public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Create<T>(System.Collections.Immutable.ImmutableArray<T> values) where T : System.IEquatable<T> => throw null;
     }
 
+    [System.Diagnostics.DebuggerDisplay("Length = {Length}")]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableArray))]
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Collections.ImmutableEquatableArray), "Create")]
+    public sealed class ImmutableEquatableArray<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableArray<T>> where T : System.IEquatable<T>
+    {
+        public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Empty { get => throw null; }
+        public ref T this[int index] { get => throw null; }
+        public int Length { get => throw null; }
+        public bool Equals(Meziantou.Framework.Collections.ImmutableEquatableArray<T>? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public Enumerator<T> GetEnumerator() => throw null;
+        public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableArray<T>? left, Meziantou.Framework.Collections.ImmutableEquatableArray<T>? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableArray<T>? left, Meziantou.Framework.Collections.ImmutableEquatableArray<T>? right) => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        int System.Collections.IList.IndexOf(object? value) => throw null;
+        bool System.Collections.IList.Contains(object? value) => throw null;
+        int System.Collections.IList.Add(object? value) => throw null;
+        void System.Collections.IList.Clear() { }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
+        void System.Collections.IList.RemoveAt(int index) { }
+        public struct Enumerator<T> where T : System.IEquatable<T>
+        {
+            public ref T Current { get => throw null; }
+            public bool MoveNext() => throw null;
+        }
+    }
+
     public static class ImmutableEquatableDictionary
     {
         public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty<TKey, TValue>() where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
@@ -926,11 +961,55 @@ namespace Meziantou.Framework.Collections
         public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> ToImmutableEquatableDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.ValueTuple<TKey, TValue>> values) where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue> => throw null;
     }
 
+    [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableDictionary))]
+    public sealed class ImmutableEquatableDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>> where TKey : System.IEquatable<TKey> where TValue : System.IEquatable<TValue>
+    {
+        public static Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue> Empty { get => throw null; }
+        public int Count { get => throw null; }
+        public TValue this[TKey key] { get => throw null; }
+        public KeyCollection<TKey, TValue> Keys { get => throw null; }
+        public ValueCollection<TKey, TValue> Values { get => throw null; }
+        public bool ContainsKey(TKey key) => throw null;
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
+        public bool Equals(Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? left, Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? left, Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? right) => throw null;
+        public Enumerator<TKey, TValue> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() => throw null;
+        bool System.Collections.IDictionary.Contains(object key) => throw null;
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
+        void System.Collections.IDictionary.Remove(object key) { }
+        void System.Collections.IDictionary.Clear() { }
+    }
+
     public static class ImmutableEquatableSet
     {
         public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> ToImmutableEquatableSet<T>(this System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
         public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.ReadOnlySpan<T> values) where T : System.IEquatable<T> => throw null;
         public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Create<T>(System.Collections.Generic.IEnumerable<T> values) where T : System.IEquatable<T> => throw null;
+    }
+
+    [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
+    [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet))]
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet), "Create")]
+    public sealed class ImmutableEquatableSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableSet<T>> where T : System.IEquatable<T>
+    {
+        public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Empty { get => throw null; }
+        public int Count { get => throw null; }
+        public bool Contains(T item) => throw null;
+        public bool Equals(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? left, Meziantou.Framework.Collections.ImmutableEquatableSet<T>? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? left, Meziantou.Framework.Collections.ImmutableEquatableSet<T>? right) => throw null;
+        public Enumerator<T> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
     }
 
     public sealed class LimitList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable

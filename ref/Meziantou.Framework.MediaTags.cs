@@ -99,6 +99,16 @@ namespace Meziantou.Framework.MediaTags
         public Meziantou.Framework.MediaTags.MediaFormat? Format { get => throw null; set { } }
     }
 
+    public readonly struct MediaTagResult
+    {
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "Error")]
+        public bool IsSuccess { get => throw null; }
+        public Meziantou.Framework.MediaTags.MediaTagError? Error { get => throw null; }
+        public string? ErrorMessage { get => throw null; }
+        public static Meziantou.Framework.MediaTags.MediaTagResult Success() => throw null;
+        public static Meziantou.Framework.MediaTags.MediaTagResult Failure(Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
+    }
+
     public readonly struct MediaTagResult<T>
     {
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "Value")]

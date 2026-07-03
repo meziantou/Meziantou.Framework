@@ -4,6 +4,12 @@
 
 namespace Meziantou.Framework
 {
+    public interface IStronglyTypedId
+    {
+        string ValueAsString { get; }
+        System.Type UnderlyingType { get; }
+    }
+
     public interface IStronglyTypedId<T> : Meziantou.Framework.IStronglyTypedId
     {
         T Value { get; }

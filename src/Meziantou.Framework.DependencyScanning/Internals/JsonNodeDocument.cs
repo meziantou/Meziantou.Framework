@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -27,6 +28,34 @@ internal sealed class JsonNodeDocument
     public static JsonNode ParseNode(string text)
     {
         return JsonNode.Parse(text, nodeOptions: null, documentOptions: JsonDocumentOptions) ?? throw new JsonException("Expected a JSON value.");
+    }
+
+    public static string GetPath(JsonNode node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        var components = new List<string>();
+        var current = node;
+        while (current.Parent is { } parent)
+        {
+            switch (parent)
+            {
+                case JsonObject jsonObject:
+                    components.Add("[" + JsonSerializer.Serialize(GetPropertyName(jsonObject, current)) + "]");
+                    break;
+                case JsonArray jsonArray:
+                    components.Add("[" + GetElementIndex(jsonArray, current).ToString(CultureInfo.InvariantCulture) + "]");
+                    break;
+                default:
+                    throw new InvalidOperationException("Unexpected JSON node parent.");
+            }
+
+            current = parent;
+        }
+
+        components.Reverse();
+
+        return "$" + string.Concat(components);
     }
 
     public JsonObject? GetRootObject()
@@ -91,4 +120,25 @@ internal sealed class JsonNodeDocument
         return false;
     }
 
+    private static string GetPropertyName(JsonObject jsonObject, JsonNode node)
+    {
+        foreach (var property in jsonObject)
+        {
+            if (ReferenceEquals(property.Value, node))
+                return property.Key;
+        }
+
+        throw new InvalidOperationException("The JSON node was not found in its parent object.");
+    }
+
+    private static int GetElementIndex(JsonArray jsonArray, JsonNode node)
+    {
+        for (var index = 0; index < jsonArray.Count; index++)
+        {
+            if (ReferenceEquals(jsonArray[index], node))
+                return index;
+        }
+
+        throw new InvalidOperationException("The JSON node was not found in its parent array.");
+    }
 }

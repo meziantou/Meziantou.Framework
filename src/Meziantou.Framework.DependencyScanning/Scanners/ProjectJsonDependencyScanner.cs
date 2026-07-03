@@ -46,12 +46,12 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
                 if (JsonNodeDocument.TryGetString(dep.Value, out var stringVersion) && dep.Value is not null)
                 {
                     version = stringVersion;
-                    versionPath = dep.Value.GetPath();
+                    versionPath = JsonNodeDocument.GetPath(dep.Value);
                 }
                 else if (dep.Value is JsonObject dependencyObject && JsonNodeDocument.TryGetProperty(dependencyObject, "version", out var versionNode) && versionNode is not null && JsonNodeDocument.TryGetString(versionNode, out var objectVersion))
                 {
                     version = objectVersion;
-                    versionPath = versionNode.GetPath();
+                    versionPath = JsonNodeDocument.GetPath(versionNode);
                 }
                 else
                 {

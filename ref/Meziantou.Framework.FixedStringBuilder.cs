@@ -120,6 +120,14 @@ namespace Meziantou.Framework.FixedStringBuilder
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) => throw null;
     }
 
+    public interface IFixedString : System.IFormattable, System.ISpanFormattable
+    {
+        static int MaxLength { get; }
+        int Length { get; }
+        void Clear();
+        System.Span<char> GetUnsafeFullSpan();
+    }
+
     public interface IFixedString<T> : Meziantou.Framework.FixedStringBuilder.IFixedString, System.IEquatable<T>, System.IFormattable, System.ISpanFormattable where T : Meziantou.Framework.FixedStringBuilder.IFixedString<T>
     {
         static implicit operator T(string s);

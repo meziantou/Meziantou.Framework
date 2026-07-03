@@ -4,6 +4,14 @@
 
 namespace Meziantou.Framework
 {
+    public static class SensitiveData
+    {
+        public static Meziantou.Framework.SensitiveData<char> Create(string value) => throw null;
+        public static Meziantou.Framework.SensitiveData<T> Create<T>(T[] buffer) where T : struct => throw null;
+        public static Meziantou.Framework.SensitiveData<T> Create<T>(System.ReadOnlySpan<T> buffer) where T : struct => throw null;
+        public static string RevealToString(this Meziantou.Framework.SensitiveData<char> secret) => throw null;
+    }
+
     [System.ComponentModel.TypeConverter(typeof(Meziantou.Framework.SensitiveDataTypeConverter))]
     public sealed class SensitiveData<T> : System.IDisposable where T : struct
     {

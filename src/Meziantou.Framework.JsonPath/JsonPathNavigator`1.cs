@@ -3,10 +3,9 @@ namespace Meziantou.Framework.Json;
 /// <summary>Provides JSONPath navigation services for a custom object model.</summary>
 /// <typeparam name="TValue">The node type used by the custom object model.</typeparam>
 public abstract class JsonPathNavigator<TValue>
-    where TValue : class
 {
     /// <summary>Gets the JSON node kind represented by <paramref name="value"/>.</summary>
-    /// <param name="value">The value to inspect. A <see langword="null"/> value represents JSON <c>null</c>.</param>
+    /// <param name="value">The value to inspect. Navigators may use <see langword="null"/> or a model-specific value to represent JSON <c>null</c>.</param>
     /// <returns>The JSON node kind represented by <paramref name="value"/>.</returns>
     public abstract JsonPathNodeKind GetKind(TValue? value);
 

@@ -179,7 +179,7 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
             JsonNodeDocument.TryGetString(node, out var stringValue))
         {
             value = stringValue;
-            valuePath = node.GetPath();
+            valuePath = JsonNodeDocument.GetPath(node);
             return true;
         }
 

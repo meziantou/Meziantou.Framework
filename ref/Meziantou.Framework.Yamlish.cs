@@ -8,18 +8,26 @@ namespace Meziantou.Framework.Yamlish
     {
     }
 
-    public abstract class YamlishConverter<T> : Meziantou.Framework.Yamlish.YamlishConverter
+    public abstract class YamlishConverter
     {
-        public sealed override bool CanConvert(System.Type typeToConvert) => throw null;
-        public abstract T Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
-        public abstract Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(T value, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
-        public sealed override object? Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
-        public sealed override Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
+        public bool HandleNullValues { get => throw null; }
+        public abstract bool CanConvert(System.Type typeToConvert);
+        public abstract object? Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
+        public abstract Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
     }
 
     public abstract class YamlishConverterFactory : Meziantou.Framework.Yamlish.YamlishConverter
     {
         public abstract Meziantou.Framework.Yamlish.YamlishConverter? CreateConverter(System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
+        public sealed override object? Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
+        public sealed override Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
+    }
+
+    public abstract class YamlishConverter<T> : Meziantou.Framework.Yamlish.YamlishConverter
+    {
+        public sealed override bool CanConvert(System.Type typeToConvert) => throw null;
+        public abstract T Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
+        public abstract Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(T value, Meziantou.Framework.Yamlish.YamlishSerializerOptions options);
         public sealed override object? Read(Meziantou.Framework.Yamlish.Nodes.YamlishNode node, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
         public sealed override Meziantou.Framework.Yamlish.Nodes.YamlishNode Write(object value, System.Type typeToConvert, Meziantou.Framework.Yamlish.YamlishSerializerOptions options) => throw null;
     }

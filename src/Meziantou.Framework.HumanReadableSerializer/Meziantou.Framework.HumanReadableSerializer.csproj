@@ -3,8 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.HumanReadable</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <Description>One-way serializer to a human readable format</Description>
     <Version>3.0.5</Version>
   </PropertyGroup>

@@ -54,12 +54,12 @@ public static class ThrottleExtensions
         Task? task = null;
         var l = new object();
 <# if (i > 0) { #>
-        ValueTuple<#= GetTemplateString(i) #> args = default;
+        <#= GetTupleTypeString(i) #> args = <#= GetTupleDefaultValue(i) #>;
 <# } #>
         return (<#= GetTypedArgsString(i, "arg") #>) =>
         {
 <# if (i > 0) { #>
-            args = ValueTuple.Create(<#= GetArgsString(i, "arg") #>);
+            args = <#= GetTupleCreationExpression(i) #>;
 <# } #>
             if (task is not null)
                 return;
@@ -71,7 +71,7 @@ public static class ThrottleExtensions
 
                 task = Task.Delay(interval, timeProvider).ContinueWith(t =>
                 {
-                    action(<#= GetArgsString(i, "args.Item") #>);
+                    action(<#= GetTupleItemsString(i, "args") #>);
                     t.Dispose();
                     task = null;
                 }, TaskScheduler.Default);
@@ -79,30 +79,6 @@ public static class ThrottleExtensions
         };
     }
 
-<# } #>
-    private static class ValueTuple
-    {
-<# for (int i = 1; i < count; i++) { #>
-        public static ValueTuple<#= GetTemplateString(i) #> Create<#= GetTemplateString(i) #>(<#= GetTypedArgsString(i, "arg") #>)
-        {
-            return new ValueTuple<#= GetTemplateString(i) #>(<#= GetArgsString(i, "arg") #>);
-        }
-<# } #>
-    }
-<# for (int i = 1; i < count; i++) { #>
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
-    private readonly struct ValueTuple<#= GetTemplateString(i) #>
-    {
-<# for (var j = 0; j < i; j++) { #>
-        public readonly T<#= j #> Item<#= j #>;
-<# } #>
-        public ValueTuple(<#= GetTypedArgsString(i, "arg") #>)
-        {
-<# for (var j = 0; j < i; j++) { #>
-            Item<#= j #> = arg<#= j #>;
-<# } #>
-        }
-    }
 <# } #>
 }
 <#+
@@ -167,6 +143,54 @@ public static class ThrottleExtensions
 
             str += "T" + i + " " + name + i;
         }
+        return str;
+    }
+
+    static string GetTupleTypeString(int count)
+    {
+        return count switch
+        {
+            1 => "T0",
+            _ => "(" + GetTemplateString(count).Substring(1, GetTemplateString(count).Length - 2) + ")",
+        };
+    }
+
+    static string GetTupleCreationExpression(int count)
+    {
+        if (count == 1)
+            return "arg0";
+
+        return "(" + GetArgsString(count, "arg") + ")";
+    }
+
+    static string GetTupleDefaultValue(int count)
+    {
+        return count switch
+        {
+            1 => "default!",
+            _ => "default",
+        };
+    }
+
+    static string GetTupleItemsString(int count, string tupleName)
+    {
+        if (count == 0)
+            return "";
+
+        if (count == 1)
+            return tupleName;
+
+        var str = "";
+        for (var i = 1; i <= count; i++)
+        {
+            if (i > 1)
+            {
+                str += ", ";
+            }
+
+            str += tupleName + ".Item" + i;
+        }
+
         return str;
     }
 #>

@@ -11,553 +11,552 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+/// <summary>
+/// Provides extension methods to debounce <see cref="Action"/> delegates so that they are only invoked
+/// after a specified interval has elapsed without a new call.
+/// </summary>
+public static class DebounceExtensions
 {
     /// <summary>
-    /// Provides extension methods to debounce <see cref="Action"/> delegates so that they are only invoked
-    /// after a specified interval has elapsed without a new call.
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
     /// </summary>
-    public static class DebounceExtensions
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action Debounce(this Action action, TimeSpan interval)
     {
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action Debounce(this Action action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action Debounce(this Action action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return () =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action();
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0> Debounce<T0>(this Action<T0> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0> Debounce<T0>(this Action<T0> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1> Debounce<T0, T1>(this Action<T0, T1> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1> Debounce<T0, T1>(this Action<T0, T1> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0, arg1) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0, arg1);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2> Debounce<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2> Debounce<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0, arg1, arg2) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0, arg1, arg2);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0, arg1, arg2, arg3) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0, arg1, arg2, arg3);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0, arg1, arg2, arg3, arg4) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0, arg1, arg2, arg3, arg4);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0, arg1, arg2, arg3, arg4, arg5) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0, arg1, arg2, arg3, arg4, arg5);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0, arg1, arg2, arg3, arg4, arg5, arg6) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
-        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
-        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
-        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
-        /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval)
-        {
-            return Debounce(action, interval, TimeProvider.System);
-        }
-
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
-        /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
-        /// the timer is reset and only the most recent call is executed.
-        /// </summary>
-        /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
-        /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
-        /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
-        /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
-        /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-        /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-        /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
-        /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
-        /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
-        /// <param name="action">The action to debounce.</param>
-        /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
-
-            var last = 0;
-            return (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) =>
-            {
-                var current = Interlocked.Increment(ref last);
-                Task.Delay(interval, timeProvider).ContinueWith(task =>
-                {
-                    if (current == last)
-                    {
-                        action(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-                    }
-
-                    task.Dispose();
-                }, TaskScheduler.Default);
-            };
-        }
-
+        return Debounce(action, interval, TimeProvider.System);
     }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action Debounce(this Action action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return () =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action();
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0> Debounce<T0>(this Action<T0> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0> Debounce<T0>(this Action<T0> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1> Debounce<T0, T1>(this Action<T0, T1> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1> Debounce<T0, T1>(this Action<T0, T1> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0, arg1) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0, arg1);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2> Debounce<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2> Debounce<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0, arg1, arg2) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0, arg1, arg2);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0, arg1, arg2, arg3) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0, arg1, arg2, arg3);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0, arg1, arg2, arg3, arg4) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0, arg1, arg2, arg3, arg4);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0, arg1, arg2, arg3, arg4, arg5) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0, arg1, arg2, arg3, arg4, arg5);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0, arg1, arg2, arg3, arg4, arg5, arg6) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+    /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval)
+    {
+        return Debounce(action, interval, TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+    /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var last = 0;
+        return (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) =>
+        {
+            var current = Interlocked.Increment(ref last);
+            Task.Delay(interval, timeProvider).ContinueWith(task =>
+            {
+                if (current == last)
+                {
+                    action(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                }
+
+                task.Dispose();
+            }, TaskScheduler.Default);
+        };
+    }
+
 }

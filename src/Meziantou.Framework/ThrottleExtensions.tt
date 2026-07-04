@@ -13,97 +13,73 @@
 using System;
 using System.Threading.Tasks;
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+/// <summary>
+/// Provides extension methods to throttle <see cref="Action"/> delegates so that they are invoked at most
+/// once per specified interval, regardless of how many times the returned delegate is called.
+/// </summary>
+public static class ThrottleExtensions
 {
-    /// <summary>
-    /// Provides extension methods to throttle <see cref="Action"/> delegates so that they are invoked at most
-    /// once per specified interval, regardless of how many times the returned delegate is called.
-    /// </summary>
-    public static class ThrottleExtensions
-    {
 <# for (int i = 0; i < count; i++) { #>
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
-        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
-        /// an invocation is pending are ignored except for updating the arguments.
-        /// </summary>
-<#= GetTypeParamDocs(i) #>        /// <param name="action">The action to throttle.</param>
-        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
-        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-        public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
-        {
-            return Throttle(action, interval, TimeProvider.System);
-        }
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+<#= GetTypeParamDocs(i) #>    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
+    {
+        return Throttle(action, interval, TimeProvider.System);
+    }
 
-        /// <summary>
-        /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
-        /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
-        /// an invocation is pending are ignored except for updating the arguments.
-        /// </summary>
-<#= GetTypeParamDocs(i) #>        /// <param name="action">The action to throttle.</param>
-        /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
-        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
-        /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-        public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider)
-        {
-            ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(timeProvider);
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+<#= GetTypeParamDocs(i) #>    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
-            Task? task = null;
-            var l = new object();
+        Task? task = null;
+        var l = new object();
 <# if (i > 0) { #>
-            ValueTuple<#= GetTemplateString(i) #> args = default;
+        <#= GetTupleTypeString(i) #> args = <#= GetTupleDefaultValue(i) #>;
 <# } #>
-            return (<#= GetTypedArgsString(i, "arg") #>) =>
+        return (<#= GetTypedArgsString(i, "arg") #>) =>
+        {
+<# if (i > 0) { #>
+            args = <#= GetTupleCreationExpression(i) #>;
+<# } #>
+            if (task is not null)
+                return;
+
+            lock (l)
             {
-<# if (i > 0) { #>
-                args = ValueTuple.Create(<#= GetArgsString(i, "arg") #>);
-<# } #>
                 if (task is not null)
                     return;
 
-                lock (l)
+                task = Task.Delay(interval, timeProvider).ContinueWith(t =>
                 {
-                    if (task is not null)
-                        return;
-
-                    task = Task.Delay(interval, timeProvider).ContinueWith(t =>
-                    {
-                        action(<#= GetArgsString(i, "args.Item") #>);
-                        t.Dispose();
-                        task = null;
-                    }, TaskScheduler.Default);
-                }
-            };
-        }
-<# } #>
-        private static class ValueTuple
-        {
-<# for (int i = 1; i < count; i++) { #>
-            public static ValueTuple<#= GetTemplateString(i) #> Create<#= GetTemplateString(i) #>(<#= GetTypedArgsString(i, "arg") #>)
-            {
-                return new ValueTuple<#= GetTemplateString(i) #>(<#= GetArgsString(i, "arg") #>);
+                    action(<#= GetTupleItemsString(i, "args") #>);
+                    t.Dispose();
+                    task = null;
+                }, TaskScheduler.Default);
             }
-<# } #>
-        }
-<# for (int i = 1; i < count; i++) { #>
-        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
-        private readonly struct ValueTuple<#= GetTemplateString(i) #>
-        {
-<# for (var j = 0; j < i; j++) { #>
-            public readonly T<#= j #> Item<#= j #>;
-<# } #>
-            public ValueTuple(<#= GetTypedArgsString(i, "arg") #>)
-            {
-<# for (var j = 0; j < i; j++) { #>
-                Item<#= j #> = arg<#= j #>;
-<# } #>
-            }
-        }
-<# } #>
+        };
     }
+
+<# } #>
 }
 <#+
     static string GetTemplateString(int count)
@@ -129,7 +105,7 @@ namespace Meziantou.Framework
         var str = "";
         for (var i = 0; i < count; i++)
         {
-            str += "        /// <typeparam name=\"T" + i + "\">The type of the parameter " + i + " of the action.</typeparam>\r\n";
+            str += "    /// <typeparam name=\"T" + i + "\">The type of the parameter " + i + " of the action.</typeparam>\r\n";
         }
         return str;
     }
@@ -167,6 +143,54 @@ namespace Meziantou.Framework
 
             str += "T" + i + " " + name + i;
         }
+        return str;
+    }
+
+    static string GetTupleTypeString(int count)
+    {
+        return count switch
+        {
+            1 => "T0",
+            _ => "(" + GetTemplateString(count).Substring(1, GetTemplateString(count).Length - 2) + ")",
+        };
+    }
+
+    static string GetTupleCreationExpression(int count)
+    {
+        if (count == 1)
+            return "arg0";
+
+        return "(" + GetArgsString(count, "arg") + ")";
+    }
+
+    static string GetTupleDefaultValue(int count)
+    {
+        return count switch
+        {
+            1 => "default!",
+            _ => "default",
+        };
+    }
+
+    static string GetTupleItemsString(int count, string tupleName)
+    {
+        if (count == 0)
+            return "";
+
+        if (count == 1)
+            return tupleName;
+
+        var str = "";
+        for (var i = 1; i <= count; i++)
+        {
+            if (i > 1)
+            {
+                str += ", ";
+            }
+
+            str += tupleName + ".Item" + i;
+        }
+
         return str;
     }
 #>

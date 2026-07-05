@@ -14,10 +14,10 @@
     <None Include="build/**" Pack="true" PackagePath="build" />
     <None Include="buildTransitive/**" Pack="true" PackagePath="buildTransitive" />
     <None Include="buildMultiTargeting/**" Pack="true" PackagePath="buildMultiTargeting" />
-    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_$(MinimumTargetFramework)/Meziantou.Framework.FullPath.dll" Pack="true" PackagePath="tasks/$(MinimumTargetFramework)" Visible="false" />
-    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_$(MinimumTargetFramework)/Meziantou.Framework.PublicApiGenerator.dll" Pack="true" PackagePath="tasks/$(MinimumTargetFramework)" Visible="false" />
-    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_$(MinimumTargetFramework)/Meziantou.Framework.PublicApiGenerator.MSBuild.dll" Pack="true" PackagePath="tasks/$(MinimumTargetFramework)" Visible="false" />
-    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_$(MinimumTargetFramework)/Meziantou.Framework.PublicApiGenerator.MSBuild.deps.json" Pack="true" PackagePath="tasks/$(MinimumTargetFramework)" Visible="false" />
+    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_$(MinimumTargetFramework)/Meziantou.Framework.FullPath.dll" Pack="true" PackagePath="tasks/" Visible="false" />
+    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_$(MinimumTargetFramework)/Meziantou.Framework.PublicApiGenerator.dll" Pack="true" PackagePath="tasks/" Visible="false" />
+    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_$(MinimumTargetFramework)/Meziantou.Framework.PublicApiGenerator.MSBuild.dll" Pack="true" PackagePath="tasks/" Visible="false" />
+    <None Include="$(OutputPath)/../$(Configuration.ToLowerInvariant())_$(MinimumTargetFramework)/Meziantou.Framework.PublicApiGenerator.MSBuild.deps.json" Pack="true" PackagePath="tasks/" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

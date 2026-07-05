@@ -67,7 +67,6 @@ public static class DnsServerBuilderExtensions
             });
         }
 
-#if NET9_0_OR_GREATER
         // Register QUIC listener as hosted service
         if (options.QuicListeners.Count > 0)
         {
@@ -79,7 +78,6 @@ public static class DnsServerBuilderExtensions
                 return new DnsQuicListener(serverOptions, handlerHolder, logger);
             });
         }
-#endif
 
         return builder;
     }

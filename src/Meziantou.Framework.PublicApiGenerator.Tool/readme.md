@@ -12,7 +12,7 @@ dotnet tool install --global Meziantou.Framework.PublicApiGenerator.Tool
 
 ```bash
 Meziantou.Framework.PublicApiGenerator.Tool \
-  --input ./bin/Release/net8.0/MyLibrary.dll \
+  --input ./bin/Release/net10.0/MyLibrary.dll \
   --output ./public-api \
   --file-layout OneFilePerNamespace \
   --omit-auto-generated-comment
@@ -23,7 +23,7 @@ Multi-target example:
 ```bash
 Meziantou.Framework.PublicApiGenerator.Tool \
   --input netstandard2.0=./bin/Release/netstandard2.0/MyLibrary.dll \
-  --input net8.0=./bin/Release/net8.0/MyLibrary.dll \
+  --input net10.0=./bin/Release/net10.0/MyLibrary.dll \
   --output ./public-api \
   --omit-auto-generated-comment
 ```
@@ -36,7 +36,7 @@ When using `--file-layout SingleFile`, you can use `--output-file` to set an exp
 
 ```bash
 Meziantou.Framework.PublicApiGenerator.Tool \
-  --input ./bin/Release/net8.0/MyLibrary.dll \
+  --input ./bin/Release/net10.0/MyLibrary.dll \
   --output-file ./public-api/MyLibrary.PublicApi.cs \
   --file-layout SingleFile
 ```
@@ -45,7 +45,7 @@ Use `--verify-no-change` to check that generated files are up to date without wr
 
 ```bash
 Meziantou.Framework.PublicApiGenerator.Tool \
-  --input ./bin/Release/net8.0/MyLibrary.dll \
+  --input ./bin/Release/net10.0/MyLibrary.dll \
   --output-file ./public-api/MyLibrary.PublicApi.cs \
   --file-layout SingleFile \
   --verify-no-change

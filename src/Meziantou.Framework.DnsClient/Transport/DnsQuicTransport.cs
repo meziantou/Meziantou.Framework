@@ -1,4 +1,3 @@
-#if NET9_0_OR_GREATER
 using System.Buffers.Binary;
 using System.Net;
 using System.Net.Quic;
@@ -59,4 +58,3 @@ internal sealed class DnsQuicTransport : IDnsTransport
     {
     }
 }
-#endif

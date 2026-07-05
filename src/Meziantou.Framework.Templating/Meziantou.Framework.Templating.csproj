@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>3.0.4</Version>
+    <Version>4.0.0</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Template parser and evaluator. The template syntax is customizable. The code sections use C#.</Description>
   </PropertyGroup>

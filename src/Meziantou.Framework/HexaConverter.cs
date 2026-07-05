@@ -4,36 +4,28 @@ namespace Meziantou.Framework;
 public static class HexaConverter
 {
     /// <summary>Converts a byte array to its hexadecimal string representation using uppercase letters.</summary>
-#if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
-#endif
     public static string ToHexaString(this byte[] bytes)
     {
         return ToHexaString(bytes, default);
     }
 
     /// <summary>Converts a byte array to its hexadecimal string representation with the specified casing.</summary>
-#if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
-#endif
     public static string ToHexaString(this byte[] bytes, HexaOptions options)
     {
         return ToHexaString(bytes.AsSpan(), options);
     }
 
     /// <summary>Converts a span of bytes to its hexadecimal string representation using uppercase letters.</summary>
-#if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
-#endif
     public static string ToHexaString(this ReadOnlySpan<byte> bytes)
     {
         return ToHexaString(bytes, default);
     }
 
     /// <summary>Converts a span of bytes to its hexadecimal string representation with the specified casing.</summary>
-#if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
-#endif
     public static string ToHexaString(this ReadOnlySpan<byte> bytes, HexaOptions options)
     {
         if (bytes.Length is 0)
@@ -48,9 +40,7 @@ public static class HexaConverter
     }
 
     /// <summary>Parses a hexadecimal string into a byte array. Supports 0x or 0X prefix notation.</summary>
-#if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
-#endif
     [SuppressMessage("Usage", "MA0015:Specify the parameter name in ArgumentException")]
     public static byte[] ParseHexaString(string str)
     {
@@ -108,9 +98,7 @@ public static class HexaConverter
     }
 
     /// <summary>Attempts to parse a hexadecimal string into a byte array.</summary>
-#if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
-#endif
     public static bool TryParseHexaString(string? str, [NotNullWhen(returnValue: true)] out byte[]? result)
     {
         if (str is null)
@@ -123,9 +111,7 @@ public static class HexaConverter
     }
 
     /// <summary>Attempts to parse a hexadecimal character span into a byte array.</summary>
-#if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
-#endif
     public static bool TryParseHexaString(ReadOnlySpan<char> str, [NotNullWhen(returnValue: true)] out byte[]? result)
     {
         if (str.Length % 2 != 0)
@@ -175,9 +161,7 @@ public static class HexaConverter
     }
 
     /// <summary>Attempts to parse a hexadecimal string into a destination span of bytes.</summary>
-#if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
-#endif
     public static bool TryParseHexaString(string? str, Span<byte> bytes, out int writtenBytes)
     {
         if (str is null || str.Length % 2 != 0)

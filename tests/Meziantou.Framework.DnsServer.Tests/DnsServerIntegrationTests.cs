@@ -393,7 +393,6 @@ public sealed class DnsServerIntegrationTests
         }
     }
 
-#if NET9_0_OR_GREATER
     [Fact]
     public async Task AllProtocols_SingleServer_CanHandleUdpTcpDoTDoQAndDoH()
     {
@@ -491,7 +490,6 @@ public sealed class DnsServerIntegrationTests
         var quicRecord = Assert.IsType<DnsARecordData>(Assert.Single(quicResponse.Answers).Data);
         Assert.Equal(IPAddress.Parse("10.0.0.1"), quicRecord.Address);
     }
-#endif
 
     private static async Task<AllProtocolsServer> StartAllProtocolsServerAsync(X509Certificate2 certificate, bool includeQuic)
     {
@@ -647,10 +645,6 @@ public sealed class DnsServerIntegrationTests
 
         // Export and re-import to ensure the private key is available on all platforms
         var pfxBytes = cert.Export(X509ContentType.Pfx);
-#if NET9_0_OR_GREATER
         return X509CertificateLoader.LoadPkcs12(pfxBytes, password: null);
-#else
-        return new X509Certificate2(pfxBytes);
-#endif
     }
 }

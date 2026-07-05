@@ -35,7 +35,7 @@ var files = PublicApi.Generate(
     assemblySources:
     [
         "/path/to/MyLibrary.netstandard2.0.dll",
-        "/path/to/MyLibrary.net8.0.dll",
+        "/path/to/MyLibrary.net10.0.dll",
     ]);
 ```
 
@@ -48,7 +48,7 @@ var files = PublicApi.Generate(
     assemblySources:
     [
         new AssemblySource("/path/to/MyLibrary.netstandard2.0.dll", ".NETStandard,Version=v2.0"),
-        new AssemblySource("/path/to/MyLibrary.net8.0.dll", ".NETCoreApp,Version=v8.0"),
+        new AssemblySource("/path/to/MyLibrary.net10.0.dll", ".NETCoreApp,Version=v10.0"),
     ]);
 ```
 
@@ -70,7 +70,7 @@ public sealed class Sample
 Generated API:
 
 ```csharp
-// Target Frameworks: net8.0
+// Target Frameworks: net10.0
 #nullable enable
 
 namespace Demo

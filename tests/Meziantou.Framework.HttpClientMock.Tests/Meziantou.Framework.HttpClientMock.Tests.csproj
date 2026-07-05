@@ -15,13 +15,6 @@
     <ProjectReference Include="../../src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.28" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.17" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.9" />

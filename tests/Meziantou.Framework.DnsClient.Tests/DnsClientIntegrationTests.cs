@@ -484,7 +484,6 @@ public sealed class DnsClientIntegrationTests
         Assert.NotEmpty(response.Answers);
     }
 
-#if NET9_0_OR_GREATER
     [Fact]
     public async Task Query_DoQ()
     {
@@ -497,5 +496,4 @@ public sealed class DnsClientIntegrationTests
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.NotEmpty(response.Answers);
     }
-#endif
 }

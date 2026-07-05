@@ -73,11 +73,7 @@ internal static class PostgreSqlServerCertificateLoader
 
     private static X509Certificate2 LoadPfxCertificate(string path, string? password)
     {
-#if NET9_0_OR_GREATER
         return X509CertificateLoader.LoadPkcs12(File.ReadAllBytes(path), password);
-#else
-        return new X509Certificate2(path, password);
-#endif
     }
 
     private static X509Certificate2 LoadPemCertificate(string certificatePath, string privateKeyPath)
@@ -92,11 +88,7 @@ internal static class PostgreSqlServerCertificateLoader
         certificate.Dispose();
         try
         {
-#if NET9_0_OR_GREATER
             return X509CertificateLoader.LoadPkcs12(exportedCertificate, password: null, keyStorageFlags: X509KeyStorageFlags.UserKeySet);
-#else
-            return new X509Certificate2(exportedCertificate, (string?)null, X509KeyStorageFlags.UserKeySet);
-#endif
         }
         finally
         {

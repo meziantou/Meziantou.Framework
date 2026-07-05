@@ -486,10 +486,8 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <summary>Combines an array of path strings into a full path.</summary>
     public static FullPath Combine(params string[] paths) => FromPath(Path.Combine(paths));
 
-#if NET9_0_OR_GREATER
     /// <summary>Combines a span of path strings into a full path.</summary>
     public static FullPath Combine(params ReadOnlySpan<string> paths) => FromPath(Path.Combine(paths));
-#endif
 
     /// <summary>Combines a <see cref="FullPath"/> with a relative path.</summary>
     public static FullPath Combine(FullPath rootPath, string relativePath)
@@ -518,7 +516,6 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         return FromPath(Path.Combine(rootPath._value, Path.Combine(paths)));
     }
 
-#if NET9_0_OR_GREATER
     /// <summary>Combines a <see cref="FullPath"/> with a span of relative paths.</summary>
     public static FullPath Combine(FullPath rootPath, params ReadOnlySpan<string> paths)
     {
@@ -527,7 +524,6 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
         return FromPath(Path.Combine([rootPath._value, .. paths]));
     }
-#endif
 
     /// <summary>Combines a <see cref="FullPath"/> with three relative paths.</summary>
     public static FullPath Combine(FullPath rootPath, string path1, string path2, string path3)

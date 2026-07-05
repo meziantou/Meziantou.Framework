@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace Meziantou.Framework.ResxSourceGenerator;
 
 [Generator]
-public sealed class ResxGenerator : IIncrementalGenerator
+public sealed partial class ResxGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -136,7 +136,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         {
             get
             {
-                if (resourceMan is null) 
+                if (resourceMan is null)
                 {
                     resourceMan = new global::System.Resources.ResourceManager(""" + resourceName + @""", typeof(" + className + @").Assembly);
                 }
@@ -164,7 +164,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
             return obj;
         }
-        
+
         public static object? GetObject(global::System.Globalization.CultureInfo? culture, string name)
         {
             return GetObject(culture: culture, name: name, defaultValue: null);
@@ -215,13 +215,13 @@ public sealed class ResxGenerator : IIncrementalGenerator
                 return str;
             }
         }
-        
+
         public static string? GetString(string name, params object?[]? args)
         {
             return GetString(culture: null, name: name, args: args);
         }
 
-        " + AppendNotNullIfNotNull("defaultValue") + @"        
+        " + AppendNotNullIfNotNull("defaultValue") + @"
         public static string? GetString(string name, string? defaultValue)
         {
             return GetStringWithDefault(culture: null, name: name, defaultValue: defaultValue, args: null);
@@ -231,7 +231,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         {
             return GetStringWithDefault(culture: null, name: name, defaultValue: null, args: null);
         }
-        
+
         " + AppendNotNullIfNotNull("defaultValue") + @"
         public static string? GetStringWithDefault(global::System.Globalization.CultureInfo? culture, string name, string? defaultValue)
         {

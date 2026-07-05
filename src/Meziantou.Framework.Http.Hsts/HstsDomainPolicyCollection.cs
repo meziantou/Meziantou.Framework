@@ -131,12 +131,8 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
             var dictionary = _policies[i];
             var lastSegments = host[enumerator.Current..];
 
-#if NET9_0_OR_GREATER
             var lookup = dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
             if (lookup.TryGetValue(lastSegments, out var hsts))
-#else
-            if (dictionary.TryGetValue(lastSegments.ToString(), out var hsts))
-#endif
             {
                 if (hsts.ExpiresAt < _timeProvider.GetUtcNow())
                 {

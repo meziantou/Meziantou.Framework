@@ -6,7 +6,7 @@
     <IsTrimmable>false</IsTrimmable>
 
     <ToolCommandName>meziantou.html</ToolCommandName>
-    <Version>1.0.32</Version>
+    <Version>2.0.0</Version>
     <Description>CLI to edit HTML files</Description>
   </PropertyGroup>
 

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Detect known LLM and agentic execution contexts</Description>
   </PropertyGroup>

@@ -279,12 +279,8 @@ public sealed class DnsClient : IDisposable
     [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance")]
     private static IDnsTransport CreateQuicTransport(string server, DnsClientOptions options)
     {
-#if NET9_0_OR_GREATER
         var (host, endpoint) = ParseHostAndEndpoint(server, defaultPort: 853, options);
         return new DnsQuicTransport(host, endpoint);
-#else
-        throw new PlatformNotSupportedException("DNS over QUIC requires .NET 9.0 or later.");
-#endif
     }
 
     private static IPEndPoint ParseEndpoint(string server, int defaultPort, DnsClientOptions? options)

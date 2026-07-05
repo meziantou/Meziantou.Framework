@@ -1,6 +1,4 @@
-#if NET9_0_OR_GREATER
 #pragma warning disable MEZ_NET9 // Type or member is obsolete
-#endif
 using Meziantou.Framework.IO;
 
 namespace Meziantou.Framework.Tests.IO;

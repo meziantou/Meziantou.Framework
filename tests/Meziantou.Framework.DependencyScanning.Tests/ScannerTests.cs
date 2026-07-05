@@ -7,7 +7,7 @@ using Meziantou.Xunit;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 
-public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposable
+public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposable
 {
     private readonly TemporaryDirectory _directory = TemporaryDirectory.Create();
 
@@ -765,7 +765,7 @@ jobs:
         {
             FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
             DependencyType = DependencyType.DockerImage,
-            Regex = new Regex("image: (?<name>[a-z]+):(?<version>[0-9]+)", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)),
+            Regex = DockerImageWithVersionRegex(),
         }]);
         AssertContainDependency(result,
             (DependencyType.DockerImage, "node", "10", 2, 15));
@@ -795,7 +795,7 @@ jobs:
         {
             FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
             DependencyType = DependencyType.DockerImage,
-            Regex = new Regex("image: (?<name>[a-z]+)(:(?<version>[0-9]+))?", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)),
+            Regex = DockerImageWithOptionalVersionRegex(),
         }]);
         AssertContainDependency(result,
             (DependencyType.DockerImage, "node", null, 0, 0));
@@ -1514,4 +1514,10 @@ jobs:
     {
         _directory.Dispose();
     }
+
+    [GeneratedRegex("image: (?<name>[a-z]+):(?<version>[0-9]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10000)]
+    private static partial Regex DockerImageWithVersionRegex();
+
+    [GeneratedRegex("image: (?<name>[a-z]+)(:(?<version>[0-9]+))?", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10000)]
+    private static partial Regex DockerImageWithOptionalVersionRegex();
 }

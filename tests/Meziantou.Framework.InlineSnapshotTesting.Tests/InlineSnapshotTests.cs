@@ -14,7 +14,7 @@ using TestUtilities;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 
-public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
+public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
     public async Task WithSerializer()
@@ -675,7 +675,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     public void ScrubLinesMatching_Regex()
     {
         InlineSnapshot
-            .WithSettings(settings => settings.ScrubLinesMatching(new Regex("Line[2]", RegexOptions.None, TimeSpan.FromSeconds(10))))
+            .WithSettings(settings => settings.ScrubLinesMatching(Line2Regex()))
             .Validate("Line1\nLine2\nLine3", "Line1\nLine3");
     }
 
@@ -1393,4 +1393,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             }
         }
     }
+
+    [GeneratedRegex("Line[2]", RegexOptions.None, matchTimeoutMilliseconds: 10000)]
+    private static partial Regex Line2Regex();
 }

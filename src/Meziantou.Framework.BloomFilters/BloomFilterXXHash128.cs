@@ -2,9 +2,7 @@ using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-#if NET9_0_OR_GREATER
 using System.Runtime.Intrinsics.Arm;
-#endif
 using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.BloomFilters;
@@ -36,7 +34,6 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
 
         ref var valuesReference = ref MemoryMarshal.GetReference(values);
         var index = 0;
-#if NET9_0_OR_GREATER
         if (AdvSimd.Arm64.IsSupported)
         {
             while (index <= values.Length - Vector128<ulong>.Count)
@@ -61,7 +58,6 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
             }
         }
         else
-#endif
         if (Avx2.IsSupported)
         {
             while (index <= values.Length - Vector256<ulong>.Count)
@@ -98,7 +94,6 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
         return new(XxHash128.HashToUInt128(value));
     }
 
-#if NET9_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector128<ulong> MultiplyLow(Vector128<ulong> value, ulong multiplier)
     {
@@ -110,7 +105,6 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
         var productMiddle2 = AdvSimd.MultiplyWideningLower(upper, multiplierLower);
         return productLower + ((productMiddle1 + productMiddle2) << 32);
     }
-#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector256<ulong> MultiplyLow(Vector256<ulong> value, ulong multiplier)
@@ -125,7 +119,6 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
         return productLower + ((productMiddle1 + productMiddle2) << 32);
     }
 
-#if NET9_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Multiply64To128(Vector128<ulong> value, ulong multiplier, out Vector128<ulong> low, out Vector128<ulong> high)
     {
@@ -141,7 +134,6 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
         low = (productLower & mask) | (middle << 32);
         high = productUpper + (productMiddle1 >> 32) + (productMiddle2 >> 32) + (middle >> 32);
     }
-#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Multiply64To128(Vector256<ulong> value, ulong multiplier, out Vector256<ulong> low, out Vector256<ulong> high)
@@ -160,7 +152,6 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
         high = productUpper + (productMiddle1 >> 32) + (productMiddle2 >> 32) + (middle >> 32);
     }
 
-#if NET9_0_OR_GREATER
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Split(Vector128<ulong> value, out Vector64<uint> lower, out Vector64<uint> upper)
     {
@@ -168,5 +159,4 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
         lower = AdvSimd.Arm64.UnzipEven(words, words).GetLower();
         upper = AdvSimd.Arm64.UnzipOdd(words, words).GetLower();
     }
-#endif
 }

@@ -1,4 +1,3 @@
-#if NET9_0_OR_GREATER
 #pragma warning disable CA1416 // QUIC platform compatibility is validated at runtime via QuicListener.IsSupported
 using System.Buffers.Binary;
 using System.Net;
@@ -158,4 +157,3 @@ internal sealed class DnsQuicListener : BackgroundService
         }
     }
 }
-#endif

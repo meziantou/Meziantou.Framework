@@ -55,13 +55,8 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
             name = null;
         }
 
-#if NET9_0_OR_GREATER
         if (Cache.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(nameSpan, out var snapshotType))
             return snapshotType;
-#else
-        if (Cache.TryGetValue(name ?? nameSpan.ToString(), out var snapshotType))
-            return snapshotType;
-#endif
 
         return new SnapshotType(name ?? nameSpan.ToString());
     }

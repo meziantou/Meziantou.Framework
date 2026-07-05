@@ -95,7 +95,6 @@ public sealed class FullPathTests
         Assert.Equal(expected, actual);
     }
 
-#if NET9_0_OR_GREATER
     [Fact]
     public void CombinePath_ReadOnlySpan()
     {
@@ -103,7 +102,6 @@ public sealed class FullPathTests
         var expected = FullPath.Combine(FullPath.FromPath("test"), (ReadOnlySpan<string>)["a", "b"]);
         Assert.Equal(expected, actual);
     }
-#endif
 
     [Theory]
     [InlineData("a", "a")]

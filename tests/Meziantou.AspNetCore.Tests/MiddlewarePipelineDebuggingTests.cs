@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Meziantou.AspNetCore.Tests;
 
-public sealed class MiddlewarePipelineDebuggingTests
+public sealed partial class MiddlewarePipelineDebuggingTests
 {
     [Fact]
     public async Task MapMiddlewarePipelineDebugEndpoint_Development_ReturnsPipelineAndEndpoints()
@@ -139,8 +139,8 @@ public sealed class MiddlewarePipelineDebuggingTests
         {
             settings.ScrubLinesWithReplace(static line =>
             {
-                var scrubbed = Regex.Replace(line, @"Version=\d+\.\d+\.\d+\.\d+", "Version=*", RegexOptions.None, TimeSpan.FromSeconds(1));
-                scrubbed = Regex.Replace(scrubbed, @"PublicKeyToken=[0-9a-f]{16}", "PublicKeyToken=*", RegexOptions.None, TimeSpan.FromSeconds(1));
+                var scrubbed = AssemblyVersionRegex().Replace(line, "Version=*");
+                scrubbed = PublicKeyTokenRegex().Replace(scrubbed, "PublicKeyToken=*");
                 return scrubbed;
             });
         }).Validate(text, """
@@ -187,4 +187,10 @@ public sealed class MiddlewarePipelineDebuggingTests
         var exception = Assert.Throws<InvalidOperationException>(() => app.MapMiddlewarePipelineDebugEndpoint(developmentOnly: false));
         Assert.Contains(nameof(MiddlewarePipelineDebuggingServiceCollectionExtensions.AddMiddlewarePipelineDebugging), exception.Message);
     }
+
+    [GeneratedRegex(@"Version=\d+\.\d+\.\d+\.\d+", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex AssemblyVersionRegex();
+
+    [GeneratedRegex(@"PublicKeyToken=[0-9a-f]{16}", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex PublicKeyTokenRegex();
 }

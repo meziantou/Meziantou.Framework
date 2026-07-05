@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
-    <Version>2.0.13</Version>
+    <Version>3.0.0</Version>
     <Description>Generate optimized enum helper methods</Description>
 
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

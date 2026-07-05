@@ -2,14 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>3.0.5</Version>
+    <Version>4.0.0</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>HTML Template parser and evaluator. Provide a few syntax extensions to encode values or handle attached files for emails.</Description>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Text.Encodings.Web" Version="10.0.9" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />

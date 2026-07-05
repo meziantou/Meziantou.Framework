@@ -32,6 +32,9 @@ public sealed class NullWithValueTypeCodeFixProvider : CodeFixProvider
         if (assertType is null)
             return;
 
+        var unionAttributeType = semanticModel.Compilation.GetTypeByMetadataName(AssertionsAnalyzerHelpers.CSharpUnionAttributeMetadataName);
+        var unionInterfaceType = semanticModel.Compilation.GetTypeByMetadataName(AssertionsAnalyzerHelpers.CSharpUnionInterfaceMetadataName);
+
         foreach (var diagnostic in context.Diagnostics)
         {
             var invocationExpression = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true)
@@ -42,14 +45,20 @@ public sealed class NullWithValueTypeCodeFixProvider : CodeFixProvider
             if (!AssertionCodeFixHelpers.TryGetInvocationOperation(semanticModel, invocationExpression, context.CancellationToken, out var invocationOperation))
                 continue;
 
-            if (!AssertionMethodSelectionAnalyzerCommon.TryGetNullNotNullValueTypeMatch(invocationOperation, assertType, out var match) || invocationExpression.ArgumentList.Arguments.Count != 1)
+            if (!AssertionMethodSelectionAnalyzerCommon.TryGetNullNotNullValueTypeMatch(invocationOperation, assertType, unionAttributeType, unionInterfaceType, out var match) || invocationExpression.ArgumentList.Arguments.Count != 1)
                 continue;
 
-            context.RegisterCodeFix(CodeAction.Create(title: "Use Assert." + match.AssertionMethodName, createChangedDocument: ct => ApplyFixAsync(context.Document, invocationExpression, assertType, ct), equivalenceKey: GetType().FullName), diagnostic);
+            context.RegisterCodeFix(CodeAction.Create(title: "Use Assert." + match.AssertionMethodName, createChangedDocument: ct => ApplyFixAsync(context.Document, invocationExpression, assertType, unionAttributeType, unionInterfaceType, ct), equivalenceKey: GetType().FullName), diagnostic);
         }
     }
 
-    private static async Task<Document> ApplyFixAsync(Document document, InvocationExpressionSyntax invocationExpression, INamedTypeSymbol assertType, CancellationToken cancellationToken)
+    private static async Task<Document> ApplyFixAsync(
+        Document document,
+        InvocationExpressionSyntax invocationExpression,
+        INamedTypeSymbol assertType,
+        INamedTypeSymbol? unionAttributeType,
+        INamedTypeSymbol? unionInterfaceType,
+        CancellationToken cancellationToken)
     {
         var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
         if (root is null)
@@ -62,7 +71,7 @@ public sealed class NullWithValueTypeCodeFixProvider : CodeFixProvider
         if (!AssertionCodeFixHelpers.TryGetInvocationOperation(semanticModel, invocationExpression, cancellationToken, out var invocationOperation))
             return document;
 
-        if (!AssertionMethodSelectionAnalyzerCommon.TryGetNullNotNullValueTypeMatch(invocationOperation, assertType, out var match) || invocationExpression.ArgumentList.Arguments.Count != 1 || !AssertionCodeFixHelpers.TryGetExpressionSyntax(match.ActualOperation, out var actualValueExpression))
+        if (!AssertionMethodSelectionAnalyzerCommon.TryGetNullNotNullValueTypeMatch(invocationOperation, assertType, unionAttributeType, unionInterfaceType, out var match) || invocationExpression.ArgumentList.Arguments.Count != 1 || !AssertionCodeFixHelpers.TryGetExpressionSyntax(match.ActualOperation, out var actualValueExpression))
             return document;
 
         var typeName = match.ValueType.ToMinimalDisplayString(semanticModel, invocationExpression.SpanStart);

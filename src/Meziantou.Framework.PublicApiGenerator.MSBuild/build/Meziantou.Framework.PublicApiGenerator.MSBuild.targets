@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <_PublicApiGeneratorTaskAssemblyPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'tasks', 'net10.0', 'Meziantou.Framework.PublicApiGenerator.MSBuild.dll'))</_PublicApiGeneratorTaskAssemblyPath>
+    <_PublicApiGeneratorTaskAssemblyPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'tasks', '$(MinimumTargetFramework)', 'Meziantou.Framework.PublicApiGenerator.MSBuild.dll'))</_PublicApiGeneratorTaskAssemblyPath>
     <_PublicApiGeneratorResolvedOutputPath Condition="'$(PublicApiGeneratorOutputPath)' != ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(PublicApiGeneratorOutputPath)'))</_PublicApiGeneratorResolvedOutputPath>
     <_PublicApiGeneratorEnabled Condition="'$(PublicApiGeneratorGenerateOnBuild)' == 'true' or '$(PublicApiGeneratorVerifyNoChangeOnBuild)' == 'true'">true</_PublicApiGeneratorEnabled>
   </PropertyGroup>

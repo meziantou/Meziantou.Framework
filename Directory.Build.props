@@ -10,6 +10,7 @@
   <!-- Build options -->
   <PropertyGroup>
     <LatestTargetFramework>net11.0</LatestTargetFramework>
+    <MinimumTargetFramework>net10.0</MinimumTargetFramework>
 
     <LatestTargetFrameworks>net11.0;net10.0</LatestTargetFrameworks>
     <LatestTargetFrameworksWindows>net11.0-windows;net10.0-windows</LatestTargetFrameworksWindows>

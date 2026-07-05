@@ -36,16 +36,19 @@ public sealed class NullWithValueTypeAnalyzer : DiagnosticAnalyzer
             if (assertType is null)
                 return;
 
+            var unionAttributeType = context.Compilation.GetTypeByMetadataName(AssertionsAnalyzerHelpers.CSharpUnionAttributeMetadataName);
+            var unionInterfaceType = context.Compilation.GetTypeByMetadataName(AssertionsAnalyzerHelpers.CSharpUnionInterfaceMetadataName);
+
             context.RegisterOperationAction(
-                context => Analyze(context, assertType),
+                context => Analyze(context, assertType, unionAttributeType, unionInterfaceType),
                 OperationKind.Invocation);
         });
     }
 
-    private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol assertType)
+    private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol assertType, INamedTypeSymbol? unionAttributeType, INamedTypeSymbol? unionInterfaceType)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
-        if (!AssertionMethodSelectionAnalyzerCommon.TryGetNullNotNullValueTypeMatch(invocationOperation, assertType, out var match))
+        if (!AssertionMethodSelectionAnalyzerCommon.TryGetNullNotNullValueTypeMatch(invocationOperation, assertType, unionAttributeType, unionInterfaceType, out var match))
             return;
 
         var descriptor = match.AssertionMethodName == "Equal" ? NullWithValueTypeDescriptor : NotNullWithValueTypeDescriptor;

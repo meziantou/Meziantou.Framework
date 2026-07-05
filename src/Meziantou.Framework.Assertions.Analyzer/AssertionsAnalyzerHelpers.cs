@@ -6,6 +6,8 @@ namespace Meziantou.Framework.Analyzers.Assertions;
 internal static class AssertionsAnalyzerHelpers
 {
     public const string AssertMetadataName = "Meziantou.Framework.Assertions.Assert";
+    public const string CSharpUnionAttributeMetadataName = "System.Runtime.CompilerServices.UnionAttribute";
+    public const string CSharpUnionInterfaceMetadataName = "System.Runtime.CompilerServices.IUnion";
 
     public static bool IsAssertReferenceEqualsInvocation(IInvocationOperation invocationOperation, INamedTypeSymbol assertType)
     {
@@ -34,14 +36,31 @@ internal static class AssertionsAnalyzerHelpers
         return type?.IsValueType == true;
     }
 
-    public static bool IsNonNullableValueType(ITypeSymbol? type)
+    public static bool IsNonNullableValueType(ITypeSymbol? type, INamedTypeSymbol? unionAttributeType, INamedTypeSymbol? unionInterfaceType)
     {
         return type is { IsValueType: true } &&
-               !IsNullableValueType(type);
+               !IsNullableValueType(type) &&
+               !IsCSharpUnionType(type, unionAttributeType, unionInterfaceType);
     }
 
     private static bool IsNullableValueType(ITypeSymbol type)
     {
         return type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+    }
+
+    private static bool IsCSharpUnionType(ITypeSymbol type, INamedTypeSymbol? unionAttributeType, INamedTypeSymbol? unionInterfaceType)
+    {
+        if (unionAttributeType is null ||
+            unionInterfaceType is null ||
+            !type.AllInterfaces.Contains(unionInterfaceType, SymbolEqualityComparer.Default))
+            return false;
+
+        foreach (var attribute in type.GetAttributes())
+        {
+            if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, unionAttributeType))
+                return true;
+        }
+
+        return false;
     }
 }

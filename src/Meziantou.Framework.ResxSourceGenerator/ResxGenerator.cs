@@ -311,12 +311,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                     if (entry.Value is not null)
                     {
-                        var args =
-#if NET7_0_OR_GREATER
-                            FormatParameterRegex().Matches(entry.Value)
-#else
-                            Regex.Matches(entry.Value, "\\{(?<num>[0-9]+)(\\:[^}]*)?\\}", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
-#endif
+                        var args = Regex.Matches(entry.Value, "\\{(?<num>[0-9]+)(\\:[^}]*)?\\}", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
                             .Cast<Match>()
                             .Select(m => int.Parse(m.Groups["num"].Value, CultureInfo.InvariantCulture))
                             .Distinct()
@@ -526,9 +521,4 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
         public bool IsFileRef => Type is not null && Type.StartsWith("System.Resources.ResXFileRef,", StringComparison.Ordinal);
     }
-
-#if NET7_0_OR_GREATER
-    [GeneratedRegex("\\{(?<num>[0-9]+)(\\:[^}]*)?\\}", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex FormatParameterRegex();
-#endif
 }

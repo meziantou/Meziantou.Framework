@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Meziantou.Framework.ResxSourceGenerator;
 
-internal static partial class ResxGeneratorCommon
+internal static class ResxGeneratorCommon
 {
     internal static IEnumerable<IGrouping<string, AdditionalText>> GetResxGroups(IEnumerable<AdditionalText> files)
     {
@@ -114,11 +114,8 @@ internal static partial class ResxGeneratorCommon
         if (indexOf < 0)
             return pathWithoutExtension;
 
-        var cultureSuffix = pathWithoutExtension[(indexOf + 1)..];
-        return IsCultureSuffix(cultureSuffix)
+        return Regex.IsMatch(pathWithoutExtension[(indexOf + 1)..], "^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
             ? pathWithoutExtension[0..indexOf]
             : pathWithoutExtension;
     }
-
-    private static bool IsCultureSuffix(string value) => Regex.IsMatch(value, "^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 }

@@ -9,7 +9,7 @@ using TestUtilities;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
-public sealed class SnapshotEndToEndTests
+public sealed partial class SnapshotEndToEndTests
 {
     public enum SnapshotTestFramework
     {
@@ -426,7 +426,7 @@ public sealed class SnapshotEndToEndTests
 
         var snapshotFile = Assert.Single(snapshotFiles);
         Assert.StartsWith("__snapshots__/GeneratedSnapshotTests_SampleTest", snapshotFile.RelativePath);
-        Assert.Matches(new Regex("^__snapshots__/[A-Za-z0-9._-]+_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), snapshotFile.RelativePath);
+        Assert.Matches(SnapshotPathWithHashSuffixRegex(), snapshotFile.RelativePath);
         Assert.Equal("sample", snapshotFile.ContentAsString);
     }
 
@@ -455,7 +455,7 @@ public sealed class SnapshotEndToEndTests
             """);
 
         var snapshotFile = Assert.Single(snapshotFiles);
-        Assert.Matches(new Regex("^__snapshots__/GeneratedSnapshotTests_snapshot\\.verified_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), snapshotFile.RelativePath);
+        Assert.Matches(ReservedSnapshotPathWithHashSuffixRegex(), snapshotFile.RelativePath);
         Assert.Equal("sample", snapshotFile.ContentAsString);
     }
 
@@ -1483,4 +1483,10 @@ public sealed class SnapshotEndToEndTests
     {
         public string ContentAsString => Encoding.UTF8.GetString(Content);
     }
+
+    [GeneratedRegex("^__snapshots__/[A-Za-z0-9._-]+_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SnapshotPathWithHashSuffixRegex();
+
+    [GeneratedRegex("^__snapshots__/GeneratedSnapshotTests_snapshot\\.verified_[0-9a-f]{8}\\.verified\\.txt$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ReservedSnapshotPathWithHashSuffixRegex();
 }

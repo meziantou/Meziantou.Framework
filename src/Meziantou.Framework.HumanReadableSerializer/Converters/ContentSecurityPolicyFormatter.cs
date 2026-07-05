@@ -2,14 +2,16 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
-internal sealed class ContentSecurityPolicyFormatter : HttpHeaderValueFormatter
+internal sealed partial class ContentSecurityPolicyFormatter : HttpHeaderValueFormatter
 {
-    [SuppressMessage("Security", "MA0009:Add regex evaluation timeout")]
     public override string FormatHeaderValue(string headerName, string headerValue)
     {
         if (string.Equals(headerName, "Content-Security-Policy", StringComparison.OrdinalIgnoreCase))
-            headerValue = Regex.Replace(headerValue, "(?<=nonce-).*?(?=')", "[redacted]", RegexOptions.None);
+            headerValue = ContentSecurityPolicyNonceRegex.Replace(headerValue, "[redacted]");
 
         return headerValue;
     }
+
+    [GeneratedRegex("(?<=nonce-).*?(?=')", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ContentSecurityPolicyNonceRegex { get; }
 }

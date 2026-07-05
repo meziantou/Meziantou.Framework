@@ -3,14 +3,12 @@ using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;
 
-public sealed class AssertMatchTests
+public sealed partial class AssertMatchTests
 {
-    private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromSeconds(1);
-
     [Fact]
     public void MatchRegex_Success()
     {
-        var regex = new Regex("^sam", RegexOptions.CultureInvariant, RegexMatchTimeout);
+        var regex = SamplePrefixRegex();
         var actual = "sample";
 
         AssertionsAssert.Matches(regex, actual);
@@ -19,7 +17,7 @@ public sealed class AssertMatchTests
     [Fact]
     public void MatchRegex_Fails()
     {
-        var regex = new Regex("^sam", RegexOptions.CultureInvariant, RegexMatchTimeout);
+        var regex = SamplePrefixRegex();
         var actual = "value";
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Matches(regex, actual), """
@@ -58,7 +56,7 @@ public sealed class AssertMatchTests
     [Fact]
     public void DoesNotMatchRegex_Success()
     {
-        var regex = new Regex("^sam", RegexOptions.CultureInvariant, RegexMatchTimeout);
+        var regex = SamplePrefixRegex();
         var actual = "value";
 
         AssertionsAssert.DoesNotMatch(regex, actual);
@@ -67,7 +65,7 @@ public sealed class AssertMatchTests
     [Fact]
     public void DoesNotMatchRegex_Fails()
     {
-        var regex = new Regex("^sam", RegexOptions.CultureInvariant, RegexMatchTimeout);
+        var regex = SamplePrefixRegex();
         var actual = "sample";
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotMatch(regex, actual), """
@@ -102,4 +100,7 @@ public sealed class AssertMatchTests
             Actual:               "sample"
             """);
     }
+
+    [GeneratedRegex("^sam", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SamplePrefixRegex();
 }

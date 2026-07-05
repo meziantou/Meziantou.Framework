@@ -3,7 +3,7 @@ using Meziantou.Framework.SnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
-public sealed class SnapshotTests
+public sealed partial class SnapshotTests
 {
     private const string SnapshotUpdateStrategyEnvironmentVariableName = "SNAPSHOTTESTING_STRATEGY";
 
@@ -111,8 +111,8 @@ public sealed class SnapshotTests
             SnapshotCount: 3);
 
         var path = settings.SnapshotPathStrategy(context);
-        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
-        Assert.DoesNotMatch(new Regex("_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.Matches(SnapshotNameWithIndexRegex(), path.Name);
+        Assert.DoesNotMatch(SnapshotNameHashWithIndexFragmentRegex(), path.Name);
         Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
     }
 
@@ -133,7 +133,7 @@ public sealed class SnapshotTests
             SnapshotCount: 1);
 
         var path = settings.SnapshotPathStrategy(context);
-        Assert.Matches(new Regex("^[A-Za-z0-9._-]+\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.Matches(SnapshotNameRegex(), path.Name);
         Assert.DoesNotContain("_0", path.Name);
         Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
     }
@@ -290,7 +290,7 @@ public sealed class SnapshotTests
             SnapshotCount: 3);
 
         var path = settings.SnapshotPathStrategy(context);
-        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.Matches(SnapshotNameWithHashAndIndexRegex(), path.Name);
         Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
     }
 
@@ -313,7 +313,7 @@ public sealed class SnapshotTests
             SnapshotCount: 3);
 
         var path = settings.SnapshotPathStrategy(context);
-        Assert.Matches(new Regex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeout: TimeSpan.FromSeconds(1)), path.Name);
+        Assert.Matches(SnapshotNameWithHashAndIndexRegex(), path.Name);
         Assert.True(path.Name.Length <= settings.MaxSnapshotFileNameLength);
     }
 
@@ -957,7 +957,7 @@ public sealed class SnapshotTests
     {
         using var directory = TemporaryDirectory.Create();
         var settings = CreateScrubberSnapshotSettings(directory);
-        settings.ScrubLinesMatching(new Regex("Line[2]", RegexOptions.None, TimeSpan.FromSeconds(10)));
+        settings.ScrubLinesMatching(Line2Regex());
         settings.Serializers.Add(new FixedValueSerializer("Line1\nLine2\nLine3"));
 
         Snapshot.Validate("sample", settings);
@@ -1301,4 +1301,19 @@ public sealed class SnapshotTests
             Environment.SetEnvironmentVariable(_name, _previousValue);
         }
     }
+
+    [GeneratedRegex("^[A-Za-z0-9._-]+_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SnapshotNameWithIndexRegex();
+
+    [GeneratedRegex("_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SnapshotNameHashWithIndexFragmentRegex();
+
+    [GeneratedRegex("^[A-Za-z0-9._-]+\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SnapshotNameRegex();
+
+    [GeneratedRegex("^[A-Za-z0-9._-]+_[0-9a-f]{8}_2\\.verified\\.png$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex SnapshotNameWithHashAndIndexRegex();
+
+    [GeneratedRegex("Line[2]", RegexOptions.None, matchTimeoutMilliseconds: 10000)]
+    private static partial Regex Line2Regex();
 }

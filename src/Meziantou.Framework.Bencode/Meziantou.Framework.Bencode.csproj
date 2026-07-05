@@ -7,8 +7,4 @@
     <Description>Bencode parser/writer and torrent file model</Description>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.IO.Pipelines" Version="10.0.9" />
-  </ItemGroup>
-
 </Project>

@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Meziantou.Framework.ResxSourceGenerator;
 
-internal static class ResxGeneratorCommon
+internal static partial class ResxGeneratorCommon
 {
     internal static IEnumerable<IGrouping<string, AdditionalText>> GetResxGroups(IEnumerable<AdditionalText> files)
     {
@@ -114,8 +114,23 @@ internal static class ResxGeneratorCommon
         if (indexOf < 0)
             return pathWithoutExtension;
 
-        return Regex.IsMatch(pathWithoutExtension[(indexOf + 1)..], "^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
+#if NET7_0_OR_GREATER
+        var cultureSuffix = pathWithoutExtension.AsSpan(indexOf + 1);
+#else
+        var cultureSuffix = pathWithoutExtension[(indexOf + 1)..];
+#endif
+
+        return IsCultureSuffix(cultureSuffix)
             ? pathWithoutExtension[0..indexOf]
             : pathWithoutExtension;
     }
+
+#if NET7_0_OR_GREATER
+    private static bool IsCultureSuffix(ReadOnlySpan<char> value) => CultureSuffixRegex().IsMatch(value);
+
+    [GeneratedRegex("^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex CultureSuffixRegex();
+#else
+    private static bool IsCultureSuffix(string value) => Regex.IsMatch(value, "^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+#endif
 }

@@ -42,7 +42,12 @@ internal static class AssertionMethodSelectionAnalyzerCommon
         return false;
     }
 
-    internal static bool TryGetNullNotNullValueTypeMatch(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, out NullNotNullValueTypeMatch match)
+    internal static bool TryGetNullNotNullValueTypeMatch(
+        IInvocationOperation invocationOperation,
+        INamedTypeSymbol assertType,
+        INamedTypeSymbol? unionAttributeType,
+        INamedTypeSymbol? unionInterfaceType,
+        out NullNotNullValueTypeMatch match)
     {
         if (!IsAssertInvocation(invocationOperation, assertType, NullAssertionMethodName, NotNullAssertionMethodName))
         {
@@ -52,7 +57,7 @@ internal static class AssertionMethodSelectionAnalyzerCommon
 
         var actualArgument = invocationOperation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "actual");
         if (actualArgument is null ||
-            !AssertionsAnalyzerHelpers.IsNonNullableValueType(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(actualArgument.Value).Type))
+            !AssertionsAnalyzerHelpers.IsNonNullableValueType(AssertionsAnalyzerHelpers.UnwrapImplicitConversion(actualArgument.Value).Type, unionAttributeType, unionInterfaceType))
         {
             match = default;
             return false;

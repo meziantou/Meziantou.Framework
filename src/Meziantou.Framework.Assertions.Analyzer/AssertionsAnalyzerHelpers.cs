@@ -37,11 +37,23 @@ internal static class AssertionsAnalyzerHelpers
     public static bool IsNonNullableValueType(ITypeSymbol? type)
     {
         return type is { IsValueType: true } &&
-               !IsNullableValueType(type);
+               !IsNullableValueType(type) &&
+               !IsCSharpUnionType(type);
     }
 
     private static bool IsNullableValueType(ITypeSymbol type)
     {
         return type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+    }
+
+    private static bool IsCSharpUnionType(ITypeSymbol type)
+    {
+        foreach (var attribute in type.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() == "System.Runtime.CompilerServices.UnionAttribute")
+                return true;
+        }
+
+        return false;
     }
 }

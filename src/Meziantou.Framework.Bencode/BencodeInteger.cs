@@ -13,9 +13,9 @@ public sealed class BencodeInteger : BencodeValue, IEquatable<BencodeInteger>
 
     public long Value { get; }
 
-    public bool Equals(BencodeInteger? other) => other is not null && Value == other.Value;
+    public bool Equals([NotNullWhen(true)] BencodeInteger? other) => other is not null && Value == other.Value;
 
-    public override bool Equals(object? obj) => obj is BencodeInteger other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is BencodeInteger other && Equals(other);
 
     public override int GetHashCode() => Value.GetHashCode();
 

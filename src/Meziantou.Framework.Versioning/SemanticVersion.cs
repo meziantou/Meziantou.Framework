@@ -12,12 +12,12 @@ namespace Meziantou.Framework.Versioning;
 /// Console.WriteLine(version.PrereleaseLabels); // ["alpha", "1"]
 /// Console.WriteLine(version.HasMetadata); // true
 /// Console.WriteLine(version.Metadata); // ["build"]
-/// 
+///
 /// // Create and compare versions
 /// var v1 = new SemanticVersion(1, 0, 0, "alpha");
 /// var v2 = new SemanticVersion(1, 0, 0);
 /// Console.WriteLine(v1 &lt; v2); // true (prerelease versions have lower precedence)
-/// 
+///
 /// // Get next version
 /// Console.WriteLine(v2.NextPatchVersion()); // 1.0.1
 /// Console.WriteLine(v2.NextMinorVersion()); // 1.1.0
@@ -193,7 +193,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return SemanticVersionComparer.Instance.GetHashCode(this);
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         if (obj is SemanticVersion semver)
         {
@@ -204,7 +204,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     }
 
     /// <summary>Determines whether the specified semantic version is equal to the current version.</summary>
-    public bool Equals(SemanticVersion? other)
+    public bool Equals([NotNullWhen(true)] SemanticVersion? other)
     {
         return SemanticVersionComparer.Instance.Equals(this, other);
     }

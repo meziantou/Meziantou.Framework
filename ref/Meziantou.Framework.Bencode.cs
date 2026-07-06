@@ -36,8 +36,8 @@ namespace Meziantou.Framework.Bencode
         public Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public long Value { get => throw null; }
         public BencodeInteger(long value) { }
-        public bool Equals(Meziantou.Framework.Bencode.BencodeInteger? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Bencode.BencodeInteger? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
@@ -61,8 +61,8 @@ namespace Meziantou.Framework.Bencode
         public System.ReadOnlyMemory<byte> Value { get => throw null; }
         public BencodeString(System.ReadOnlyMemory<byte> value) { }
         public string ToUtf8String() => throw null;
-        public bool Equals(Meziantou.Framework.Bencode.BencodeString? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Bencode.BencodeString? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
         public override string ToString() => throw null;

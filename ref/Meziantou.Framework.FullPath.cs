@@ -27,7 +27,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.FullPath operator +(Meziantou.Framework.FullPath rootPath, string suffix) => throw null;
         public int CompareTo(Meziantou.Framework.FullPath other) => throw null;
         public int CompareTo(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.FullPath other) => throw null;
         public bool Equals(Meziantou.Framework.FullPath other, bool ignoreCase) => throw null;
         public override int GetHashCode() => throw null;

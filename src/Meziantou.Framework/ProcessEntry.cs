@@ -19,7 +19,7 @@ public readonly struct ProcessEntry : IEquatable<ProcessEntry>
     /// <summary>Gets the parent process identifier.</summary>
     public int ParentProcessId { get; }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         return obj is ProcessEntry entry && Equals(entry);
     }

@@ -305,7 +305,7 @@ namespace Meziantou.Framework.SnapshotTesting
         public string FileExtension { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Create(string type, string? mimeType, string? displayName) => throw null;
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Create(string? name) => throw null;
-        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotType? other) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.SnapshotTesting.SnapshotType? other) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotType? left, Meziantou.Framework.SnapshotTesting.SnapshotType? right) => throw null;

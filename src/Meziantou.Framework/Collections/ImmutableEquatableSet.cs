@@ -24,7 +24,7 @@ public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<
     public int Count => _values.Count;
     public bool Contains(T item) => _values.Contains(item);
 
-    public bool Equals(ImmutableEquatableSet<T>? other)
+    public bool Equals([NotNullWhen(true)] ImmutableEquatableSet<T>? other)
     {
         if (other is null)
             return false;
@@ -48,7 +48,7 @@ public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<
         return true;
     }
 
-    public override bool Equals(object? obj) => obj is ImmutableEquatableSet<T> other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImmutableEquatableSet<T> other && Equals(other);
     public override int GetHashCode() => _values.Count;
 
     public static bool operator ==(ImmutableEquatableSet<T>? left, ImmutableEquatableSet<T>? right)

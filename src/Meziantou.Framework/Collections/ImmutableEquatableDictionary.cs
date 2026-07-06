@@ -26,7 +26,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
     public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _values.TryGetValue(key, out value);
     public TValue this[TKey key] => _values[key];
 
-    public bool Equals(ImmutableEquatableDictionary<TKey, TValue>? other)
+    public bool Equals([NotNullWhen(true)] ImmutableEquatableDictionary<TKey, TValue>? other)
     {
         if (other is null)
             return false;
@@ -48,7 +48,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
         return true;
     }
 
-    public override bool Equals(object? obj) => obj is ImmutableEquatableDictionary<TKey, TValue> other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImmutableEquatableDictionary<TKey, TValue> other && Equals(other);
 
     public override int GetHashCode() => _values.Count;
 

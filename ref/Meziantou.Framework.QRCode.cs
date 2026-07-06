@@ -84,7 +84,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.Color Parse(string value) => throw null;
         public static bool TryParse(string? value, out Meziantou.Framework.Color color) => throw null;
         public bool Equals(Meziantou.Framework.Color other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Color left, Meziantou.Framework.Color right) => throw null;

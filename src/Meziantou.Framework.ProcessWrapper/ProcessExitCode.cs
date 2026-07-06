@@ -32,7 +32,7 @@ public readonly struct ProcessExitCode(int value) : IEquatable<ProcessExitCode>
     public bool Equals(ProcessExitCode other) => Value == other.Value;
 
     /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is ProcessExitCode other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is ProcessExitCode other && Equals(other);
 
     /// <inheritdoc />
     public override int GetHashCode() => Value.GetHashCode();

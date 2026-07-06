@@ -8,15 +8,15 @@ namespace Meziantou.Framework;
 /// // Basic usage
 /// var pastDate = RelativeDate.Get(DateTime.UtcNow.AddHours(-2));
 /// Console.WriteLine(pastDate); // "2 hours ago"
-/// 
+///
 /// var futureDate = RelativeDate.Get(DateTime.UtcNow.AddDays(3));
 /// Console.WriteLine(futureDate); // "in 3 days"
-/// 
+///
 /// // With localization
 /// var date = RelativeDate.Get(DateTime.UtcNow.AddMinutes(-30));
 /// Console.WriteLine(date.ToString(null, CultureInfo.GetCultureInfo("fr"))); // "il y a 30 minutes"
 /// Console.WriteLine(date.ToString(null, CultureInfo.InvariantCulture)); // "30 minutes ago"
-/// 
+///
 /// // With custom TimeProvider for testing
 /// var fakeTimeProvider = new FakeTimeProvider();
 /// fakeTimeProvider.SetUtcNow(new DateTimeOffset(2024, 1, 1, 12, 0, 0, TimeSpan.Zero));
@@ -221,7 +221,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// </returns>
     public int CompareTo(RelativeDate other) => DateTime.CompareTo(other.DateTime);
 
-    public override bool Equals(object? obj) => obj is RelativeDate date && Equals(date);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is RelativeDate date && Equals(date);
 
     /// <summary>Determines whether the specified <see cref="RelativeDate"/> is equal to the current instance.</summary>
     public bool Equals(RelativeDate other) => DateTime == other.DateTime;

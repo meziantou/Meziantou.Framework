@@ -136,7 +136,7 @@ public readonly struct Range<T> : IEquatable<Range<T>>
         return HashCode.Combine(From, To);
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         return obj is Range<T> range && Equals(range);
     }

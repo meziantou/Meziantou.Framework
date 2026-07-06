@@ -30,7 +30,7 @@ internal sealed class ByDay : IEquatable<ByDay>
     /// <summary>Gets or sets the ordinal position within the month or year.</summary>
     public int? Ordinal { get; set; }
 
-    public bool Equals(ByDay? other)
+    public bool Equals([NotNullWhen(true)] ByDay? other)
     {
         if (other is null)
             return false;
@@ -39,7 +39,7 @@ internal sealed class ByDay : IEquatable<ByDay>
         return DayOfWeek == other.DayOfWeek && Ordinal == other.Ordinal;
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         if (obj is null)
             return false;

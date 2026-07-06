@@ -171,12 +171,12 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
         return $"{minBracket}{minStr}, {maxStr}{maxBracket}";
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
-        return Equals(obj as SemanticVersionRange);
+        return obj is SemanticVersionRange other && Equals(other);
     }
 
-    public bool Equals(SemanticVersionRange? other)
+    public bool Equals([NotNullWhen(true)] SemanticVersionRange? other)
     {
         if (other is null)
         {

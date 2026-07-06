@@ -31,10 +31,7 @@ public class VersionDirective : Token
     /// <summary>Determines whether the specified System.Object is equal to the current System.Object.</summary>
     /// <param name="obj">The System.Object to compare with the current System.Object.</param>
     /// <returns>true if the specified System.Object is equal to the current System.Object; otherwise, false.</returns>
-    public override bool Equals(object? obj)
-    {
-        return obj is VersionDirective other && Version.Equals(other.Version);
-    }
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is VersionDirective other && Version.Equals(other.Version);
 
     /// <summary>Serves as a hash function for a particular type.</summary>
     /// <returns>

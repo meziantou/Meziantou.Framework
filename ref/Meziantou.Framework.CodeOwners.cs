@@ -13,7 +13,7 @@ namespace Meziantou.Framework.CodeOwners
         public Meziantou.Framework.CodeOwners.CodeOwnersSection? Section { get => throw null; }
         public bool IsOptional { get => throw null; }
         public override string ToString() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersEntry other) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersEntry left, Meziantou.Framework.CodeOwners.CodeOwnersEntry right) => throw null;
@@ -41,7 +41,7 @@ namespace Meziantou.Framework.CodeOwners
         public System.Collections.Generic.IReadOnlyCollection<string> DefaultOwners { get => throw null; }
         public bool HasDefaultOwners { get => throw null; }
         public override string ToString() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.CodeOwners.CodeOwnersSection other) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.CodeOwners.CodeOwnersSection left, Meziantou.Framework.CodeOwners.CodeOwnersSection right) => throw null;

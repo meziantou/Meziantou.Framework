@@ -1,4 +1,4 @@
-using YamlDotNet.RepresentationModel;
+using Meziantou.Framework.Yaml.Model;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -19,14 +19,14 @@ public sealed class HelmChartDependencyScanner : DependencyScanner
         if (yaml is null)
             return ValueTask.CompletedTask;
 
-        foreach (var document in yaml.Documents)
+        foreach (var document in yaml)
         {
-            if (document.RootNode is not YamlMappingNode rootNode)
+            if (document.Contents is not YamlMapping rootNode)
                 continue;
 
             // find dependencies
             var dependenciesNode = GetProperty(rootNode, "dependencies", StringComparison.Ordinal);
-            if (dependenciesNode is YamlSequenceNode dependencies)
+            if (dependenciesNode is YamlSequence dependencies)
             {
                 foreach (var dependency in dependencies)
                 {

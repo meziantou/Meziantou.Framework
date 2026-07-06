@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Json;
 public abstract class JsonPathNavigator<TValue>
 {
     /// <summary>Gets the JSON node kind represented by <paramref name="value"/>.</summary>
-    /// <param name="value">The value to inspect. Navigators may use <see langword="null"/> or a model-specific value to represent JSON <c>null</c>.</param>
+    /// <param name="value">The value to inspect. Navigators may use <see langword="null"/> or a model-specific value to represent JSON <c language="json">null</c>.</param>
     /// <returns>The JSON node kind represented by <paramref name="value"/>.</returns>
     public abstract JsonPathNodeKind GetKind(TValue? value);
 

@@ -1,0 +1,26 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);RS1041;RS2008</NoWarn>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_YAML_SOURCE_GENERATOR</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" PrivateAssets="all" />
+
+    <EmbeddedResource Include="../Meziantou.Framework.Yaml/Serialization/YamlThrowHelper.cs" LogicalName="Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework.Yaml/YamlNamingPolicy.cs" Link="YamlNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Yaml/YamlCamelCaseNamingPolicy.cs" Link="YamlCamelCaseNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Yaml/YamlKebabCaseLowerNamingPolicy.cs" Link="YamlKebabCaseLowerNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Yaml/YamlKebabCaseUpperNamingPolicy.cs" Link="YamlKebabCaseUpperNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Yaml/YamlSeparatorNamingPolicy.cs" Link="YamlSeparatorNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Yaml/YamlSnakeCaseLowerNamingPolicy.cs" Link="YamlSnakeCaseLowerNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Yaml/YamlSnakeCaseUpperNamingPolicy.cs" Link="YamlSnakeCaseUpperNamingPolicy.cs" />
+  </ItemGroup>
+</Project>

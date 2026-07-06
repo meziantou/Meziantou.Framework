@@ -1,0 +1,13 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml\Meziantou.Framework.Yaml.csproj" />
+  </ItemGroup>
+</Project>

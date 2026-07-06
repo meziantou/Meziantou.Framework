@@ -18,6 +18,6 @@ public readonly struct JsonPathProperty<TValue>
     /// <summary>Gets the property name.</summary>
     public string Name { get; }
 
-    /// <summary>Gets the property value. May be <see langword="null"/> when the navigator represents JSON <c>null</c> as <see langword="null"/>.</summary>
+    /// <summary>Gets the property value. May be <see langword="null"/> when the navigator represents JSON <c language="json">null</c> as <see langword="null"/>.</summary>
     public TValue? Value { get; }
 }

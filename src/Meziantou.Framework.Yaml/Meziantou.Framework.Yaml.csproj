@@ -1,0 +1,25 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>A high-performance .NET YAML library providing parsing and serialization of object graphs, NativeAOT ready.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj"
+                      PrivateAssets="all"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)/../../Meziantou.Framework.Yaml.SourceGenerator/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.Yaml.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="Meziantou.Framework.Yaml.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.Yaml.targets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ILLink.Substitutions.xml" LogicalName="ILLink.Substitutions.xml" />
+  </ItemGroup>
+</Project>

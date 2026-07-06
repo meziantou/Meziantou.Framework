@@ -1,0 +1,28 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="files\**\*.yaml" />
+    <EmbeddedResource Include="files\**\*.yaml" />
+    <Compile Include="..\..\common\NuGetPackageFixture.cs" />
+    <Compile Include="..\..\common\OutputPathHelper.cs" />
+    <Compile Include="..\..\common\TargetFrameworkHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml\Meziantou.Framework.Yaml.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Yaml.FeatureSwitchSmoke\Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml.SourceGenerator\Meziantou.Framework.Yaml.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="true"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+</Project>

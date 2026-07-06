@@ -1,5 +1,6 @@
-using YamlDotNet.Core;
-using YamlDotNet.RepresentationModel;
+using Meziantou.Framework.Yaml;
+using Meziantou.Framework.Yaml.Events;
+using Meziantou.Framework.Yaml.Model;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
@@ -10,10 +11,7 @@ internal static class YamlParserUtilities
         try
         {
             using var textReader = new StreamReader(stream, leaveOpen: true);
-            var reader = new MergingParser(new Parser(textReader));
-            var yaml = new YamlStream();
-            yaml.Load(reader);
-            return yaml;
+            return YamlStream.Load(textReader);
         }
         catch
         {
@@ -21,13 +19,13 @@ internal static class YamlParserUtilities
         }
     }
 
-    public static YamlNode? GetProperty(YamlNode? node, string propertyName, StringComparison stringComparison)
+    public static YamlElement? GetProperty(YamlElement? node, string propertyName, StringComparison stringComparison)
     {
-        if (node is YamlMappingNode mapping)
+        if (node is YamlMapping mapping)
         {
-            foreach (var child in mapping.Children)
+            foreach (var child in mapping)
             {
-                if (child.Key is YamlScalarNode scalar && string.Equals(scalar.Value, propertyName, stringComparison))
+                if (child.Key is YamlValue scalar && string.Equals(scalar.Value, propertyName, stringComparison))
                     return child.Value;
             }
         }
@@ -35,7 +33,7 @@ internal static class YamlParserUtilities
         return null;
     }
 
-    public static void ReportDependency(DependencyScanner scanner, ScanFileContext context, YamlNode node, DependencyType dependencyType)
+    public static void ReportDependency(DependencyScanner scanner, ScanFileContext context, YamlElement node, DependencyType dependencyType)
     {
         var value = GetScalarValue(node);
         if (value is null)
@@ -44,7 +42,7 @@ internal static class YamlParserUtilities
         context.ReportDependency(scanner, name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
     }
 
-    public static void ReportDependencyWithSeparator(DependencyScanner scanner, ScanFileContext context, YamlNode? node, DependencyType dependencyType, char versionSeparator)
+    public static void ReportDependencyWithSeparator(DependencyScanner scanner, ScanFileContext context, YamlElement? node, DependencyType dependencyType, char versionSeparator)
     {
         var value = GetScalarValue(node);
         if (value is null)
@@ -67,41 +65,67 @@ internal static class YamlParserUtilities
         }
     }
 
-    public static string? GetScalarValue(YamlNode? node)
+    public static string? GetScalarValue(YamlElement? node)
     {
-        if (node is YamlScalarNode scalar && scalar.Value is not null)
+        if (node is YamlValue scalar)
             return scalar.Value;
 
         return null;
     }
 
-    [return: NotNullIfNotNull(nameof(node))]
-    public static TextLocation? GetLocation(ScanFileContext context, YamlNode? node, int? start = null, int? length = null)
+    public static TextLocation? GetLocation(ScanFileContext context, YamlElement? node, int? start = null, int? length = null)
     {
         if (node is null)
             return null;
 
         start ??= 0;
 
-        var line = (int)node.Start.Line;
-        var column = (int)(node.Start.Column + start);
-        if (node is YamlScalarNode { Style: ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted })
+        var span = GetSpan(node);
+        if (span is null)
+            return null;
+
+        var (spanStart, spanEnd) = span.Value;
+        var line = spanStart.Line + 1;
+        var column = spanStart.Column + 1 + start.Value;
+        if (node is YamlValue { Style: ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted })
         {
             column += 1;
         }
 
         if (length is null)
         {
-            if (node is YamlScalarNode { Value: { } nodeValue })
+            if (node is YamlValue { Value: { } nodeValue })
             {
-                length = nodeValue.Length - start;
+                length = Math.Max(0, nodeValue.Length - start.Value);
             }
             else
             {
-                length = (int)(node.End.Column - node.Start.Column - start);
+                length = Math.Max(0, spanEnd.Column - spanStart.Column - start.Value);
             }
         }
 
         return new TextLocation(context.FileSystem, context.FullPath, line, column, length.Value);
+    }
+
+    private static (Mark Start, Mark End)? GetSpan(YamlElement node)
+    {
+        ParsingEvent? first = null;
+        ParsingEvent? last = null;
+
+        foreach (var yamlEvent in node.EnumerateEvents())
+        {
+            if (yamlEvent is StreamStart or StreamEnd or DocumentStart or DocumentEnd)
+            {
+                continue;
+            }
+
+            first ??= yamlEvent;
+            last = yamlEvent;
+        }
+
+        if (first is null || last is null)
+            return null;
+
+        return (first.Start, last.End);
     }
 }

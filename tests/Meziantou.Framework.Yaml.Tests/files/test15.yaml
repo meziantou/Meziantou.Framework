@@ -1,0 +1,5 @@
+{
+  field1: "R \ud83d\ude0e",
+  field2: "R \u0100\u0101",
+  field3: "R \u0100\ud83d\ude0e\u0101"
+}

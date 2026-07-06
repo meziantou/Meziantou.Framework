@@ -1,4 +1,6 @@
+using System;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace Meziantou.Framework.Analyzers.Assertions;
@@ -50,14 +52,28 @@ internal static class AssertionsAnalyzerHelpers
 
     private static bool IsCSharpUnionType(ITypeSymbol type, INamedTypeSymbol? unionAttributeType, INamedTypeSymbol? unionInterfaceType)
     {
-        if (unionAttributeType is null ||
-            unionInterfaceType is null ||
-            !type.AllInterfaces.Contains(unionInterfaceType, SymbolEqualityComparer.Default))
-            return false;
+        if (IsCSharpUnionDeclaration(type))
+            return true;
 
-        foreach (var attribute in type.GetAttributes())
+        if (unionAttributeType is not null)
         {
-            if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, unionAttributeType))
+            foreach (var attribute in type.GetAttributes())
+            {
+                if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, unionAttributeType))
+                    return true;
+            }
+        }
+
+        return unionInterfaceType is not null &&
+               type.AllInterfaces.Contains(unionInterfaceType, SymbolEqualityComparer.Default);
+    }
+
+    private static bool IsCSharpUnionDeclaration(ITypeSymbol type)
+    {
+        // When updating to a newer version of Roslyn, this check may need to be updated to use a different syntax kind.
+        foreach (var syntaxReference in type.DeclaringSyntaxReferences)
+        {
+            if (syntaxReference.GetSyntax().IsKind((SyntaxKind)9082 /* UnionDeclaration */))
                 return true;
         }
 

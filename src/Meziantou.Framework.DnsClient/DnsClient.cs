@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using Meziantou.Framework.DnsClient.Helpers;
 using Meziantou.Framework.DnsClient.Internal;

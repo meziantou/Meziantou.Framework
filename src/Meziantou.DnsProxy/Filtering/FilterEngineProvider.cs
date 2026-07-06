@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
-using System.Text;
 using Meziantou.Framework.DnsFilter;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

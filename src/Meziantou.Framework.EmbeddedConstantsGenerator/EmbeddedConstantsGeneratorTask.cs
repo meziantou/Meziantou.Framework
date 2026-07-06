@@ -1,7 +1,4 @@
 #nullable enable
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework.EmbeddedConstantsGenerator;
 
 internal static class EmbeddedConstantsGeneratorTask

@@ -1,7 +1,3 @@
-using Meziantou.Framework;
-using Meziantou.Framework.Templating.Tool;
-using System.Text;
-
 namespace Meziantou.Framework.Templating.Tool.Tests;
 
 public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)

@@ -1,4 +1,3 @@
-using System.Text;
 using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.Language.Xml;

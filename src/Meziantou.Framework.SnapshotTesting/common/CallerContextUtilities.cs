@@ -5,14 +5,15 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
-internal static class CallerContextUtilities
+internal static partial class CallerContextUtilities
 {
     /// <summary>
     /// Newer Roslyn versions use the format "&lt;callerName&gt;g__functionName|x_y".
     /// Older versions use "&lt;callerName&gt;g__functionNamex_y".
     /// </summary>
     /// <see href="https://github.com/dotnet/roslyn/blob/aecd49800750d64e08767836e2678ffa62a4647f/src/Compilers/CSharp/Portable/Symbols/Synthesized/GeneratedNames.cs#L109" />
-    private static readonly Regex FunctionNameRegex = new(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeout: Timeout.InfiniteTimeSpan);
+    [GeneratedRegex(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}[0-9]+(_[0-9]+)?$", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
+    private static partial Regex FunctionNameRegex { get; }
 
     private static readonly ConcurrentDictionary<string, string> SourceRootMappings = new(StringComparer.Ordinal);
 

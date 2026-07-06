@@ -3,7 +3,6 @@ using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
-using Meziantou.Xunit;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 

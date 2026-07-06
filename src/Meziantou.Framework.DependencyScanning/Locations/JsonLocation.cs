@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.Language.Json;
 using JsonPathExpression = Meziantou.Framework.Json.JsonPath;

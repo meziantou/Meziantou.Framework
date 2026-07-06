@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Net;
 using Meziantou.DnsProxy;
 using Meziantou.DnsProxy.Filtering;
-using Meziantou.Framework;
 using Meziantou.Framework.DnsFilter;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;

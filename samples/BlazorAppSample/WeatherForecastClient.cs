@@ -1,5 +1,3 @@
-using System.Net.Http.Json;
-
 namespace BlazorAppSample;
 
 public class WeatherForecastClient

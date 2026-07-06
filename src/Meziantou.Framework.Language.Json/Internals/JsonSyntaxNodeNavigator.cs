@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework.Json;
 
 namespace Meziantou.Framework.Language.Json.Internals;

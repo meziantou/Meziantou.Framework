@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;

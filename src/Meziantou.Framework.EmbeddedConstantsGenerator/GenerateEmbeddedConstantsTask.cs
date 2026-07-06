@@ -1,5 +1,4 @@
 #nullable enable
-using System.Text;
 using Microsoft.Build.Framework;
 
 namespace Meziantou.Framework.EmbeddedConstantsGenerator;

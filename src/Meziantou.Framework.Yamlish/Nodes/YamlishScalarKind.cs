@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Meziantou.Framework.Yamlish.Nodes;
 
 /// <summary>Specifies the kind of a Yamlish scalar node.</summary>

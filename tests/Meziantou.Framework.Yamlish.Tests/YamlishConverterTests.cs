@@ -4,8 +4,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Numerics;
-using System.Text;
-using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Yamlish.Tests;
 

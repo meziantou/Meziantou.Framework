@@ -12,12 +12,12 @@ namespace Meziantou.Framework.Versioning;
 /// Console.WriteLine(version.PrereleaseLabels); // ["alpha", "1"]
 /// Console.WriteLine(version.HasMetadata); // true
 /// Console.WriteLine(version.Metadata); // ["build"]
-/// 
+///
 /// // Create and compare versions
 /// var v1 = new SemanticVersion(1, 0, 0, "alpha");
 /// var v2 = new SemanticVersion(1, 0, 0);
 /// Console.WriteLine(v1 &lt; v2); // true (prerelease versions have lower precedence)
-/// 
+///
 /// // Get next version
 /// Console.WriteLine(v2.NextPatchVersion()); // 1.0.1
 /// Console.WriteLine(v2.NextMinorVersion()); // 1.1.0
@@ -188,10 +188,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return ToString(format: null, formatProvider: null);
     }
 
-    public override int GetHashCode()
-    {
-        return SemanticVersionComparer.Instance.GetHashCode(this);
-    }
+    public override int GetHashCode() => SemanticVersionComparer.Instance.GetHashCode(this);
 
     public override bool Equals(object? obj)
     {

@@ -21,13 +21,7 @@ public readonly struct TextDiffEntry : IEquatable<TextDiffEntry>
     public override bool Equals(object? obj)
         => obj is TextDiffEntry other && Equals(other);
 
-    public override int GetHashCode()
-    {
-        var hash = new HashCode();
-        hash.Add(Operation);
-        hash.Add(Text);
-        return hash.ToHashCode();
-    }
+    public override int GetHashCode() => HashCode.Combine(Operation, Text);
 
     public static bool operator ==(TextDiffEntry left, TextDiffEntry right) => left.Equals(right);
 

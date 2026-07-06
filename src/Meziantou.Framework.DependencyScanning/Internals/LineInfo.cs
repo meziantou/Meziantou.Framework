@@ -36,10 +36,7 @@ internal readonly struct LineInfo : IEquatable<LineInfo>
                LinePosition == other.LinePosition;
     }
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(LineNumber, LinePosition);
-    }
+    public override int GetHashCode() => HashCode.Combine(LineNumber, LinePosition);
 
     public override string ToString()
     {

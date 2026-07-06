@@ -10,7 +10,7 @@ namespace Meziantou.Framework.CodeOwners;
 /// var content = """
 ///     [Backend][2] @backend-team
 ///     *.cs @csharp-owner
-///     
+///
 ///     ^[Optional]
 ///     docs/* @docs-owner
 ///     """;
@@ -86,10 +86,7 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
                DefaultOwners.SequenceEqual(other.DefaultOwners, StringComparer.Ordinal);
     }
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Name, RequiredReviewerCount, DefaultOwners.Count);
-    }
+    public override int GetHashCode() => HashCode.Combine(Name, RequiredReviewerCount, DefaultOwners.Count);
 
     public static bool operator ==(CodeOwnersSection left, CodeOwnersSection right) => left.Equals(right);
     public static bool operator !=(CodeOwnersSection left, CodeOwnersSection right) => !(left == right);

@@ -40,8 +40,5 @@ public class VersionDirective : Token
     /// <returns>
     /// A hash code for the current <see cref="object"/>.
     /// </returns>
-    public override int GetHashCode()
-    {
-        return Version.GetHashCode();
-    }
+    public override int GetHashCode() => Version.GetHashCode();
 }

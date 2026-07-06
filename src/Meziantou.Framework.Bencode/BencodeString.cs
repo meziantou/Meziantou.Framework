@@ -31,11 +31,7 @@ public sealed class BencodeString : BencodeValue, IEquatable<BencodeString>
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        foreach (var item in Value.Span)
-        {
-            hash.Add(item);
-        }
-
+        hash.AddBytes(Value.Span);
         return hash.ToHashCode();
     }
 

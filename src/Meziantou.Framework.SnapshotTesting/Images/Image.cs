@@ -83,11 +83,7 @@ internal sealed class Image : IEquatable<Image>
         hash.Add(Width);
         hash.Add(Height);
         var hashPixelCount = Math.Min(_pixels.Length, 32);
-        for (var i = 0; i < hashPixelCount; i++)
-        {
-            hash.Add(_pixels[i].PackedValue);
-        }
-
+        hash.AddBytes(MemoryMarshal.Cast<Argb, byte>(_pixels.AsSpan(0, hashPixelCount)));
         return hash.ToHashCode();
     }
 

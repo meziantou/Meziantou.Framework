@@ -11,7 +11,7 @@ public readonly struct JsonPathMatch<TValue>
     }
 
     /// <summary>
-    /// Gets the value of the matched node. May be <see langword="null"/> when the navigator represents JSON <c>null</c> as <see langword="null"/>.
+    /// Gets the value of the matched node. May be <see langword="null"/> when the navigator represents JSON <c language="json">null</c> as <see langword="null"/>.
     /// </summary>
     public TValue? Value { get; }
 

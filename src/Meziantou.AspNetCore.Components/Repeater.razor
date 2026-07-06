@@ -39,11 +39,11 @@ else
 @code {
     private static RenderFragment<RenderFragment> s_defaultContainerTemplate = new RenderFragment<RenderFragment>(fragment => fragment);
 
-    /// <summary>Gets or sets the collection of items to render. When <c>null</c>, the <see cref="LoadingTemplate"/> is displayed.</summary>
+    /// <summary>Gets or sets the collection of items to render. When <see langword="null"/>, the <see cref="LoadingTemplate"/> is displayed.</summary>
     [Parameter]
     public IEnumerable<T>? Items { get; set; }
 
-    /// <summary>Gets or sets the template to display while the items are being loaded (when <see cref="Items"/> is <c>null</c>).</summary>
+    /// <summary>Gets or sets the template to display while the items are being loaded (when <see cref="Items"/> is <see langword="null"/>).</summary>
     [Parameter]
     public RenderFragment? LoadingTemplate { get; set; }
 

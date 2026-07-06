@@ -1,4 +1,4 @@
-using YamlDotNet.RepresentationModel;
+using Meziantou.Framework.Yaml.Model;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -36,42 +36,42 @@ public sealed class GitHubActionsScanner : DependencyScanner
         if (yaml is null)
             return ValueTask.CompletedTask;
 
-        foreach (var document in yaml.Documents)
+        foreach (var document in yaml)
         {
-            if (document.RootNode is not YamlMappingNode rootNode)
+            if (document.Contents is not YamlMapping rootNode)
                 continue;
 
             var jobsNode = GetProperty(rootNode, "jobs", StringComparison.OrdinalIgnoreCase);
-            if (jobsNode is YamlMappingNode jobs)
+            if (jobsNode is YamlMapping jobs)
             {
-                foreach (var job in jobs.Children) // Enumerate jobs
+                foreach (var job in jobs) // Enumerate jobs
                 {
-                    if (job.Value is YamlMappingNode jobNode)
+                    if (job.Value is YamlMapping jobNode)
                     {
                         ExtractUsesProperty(context, jobNode);
 
                         var stepsNode = GetProperty(jobNode, "steps", StringComparison.OrdinalIgnoreCase);
-                        if (stepsNode is YamlSequenceNode steps)
+                        if (stepsNode is YamlSequence steps)
                         {
-                            foreach (var step in steps.OfType<YamlMappingNode>())
+                            foreach (var step in steps.OfType<YamlMapping>())
                             {
                                 ExtractUsesProperty(context, step);
                             }
                         }
 
                         var containerNode = GetProperty(jobNode, "container", StringComparison.OrdinalIgnoreCase);
-                        if (containerNode is YamlMappingNode container)
+                        if (containerNode is YamlMapping container)
                         {
                             var imageNode = GetProperty(container, "image", StringComparison.OrdinalIgnoreCase);
                             ReportDependencyWithSeparator(this, context, imageNode, DependencyType.DockerImage, ':');
                         }
 
                         var servicesNode = GetProperty(jobNode, "services", StringComparison.OrdinalIgnoreCase);
-                        if (servicesNode is YamlMappingNode services)
+                        if (servicesNode is YamlMapping services)
                         {
-                            foreach (var serviceNameNode in services.Children)
+                            foreach (var serviceNameNode in services)
                             {
-                                if (serviceNameNode.Value is YamlMappingNode serviceNode)
+                                if (serviceNameNode.Value is YamlMapping serviceNode)
                                 {
                                     var imageNode = GetProperty(serviceNode, "image", StringComparison.Ordinal);
                                     ReportDependencyWithSeparator(this, context, imageNode, DependencyType.DockerImage, ':');
@@ -86,10 +86,10 @@ public sealed class GitHubActionsScanner : DependencyScanner
         return ValueTask.CompletedTask;
     }
 
-    private void ExtractUsesProperty(ScanFileContext context, YamlNode node)
+    private void ExtractUsesProperty(ScanFileContext context, YamlElement node)
     {
         var uses = GetProperty(node, "uses", StringComparison.OrdinalIgnoreCase);
-        if (uses is YamlScalarNode usesValue && usesValue.Value is { } value)
+        if (uses is YamlValue usesValue && usesValue.Value is { } value)
         {
             // uses: docker://alpine:3.8
             if (value.StartsWith(DockerPrefix, StringComparison.OrdinalIgnoreCase)) // https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#example-using-a-docker-hub-action

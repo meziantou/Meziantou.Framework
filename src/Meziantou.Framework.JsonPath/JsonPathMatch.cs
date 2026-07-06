@@ -12,7 +12,7 @@ public readonly struct JsonPathMatch
     }
 
     /// <summary>
-    /// Gets the JSON value of the matched node. May be <see langword="null"/> when the matched value is JSON <c>null</c>.
+    /// Gets the JSON value of the matched node. May be <see langword="null"/> when the matched value is JSON <c language="json">null</c>.
     /// </summary>
     public JsonNode? Value { get; }
 

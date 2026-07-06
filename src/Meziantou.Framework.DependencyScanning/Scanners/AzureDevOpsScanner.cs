@@ -1,4 +1,4 @@
-using YamlDotNet.RepresentationModel;
+using Meziantou.Framework.Yaml.Model;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -26,18 +26,8 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         return false;
     }
 
-    private static string? GetScalarValue(YamlNode? node)
-    {
-        if (node is YamlScalarNode scalar && scalar.Value is not null)
-        {
-            return scalar.Value;
-        }
-
-        return null;
-    }
-
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/pool?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
-    private void ScanPool(ScanFileContext context, YamlNode node)
+    private void ScanPool(ScanFileContext context, YamlElement node)
     {
         var poolNode = GetProperty(node, "pool", StringComparison.Ordinal);
         var vmImageNode = GetProperty(poolNode, "vmImage", StringComparison.Ordinal);
@@ -48,7 +38,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanStep(ScanFileContext context, YamlNode node)
+    private void ScanStep(ScanFileContext context, YamlElement node)
     {
         var taskNode = GetProperty(node, "task", StringComparison.Ordinal);
         ReportDependencyWithSeparator(this, context, taskNode, DependencyType.AzureDevOpsTask, '@');
@@ -58,10 +48,10 @@ public sealed class AzureDevOpsScanner : DependencyScanner
     }
 
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/stages?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
-    private void ScanStages(ScanFileContext context, YamlMappingNode node)
+    private void ScanStages(ScanFileContext context, YamlMapping node)
     {
         var stagesNode = GetProperty(node, "stages", StringComparison.Ordinal);
-        if (stagesNode is YamlSequenceNode stages)
+        if (stagesNode is YamlSequence stages)
         {
             foreach (var stage in stages)
             {
@@ -71,10 +61,10 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanJobs(ScanFileContext context, YamlNode node)
+    private void ScanJobs(ScanFileContext context, YamlElement node)
     {
         var jobsNode = GetProperty(node, "jobs", StringComparison.Ordinal);
-        if (jobsNode is YamlSequenceNode jobs)
+        if (jobsNode is YamlSequence jobs)
         {
             foreach (var job in jobs)
             {
@@ -85,10 +75,10 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanSteps(ScanFileContext context, YamlNode node)
+    private void ScanSteps(ScanFileContext context, YamlElement node)
     {
         var stepsNode = GetProperty(node, "steps", StringComparison.Ordinal);
-        if (stepsNode is YamlSequenceNode steps)
+        if (stepsNode is YamlSequence steps)
         {
             foreach (var step in steps)
             {
@@ -97,10 +87,10 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanJobContainers(ScanFileContext context, YamlNode node)
+    private void ScanJobContainers(ScanFileContext context, YamlElement node)
     {
         var containerNode = GetProperty(node, "container", StringComparison.Ordinal);
-        if (containerNode is YamlMappingNode container)
+        if (containerNode is YamlMapping container)
         {
             containerNode = GetProperty(container, "image", StringComparison.Ordinal);
         }
@@ -108,11 +98,11 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         ReportDependencyWithSeparator(this, context, containerNode, DependencyType.DockerImage, ':');
     }
 
-    private void ScanResources(ScanFileContext context, YamlNode node)
+    private void ScanResources(ScanFileContext context, YamlElement node)
     {
-        if (GetProperty(node, "resources", StringComparison.Ordinal) is YamlMappingNode resources)
+        if (GetProperty(node, "resources", StringComparison.Ordinal) is YamlMapping resources)
         {
-            if (GetProperty(resources, "containers", StringComparison.Ordinal) is YamlSequenceNode containers)
+            if (GetProperty(resources, "containers", StringComparison.Ordinal) is YamlSequence containers)
             {
                 foreach (var container in containers)
                 {
@@ -121,7 +111,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
                 }
             }
 
-            if (GetProperty(resources, "repositories", StringComparison.Ordinal) is YamlSequenceNode repositories)
+            if (GetProperty(resources, "repositories", StringComparison.Ordinal) is YamlSequence repositories)
             {
                 foreach (var repository in repositories)
                 {
@@ -160,9 +150,9 @@ public sealed class AzureDevOpsScanner : DependencyScanner
             var yaml = LoadYamlDocument(context.Content);
             if (yaml is not null)
             {
-                foreach (var document in yaml.Documents)
+                foreach (var document in yaml)
                 {
-                    if (document.RootNode is not YamlMappingNode rootNode)
+                    if (document.Contents is not YamlMapping rootNode)
                         continue;
 
                     ScanPool(context, rootNode);

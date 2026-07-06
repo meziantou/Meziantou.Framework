@@ -66,7 +66,7 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
 
     /// <summary>Evaluates this JSONPath expression against a custom object model.</summary>
     /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
-    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c>null</c>.</param>
+    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c language="json">null</c>.</param>
     /// <param name="navigator">The navigator used to inspect values.</param>
     /// <returns>A <see cref="JsonPathResult{TValue}"/> containing all matched nodes.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="navigator"/> is <see langword="null"/>.</exception>
@@ -77,7 +77,7 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
 
     /// <summary>Evaluates this JSONPath expression against a custom object model.</summary>
     /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
-    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c>null</c>.</param>
+    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c language="json">null</c>.</param>
     /// <param name="navigator">The navigator used to inspect values.</param>
     /// <param name="mode">The evaluation mode.</param>
     /// <returns>A <see cref="JsonPathResult{TValue}"/> containing all matched nodes.</returns>
@@ -149,7 +149,7 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     /// Evaluates this JSONPath expression and returns the first matched custom value, or <see langword="null"/> when there is no match.
     /// </summary>
     /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
-    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c>null</c>.</param>
+    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c language="json">null</c>.</param>
     /// <param name="navigator">The navigator used to inspect values.</param>
     /// <returns>The first matched value, or <see langword="null"/> when there is no match.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="navigator"/> is <see langword="null"/>.</exception>
@@ -162,7 +162,7 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     /// Evaluates this JSONPath expression and returns the first matched custom value, or <see langword="null"/> when there is no match.
     /// </summary>
     /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
-    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c>null</c>.</param>
+    /// <param name="root">The root value to query. May be <see langword="null"/> when the root value is JSON <c language="json">null</c>.</param>
     /// <param name="navigator">The navigator used to inspect values.</param>
     /// <param name="mode">The evaluation mode.</param>
     /// <returns>The first matched value, or <see langword="null"/> when there is no match.</returns>

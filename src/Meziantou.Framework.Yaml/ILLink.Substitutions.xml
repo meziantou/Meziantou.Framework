@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="Meziantou.Framework.Yaml" feature="Meziantou.Framework.Yaml.YamlSerializer.IsReflectionEnabledByDefault" featurevalue="false">
+    <type fullname="Meziantou.Framework.Yaml.Serialization.YamlSerializerFeatureSwitches">
+      <method signature="System.Boolean get_IsReflectionEnabledByDefault()" body="stub" value="false">
+      </method>
+    </type>
+  </assembly>
+</linker>
+

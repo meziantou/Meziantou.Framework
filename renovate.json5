@@ -13,7 +13,12 @@
       "enabled": false
     },
     {
-      "matchPackageNames": [ "Microsoft.CodeAnalysis", "Microsoft.CodeAnalysis.CSharp", "Microsoft.CodeAnalysis.CSharp.Workspaces" ],
+      "matchPackageNames": [
+        "Microsoft.CodeAnalysis",
+        "Microsoft.CodeAnalysis.Analyzers",
+        "Microsoft.CodeAnalysis.CSharp",
+        "Microsoft.CodeAnalysis.CSharp.Workspaces"
+      ],
       "matchFileNames": [
         "src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj",
         "src/Meziantou.Framework.Assertions.Analyzer/Meziantou.Framework.Assertions.Analyzer.csproj",
@@ -24,7 +29,8 @@
         "src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj",
         "src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj",
         "src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj",
-        "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj"
+        "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj",
+        "src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj"
       ],
       "groupName": "roslyn-analyzers",
       "enabled": false

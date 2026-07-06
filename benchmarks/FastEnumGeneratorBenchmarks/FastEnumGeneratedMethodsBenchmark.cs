@@ -1,3 +1,4 @@
+using FastEnumGeneratorBenchmarks.Generated;
 using BenchmarkDotNet.Attributes;
 
 namespace FastEnumGeneratorBenchmarks;

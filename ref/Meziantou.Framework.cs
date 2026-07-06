@@ -139,8 +139,8 @@ namespace Meziantou.Framework
         public static System.Guid UrlNamespace { get => throw null; }
         public static System.Guid OidNamespace { get => throw null; }
         public static System.Guid X500Namespace { get => throw null; }
-        public static System.Guid Create(System.Guid namespace, string name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
-        public static System.Guid Create(System.Guid namespace, System.ReadOnlySpan<byte> name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
+        public static System.Guid Create(System.Guid @namespace, string name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
+        public static System.Guid Create(System.Guid @namespace, System.ReadOnlySpan<byte> name, Meziantou.Framework.DeterministicGuidVersion version) => throw null;
     }
 
     public enum DeterministicGuidVersion

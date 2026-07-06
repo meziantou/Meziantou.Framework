@@ -60,9 +60,9 @@ namespace Meziantou.Framework.SimpleQueryLanguage
 
     public delegate bool ScalarParser<T>(string value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result);
 
-    public delegate bool UnhandledPropertyDelegate<T>(T obj, string propertyName, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
+    public delegate bool UnhandledPropertyDelegate<T>(T obj, string propertyName, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator @operator, string value);
 
-    public delegate System.Linq.Expressions.Expression<System.Func<T, bool>>? UnhandledPropertyExpressionHandler<T>(string propertyName, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator operator, string value);
+    public delegate System.Linq.Expressions.Expression<System.Func<T, bool>>? UnhandledPropertyExpressionHandler<T>(string propertyName, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator @operator, string value);
 }
 namespace Meziantou.Framework.SimpleQueryLanguage.Binding
 {

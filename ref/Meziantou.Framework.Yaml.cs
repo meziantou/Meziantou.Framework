@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Yaml
     {
         public bool ForceIndentLess { get => throw null; set { } }
         public Emitter(System.IO.TextWriter output, int bestIndent = 2, int bestWidth = 2147483647, bool isCanonical = false, bool forceIndentLess = false, bool emitKeyQuoted = false) { }
-        public void Emit(Meziantou.Framework.Yaml.Events.ParsingEvent event) { }
+        public void Emit(Meziantou.Framework.Yaml.Events.ParsingEvent @event) { }
     }
 
     public class EventReader
@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Yaml
 
     public interface IEmitter
     {
-        void Emit(Meziantou.Framework.Yaml.Events.ParsingEvent event);
+        void Emit(Meziantou.Framework.Yaml.Events.ParsingEvent @event);
     }
 
     public interface ILookAheadBuffer

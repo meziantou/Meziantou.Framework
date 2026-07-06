@@ -1457,6 +1457,9 @@ public sealed partial class SnapshotEndToEndTests
                 env.Set("DiffEngine_Disabled", "true");
                 env.Set("MSBUILDDISABLENODEREUSE", "1");
                 env.Set("DOTNET_CLI_TELEMETRY_OPTOUT", "1");
+                env.Set("TUNIT_DISABLE_LOGO", "true");
+                env.Set("TUNIT_DISABLE_HTML_REPORTER", "true");
+                env.Set("TUNIT_DISABLE_GITHUB_REPORTER", "true");
             })
             .ExecuteBufferedAsync();
 

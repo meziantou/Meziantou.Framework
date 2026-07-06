@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.ComponentModel;
+using System.Diagnostics;
 using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
@@ -48,7 +50,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 
             context.ReportDependency(this, submodule.Url, sha, DependencyType.GitReference,
                 nameLocation: new NonUpdatableLocation(context),
-                versionLocation: new NonUpdatableLocation(context));
+                versionLocation: new GitSubmoduleVersionLocation(context.FileSystem, context.FullPath, repositoryDirectory, gitDirectory, submodule.Path));
         }
 
         return ValueTask.CompletedTask;
@@ -368,6 +370,111 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
     private static bool TryReadExactly(Stream stream, Span<byte> buffer)
     {
         return stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false) == buffer.Length;
+    }
+
+    private sealed class GitSubmoduleVersionLocation : Location
+    {
+        private readonly string _repositoryDirectory;
+        private readonly string _gitDirectory;
+        private readonly string _submodulePath;
+
+        public GitSubmoduleVersionLocation(IFileSystem fileSystem, string filePath, string repositoryDirectory, string gitDirectory, string submodulePath)
+            : base(fileSystem, filePath)
+        {
+            _repositoryDirectory = repositoryDirectory;
+            _gitDirectory = gitDirectory;
+            _submodulePath = submodulePath;
+        }
+
+        public override bool IsUpdatable => true;
+
+        protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(newValue))
+                throw new ArgumentException("The new submodule commit SHA cannot be null or empty.", nameof(newValue));
+
+            if (oldValue is not null)
+            {
+                if (!TryReadGitLinks(_gitDirectory, out var gitLinks) || !gitLinks.TryGetValue(_submodulePath, out var currentValue))
+                    throw new DependencyScannerException($"Submodule '{_submodulePath}' was not found in the git index.");
+
+                if (!string.Equals(currentValue, oldValue, StringComparison.OrdinalIgnoreCase))
+                    throw new DependencyScannerException($"Expected value not found for submodule '{_submodulePath}'. Current value: {currentValue}; expected value: {oldValue}");
+            }
+
+            var gitProcessName = await GetAvailableGitProcessNameAsync(cancellationToken).ConfigureAwait(false);
+            await RunGitCommandAsync(gitProcessName, _repositoryDirectory, ["submodule", "update", "--init", "--", _submodulePath], cancellationToken).ConfigureAwait(false);
+
+            var submoduleDirectory = Path.Combine(_repositoryDirectory, _submodulePath);
+            await RunGitCommandAsync(gitProcessName, submoduleDirectory, ["fetch", "--all", "--tags", "--prune"], cancellationToken).ConfigureAwait(false);
+            await RunGitCommandAsync(gitProcessName, submoduleDirectory, ["checkout", "--detach", newValue], cancellationToken).ConfigureAwait(false);
+            await RunGitCommandAsync(gitProcessName, _repositoryDirectory, ["add", "--", _submodulePath], cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<string> GetAvailableGitProcessNameAsync(CancellationToken cancellationToken)
+    {
+        if (await IsProcessAvailableAsync("git", cancellationToken).ConfigureAwait(false))
+            return "git";
+
+        if (await IsProcessAvailableAsync("mingit", cancellationToken).ConfigureAwait(false))
+            return "mingit";
+
+        throw new InvalidOperationException("Cannot update Git submodule because neither 'git' nor 'mingit' is available.");
+    }
+
+    private static async Task<bool> IsProcessAvailableAsync(string processName, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo(processName)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            startInfo.ArgumentList.Add("--version");
+
+            using var process = Process.Start(startInfo);
+            if (process is null)
+                return false;
+
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            return process.ExitCode == 0;
+        }
+        catch (Win32Exception)
+        {
+            return false;
+        }
+    }
+
+    private static async Task RunGitCommandAsync(string processName, string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    {
+        var startInfo = new ProcessStartInfo(processName)
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        using var process = Process.Start(startInfo) ?? throw new DependencyScannerException($"Cannot start process '{processName}'.");
+
+        var standardOutputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        var errorOutputTask = process.StandardError.ReadToEndAsync(cancellationToken);
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        await standardOutputTask.ConfigureAwait(false);
+        var errorOutput = await errorOutputTask.ConfigureAwait(false);
+
+        if (process.ExitCode != 0)
+        {
+            throw new DependencyScannerException($"Command '{processName} {string.Join(" ", arguments)}' failed with exit code {process.ExitCode}: {errorOutput}");
+        }
     }
 
     private readonly record struct SubmoduleEntry(string Path, string Url);

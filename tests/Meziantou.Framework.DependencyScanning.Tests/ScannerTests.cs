@@ -600,12 +600,26 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
         // Assert
         var result = await GetDependencies<GitSubmoduleDependencyScanner>();
-        Assert.Contains(result, d =>
+        var dependency = Assert.Single(result, d =>
             d.Type == DependencyType.GitReference &&
             d.Version == head &&
             IsEquivalentPath(d.Name, remote.FullPath));
 
-        Assert.All(result, item => Assert.False(item.VersionLocation!.IsUpdatable));
+        Assert.False(dependency.NameLocation!.IsUpdatable);
+        Assert.True(dependency.VersionLocation!.IsUpdatable);
+
+        await File.WriteAllTextAsync(remote.GetFullPath("test.txt"), "updated-content");
+        await ExecuteProcess("git", "add .", remote.FullPath);
+        await ExecuteProcess("git", "commit -m updated-submodule-head", remote.FullPath);
+        var updatedHead = (await ExecuteProcess("git", "rev-parse HEAD", remote.FullPath)).Trim();
+
+        await dependency.UpdateVersionAsync(updatedHead);
+
+        var submoduleHead = (await ExecuteProcess("git", "-C submodule_path rev-parse HEAD", _directory.FullPath)).Trim();
+        Assert.Equal(updatedHead, submoduleHead);
+
+        var indexHead = (await ExecuteProcess("git", "rev-parse :submodule_path", _directory.FullPath)).Trim();
+        Assert.Equal(updatedHead, indexHead);
 
         async Task<string> ExecuteProcess(string process, string args, string workingDirectory)
         {

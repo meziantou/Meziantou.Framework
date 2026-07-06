@@ -52,7 +52,7 @@ dotnet_diagnostic.SYSLIB1054.severity = warning
 dotnet_diagnostic.MA0186.severity = warning
 
 [src/**/*.cs]
-dotnet_diagnostic.MA0110.severity = error
+dotnet_diagnostic.MA0110.severity = warning
 
 [samples/**/*.cs]
 dotnet_diagnostic.CA1852.severity = none

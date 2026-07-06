@@ -155,20 +155,6 @@ public static partial class EnumerableExtensions
         return true;
     }
 
-    [Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
-    public static IEnumerable<T> Sort<T>(this IEnumerable<T> list)
-    {
-        return Sort(list, comparer: null);
-    }
-
-    [Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
-    public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T>? comparer)
-    {
-        ArgumentNullException.ThrowIfNull(list);
-
-        return list.Order(comparer);
-    }
-
     public static int IndexOf<T>(this IEnumerable<T> list, T value)
     {
         ArgumentNullException.ThrowIfNull(list);

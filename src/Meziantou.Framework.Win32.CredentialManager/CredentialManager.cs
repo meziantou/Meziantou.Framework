@@ -204,20 +204,12 @@ public static class CredentialManager
         }
     }
 
-    [Obsolete("Use EnumerateCredentials")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public static IReadOnlyList<Credential> EnumerateCrendentials() => EnumerateCredentials();
-
     /// <summary>Enumerates all credentials from the Windows Credential Manager.</summary>
     /// <returns>A read-only list of credentials.</returns>
     public static IReadOnlyList<Credential> EnumerateCredentials()
     {
         return EnumerateCredentials(filter: null);
     }
-
-    [Obsolete("Use EnumerateCredentials")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public static IReadOnlyList<Credential> EnumerateCrendentials(string? filter) => EnumerateCredentials(filter);
 
     /// <summary>Enumerates credentials from the Windows Credential Manager that match the specified filter.</summary>
     /// <param name="filter">A filter string that supports wildcards. Pass <see langword="null"/> or "*" to enumerate all credentials.</param>

@@ -5,28 +5,6 @@ namespace Meziantou.Framework;
 /// </summary>
 public static class DateTimeExtensions
 {
-    /// <summary>Gets the first date of a specific ISO 8601 week.</summary>
-    [Obsolete("Use System.Globalization.ISOWeek", DiagnosticId = "MEZ_NETCORE3_1")]
-    public static DateTime FirstDateOfWeekIso8601(int year, int weekOfYear, DayOfWeek weekStart = DayOfWeek.Monday)
-    {
-        var jan1 = new DateTime(year, 1, 1);
-        var fourthDay = (DayOfWeek)(((int)weekStart + 3) % 7);
-        var daysOffset = fourthDay - jan1.DayOfWeek;
-
-        var firstThursday = jan1.AddDays(daysOffset);
-        var cal = CultureInfo.CurrentCulture.Calendar;
-        var firstWeek = cal.GetWeekOfYear(firstThursday, CalendarWeekRule.FirstFourDayWeek, weekStart);
-
-        var weekNum = weekOfYear;
-        if (firstWeek <= 1)
-        {
-            weekNum--;
-        }
-
-        var result = firstThursday.AddDays(weekNum * 7);
-        return result.AddDays(-3);
-    }
-
     /// <summary>Returns the start of the week for the specified date using the current culture's first day of week.</summary>
     public static DateTime StartOfWeek(this DateTime dt)
     {

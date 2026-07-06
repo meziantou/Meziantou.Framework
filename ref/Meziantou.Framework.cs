@@ -93,8 +93,6 @@ namespace Meziantou.Framework
 
     public static class DateTimeExtensions
     {
-        [System.Obsolete("Use System.Globalization.ISOWeek", DiagnosticId = "MEZ_NETCORE3_1")]
-        public static System.DateTime FirstDateOfWeekIso8601(int year, int weekOfYear, System.DayOfWeek weekStart = 1) => throw null;
         public static System.DateTime StartOfWeek(this System.DateTime dt) => throw null;
         public static System.DateTime StartOfWeek(this System.DateTime dt, System.DayOfWeek startOfWeek) => throw null;
         public static System.DateTime StartOfMonth(this System.DateTime dt) => throw null;
@@ -189,10 +187,6 @@ namespace Meziantou.Framework
         public static bool IsDistinctBy<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer) => throw null;
         public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source) => throw null;
         public static bool IsDistinct<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IEqualityComparer<TSource>? comparer) => throw null;
-        [System.Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
-        public static System.Collections.Generic.IEnumerable<T> Sort<T>(this System.Collections.Generic.IEnumerable<T> list) => throw null;
-        [System.Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
-        public static System.Collections.Generic.IEnumerable<T> Sort<T>(this System.Collections.Generic.IEnumerable<T> list, System.Collections.Generic.IComparer<T>? comparer) => throw null;
         public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value) => throw null;
         public static int IndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value, System.Collections.Generic.IEqualityComparer<T>? comparer) => throw null;
         public static long LongIndexOf<T>(this System.Collections.Generic.IEnumerable<T> list, T value) where T : System.IEquatable<T> => throw null;
@@ -264,32 +258,6 @@ namespace Meziantou.Framework
         public static void AddValues<T>(this System.HashCode hashCode, System.Collections.Generic.IEnumerable<T> values, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { }
     }
 
-    public static class HexaConverter
-    {
-        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
-        public static string ToHexaString(this byte[] bytes) => throw null;
-        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
-        public static string ToHexaString(this byte[] bytes, Meziantou.Framework.HexaOptions options) => throw null;
-        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
-        public static string ToHexaString(this System.ReadOnlySpan<byte> bytes) => throw null;
-        [System.Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
-        public static string ToHexaString(this System.ReadOnlySpan<byte> bytes, Meziantou.Framework.HexaOptions options) => throw null;
-        [System.Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
-        public static byte[] ParseHexaString(string str) => throw null;
-        [System.Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
-        public static bool TryParseHexaString(string? str, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? result) => throw null;
-        [System.Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
-        public static bool TryParseHexaString(System.ReadOnlySpan<char> str, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out byte[]? result) => throw null;
-        [System.Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
-        public static bool TryParseHexaString(string? str, System.Span<byte> bytes, out int writtenBytes) => throw null;
-    }
-
-    public enum HexaOptions
-    {
-        LowerCase = 0,
-        UpperCase = 1
-    }
-
     public interface ICachedAsyncEnumerable<T> : System.Collections.Generic.IAsyncEnumerable<T>, System.IAsyncDisposable
     {
     }
@@ -302,12 +270,6 @@ namespace Meziantou.Framework
     {
         public static void PathCreateDirectory(string filePath) { }
         public static void PathUnprotect(string path) { }
-        [System.Obsolete("Use FullPath struct instead")]
-        public static bool ArePathEqual(string path1, string path2) => throw null;
-        [System.Obsolete("Use FullPath struct instead")]
-        public static bool IsChildPathOf(string parent, string child) => throw null;
-        [System.Obsolete("Use FullPath struct instead")]
-        public static string MakeRelativePath(string root, string path) => throw null;
         public static string ToValidFileName(string fileName, string reservedNameFormat = "_{0}_", string reservedCharFormat = "_x{0}_") => throw null;
         public static void CopyDirectory(string sourcePath, string destinationPath) { }
         public static void CopyDirectory(System.IO.DirectoryInfo source, System.IO.DirectoryInfo destination) { }
@@ -429,49 +391,6 @@ namespace Meziantou.Framework
         public static System.Diagnostics.Process? GetParentProcess(this System.Diagnostics.Process process) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public static System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessEntry> GetProcesses() => throw null;
-        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
-        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
-        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, string? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
-        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments, string? workingDirectory, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
-        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(this System.Diagnostics.ProcessStartInfo psi, bool redirectOutput, System.Threading.CancellationToken cancellationToken = null) => throw null;
-        [System.Obsolete("Use Process.RunAndCaptureText or Meziantou.Framework.ProcessWrapper.")]
-        public static System.Threading.Tasks.Task<Meziantou.Framework.ProcessResult> RunAsTaskAsync(this System.Diagnostics.ProcessStartInfo psi, System.Threading.CancellationToken cancellationToken = null) => throw null;
-    }
-
-    [System.Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
-    public sealed class ProcessOutput
-    {
-        public Meziantou.Framework.ProcessOutputType Type { get => throw null; }
-        public string Text { get => throw null; }
-        public void Deconstruct(out Meziantou.Framework.ProcessOutputType type, out string text) => throw null;
-        public override string ToString() => throw null;
-    }
-
-    [System.Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
-    public sealed class ProcessOutputCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.ProcessOutput>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.ProcessOutput>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.ProcessOutput>, System.Collections.IEnumerable
-    {
-        public int Count { get => throw null; }
-        public Meziantou.Framework.ProcessOutput this[int index] { get => throw null; }
-        public System.Collections.Generic.IEnumerator<Meziantou.Framework.ProcessOutput> GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public override string ToString() => throw null;
-    }
-
-    [System.Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
-    public enum ProcessOutputType
-    {
-        StandardOutput = 0,
-        StandardError = 1
-    }
-
-    [System.Obsolete("Use Meziantou.Framework.ProcessWrapper.")]
-    public sealed class ProcessResult
-    {
-        public int ExitCode { get => throw null; }
-        public Meziantou.Framework.ProcessOutputCollection Output { get => throw null; }
     }
 
     public static class QueueExtensions
@@ -1171,22 +1090,6 @@ namespace Meziantou.Framework.DataAnnotations
     {
         protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) => throw null;
         public override bool IsValid(object? value) => throw null;
-    }
-}
-namespace Meziantou.Framework.IO
-{
-    [System.Obsolete("Use TextWriter.CreateBroadcasting", DiagnosticId = "MEZ_NET9")]
-    public sealed class TeeTextWriter : System.IO.TextWriter
-    {
-        public System.IO.TextWriter Stream1 { get => throw null; }
-        public System.IO.TextWriter Stream2 { get => throw null; }
-        public System.Text.Encoding Encoding { get => throw null; }
-        public TeeTextWriter(System.IO.TextWriter stream1, System.IO.TextWriter stream2) { }
-        public override void Write(char value) { }
-        public override void Write(char[] buffer, int index, int count) { }
-        public override void Write(string? value) { }
-        public override void Flush() { }
-        protected override void Dispose(bool disposing) { }
     }
 }
 namespace Meziantou.Framework.Text

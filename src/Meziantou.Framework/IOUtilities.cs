@@ -48,43 +48,6 @@ static partial class IOUtilities
         }
     }
 
-    [Obsolete("Use FullPath struct instead")]
-    public static bool ArePathEqual(string path1, string path2)
-    {
-        ArgumentNullException.ThrowIfNull(path1);
-        ArgumentNullException.ThrowIfNull(path2);
-
-        var uri1 = new Uri(path1);
-        var uri2 = new Uri(path2);
-
-        return Uri.Compare(uri1, uri2, UriComponents.AbsoluteUri, UriFormat.UriEscaped, StringComparison.OrdinalIgnoreCase) is 0;
-    }
-
-    [Obsolete("Use FullPath struct instead")]
-    public static bool IsChildPathOf(string parent, string child)
-    {
-        ArgumentNullException.ThrowIfNull(parent);
-        ArgumentNullException.ThrowIfNull(child);
-
-        var parentUri = new Uri(parent);
-        var childUri = new Uri(child);
-
-        return parentUri.IsBaseOf(childUri);
-    }
-
-    [Obsolete("Use FullPath struct instead")]
-    public static string MakeRelativePath(string root, string path)
-    {
-        ArgumentNullException.ThrowIfNull(root);
-        ArgumentNullException.ThrowIfNull(path);
-
-        var parentUri = new Uri(root);
-        var childUri = new Uri(path);
-
-        var relativeUri = parentUri.MakeRelativeUri(childUri).ToString();
-        return relativeUri.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-    }
-
     /// <summary>Converts a text into a valid file name.</summary>
     /// <param name="fileName">The file name.</param>
     /// <param name="reservedNameFormat">The reserved format to use for reserved names. If null '_{0}_' will be used.</param>

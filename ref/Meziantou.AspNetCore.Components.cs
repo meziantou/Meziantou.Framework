@@ -143,14 +143,6 @@ namespace Meziantou.AspNetCore.Components
         public static void UpdateUrlUsingParameters(this Microsoft.AspNetCore.Components.NavigationManager navigationManager, Microsoft.AspNetCore.Components.IComponent component, bool replaceHistory = false) { }
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
-    [System.Obsolete("Use SupplyParameterFromQueryAttribute instead")]
-    public sealed class QueryStringParameterAttribute : System.Attribute
-    {
-        public string? Name { get => throw null; }
-        public QueryStringParameterAttribute(string name) { }
-    }
-
     public sealed class QueryStringService
     {
         public QueryStringService(Microsoft.AspNetCore.Components.NavigationManager navigationManager, Microsoft.JSInterop.IJSRuntime jsRuntime) { }

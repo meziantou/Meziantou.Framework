@@ -21,7 +21,7 @@ public readonly struct BcryptHashInfo : IEquatable<BcryptHashInfo>
     /// <summary>Gets the BCrypt work factor (cost).</summary>
     public int WorkFactor { get; }
 
-    public override bool Equals(object? obj) => obj is BcryptHashInfo other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is BcryptHashInfo other && Equals(other);
 
     public bool Equals(BcryptHashInfo other) => Version == other.Version && WorkFactor == other.WorkFactor;
 

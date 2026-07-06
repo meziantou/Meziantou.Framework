@@ -118,7 +118,7 @@ namespace Meziantou.Framework
         public ProcessExitCode(int value) { }
         public bool IsAnyOf(params System.ReadOnlySpan<int> expectedValues) => throw null;
         public bool Equals(Meziantou.Framework.ProcessExitCode other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
         public static explicit operator Meziantou.Framework.ProcessExitCode(int value) => throw null;

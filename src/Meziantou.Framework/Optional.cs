@@ -42,10 +42,7 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>
         return EqualityComparer<T>.Default.Equals(Value, other.Value);
     }
 
-    public override bool Equals(object? obj)
-    {
-        return obj is Optional<T> other && Equals(other);
-    }
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is Optional<T> other && Equals(other);
 
     public override int GetHashCode()
     {

@@ -32,7 +32,7 @@ namespace Meziantou.Framework
         public string Text { get => throw null; }
         public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string text) { }
         public bool Equals(Meziantou.Framework.TextDiffEntry other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.TextDiffEntry left, Meziantou.Framework.TextDiffEntry right) => throw null;
         public static bool operator !=(Meziantou.Framework.TextDiffEntry left, Meziantou.Framework.TextDiffEntry right) => throw null;

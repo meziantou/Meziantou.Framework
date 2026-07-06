@@ -354,7 +354,7 @@ namespace Meziantou.Framework
         public override string? ToString() => throw null;
         public void Deconstruct(out bool hasValue, out T value) => throw null;
         public bool Equals(Meziantou.Framework.Optional<T> other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Optional<T> left, Meziantou.Framework.Optional<T> right) => throw null;
         public static bool operator !=(Meziantou.Framework.Optional<T> left, Meziantou.Framework.Optional<T> right) => throw null;
@@ -364,7 +364,7 @@ namespace Meziantou.Framework
     {
         public int ProcessId { get => throw null; }
         public int ParentProcessId { get => throw null; }
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.ProcessEntry other) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
@@ -446,7 +446,7 @@ namespace Meziantou.Framework
         public bool IsInRangeUpperInclusive(Meziantou.Framework.Range<T> range) => throw null;
         public bool Equals(Meziantou.Framework.Range<T> other) => throw null;
         public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override string? ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Range<T> left, Meziantou.Framework.Range<T> right) => throw null;
         public static bool operator !=(Meziantou.Framework.Range<T> left, Meziantou.Framework.Range<T> right) => throw null;
@@ -838,8 +838,8 @@ namespace Meziantou.Framework.Collections
         public static Meziantou.Framework.Collections.ImmutableEquatableArray<T> Empty { get => throw null; }
         public ref T this[int index] { get => throw null; }
         public int Length { get => throw null; }
-        public bool Equals(Meziantou.Framework.Collections.ImmutableEquatableArray<T>? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Collections.ImmutableEquatableArray<T>? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public Enumerator<T> GetEnumerator() => throw null;
         public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableArray<T>? left, Meziantou.Framework.Collections.ImmutableEquatableArray<T>? right) => throw null;
@@ -880,8 +880,8 @@ namespace Meziantou.Framework.Collections
         public ValueCollection<TKey, TValue> Values { get => throw null; }
         public bool ContainsKey(TKey key) => throw null;
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
-        public bool Equals(Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? left, Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? left, Meziantou.Framework.Collections.ImmutableEquatableDictionary<TKey, TValue>? right) => throw null;
@@ -910,8 +910,8 @@ namespace Meziantou.Framework.Collections
         public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Empty { get => throw null; }
         public int Count { get => throw null; }
         public bool Contains(T item) => throw null;
-        public bool Equals(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Collections.ImmutableEquatableSet<T>? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? left, Meziantou.Framework.Collections.ImmutableEquatableSet<T>? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? left, Meziantou.Framework.Collections.ImmutableEquatableSet<T>? right) => throw null;

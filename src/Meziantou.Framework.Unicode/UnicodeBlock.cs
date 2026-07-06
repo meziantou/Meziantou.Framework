@@ -27,7 +27,7 @@ public sealed class UnicodeBlock : IEquatable<UnicodeBlock>
     /// <returns><see langword="true"/> if the rune is in the block; otherwise, <see langword="false"/>.</returns>
     public bool Contains(Rune rune) => Range.Contains(rune);
 
-    public bool Equals(UnicodeBlock? other)
+    public bool Equals([NotNullWhen(true)] UnicodeBlock? other)
     {
         if (other is null)
             return false;
@@ -38,7 +38,7 @@ public sealed class UnicodeBlock : IEquatable<UnicodeBlock>
         return Name == other.Name && Range == other.Range;
     }
 
-    public override bool Equals(object? obj) => obj is UnicodeBlock other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is UnicodeBlock other && Equals(other);
 
     public override int GetHashCode() => HashCode.Combine(Name, Range);
 

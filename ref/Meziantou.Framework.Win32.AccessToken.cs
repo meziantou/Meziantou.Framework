@@ -112,8 +112,8 @@ namespace Meziantou.Framework.Win32
         public string FullName { get => throw null; }
         public override string ToString() => throw null;
         public static Meziantou.Framework.Win32.SecurityIdentifier FromWellKnown(Meziantou.Framework.Win32.WellKnownSidType type) => throw null;
-        public bool Equals(Meziantou.Framework.Win32.SecurityIdentifier? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Win32.SecurityIdentifier? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Win32.SecurityIdentifier? left, Meziantou.Framework.Win32.SecurityIdentifier? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Win32.SecurityIdentifier? left, Meziantou.Framework.Win32.SecurityIdentifier? right) => throw null;

@@ -10,7 +10,7 @@ namespace Meziantou.Framework.CodeOwners;
 /// var content = """
 ///     [Backend][2] @backend-team
 ///     *.cs @csharp-owner
-///     
+///
 ///     ^[Optional]
 ///     docs/* @docs-owner
 ///     """;
@@ -74,7 +74,7 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
         return result;
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         return obj is CodeOwnersSection section && Equals(section);
     }

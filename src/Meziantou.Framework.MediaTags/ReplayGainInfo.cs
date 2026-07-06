@@ -26,7 +26,7 @@ public readonly struct ReplayGainInfo : IEquatable<ReplayGainInfo>
         && AlbumGain == other.AlbumGain && AlbumPeak == other.AlbumPeak;
 
     /// <inheritdoc/>
-    public override bool Equals(object? obj) => obj is ReplayGainInfo other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is ReplayGainInfo other && Equals(other);
 
     /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(TrackGain, TrackPeak, AlbumGain, AlbumPeak);

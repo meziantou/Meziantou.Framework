@@ -20,8 +20,8 @@ namespace Meziantou.Framework.Versioning
         public string ToString(string? format, System.IFormatProvider? formatProvider) => throw null;
         public override string ToString() => throw null;
         public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.Versioning.SemanticVersion? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Versioning.SemanticVersion? other) => throw null;
         public int CompareTo(object? obj) => throw null;
         public int CompareTo(Meziantou.Framework.Versioning.SemanticVersion? other) => throw null;
         public static Meziantou.Framework.Versioning.SemanticVersion Parse(string versionString) => throw null;
@@ -58,8 +58,8 @@ namespace Meziantou.Framework.Versioning
         public static Meziantou.Framework.Versioning.SemanticVersionRange LessThanOrEqual(Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
         public static Meziantou.Framework.Versioning.SemanticVersionRange LessThan(Meziantou.Framework.Versioning.SemanticVersion version) => throw null;
         public override string ToString() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public bool Equals(Meziantou.Framework.Versioning.SemanticVersionRange? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Versioning.SemanticVersionRange? other) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Versioning.SemanticVersionRange? left, Meziantou.Framework.Versioning.SemanticVersionRange? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Versioning.SemanticVersionRange? left, Meziantou.Framework.Versioning.SemanticVersionRange? right) => throw null;

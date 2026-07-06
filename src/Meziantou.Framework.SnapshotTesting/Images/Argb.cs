@@ -22,7 +22,7 @@ internal readonly struct Argb : IEquatable<Argb>
     internal uint PackedValue => _value;
 
     public bool Equals(Argb other) => _value == other._value;
-    public override bool Equals(object? obj) => obj is Argb other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is Argb other && Equals(other);
     public override int GetHashCode() => _value.GetHashCode();
     public override string ToString() => $"#{_value:X8}";
 

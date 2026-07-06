@@ -50,8 +50,8 @@ namespace Meziantou.Framework
         public Meziantou.Framework.UnicodeRange Range { get => throw null; }
         public bool Contains(int codePoint) => throw null;
         public bool Contains(System.Text.Rune rune) => throw null;
-        public bool Equals(Meziantou.Framework.UnicodeBlock? other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.UnicodeBlock? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
     }
@@ -455,7 +455,7 @@ namespace Meziantou.Framework
         public bool Contains(int codePoint) => throw null;
         public bool Contains(System.Text.Rune rune) => throw null;
         public bool Equals(Meziantou.Framework.UnicodeRange other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.UnicodeRange left, Meziantou.Framework.UnicodeRange right) => throw null;
         public static bool operator !=(Meziantou.Framework.UnicodeRange left, Meziantou.Framework.UnicodeRange right) => throw null;

@@ -71,7 +71,7 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
         return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.None, member: null, section);
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         return obj is CodeOwnersEntry entry && Equals(entry);
 

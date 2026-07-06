@@ -59,7 +59,7 @@ public partial class TagDirective : Token
     /// <summary>Determines whether the specified System.Object is equal to the current System.Object.</summary>
     /// <param name="obj">The System.Object to compare with the current System.Object.</param>
     /// <returns>true if the specified System.Object is equal to the current System.Object; otherwise, false.</returns>
-    public override bool Equals(object? obj) => obj is TagDirective other && Handle.Equals(other.Handle, StringComparison.Ordinal) && Prefix.Equals(other.Prefix, StringComparison.Ordinal);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is TagDirective other && Handle.Equals(other.Handle, StringComparison.Ordinal) && Prefix.Equals(other.Prefix, StringComparison.Ordinal);
 
     /// <summary>Serves as a hash function for a particular type.</summary>
     /// <returns>

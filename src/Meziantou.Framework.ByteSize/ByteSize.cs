@@ -43,7 +43,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     /// <summary>Gets a <see cref="ByteSize"/> instance representing the minimum possible byte value.</summary>
     public static ByteSize MinValue => new(long.MinValue);
 
-    public override bool Equals(object? obj) => obj is ByteSize byteSize && Equals(byteSize);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is ByteSize byteSize && Equals(byteSize);
 
     public bool Equals(ByteSize other) => Value == other.Value;
 

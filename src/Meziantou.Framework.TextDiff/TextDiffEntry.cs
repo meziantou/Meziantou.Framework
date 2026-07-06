@@ -18,7 +18,7 @@ public readonly struct TextDiffEntry : IEquatable<TextDiffEntry>
     public bool Equals(TextDiffEntry other)
         => Operation == other.Operation && Text == other.Text;
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
         => obj is TextDiffEntry other && Equals(other);
 
     public override int GetHashCode()

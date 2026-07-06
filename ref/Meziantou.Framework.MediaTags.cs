@@ -128,7 +128,7 @@ namespace Meziantou.Framework.MediaTags
         public double? AlbumGain { get => throw null; init { } }
         public double? AlbumPeak { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.MediaTags.ReplayGainInfo other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.MediaTags.ReplayGainInfo left, Meziantou.Framework.MediaTags.ReplayGainInfo right) => throw null;
         public static bool operator !=(Meziantou.Framework.MediaTags.ReplayGainInfo left, Meziantou.Framework.MediaTags.ReplayGainInfo right) => throw null;

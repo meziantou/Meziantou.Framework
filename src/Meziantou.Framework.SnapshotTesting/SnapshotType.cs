@@ -61,7 +61,7 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         return new SnapshotType(name ?? nameSpan.ToString());
     }
 
-    public bool Equals(SnapshotType? other) => other is not null && StringComparer.Ordinal.Equals(Type, other.Type);
+    public bool Equals([NotNullWhen(true)] SnapshotType? other) => other is not null && StringComparer.Ordinal.Equals(Type, other.Type);
     public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Type);
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is SnapshotType snapshotType && Equals(snapshotType);
 

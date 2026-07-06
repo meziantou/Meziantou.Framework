@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Reflection;
+using TestUtilities;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 
@@ -32,11 +33,8 @@ public sealed class YamlFeatureSwitchPackageTests(YamlPackageFixture yamlPackage
 
     private static string GetRuntimeAssemblyEntryName()
     {
-#if NET11_0_OR_GREATER
-        return "lib/net11.0/Meziantou.Framework.Yaml.dll";
-#else
-        return "lib/net10.0/Meziantou.Framework.Yaml.dll";
-#endif
+        var tfm = TargetFrameworkHelper.GetTargetFrameworkMoniker();
+        return $"lib/{tfm}/Meziantou.Framework.Yaml.dll";
     }
 
     [Fact]

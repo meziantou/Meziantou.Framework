@@ -359,12 +359,7 @@ internal static class Tokenizer
         }
 
         var span = text.AsSpan();
-
-#if NET10_0_OR_GREATER
         var lookup = top.KeywordMap.GetAlternateLookup<ReadOnlySpan<char>>();
-#else
-        var lookup = top.KeywordMap;
-#endif
         var lastIndex = 0;
         foreach (var m in top.KeywordPatternRe.EnumerateMatches(span))
         {
@@ -374,12 +369,7 @@ internal static class Tokenizer
             }
 
             var word = span.Slice(m.Index, m.Length);
-#if NET10_0_OR_GREATER
-            if (lookup.TryGetValue(word, out var data) && data.Scope is not null
-#else
-            if (lookup.TryGetValue(word.ToString(), out var data) && data.Scope is not null
-#endif
-                && (top.KeywordValidator is null || top.KeywordValidator(input, bufferStart + m.Index, word)))
+            if (lookup.TryGetValue(word, out var data) && data.Scope is not null && (top.KeywordValidator is null || top.KeywordValidator(input, bufferStart + m.Index, word)))
             {
                 emitter.OpenScope(data.Scope);
                 emitter.AddText(word);

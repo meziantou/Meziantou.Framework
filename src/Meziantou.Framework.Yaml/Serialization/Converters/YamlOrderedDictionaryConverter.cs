@@ -1,4 +1,3 @@
-#if NET9_0_OR_GREATER
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 internal sealed class YamlOrderedDictionaryConverter<TValue> : YamlConverter<OrderedDictionary<string, TValue>?>
 {
@@ -62,4 +61,3 @@ internal sealed class YamlOrderedDictionaryConverter<TKey, TValue> : YamlConvert
         YamlDictionaryConverterHelper.WriteEntries(writer, value, _valueConverter);
     }
 }
-#endif

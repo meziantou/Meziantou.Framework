@@ -76,11 +76,7 @@ public static class MeziantouServiceDefaults
         builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(jsonOptions => ConfigureJsonOptions(jsonOptions.SerializerOptions, options));
 
         builder.Services.AddProblemDetails();
-
-#if NET10_0_OR_GREATER
         builder.Services.AddValidation();
-#endif
-
         return builder;
     }
 
@@ -176,12 +172,8 @@ public static class MeziantouServiceDefaults
         {
             ForwardedHeaders = options.ForwardedHeaders.ForwardedHeaders,
         };
-#pragma warning disable ASPDEPR005 // Type or member is obsolete
-        forwardedHeadersOptions.KnownNetworks.Clear();
-#pragma warning restore ASPDEPR005 // Type or member is obsolete
-#if NET10_0_OR_GREATER
+
         forwardedHeadersOptions.KnownIPNetworks.Clear();
-#endif
         forwardedHeadersOptions.KnownProxies.Clear();
 
         app.UseForwardedHeaders(forwardedHeadersOptions);

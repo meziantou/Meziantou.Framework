@@ -1208,7 +1208,6 @@ public sealed class PublicApiGeneratorTests
             """);
     }
 
-#if NET10_0_OR_GREATER
     [Fact]
     public async Task ExtensionMembers_CSharp14()
     {
@@ -1240,7 +1239,6 @@ public sealed class PublicApiGeneratorTests
             TargetFramework = "net10.0",
         });
     }
-#endif
 
     [Fact]
     public async Task Method_ParameterModifiers()
@@ -2331,7 +2329,6 @@ public sealed class PublicApiGeneratorTests
             """);
     }
 
-#if NET10_0_OR_GREATER
     [Fact]
     public async Task GenericConstraint_AllowsRefStruct()
     {
@@ -2351,7 +2348,6 @@ public sealed class PublicApiGeneratorTests
             TargetFramework = "net10.0",
         });
     }
-#endif
 
     [InlineSnapshotAssertion(nameof(expected))]
     private static async Task Validate(string source, string expected, PublicApiOptions? options = null, CompilerOptions? compilerOptions = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)

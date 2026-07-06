@@ -1,0 +1,51 @@
+<Project>
+  <PropertyGroup>
+    <_EmbeddedConstantsTaskAssemblyPath>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', '..', 'tasks', 'Meziantou.Framework.EmbeddedConstantsGenerator.dll'))</_EmbeddedConstantsTaskAssemblyPath>
+
+    <Meziantou_EmbeddedConstantsNamespace Condition="'$(Meziantou_EmbeddedConstantsNamespace)' == '' and '$(EmbeddedConstantsNamespace)' != ''">$(EmbeddedConstantsNamespace)</Meziantou_EmbeddedConstantsNamespace>
+    <Meziantou_EmbeddedConstantsClassName Condition="'$(Meziantou_EmbeddedConstantsClassName)' == '' and '$(EmbeddedConstantsClassName)' != ''">$(EmbeddedConstantsClassName)</Meziantou_EmbeddedConstantsClassName>
+    <Meziantou_EmbeddedConstantsClassVisibility Condition="'$(Meziantou_EmbeddedConstantsClassVisibility)' == '' and '$(EmbeddedConstantsClassVisibility)' != ''">$(EmbeddedConstantsClassVisibility)</Meziantou_EmbeddedConstantsClassVisibility>
+    <Meziantou_EmbeddedConstantsMemberVisibility Condition="'$(Meziantou_EmbeddedConstantsMemberVisibility)' == '' and '$(EmbeddedConstantsMemberVisibility)' != ''">$(EmbeddedConstantsMemberVisibility)</Meziantou_EmbeddedConstantsMemberVisibility>
+    <Meziantou_EmbeddedConstantsOutputPath Condition="'$(Meziantou_EmbeddedConstantsOutputPath)' == '' and '$(EmbeddedConstantsOutputPath)' != ''">$(EmbeddedConstantsOutputPath)</Meziantou_EmbeddedConstantsOutputPath>
+
+    <Meziantou_EmbeddedConstantsNamespace Condition="'$(Meziantou_EmbeddedConstantsNamespace)' == '' and '$(RootNamespace)' != ''">$(RootNamespace)</Meziantou_EmbeddedConstantsNamespace>
+    <Meziantou_EmbeddedConstantsNamespace Condition="'$(Meziantou_EmbeddedConstantsNamespace)' == ''">$(MSBuildProjectName)</Meziantou_EmbeddedConstantsNamespace>
+    <Meziantou_EmbeddedConstantsClassName Condition="'$(Meziantou_EmbeddedConstantsClassName)' == ''">EmbeddedConstants</Meziantou_EmbeddedConstantsClassName>
+    <Meziantou_EmbeddedConstantsClassVisibility Condition="'$(Meziantou_EmbeddedConstantsClassVisibility)' == ''">internal</Meziantou_EmbeddedConstantsClassVisibility>
+    <Meziantou_EmbeddedConstantsMemberVisibility Condition="'$(Meziantou_EmbeddedConstantsMemberVisibility)' == ''">public</Meziantou_EmbeddedConstantsMemberVisibility>
+    <Meziantou_EmbeddedConstantsOutputPath Condition="'$(Meziantou_EmbeddedConstantsOutputPath)' == ''">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'Meziantou.Framework.EmbeddedConstantsGenerator', 'EmbeddedConstants.g.cs'))</Meziantou_EmbeddedConstantsOutputPath>
+
+    <_EmbeddedConstantsGeneratedCodePath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(Meziantou_EmbeddedConstantsOutputPath)'))</_EmbeddedConstantsGeneratedCodePath>
+    <_EmbeddedConstantsGeneratedCodeDirectory>$([System.IO.Path]::GetDirectoryName('$(_EmbeddedConstantsGeneratedCodePath)'))</_EmbeddedConstantsGeneratedCodeDirectory>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Meziantou.Framework.EmbeddedConstantsGenerator.GenerateEmbeddedConstantsTask"
+             AssemblyFile="$(_EmbeddedConstantsTaskAssemblyPath)"
+             Condition="Exists('$(_EmbeddedConstantsTaskAssemblyPath)')" />
+
+  <Target Name="GenerateEmbeddedConstants"
+          BeforeTargets="CoreCompile;BeforeCompile"
+          Condition="'@(EmbeddedConstant)' != '' and '$(IsCrossTargetingBuild)' != 'true'">
+    <MakeDir Directories="$(_EmbeddedConstantsGeneratedCodeDirectory)" />
+
+    <GenerateEmbeddedConstantsTask EmbeddedConstants="@(EmbeddedConstant)"
+                                   OutputPath="$(_EmbeddedConstantsGeneratedCodePath)"
+                                   Namespace="$(Meziantou_EmbeddedConstantsNamespace)"
+                                   ClassName="$(Meziantou_EmbeddedConstantsClassName)"
+                                   ClassVisibility="$(Meziantou_EmbeddedConstantsClassVisibility)"
+                                   MemberVisibility="$(Meziantou_EmbeddedConstantsMemberVisibility)"
+                                   ProjectDirectory="$(MSBuildProjectDirectory)" />
+
+    <ItemGroup>
+      <Compile Include="$(_EmbeddedConstantsGeneratedCodePath)" AutoGen="true" DesignTime="true" Visible="false" />
+      <FileWrites Include="$(_EmbeddedConstantsGeneratedCodePath)" />
+      <EmbedInBinlog Include="$(_EmbeddedConstantsGeneratedCodePath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CleanEmbeddedConstants"
+          BeforeTargets="CoreClean"
+          Condition="'@(EmbeddedConstant)' != '' and '$(IsCrossTargetingBuild)' != 'true'">
+    <Delete Files="$(_EmbeddedConstantsGeneratedCodePath)" />
+  </Target>
+</Project>

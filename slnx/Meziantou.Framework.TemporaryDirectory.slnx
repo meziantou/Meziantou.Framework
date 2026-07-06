@@ -44,6 +44,7 @@
     <Project Path="../tests/Meziantou.Framework.DependencyScanning.Tool.Tests/Meziantou.Framework.DependencyScanning.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DiffEngine.Tests/Meziantou.Framework.DiffEngine.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />

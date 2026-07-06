@@ -1,4 +1,3 @@
-#pragma warning disable MEZ_NETCORE3_1
 using System.ComponentModel;
 using System.Diagnostics;
 using Meziantou.Xunit;

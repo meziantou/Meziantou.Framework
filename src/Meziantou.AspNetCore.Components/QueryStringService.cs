@@ -169,13 +169,6 @@ public sealed class QueryStringService
 
     private static string? GetQueryStringParameterName(PropertyInfo property)
     {
-#pragma warning disable CS0618 // Type or member is obsolete
-        var attribute = property.GetCustomAttribute<QueryStringParameterAttribute>();
-#pragma warning restore CS0618
-
-        if (attribute is not null)
-            return attribute.Name ?? property.Name;
-
         if (property.GetCustomAttribute<ParameterAttribute>() is not null && property.GetCustomAttribute<SupplyParameterFromQueryAttribute>() is { } supplyAttribute)
             return supplyAttribute.Name ?? property.Name;
 

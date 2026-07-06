@@ -221,7 +221,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// </returns>
     public int CompareTo(RelativeDate other) => DateTime.CompareTo(other.DateTime);
 
-    public override bool Equals(object? obj) => obj is RelativeDate date && Equals(date);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is RelativeDate date && Equals(date);
 
     /// <summary>Determines whether the specified <see cref="RelativeDate"/> is equal to the current instance.</summary>
     public bool Equals(RelativeDate other) => DateTime == other.DateTime;

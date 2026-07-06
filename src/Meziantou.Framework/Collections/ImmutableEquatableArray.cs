@@ -20,7 +20,7 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
     public int Length => _values.Length;
 
     internal ImmutableEquatableArray(T[] values) => _values = values;
-    public bool Equals(ImmutableEquatableArray<T>? other)
+    public bool Equals([NotNullWhen(true)] ImmutableEquatableArray<T>? other)
     {
         if (other is null)
             return false;
@@ -28,7 +28,7 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
         return ReferenceEquals(this, other) || ((ReadOnlySpan<T>)_values).SequenceEqual(other._values);
     }
 
-    public override bool Equals(object? obj) => obj is ImmutableEquatableArray<T> other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImmutableEquatableArray<T> other && Equals(other);
 
     public override int GetHashCode() => _values.Length;
 

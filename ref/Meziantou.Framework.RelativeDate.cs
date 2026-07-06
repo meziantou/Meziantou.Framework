@@ -26,7 +26,7 @@ namespace Meziantou.Framework
         public string ToString(string? format, System.IFormatProvider? formatProvider) => throw null;
         int System.IComparable.CompareTo(object? obj) => throw null;
         public int CompareTo(Meziantou.Framework.RelativeDate other) => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.RelativeDate other) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.RelativeDate date1, Meziantou.Framework.RelativeDate date2) => throw null;

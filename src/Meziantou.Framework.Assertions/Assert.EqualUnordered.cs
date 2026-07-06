@@ -250,7 +250,7 @@ public partial class Assert
             return EqualityComparer<T>.Default.Equals(Value, other.Value);
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is DefaultComparerKey<T> other && Equals(other);
         }

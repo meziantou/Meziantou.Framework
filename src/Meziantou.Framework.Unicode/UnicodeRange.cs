@@ -43,7 +43,7 @@ public readonly struct UnicodeRange : IEquatable<UnicodeRange>
 
     public bool Equals(UnicodeRange other) => Start == other.Start && End == other.End;
 
-    public override bool Equals(object? obj) => obj is UnicodeRange other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is UnicodeRange other && Equals(other);
 
     public override int GetHashCode() => HashCode.Combine(Start, End);
 

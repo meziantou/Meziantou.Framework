@@ -727,7 +727,7 @@ public sealed class AssertEqualTests
 
         public bool Equals(ImplicitlyConvertibleValue other) => _value == other._value;
 
-        public override bool Equals(object? obj) => obj is ImplicitlyConvertibleValue other && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImplicitlyConvertibleValue other && Equals(other);
 
         public override int GetHashCode() => _value;
     }

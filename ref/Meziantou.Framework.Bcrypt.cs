@@ -30,7 +30,7 @@ namespace Meziantou.Framework
         public Meziantou.Framework.BcryptVersion Version { get => throw null; }
         public int WorkFactor { get => throw null; }
         public BcryptHashInfo(Meziantou.Framework.BcryptVersion version, int workFactor) { }
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.BcryptHashInfo other) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.BcryptHashInfo left, Meziantou.Framework.BcryptHashInfo right) => throw null;

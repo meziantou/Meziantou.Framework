@@ -139,7 +139,7 @@ namespace Meziantou.Framework.Yaml
         public int Major { get => throw null; }
         public int Minor { get => throw null; }
         public Version(int major, int minor) { }
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
     }
 
@@ -1263,7 +1263,7 @@ namespace Meziantou.Framework.Yaml.Tokens
         public string Prefix { get => throw null; }
         public TagDirective(string handle, string prefix) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public TagDirective(string handle, string prefix, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
     }
@@ -1286,7 +1286,7 @@ namespace Meziantou.Framework.Yaml.Tokens
         public Meziantou.Framework.Yaml.Version Version { get => throw null; }
         public VersionDirective(Meziantou.Framework.Yaml.Version version) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
         public VersionDirective(Meziantou.Framework.Yaml.Version version, Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) : base(default(Meziantou.Framework.Yaml.Mark), default(Meziantou.Framework.Yaml.Mark)) { }
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
     }
 }

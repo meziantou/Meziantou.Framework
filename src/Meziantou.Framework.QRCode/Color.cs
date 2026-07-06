@@ -102,7 +102,7 @@ public readonly partial struct Color : IEquatable<Color>
         return Alpha == other.Alpha && Red == other.Red && Green == other.Green && Blue == other.Blue;
     }
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         return obj is Color other && Equals(other);
     }

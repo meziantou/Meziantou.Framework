@@ -620,9 +620,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool IsValueTypeNullable => IdType is IdType.System_String;
         public bool ValueTypeHasParseReadOnlySpan => IdType != IdType.MongoDB_Bson_ObjectId && SupportReadOnlySpanChar;
 
-        public override bool Equals(object? obj) => Equals(obj as AttributeInfo);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is AttributeInfo attributeInfo && Equals(attributeInfo);
 
-        public bool Equals(AttributeInfo? other)
+        public bool Equals([NotNullWhen(true)] AttributeInfo? other)
         {
             // Do not use TypeSymbol as it cannot be compared across Compilation.
             return other is not null

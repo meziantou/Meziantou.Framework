@@ -62,7 +62,7 @@ internal sealed class Image : IEquatable<Image>
         return new Image(width, height, pixels);
     }
 
-    public bool Equals(Image? other)
+    public bool Equals([NotNullWhen(true)] Image? other)
     {
         if (other is null)
             return false;
@@ -75,7 +75,7 @@ internal sealed class Image : IEquatable<Image>
         return expectedPixels.SequenceEqual(actualPixels);
     }
 
-    public override bool Equals(object? obj) => obj is Image image && Equals(image);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is Image image && Equals(image);
 
     public override int GetHashCode()
     {

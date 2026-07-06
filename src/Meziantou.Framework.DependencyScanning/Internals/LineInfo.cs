@@ -25,10 +25,7 @@ internal readonly struct LineInfo : IEquatable<LineInfo>
         return default;
     }
 
-    public override bool Equals(object? obj)
-    {
-        return obj is LineInfo info && Equals(info);
-    }
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is LineInfo info && Equals(info);
 
     public bool Equals(LineInfo other)
     {

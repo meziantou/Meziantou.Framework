@@ -171,7 +171,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <summary>Compares this path to another with optional case-insensitive comparison.</summary>
     public int CompareTo(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Compare(this, other);
 
-    public override bool Equals(object? obj) => obj is FullPath path && Equals(path);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is FullPath path && Equals(path);
     public bool Equals(FullPath other) => FullPathComparer.Default.Equals(this, other);
 
     /// <summary>Determines whether this path equals another path with optional case-insensitive comparison.</summary>

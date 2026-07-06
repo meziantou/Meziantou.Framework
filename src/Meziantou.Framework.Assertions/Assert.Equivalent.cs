@@ -243,15 +243,9 @@ public partial class Assert
                 && object.ReferenceEquals(Actual, other.Actual);
         }
 
-        public override bool Equals(object? obj)
-        {
-            return obj is StructuralReferencePair other && Equals(other);
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is StructuralReferencePair other && Equals(other);
 
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(RuntimeHelpers.GetHashCode(Expected), RuntimeHelpers.GetHashCode(Actual));
-        }
+        public override int GetHashCode() => HashCode.Combine(RuntimeHelpers.GetHashCode(Expected), RuntimeHelpers.GetHashCode(Actual));
     }
 
     private sealed class StructuralMember(string name, MemberInfo member)
@@ -280,15 +274,9 @@ public partial class Assert
                 && Comparer == other.Comparer;
         }
 
-        public override bool Equals(object? obj)
-        {
-            return obj is StructuralMembersCacheKey other && Equals(other);
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is StructuralMembersCacheKey other && Equals(other);
 
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Type, Comparer);
-        }
+        public override int GetHashCode() => HashCode.Combine(Type, Comparer);
     }
 
     private readonly struct StructuralComparisonOptions(bool ignoreCollectionOrder, StringComparer memberNameComparer, StringComparison stringComparison)

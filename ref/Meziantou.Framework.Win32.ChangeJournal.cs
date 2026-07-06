@@ -146,7 +146,7 @@ namespace Meziantou.Framework.Win32
         public long Value { get => throw null; }
         public Usn(long value) { }
         public override string ToString() => throw null;
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.Win32.Usn other) => throw null;
         public override int GetHashCode() => throw null;
         public static bool operator ==(Meziantou.Framework.Win32.Usn usn1, Meziantou.Framework.Win32.Usn usn2) => throw null;

@@ -239,10 +239,7 @@ public partial class Assert
             return SourceType == other.SourceType && TargetType == other.TargetType;
         }
 
-        public override bool Equals(object? obj)
-        {
-            return obj is ImplicitConversionCacheKey other && Equals(other);
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImplicitConversionCacheKey other && Equals(other);
 
         public override int GetHashCode() => HashCode.Combine(SourceType, TargetType);
     }

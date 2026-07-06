@@ -11,7 +11,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.ByteSize MaxValue { get => throw null; }
         public static Meziantou.Framework.ByteSize MinValue { get => throw null; }
         public ByteSize(long length) { }
-        public override bool Equals(object? obj) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public bool Equals(Meziantou.Framework.ByteSize other) => throw null;
         public override int GetHashCode() => throw null;
         public int CompareTo(Meziantou.Framework.ByteSize other) => throw null;

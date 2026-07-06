@@ -18,7 +18,7 @@ public sealed class BencodeString : BencodeValue, IEquatable<BencodeString>
         return Utf8Encoding.GetString(Value.Span);
     }
 
-    public bool Equals(BencodeString? other)
+    public bool Equals([NotNullWhen(true)] BencodeString? other)
     {
         if (other is null)
             return false;
@@ -26,7 +26,7 @@ public sealed class BencodeString : BencodeValue, IEquatable<BencodeString>
         return Value.Span.SequenceEqual(other.Value.Span);
     }
 
-    public override bool Equals(object? obj) => obj is BencodeString other && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is BencodeString other && Equals(other);
 
     public override int GetHashCode()
     {

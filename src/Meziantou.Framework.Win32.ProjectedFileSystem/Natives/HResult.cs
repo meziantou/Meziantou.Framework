@@ -32,7 +32,7 @@ internal readonly struct HResult : IEquatable<HResult>
         }
     }
 
-    public override bool Equals(object? obj) => obj is HResult result && Equals(result);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is HResult result && Equals(result);
     public bool Equals(HResult other) => Value == other.Value;
     public override int GetHashCode() => HashCode.Combine(Value);
 

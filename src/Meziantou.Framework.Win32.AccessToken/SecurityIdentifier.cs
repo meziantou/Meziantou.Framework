@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Win32;
 /// var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
 /// Console.WriteLine($"Administrators SID: {adminSid.Sid}");
 /// Console.WriteLine($"Full Name: {adminSid.FullName}");
-/// 
+///
 /// // Compare SIDs
 /// using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
 /// var ownerSid = token.GetOwner();
@@ -138,13 +138,13 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     }
 
     /// <summary>Determines whether the specified <see cref="SecurityIdentifier"/> is equal to the current instance.</summary>
-    public bool Equals(SecurityIdentifier? other)
+    public bool Equals([NotNullWhen(true)] SecurityIdentifier? other)
     {
         return other != null && Sid == other.Sid;
     }
 
     /// <inheritdoc/>
-    public override bool Equals(object? obj) => Equals(obj as SecurityIdentifier);
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is SecurityIdentifier other && Equals(other);
 
     /// <inheritdoc/>
     public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Sid);

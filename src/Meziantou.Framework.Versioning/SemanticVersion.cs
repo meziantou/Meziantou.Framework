@@ -190,7 +190,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
     public override int GetHashCode() => SemanticVersionComparer.Instance.GetHashCode(this);
 
-    public override bool Equals(object? obj)
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
         if (obj is SemanticVersion semver)
         {
@@ -201,7 +201,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     }
 
     /// <summary>Determines whether the specified semantic version is equal to the current version.</summary>
-    public bool Equals(SemanticVersion? other)
+    public bool Equals([NotNullWhen(true)] SemanticVersion? other)
     {
         return SemanticVersionComparer.Instance.Equals(this, other);
     }

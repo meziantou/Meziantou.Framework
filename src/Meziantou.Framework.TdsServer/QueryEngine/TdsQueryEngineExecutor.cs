@@ -520,13 +520,6 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("Only INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN are supported.");
         }
 
-#if !NET10_0_OR_GREATER
-        if (isLeftJoin || isRightJoin)
-        {
-            throw new TdsQueryEngineException("LEFT JOIN and RIGHT JOIN require .NET 10 or later.");
-        }
-#endif
-
 #if !NET11_0_OR_GREATER
         if (isFullJoin)
         {
@@ -612,7 +605,6 @@ internal sealed class TdsQueryEngineExecutor
 
     private static MethodCallExpression BuildLeftJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)
     {
-#if NET10_0_OR_GREATER
         return Expression.Call(
             typeof(Queryable),
             nameof(Queryable.LeftJoin),
@@ -622,14 +614,10 @@ internal sealed class TdsQueryEngineExecutor
             Expression.Quote(Expression.Lambda(leftKey, leftParameter)),
             Expression.Quote(Expression.Lambda(rightKey, rightParameter)),
             Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)));
-#else
-        throw new TdsQueryEngineException("LEFT JOIN requires .NET 10 or later.");
-#endif
     }
 
     private static MethodCallExpression BuildRightJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)
     {
-#if NET10_0_OR_GREATER
         return Expression.Call(
             typeof(Queryable),
             nameof(Queryable.RightJoin),
@@ -639,9 +627,6 @@ internal sealed class TdsQueryEngineExecutor
             Expression.Quote(Expression.Lambda(leftKey, leftParameter)),
             Expression.Quote(Expression.Lambda(rightKey, rightParameter)),
             Expression.Quote(Expression.Lambda(resultBody, leftParameter, rightParameter)));
-#else
-        throw new TdsQueryEngineException("RIGHT JOIN requires .NET 10 or later.");
-#endif
     }
 
     private static MethodCallExpression BuildFullJoinCall(QuerySource left, QuerySource right, Expression leftKey, Expression rightKey, ParameterExpression leftParameter, ParameterExpression rightParameter, Type carrierType, MemberInitExpression resultBody)

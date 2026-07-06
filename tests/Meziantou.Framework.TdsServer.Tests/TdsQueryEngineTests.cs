@@ -142,7 +142,6 @@ public sealed class TdsQueryEngineTests
     public async Task SqlClient_QueryEngine_LeftJoin_ReturnsRowsWithNullsForMissingMatches()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
-#if NET10_0_OR_GREATER
         await ExecuteQuery(
             queryEngineOptions,
             command =>
@@ -161,27 +160,12 @@ public sealed class TdsQueryEngineTests
             4 NULL
             """,
             expectedMaterializedQueries: "Customer[].LeftJoin(Order[], customer => customer.Id, order => order.Id, (customer2, order2) => new TdsCarrier() {c = customer2, o = order2}).OrderBy(carrier => carrier.c.Id).Select(carrier2 => new TdsProjection() {Id = carrier2.c.Id, Region = IIF((carrier2.o == null), null, carrier2.o.Region)})");
-#else
-        await ExecuteQueryExpectingServerError(
-            queryEngineOptions,
-            command =>
-            {
-                command.CommandText = """
-                    SELECT c.Id, o.Region
-                    FROM customers c
-                    LEFT JOIN orders o ON c.Id = o.Id
-                    ORDER BY c.Id
-                    """;
-            });
-#endif
     }
 
     [Fact]
     public async Task SqlClient_QueryEngine_RightJoin_ReturnsRowsFromRightSource()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
-
-#if NET10_0_OR_GREATER
         await ExecuteQuery(
             queryEngineOptions,
             command =>
@@ -200,19 +184,6 @@ public sealed class TdsQueryEngineTests
             3 South
             """,
             expectedMaterializedQueries: "Customer[].RightJoin(Order[], customer => customer.Id, order => order.Id, (customer2, order2) => new TdsCarrier() {c = customer2, o = order2}).OrderBy(carrier => carrier.o.Id).Select(carrier2 => new TdsProjection() {Id = carrier2.o.Id, Region = carrier2.o.Region})");
-#else
-        await ExecuteQueryExpectingServerError(
-            queryEngineOptions,
-            command =>
-            {
-                command.CommandText = """
-                    SELECT o.Id, o.Region
-                    FROM customers c
-                    RIGHT JOIN orders o ON c.Id = o.Id
-                    ORDER BY o.Id
-                    """;
-            });
-#endif
     }
 
     [Fact]

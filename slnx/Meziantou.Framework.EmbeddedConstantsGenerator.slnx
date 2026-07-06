@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.EmbeddedConstantsGenerator/Meziantou.Framework.EmbeddedConstantsGenerator.csproj" />
+  </Folder>
+</Solution>

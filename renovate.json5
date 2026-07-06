@@ -6,7 +6,10 @@
   "packageRules": [
     {
       "matchPackageNames": [ "/^Microsoft\\.Build\\..*/" ],
-      "matchFileNames": [ "src/Meziantou.Framework.PublicApiGenerator.MSBuild/Meziantou.Framework.PublicApiGenerator.MSBuild.csproj" ],
+      "matchFileNames": [
+        "src/Meziantou.Framework.EmbeddedConstantsGenerator/Meziantou.Framework.EmbeddedConstantsGenerator.csproj",
+        "src/Meziantou.Framework.PublicApiGenerator.MSBuild/Meziantou.Framework.PublicApiGenerator.MSBuild.csproj"
+      ],
       "enabled": false
     },
     {

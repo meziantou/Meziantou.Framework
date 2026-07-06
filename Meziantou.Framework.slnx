@@ -56,6 +56,7 @@
     <Project Path="src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
     <Project Path="src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
     <Project Path="src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
+    <Project Path="src/Meziantou.Framework.EmbeddedConstantsGenerator/Meziantou.Framework.EmbeddedConstantsGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj" />
@@ -181,6 +182,7 @@
     <Project Path="tests/Meziantou.Framework.DnsFilter.Tests/Meziantou.Framework.DnsFilter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests/Meziantou.Framework.FixedStringBuilder.Generator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FixedStringBuilder.Tests/Meziantou.Framework.FixedStringBuilder.Tests.csproj" />

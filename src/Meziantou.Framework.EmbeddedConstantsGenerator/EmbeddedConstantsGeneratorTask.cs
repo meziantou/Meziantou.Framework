@@ -163,7 +163,7 @@ internal static class EmbeddedConstantsGeneratorTask
         foreach (var file in files)
         {
             var baseName = !string.IsNullOrWhiteSpace(file.ExplicitName)
-                ? ToPascalCaseIdentifier(file.ExplicitName!)
+                ? ToPascalCaseIdentifier(file.ExplicitName)
                 : ToPascalCaseIdentifier(Path.GetFileNameWithoutExtension(file.FullPath));
             entries.Add(new EmbeddedConstantEntry(file, baseName, isExplicitName: !string.IsNullOrWhiteSpace(file.ExplicitName)));
         }
@@ -523,7 +523,7 @@ internal static class EmbeddedConstantsGeneratorTask
             if (Path.IsPathRooted(path) || string.IsNullOrWhiteSpace(projectDirectory))
                 return path;
 
-            return Path.GetFullPath(Path.Combine(projectDirectory!, path));
+            return Path.GetFullPath(Path.Combine(projectDirectory, path));
         }
     }
 
@@ -555,9 +555,9 @@ internal static class EmbeddedConstantsGeneratorTask
                 return new EmbeddedFile(file.FullPath, EmbeddedConstantKind.None, file.ExplicitName, text: null, Array.Empty<byte>(), errors);
             }
 
-            if (!TryParseKind(file.Kind!, out var kind))
+            if (!TryParseKind(file.Kind, out var kind))
             {
-                errors.Add(ValidationError.UnsupportedKind(file.FullPath, file.Kind!));
+                errors.Add(ValidationError.UnsupportedKind(file.FullPath, file.Kind));
                 return new EmbeddedFile(file.FullPath, EmbeddedConstantKind.None, file.ExplicitName, text: null, Array.Empty<byte>(), errors);
             }
 

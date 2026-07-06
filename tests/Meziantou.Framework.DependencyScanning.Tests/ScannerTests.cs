@@ -652,6 +652,83 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task GitSubmodulesFromDependenciesInWorktree()
+    {
+        await using var remote = TemporaryDirectory.Create();
+        await ExecuteProcess("git", ["init"], remote.FullPath);
+        await ExecuteProcess("git", ["config", "user.name", "test"], remote.FullPath);
+        await ExecuteProcess("git", ["config", "user.email", "test@example.com"], remote.FullPath);
+        await ExecuteProcess("git", ["config", "commit.gpgsign", "false"], remote.FullPath);
+        await File.WriteAllTextAsync(remote.GetFullPath("test.txt"), "content");
+        await ExecuteProcess("git", ["add", "."], remote.FullPath);
+        await ExecuteProcess("git", ["commit", "-m", "commit-message"], remote.FullPath);
+
+        var head = (await ExecuteProcess("git", ["rev-parse", "HEAD"], remote.FullPath)).Trim();
+        testOutputHelper.WriteLine("Head: " + head);
+
+        await ExecuteProcess("git", ["init"], _directory.FullPath);
+        await ExecuteProcess("git", ["config", "user.name", "test"], _directory.FullPath);
+        await ExecuteProcess("git", ["config", "user.email", "test@example.com"], _directory.FullPath);
+        await ExecuteProcess("git", ["config", "commit.gpgsign", "false"], _directory.FullPath);
+        await File.WriteAllTextAsync(_directory.GetFullPath("test.txt"), "content");
+        await ExecuteProcess("git", ["add", "."], _directory.FullPath);
+        await ExecuteProcess("git", ["commit", "-m", "commit-message"], _directory.FullPath);
+
+        await ExecuteProcess("git", ["-c", "protocol.file.allow=always", "submodule", "add", remote.FullPath, "submodule_path"], _directory.FullPath);
+        await ExecuteProcess("git", ["add", ".gitmodules", "submodule_path"], _directory.FullPath);
+        await ExecuteProcess("git", ["commit", "-m", "add-submodule"], _directory.FullPath);
+
+        await using var worktree = TemporaryDirectory.Create();
+        await ExecuteProcess("git", ["worktree", "add", "-b", "scanner-test-worktree", worktree.FullPath], _directory.FullPath);
+
+        var dotGitPath = Path.Combine(worktree.FullPath, ".git");
+        Assert.True(File.Exists(dotGitPath));
+        Assert.False(Directory.Exists(dotGitPath));
+
+        var options = new ScannerOptions
+        {
+            DegreeOfParallelism = 1,
+            Scanners = [new GitSubmoduleDependencyScanner()],
+        };
+
+        var result = await DependencyScanner.ScanDirectoryAsync(worktree.FullPath, options);
+        Assert.Contains(result, d =>
+            d.Type == DependencyType.GitReference &&
+            d.Version == head &&
+            IsEquivalentPath(d.Name, remote.FullPath));
+
+        async Task<string> ExecuteProcess(string process, string[] args, string workingDirectory)
+        {
+            testOutputHelper.WriteLine($"Executing: '{process}' {string.Join(' ', args)} ({workingDirectory})");
+            var processInstance = ProcessWrapper.Create(process)
+                .WithArguments(args)
+                .WithWorkingDirectory(workingDirectory)
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteBufferedAsync(XunitCancellationToken);
+
+            var processResult = await processInstance;
+            AssertProcessResult(processResult.ExitCode, string.Join('\n', processResult.Output));
+            return string.Join('\n', processResult.Output);
+        }
+
+        void AssertProcessResult(int exitCode, string output)
+        {
+            Assert.Equal(0, exitCode);
+            testOutputHelper.WriteLine("git command succeeds\n" + output);
+        }
+
+        static bool IsEquivalentPath(string? left, string? right)
+        {
+            if (left is null || right is null)
+                return left is null && right is null;
+
+            var normalizedLeft = left.Replace('\\', '/').TrimEnd('/');
+            var normalizedRight = right.Replace('\\', '/').TrimEnd('/');
+            return string.Equals(normalizedLeft, normalizedRight, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public async Task GitHubActions()
     {
         const string Path = ".github/workflows/sample.yml";

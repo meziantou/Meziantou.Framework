@@ -207,10 +207,15 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         var dotGitPath = Path.Combine(repositoryDirectory, ".git");
         if (Directory.Exists(dotGitPath))
         {
-            gitDirectory = dotGitPath;
+            gitDirectory = Path.GetFullPath(dotGitPath);
             return true;
         }
 
+        return TryGetGitDirectoryFromFile(dotGitPath, out gitDirectory);
+    }
+
+    private static bool TryGetGitDirectoryFromFile(string dotGitPath, out string gitDirectory)
+    {
         if (!File.Exists(dotGitPath))
         {
             gitDirectory = "";
@@ -219,15 +224,17 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 
         try
         {
-            var dotGitContent = File.ReadAllText(dotGitPath).Trim();
-            if (!dotGitContent.StartsWith(GitDirectoryPrefix, StringComparison.OrdinalIgnoreCase))
+            using var reader = File.OpenText(dotGitPath);
+            var dotGitContent = reader.ReadLine()?.TrimStart('\uFEFF').Trim();
+            if (string.IsNullOrEmpty(dotGitContent) || !dotGitContent.StartsWith(GitDirectoryPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 gitDirectory = "";
                 return false;
             }
 
             var relativeGitDirectory = dotGitContent[GitDirectoryPrefix.Length..].Trim();
-            if (string.IsNullOrEmpty(relativeGitDirectory))
+            var dotGitDirectory = Path.GetDirectoryName(dotGitPath);
+            if (string.IsNullOrEmpty(relativeGitDirectory) || string.IsNullOrEmpty(dotGitDirectory))
             {
                 gitDirectory = "";
                 return false;
@@ -235,7 +242,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 
             gitDirectory = Path.IsPathRooted(relativeGitDirectory)
                 ? Path.GetFullPath(relativeGitDirectory)
-                : Path.GetFullPath(Path.Combine(repositoryDirectory, relativeGitDirectory));
+                : Path.GetFullPath(Path.Combine(dotGitDirectory, relativeGitDirectory));
             return Directory.Exists(gitDirectory);
         }
         catch (IOException)

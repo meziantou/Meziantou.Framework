@@ -112,6 +112,7 @@ internal static class PublicApiModelReader
 
     private static string BuildTypeSource(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition, string typeName)
     {
+        var escapedTypeName = EscapeIdentifier(typeName);
         var accessibility = GetAccessibility(typeDefinition.Attributes);
         var genericArguments = BuildGenericArguments(metadataReader, typeDefinitionHandle);
         var keyword = GetTypeKeyword(metadataReader, typeDefinition);
@@ -140,13 +141,13 @@ internal static class PublicApiModelReader
                 delegateBuilder.AppendLine(attribute);
             }
 
-            delegateBuilder.Append($"{accessibility}{unsafeModifier} delegate {returnType} {typeName}{genericArguments}({string.Join(", ", parameters.Select(static parameter => parameter.Text))}){FormatConstraintsInline(constraints)};");
+            delegateBuilder.Append($"{accessibility}{unsafeModifier} delegate {returnType} {escapedTypeName}{genericArguments}({string.Join(", ", parameters.Select(static parameter => parameter.Text))}){FormatConstraintsInline(constraints)};");
             return delegateBuilder.ToString();
         }
 
         if (keyword == "enum")
         {
-            var enumDeclaration = $"{accessibility} enum {typeName}{genericArguments}";
+            var enumDeclaration = $"{accessibility} enum {escapedTypeName}{genericArguments}";
             var enumBody = BuildEnumMembers(metadataReader, typeDefinition).ToArray();
             var enumBuilder = new StringBuilder();
             foreach (var attribute in typeAttributes)
@@ -197,7 +198,7 @@ internal static class PublicApiModelReader
         sb.Append(' ');
         sb.Append(keyword);
         sb.Append(' ');
-        sb.Append(typeName);
+        sb.Append(escapedTypeName);
         sb.Append(genericArguments);
         sb.Append(inheritance);
         sb.Append(FormatConstraintsInline(constraints));
@@ -347,12 +348,12 @@ internal static class PublicApiModelReader
             var name = metadataReader.GetString(field.Name);
             if (field.GetDefaultValue().IsNil)
             {
-                yield return name;
+                yield return EscapeIdentifier(name);
                 continue;
             }
 
             var constant = DecodeConstantValue(metadataReader, metadataReader.GetConstant(field.GetDefaultValue()));
-            yield return name + " = " + FormatConstant(constant);
+            yield return EscapeIdentifier(name) + " = " + FormatConstant(constant);
         }
     }
 
@@ -430,7 +431,7 @@ internal static class PublicApiModelReader
             if (values.Count == 0)
                 continue;
 
-            constraints.Add($"where {metadataReader.GetString(genericParameter.Name)} : {string.Join(", ", values)}");
+            constraints.Add($"where {EscapeIdentifier(metadataReader.GetString(genericParameter.Name))} : {string.Join(", ", values)}");
         }
 
         return constraints;
@@ -474,7 +475,7 @@ internal static class PublicApiModelReader
             modifiers.Add("const");
         }
 
-        var declaration = $"{string.Join(' ', modifiers)} {typeName} {metadataReader.GetString(field.Name)}";
+        var declaration = $"{string.Join(' ', modifiers)} {typeName} {EscapeIdentifier(metadataReader.GetString(field.Name))}";
         if (field.Attributes.HasFlag(FieldAttributes.Literal) && !field.GetDefaultValue().IsNil)
         {
             declaration += " = " + FormatConstant(DecodeConstantValue(metadataReader, metadataReader.GetConstant(field.GetDefaultValue())));
@@ -549,7 +550,7 @@ internal static class PublicApiModelReader
         var propertyType = ApplyNullableReferenceType(propertySignature.ReturnType, propertyNullableInfo);
         var propertyName = propertySignature.ParameterTypes.Length > 0
             ? "this[" + BuildIndexerParameters(metadataReader, declaringTypeHandle, getAccessorHandle, setAccessorHandle, getAccessor, setAccessor, propertySignature.ParameterTypes) + "]"
-            : metadataReader.GetString(property.Name);
+            : EscapeIdentifier(metadataReader.GetString(property.Name));
         var accessorText = new List<string>();
         if (isGetVisible)
         {
@@ -605,7 +606,7 @@ internal static class PublicApiModelReader
             eventDefinition.GetCustomAttributes());
         var addMethodSignature = DecodeMethodSignature(metadataReader, declaringTypeHandle, accessors.Adder, addMethod);
         var eventType = ApplyNullableReferenceType(addMethodSignature.Signature.ParameterTypes[0], eventNullableInfo);
-        var eventName = metadataReader.GetString(eventDefinition.Name);
+        var eventName = EscapeIdentifier(metadataReader.GetString(eventDefinition.Name));
         var declaration = $"{string.Join(' ', modifiers)} event {eventType} {eventName};";
         var attributes = BuildAttributes(metadataReader, eventDefinition.GetCustomAttributes());
         return ComposeAttributedMember(attributes, declaration);
@@ -617,7 +618,7 @@ internal static class PublicApiModelReader
         if (IsDestructor(method, signature, name))
         {
             var declaringTypeDefinition = metadataReader.GetTypeDefinition(declaringTypeHandle);
-            var typeName = RemoveGenericArity(metadataReader.GetString(declaringTypeDefinition.Name));
+            var typeName = EscapeIdentifier(RemoveGenericArity(metadataReader.GetString(declaringTypeDefinition.Name)));
             var destructorBody = method.Attributes.HasFlag(MethodAttributes.Abstract) ? ";" : " { }";
             return $"~{typeName}(){destructorBody}";
         }
@@ -635,7 +636,7 @@ internal static class PublicApiModelReader
         var returnType = ApplyNullableReferenceType(signature.Signature.ReturnType, returnNullableInfo);
         var parameters = BuildParameterDeclarations(metadataReader, declaringTypeHandle, methodHandle, method, signature.Signature.ParameterTypes, signature.Signature.ReturnType, isExtensionMethod);
         var methodBody = BuildMethodBody(metadataReader, method, signature);
-        var methodName = isExplicitInterfaceImplementation ? BuildExplicitInterfaceMethodName(name) : name;
+        var methodName = isExplicitInterfaceImplementation ? BuildExplicitInterfaceMethodName(name) : EscapeIdentifier(name);
         var modifiersPrefix = modifiers.Count > 0 ? string.Join(' ', modifiers) + " " : string.Empty;
         var unsafeModifier = RequiresUnsafeContext(signature.Signature.ReturnType, signature.Signature.ParameterTypes) ? "unsafe " : string.Empty;
         var requiresNullableDisableDirective = RequiresNullableDirectives(signature.Signature.ReturnType, returnNullableInfo) ||
@@ -663,7 +664,7 @@ internal static class PublicApiModelReader
     {
         var signature = DecodeMethodSignature(metadataReader, declaringTypeHandle, methodHandle, method);
         var declaringType = metadataReader.GetTypeDefinition(declaringTypeHandle);
-        var typeName = RemoveGenericArity(metadataReader.GetString(declaringType.Name));
+        var typeName = EscapeIdentifier(RemoveGenericArity(metadataReader.GetString(declaringType.Name)));
         var accessibility = GetAccessibility(method.Attributes);
         var modifiersPrefix = string.IsNullOrEmpty(accessibility) ? string.Empty : accessibility + " ";
         var unsafeModifier = RequiresUnsafeContext(signature.Signature.ReturnType, signature.Signature.ParameterTypes) ? "unsafe " : string.Empty;
@@ -717,7 +718,7 @@ internal static class PublicApiModelReader
                 var parameter = metadataReader.GetParameter(parameterHandle);
                 parameterName = parameter.Name.IsNil
                     ? "arg" + sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                    : metadataReader.GetString(parameter.Name);
+                    : EscapeIdentifier(metadataReader.GetString(parameter.Name));
                 parameterAttributeFlags = parameter.Attributes;
                 parameterAttributes = parameter.GetCustomAttributes();
                 hasInAttribute = HasAttribute(metadataReader, parameterAttributes.Value, "System.Runtime.InteropServices.InAttribute");
@@ -985,7 +986,7 @@ internal static class PublicApiModelReader
             var hasParamCollectionAttribute = false;
             if (parametersBySequence.TryGetValue(sequence, out var parameter))
             {
-                parameterName = parameter.Name.IsNil ? parameterName : metadataReader.GetString(parameter.Name);
+                parameterName = parameter.Name.IsNil ? parameterName : EscapeIdentifier(metadataReader.GetString(parameter.Name));
                 parameterAttributes = parameter.Attributes;
                 customAttributes = parameter.GetCustomAttributes();
                 hasInAttribute = HasAttribute(metadataReader, customAttributes.Value, "System.Runtime.InteropServices.InAttribute");
@@ -1304,13 +1305,13 @@ internal static class PublicApiModelReader
         builder.Append("extension(");
         builder.Append(block.ReceiverType);
         builder.Append(' ');
-        builder.Append(block.ReceiverName);
+        builder.Append(EscapeIdentifier(block.ReceiverName));
         builder.AppendLine(")");
         builder.AppendLine("    {");
         builder.Append("        public ");
         builder.Append(block.PropertyType);
         builder.Append(' ');
-        builder.Append(block.PropertyName);
+        builder.Append(EscapeIdentifier(block.PropertyName));
         builder.Append(" { ");
         builder.Append(string.Join(' ', accessorDeclarations));
         builder.AppendLine(" }");
@@ -1328,7 +1329,7 @@ internal static class PublicApiModelReader
                 if (parameter.Name.IsNil)
                     return fallbackName;
 
-                return metadataReader.GetString(parameter.Name);
+                return EscapeIdentifier(metadataReader.GetString(parameter.Name));
             }
         }
 
@@ -1496,7 +1497,7 @@ internal static class PublicApiModelReader
     {
         var separatorIndex = methodName.LastIndexOf('.', StringComparison.Ordinal);
         if (separatorIndex < 0)
-            return methodName;
+            return EscapeIdentifier(methodName);
 
         var interfaceName = methodName[..separatorIndex];
         if (interfaceName.StartsWith("global::", StringComparison.Ordinal))
@@ -1505,7 +1506,7 @@ internal static class PublicApiModelReader
         }
 
         var memberName = methodName[(separatorIndex + 1)..];
-        return interfaceName + "." + memberName;
+        return interfaceName + "." + EscapeIdentifier(memberName);
     }
 
     private static string BuildAccessorModifier(MethodAttributes accessorAttributes, MethodAttributes representativeAccessorAttributes)
@@ -1715,7 +1716,7 @@ internal static class PublicApiModelReader
                 typeName = "ref " + FormatDecodedType(type.ElementType!, nullableInfo, ref annotationIndex);
                 break;
             default:
-                typeName = type.Name;
+                typeName = type.IsTypeParameter ? EscapeIdentifier(type.Name) : type.Name;
                 break;
         }
 
@@ -1858,7 +1859,7 @@ internal static class PublicApiModelReader
 
         var names = genericParameters
             .Select(metadataReader.GetGenericParameter)
-            .Select(parameter => metadataReader.GetString(parameter.Name))
+            .Select(parameter => EscapeIdentifier(metadataReader.GetString(parameter.Name)))
             .ToArray();
         return "<" + string.Join(", ", names) + ">";
     }
@@ -1870,7 +1871,7 @@ internal static class PublicApiModelReader
 
         var names = genericParameters
             .Select(metadataReader.GetGenericParameter)
-            .Select(parameter => metadataReader.GetString(parameter.Name))
+            .Select(parameter => EscapeIdentifier(metadataReader.GetString(parameter.Name)))
             .ToArray();
         return "<" + string.Join(", ", names) + ">";
     }
@@ -2669,12 +2670,34 @@ internal static class PublicApiModelReader
         return name[..index];
     }
 
+    private static string EscapeIdentifier(string identifier)
+    {
+        if (CSharpKeywords.Contains(identifier))
+        {
+            return "@" + identifier;
+        }
+
+        return identifier;
+    }
+
     private sealed record EnumMetadata(
         bool IsFlags,
         IReadOnlyDictionary<ulong, string> MemberNamesByValue,
         ImmutableArray<EnumMember> MembersDescending);
 
     private readonly record struct EnumMember(ulong Value, string Name);
+
+    private static readonly HashSet<string> CSharpKeywords = new(StringComparer.Ordinal)
+    {
+        "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const",
+        "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit",
+        "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in",
+        "int", "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator",
+        "out", "override", "params", "private", "protected", "public", "readonly", "record", "ref", "return",
+        "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this",
+        "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual",
+        "void", "volatile", "while", "required", "file", "scoped",
+    };
 
     private readonly record struct SignatureGenericContext(ImmutableArray<string> TypeParameterNames, ImmutableArray<string> MethodParameterNames)
     {

@@ -1065,6 +1065,24 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Method_ParameterName_Keyword_IsEscaped()
+    {
+        await Validate("""
+            public static class Sample
+            {
+                public static System.Guid Create(System.Guid @namespace) => default;
+            }
+            """, """
+            #nullable enable
+
+            public static class Sample
+            {
+                public static System.Guid Create(System.Guid @namespace) => throw null;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Operators_ImplicitExplicitEqualityAddition()
     {
         await Validate("""

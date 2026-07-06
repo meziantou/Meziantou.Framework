@@ -4,9 +4,10 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
-internal sealed record SnapshotCallerContext(FullPath SourceFilePath, string MethodName, string? ContainingTypeName, string? MemberName, int LineNumber)
+internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, string MethodName, string? ContainingTypeName, string? MemberName, int LineNumber)
 {
-    private static readonly Regex LambdaContainingMethodNameRegex = new(@"^<(?<name>[^>]+)>b__[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeout: Timeout.InfiniteTimeSpan);
+    [GeneratedRegex(@"^<(?<name>[^>]+)>b__[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
+    private static partial Regex LambdaContainingMethodNameRegex { get; }
 
     private static readonly HashSet<string> TestAttributeNames = new(StringComparer.Ordinal)
     {

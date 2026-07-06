@@ -114,8 +114,10 @@ internal static class ResxGeneratorCommon
         if (indexOf < 0)
             return pathWithoutExtension;
 
+#pragma warning disable MA0110 // Cannot use compiled regex in source generator because it targets netstandard2.0
         return Regex.IsMatch(pathWithoutExtension[(indexOf + 1)..], "^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
             ? pathWithoutExtension[0..indexOf]
             : pathWithoutExtension;
+#pragma warning restore MA0110
     }
 }

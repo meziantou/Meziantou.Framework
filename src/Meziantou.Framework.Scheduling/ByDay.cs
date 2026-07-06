@@ -51,13 +51,7 @@ internal sealed class ByDay : IEquatable<ByDay>
     }
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        unchecked
-        {
-            return ((int)DayOfWeek * 397) ^ Ordinal.GetHashCode();
-        }
-    }
+    public override int GetHashCode() => HashCode.Combine(DayOfWeek, Ordinal);
 
     /// <summary>Determines whether two <see cref="ByDay"/> instances are equal.</summary>
     public static bool operator ==(ByDay left, ByDay right) => Equals(left, right);

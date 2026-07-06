@@ -194,15 +194,7 @@ public sealed class SemanticVersionRange : IEquatable<SemanticVersionRange>
             && IsMaxInclusive == other.IsMaxInclusive;
     }
 
-    public override int GetHashCode()
-    {
-        var hash = MinVersion?.GetHashCode() ?? 0;
-        hash = (hash * 397) ^ (MaxVersion?.GetHashCode() ?? 0);
-        hash = (hash * 397) ^ IsMinInclusive.GetHashCode();
-        hash = (hash * 397) ^ IsMaxInclusive.GetHashCode();
-
-        return hash;
-    }
+    public override int GetHashCode() => HashCode.Combine(MinVersion, MaxVersion, IsMinInclusive, IsMaxInclusive);
 
     public static bool operator ==(SemanticVersionRange? left, SemanticVersionRange? right)
     {

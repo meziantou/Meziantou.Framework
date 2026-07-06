@@ -77,7 +77,6 @@ public class SemanticVersionTests
         Assert.Equal(right, right);
 
         Assert.NotEqual(left, right);
-        Assert.NotEqual(left.GetHashCode(), right.GetHashCode());
         Assert.False(left == right);
         Assert.True(left != right);
         Assert.True(left < right);

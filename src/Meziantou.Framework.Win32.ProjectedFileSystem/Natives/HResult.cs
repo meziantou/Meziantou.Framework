@@ -34,7 +34,7 @@ internal readonly struct HResult : IEquatable<HResult>
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is HResult result && Equals(result);
     public bool Equals(HResult other) => Value == other.Value;
-    public override int GetHashCode() => -1937169414 + Value.GetHashCode();
+    public override int GetHashCode() => HashCode.Combine(Value);
 
     public static bool operator ==(HResult result1, HResult result2) => result1.Equals(result2);
 

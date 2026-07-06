@@ -241,9 +241,6 @@ public partial class Assert
 
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImplicitConversionCacheKey other && Equals(other);
 
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(SourceType, TargetType);
-        }
+        public override int GetHashCode() => HashCode.Combine(SourceType, TargetType);
     }
 }

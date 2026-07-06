@@ -131,10 +131,7 @@ public readonly struct Range<T> : IEquatable<Range<T>>
         return true;
     }
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(From, To);
-    }
+    public override int GetHashCode() => HashCode.Combine(From, To);
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {

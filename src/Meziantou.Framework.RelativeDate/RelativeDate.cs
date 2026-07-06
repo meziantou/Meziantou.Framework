@@ -226,7 +226,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     /// <summary>Determines whether the specified <see cref="RelativeDate"/> is equal to the current instance.</summary>
     public bool Equals(RelativeDate other) => DateTime == other.DateTime;
 
-    public override int GetHashCode() => -10323184 + DateTime.GetHashCode();
+    public override int GetHashCode() => HashCode.Combine(DateTime);
 
     /// <summary>Determines whether two <see cref="RelativeDate"/> instances are equal.</summary>
     public static bool operator ==(RelativeDate date1, RelativeDate date2) => date1.Equals(date2);

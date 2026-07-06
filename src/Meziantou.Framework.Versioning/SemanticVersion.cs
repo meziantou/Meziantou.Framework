@@ -188,10 +188,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return ToString(format: null, formatProvider: null);
     }
 
-    public override int GetHashCode()
-    {
-        return SemanticVersionComparer.Instance.GetHashCode(this);
-    }
+    public override int GetHashCode() => SemanticVersionComparer.Instance.GetHashCode(this);
 
     public override bool Equals([NotNullWhen(true)] object? obj)
     {

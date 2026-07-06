@@ -29,8 +29,5 @@ public class Version
     /// <returns>
     /// A hash code for the current <see cref="object"/>.
     /// </returns>
-    public override int GetHashCode()
-    {
-        return Major.GetHashCode() ^ Minor.GetHashCode();
-    }
+    public override int GetHashCode() => HashCode.Combine(Major, Minor);
 }

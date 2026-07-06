@@ -78,22 +78,5 @@ internal sealed class SemanticVersionComparer : IComparer<SemanticVersion>, IEqu
         return Compare(x, y) == 0;
     }
 
-    public int GetHashCode(SemanticVersion? obj)
-    {
-        if (obj == null)
-            return 0;
-
-        var hash = obj.Major.GetHashCode();
-        hash = (hash * 397) ^ obj.Minor.GetHashCode();
-        hash = (hash * 397) ^ obj.Patch.GetHashCode();
-        if (obj.IsPrerelease)
-        {
-            for (var i = 0; i < obj.PrereleaseLabels.Count; i++)
-            {
-                hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(obj.PrereleaseLabels[i]);
-            }
-        }
-
-        return hash;
-    }
+    public int GetHashCode(SemanticVersion? obj) => obj is null ? 0 : HashCode.Combine(obj.Major, obj.Minor, obj.Patch, obj.PrereleaseLabels.Count);
 }

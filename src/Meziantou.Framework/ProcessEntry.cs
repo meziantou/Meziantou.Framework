@@ -29,10 +29,7 @@ public readonly struct ProcessEntry : IEquatable<ProcessEntry>
         return ProcessId == other.ProcessId && ParentProcessId == other.ParentProcessId;
     }
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(ProcessId, ParentProcessId);
-    }
+    public override int GetHashCode() => HashCode.Combine(ProcessId, ParentProcessId);
 
     public override string ToString() => $"Id: {ProcessId}; Parent Id: {ParentProcessId}";
 

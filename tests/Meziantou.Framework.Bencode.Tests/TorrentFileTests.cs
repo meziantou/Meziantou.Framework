@@ -1,7 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Security.Cryptography;
-using System.Text;
 using Meziantou.Framework.Bencode.Torrent;
 
 namespace Meziantou.Framework.Bencode.Tests;

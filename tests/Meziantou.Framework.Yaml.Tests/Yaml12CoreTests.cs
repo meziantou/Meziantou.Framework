@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Meziantou.Framework.Yaml.Events;
 using Meziantou.Framework.Yaml.Model;
 using Meziantou.Framework.Yaml.Schemas;

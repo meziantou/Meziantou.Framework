@@ -1,4 +1,3 @@
-using System;
 using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.Yaml.SourceGeneration;

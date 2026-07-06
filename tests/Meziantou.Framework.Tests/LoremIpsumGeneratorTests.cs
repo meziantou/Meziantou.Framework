@@ -1,5 +1,3 @@
-using Xunit.Sdk;
-
 namespace Meziantou.Framework.Tests;
 
 public class LoremIpsumGeneratorTests

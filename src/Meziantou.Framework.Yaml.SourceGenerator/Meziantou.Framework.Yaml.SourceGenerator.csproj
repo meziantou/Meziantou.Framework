@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
-    <NoWarn>$(NoWarn);RS1041;RS2008</NoWarn>
+    <NoWarn>$(NoWarn);RS1041</NoWarn>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_YAML_SOURCE_GENERATOR</DefineConstants>
   </PropertyGroup>

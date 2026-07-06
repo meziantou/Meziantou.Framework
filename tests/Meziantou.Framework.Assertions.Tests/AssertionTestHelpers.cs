@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using AssertionException = Meziantou.Framework.Assertions.AssertionException;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;

@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Bencode;
 
 public sealed class BencodeInteger : BencodeValue, IEquatable<BencodeInteger>

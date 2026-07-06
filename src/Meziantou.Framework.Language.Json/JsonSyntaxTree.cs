@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Meziantou.Framework.Language.Json;
 
 /// <summary>Represents an immutable JSON syntax tree with source text and diagnostics.</summary>

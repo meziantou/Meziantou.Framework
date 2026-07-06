@@ -7,7 +7,6 @@ using Meziantou.Framework.DnsServer.Protocol;
 using Meziantou.Framework.DnsServer.Protocol.Records;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Time.Testing;
 using DnsServerQuestion = Meziantou.Framework.DnsServer.Protocol.DnsQuestion;
 
 namespace Meziantou.Framework.DnsProxy.Tests;

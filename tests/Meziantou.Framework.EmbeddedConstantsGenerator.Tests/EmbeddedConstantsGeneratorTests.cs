@@ -1,4 +1,3 @@
-using TestUtilities;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.EmbeddedConstantsGenerator.Tests;

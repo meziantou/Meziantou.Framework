@@ -729,8 +729,8 @@ public int Count
 """
 <span class="hljs-keyword">public</span> <span class="hljs-built_in">int</span> Count
 {
-    <span class="hljs-keyword">get</span> =&gt; field;
-    <span class="hljs-keyword">set</span> =&gt; field = <span class="hljs-keyword">value</span> &lt; <span class="hljs-number">0</span> ? <span class="hljs-number">0</span> : <span class="hljs-keyword">value</span>;
+    <span class="hljs-keyword">get</span> =&gt; <span class="hljs-keyword">field</span>;
+    <span class="hljs-keyword">set</span> =&gt; <span class="hljs-keyword">field</span> = <span class="hljs-keyword">value</span> &lt; <span class="hljs-number">0</span> ? <span class="hljs-number">0</span> : <span class="hljs-keyword">value</span>;
 }
 """);
     }
@@ -935,7 +935,7 @@ public T Process<T>(T value) where T : IComparable<T>, IEquatable<T>, new() => v
 public void Process<T>(T value) where T : allows ref struct { }
 """,
 """
-<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Process</span>&lt;<span class="hljs-title">T</span>&gt;(<span class="hljs-params">T <span class="hljs-keyword">value</span></span>) <span class="hljs-keyword">where</span> T : allows <span class="hljs-keyword">ref</span> <span class="hljs-keyword">struct</span></span> { }
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Process</span>&lt;<span class="hljs-title">T</span>&gt;(<span class="hljs-params">T <span class="hljs-keyword">value</span></span>) <span class="hljs-keyword">where</span> T : <span class="hljs-keyword">allows</span> <span class="hljs-keyword">ref</span> <span class="hljs-keyword">struct</span></span> { }
 """);
     }
 

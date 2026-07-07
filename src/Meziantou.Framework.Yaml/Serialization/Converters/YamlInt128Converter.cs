@@ -23,6 +23,6 @@ internal sealed class YamlInt128Converter : YamlConverter<Int128>
 
     public override void Write(YamlWriter writer, Int128 value)
     {
-        writer.WriteScalar(value.ToString(CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

@@ -413,6 +413,69 @@ public sealed class YamlWriter : YamlReaderWriterBase
         WriteFormattableScalar(value, format: "R", plainSafe: true);
     }
 
+    /// <summary>Writes a date and time scalar value using the round-trip format.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(DateTime value)
+    {
+        WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>Writes a date and time with offset scalar value using the round-trip format.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(DateTimeOffset value)
+    {
+        WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>Writes a GUID scalar value.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(Guid value)
+    {
+        WritePlainScalar(value.ToString("D"));
+    }
+
+    /// <summary>Writes a time interval scalar value using the constant format.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(TimeSpan value)
+    {
+        WritePlainScalar(value.ToString("c", CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>Writes a date-only scalar value using the round-trip format.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(DateOnly value)
+    {
+        WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>Writes a time-only scalar value using the round-trip format.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(TimeOnly value)
+    {
+        WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>Writes a half-precision floating-point scalar value.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(Half value)
+    {
+        WritePlainScalar(value.ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>Writes a 128-bit signed integer scalar value.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(Int128 value)
+    {
+        WritePlainScalar(value.ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>Writes a 128-bit unsigned integer scalar value.</summary>
+    /// <param name="value">The value to write.</param>
+    public void WriteScalar(UInt128 value)
+    {
+        WritePlainScalar(value.ToString(CultureInfo.InvariantCulture));
+    }
+
     /// <summary>Writes a scalar value for a span-formattable type using invariant culture formatting.</summary>
     /// <typeparam name="T">The value type to write.</typeparam>
     /// <param name="value">The value to write.</param>

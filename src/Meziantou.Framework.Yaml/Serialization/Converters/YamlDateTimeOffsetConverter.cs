@@ -23,6 +23,6 @@ internal sealed class YamlDateTimeOffsetConverter : YamlConverter<DateTimeOffset
 
     public override void Write(YamlWriter writer, DateTimeOffset value)
     {
-        writer.WriteScalar(value.ToString("O", CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

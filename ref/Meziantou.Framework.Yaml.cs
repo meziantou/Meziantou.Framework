@@ -1052,6 +1052,15 @@ namespace Meziantou.Framework.Yaml.Serialization
         public void WriteScalar(char value) { }
         public void WriteScalar(double value) { }
         public void WriteScalar(float value) { }
+        public void WriteScalar(System.DateTime value) { }
+        public void WriteScalar(System.DateTimeOffset value) { }
+        public void WriteScalar(System.Guid value) { }
+        public void WriteScalar(System.TimeSpan value) { }
+        public void WriteScalar(System.DateOnly value) { }
+        public void WriteScalar(System.TimeOnly value) { }
+        public void WriteScalar(System.Half value) { }
+        public void WriteScalar(System.Int128 value) { }
+        public void WriteScalar(System.UInt128 value) { }
         public void WriteScalar<T>(T value) where T : System.IFormattable { }
         public void WriteNullValue() { }
         public readonly struct BlockSequenceItemStyleScope : System.IDisposable

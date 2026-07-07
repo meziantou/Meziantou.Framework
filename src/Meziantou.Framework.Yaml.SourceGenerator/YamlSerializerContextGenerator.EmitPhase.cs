@@ -4355,26 +4355,26 @@ public sealed partial class YamlSerializerContextGenerator
             if (string.Equals(systemType.Name, "DateTime", StringComparison.Ordinal) ||
                 string.Equals(systemType.Name, "DateTimeOffset", StringComparison.Ordinal))
             {
-                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(".ToString(\"O\", global::System.Globalization.CultureInfo.InvariantCulture));");
+                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(");");
                 return true;
             }
 
             if (string.Equals(systemType.Name, "Guid", StringComparison.Ordinal))
             {
-                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(".ToString(\"D\"));");
+                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(");");
                 return true;
             }
 
             if (string.Equals(systemType.Name, "TimeSpan", StringComparison.Ordinal))
             {
-                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(".ToString(\"c\", global::System.Globalization.CultureInfo.InvariantCulture));");
+                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(");");
                 return true;
             }
 
             if (string.Equals(systemType.Name, "DateOnly", StringComparison.Ordinal) ||
                 string.Equals(systemType.Name, "TimeOnly", StringComparison.Ordinal))
             {
-                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(".ToString(\"O\", global::System.Globalization.CultureInfo.InvariantCulture));");
+                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(");");
                 return true;
             }
 
@@ -4382,7 +4382,7 @@ public sealed partial class YamlSerializerContextGenerator
                 string.Equals(systemType.Name, "Int128", StringComparison.Ordinal) ||
                 string.Equals(systemType.Name, "UInt128", StringComparison.Ordinal))
             {
-                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(".ToString(global::System.Globalization.CultureInfo.InvariantCulture));");
+                builder.Append(indent).Append("writer.WriteScalar(").Append(valueExpression).AppendLine(");");
                 return true;
             }
         }

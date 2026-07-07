@@ -4,14 +4,11 @@
     <IsAotCompatible>true</IsAotCompatible>
     <IsTrimmable>true</IsTrimmable>
     <Description>A high-performance .NET YAML library providing parsing and serialization of object graphs, NativeAOT ready.</Description>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj"
-                      PrivateAssets="all"
-                      ReferenceOutputAssembly="false"
-                      OutputItemType="Analyzer"
-                      SetTargetFramework="TargetFramework=netstandard2.0" />
+    <ProjectReference Include="../Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
   <ItemGroup>

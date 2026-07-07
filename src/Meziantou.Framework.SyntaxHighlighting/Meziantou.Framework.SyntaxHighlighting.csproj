@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Syntax highlighting engine for .NET</Description>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
 </Project>

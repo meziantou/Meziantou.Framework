@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework.Tests;
 
 public class StringExtensionsTests
@@ -112,6 +114,26 @@ public class StringExtensionsTests
             { "ab\u0085cd\u2028ef\u2029gh\vij\fkl", LineBreakMode.Unicode, new[] { ("ab", "\u0085"), ("cd", "\u2028"), ("ef", "\u2029"), ("gh\vij\fkl", "") } },
             { "ab\u0085cd\u2028ef\u2029gh\vij\fkl", LineBreakMode.UnicodeWithLegacyControls, new[] { ("ab", "\u0085"), ("cd", "\u2028"), ("ef", "\u2029"), ("gh", "\v"), ("ij", "\f"), ("kl", "") } },
         };
+    }
+
+    [Theory]
+    [InlineData("", "", '_')]
+    [InlineData("abc", "abc", '_')]
+    [InlineData("a,b.c", "a_b_c", '_')]
+    [InlineData("a-b/c", "a_b_c", '_')]
+    [InlineData("..a..", "__a__", '_')]
+    public void ReplaceAny(string input, string expected, char newValue)
+    {
+        var actual = input.ReplaceAny(SearchValues.Create(".,-/"), newValue);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ReplaceAny_NoMatch_ReturnsSameInstance()
+    {
+        var input = "abcdef";
+        var actual = input.ReplaceAny(SearchValues.Create(".,-/"), '_');
+        Assert.Same(input, actual);
     }
 
     [Theory]

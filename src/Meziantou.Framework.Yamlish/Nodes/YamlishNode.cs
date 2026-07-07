@@ -10,7 +10,7 @@ public abstract class YamlishNode
     public override string ToString()
     {
         using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        YamlishWriter.Write(writer, this, indentCharacter: ' ', indentSize: 2, newLine: writer.NewLine);
+        YamlishWriter.Write(writer, this, indentCharacter: ' ', indentSize: 2, indentBlockSequenceItems: true, newLine: writer.NewLine);
         return writer.ToString();
     }
 }

@@ -31,7 +31,7 @@ public static class YamlishSerializer
         options.MakeReadOnly();
         var root = ObjectBinder.Serialize(value, type, options, depth: 0);
         using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        YamlishWriter.Write(writer, root, options.IndentCharacter, options.IndentSize, options.NewLine);
+        YamlishWriter.Write(writer, root, options.IndentCharacter, options.IndentSize, options.IndentBlockSequenceItems, options.NewLine);
         return writer.ToString();
     }
 

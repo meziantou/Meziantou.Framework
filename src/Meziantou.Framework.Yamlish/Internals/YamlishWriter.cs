@@ -2,10 +2,10 @@ namespace Meziantou.Framework.Yamlish.Internals;
 
 internal static class YamlishWriter
 {
-    public static void Write(TextWriter writer, YamlishNode node, char indentCharacter, int indentSize, string newLine)
+    public static void Write(TextWriter writer, YamlishNode node, char indentCharacter, int indentSize, bool indentBlockSequenceItems, string newLine)
     {
         using var buffer = new StringWriter(CultureInfo.InvariantCulture) { NewLine = newLine };
-        WriteNode(buffer, node, indent: 0, indentCharacter, indentSize);
+        WriteNode(buffer, node, indent: 0, indentCharacter, indentSize, indentBlockSequenceItems);
 
         var content = buffer.ToString();
         if (content.EndsWith(newLine, StringComparison.Ordinal))
@@ -14,7 +14,7 @@ internal static class YamlishWriter
         writer.Write(content);
     }
 
-    private static void WriteNode(TextWriter writer, YamlishNode node, int indent, char indentCharacter, int indentSize)
+    private static void WriteNode(TextWriter writer, YamlishNode node, int indent, char indentCharacter, int indentSize, bool indentBlockSequenceItems)
     {
         switch (node)
         {
@@ -23,24 +23,24 @@ internal static class YamlishWriter
                 break;
 
             case YamlishMapping mapping:
-                WriteMapping(writer, mapping, indent, indentCharacter, indentSize);
+                WriteMapping(writer, mapping, indent, indentCharacter, indentSize, indentBlockSequenceItems);
                 break;
 
             case YamlishSequence sequence:
-                WriteSequence(writer, sequence, indent, indentCharacter, indentSize);
+                WriteSequence(writer, sequence, indent, indentCharacter, indentSize, indentBlockSequenceItems);
                 break;
         }
     }
 
-    private static void WriteMapping(TextWriter writer, YamlishMapping mapping, int indent, char indentCharacter, int indentSize)
+    private static void WriteMapping(TextWriter writer, YamlishMapping mapping, int indent, char indentCharacter, int indentSize, bool indentBlockSequenceItems)
     {
         foreach (var entry in mapping)
         {
-            WriteMappingEntry(writer, entry, indent, writeIndent: true, indentCharacter, indentSize);
+            WriteMappingEntry(writer, entry, indent, writeIndent: true, indentCharacter, indentSize, indentBlockSequenceItems);
         }
     }
 
-    private static void WriteSequence(TextWriter writer, YamlishSequence sequence, int indent, char indentCharacter, int indentSize)
+    private static void WriteSequence(TextWriter writer, YamlishSequence sequence, int indent, char indentCharacter, int indentSize, bool indentBlockSequenceItems)
     {
         if (sequence.Count is 0)
         {
@@ -74,31 +74,31 @@ internal static class YamlishWriter
                 if (item is YamlishMapping { Count: > 0 } mapping)
                 {
                     writer.Write(' ');
-                    WriteCompactMapping(writer, mapping, indent + indentSize, indentCharacter, indentSize);
+                    WriteCompactMapping(writer, mapping, indent + indentSize, indentCharacter, indentSize, indentBlockSequenceItems);
                 }
                 else
                 {
                     writer.WriteLine();
-                    WriteNode(writer, item, indent + indentSize, indentCharacter, indentSize);
+                    WriteNode(writer, item, indent + indentSize, indentCharacter, indentSize, indentBlockSequenceItems);
                 }
             }
         }
     }
 
-    private static void WriteCompactMapping(TextWriter writer, YamlishMapping mapping, int indent, char indentCharacter, int indentSize)
+    private static void WriteCompactMapping(TextWriter writer, YamlishMapping mapping, int indent, char indentCharacter, int indentSize, bool indentBlockSequenceItems)
     {
         using var enumerator = mapping.GetEnumerator();
         if (!enumerator.MoveNext())
             return;
 
-        WriteMappingEntry(writer, enumerator.Current, indent, writeIndent: false, indentCharacter, indentSize);
+        WriteMappingEntry(writer, enumerator.Current, indent, writeIndent: false, indentCharacter, indentSize, indentBlockSequenceItems);
         while (enumerator.MoveNext())
         {
-            WriteMappingEntry(writer, enumerator.Current, indent, writeIndent: true, indentCharacter, indentSize);
+            WriteMappingEntry(writer, enumerator.Current, indent, writeIndent: true, indentCharacter, indentSize, indentBlockSequenceItems);
         }
     }
 
-    private static void WriteMappingEntry(TextWriter writer, KeyValuePair<string, YamlishNode> entry, int indent, bool writeIndent, char indentCharacter, int indentSize)
+    private static void WriteMappingEntry(TextWriter writer, KeyValuePair<string, YamlishNode> entry, int indent, bool writeIndent, char indentCharacter, int indentSize, bool indentBlockSequenceItems)
     {
         if (writeIndent)
             WriteIndent(writer, indent, indentCharacter);
@@ -123,7 +123,8 @@ internal static class YamlishWriter
         else
         {
             writer.WriteLine();
-            WriteNode(writer, entry.Value, indent + indentSize, indentCharacter, indentSize);
+            var childIndent = entry.Value is YamlishSequence && !indentBlockSequenceItems ? indent : indent + indentSize;
+            WriteNode(writer, entry.Value, childIndent, indentCharacter, indentSize, indentBlockSequenceItems);
         }
     }
 

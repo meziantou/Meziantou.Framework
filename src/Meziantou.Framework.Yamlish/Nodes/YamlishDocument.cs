@@ -36,7 +36,7 @@ public sealed class YamlishDocument
     public void WriteTo(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
-        YamlishWriter.Write(writer, Root, indentCharacter: ' ', indentSize: 2, newLine: writer.NewLine);
+        YamlishWriter.Write(writer, Root, indentCharacter: ' ', indentSize: 2, indentBlockSequenceItems: true, newLine: writer.NewLine);
     }
 
     /// <inheritdoc />

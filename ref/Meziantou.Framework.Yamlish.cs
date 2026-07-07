@@ -141,6 +141,7 @@ namespace Meziantou.Framework.Yamlish
         public System.StringComparer PropertyNameComparer { get => throw null; set { } }
         public int IndentSize { get => throw null; set { } }
         public char IndentCharacter { get => throw null; set { } }
+        public bool IndentBlockSequenceItems { get => throw null; set { } }
         public string NewLine { get => throw null; set { } }
         public int MaxDepth { get => throw null; set { } }
         public Meziantou.Framework.Yamlish.YamlishIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }

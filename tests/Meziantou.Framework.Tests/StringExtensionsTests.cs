@@ -131,7 +131,7 @@ public class StringExtensionsTests
     [Fact]
     public void ReplaceAny_NoMatch_ReturnsSameInstance()
     {
-        const string input = "abcdef";
+        var input = "abcdef";
         var actual = input.ReplaceAny(SearchValues.Create(".,-/"), '_');
         Assert.Same(input, actual);
     }

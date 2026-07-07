@@ -12,7 +12,7 @@ public sealed class YamlishSerializerTests
         Assert.False(options.IncludeFields);
         Assert.Equal(' ', options.IndentCharacter);
         Assert.Equal(2, options.IndentSize);
-        Assert.True(options.IndentBlockSequenceItems);
+        Assert.False(options.IndentBlockSequenceItems);
         Assert.Equal(Environment.NewLine, options.NewLine);
         Assert.Equal(YamlishObjectCreationHandling.Replace, options.PreferredObjectCreationHandling);
         Assert.True(options.AllowDuplicateProperties);
@@ -120,7 +120,7 @@ public sealed class YamlishSerializerTests
         Assert.Equal(countAfterFirstUse, predicateEvaluationCount);
         Assert.Throws<InvalidOperationException>(() => options.IncludeFields = true);
         Assert.Throws<InvalidOperationException>(() => options.IndentCharacter = '\t');
-        Assert.Throws<InvalidOperationException>(() => options.IndentBlockSequenceItems = false);
+        Assert.Throws<InvalidOperationException>(() => options.IndentBlockSequenceItems = true);
         Assert.Throws<InvalidOperationException>(() => options.NewLine = "\n");
         Assert.Throws<InvalidOperationException>(() => options.AllowDuplicateProperties = false);
         Assert.Throws<InvalidOperationException>(() => options.RejectUnmatchedProperties = true);
@@ -600,22 +600,22 @@ public sealed class YamlishSerializerTests
 
         Assert.Equal("""
             Block:
-              - item1
-              - item2
+            - item1
+            - item2
             Flow: [item1, item2]
             """, content, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
-    public void Serialize_IndentBlockSequenceItemsFalse_DoesNotIndentSequenceItemsUnderProperty()
+    public void Serialize_IndentBlockSequenceItemsTrue_IndentsSequenceItemsUnderProperty()
     {
-        var options = new YamlishSerializerOptions { IndentBlockSequenceItems = false };
+        var options = new YamlishSerializerOptions { IndentBlockSequenceItems = true };
         var content = YamlishSerializer.Serialize(new SequenceStyleValue(), options);
 
         Assert.Equal("""
             Block:
-            - item1
-            - item2
+              - item1
+              - item2
             Flow: [item1, item2]
             """, content, ignoreLineEndingDifferences: true);
     }
@@ -648,8 +648,8 @@ public sealed class YamlishSerializerTests
 
         Assert.Equal("""
             Values:
-              - item1
-              - item2
+            - item1
+            - item2
             """, content, ignoreLineEndingDifferences: true);
     }
 
@@ -680,17 +680,17 @@ public sealed class YamlishSerializerTests
 
         Assert.Equal("""
             Items:
-              -
-                - item1.1
-                - item1.2
-              -
-                - item2.1
-                - item2.2
+            -
+              - item1.1
+              - item1.2
+            -
+              - item2.1
+              - item2.2
             """, content, ignoreLineEndingDifferences: true);
     }
 
     [Fact]
-    public void Serialize_JaggedArray_IndentBlockSequenceItemsFalse_DoesNotIndentRootSequenceItemsInMapping()
+    public void Serialize_JaggedArray_IndentBlockSequenceItemsTrue_IndentsRootSequenceItemsInMapping()
     {
         var value = new JaggedArrayValue
         {
@@ -700,17 +700,17 @@ public sealed class YamlishSerializerTests
                 ["item2.1", "item2.2"],
             ],
         };
-        var options = new YamlishSerializerOptions { IndentBlockSequenceItems = false };
+        var options = new YamlishSerializerOptions { IndentBlockSequenceItems = true };
         var content = YamlishSerializer.Serialize(value, options);
 
         Assert.Equal("""
             Items:
-            -
-              - item1.1
-              - item1.2
-            -
-              - item2.1
-              - item2.2
+              -
+                - item1.1
+                - item1.2
+              -
+                - item2.1
+                - item2.2
             """, content, ignoreLineEndingDifferences: true);
     }
 
@@ -734,9 +734,9 @@ public sealed class YamlishSerializerTests
 
         Assert.Equal("""
             Assets:
-              - Path: item-alpha
-                HtmlOutput: item-alpha.html
-                ZipOutput: item-alpha.zip
+            - Path: item-alpha
+              HtmlOutput: item-alpha.html
+              ZipOutput: item-alpha.zip
             """, content, ignoreLineEndingDifferences: true);
     }
 

@@ -77,7 +77,7 @@ public sealed class YamlishSerializerOptions
             VerifyMutable();
             field = value;
         }
-    } = true;
+    }
 
     /// <summary>Gets or sets the newline sequence used when writing Yamlish.</summary>
     public string NewLine

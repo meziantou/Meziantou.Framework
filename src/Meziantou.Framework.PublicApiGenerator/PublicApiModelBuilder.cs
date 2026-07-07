@@ -8,6 +8,8 @@ internal static class PublicApiModelBuilder
     private static readonly NullabilityInfoContext NullabilityInfoContext = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
+    private const string ClosedAttributeFullName = "System.Runtime.CompilerServices.ClosedAttribute";
+    private const string IsClosedTypeAttributeFullName = "System.Runtime.CompilerServices.IsClosedTypeAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
@@ -39,6 +41,8 @@ internal static class PublicApiModelBuilder
         "System.ParamArrayAttribute",
         "System.Runtime.CompilerServices.ParamCollectionAttribute",
         "System.Runtime.CompilerServices.ScopedRefAttribute",
+        "System.Runtime.CompilerServices.ClosedAttribute",
+        "System.Runtime.CompilerServices.IsClosedTypeAttribute",
         "System.Reflection.AssemblyCompanyAttribute",
         "System.Reflection.AssemblyConfigurationAttribute",
         "System.Reflection.AssemblyCopyrightAttribute",
@@ -1112,13 +1116,18 @@ internal static class PublicApiModelBuilder
     private static (string Declaration, IReadOnlyList<string> Constraints) BuildTypeHeader(Type type)
     {
         var modifiers = new List<string> { GetTypeAccessibility(type) };
+        var isClosedType = IsClosedType(type);
         if (type.IsAbstract && type.IsSealed)
         {
             modifiers.Add("static");
         }
         else
         {
-            if (type.IsAbstract && !type.IsInterface)
+            if (isClosedType)
+            {
+                modifiers.Add("closed");
+            }
+            else if (type.IsAbstract && !type.IsInterface)
             {
                 modifiers.Add("abstract");
             }
@@ -1144,6 +1153,15 @@ internal static class PublicApiModelBuilder
 
         var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {keyword} {typeName}{genericArguments}{inheritance}";
         return (declaration, constraints);
+    }
+
+    private static bool IsClosedType(Type type)
+    {
+        if (type.IsValueType || type.IsInterface || type.IsEnum || IsDelegate(type))
+            return false;
+
+        return type.GetCustomAttributesData().Any(static attribute =>
+            attribute.AttributeType.FullName is ClosedAttributeFullName or IsClosedTypeAttributeFullName);
     }
 
     private static string BuildInheritance(Type type)

@@ -13,6 +13,8 @@ internal static class PublicApiModelReader
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
     private const string ClosedAttributeFullName = "System.Runtime.CompilerServices.ClosedAttribute";
     private const string IsClosedTypeAttributeFullName = "System.Runtime.CompilerServices.IsClosedTypeAttribute";
+    private const string UnionAttributeFullName = "System.Runtime.CompilerServices.UnionAttribute";
+    private const string IUnionInterfaceFullName = "System.Runtime.CompilerServices.IUnion";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
     private static readonly Lock EnumMetadataCacheLock = new();
     private static readonly Dictionary<string, EnumMetadata?> EnumMetadataCache = new(StringComparer.Ordinal);
@@ -120,9 +122,14 @@ internal static class PublicApiModelReader
         var accessibility = GetAccessibility(typeDefinition.Attributes);
         var genericArguments = BuildGenericArguments(metadataReader, typeDefinitionHandle);
         var keyword = GetTypeKeyword(metadataReader, typeDefinition);
-        var inheritance = BuildTypeInheritance(metadataReader, typeDefinitionHandle, typeDefinition);
+        var isUnionDeclaration = keyword == "union";
+        var inheritance = BuildTypeInheritance(metadataReader, typeDefinitionHandle, typeDefinition, isUnionDeclaration);
         var constraints = BuildTypeConstraints(metadataReader, typeDefinitionHandle);
         var typeAttributes = BuildAttributes(metadataReader, typeDefinition.GetCustomAttributes());
+        if (isUnionDeclaration)
+        {
+            typeAttributes = typeAttributes.Where(static attribute => !attribute.StartsWith("[System.Runtime.CompilerServices.Union", StringComparison.Ordinal)).ToList();
+        }
 
         if (keyword == "delegate")
         {
@@ -210,12 +217,17 @@ internal static class PublicApiModelReader
         sb.Append(' ');
         sb.Append(escapedTypeName);
         sb.Append(genericArguments);
+        if (isUnionDeclaration)
+        {
+            sb.Append(BuildUnionCaseTypes(metadataReader, typeDefinitionHandle));
+        }
+
         sb.Append(inheritance);
         sb.Append(FormatConstraintsInline(constraints));
         sb.AppendLine();
         sb.AppendLine("{");
 
-        foreach (var member in BuildMembers(metadataReader, typeDefinitionHandle, typeDefinition))
+        foreach (var member in BuildMembers(metadataReader, typeDefinitionHandle, typeDefinition, isUnionDeclaration))
         {
             AppendIndentedLine(sb, 1, member);
         }
@@ -236,7 +248,7 @@ internal static class PublicApiModelReader
         return sb.ToString();
     }
 
-    private static IEnumerable<string> BuildMembers(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
+    private static IEnumerable<string> BuildMembers(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition, bool isUnionDeclaration)
     {
         foreach (var fieldHandle in typeDefinition.GetFields())
         {
@@ -250,6 +262,9 @@ internal static class PublicApiModelReader
         foreach (var propertyHandle in EnumerateProperties(typeDefinition))
         {
             var property = metadataReader.GetPropertyDefinition(propertyHandle);
+            if (isUnionDeclaration && IsGeneratedUnionValueProperty(metadataReader, typeDefinitionHandle, property))
+                continue;
+
             var propertyText = BuildProperty(metadataReader, typeDefinitionHandle, property);
             if (propertyText is not null)
             {
@@ -281,6 +296,9 @@ internal static class PublicApiModelReader
             if (string.Equals(name, ".ctor", StringComparison.Ordinal))
             {
                 if (!IsExternallyVisible(method.Attributes))
+                    continue;
+
+                if (isUnionDeclaration && IsGeneratedUnionCaseConstructor(metadataReader, typeDefinitionHandle, methodHandle, method))
                     continue;
 
                 var constructorText = BuildConstructor(metadataReader, typeDefinitionHandle, methodHandle, method);
@@ -367,7 +385,7 @@ internal static class PublicApiModelReader
         }
     }
 
-    private static string BuildTypeInheritance(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition)
+    private static string BuildTypeInheritance(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle, TypeDefinition typeDefinition, bool isUnionDeclaration)
     {
         var keyword = GetTypeKeyword(metadataReader, typeDefinition);
         var genericContext = BuildSignatureGenericContext(metadataReader, typeDefinitionHandle);
@@ -385,6 +403,10 @@ internal static class PublicApiModelReader
         foreach (var interfaceImplementationHandle in typeDefinition.GetInterfaceImplementations())
         {
             var interfaceImplementation = metadataReader.GetInterfaceImplementation(interfaceImplementationHandle);
+            var interfaceTypeName = GetTypeFullName(metadataReader, interfaceImplementation.Interface);
+            if (isUnionDeclaration && string.Equals(interfaceTypeName, IUnionInterfaceFullName, StringComparison.Ordinal))
+                continue;
+
             baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, interfaceImplementation.Interface, genericContext)));
         }
 
@@ -1868,7 +1890,7 @@ internal static class PublicApiModelReader
     private static DecodedType DecodeTypeDefinitionHandle(MetadataReader metadataReader, MetadataTypeNameProvider provider, TypeDefinitionHandle typeDefinitionHandle)
     {
         var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
-        var rawTypeKind = GetTypeKeyword(metadataReader, typeDefinition) is "struct" or "enum"
+        var rawTypeKind = GetTypeKeyword(metadataReader, typeDefinition) is "struct" or "enum" or "union"
             ? (byte)0x11
             : (byte)0x12;
         return provider.GetTypeFromDefinition(metadataReader, typeDefinitionHandle, rawTypeKind);
@@ -1916,6 +1938,9 @@ internal static class PublicApiModelReader
         if ((typeDefinition.Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface)
             return "interface";
 
+        if (IsUnionDeclarationType(metadataReader, typeDefinition))
+            return "union";
+
         var baseTypeName = GetTypeFullName(metadataReader, typeDefinition.BaseType);
         if (string.Equals(baseTypeName, "System.Enum", StringComparison.Ordinal))
             return "enum";
@@ -1935,6 +1960,79 @@ internal static class PublicApiModelReader
         }
 
         return "class";
+    }
+
+    private static bool IsUnionDeclarationType(MetadataReader metadataReader, TypeDefinition typeDefinition)
+    {
+        if (!string.Equals(GetTypeFullName(metadataReader, typeDefinition.BaseType), "System.ValueType", StringComparison.Ordinal))
+            return false;
+
+        if (!HasAttribute(metadataReader, typeDefinition.GetCustomAttributes(), UnionAttributeFullName))
+            return false;
+
+        foreach (var interfaceImplementationHandle in typeDefinition.GetInterfaceImplementations())
+        {
+            var interfaceImplementation = metadataReader.GetInterfaceImplementation(interfaceImplementationHandle);
+            if (string.Equals(GetTypeFullName(metadataReader, interfaceImplementation.Interface), IUnionInterfaceFullName, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string BuildUnionCaseTypes(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle)
+    {
+        var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+        var caseTypes = new List<string>();
+        foreach (var methodHandle in typeDefinition.GetMethods())
+        {
+            var method = metadataReader.GetMethodDefinition(methodHandle);
+            if (!IsGeneratedUnionCaseConstructor(metadataReader, typeDefinitionHandle, methodHandle, method))
+                continue;
+
+            var signature = DecodeMethodSignature(metadataReader, typeDefinitionHandle, methodHandle, method);
+            var nullableInfo = GetNullableMetadataInfo(metadataReader, typeDefinitionHandle, GetParameterCustomAttributes(metadataReader, method, sequenceNumber: 1), methodHandle);
+            var parameterType = ApplyNullableReferenceType(signature.Signature.ParameterTypes[0], nullableInfo);
+            caseTypes.Add(parameterType);
+        }
+
+        return "(" + string.Join(", ", caseTypes) + ")";
+    }
+
+    private static bool IsGeneratedUnionCaseConstructor(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, MethodDefinitionHandle methodHandle, MethodDefinition method)
+    {
+        if (!string.Equals(metadataReader.GetString(method.Name), ".ctor", StringComparison.Ordinal) ||
+            !IsExternallyVisible(method.Attributes))
+        {
+            return false;
+        }
+
+        var signature = DecodeMethodSignature(metadataReader, declaringTypeHandle, methodHandle, method);
+        return !method.Attributes.HasFlag(MethodAttributes.Static) &&
+               signature.Signature.ParameterTypes.Length == 1 &&
+               signature.Signature.ParameterTypes[0].Kind != DecodedTypeKind.ByReference;
+    }
+
+    private static bool IsGeneratedUnionValueProperty(MetadataReader metadataReader, TypeDefinitionHandle declaringTypeHandle, PropertyDefinition property)
+    {
+        if (!string.Equals(metadataReader.GetString(property.Name), "Value", StringComparison.Ordinal))
+            return false;
+
+        var accessors = property.GetAccessors();
+        if (accessors.Getter.IsNil)
+            return false;
+
+        var getter = metadataReader.GetMethodDefinition(accessors.Getter);
+        if (!IsExternallyVisible(getter.Attributes))
+            return false;
+
+        var propertySignature = DecodePropertySignature(metadataReader, declaringTypeHandle, property);
+        var propertyType = ApplyNullableReferenceType(propertySignature.ReturnType, GetNullableMetadataInfo(metadataReader, declaringTypeHandle, property.GetCustomAttributes()));
+        return propertySignature.ParameterTypes.Length == 0 &&
+               (string.Equals(propertyType, "object", StringComparison.Ordinal) ||
+                string.Equals(propertyType, "object?", StringComparison.Ordinal));
     }
 
     private static bool IsExternallyVisible(TypeAttributes attributes)
@@ -2719,7 +2817,7 @@ internal static class PublicApiModelReader
         "out", "override", "params", "private", "protected", "public", "readonly", "record", "ref", "return",
         "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this",
         "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual",
-        "void", "volatile", "while", "required", "file", "scoped",
+        "void", "volatile", "while", "required", "file", "scoped", "union",
     };
 
     private readonly record struct SignatureGenericContext(ImmutableArray<string> TypeParameterNames, ImmutableArray<string> MethodParameterNames)

@@ -1042,10 +1042,11 @@ public class YamlSerializerSourceGenerationTests
 
         var yaml = YamlSerializer.Serialize(payload, typeInfo);
 
-        Assert.Contains("PublishDate: 2019-06-17T00:00:00.0000000+00:00", yaml);
-        Assert.Contains("AllowPostingOnSocialMedia: false", yaml);
-        Assert.DoesNotContain("PublishDate: \"", yaml);
-        Assert.DoesNotContain("AllowPostingOnSocialMedia: \"false\"", yaml);
+        Assert.Equal("""
+            PublishDate: 2019-06-17T00:00:00.0000000+00:00
+            AllowPostingOnSocialMedia: false
+
+            """.ReplaceLineEndings("\n"), yaml);
     }
 
     [Fact]

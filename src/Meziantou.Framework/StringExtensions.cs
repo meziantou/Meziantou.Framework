@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework;
 
 #if PUBLIC_STRING_EXTENSIONS
@@ -36,6 +38,30 @@ static partial class StringExtensions
     public static bool ContainsIgnoreCase(this string str, string value)
     {
         return str.Contains(value, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static string ReplaceAny(this string text, SearchValues<char> values, char newValue)
+    {
+        if (!text.ContainsAny(values))
+            return text;
+
+        return string.Create(text.Length, (text, values, newValue), static (span, state) =>
+        {
+            var source = state.text.AsSpan();
+            source.CopyTo(span);
+
+            var start = 0;
+            while (start < source.Length)
+            {
+                var index = source[start..].IndexOfAny(state.values);
+                if (index < 0)
+                    break;
+
+                start += index;
+                span[start] = state.newValue;
+                start++;
+            }
+        });
     }
 
     private static readonly Lazy<Dictionary<char, char>> DiacriticDictionary = new(CreateDiacriticDictionary);

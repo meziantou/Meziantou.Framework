@@ -644,6 +644,7 @@ namespace Meziantou.Framework
         public static bool EqualsOrdinal(this string? str1, string? str2) => throw null;
         public static bool EqualsIgnoreCase(this string? str1, string? str2) => throw null;
         public static bool ContainsIgnoreCase(this string str, string value) => throw null;
+        public static string ReplaceAny(this string text, System.Buffers.SearchValues<char> values, char newValue) => throw null;
         public static string? RemoveDiacritics(this string? str) => throw null;
         public static string RemoveSuffix(this string str, string suffix) => throw null;
         public static string RemoveSuffix(this string str, string suffix, System.StringComparison stringComparison) => throw null;

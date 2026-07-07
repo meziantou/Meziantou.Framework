@@ -1046,7 +1046,7 @@ public class YamlSerializerSourceGenerationTests
             PublishDate: 2019-06-17T00:00:00.0000000+00:00
             AllowPostingOnSocialMedia: false
 
-            """.ReplaceLineEndings("\n"), yaml);
+            """, yaml, ignoreLineEndingDifferences: true);
     }
 
     [Fact]

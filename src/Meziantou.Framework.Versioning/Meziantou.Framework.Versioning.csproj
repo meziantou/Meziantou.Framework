@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>3.0.0</Version>
+    <Version>3.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Provide a SemanticVersion class to parse, compare, format semantic versions</Description>
   </PropertyGroup>

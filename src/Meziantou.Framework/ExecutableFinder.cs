@@ -43,17 +43,26 @@ static class ExecutableFinder
         static string? TryFindInDirectory(string executableName, string directory, string[] extensions)
         {
             var fullPath = Path.Combine(directory, executableName);
-            if (File.Exists(fullPath))
+            if (File.Exists(fullPath) && IsExecutable(fullPath))
                 return fullPath;
 
             foreach (var extension in extensions)
             {
                 var pathWithExt = fullPath + extension;
-                if (File.Exists(pathWithExt))
+                if (File.Exists(pathWithExt) && IsExecutable(pathWithExt))
                     return pathWithExt;
             }
 
             return null;
+        }
+
+        static bool IsExecutable(string path)
+        {
+            if (OperatingSystem.IsWindows())
+                return true;
+
+            var mode = File.GetUnixFileMode(path);
+            return (mode & (UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute)) != UnixFileMode.None;
         }
     }
 }

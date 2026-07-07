@@ -35,10 +35,11 @@ internal static partial class CSharp
 
     private static readonly string[] ContextualKeywords =
     [
-        "add","alias","and","ascending","args","async","await","by","descending","dynamic",
-        "equals","file","from","get","global","group","init","into","join","let","nameof",
-        "not","notnull","on","or","orderby","partial","record","remove","required","scoped",
-        "select","set","unmanaged","value|0","var","when","where","with","yield",
+        "add","allows","alias","and","ascending","args","async","await","by","closed",
+        "descending","dynamic","equals","extension","field","file","from","get","global","group",
+        "init","into","join","let","nameof","not","notnull","on","or","orderby","partial",
+        "record","remove","required","scoped","select","set","unmanaged","value","var","when",
+        "where","with","yield",
     ];
 
     private static Keywords BuildKeywords() => Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal)

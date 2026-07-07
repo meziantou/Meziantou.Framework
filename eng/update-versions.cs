@@ -20,7 +20,7 @@ for (var i = 0; i < args.Length; i++)
             Console.WriteLine("Bumps package versions based on git commit history.");
             Console.WriteLine("Options:");
             Console.WriteLine("  --create-pull-request      Create or update a GitHub pull request");
-            Console.WriteLine("  --force-bump-all           Bump all package versions");
+            Console.WriteLine("  --force-bump-all           Bump all packable package versions");
             Console.WriteLine("  --number-of-commits <N>    Number of commits to analyze (default: 50)");
             return 0;
         case "--create-pull-request":
@@ -54,9 +54,21 @@ Console.WriteLine($"Commits loaded ({commits.Length} commits)");
 // Initialize per-csproj tracking
 var changesPerCsproj = new Dictionary<string, CsprojInfo>(StringComparer.OrdinalIgnoreCase);
 var allCsprojFiles = new List<string>();
+var packableProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 foreach (var file in Directory.EnumerateFiles(srcPath, "*.csproj", SearchOption.AllDirectories))
 {
+    var isPackable = IsPackableProject(file);
+    if (isPackable)
+    {
+        _ = packableProjects.Add(file);
+    }
+
+    if (!isPackable)
+    {
+        continue;
+    }
+
     Console.WriteLine($"Project file detected: {file}");
     allCsprojFiles.Add(file);
     changesPerCsproj[file] = new CsprojInfo();
@@ -147,6 +159,9 @@ foreach (var commit in commits)
 
             if (!changesPerCsproj.TryGetValue(csproj, out var info))
             {
+                if (!packableProjects.Contains(csproj))
+                    continue;
+
                 info = new CsprojInfo();
                 changesPerCsproj[csproj] = info;
             }
@@ -163,6 +178,9 @@ foreach (var commit in commits)
 
         if (!changesPerCsproj.TryGetValue(csproj, out var info))
         {
+            if (!packableProjects.Contains(csproj))
+                continue;
+
             info = new CsprojInfo();
             changesPerCsproj[csproj] = info;
         }
@@ -449,6 +467,17 @@ static string RunAndCapture(string fileName, string[] arguments)
     process.WaitForExit();
 
     return output;
+}
+
+static bool IsPackableProject(string csprojPath)
+{
+    var output = RunAndCapture("dotnet", ["msbuild", csprojPath, "-nologo", "-v:q", "-getProperty:IsPackable"]).Trim();
+    if (!bool.TryParse(output, out var result))
+    {
+        throw new InvalidOperationException($"Failed to evaluate IsPackable for '{csprojPath}'. Value: '{output}'");
+    }
+
+    return result;
 }
 
 static void RunProcess(string fileName, string[] arguments)

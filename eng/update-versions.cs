@@ -335,7 +335,24 @@ bool IncrementVersion(string csprojPath)
 
     var versionNodes = doc.GetElementsByTagName("Version");
     if (versionNodes.Count == 0)
-        return false;
+    {
+        var projectElement = doc.DocumentElement ?? throw new InvalidOperationException("Invalid project file: missing root element");
+        var namespaceUri = projectElement.NamespaceURI;
+
+        var propertyGroupNode = doc.GetElementsByTagName("PropertyGroup").OfType<XmlNode>().FirstOrDefault();
+        var propertyGroup = propertyGroupNode as XmlElement;
+        if (propertyGroup is null)
+        {
+            propertyGroup = doc.CreateElement("PropertyGroup", namespaceUri);
+            _ = projectElement.AppendChild(propertyGroup);
+        }
+
+        var newVersionNode = doc.CreateElement("Version", namespaceUri);
+        newVersionNode.InnerText = "1.0.1";
+        _ = propertyGroup.AppendChild(newVersionNode);
+        doc.Save(csprojPath);
+        return true;
+    }
 
     var versionNode = versionNodes[0]!;
     var version = versionNode.InnerText;

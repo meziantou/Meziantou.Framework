@@ -2389,6 +2389,41 @@ public sealed class PublicApiGeneratorTests
         });
     }
 
+    [Fact]
+    public async Task Class_Closed()
+    {
+        await Validate("""
+            namespace System.Runtime.CompilerServices
+            {
+                [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+                public sealed class ClosedAttribute : System.Attribute
+                {
+                }
+            }
+
+            public closed class Sample
+            {
+            }
+            """, """
+            #nullable enable
+
+            public closed class Sample
+            {
+            }
+
+            namespace System.Runtime.CompilerServices
+            {
+                [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+                public sealed class ClosedAttribute : System.Attribute
+                {
+                }
+            }
+            """, compilerOptions: new CompilerOptions
+            {
+                TargetFramework = "net10.0",
+            });
+    }
+
     [InlineSnapshotAssertion(nameof(expected))]
     private static async Task Validate(string source, string expected, PublicApiOptions? options = null, CompilerOptions? compilerOptions = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {

@@ -11,6 +11,8 @@ internal static class PublicApiModelReader
 {
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
+    private const string ClosedAttributeFullName = "System.Runtime.CompilerServices.ClosedAttribute";
+    private const string IsClosedTypeAttributeFullName = "System.Runtime.CompilerServices.IsClosedTypeAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
     private static readonly Lock EnumMetadataCacheLock = new();
     private static readonly Dictionary<string, EnumMetadata?> EnumMetadataCache = new(StringComparer.Ordinal);
@@ -44,6 +46,8 @@ internal static class PublicApiModelReader
         "System.ParamArrayAttribute",
         "System.Runtime.CompilerServices.ParamCollectionAttribute",
         "System.Runtime.CompilerServices.ScopedRefAttribute",
+        "System.Runtime.CompilerServices.ClosedAttribute",
+        "System.Runtime.CompilerServices.IsClosedTypeAttribute",
         "System.Reflection.AssemblyCompanyAttribute",
         "System.Reflection.AssemblyConfigurationAttribute",
         "System.Reflection.AssemblyCopyrightAttribute",
@@ -176,13 +180,19 @@ internal static class PublicApiModelReader
         var typeModifiers = new List<string> { accessibility };
         if (keyword == "class")
         {
+            var isClosedType = HasAttribute(metadataReader, typeDefinition.GetCustomAttributes(), ClosedAttributeFullName) ||
+                               HasAttribute(metadataReader, typeDefinition.GetCustomAttributes(), IsClosedTypeAttributeFullName);
             if (typeDefinition.Attributes.HasFlag(TypeAttributes.Abstract) && typeDefinition.Attributes.HasFlag(TypeAttributes.Sealed))
             {
                 typeModifiers.Add("static");
             }
             else
             {
-                if (typeDefinition.Attributes.HasFlag(TypeAttributes.Abstract))
+                if (isClosedType)
+                {
+                    typeModifiers.Add("closed");
+                }
+                else if (typeDefinition.Attributes.HasFlag(TypeAttributes.Abstract))
                 {
                     typeModifiers.Add("abstract");
                 }

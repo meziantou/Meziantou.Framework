@@ -2424,6 +2424,65 @@ public sealed class PublicApiGeneratorTests
             });
     }
 
+    [Fact]
+    public async Task Struct_Union()
+    {
+        await Validate("""
+            namespace System.Runtime.CompilerServices
+            {
+                public sealed class UnionAttribute : System.Attribute
+                {
+                }
+
+                public interface IUnion
+                {
+                    object Value { get; }
+                }
+            }
+
+            public class Cat
+            {
+            }
+
+            public class Dog
+            {
+            }
+
+            public union Pet(Cat, Dog);
+            """, """
+            #nullable enable
+
+            public class Cat
+            {
+            }
+
+
+            public class Dog
+            {
+            }
+
+
+            public union Pet(Cat, Dog)
+            {
+            }
+
+            namespace System.Runtime.CompilerServices
+            {
+                public interface IUnion
+                {
+                    object Value { get; }
+                }
+
+                public sealed class UnionAttribute : System.Attribute
+                {
+                }
+            }
+            """, compilerOptions: new CompilerOptions
+            {
+                TargetFramework = "net10.0",
+            });
+    }
+
     [InlineSnapshotAssertion(nameof(expected))]
     private static async Task Validate(string source, string expected, PublicApiOptions? options = null, CompilerOptions? compilerOptions = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {

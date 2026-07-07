@@ -10,6 +10,8 @@ internal static class PublicApiModelBuilder
     private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
     private const string ClosedAttributeFullName = "System.Runtime.CompilerServices.ClosedAttribute";
     private const string IsClosedTypeAttributeFullName = "System.Runtime.CompilerServices.IsClosedTypeAttribute";
+    private const string UnionAttributeFullName = "System.Runtime.CompilerServices.UnionAttribute";
+    private const string IUnionInterfaceFullName = "System.Runtime.CompilerServices.IUnion";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
@@ -137,15 +139,16 @@ internal static class PublicApiModelBuilder
             return BuildEnum(type, indentationLevel);
 
         var sb = new StringBuilder();
-        AppendAttributes(sb, type.CustomAttributes, indentationLevel);
+        var isUnionDeclaration = IsUnionDeclarationType(type);
+        AppendAttributes(sb, type.CustomAttributes.Where(attribute => !isUnionDeclaration || attribute.AttributeType.FullName != UnionAttributeFullName), indentationLevel);
 
-        var typeHeader = BuildTypeHeader(type);
+        var typeHeader = BuildTypeHeader(type, isUnionDeclaration);
         AppendIndentedLine(sb, indentationLevel, typeHeader.Declaration + FormatConstraintsInline(typeHeader.Constraints));
 
         AppendIndentedLine(sb, indentationLevel, "{");
         if (!IsRecordClass(type) && !IsRecordStruct(type))
         {
-            AppendMembers(sb, type, indentationLevel + 1);
+            AppendMembers(sb, type, indentationLevel + 1, isUnionDeclaration);
         }
         AppendNestedTypes(sb, type, indentationLevel + 1);
         AppendIndentedLine(sb, indentationLevel, "}");
@@ -173,7 +176,7 @@ internal static class PublicApiModelBuilder
         }
     }
 
-    private static void AppendMembers(StringBuilder sb, Type type, int indentationLevel)
+    private static void AppendMembers(StringBuilder sb, Type type, int indentationLevel, bool isUnionDeclaration)
     {
         var members = new List<string>();
 
@@ -189,6 +192,9 @@ internal static class PublicApiModelBuilder
                      .Where(IsExternallyVisible)
                      .OrderBy(static property => property.MetadataToken))
         {
+            if (isUnionDeclaration && IsGeneratedUnionValueProperty(property))
+                continue;
+
             members.Add(BuildProperty(property, indentationLevel));
         }
 
@@ -203,6 +209,9 @@ internal static class PublicApiModelBuilder
                      .Where(IsExternallyVisible)
                      .OrderBy(static constructor => constructor.MetadataToken))
         {
+            if (isUnionDeclaration && IsGeneratedUnionCaseConstructor(constructor))
+                continue;
+
             var constructorText = BuildConstructor(constructor, indentationLevel);
             if (constructorText is not null)
             {
@@ -1113,7 +1122,7 @@ internal static class PublicApiModelBuilder
             : "ref " + FormatType(elementType, elementNullability);
     }
 
-    private static (string Declaration, IReadOnlyList<string> Constraints) BuildTypeHeader(Type type)
+    private static (string Declaration, IReadOnlyList<string> Constraints) BuildTypeHeader(Type type, bool isUnionDeclaration)
     {
         var modifiers = new List<string> { GetTypeAccessibility(type) };
         var isClosedType = IsClosedType(type);
@@ -1148,10 +1157,11 @@ internal static class PublicApiModelBuilder
         var keyword = GetTypeKeyword(type);
         var typeName = EscapeIdentifier(RemoveGenericArity(type.Name));
         var genericArguments = BuildGenericArguments(type);
-        var inheritance = BuildInheritance(type);
+        var unionCaseTypes = isUnionDeclaration ? BuildUnionCaseTypes(type) : string.Empty;
+        var inheritance = BuildInheritance(type, isUnionDeclaration);
         var constraints = BuildTypeConstraints(type, indentationLevel: 0);
 
-        var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {keyword} {typeName}{genericArguments}{inheritance}";
+        var declaration = $"{string.Join(' ', modifiers.Where(static value => !string.IsNullOrEmpty(value)))} {keyword} {typeName}{genericArguments}{unionCaseTypes}{inheritance}";
         return (declaration, constraints);
     }
 
@@ -1164,7 +1174,7 @@ internal static class PublicApiModelBuilder
             attribute.AttributeType.FullName is ClosedAttributeFullName or IsClosedTypeAttributeFullName);
     }
 
-    private static string BuildInheritance(Type type)
+    private static string BuildInheritance(Type type, bool isUnionDeclaration)
     {
         var baseTypes = new List<string>();
         if (!type.IsInterface &&
@@ -1179,6 +1189,7 @@ internal static class PublicApiModelBuilder
 
         var interfaces = type.GetInterfaces()
             .Where(@interface => IsExternallyVisible(@interface) || @interface.IsPublic)
+            .Where(@interface => !isUnionDeclaration || @interface.FullName != IUnionInterfaceFullName)
             .OrderBy(static @interface => @interface.FullName, StringComparer.Ordinal)
             .Select(static @interface => FormatType(@interface))
             .ToList();
@@ -1192,6 +1203,9 @@ internal static class PublicApiModelBuilder
 
     private static string GetTypeKeyword(Type type)
     {
+        if (IsUnionDeclarationType(type))
+            return "union";
+
         if (type.IsInterface)
             return "interface";
 
@@ -1241,6 +1255,39 @@ internal static class PublicApiModelBuilder
     {
         return type.IsValueType &&
                type.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsReadOnlyAttribute");
+    }
+
+    private static bool IsUnionDeclarationType(Type type)
+    {
+        return type.IsValueType &&
+               !type.IsEnum &&
+               type.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == UnionAttributeFullName) &&
+               type.GetInterfaces().Any(static @interface => @interface.FullName == IUnionInterfaceFullName);
+    }
+
+    private static string BuildUnionCaseTypes(Type type)
+    {
+        var caseTypes = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(IsGeneratedUnionCaseConstructor)
+            .OrderBy(static constructor => constructor.MetadataToken)
+            .Select(constructor => FormatType(constructor.GetParameters()[0].ParameterType, NullabilityInfoContext.Create(constructor.GetParameters()[0])))
+            .ToArray();
+        return "(" + string.Join(", ", caseTypes) + ")";
+    }
+
+    private static bool IsGeneratedUnionCaseConstructor(ConstructorInfo constructor)
+    {
+        return IsExternallyVisible(constructor) &&
+               !constructor.IsStatic &&
+               constructor.GetParameters() is [var parameter] &&
+               !parameter.ParameterType.IsByRef;
+    }
+
+    private static bool IsGeneratedUnionValueProperty(PropertyInfo property)
+    {
+        return string.Equals(property.Name, "Value", StringComparison.Ordinal) &&
+               property.PropertyType == typeof(object) &&
+               property.GetIndexParameters().Length == 0;
     }
 
     private static string GetTypeAccessibility(Type type)
@@ -1765,6 +1812,6 @@ internal static class PublicApiModelBuilder
         "out", "override", "params", "private", "protected", "public", "readonly", "record", "ref", "return",
         "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this",
         "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual",
-        "void", "volatile", "while", "required", "file", "scoped",
+        "void", "volatile", "while", "required", "file", "scoped", "union",
     };
 }

@@ -25,6 +25,11 @@ public class YamlSerializerApiTests
         public YamlNode? Content { get; set; }
     }
 
+    private sealed class StringPayload
+    {
+        public string Value { get; set; } = string.Empty;
+    }
+
     private sealed class StringTypeInfo : YamlTypeInfo<string>
     {
         public StringTypeInfo(YamlSerializerOptions options) : base(options)
@@ -232,6 +237,22 @@ public class YamlSerializerApiTests
 
         Assert.Equal("value: hello\n", yaml);
         Assert.Equal("hello", value);
+    }
+
+    [Fact]
+    public void SerializeStringProperty_UsesPlainStyleWhenSafe()
+    {
+        var yaml = YamlSerializer.Serialize(new StringPayload { Value = "sample string" });
+
+        Assert.Equal("Value: sample string\n", yaml);
+    }
+
+    [Fact]
+    public void SerializeStringProperty_QuotesProblematicCharacters()
+    {
+        var yaml = YamlSerializer.Serialize(new StringPayload { Value = "sample: string" });
+
+        Assert.Equal("Value: \"sample: string\"\n", yaml);
     }
 
     [Fact]

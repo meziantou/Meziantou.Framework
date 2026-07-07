@@ -1043,10 +1043,28 @@ public class YamlSerializerSourceGenerationTests
         var yaml = YamlSerializer.Serialize(payload, typeInfo);
 
         Assert.Equal("""
-            PublishDate: 2019-06-17T00:00:00.0000000+00:00
+            PublishDate: 2019-06-17T00:00:00.0000000Z
             AllowPostingOnSocialMedia: false
 
             """, yaml, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public void GeneratedContext_DateTimeAndDateTimeOffset_UseZSuffixForUtc()
+    {
+        var payload = new GeneratedWellKnownScalars
+        {
+            WhenUtc = new DateTime(2027, 04, 19, 12, 00, 00, DateTimeKind.Utc),
+            WhenOffset = new DateTimeOffset(2027, 04, 19, 12, 00, 00, TimeSpan.Zero),
+            Id = Guid.Empty,
+            Duration = TimeSpan.Zero,
+        };
+
+        var context = TestYamlSerializerContext.Default;
+        var yaml = YamlSerializer.Serialize(payload, context.GeneratedWellKnownScalars);
+
+        Assert.Contains("WhenUtc: 2027-04-19T12:00:00.0000000Z", yaml);
+        Assert.Contains("WhenOffset: 2027-04-19T12:00:00.0000000Z", yaml);
     }
 
     [Fact]

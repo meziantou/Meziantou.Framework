@@ -424,6 +424,12 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <param name="value">The value to write.</param>
     public void WriteScalar(DateTimeOffset value)
     {
+        if (value.Offset == TimeSpan.Zero)
+        {
+            WritePlainScalar(value.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffffff'Z'", CultureInfo.InvariantCulture));
+            return;
+        }
+
         WritePlainScalar(value.ToString("O", CultureInfo.InvariantCulture));
     }
 

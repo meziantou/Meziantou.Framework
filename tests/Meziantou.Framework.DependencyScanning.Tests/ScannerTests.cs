@@ -344,6 +344,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             "#:package Serilog@3.1.1\n" +
             "#:package Spectre.Console@*\n" +
             "#:project ../SharedLibrary/SharedLibrary.csproj\n" +
+            "#:ref ../SharedLibrary/bin/Debug/net10.0/SharedLibrary.dll\n" +
             "#:property TargetFramework=net10.0\n" +
             "\n" +
             "Console.WriteLine(\"Hello, World!\");\n";
@@ -356,6 +357,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             "#:package dummy4@2.0.0\n" +
             "#:package dummy5@2.0.0\n" +
             "#:project dummy6\n" +
+            "#:ref dummy7\n" +
             "#:property TargetFramework=2.0.0\n" +
             "\n" +
             "Console.WriteLine(\"Hello, World!\");\n";
@@ -369,7 +371,8 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.NuGet, "Serilog", "3.1.1", 5, 19),
             (DependencyType.NuGet, "Spectre.Console", "*", 6, 27),
             (DependencyType.MSBuildProjectReference, "../SharedLibrary/SharedLibrary.csproj", null, 0, 0),
-            (DependencyType.DotNetTargetFramework, null, "net10.0", 8, 28));
+            (DependencyType.DotNetAssemblyReference, "../SharedLibrary/bin/Debug/net10.0/SharedLibrary.dll", null, 0, 0),
+            (DependencyType.DotNetTargetFramework, null, "net10.0", 9, 28));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("app.cs", Expected, ignoreNewLines: false);
@@ -394,6 +397,36 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.NuGet, "Serilog", "3.1.1", 2, 19));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("app.cs", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task DotNetFileBasedAppDependencies_WithMultilineComments()
+    {
+        const string Original = """
+            /*
+            This is a file-based app
+            */
+            #:package Serilog@3.1.1
+
+            Console.WriteLine("Hello");
+            """;
+
+        const string Expected = """
+            /*
+            This is a file-based app
+            */
+            #:package dummy1@2.0.0
+
+            Console.WriteLine("Hello");
+            """;
+
+        AddFile("app.cs", Original);
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "Serilog", "3.1.1", 4, 19));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("app.cs", Expected, ignoreNewLines: false);

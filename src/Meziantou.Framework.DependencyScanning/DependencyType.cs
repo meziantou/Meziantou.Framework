@@ -53,4 +53,7 @@ public enum DependencyType
 
     /// <summary>MSBuild project reference.</summary>
     MSBuildProjectReference,
+
+    /// <summary>.NET assembly file reference.</summary>
+    DotNetAssemblyReference,
 }

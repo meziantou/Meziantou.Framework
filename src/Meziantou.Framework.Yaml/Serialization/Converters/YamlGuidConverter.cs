@@ -23,6 +23,6 @@ internal sealed class YamlGuidConverter : YamlConverter<Guid>
 
     public override void Write(YamlWriter writer, Guid value)
     {
-        writer.WriteScalar(value.ToString("D"));
+        writer.WriteScalar(value);
     }
 }

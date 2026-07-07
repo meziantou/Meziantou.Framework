@@ -132,6 +132,12 @@ internal sealed class GeneratedWellKnownScalars
     public TimeSpan Duration { get; set; }
 }
 
+internal sealed class GeneratedNullableScalars
+{
+    public DateTimeOffset? PublishDate { get; set; }
+    public bool? AllowPostingOnSocialMedia { get; set; }
+}
+
 internal sealed class GeneratedModernScalars
 {
     public DateOnly Date { get; set; }
@@ -604,6 +610,7 @@ internal sealed class GeneratedReadOnlyPopulateStructContainer
 [YamlSerializable(typeof(GeneratedContainer))]
 [YamlSerializable(typeof(GeneratedPrimitives))]
 [YamlSerializable(typeof(GeneratedWellKnownScalars))]
+[YamlSerializable(typeof(GeneratedNullableScalars))]
 [YamlSerializable(typeof(GeneratedModernScalars))]
 [YamlSerializable(typeof(GeneratedColor))]
 [YamlSerializable(typeof(bool))]
@@ -1020,6 +1027,25 @@ public class YamlSerializerSourceGenerationTests
         Assert.Equal(payload.WhenOffset, roundTrip.WhenOffset);
         Assert.Equal(payload.Id, roundTrip.Id);
         Assert.Equal(payload.Duration, roundTrip.Duration);
+    }
+
+    [Fact]
+    public void GeneratedContext_NullableDateTimeOffsetAndBoolean_AreEmittedPlain()
+    {
+        var context = TestYamlSerializerContext.Default;
+        var typeInfo = context.GeneratedNullableScalars;
+        var payload = new GeneratedNullableScalars
+        {
+            PublishDate = new DateTimeOffset(2019, 06, 17, 0, 0, 0, TimeSpan.Zero),
+            AllowPostingOnSocialMedia = false,
+        };
+
+        var yaml = YamlSerializer.Serialize(payload, typeInfo);
+
+        Assert.Contains("PublishDate: 2019-06-17T00:00:00.0000000+00:00", yaml);
+        Assert.Contains("AllowPostingOnSocialMedia: false", yaml);
+        Assert.DoesNotContain("PublishDate: \"", yaml);
+        Assert.DoesNotContain("AllowPostingOnSocialMedia: \"false\"", yaml);
     }
 
     [Fact]

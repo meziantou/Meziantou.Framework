@@ -18,6 +18,12 @@ public sealed class YamlWellKnownScalarConverterTests
         public UInt128 UBig { get; set; }
     }
 
+    private sealed class NullablePayload
+    {
+        public DateTimeOffset? PublishDate { get; set; }
+        public bool? AllowPostingOnSocialMedia { get; set; }
+    }
+
     [Fact]
     public void RoundTrip_WellKnownScalarTypes_ShouldSucceed()
     {
@@ -79,5 +85,22 @@ public sealed class YamlWellKnownScalarConverterTests
         Assert.Contains("Int128", ex.Message);
         Assert.Contains("Lin:", ex.Message);
         Assert.Contains("Col:", ex.Message);
+    }
+
+    [Fact]
+    public void Serialize_NullableDateTimeOffsetAndBoolean_ShouldRemainPlain()
+    {
+        var payload = new NullablePayload
+        {
+            PublishDate = new DateTimeOffset(2019, 06, 17, 0, 0, 0, TimeSpan.Zero),
+            AllowPostingOnSocialMedia = false,
+        };
+
+        var yaml = YamlSerializer.Serialize(payload);
+
+        Assert.Contains("PublishDate: 2019-06-17T00:00:00.0000000+00:00", yaml);
+        Assert.Contains("AllowPostingOnSocialMedia: false", yaml);
+        Assert.DoesNotContain("PublishDate: \"", yaml);
+        Assert.DoesNotContain("AllowPostingOnSocialMedia: \"false\"", yaml);
     }
 }

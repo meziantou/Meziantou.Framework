@@ -23,6 +23,6 @@ internal sealed class YamlDateOnlyConverter : YamlConverter<DateOnly>
 
     public override void Write(YamlWriter writer, DateOnly value)
     {
-        writer.WriteScalar(value.ToString("O", CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

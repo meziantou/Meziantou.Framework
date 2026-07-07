@@ -22,6 +22,6 @@ internal sealed class YamlBooleanConverter : YamlConverter<bool>
 
     public override void Write(YamlWriter writer, bool value)
     {
-        writer.WriteScalar(value ? "true" : "false");
+        writer.WriteScalar(value);
     }
 }

@@ -23,6 +23,6 @@ internal sealed class YamlTimeOnlyConverter : YamlConverter<TimeOnly>
 
     public override void Write(YamlWriter writer, TimeOnly value)
     {
-        writer.WriteScalar(value.ToString("O", CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

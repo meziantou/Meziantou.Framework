@@ -23,6 +23,6 @@ internal sealed class YamlHalfConverter : YamlConverter<Half>
 
     public override void Write(YamlWriter writer, Half value)
     {
-        writer.WriteScalar(value.ToString(CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

@@ -23,6 +23,6 @@ internal sealed class YamlTimeSpanConverter : YamlConverter<TimeSpan>
 
     public override void Write(YamlWriter writer, TimeSpan value)
     {
-        writer.WriteScalar(value.ToString("c", CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

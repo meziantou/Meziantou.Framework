@@ -710,6 +710,7 @@ internal static class PublicApiModelReader
             var hasInAttribute = false;
             var hasIsReadOnlyAttribute = false;
             var hasRequiresLocationAttribute = false;
+            var hasScopedRefAttribute = false;
             var hasParamArrayAttribute = false;
             var hasParamCollectionAttribute = false;
             var defaultValue = string.Empty;
@@ -724,6 +725,7 @@ internal static class PublicApiModelReader
                 hasInAttribute = HasAttribute(metadataReader, parameterAttributes.Value, "System.Runtime.InteropServices.InAttribute");
                 hasIsReadOnlyAttribute = HasAttribute(metadataReader, parameterAttributes.Value, "System.Runtime.CompilerServices.IsReadOnlyAttribute");
                 hasRequiresLocationAttribute = HasAttribute(metadataReader, parameterAttributes.Value, "System.Runtime.CompilerServices.RequiresLocationAttribute");
+                hasScopedRefAttribute = HasAttribute(metadataReader, parameterAttributes.Value, "System.Runtime.CompilerServices.ScopedRefAttribute");
                 hasParamArrayAttribute = HasAttribute(metadataReader, parameterAttributes.Value, "System.ParamArrayAttribute");
                 hasParamCollectionAttribute = HasAttribute(metadataReader, parameterAttributes.Value, "System.Runtime.CompilerServices.ParamCollectionAttribute");
                 if (parameter.Attributes.HasFlag(ParameterAttributes.HasDefault) && !parameter.GetDefaultValue().IsNil)
@@ -761,6 +763,7 @@ internal static class PublicApiModelReader
                 hasInAttribute,
                 hasIsReadOnlyAttribute,
                 hasRequiresLocationAttribute,
+                hasScopedRefAttribute,
                 hasParamArrayAttribute,
                 hasParamCollectionAttribute);
             var extensionThisModifier = isExtensionMethod && i == 0 ? "this " : string.Empty;
@@ -982,6 +985,7 @@ internal static class PublicApiModelReader
             var hasInAttribute = false;
             var hasIsReadOnlyAttribute = false;
             var hasRequiresLocationAttribute = false;
+            var hasScopedRefAttribute = false;
             var hasParamArrayAttribute = false;
             var hasParamCollectionAttribute = false;
             if (parametersBySequence.TryGetValue(sequence, out var parameter))
@@ -992,6 +996,7 @@ internal static class PublicApiModelReader
                 hasInAttribute = HasAttribute(metadataReader, customAttributes.Value, "System.Runtime.InteropServices.InAttribute");
                 hasIsReadOnlyAttribute = HasAttribute(metadataReader, customAttributes.Value, "System.Runtime.CompilerServices.IsReadOnlyAttribute");
                 hasRequiresLocationAttribute = HasAttribute(metadataReader, customAttributes.Value, "System.Runtime.CompilerServices.RequiresLocationAttribute");
+                hasScopedRefAttribute = HasAttribute(metadataReader, customAttributes.Value, "System.Runtime.CompilerServices.ScopedRefAttribute");
                 hasParamArrayAttribute = HasAttribute(metadataReader, customAttributes.Value, "System.ParamArrayAttribute");
                 hasParamCollectionAttribute = HasAttribute(metadataReader, customAttributes.Value, "System.Runtime.CompilerServices.ParamCollectionAttribute");
             }
@@ -1012,6 +1017,7 @@ internal static class PublicApiModelReader
                 hasInAttribute,
                 hasIsReadOnlyAttribute,
                 hasRequiresLocationAttribute,
+                hasScopedRefAttribute,
                 hasParamArrayAttribute,
                 hasParamCollectionAttribute);
             result[i] = inlineAttributes + parameterModifier + parameterType + " " + parameterName;
@@ -1092,28 +1098,35 @@ internal static class PublicApiModelReader
         bool hasInAttribute,
         bool hasIsReadOnlyAttribute,
         bool hasRequiresLocationAttribute,
+        bool hasScopedRefAttribute,
         bool hasParamArrayAttribute,
         bool hasParamCollectionAttribute)
     {
         if (parameterType.Kind != DecodedTypeKind.ByReference)
-            return (hasParamArrayAttribute || hasParamCollectionAttribute) ? "params " : string.Empty;
+        {
+            if (hasParamArrayAttribute || hasParamCollectionAttribute)
+                return "params ";
+
+            return hasScopedRefAttribute ? "scoped " : string.Empty;
+        }
 
         var hasInModifier = parameterType.ElementType?.HasInModifier == true;
         var hasIsReadOnlyModifier = parameterType.ElementType?.HasIsReadOnlyModifier == true;
         var hasRequiresLocationModifier = parameterType.ElementType?.HasRequiresLocationModifier == true;
+        var scopedPrefix = hasScopedRefAttribute ? "scoped " : string.Empty;
 
         if (parameterAttributes.HasFlag(ParameterAttributes.Out))
             return "out ";
 
         if (hasRequiresLocationAttribute || hasRequiresLocationModifier)
-            return "ref readonly ";
+            return scopedPrefix + "ref readonly ";
 
         if (hasInAttribute || hasInModifier || hasIsReadOnlyAttribute || hasIsReadOnlyModifier)
         {
-            return "in ";
+            return scopedPrefix + "in ";
         }
 
-        return "ref ";
+        return scopedPrefix + "ref ";
     }
 
     private static string BuildConstructorInitializer(MetadataReader metadataReader, TypeDefinition declaringType)

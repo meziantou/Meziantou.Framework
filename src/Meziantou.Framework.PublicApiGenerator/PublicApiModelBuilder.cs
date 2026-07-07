@@ -658,6 +658,11 @@ internal static class PublicApiModelBuilder
             sb.Append("this ");
         }
 
+        if (IsScopedParameter(parameter) && !parameter.IsOut && !IsParamsParameter(parameter))
+        {
+            sb.Append("scoped ");
+        }
+
         if (parameter.IsOut)
         {
             sb.Append("out ");
@@ -1080,6 +1085,11 @@ internal static class PublicApiModelBuilder
     private static bool IsRefReadOnlyParameter(ParameterInfo parameter)
     {
         return parameter.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.RequiresLocationAttribute");
+    }
+
+    private static bool IsScopedParameter(ParameterInfo parameter)
+    {
+        return parameter.GetCustomAttributesData().Any(static attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.ScopedRefAttribute");
     }
 
     private static string BuildByRefFieldType(FieldInfo field, NullabilityInfo fieldNullability)

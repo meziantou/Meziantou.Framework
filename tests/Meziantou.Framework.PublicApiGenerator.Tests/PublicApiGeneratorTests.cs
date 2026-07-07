@@ -1300,6 +1300,28 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Method_Parameter_ScopedModifiers()
+    {
+        await Validate("""
+            using System;
+
+            public static class SampleExtensions
+            {
+                public static void M(this scoped ref int receiver, scoped Span<int> p0, scoped in int p1, scoped ref int p2, scoped ref readonly int p3)
+                {
+                }
+            }
+            """, """
+            #nullable enable
+
+            public static class SampleExtensions
+            {
+                public static void M(this scoped ref int receiver, scoped System.Span<int> p0, scoped in int p1, scoped ref int p2, scoped ref readonly int p3) { }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Method_ParamsReadOnlySpanAndObjectArray()
     {
         await Validate("""

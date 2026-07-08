@@ -230,8 +230,6 @@ jobs:
           - name: Install Apple container runtime
             if: startsWith(matrix.runs-on, 'macos') && steps.build-project.outputs.has-project == 'true'
             run: |
-              # Best-effort install of Apple's 'container' runtime.
-              # If it cannot be installed, the TemporaryContainers AppleContainer tests skip themselves.
               if (-not (Get-Command container -ErrorAction SilentlyContinue)) {
                 $installerUrl = 'https://github.com/apple/container/releases/download/1.1.0/container-1.1.0-installer-signed.pkg'
                 $installerPath = Join-Path $env:RUNNER_TEMP 'container-1.1.0-installer-signed.pkg'

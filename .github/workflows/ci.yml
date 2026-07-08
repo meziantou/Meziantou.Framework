@@ -210,8 +210,6 @@ jobs:
           - name: Install wslc (WSL container runtime)
             if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
             run: |
-              # Best-effort install of the WSL container preview, which provides 'wslc' on PATH.
-              # If it cannot be installed, the TemporaryContainers wslc tests skip themselves.
               wsl --update --pre-release --web-download
               wslc --version
               exit 0

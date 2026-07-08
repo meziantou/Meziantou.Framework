@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
+    <Project Path="../src/Meziantou.Framework.TemporaryContainers/Meziantou.Framework.TemporaryContainers.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
+    <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.TemporaryContainers.Tests/Meziantou.Framework.TemporaryContainers.Tests.csproj" />
+  </Folder>
+</Solution>

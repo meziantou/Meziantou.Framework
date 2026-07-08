@@ -57,6 +57,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.SensitiveData\Meziantou.Framework.SensitiveData.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.SingleInstance\Meziantou.Framework.SingleInstance.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Slug\Meziantou.Framework.Slug.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryContainers\Meziantou.Framework.TemporaryContainers.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TextDiff\Meziantou.Framework.TextDiff.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Threading\Meziantou.Framework.Threading.csproj" />
@@ -115,6 +116,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.SensitiveData" />
     <TrimmerRootAssembly Include="Meziantou.Framework.SingleInstance" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Slug" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryContainers" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryDirectory" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TextDiff" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Threading" />

@@ -5,8 +5,7 @@ using Meziantou.Framework.Http.Caching.InMemory;
 using Meziantou.Framework.Http.Caching.Redis;
 using Meziantou.Framework.Http.Caching.Sqlite;
 using StackExchange.Redis;
-using Testcontainers.Redis;
-using Meziantou.Xunit;
+using Meziantou.Framework.TemporaryContainers;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -241,7 +240,7 @@ public class PersistenceProvidersTests
         }
     }
 
-    [Fact, RunIf(TestOperatingSystems.Linux)]
+    [Fact]
     public async Task RedisProviderPersistsEntriesBetweenHandlerInstances()
     {
         await using var redisContainer = await StartRedisContainerAsync();
@@ -291,7 +290,7 @@ public class PersistenceProvidersTests
         Assert.Equal(0, secondRequestCount);
     }
 
-    [Fact, RunIf(TestOperatingSystems.Linux)]
+    [Fact]
     public async Task RedisProviderPruneRemovesExpiredUnusableEntries()
     {
         await using var redisContainer = await StartRedisContainerAsync();
@@ -309,7 +308,7 @@ public class PersistenceProvidersTests
         Assert.Empty(remainingEntries);
     }
 
-    [Fact, RunIf(TestOperatingSystems.Linux)]
+    [Fact]
     public async Task RedisProviderPruneKeepsExpiredEntriesThatCanBeRevalidated()
     {
         await using var redisContainer = await StartRedisContainerAsync();
@@ -545,7 +544,7 @@ public class PersistenceProvidersTests
         const int MaxRetries = 3;
         for (var i = 0; ; i++)
         {
-            var redisContainer = new RedisBuilder("redis:8.2").Build();
+            var redisContainer = ContainerDefinition.CreateRedis(new RegistryImage("redis:8.2")).CreateContainer();
             try
             {
                 await redisContainer.StartAsync();

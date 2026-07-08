@@ -190,12 +190,15 @@ jobs:
               key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}
               restore-keys: |
                 public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-
+
           - name: List environment variables
             if: steps.build-project.outputs.has-project == 'true'
             run: "Get-ChildItem env: | Sort-Object Name"
+
           - name: .NET info
             if: steps.build-project.outputs.has-project == 'true'
             run: dotnet --info
+
           - name: Enable ProjFS
             if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
             run: |
@@ -203,6 +206,25 @@ jobs:
               if ($feature.State -ne 'Enabled') {
                 Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
               }
+
+          - name: Install wslc (WSL container runtime)
+            if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
+            run: |
+              # Best-effort install of the WSL container preview, which provides 'wslc' on PATH.
+              # If it cannot be installed, the TemporaryContainers wslc tests skip themselves.
+              wsl --update --pre-release --web-download
+              wslc --version
+              exit 0
+
+          - name: Install Apple container runtime
+            if: startsWith(matrix.runs-on, 'macos') && steps.build-project.outputs.has-project == 'true'
+            run: |
+              # Best-effort install of Apple's 'container' runtime.
+              # If it cannot be installed, the TemporaryContainers AppleContainer tests skip themselves.
+              brew install --cask container
+              container system start
+              container --version
+              exit 0
 
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'

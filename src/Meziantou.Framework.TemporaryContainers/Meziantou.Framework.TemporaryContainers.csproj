@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Manage temporary containers for integration tests using the docker, podman, apple/container, or wslc CLI.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.TemporaryContainers.Tests" />
+  </ItemGroup>
+
+</Project>

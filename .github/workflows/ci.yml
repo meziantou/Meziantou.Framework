@@ -232,7 +232,18 @@ jobs:
             run: |
               # Best-effort install of Apple's 'container' runtime.
               # If it cannot be installed, the TemporaryContainers AppleContainer tests skip themselves.
-              brew install --cask container
+              if (-not (Get-Command container -ErrorAction SilentlyContinue)) {
+                $installerUrl = 'https://github.com/apple/container/releases/download/1.1.0/container-1.1.0-installer-signed.pkg'
+                $installerPath = Join-Path $env:RUNNER_TEMP 'container-1.1.0-installer-signed.pkg'
+                Invoke-WebRequest $installerUrl -OutFile $installerPath
+                sudo installer -pkg $installerPath -target /
+                foreach ($pathEntry in @('/usr/local/bin', '/opt/homebrew/bin')) {
+                  if (Test-Path (Join-Path $pathEntry 'container')) {
+                    $env:PATH += ':' + $pathEntry
+                  }
+                }
+              }
+
               container system start
               container --version
               exit 0

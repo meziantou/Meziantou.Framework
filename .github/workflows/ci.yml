@@ -210,7 +210,20 @@ jobs:
           - name: Install wslc (WSL container runtime)
             if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
             run: |
-              wsl --update --pre-release --web-download
+              if (Get-Command wslc -ErrorAction SilentlyContinue) {
+                wslc --version
+                exit 0
+              }
+
+              $installerUrl = 'https://github.com/microsoft/WSL/releases/download/2.9.3/wsl.2.9.3.0.x64.msi'
+              $installerPath = Join-Path $env:RUNNER_TEMP 'wsl.2.9.3.0.x64.msi'
+              Invoke-WebRequest $installerUrl -OutFile $installerPath
+              Start-Process msiexec.exe -ArgumentList @('/i', $installerPath, '/quiet', '/norestart') -Wait -NoNewWindow
+              foreach ($pathEntry in @('C:\Program Files\WSL', 'C:\Windows\System32')) {
+                if (Test-Path (Join-Path $pathEntry 'wslc.exe')) {
+                  $env:Path += ';' + $pathEntry
+                }
+              }
               wslc --version
               exit 0
 

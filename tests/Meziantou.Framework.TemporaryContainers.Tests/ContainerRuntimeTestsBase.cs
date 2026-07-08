@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Text;
+using Meziantou.Extensions.Logging.Xunit.v3;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
@@ -43,6 +44,8 @@ public abstract class ContainerRuntimeTestsBase
         definition.Ports.Add(8080);
         definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
         definition.WaitStrategies.Add(Wait.ForPort(8080));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
 
         await using var container = await StartWithRetryAsync(definition);
 
@@ -211,6 +214,7 @@ public abstract class ContainerRuntimeTestsBase
         definition.Ports.Add(8080);
         definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
         definition.WaitStrategies.Add(Wait.ForPort(8080));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
         return definition;
     }
 

@@ -1,9 +1,16 @@
+using Meziantou.Xunit;
 using StackExchange.Redis;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
 public sealed class RedisContainerTests
 {
+    private static void SkipOnNonCompatibleEnvironments()
+    {
+        if (!OperatingSystem.IsLinux() && TestEnvironment.IsOnGitHubActions())
+            global::Xunit.Assert.Skip("Only runs on Linux.");
+    }
+
     [Fact]
     public void CreateRedis_ConfiguresDefinition()
     {
@@ -26,6 +33,7 @@ public sealed class RedisContainerTests
     [Fact]
     public async Task CreateContainer_ReturnsRedisContainer()
     {
+        SkipOnNonCompatibleEnvironments();
         await using var container = ContainerDefinition.CreateRedis().CreateContainer();
         Assert.IsType<RedisContainer>(container);
     }
@@ -33,12 +41,12 @@ public sealed class RedisContainerTests
     [Fact]
     public async Task StartAsync_ConnectionStringWorks()
     {
-        global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(), "No container runtime is available.");
+        SkipOnNonCompatibleEnvironments();
 
         await using var container = await StartWithRetryAsync(ContainerDefinition.CreateRedis());
 
         var connectionString = container.GetConnectionString();
-        using var connection = await ConnectionMultiplexer.ConnectAsync(connectionString);
+        await using var connection = await ConnectionMultiplexer.ConnectAsync(connectionString);
         var database = connection.GetDatabase();
 
         await database.StringSetAsync("key", "value");

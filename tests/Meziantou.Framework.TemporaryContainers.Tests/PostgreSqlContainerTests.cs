@@ -1,9 +1,16 @@
+using Meziantou.Xunit;
 using Npgsql;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
 public sealed class PostgreSqlContainerTests
 {
+    private static void SkipOnNonCompatibleEnvironments()
+    {
+        if (!OperatingSystem.IsLinux() && TestEnvironment.IsOnGitHubActions())
+            global::Xunit.Assert.Skip("Only runs on Linux.");
+    }
+
     [Fact]
     public void CreatePostgreSql_ConfiguresDefinition()
     {
@@ -26,6 +33,7 @@ public sealed class PostgreSqlContainerTests
     [Fact]
     public async Task CreateContainer_ReturnsPostgreSqlContainer()
     {
+        SkipOnNonCompatibleEnvironments();
         await using var container = ContainerDefinition.CreatePostgreSql().CreateContainer();
         Assert.IsType<PostgreSqlContainer>(container);
     }
@@ -33,7 +41,7 @@ public sealed class PostgreSqlContainerTests
     [Fact]
     public async Task StartAsync_ConnectionStringWorks()
     {
-        global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(), "No container runtime is available.");
+        SkipOnNonCompatibleEnvironments();
 
         var definition = ContainerDefinition.CreatePostgreSql();
         definition.Environment.Add("POSTGRES_DB", "testdb");

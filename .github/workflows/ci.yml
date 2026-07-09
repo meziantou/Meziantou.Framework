@@ -207,45 +207,6 @@ jobs:
                 Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
               }
 
-          - name: Install wslc (WSL container runtime)
-            if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
-            run: |
-              if (Get-Command wslc -ErrorAction SilentlyContinue) {
-                wslc --version
-                exit 0
-              }
-
-              $installerUrl = 'https://github.com/microsoft/WSL/releases/download/2.9.3/wsl.2.9.3.0.x64.msi'
-              $installerPath = Join-Path $env:RUNNER_TEMP 'wsl.2.9.3.0.x64.msi'
-              Invoke-WebRequest $installerUrl -OutFile $installerPath
-              Start-Process msiexec.exe -ArgumentList @('/i', $installerPath, '/quiet', '/norestart') -Wait -NoNewWindow
-              foreach ($pathEntry in @('C:\Program Files\WSL', 'C:\Windows\System32')) {
-                if (Test-Path (Join-Path $pathEntry 'wslc.exe')) {
-                  $env:Path += ';' + $pathEntry
-                }
-              }
-              wslc --version
-              exit 0
-
-          - name: Install Apple container runtime
-            if: startsWith(matrix.runs-on, 'macos') && steps.build-project.outputs.has-project == 'true'
-            run: |
-              if (-not (Get-Command container -ErrorAction SilentlyContinue)) {
-                $installerUrl = 'https://github.com/apple/container/releases/download/1.1.0/container-1.1.0-installer-signed.pkg'
-                $installerPath = Join-Path $env:RUNNER_TEMP 'container-1.1.0-installer-signed.pkg'
-                Invoke-WebRequest $installerUrl -OutFile $installerPath
-                sudo installer -pkg $installerPath -target /
-                foreach ($pathEntry in @('/usr/local/bin', '/opt/homebrew/bin')) {
-                  if (Test-Path (Join-Path $pathEntry 'container')) {
-                    $env:PATH += ':' + $pathEntry
-                  }
-                }
-              }
-
-              container system start --enable-kernel-install
-              container --version
-              exit 0
-
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
         run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}

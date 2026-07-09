@@ -7,6 +7,7 @@ using Meziantou.Framework.Http.Caching.Sqlite;
 using StackExchange.Redis;
 using Meziantou.Framework.TemporaryContainers;
 using Meziantou.Extensions.Logging.Xunit.v3;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -241,7 +242,7 @@ public class PersistenceProvidersTests
         }
     }
 
-    [Fact]
+    [Fact, RunIf(TestOperatingSystems.Linux)]
     public async Task RedisProviderPersistsEntriesBetweenHandlerInstances()
     {
         await using var redisContainer = await StartRedisContainerAsync();
@@ -291,7 +292,7 @@ public class PersistenceProvidersTests
         Assert.Equal(0, secondRequestCount);
     }
 
-    [Fact]
+    [Fact, RunIf(TestOperatingSystems.Linux)]
     public async Task RedisProviderPruneRemovesExpiredUnusableEntries()
     {
         await using var redisContainer = await StartRedisContainerAsync();
@@ -309,7 +310,7 @@ public class PersistenceProvidersTests
         Assert.Empty(remainingEntries);
     }
 
-    [Fact]
+    [Fact, RunIf(TestOperatingSystems.Linux)]
     public async Task RedisProviderPruneKeepsExpiredEntriesThatCanBeRevalidated()
     {
         await using var redisContainer = await StartRedisContainerAsync();

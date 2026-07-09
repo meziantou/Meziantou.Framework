@@ -19,7 +19,7 @@ public abstract class ContainerRuntimeTestsBase
             if (OperatingSystem.IsWindows() && runtime is ContainerRuntime.Podman)
                 global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
 
-            if (OperatingSystem.IsMacOS() && runtime is ContainerRuntime.Podman or ContainerRuntime.Docker)
+            if (OperatingSystem.IsMacOS())
                 global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
         }
 

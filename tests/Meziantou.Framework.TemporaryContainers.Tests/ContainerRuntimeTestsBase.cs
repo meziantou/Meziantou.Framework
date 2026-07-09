@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Text;
 using Meziantou.Extensions.Logging.Xunit.v3;
 
@@ -23,9 +24,7 @@ public abstract class ContainerRuntimeTestsBase
     {
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
-        var port = container.GetMappedPort(8080);
-        using var client = new HttpClient();
-        var content = await client.GetStringAsync(new Uri($"http://127.0.0.1:{port}/"), XunitCancellationToken);
+        var content = await GetIndexContentAsync(container);
         Assert.Equal("hello from container", content);
 
         var info = await container.InspectAsync(XunitCancellationToken);
@@ -41,7 +40,7 @@ public abstract class ContainerRuntimeTestsBase
         {
             Runtime = Runtime,
         };
-        definition.Ports.Add(8080);
+        AddHttpPortBinding(definition);
         definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
         definition.WaitStrategies.Add(Wait.ForPort(8080));
         definition.Logging.Logger = XUnitLogger.CreateLogger();
@@ -49,9 +48,7 @@ public abstract class ContainerRuntimeTestsBase
 
         await using var container = await StartWithRetryAsync(definition);
 
-        var port = container.GetMappedPort(8080);
-        using var client = new HttpClient();
-        var content = await client.GetStringAsync(new Uri($"http://127.0.0.1:{port}/"), XunitCancellationToken);
+        var content = await GetIndexContentAsync(container);
         Assert.Equal("hello from container", content);
     }
 
@@ -211,11 +208,66 @@ public abstract class ContainerRuntimeTestsBase
         definition.Command.Add("sh");
         definition.Command.Add("-c");
         definition.Command.Add(HttpServerCommand);
-        definition.Ports.Add(8080);
+        AddHttpPortBinding(definition);
         definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
         definition.WaitStrategies.Add(Wait.ForPort(8080));
         definition.Logging.Logger = XUnitLogger.CreateLogger();
         return definition;
+    }
+
+    private void AddHttpPortBinding(ContainerDefinition definition)
+    {
+        if (Runtime is ContainerRuntime.AppleContainer)
+        {
+            definition.Ports.Add(GetFreeTcpPort(), 8080);
+        }
+        else
+        {
+            definition.Ports.Add(8080);
+        }
+    }
+
+    private static int GetFreeTcpPort()
+    {
+        using var listener = new TcpListener(System.Net.IPAddress.Loopback, 0);
+        listener.Start();
+        return ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+    }
+
+    private static async Task<string> GetStringWithRetryAsync(HttpClient client, Uri uri, CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 60;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await client.GetStringAsync(uri, cancellationToken);
+            }
+            catch (HttpRequestException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(250, cancellationToken);
+            }
+        }
+    }
+
+    private async Task<string> GetIndexContentAsync(TemporaryContainer container)
+    {
+        if (Runtime is ContainerRuntime.AppleContainer)
+        {
+            var exec = await container.ExecAsync(options =>
+            {
+                options.Command.Add("sh");
+                options.Command.Add("-c");
+                options.Command.Add("wget -qO- http://127.0.0.1:8080/");
+            }, XunitCancellationToken);
+
+            Assert.Equal(0, exec.ExitCode);
+            return exec.StandardOutput.Trim();
+        }
+
+        var port = container.GetMappedPort(8080);
+        using var client = new HttpClient();
+        return await GetStringWithRetryAsync(client, new Uri($"http://127.0.0.1:{port}/"), XunitCancellationToken);
     }
 
     protected static async Task<TemporaryContainer> StartWithRetryAsync(ContainerDefinition definition)

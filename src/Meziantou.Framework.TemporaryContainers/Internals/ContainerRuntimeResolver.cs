@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
@@ -10,8 +11,8 @@ internal static class ContainerRuntimeResolver
             return (runtime, executable);
 
         throw new InvalidOperationException(requested is ContainerRuntime.Auto
-            ? "No supported container runtime ('docker', 'podman', 'container', or 'wslc') was found on PATH."
-            : $"The '{GetExecutableName(requested)}' executable was not found on PATH.");
+            ? "No supported container runtime ('docker', 'podman', 'container', or 'wslc') is available."
+            : $"The '{GetExecutableName(requested)}' runtime is not available.");
     }
 
     public static bool TryResolve(ContainerRuntime requested, out ContainerRuntime runtime, out string executable)
@@ -22,6 +23,9 @@ internal static class ContainerRuntimeResolver
             {
                 if (FindExecutable(candidateName) is { } path)
                 {
+                    if (!IsRuntimeOperational(candidateRuntime, path))
+                        continue;
+
                     runtime = candidateRuntime;
                     executable = path;
                     return true;
@@ -36,6 +40,13 @@ internal static class ContainerRuntimeResolver
         var name = GetExecutableName(requested);
         if (FindExecutable(name) is { } resolved)
         {
+            if (!IsRuntimeOperational(requested, resolved))
+            {
+                runtime = default;
+                executable = "";
+                return false;
+            }
+
             runtime = requested;
             executable = resolved;
             return true;
@@ -44,6 +55,49 @@ internal static class ContainerRuntimeResolver
         runtime = default;
         executable = "";
         return false;
+    }
+
+    private static bool IsRuntimeOperational(ContainerRuntime runtime, string executable)
+    {
+        // On macOS, the `container` executable can exist while its backend services are stopped.
+        // In that state every command fails with an XPC connection error and tests should be skipped.
+        return runtime is not ContainerRuntime.AppleContainer || ProbeExecutable(executable, "system", "status");
+    }
+
+    private static bool ProbeExecutable(string executable, params string[] arguments)
+    {
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = executable,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                },
+            };
+
+            foreach (var argument in arguments)
+                process.StartInfo.ArgumentList.Add(argument);
+
+            if (!process.Start())
+                return false;
+
+            if (!process.WaitForExit(5000))
+            {
+                process.Kill(entireProcessTree: true);
+                return false;
+            }
+
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string? FindExecutable(string name)

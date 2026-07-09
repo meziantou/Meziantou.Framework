@@ -170,17 +170,18 @@ internal sealed class AppleContainerRuntimeAdapter(string executable) : Containe
             throw new InvalidOperationException("Unable to inspect the container: the runtime returned no data.");
 
         var result = parsed[0];
-        var id = result.Configuration?.Id ?? "";
-        var address = result.Networks is { Count: > 0 } ? result.Networks[0].Address : null;
+        var id = result.Id ?? result.Configuration?.Id ?? "";
+        var address = GetAddress(result);
         var slash = address?.IndexOf('/', StringComparison.Ordinal) ?? -1;
+        var status = GetStatus(result.Status);
 
         return new ContainerInfo
         {
             Id = id,
             Name = id,
-            Image = result.Configuration?.Image,
-            State = ParseState(result.Status),
-            Status = result.Status,
+            Image = GetImage(result.Configuration?.Image),
+            State = ParseState(status),
+            Status = status,
             IPAddress = slash >= 0 ? address![..slash] : address,
             Ports = new Dictionary<int, int>(),
             Labels = new Dictionary<string, string>(StringComparer.Ordinal),
@@ -206,6 +207,61 @@ internal sealed class AppleContainerRuntimeAdapter(string executable) : Containe
             "running" => ContainerState.Running,
             "stopped" or "exited" => ContainerState.Exited,
             _ => ContainerState.Unknown,
+        };
+    }
+
+    private static string? GetStatus(JsonElement status)
+    {
+        if (status.ValueKind is JsonValueKind.String)
+            return status.GetString();
+
+        if (status.ValueKind is JsonValueKind.Object &&
+            status.TryGetProperty("state", out var stateElement) &&
+            stateElement.ValueKind is JsonValueKind.String)
+        {
+            return stateElement.GetString();
+        }
+
+        return null;
+    }
+
+    private static string? GetAddress(AppleInspectResult result)
+    {
+        var status = result.Status;
+        if (status.ValueKind is JsonValueKind.Object &&
+            status.TryGetProperty("networks", out var networksElement) &&
+            networksElement.ValueKind is JsonValueKind.Array)
+        {
+            foreach (var network in networksElement.EnumerateArray())
+            {
+                if (network.ValueKind is not JsonValueKind.Object)
+                    continue;
+
+                if (network.TryGetProperty("ipv4Address", out var ipv4Element) && ipv4Element.ValueKind is JsonValueKind.String)
+                    return ipv4Element.GetString();
+
+                if (network.TryGetProperty("address", out var addressElement) && addressElement.ValueKind is JsonValueKind.String)
+                    return addressElement.GetString();
+            }
+        }
+
+        if (result.Networks is { Count: > 0 })
+            return result.Networks[0].Ipv4Address ?? result.Networks[0].Address;
+
+        return null;
+    }
+
+    private static string? GetImage(JsonElement? image)
+    {
+        if (image is null)
+            return null;
+
+        var value = image.Value;
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString(),
+            JsonValueKind.Object when value.TryGetProperty("reference", out var referenceElement) && referenceElement.ValueKind is JsonValueKind.String => referenceElement.GetString(),
+            _ => null,
         };
     }
 

@@ -242,7 +242,7 @@ jobs:
                 }
               }
 
-              container system start
+              container system start --enable-kernel-install
               container --version
               exit 0
 

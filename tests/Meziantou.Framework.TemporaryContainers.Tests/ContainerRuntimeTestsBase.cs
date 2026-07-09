@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using Meziantou.Extensions.Logging.Xunit.v3;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
@@ -15,11 +16,20 @@ public abstract class ContainerRuntimeTestsBase
     {
         Runtime = runtime;
 
-        if(runtime is ContainerRuntime.AppleContainer && !OperatingSystem.IsMacOS())
+        if (TestEnvironment.IsOnGitHubActions())
+        {
+            if (OperatingSystem.IsWindows() && runtime is ContainerRuntime.Podman)
+                global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
+
+            if (OperatingSystem.IsMacOS() && runtime is ContainerRuntime.Podman or ContainerRuntime.Docker)
+                global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
+        }
+
+        if (runtime is ContainerRuntime.AppleContainer && !OperatingSystem.IsMacOS())
             global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
 
 
-        if(runtime is ContainerRuntime.Wslc && !OperatingSystem.IsWindows())
+        if (runtime is ContainerRuntime.Wslc && !OperatingSystem.IsWindows())
             global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
     }
 

@@ -199,14 +199,6 @@ jobs:
             if: steps.build-project.outputs.has-project == 'true'
             run: dotnet --info
 
-          - name: docker version
-            if: steps.build-project.outputs.has-project == 'true'
-            run: docker --version
-
-          - name: podman version
-            if: steps.build-project.outputs.has-project == 'true'
-            run: podman --version
-
           - name: Enable ProjFS
             if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
             run: |

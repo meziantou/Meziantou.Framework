@@ -14,7 +14,13 @@ public abstract class ContainerRuntimeTestsBase
     protected ContainerRuntimeTestsBase(ContainerRuntime runtime)
     {
         Runtime = runtime;
-        global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
+
+        if(runtime is ContainerRuntime.AppleContainer && !OperatingSystem.IsMacOS())
+            global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
+
+
+        if(runtime is ContainerRuntime.Wslc && !OperatingSystem.IsWindows())
+            global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
     }
 
     protected ContainerRuntime Runtime { get; }

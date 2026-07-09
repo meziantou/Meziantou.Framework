@@ -199,6 +199,10 @@ jobs:
             if: steps.build-project.outputs.has-project == 'true'
             run: dotnet --info
 
+          - name: docker info
+            if: steps.build-project.outputs.has-project == 'true'
+            run: docker info
+
           - name: Enable ProjFS
             if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
             run: |

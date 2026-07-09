@@ -36,7 +36,7 @@ public abstract class ContainerRuntimeTestsBase
 
         if (TestEnvironment.IsOnGitHubActions())
         {
-            if (OperatingSystem.IsWindows() && runtime is ContainerRuntime.Podman)
+            if (OperatingSystem.IsWindows() && runtime is ContainerRuntime.Podman or ContainerRuntime.Wslc)
                 global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
 
             if (OperatingSystem.IsMacOS())

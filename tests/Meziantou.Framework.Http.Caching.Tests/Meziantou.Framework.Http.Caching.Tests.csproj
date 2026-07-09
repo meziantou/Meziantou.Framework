@@ -22,6 +22,7 @@
 
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Http.Caching.InMemory/Meziantou.Framework.Http.Caching.InMemory.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Http.Caching.Redis/Meziantou.Framework.Http.Caching.Redis.csproj" />

@@ -6,6 +6,7 @@ using Meziantou.Framework.Http.Caching.Redis;
 using Meziantou.Framework.Http.Caching.Sqlite;
 using StackExchange.Redis;
 using Meziantou.Framework.TemporaryContainers;
+using Meziantou.Extensions.Logging.Xunit.v3;
 
 namespace Meziantou.Framework.Http.Caching.Tests;
 
@@ -544,7 +545,9 @@ public class PersistenceProvidersTests
         const int MaxRetries = 3;
         for (var i = 0; ; i++)
         {
-            var redisContainer = ContainerDefinition.CreateRedis(new RegistryImage("redis:8.2")).CreateContainer();
+            var definition = ContainerDefinition.CreateRedis();
+            definition.Logging.Logger = XUnitLogger.CreateLogger();
+            var redisContainer = definition.CreateContainer();
             try
             {
                 await redisContainer.StartAsync();

@@ -7,7 +7,7 @@ public static class ContainerRuntimeInfo
 {
     /// <summary>Determines whether a container runtime can be resolved.</summary>
     /// <param name="runtime">The runtime to look for, or <see cref="ContainerRuntime.Auto"/> to accept any supported runtime.</param>
-    /// <returns><see langword="true"/> if the runtime executable is available on PATH; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> if the runtime executable is available and operational; otherwise, <see langword="false"/>.</returns>
     public static bool IsAvailable(ContainerRuntime runtime = ContainerRuntime.Auto)
     {
         return ContainerRuntimeResolver.TryResolve(runtime, out _, out _);

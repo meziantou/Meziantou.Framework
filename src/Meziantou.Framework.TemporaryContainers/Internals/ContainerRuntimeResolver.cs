@@ -60,6 +60,11 @@ internal static class ContainerRuntimeResolver
 
     private static bool IsRuntimeOperational(ContainerRuntime runtime, string executable)
     {
+        // Some runtimes can have a CLI on PATH while their backend is unavailable.
+        // Probe readiness so tests skip unavailable runtimes instead of failing when creating containers.
+        if (runtime is ContainerRuntime.Docker or ContainerRuntime.Podman or ContainerRuntime.Wslc)
+            return IsDockerLikeRuntimeOperational(executable);
+
         // On macOS, the `container` executable can exist while its backend services are stopped.
         // In that state every command fails with an XPC connection error and tests should be skipped.
         if (runtime is not ContainerRuntime.AppleContainer)
@@ -83,6 +88,18 @@ internal static class ContainerRuntimeResolver
 
         return TryGetAppleContainerStatusFromTable(tableResult.StandardOutput, out status)
             && string.Equals(status, "running", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsDockerLikeRuntimeOperational(string executable)
+    {
+        if (TryRunProbe(executable, ["info", "--format", "json"], out var jsonResult))
+            return jsonResult.ExitCode == 0;
+
+        // Older runtimes may not support --format json.
+        if (TryRunProbe(executable, ["info"], out var infoResult))
+            return infoResult.ExitCode == 0;
+
+        return false;
     }
 
     private static bool TryRunProbe(string executable, string[] arguments, out ProbeResult result)

@@ -174,7 +174,7 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
             Status = result.State?.Status,
             StartedAt = ParseDate(result.State?.StartedAt),
             FinishedAt = ParseDate(result.State?.FinishedAt),
-            ExitCode = result.State?.ExitCode,
+            ExitCode = result.State is null ? null : unchecked((int)result.State.ExitCode),
             IPAddress = result.NetworkSettings?.IPAddress,
             Ports = ports,
             Labels = result.Config?.Labels ?? result.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal),

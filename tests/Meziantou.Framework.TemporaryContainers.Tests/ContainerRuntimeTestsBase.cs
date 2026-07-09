@@ -13,7 +13,7 @@ public abstract class ContainerRuntimeTestsBase
     private const string LinuxIndexFilePath = "/www/index.html";
     private const string LinuxTempDirectory = "/tmp";
     private const string WindowsIndexFilePath = "C:/www/index.html";
-    private const string WindowsTempDirectory = "C:/tmp";
+    private const string WindowsTempDirectory = "C:/Windows/Temp";
     private const string LinuxHttpServerCommand = "mkdir -p /www; printf 'hello from container' > /www/index.html; echo SERVER READY; exec httpd -f -p 8080 -h /www";
     private const string WindowsHttpServerCommand = "$content='hello from container'; New-Item -ItemType Directory -Path C:/www -Force | Out-Null; Set-Content -Path C:/www/index.html -Value $content -NoNewline; $listener=[System.Net.HttpListener]::new(); $listener.Prefixes.Add('http://+:8080/'); $listener.Start(); Write-Output 'SERVER READY'; while ($true) { $context=$listener.GetContext(); $bytes=[System.Text.Encoding]::UTF8.GetBytes($content); $context.Response.ContentLength64=$bytes.Length; $context.Response.OutputStream.Write($bytes, 0, $bytes.Length); $context.Response.OutputStream.Close(); }";
 
@@ -323,7 +323,7 @@ public abstract class ContainerRuntimeTestsBase
                 options.Command.Add("powershell");
                 options.Command.Add("-NoProfile");
                 options.Command.Add("-Command");
-                options.Command.Add("Get-Content -Raw C:/tmp/written.txt");
+                options.Command.Add("Get-Content -Raw " + writtenPath);
             }
             else
             {
@@ -346,7 +346,7 @@ public abstract class ContainerRuntimeTestsBase
                     options.Command.Add("powershell");
                     options.Command.Add("-NoProfile");
                     options.Command.Add("-Command");
-                    options.Command.Add("Get-Content -Raw C:/tmp/copied.txt");
+                    options.Command.Add("Get-Content -Raw " + copiedPath);
                 }
                 else
                 {
@@ -424,6 +424,8 @@ public abstract class ContainerRuntimeTestsBase
     /// <summary>Shared pause/unpause assertion for runtimes that support it (called from the relevant subclasses).</summary>
     protected async Task AssertPauseUnpauseAsync()
     {
+        global::Xunit.Assert.SkipUnless(!UseWindowsContainerImages || Runtime is not ContainerRuntime.Docker, "docker pause is not implemented for Windows process-isolated containers");
+
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
         await container.PauseAsync(XunitCancellationToken);

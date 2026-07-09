@@ -87,4 +87,31 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal(50809, container.Ports[8080]);
         Assert.Equal("v", container.Labels["k"]);
     }
+
+    [Fact]
+    public void ParseInspect_ConvertsLargeUnsignedExitCodeToSignedInt()
+    {
+        var adapter = ContainerRuntimeAdapter.Create(ContainerRuntime.Docker, "docker");
+
+        var inspectOutput =
+                """
+                [
+                    {
+                        "Id": "container-id",
+                        "Name": "test",
+                        "Image": "windows/servercore:ltsc2022",
+                        "State": {
+                            "Status": "exited",
+                            "StartedAt": "2026-01-01T00:00:00Z",
+                            "FinishedAt": "2026-01-01T00:00:10Z",
+                            "ExitCode": 3221225786
+                        }
+                    }
+                ]
+                """;
+
+        var container = adapter.ParseInspect(inspectOutput);
+
+        Assert.Equal(unchecked((int)3221225786u), container.ExitCode);
+    }
 }

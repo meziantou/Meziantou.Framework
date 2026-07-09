@@ -11,9 +11,35 @@ public partial class TemporaryContainer
         ArgumentNullException.ThrowIfNull(path);
         var id = RequireId();
 
+        try
+        {
+            return await OpenReadAsync(id, ["cat", path], cancellationToken).ConfigureAwait(false);
+        }
+        catch (ProcessExecutionException)
+        {
+            try
+            {
+                return await OpenReadAsync(id,
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    "$bytes=[System.IO.File]::ReadAllBytes('" + EscapePowerShellSingleQuotedString(path) + "'); [Console]::OpenStandardOutput().Write($bytes, 0, $bytes.Length)",
+                ], cancellationToken).ConfigureAwait(false);
+            }
+            catch (ProcessExecutionException)
+            {
+                return await OpenReadUsingCopyAsync(id, path, cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task<Stream> OpenReadAsync(string id, IReadOnlyList<string> command, CancellationToken cancellationToken)
+    {
         var options = new ExecOptions();
-        options.Command.Add("cat");
-        options.Command.Add(path);
+        foreach (var item in command)
+            options.Command.Add(item);
+
         var args = Adapter.BuildExecArguments(id, options);
 
         var stream = new MemoryStream();
@@ -26,6 +52,21 @@ public partial class TemporaryContainer
         catch
         {
             await stream.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private async Task<Stream> OpenReadUsingCopyAsync(string id, string path, CancellationToken cancellationToken)
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), "MezTC_" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            await Cli.RunBufferedAsync(Adapter.BuildCopyFromContainerArguments(id, path, tempFile), cancellationToken).ConfigureAwait(false);
+            return new Internals.TemporaryFileStream(tempFile);
+        }
+        catch
+        {
+            File.Delete(tempFile);
             throw;
         }
     }
@@ -117,5 +158,10 @@ public partial class TemporaryContainer
     private static string QuoteShellArgument(string value)
     {
         return "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
+    }
+
+    private static string EscapePowerShellSingleQuotedString(string value)
+    {
+        return value.Replace("'", "''", StringComparison.Ordinal);
     }
 }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
@@ -61,10 +62,30 @@ internal static class ContainerRuntimeResolver
     {
         // On macOS, the `container` executable can exist while its backend services are stopped.
         // In that state every command fails with an XPC connection error and tests should be skipped.
-        return runtime is not ContainerRuntime.AppleContainer || ProbeExecutable(executable, "system", "status");
+        if (runtime is not ContainerRuntime.AppleContainer)
+            return true;
+
+        if (!TryRunProbe(executable, ["system", "status", "--format", "json"], out var jsonResult))
+            return false;
+
+        if (jsonResult.ExitCode != 0)
+            return false;
+
+        if (TryGetAppleContainerStatusFromJson(jsonResult.StandardOutput, out var status))
+            return string.Equals(status, "running", StringComparison.OrdinalIgnoreCase);
+
+        // Fall back to the default output in case older versions don't honor --format json.
+        if (!TryRunProbe(executable, ["system", "status"], out var tableResult))
+            return false;
+
+        if (tableResult.ExitCode != 0)
+            return false;
+
+        return TryGetAppleContainerStatusFromTable(tableResult.StandardOutput, out status)
+            && string.Equals(status, "running", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool ProbeExecutable(string executable, params string[] arguments)
+    private static bool TryRunProbe(string executable, string[] arguments, out ProbeResult result)
     {
         try
         {
@@ -84,21 +105,70 @@ internal static class ContainerRuntimeResolver
                 process.StartInfo.ArgumentList.Add(argument);
 
             if (!process.Start())
+            {
+                result = default;
                 return false;
+            }
+
+            var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+            _ = process.StandardError.ReadToEndAsync();
 
             if (!process.WaitForExit(5000))
             {
                 process.Kill(entireProcessTree: true);
+                result = default;
                 return false;
             }
 
-            return process.ExitCode == 0;
+            result = new ProbeResult(process.ExitCode, standardOutputTask.GetAwaiter().GetResult());
+            return true;
         }
         catch
         {
+            result = default;
             return false;
         }
     }
+
+    private static bool TryGetAppleContainerStatusFromJson(string json, [NotNullWhen(true)] out string? status)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.TryGetProperty("status", out var statusProperty) && statusProperty.ValueKind is JsonValueKind.String)
+            {
+                status = statusProperty.GetString();
+                return status is not null;
+            }
+        }
+        catch
+        {
+        }
+
+        status = null;
+        return false;
+    }
+
+    private static bool TryGetAppleContainerStatusFromTable(string output, [NotNullWhen(true)] out string? status)
+    {
+        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!line.StartsWith("status", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var lastWhitespaceIndex = line.LastIndexOfAny([' ', '\t']);
+            if (lastWhitespaceIndex <= 0 || lastWhitespaceIndex >= line.Length - 1)
+                continue;
+
+            status = line[(lastWhitespaceIndex + 1)..].Trim();
+            return status.Length > 0;
+        }
+
+        status = null;
+        return false;
+    }
+
+    private readonly record struct ProbeResult(int ExitCode, string StandardOutput);
 
     private static string? FindExecutable(string name)
     {

@@ -376,7 +376,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public System.Threading.Tasks.Task KillAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.Task DeleteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
-        [System.Runtime.CompilerServices.AsyncIteratorStateMachine(typeof(Meziantou.Framework.TemporaryContainers.TemporaryContainer.<GetLogsAsync>d__42))]
+        [System.Runtime.CompilerServices.AsyncIteratorStateMachine(typeof(Meziantou.Framework.TemporaryContainers.TemporaryContainer.<GetLogsAsync>d__43))]
         public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = null) => throw null;
     }
 

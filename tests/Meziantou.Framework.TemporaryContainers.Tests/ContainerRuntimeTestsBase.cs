@@ -236,14 +236,14 @@ public abstract class ContainerRuntimeTestsBase
 
     private static async Task<string> GetStringWithRetryAsync(HttpClient client, Uri uri, CancellationToken cancellationToken)
     {
-        const int maxAttempts = 60;
+        const int MaxAttempts = 60;
         for (var attempt = 1; ; attempt++)
         {
             try
             {
                 return await client.GetStringAsync(uri, cancellationToken);
             }
-            catch (HttpRequestException) when (attempt < maxAttempts)
+            catch (HttpRequestException) when (attempt < MaxAttempts)
             {
                 await Task.Delay(250, cancellationToken);
             }

@@ -24,6 +24,7 @@ internal static class PublicApiModelReader
         "System.CodeDom.Compiler.GeneratedCodeAttribute",
         "System.ComponentModel.EditorBrowsableAttribute",
         "System.Runtime.CompilerServices.AsyncStateMachineAttribute",
+        "System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute",
         "System.Runtime.CompilerServices.CompilerGeneratedAttribute",
         "System.Runtime.CompilerServices.CompilationRelaxationsAttribute",
         "System.Runtime.CompilerServices.ExtensionAttribute",

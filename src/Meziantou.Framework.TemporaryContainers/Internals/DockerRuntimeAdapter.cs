@@ -10,7 +10,7 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
 
     public override bool SupportsPause => true;
 
-    public override bool SupportsRestart => true;
+    public override bool SupportsRestart => Runtime is not ContainerRuntime.Wslc;
 
     public override async Task<string> PrepareImageAsync(ContainerCli cli, ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken)
     {
@@ -40,11 +40,21 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
 
     public override async Task<string?> FindReusableContainerAsync(ContainerCli cli, string reuseId, CancellationToken cancellationToken)
     {
-        var lookup = await cli.RunBufferedAsync(["ps", "-a", "--no-trunc", "--filter", $"label={DockerCreateArgumentBuilder.ReuseLabel}={reuseId}", "--format", "{{.ID}}"], cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        IReadOnlyList<string> lookupArgs;
+        if (Runtime is ContainerRuntime.Wslc)
+        {
+            lookupArgs = ["list", "-a", "-q", "--filter", $"label={DockerCreateArgumentBuilder.ReuseLabel}={reuseId}"];
+        }
+        else
+        {
+            lookupArgs = ["ps", "-a", "--no-trunc", "--filter", $"label={DockerCreateArgumentBuilder.ReuseLabel}={reuseId}", "--format", "{{.ID}}"];
+        }
+
+        var lookup = await cli.RunBufferedAsync(lookupArgs, cancellationToken, allowNonZero: true).ConfigureAwait(false);
         foreach (var line in lookup.StandardOutput.Split('\n'))
         {
             var trimmed = line.Trim();
-            if (trimmed.Length > 0)
+            if (IsContainerId(trimmed))
                 return trimmed;
         }
 
@@ -65,6 +75,9 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
             _ => null,
         };
 
+        if (Runtime is ContainerRuntime.Wslc)
+            pullPolicyValue = null;
+
         return DockerCreateArgumentBuilder.Build(definition, imageRef, pullPolicyValue);
     }
 
@@ -82,7 +95,10 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
 
     public override IReadOnlyList<string> BuildRemoveArguments(string id) => ["rm", "-f", id];
 
-    public override IReadOnlyList<string> BuildExistsArguments(string id) => ["container", "inspect", "--format", "{{.Id}}", id];
+    public override IReadOnlyList<string> BuildExistsArguments(string id)
+        => Runtime is ContainerRuntime.Wslc
+            ? ["inspect", id]
+            : ["container", "inspect", "--format", "{{.Id}}", id];
 
     public override IReadOnlyList<string> BuildInspectArguments(string id) => ["inspect", id];
 
@@ -131,7 +147,8 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
 
         var result = parsed[0];
         var ports = new Dictionary<int, int>();
-        if (result.NetworkSettings?.Ports is { } portBindings)
+        var portBindings = result.NetworkSettings?.Ports ?? result.Ports;
+        if (portBindings is not null)
         {
             foreach (var (key, bindings) in portBindings)
             {
@@ -160,7 +177,7 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
             ExitCode = result.State?.ExitCode,
             IPAddress = result.NetworkSettings?.IPAddress,
             Ports = ports,
-            Labels = result.Config?.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal),
+            Labels = result.Config?.Labels ?? result.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal),
         };
     }
 
@@ -197,5 +214,19 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
         }
 
         throw new InvalidOperationException("Unable to determine the image reference from the load output: " + output);
+    }
+
+    private static bool IsContainerId(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        foreach (var c in value)
+        {
+            if (!char.IsAsciiHexDigit(c))
+                return false;
+        }
+
+        return true;
     }
 }

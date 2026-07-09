@@ -41,6 +41,22 @@ public partial class TemporaryContainer
         ArgumentNullException.ThrowIfNull(content);
         var id = RequireId();
 
+        if (Runtime is ContainerRuntime.Wslc)
+        {
+            var result = await ExecAsync(options =>
+            {
+                options.StandardInput = InputSource.FromStream(content);
+                options.Command.Add("sh");
+                options.Command.Add("-c");
+                options.Command.Add("cat > " + QuoteShellArgument(path));
+            }, cancellationToken).ConfigureAwait(false);
+
+            if (result.ExitCode != 0)
+                throw new InvalidOperationException("Unable to write file to the container. " + result.StandardError);
+
+            return;
+        }
+
         var tempFile = Path.Combine(Path.GetTempPath(), "MezTC_" + Guid.NewGuid().ToString("N"));
         try
         {
@@ -66,6 +82,13 @@ public partial class TemporaryContainer
         ArgumentNullException.ThrowIfNull(destination);
         var id = RequireId();
 
+        if (Runtime is ContainerRuntime.Wslc)
+        {
+            await using var stream = File.OpenRead(source);
+            await WriteFileAsync(destination, stream, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         await Cli.RunBufferedAsync(Adapter.BuildCopyToContainerArguments(id, source, destination), cancellationToken).ConfigureAwait(false);
     }
 
@@ -80,6 +103,19 @@ public partial class TemporaryContainer
         ArgumentNullException.ThrowIfNull(destination);
         var id = RequireId();
 
+        if (Runtime is ContainerRuntime.Wslc)
+        {
+            await using var stream = await OpenReadAsync(source, cancellationToken).ConfigureAwait(false);
+            await using var fileStream = File.Create(destination);
+            await stream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         await Cli.RunBufferedAsync(Adapter.BuildCopyFromContainerArguments(id, source, destination), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static string QuoteShellArgument(string value)
+    {
+        return "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
     }
 }

@@ -1,6 +1,4 @@
-using System.Net.Http;
 using System.Net.Sockets;
-using System.Text;
 using Meziantou.Extensions.Logging.Xunit.v3;
 using Meziantou.Xunit;
 

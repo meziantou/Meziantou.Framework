@@ -126,7 +126,7 @@ public class ContainerDefinition
     /// <returns>A Redis container definition using the <c>redis:8.2</c> image.</returns>
     public static RedisContainerDefinition CreateRedis()
     {
-        return CreateRedis(new RegistryImage("redis:8.2"));
+        return CreateRedis(ImageSource.FromRegistry("redis:8.2"));
     }
 
     /// <summary>Creates a definition pre-configured for a Redis container (port 6379 and a readiness wait strategy).</summary>
@@ -146,7 +146,7 @@ public class ContainerDefinition
     /// <returns>A PostgreSQL container definition using the <c>postgres:17</c> image.</returns>
     public static PostgreSqlContainerDefinition CreatePostgreSql()
     {
-        return CreatePostgreSql(new RegistryImage("postgres:17"));
+        return CreatePostgreSql(ImageSource.FromRegistry("postgres:17"));
     }
 
     /// <summary>Creates a definition pre-configured for a PostgreSQL container (port 5432, a default password, and a readiness wait strategy).</summary>

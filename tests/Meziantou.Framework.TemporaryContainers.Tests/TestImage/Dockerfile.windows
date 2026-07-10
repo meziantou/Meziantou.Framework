@@ -1,0 +1,7 @@
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+RUN powershell -NoProfile -Command "New-Item -ItemType Directory -Path C:/www -Force | Out-Null; Set-Content -Path C:/www/index.html -Value 'hello from container' -NoNewline"
+
+EXPOSE 8080
+
+CMD ["powershell", "-NoProfile", "-Command", "Write-Output 'SERVER READY'; $content = Get-Content -Raw C:/www/index.html; $listener = [System.Net.HttpListener]::new(); $listener.Prefixes.Add('http://+:8080/'); $listener.Start(); while ($true) { $context = $listener.GetContext(); $bytes = [System.Text.Encoding]::UTF8.GetBytes($content); $context.Response.ContentLength64 = $bytes.Length; $context.Response.OutputStream.Write($bytes, 0, $bytes.Length); $context.Response.OutputStream.Close(); }"]

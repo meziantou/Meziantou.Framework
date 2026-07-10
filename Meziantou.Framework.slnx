@@ -120,6 +120,7 @@
     <Project Path="src/Meziantou.Framework.Templating.Html/Meziantou.Framework.Templating.Html.csproj" />
     <Project Path="src/Meziantou.Framework.Templating.Tool/Meziantou.Framework.Templating.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />
+    <Project Path="src/Meziantou.Framework.TemporaryContainers/Meziantou.Framework.TemporaryContainers.csproj" />
     <Project Path="src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
     <Project Path="src/Meziantou.Framework.Threading/Meziantou.Framework.Threading.csproj" />
@@ -240,6 +241,7 @@
     <Project Path="tests/Meziantou.Framework.Templating.Html.Tests/Meziantou.Framework.Templating.Html.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Templating.Tests/Meziantou.Framework.Templating.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Templating.Tool.Tests/Meziantou.Framework.Templating.Tool.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.TemporaryContainers.Tests/Meziantou.Framework.TemporaryContainers.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Tests/Meziantou.Framework.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TextDiff.Tests/Meziantou.Framework.TextDiff.Tests.csproj" />

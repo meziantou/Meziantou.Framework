@@ -190,12 +190,15 @@ jobs:
               key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}
               restore-keys: |
                 public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-
+
           - name: List environment variables
             if: steps.build-project.outputs.has-project == 'true'
             run: "Get-ChildItem env: | Sort-Object Name"
+
           - name: .NET info
             if: steps.build-project.outputs.has-project == 'true'
             run: dotnet --info
+
           - name: Enable ProjFS
             if: startsWith(matrix.runs-on, 'windows') && steps.build-project.outputs.has-project == 'true'
             run: |

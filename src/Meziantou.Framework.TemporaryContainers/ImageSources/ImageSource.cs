@@ -28,7 +28,7 @@ public abstract record ImageSource
     /// <param name="archivePath">The path to the image archive.</param>
     public static ImageSource FromArchive(string archivePath)
     {
-        return new ArchiveImage(archivePath);
+        return new ArchiveImage(Path.GetFullPath(archivePath));
     }
 
     /// <summary>Creates an image source from an image that already exists locally.</summary>

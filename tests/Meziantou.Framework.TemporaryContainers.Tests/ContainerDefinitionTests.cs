@@ -12,7 +12,7 @@ public sealed class ContainerDefinitionTests
     }
 
     [Fact]
-    public void ImageSource_FromDockerfile_CreatesDockerfileImage()
+    public void ImageSource_FromDockerfile_CreatesDockerfileImage1()
     {
         var image = ImageSource.FromDockerfile("/tmp/Dockerfile", "/tmp");
 
@@ -22,12 +22,22 @@ public sealed class ContainerDefinitionTests
     }
 
     [Fact]
+    public void ImageSource_FromDockerfile_CreatesDockerfileImage2()
+    {
+        var image = ImageSource.FromDockerfile("/tmp/Dockerfile");
+
+        var dockerfileImage = Assert.IsType<DockerfileImage>(image);
+        Assert.Equal(Path.GetFullPath("/tmp/Dockerfile"), dockerfileImage.DockerfilePath);
+        Assert.Equal(Path.GetFullPath("/tmp"), dockerfileImage.ContextDirectory);
+    }
+
+    [Fact]
     public void ImageSource_FromArchive_CreatesArchiveImage()
     {
         var image = ImageSource.FromArchive("/tmp/image.tar");
 
         var archiveImage = Assert.IsType<ArchiveImage>(image);
-        Assert.Equal("/tmp/image.tar", archiveImage.ArchivePath);
+        Assert.Equal(Path.GetFullPath("/tmp/image.tar"), archiveImage.ArchivePath);
     }
 
     [Fact]

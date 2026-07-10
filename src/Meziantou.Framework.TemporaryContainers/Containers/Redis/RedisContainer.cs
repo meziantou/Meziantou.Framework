@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>A temporary Redis container. Obtain one from <see cref="RedisContainerDefinition.CreateContainer"/>.</summary>

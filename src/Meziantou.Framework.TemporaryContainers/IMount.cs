@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>Represents a mount attached to a container. Implemented by <see cref="BindMount"/>, <see cref="VolumeMount"/>, and <see cref="TmpfsMount"/>.</summary>

@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 /// <summary>Encapsulates the CLI dialect of a specific container runtime (command construction and inspect parsing).</summary>

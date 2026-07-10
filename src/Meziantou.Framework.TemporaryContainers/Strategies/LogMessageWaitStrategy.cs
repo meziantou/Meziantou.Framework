@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.TemporaryContainers.Strategies;

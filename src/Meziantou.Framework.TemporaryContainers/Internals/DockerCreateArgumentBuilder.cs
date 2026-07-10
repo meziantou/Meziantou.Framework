@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal static class DockerCreateArgumentBuilder

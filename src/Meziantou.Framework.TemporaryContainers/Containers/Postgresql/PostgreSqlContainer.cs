@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>A temporary PostgreSQL container. Obtain one from <see cref="PostgreSqlContainerDefinition.CreateContainer"/>.</summary>

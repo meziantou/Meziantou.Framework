@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers;

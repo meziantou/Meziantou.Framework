@@ -55,7 +55,7 @@ public sealed class PostgreSqlContainerTests
         await using var command = new NpgsqlCommand("SELECT 1", connection);
         var result = await command.ExecuteScalarAsync(XunitCancellationToken);
 
-        Assert.Equal(1, Convert.ToInt32(result, System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
     }
 
     private static async Task<PostgreSqlContainer> StartWithRetryAsync(PostgreSqlContainerDefinition definition)

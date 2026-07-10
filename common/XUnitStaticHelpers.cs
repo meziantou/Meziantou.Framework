@@ -5,7 +5,7 @@ internal static class XUnitStaticHelpers
 {
     private const int DefaultRetryCount = 10;
 
-    public static CancellationToken XunitCancellationToken => Xunit.TestContext.Current.CancellationToken;
+    public static CancellationToken XunitCancellationToken => TestContext.Current.CancellationToken;
 
     public static async Task Retry(Func<Task> action)
     {

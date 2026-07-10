@@ -3,6 +3,43 @@ namespace Meziantou.Framework.TemporaryContainers.Tests;
 public sealed class ContainerDefinitionTests
 {
     [Fact]
+    public void ImageSource_FromRegistry_CreatesRegistryImage()
+    {
+        var image = ImageSource.FromRegistry("redis:8");
+
+        var registryImage = Assert.IsType<RegistryImage>(image);
+        Assert.Equal("redis:8", registryImage.Name);
+    }
+
+    [Fact]
+    public void ImageSource_FromDockerfile_CreatesDockerfileImage()
+    {
+        var image = ImageSource.FromDockerfile("/tmp/Dockerfile", "/tmp");
+
+        var dockerfileImage = Assert.IsType<DockerfileImage>(image);
+        Assert.Equal("/tmp/Dockerfile", dockerfileImage.DockerfilePath);
+        Assert.Equal("/tmp", dockerfileImage.ContextDirectory);
+    }
+
+    [Fact]
+    public void ImageSource_FromArchive_CreatesArchiveImage()
+    {
+        var image = ImageSource.FromArchive("/tmp/image.tar");
+
+        var archiveImage = Assert.IsType<ArchiveImage>(image);
+        Assert.Equal("/tmp/image.tar", archiveImage.ArchivePath);
+    }
+
+    [Fact]
+    public void ImageSource_FromExisting_CreatesExistingImage()
+    {
+        var image = ImageSource.FromExisting("sha256:abcd");
+
+        var existingImage = Assert.IsType<ExistingImage>(image);
+        Assert.Equal("sha256:abcd", existingImage.ImageId);
+    }
+
+    [Fact]
     public async Task CreateContainer_DeepClonesDefinition()
     {
         var definition = new ContainerDefinition(new RegistryImage("redis:8"));

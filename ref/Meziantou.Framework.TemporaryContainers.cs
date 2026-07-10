@@ -4,22 +4,6 @@
 
 namespace Meziantou.Framework.TemporaryContainers
 {
-    public sealed class ArchiveImage : Meziantou.Framework.TemporaryContainers.ImageSource, System.IEquatable<Meziantou.Framework.TemporaryContainers.ArchiveImage>
-    {
-        protected System.Type EqualityContract { get => throw null; }
-        public string ArchivePath { get => throw null; init { } }
-        public ArchiveImage(string ArchivePath) { }
-        public override string ToString() => throw null;
-        protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ArchiveImage? left, Meziantou.Framework.TemporaryContainers.ArchiveImage? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ArchiveImage? left, Meziantou.Framework.TemporaryContainers.ArchiveImage? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public sealed override bool Equals(Meziantou.Framework.TemporaryContainers.ImageSource? other) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.ArchiveImage? other) => throw null;
-        public void Deconstruct(out string ArchivePath) => throw null;
-    }
-
     public sealed class BindMount : Meziantou.Framework.TemporaryContainers.IMount, System.IEquatable<Meziantou.Framework.TemporaryContainers.BindMount>
     {
         public string Source { get => throw null; init { } }
@@ -207,23 +191,6 @@ namespace Meziantou.Framework.TemporaryContainers
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
-    public sealed class DockerfileImage : Meziantou.Framework.TemporaryContainers.ImageSource, System.IEquatable<Meziantou.Framework.TemporaryContainers.DockerfileImage>
-    {
-        protected System.Type EqualityContract { get => throw null; }
-        public string DockerfilePath { get => throw null; init { } }
-        public string ContextDirectory { get => throw null; init { } }
-        public DockerfileImage(string DockerfilePath, string ContextDirectory) { }
-        public override string ToString() => throw null;
-        protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.DockerfileImage? left, Meziantou.Framework.TemporaryContainers.DockerfileImage? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.DockerfileImage? left, Meziantou.Framework.TemporaryContainers.DockerfileImage? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public sealed override bool Equals(Meziantou.Framework.TemporaryContainers.ImageSource? other) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.DockerfileImage? other) => throw null;
-        public void Deconstruct(out string DockerfilePath, out string ContextDirectory) => throw null;
-    }
-
     public sealed class ExecOptions
     {
         public System.Collections.Generic.IList<string> Command { get => throw null; }
@@ -248,22 +215,6 @@ namespace Meziantou.Framework.TemporaryContainers
         public void Deconstruct(out int ExitCode, out string StandardOutput, out string StandardError) => throw null;
     }
 
-    public sealed class ExistingImage : Meziantou.Framework.TemporaryContainers.ImageSource, System.IEquatable<Meziantou.Framework.TemporaryContainers.ExistingImage>
-    {
-        protected System.Type EqualityContract { get => throw null; }
-        public string ImageId { get => throw null; init { } }
-        public ExistingImage(string ImageId) { }
-        public override string ToString() => throw null;
-        protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.ExistingImage? left, Meziantou.Framework.TemporaryContainers.ExistingImage? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.ExistingImage? left, Meziantou.Framework.TemporaryContainers.ExistingImage? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public sealed override bool Equals(Meziantou.Framework.TemporaryContainers.ImageSource? other) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.ExistingImage? other) => throw null;
-        public void Deconstruct(out string ImageId) => throw null;
-    }
-
     public interface IMount
     {
     }
@@ -276,6 +227,11 @@ namespace Meziantou.Framework.TemporaryContainers
     public abstract class ImageSource : System.IEquatable<Meziantou.Framework.TemporaryContainers.ImageSource>
     {
         protected System.Type EqualityContract { get => throw null; }
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromRegistry(string name) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerfile(string dockerfilePath, string contextDirectory) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerFile(string dockerfilePath, string contextDirectory) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromArchive(string archivePath) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromExisting(string imageId) => throw null;
         public override string ToString() => throw null;
         protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
         public static bool operator !=(Meziantou.Framework.TemporaryContainers.ImageSource? left, Meziantou.Framework.TemporaryContainers.ImageSource? right) => throw null;
@@ -334,22 +290,6 @@ namespace Meziantou.Framework.TemporaryContainers
     {
         [System.Runtime.CompilerServices.PreserveBaseOverrides]
         public virtual Meziantou.Framework.TemporaryContainers.RedisContainer CreateContainer() => throw null;
-    }
-
-    public sealed class RegistryImage : Meziantou.Framework.TemporaryContainers.ImageSource, System.IEquatable<Meziantou.Framework.TemporaryContainers.RegistryImage>
-    {
-        protected System.Type EqualityContract { get => throw null; }
-        public string Name { get => throw null; init { } }
-        public RegistryImage(string Name) { }
-        public override string ToString() => throw null;
-        protected override bool PrintMembers(System.Text.StringBuilder builder) => throw null;
-        public static bool operator !=(Meziantou.Framework.TemporaryContainers.RegistryImage? left, Meziantou.Framework.TemporaryContainers.RegistryImage? right) => throw null;
-        public static bool operator ==(Meziantou.Framework.TemporaryContainers.RegistryImage? left, Meziantou.Framework.TemporaryContainers.RegistryImage? right) => throw null;
-        public override int GetHashCode() => throw null;
-        public override bool Equals(object? obj) => throw null;
-        public sealed override bool Equals(Meziantou.Framework.TemporaryContainers.ImageSource? other) => throw null;
-        public bool Equals(Meziantou.Framework.TemporaryContainers.RegistryImage? other) => throw null;
-        public void Deconstruct(out string Name) => throw null;
     }
 
     public class TemporaryContainer : System.IAsyncDisposable

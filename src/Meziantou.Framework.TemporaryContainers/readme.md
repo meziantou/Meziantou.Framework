@@ -5,7 +5,7 @@ Manage temporary containers for integration tests by driving a container runtime
 Supported runtimes (auto-detected, or set `ContainerDefinition.Runtime`): `docker`, `podman`, Apple's `container` (macOS), and `wslc` (Windows/WSL).
 
 ```c#
-var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
 definition.Environment.Add("ALLOW_EMPTY_PASSWORD", "yes");
 definition.Ports.Add(new ContainerPort(6379));
 definition.WaitStrategies.Add(Wait.ForPort(6379));
@@ -23,7 +23,7 @@ The container is removed when disposed. Set `ContainerDefinition.ReuseId` to reu
 ## Building an image
 
 ```c#
-var definition = new ContainerDefinition(new DockerfileImage("./Dockerfile", "."));
+var definition = new ContainerDefinition(ImageSource.FromDockerfile("./Dockerfile", "."));
 definition.Ports.Add(new ContainerPort(8080));
 definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
 
@@ -40,7 +40,7 @@ await using var redis = ContainerDefinition.CreateRedis().CreateContainer();
 await redis.StartAsync();
 var redisConnectionString = redis.GetConnectionString(); // 127.0.0.1:<port>
 
-var definition = ContainerDefinition.CreatePostgreSql(); // or CreatePostgreSql(new RegistryImage("postgres:16"))
+var definition = ContainerDefinition.CreatePostgreSql(); // or CreatePostgreSql(ImageSource.FromRegistry("postgres:16"))
 definition.Environment.Add("POSTGRES_DB", "mydb");
 await using var postgres = definition.CreateContainer();
 await postgres.StartAsync();

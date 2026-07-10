@@ -19,7 +19,14 @@ public abstract record ImageSource
     public static ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory = null)
     {
         var fullPath = Path.GetFullPath(dockerfilePath);
-        contextDirectory ??= Path.GetDirectoryName(fullPath) ?? throw new ArgumentException($"Cannot determine the directory of the Dockerfile '{dockerfilePath}'.", nameof(dockerfilePath));
+        if (contextDirectory is null)
+        {
+            contextDirectory = Path.GetDirectoryName(fullPath) ?? throw new ArgumentException($"Cannot determine the directory of the Dockerfile '{dockerfilePath}'.", nameof(dockerfilePath));
+        }
+        else
+        {
+            contextDirectory = Path.GetFullPath(contextDirectory);
+        }
 
         return new DockerfileImage(fullPath, contextDirectory);
     }

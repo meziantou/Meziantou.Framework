@@ -227,9 +227,9 @@ namespace Meziantou.Framework.TemporaryContainers
     public abstract class ImageSource : System.IEquatable<Meziantou.Framework.TemporaryContainers.ImageSource>
     {
         protected System.Type EqualityContract { get => throw null; }
+        public static implicit operator Meziantou.Framework.TemporaryContainers.ImageSource(string name) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromRegistry(string name) => throw null;
-        public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerfile(string dockerfilePath, string contextDirectory) => throw null;
-        public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerFile(string dockerfilePath, string contextDirectory) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory = null) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromArchive(string archivePath) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromExisting(string imageId) => throw null;
         public override string ToString() => throw null;

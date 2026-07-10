@@ -17,8 +17,8 @@ public sealed class ContainerDefinitionTests
         var image = ImageSource.FromDockerfile("/tmp/Dockerfile", "/tmp");
 
         var dockerfileImage = Assert.IsType<DockerfileImage>(image);
-        Assert.Equal("/tmp/Dockerfile", dockerfileImage.DockerfilePath);
-        Assert.Equal("/tmp", dockerfileImage.ContextDirectory);
+        Assert.Equal(Path.GetFullPath("/tmp/Dockerfile"), dockerfileImage.DockerfilePath);
+        Assert.Equal(Path.GetFullPath("/tmp"), dockerfileImage.ContextDirectory);
     }
 
     [Fact]

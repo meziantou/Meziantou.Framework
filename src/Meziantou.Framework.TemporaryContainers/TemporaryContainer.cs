@@ -33,7 +33,7 @@ public partial class TemporaryContainer : IAsyncDisposable
         get
         {
             EnsureRuntimeResolved();
-            return _runtime!;
+            return _runtime;
         }
     }
 

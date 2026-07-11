@@ -16,10 +16,7 @@ public abstract class ContainerRuntime
 
     private readonly string _name;
 
-    private protected ContainerRuntime(string name)
-    {
-        _name = name;
-    }
+    private protected ContainerRuntime(string name) => _name = name;
 
     /// <summary>Automatically detect an available runtime (docker, then podman, then a platform-specific runtime).</summary>
     public static ContainerRuntime Auto { get; } = new AutoContainerRuntime();
@@ -113,10 +110,7 @@ public abstract class ContainerRuntime
     internal virtual IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
         => throw CreateNotSupportedException();
 
-    private NotSupportedException CreateNotSupportedException()
-    {
-        return new NotSupportedException($"The '{this}' runtime cannot execute container operations.");
-    }
+    private NotSupportedException CreateNotSupportedException() => new NotSupportedException($"The '{this}' runtime cannot execute container operations.");
 
     public override string ToString() => _name;
 }

@@ -1,32 +1,38 @@
+using Microsoft.Extensions.Logging;
+
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal static class ContainerRuntimeResolver
 {
-    public static (ContainerRuntime Runtime, string Executable) Resolve(ContainerRuntime requested)
+    public static ContainerRuntime Resolve(ContainerRuntime requested, ILogger? logger)
     {
-        if (TryResolve(requested, out var runtime, out var executable))
-            return (runtime, executable);
+        ArgumentNullException.ThrowIfNull(requested);
 
-        throw new InvalidOperationException(requested is ContainerRuntime.Auto
+        if (TryResolve(requested, out var runtime, out _, logger))
+            return runtime;
+
+        throw new InvalidOperationException(requested == ContainerRuntime.Auto
             ? "No supported container runtime ('docker', 'podman', 'container', or 'wslc') is available."
             : $"The '{GetExecutableName(requested)}' runtime is not available.");
     }
 
-    public static bool TryResolve(ContainerRuntime requested, out ContainerRuntime runtime, out string executable)
+    public static bool TryResolve(ContainerRuntime requested, out ContainerRuntime runtime, out string executable, ILogger? logger)
     {
-        if (requested is ContainerRuntime.Auto)
+        ArgumentNullException.ThrowIfNull(requested);
+
+        if (requested == ContainerRuntime.Auto)
         {
             foreach (var (candidateRuntime, candidateName) in GetAutoCandidates())
             {
                 if (FindExecutable(candidateName) is { } path)
                 {
-                    runtime = candidateRuntime;
+                    runtime = candidateRuntime.Bind(path, logger);
                     executable = path;
                     return true;
                 }
             }
 
-            runtime = default;
+            runtime = requested;
             executable = "";
             return false;
         }
@@ -34,12 +40,12 @@ internal static class ContainerRuntimeResolver
         var name = GetExecutableName(requested);
         if (FindExecutable(name) is { } resolved)
         {
-            runtime = requested;
+            runtime = requested.Bind(resolved, logger);
             executable = resolved;
             return true;
         }
 
-        runtime = default;
+        runtime = requested;
         executable = "";
         return false;
     }
@@ -76,10 +82,10 @@ internal static class ContainerRuntimeResolver
     {
         return runtime switch
         {
-            ContainerRuntime.Docker => "docker",
-            ContainerRuntime.Podman => "podman",
-            ContainerRuntime.AppleContainer => "container",
-            ContainerRuntime.Wslc => "wslc",
+            _ when runtime == ContainerRuntime.Docker => "docker",
+            _ when runtime == ContainerRuntime.Podman => "podman",
+            _ when runtime == ContainerRuntime.AppleContainer => "container",
+            _ when runtime == ContainerRuntime.Wslc => "wslc",
             _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown container runtime."),
         };
     }

@@ -17,8 +17,6 @@ public partial class TemporaryContainer
         if (options.Command.Count == 0)
             throw new InvalidOperationException("ExecOptions.Command must contain at least one element.");
 
-        var args = Adapter.BuildExecArguments(id, options);
-        var result = await Cli.RunBufferedAsync(args, cancellationToken, allowNonZero: true, input: options.StandardInput).ConfigureAwait(false);
-        return new ExecResult(result.ExitCode, result.StandardOutput, result.StandardError);
+        return await Runtime.ExecAsync(id, options, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -1,32 +1,59 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
-/// <summary>CLI dialect for docker-compatible runtimes (docker, podman, and wslc).</summary>
-internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string executable) : ContainerRuntimeAdapter(runtime, executable)
+/// <summary>Runtime implementation for docker-compatible CLIs (docker, podman, and wslc).</summary>
+internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 {
-    public override bool LogsIncludeTimestamps => true;
+    internal enum Flavor
+    {
+        Docker,
+        Podman,
+        Wslc,
+    }
 
-    public override bool SupportsPause => true;
+    private readonly Flavor _flavor;
 
-    public override bool SupportsRestart => Runtime is not ContainerRuntime.Wslc;
+    public DockerContainerRuntime(string name, Flavor flavor)
+        : base(name)
+    {
+        _flavor = flavor;
+    }
 
-    public override async Task<string> PrepareImageAsync(ContainerCli cli, ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken)
+    private DockerContainerRuntime(string name, Flavor flavor, string executable, ILogger? logger)
+        : base(name, executable, logger)
+    {
+        _flavor = flavor;
+    }
+
+    internal override ContainerRuntime Bind(string executable, ILogger? logger)
+    {
+        return new DockerContainerRuntime(ToString(), _flavor, executable, logger);
+    }
+
+    internal override bool LogsIncludeTimestamps => true;
+
+    internal override bool SupportsPause => true;
+
+    internal override bool SupportsRestart => _flavor is not Flavor.Wslc;
+
+    internal override async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken)
     {
         switch (source)
         {
             case RegistryImage registry:
                 if (pullPolicy is PullPolicy.Always)
-                    await cli.RunBufferedAsync(["pull", registry.Name], cancellationToken).ConfigureAwait(false);
+                    await Cli.RunBufferedAsync(["pull", registry.Name], cancellationToken).ConfigureAwait(false);
                 return registry.Name;
 
             case DockerfileImage dockerfile:
                 var tag = "meziantou-tc/" + Guid.NewGuid().ToString("N") + ":latest";
-                await cli.RunBufferedAsync(["build", "-t", tag, "-f", dockerfile.DockerfilePath, dockerfile.ContextDirectory], cancellationToken).ConfigureAwait(false);
+                await Cli.RunBufferedAsync(["build", "-t", tag, "-f", dockerfile.DockerfilePath, dockerfile.ContextDirectory], cancellationToken).ConfigureAwait(false);
                 return tag;
 
             case ArchiveImage archive:
-                var loadResult = await cli.RunBufferedAsync(["load", "-i", archive.ArchivePath], cancellationToken).ConfigureAwait(false);
+                var loadResult = await Cli.RunBufferedAsync(["load", "-i", archive.ArchivePath], cancellationToken).ConfigureAwait(false);
                 return ParseLoadedImage(loadResult.StandardOutput);
 
             case ExistingImage existing:
@@ -37,10 +64,10 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
         }
     }
 
-    public override async Task<string?> FindReusableContainerAsync(ContainerCli cli, string reuseId, CancellationToken cancellationToken)
+    internal override async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
     {
         IReadOnlyList<string> lookupArgs;
-        if (Runtime is ContainerRuntime.Wslc)
+        if (_flavor is Flavor.Wslc)
         {
             lookupArgs = ["list", "-a", "-q", "--filter", $"label={DockerCreateArgumentBuilder.ReuseLabel}={reuseId}"];
         }
@@ -49,7 +76,7 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
             lookupArgs = ["ps", "-a", "--no-trunc", "--filter", $"label={DockerCreateArgumentBuilder.ReuseLabel}={reuseId}", "--format", "{{.ID}}"];
         }
 
-        var lookup = await cli.RunBufferedAsync(lookupArgs, cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        var lookup = await Cli.RunBufferedAsync(lookupArgs, cancellationToken, allowNonZero: true).ConfigureAwait(false);
         foreach (var line in lookup.StandardOutput.Split('\n'))
         {
             var trimmed = line.Trim();
@@ -60,7 +87,7 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
         return null;
     }
 
-    public override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef)
+    internal override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef)
     {
         var pullPolicyValue = definition.Image switch
         {
@@ -74,36 +101,36 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
             _ => null,
         };
 
-        if (Runtime is ContainerRuntime.Wslc)
+        if (_flavor is Flavor.Wslc)
             pullPolicyValue = null;
 
         return DockerCreateArgumentBuilder.Build(definition, imageRef, pullPolicyValue);
     }
 
-    public override IReadOnlyList<string> BuildStartArguments(string id) => ["start", id];
+    internal override IReadOnlyList<string> BuildStartArguments(string id) => ["start", id];
 
-    public override IReadOnlyList<string> BuildStopArguments(string id) => ["stop", id];
+    internal override IReadOnlyList<string> BuildStopArguments(string id) => ["stop", id];
 
-    public override IReadOnlyList<string> BuildRestartArguments(string id) => ["restart", id];
+    internal override IReadOnlyList<string> BuildRestartArguments(string id) => ["restart", id];
 
-    public override IReadOnlyList<string> BuildPauseArguments(string id) => ["pause", id];
+    internal override IReadOnlyList<string> BuildPauseArguments(string id) => ["pause", id];
 
-    public override IReadOnlyList<string> BuildUnpauseArguments(string id) => ["unpause", id];
+    internal override IReadOnlyList<string> BuildUnpauseArguments(string id) => ["unpause", id];
 
-    public override IReadOnlyList<string> BuildKillArguments(string id) => ["kill", id];
+    internal override IReadOnlyList<string> BuildKillArguments(string id) => ["kill", id];
 
-    public override IReadOnlyList<string> BuildRemoveArguments(string id) => ["rm", "-f", id];
+    internal override IReadOnlyList<string> BuildRemoveArguments(string id) => ["rm", "-f", id];
 
-    public override IReadOnlyList<string> BuildExistsArguments(string id)
-        => Runtime is ContainerRuntime.Wslc
+    internal override IReadOnlyList<string> BuildExistsArguments(string id)
+        => _flavor is Flavor.Wslc
             ? ["inspect", id]
             : ["container", "inspect", "--format", "{{.Id}}", id];
 
-    public override IReadOnlyList<string> BuildInspectArguments(string id) => ["inspect", id];
+    internal override IReadOnlyList<string> BuildInspectArguments(string id) => ["inspect", id];
 
-    public override IReadOnlyList<string> BuildLogsArguments(string id) => ["logs", "-f", "--timestamps", id];
+    internal override IReadOnlyList<string> BuildLogsArguments(string id) => ["logs", "-f", "--timestamps", id];
 
-    public override IReadOnlyList<string> BuildExecArguments(string id, ExecOptions options)
+    internal override IReadOnlyList<string> BuildExecArguments(string id, ExecOptions options)
     {
         var args = new List<string> { "exec" };
         if (options.StandardInput is not null)
@@ -132,13 +159,13 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
         return args;
     }
 
-    public override IReadOnlyList<string> BuildCopyToContainerArguments(string id, string source, string destination)
+    internal override IReadOnlyList<string> BuildCopyToContainerArguments(string id, string source, string destination)
         => ["cp", source, $"{id}:{destination}"];
 
-    public override IReadOnlyList<string> BuildCopyFromContainerArguments(string id, string source, string destination)
+    internal override IReadOnlyList<string> BuildCopyFromContainerArguments(string id, string source, string destination)
         => ["cp", $"{id}:{source}", destination];
 
-    public override ContainerInfo ParseInspect(string output)
+    internal override ContainerInfo ParseInspect(string output)
     {
         var parsed = JsonSerializer.Deserialize(output, DockerInspectJsonContext.Default.DockerInspectResultArray);
         if (parsed is null || parsed.Length == 0)
@@ -180,7 +207,54 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
         };
     }
 
-    public override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition) => info.Ports;
+    internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition) => info.Ports;
+
+    internal override async Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
+    {
+        if (_flavor is Flavor.Wslc)
+        {
+            var options = new ExecOptions
+            {
+                StandardInput = InputSource.FromStream(content),
+            };
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("cat > " + QuoteShellArgument(path));
+
+            var result = await ExecAsync(id, options, cancellationToken).ConfigureAwait(false);
+            if (result.ExitCode != 0)
+                throw new InvalidOperationException("Unable to write file to the container. " + result.StandardError);
+
+            return;
+        }
+
+        await base.WriteFileAsync(id, path, content, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
+    {
+        if (_flavor is Flavor.Wslc)
+        {
+            await using var stream = File.OpenRead(source);
+            await WriteFileAsync(id, destination, stream, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await base.CopyToContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
+    {
+        if (_flavor is Flavor.Wslc)
+        {
+            await using var stream = await OpenReadAsync(id, source, cancellationToken).ConfigureAwait(false);
+            await using var fileStream = File.Create(destination);
+            await stream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await base.CopyFromContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
+    }
 
     private static ContainerState ParseState(string? status)
     {
@@ -227,5 +301,10 @@ internal sealed class DockerRuntimeAdapter(ContainerRuntime runtime, string exec
         }
 
         return true;
+    }
+
+    private static string QuoteShellArgument(string value)
+    {
+        return "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
     }
 }

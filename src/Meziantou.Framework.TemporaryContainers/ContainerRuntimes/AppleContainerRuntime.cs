@@ -1,34 +1,50 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 /// <summary>CLI dialect for Apple's <c>container</c> runtime (macOS). Best-effort: verified against the documented CLI, not executed in CI on non-macOS hosts.</summary>
-internal sealed class AppleContainerRuntimeAdapter(string executable) : ContainerRuntimeAdapter(ContainerRuntime.AppleContainer, executable)
+internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 {
     private const string ReuseNamePrefix = "meziantou-tc-";
 
-    public override bool LogsIncludeTimestamps => false;
+    public AppleContainerRuntime(string name)
+        : base(name)
+    {
+    }
 
-    public override bool SupportsPause => false;
+    private AppleContainerRuntime(string name, string executable, ILogger? logger)
+        : base(name, executable, logger)
+    {
+    }
 
-    public override bool SupportsRestart => false;
+    internal override ContainerRuntime Bind(string executable, ILogger? logger)
+    {
+        return new AppleContainerRuntime(ToString(), executable, logger);
+    }
 
-    public override async Task<string> PrepareImageAsync(ContainerCli cli, ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken)
+    internal override bool LogsIncludeTimestamps => false;
+
+    internal override bool SupportsPause => false;
+
+    internal override bool SupportsRestart => false;
+
+    internal override async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken)
     {
         switch (source)
         {
             case RegistryImage registry:
                 if (pullPolicy is PullPolicy.Always)
-                    await cli.RunBufferedAsync(["image", "pull", registry.Name], cancellationToken).ConfigureAwait(false);
+                    await Cli.RunBufferedAsync(["image", "pull", registry.Name], cancellationToken).ConfigureAwait(false);
                 return registry.Name;
 
             case DockerfileImage dockerfile:
                 var tag = "meziantou-tc/" + Guid.NewGuid().ToString("N") + ":latest";
-                await cli.RunBufferedAsync(["build", "-t", tag, "-f", dockerfile.DockerfilePath, dockerfile.ContextDirectory], cancellationToken).ConfigureAwait(false);
+                await Cli.RunBufferedAsync(["build", "-t", tag, "-f", dockerfile.DockerfilePath, dockerfile.ContextDirectory], cancellationToken).ConfigureAwait(false);
                 return tag;
 
             case ArchiveImage archive:
-                var loadResult = await cli.RunBufferedAsync(["image", "load", "-i", archive.ArchivePath], cancellationToken).ConfigureAwait(false);
+                var loadResult = await Cli.RunBufferedAsync(["image", "load", "-i", archive.ArchivePath], cancellationToken).ConfigureAwait(false);
                 return ParseLoadedImage(loadResult.StandardOutput);
 
             case ExistingImage existing:
@@ -39,14 +55,14 @@ internal sealed class AppleContainerRuntimeAdapter(string executable) : Containe
         }
     }
 
-    public override async Task<string?> FindReusableContainerAsync(ContainerCli cli, string reuseId, CancellationToken cancellationToken)
+    internal override async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
     {
         var name = GetReuseName(reuseId);
-        var result = await cli.RunBufferedAsync(["inspect", name], cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        var result = await Cli.RunBufferedAsync(["inspect", name], cancellationToken, allowNonZero: true).ConfigureAwait(false);
         return result.ExitCode == 0 ? name : null;
     }
 
-    public override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef)
+    internal override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef)
     {
         if (definition.Resources.ReadOnlyRootFilesystem)
             throw new NotSupportedException("Apple's container runtime does not support a read-only root filesystem.");
@@ -103,30 +119,30 @@ internal sealed class AppleContainerRuntimeAdapter(string executable) : Containe
         return args;
     }
 
-    public override IReadOnlyList<string> BuildStartArguments(string id) => ["start", id];
+    internal override IReadOnlyList<string> BuildStartArguments(string id) => ["start", id];
 
-    public override IReadOnlyList<string> BuildStopArguments(string id) => ["stop", id];
+    internal override IReadOnlyList<string> BuildStopArguments(string id) => ["stop", id];
 
-    public override IReadOnlyList<string> BuildRestartArguments(string id)
+    internal override IReadOnlyList<string> BuildRestartArguments(string id)
         => throw new NotSupportedException("Apple's container runtime does not support restart.");
 
-    public override IReadOnlyList<string> BuildPauseArguments(string id)
+    internal override IReadOnlyList<string> BuildPauseArguments(string id)
         => throw new NotSupportedException("Apple's container runtime does not support pause.");
 
-    public override IReadOnlyList<string> BuildUnpauseArguments(string id)
+    internal override IReadOnlyList<string> BuildUnpauseArguments(string id)
         => throw new NotSupportedException("Apple's container runtime does not support unpause.");
 
-    public override IReadOnlyList<string> BuildKillArguments(string id) => ["kill", id];
+    internal override IReadOnlyList<string> BuildKillArguments(string id) => ["kill", id];
 
-    public override IReadOnlyList<string> BuildRemoveArguments(string id) => ["delete", "--force", id];
+    internal override IReadOnlyList<string> BuildRemoveArguments(string id) => ["delete", "--force", id];
 
-    public override IReadOnlyList<string> BuildExistsArguments(string id) => ["inspect", id];
+    internal override IReadOnlyList<string> BuildExistsArguments(string id) => ["inspect", id];
 
-    public override IReadOnlyList<string> BuildInspectArguments(string id) => ["inspect", id];
+    internal override IReadOnlyList<string> BuildInspectArguments(string id) => ["inspect", id];
 
-    public override IReadOnlyList<string> BuildLogsArguments(string id) => ["logs", "--follow", id];
+    internal override IReadOnlyList<string> BuildLogsArguments(string id) => ["logs", "--follow", id];
 
-    public override IReadOnlyList<string> BuildExecArguments(string id, ExecOptions options)
+    internal override IReadOnlyList<string> BuildExecArguments(string id, ExecOptions options)
     {
         var args = new List<string> { "exec" };
         if (options.StandardInput is not null)
@@ -155,13 +171,13 @@ internal sealed class AppleContainerRuntimeAdapter(string executable) : Containe
         return args;
     }
 
-    public override IReadOnlyList<string> BuildCopyToContainerArguments(string id, string source, string destination)
+    internal override IReadOnlyList<string> BuildCopyToContainerArguments(string id, string source, string destination)
         => ["copy", source, $"{id}:{destination}"];
 
-    public override IReadOnlyList<string> BuildCopyFromContainerArguments(string id, string source, string destination)
+    internal override IReadOnlyList<string> BuildCopyFromContainerArguments(string id, string source, string destination)
         => ["copy", $"{id}:{source}", destination];
 
-    public override ContainerInfo ParseInspect(string output)
+    internal override ContainerInfo ParseInspect(string output)
     {
         var parsed = JsonSerializer.Deserialize(output, AppleInspectJsonContext.Default.AppleInspectResultArray);
         if (parsed is null || parsed.Length == 0)
@@ -186,7 +202,7 @@ internal sealed class AppleContainerRuntimeAdapter(string executable) : Containe
         };
     }
 
-    public override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
+    internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
     {
         // Apple's runtime does not report host port bindings in inspect and has no random-port discovery,
         // so the mapping is derived from the published ports (host defaults to the container port).

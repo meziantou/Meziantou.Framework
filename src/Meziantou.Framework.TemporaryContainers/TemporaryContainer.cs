@@ -1,13 +1,10 @@
-using Meziantou.Framework.TemporaryContainers.Internals;
-
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>A temporary container created from a <see cref="ContainerDefinition"/>. Dispose the instance to remove the container (unless <see cref="ContainerDefinition.ReuseId"/> is set).</summary>
 public partial class TemporaryContainer : IAsyncDisposable
 {
     private readonly ContainerDefinition _definition;
-    private ContainerCli? _cli;
-    private ContainerRuntimeAdapter? _adapter;
+    private ContainerRuntime? _runtime;
     private string? _id;
     private string? _name;
     private Dictionary<int, int>? _portMap;
@@ -31,36 +28,23 @@ public partial class TemporaryContainer : IAsyncDisposable
     public ContainerDefinition Definition => _definition;
 
     /// <summary>Gets the container runtime in use.</summary>
-    public ContainerRuntime Runtime => Adapter.Runtime;
-
-    private ContainerCli Cli
+    public ContainerRuntime Runtime
     {
         get
         {
             EnsureRuntimeResolved();
-            return _cli;
+            return _runtime;
         }
     }
 
-    private ContainerRuntimeAdapter Adapter
-    {
-        get
-        {
-            EnsureRuntimeResolved();
-            return _adapter;
-        }
-    }
+[MemberNotNull(nameof(_runtime))]
+private void EnsureRuntimeResolved()
+{
+    if (_runtime is not null)
+        return;
 
-    [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(_cli), nameof(_adapter))]
-    private void EnsureRuntimeResolved()
-    {
-        if (_cli is not null && _adapter is not null)
-            return;
-
-        var (runtime, executable) = ContainerRuntimeResolver.Resolve(_definition.Runtime);
-        _cli = new ContainerCli(runtime, executable, _definition.Logging.Logger);
-        _adapter = ContainerRuntimeAdapter.Create(runtime, executable);
-    }
+    _runtime = Internals.ContainerRuntimeResolver.Resolve(_definition.Runtime, _definition.Logging.Logger);
+}
 
     /// <summary>Creates the container if it does not exist yet, without starting it. When <see cref="ContainerDefinition.ReuseId"/> is set, an existing matching container is adopted instead.</summary>
     /// <param name="cancellationToken">A cancellation token.</param>
@@ -73,21 +57,7 @@ public partial class TemporaryContainer : IAsyncDisposable
 
         EnsureRuntimeResolved();
 
-        string? existingId = null;
-        if (_definition.ReuseId is { } reuseId)
-            existingId = await _adapter.FindReusableContainerAsync(_cli, reuseId, cancellationToken).ConfigureAwait(false);
-
-        if (existingId is not null)
-        {
-            _id = existingId;
-        }
-        else
-        {
-            var imageRef = await _adapter.PrepareImageAsync(_cli, _definition.Image, _definition.PullPolicy, cancellationToken).ConfigureAwait(false);
-            var args = _adapter.BuildCreateArguments(_definition, imageRef);
-            var createResult = await _cli.RunBufferedAsync(args, cancellationToken).ConfigureAwait(false);
-            _id = createResult.StandardOutput.Trim();
-        }
+        _id = await Runtime.EnsureCreatedAsync(_definition, cancellationToken).ConfigureAwait(false);
 
         var info = await InspectAsync(cancellationToken).ConfigureAwait(false);
         _name = info.Name;
@@ -101,7 +71,7 @@ public partial class TemporaryContainer : IAsyncDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         await EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
-        await Cli.RunBufferedAsync(Adapter.BuildStartArguments(Id), cancellationToken).ConfigureAwait(false);
+        await Runtime.StartAsync(Id, cancellationToken).ConfigureAwait(false);
         await RefreshPortsAsync(cancellationToken).ConfigureAwait(false);
         await WaitUntilReadyAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -159,7 +129,7 @@ public partial class TemporaryContainer : IAsyncDisposable
 
         try
         {
-            await Cli.RunBufferedAsync(Adapter.BuildRemoveArguments(_id), CancellationToken.None, allowNonZero: true).ConfigureAwait(false);
+            await Runtime.DeleteAsync(_id, CancellationToken.None).ConfigureAwait(false);
         }
         catch
         {

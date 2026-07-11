@@ -8,14 +8,13 @@ public partial class TemporaryContainer
     public async Task<ContainerInfo> InspectAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
-        var result = await Cli.RunBufferedAsync(Adapter.BuildInspectArguments(id), cancellationToken).ConfigureAwait(false);
-        return Adapter.ParseInspect(result.StandardOutput);
+        return await Runtime.InspectAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task RefreshPortsAsync(CancellationToken cancellationToken)
     {
         var info = await InspectAsync(cancellationToken).ConfigureAwait(false);
-        var portMap = Adapter.ResolvePortMap(info, _definition);
+        var portMap = Runtime.ResolvePortMap(info, _definition);
 
         var map = new Dictionary<int, int>(portMap.Count);
         foreach (var (containerPort, hostPort) in portMap)

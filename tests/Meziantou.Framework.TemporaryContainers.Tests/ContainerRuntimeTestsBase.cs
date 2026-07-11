@@ -34,28 +34,14 @@ public abstract class ContainerRuntimeTestsBase
         Runtime = runtime;
         _useWindowsContainerImages = DetectUseWindowsContainerImages(runtime);
 
-        if (TestEnvironment.IsOnGitHubActions())
-        {
-            if (OperatingSystem.IsWindows() && runtime is ContainerRuntime.Podman or ContainerRuntime.Wslc)
-                global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
-
-            if (OperatingSystem.IsMacOS())
-                global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
-        }
-
-        if (runtime is ContainerRuntime.AppleContainer && !OperatingSystem.IsMacOS())
-            global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
-
-
-        if (runtime is ContainerRuntime.Wslc && !OperatingSystem.IsWindows())
-            global::Xunit.Assert.SkipUnless(ContainerRuntimeInfo.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
+        global::Xunit.Assert.SkipUnless(runtime.IsSupported(), $"The '{runtime}' container runtime is not available on this system.");
     }
 
     protected ContainerRuntime Runtime { get; }
 
     private static bool DetectUseWindowsContainerImages(ContainerRuntime runtime)
     {
-        if (runtime is ContainerRuntime.AppleContainer or ContainerRuntime.Wslc)
+        if (runtime == ContainerRuntime.AppleContainer || runtime == ContainerRuntime.Wslc)
             return false;
 
         if (TryGetRuntimeContainerOs(runtime, out var containerOs))
@@ -79,13 +65,23 @@ public abstract class ContainerRuntimeTestsBase
 
     private static bool TryGetRuntimeExecutable(ContainerRuntime runtime, out string executable)
     {
-        var commandName = runtime switch
+        string? commandName;
+        if (runtime == ContainerRuntime.Docker)
         {
-            ContainerRuntime.Docker => "docker",
-            ContainerRuntime.Podman => "podman",
-            ContainerRuntime.Wslc => "wslc",
-            _ => null,
-        };
+            commandName = "docker";
+        }
+        else if (runtime == ContainerRuntime.Podman)
+        {
+            commandName = "podman";
+        }
+        else if (runtime == ContainerRuntime.Wslc)
+        {
+            commandName = "wslc";
+        }
+        else
+        {
+            commandName = null;
+        }
 
         if (commandName is null)
         {
@@ -100,8 +96,8 @@ public abstract class ContainerRuntimeTestsBase
     {
         if (Path.IsPathRooted(name) && File.Exists(name))
         {
-            executable = name;
-            return true;
+            executable = string.Empty;
+            return false;
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
@@ -424,7 +420,7 @@ public abstract class ContainerRuntimeTestsBase
     /// <summary>Shared pause/unpause assertion for runtimes that support it (called from the relevant subclasses).</summary>
     protected async Task AssertPauseUnpauseAsync()
     {
-        global::Xunit.Assert.SkipUnless(!UseWindowsContainerImages || Runtime is not ContainerRuntime.Docker, "docker pause is not implemented for Windows process-isolated containers");
+        global::Xunit.Assert.SkipUnless(!UseWindowsContainerImages || Runtime != ContainerRuntime.Docker, "docker pause is not implemented for Windows process-isolated containers");
 
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
@@ -463,7 +459,7 @@ public abstract class ContainerRuntimeTestsBase
 
     private void AddHttpPortBinding(ContainerDefinition definition)
     {
-        if (Runtime is ContainerRuntime.AppleContainer)
+        if (Runtime == ContainerRuntime.AppleContainer)
         {
             definition.Ports.Add(GetFreeTcpPort(), 8080);
         }
@@ -498,7 +494,7 @@ public abstract class ContainerRuntimeTestsBase
 
     private async Task<string> GetIndexContentAsync(TemporaryContainer container)
     {
-        if (Runtime is ContainerRuntime.AppleContainer)
+        if (Runtime == ContainerRuntime.AppleContainer)
         {
             var exec = await container.ExecAsync(options =>
             {

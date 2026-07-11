@@ -14,6 +14,8 @@ namespace Meziantou.Framework.TemporaryContainers;
 /// </example>
 public class ContainerDefinition
 {
+    private ContainerRuntime _runtime = ContainerRuntime.Auto;
+
     /// <summary>Initializes a new instance of the <see cref="ContainerDefinition"/> class.</summary>
     /// <param name="image">The image the container is created from.</param>
     public ContainerDefinition(ImageSource image)
@@ -62,7 +64,15 @@ public class ContainerDefinition
     public ImageSource Image { get; set; }
 
     /// <summary>Gets or sets the container runtime to use.</summary>
-    public ContainerRuntime Runtime { get; set; } = ContainerRuntime.Auto;
+    public ContainerRuntime Runtime
+    {
+        get => _runtime;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            _runtime = value;
+        }
+    }
 
     /// <summary>Gets or sets the image pull policy.</summary>
     public PullPolicy PullPolicy { get; set; } = PullPolicy.IfMissing;

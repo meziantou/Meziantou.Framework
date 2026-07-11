@@ -158,19 +158,17 @@ namespace Meziantou.Framework.TemporaryContainers
         public bool ReadOnlyRootFilesystem { get => throw null; set { } }
     }
 
-    public enum ContainerRuntime
+    public abstract class ContainerRuntime
     {
-        Auto = 0,
-        Docker = 1,
-        Podman = 2,
-        AppleContainer = 3,
-        Wslc = 4
-    }
-
-    public static class ContainerRuntimeInfo
-    {
-        public static bool IsAvailable(Meziantou.Framework.TemporaryContainers.ContainerRuntime runtime = 0) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Auto { get => throw null; }
+        public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Docker { get => throw null; }
+        public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Podman { get => throw null; }
+        public static Meziantou.Framework.TemporaryContainers.ContainerRuntime AppleContainer { get => throw null; }
+        public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Wslc { get => throw null; }
+        public static bool IsAvailable() => throw null;
+        public static bool IsAvailable(Meziantou.Framework.TemporaryContainers.ContainerRuntime runtime) => throw null;
         public static bool TryGetAvailableRuntime(out Meziantou.Framework.TemporaryContainers.ContainerRuntime runtime) => throw null;
+        public override string ToString() => throw null;
     }
 
     public enum ContainerState

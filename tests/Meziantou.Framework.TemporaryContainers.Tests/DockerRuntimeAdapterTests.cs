@@ -7,44 +7,40 @@ public sealed class DockerRuntimeAdapterTests
     [Fact]
     public void DockerUsesDockerDialect()
     {
-        var adapter = ContainerRuntimeAdapter.Create(ContainerRuntime.Docker, "docker");
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
 
-        Assert.Equal(ContainerRuntime.Docker, adapter.Runtime);
-        Assert.IsAssignableTo<DockerRuntimeAdapter>(adapter);
-        Assert.True(adapter.SupportsPause);
-        Assert.True(adapter.SupportsRestart);
-        Assert.True(adapter.LogsIncludeTimestamps);
-        Assert.Equal("rm -f abc", string.Join(' ', adapter.BuildRemoveArguments("abc")));
-        Assert.Equal("cp src abc:/dst", string.Join(' ', adapter.BuildCopyToContainerArguments("abc", "src", "/dst")));
-        Assert.Equal("cp abc:/src dst", string.Join(' ', adapter.BuildCopyFromContainerArguments("abc", "/src", "dst")));
-        Assert.Contains("--timestamps", adapter.BuildLogsArguments("abc"));
+        Assert.True(runtime.SupportsPause);
+        Assert.True(runtime.SupportsRestart);
+        Assert.True(runtime.LogsIncludeTimestamps);
+        Assert.Equal("rm -f abc", string.Join(' ', runtime.BuildRemoveArguments("abc")));
+        Assert.Equal("cp src abc:/dst", string.Join(' ', runtime.BuildCopyToContainerArguments("abc", "src", "/dst")));
+        Assert.Equal("cp abc:/src dst", string.Join(' ', runtime.BuildCopyFromContainerArguments("abc", "/src", "dst")));
+        Assert.Contains("--timestamps", runtime.BuildLogsArguments("abc"));
     }
 
     [Fact]
     public void PodmanUsesDockerDialect()
     {
-        var adapter = ContainerRuntimeAdapter.Create(ContainerRuntime.Podman, "podman");
+        var runtime = ContainerRuntime.Podman;
 
-        Assert.Equal(ContainerRuntime.Podman, adapter.Runtime);
-        Assert.IsAssignableTo<DockerRuntimeAdapter>(adapter);
+        Assert.IsAssignableTo<DockerContainerRuntime>(runtime);
     }
 
     [Fact]
     public void WslcUsesDockerDialect()
     {
-        var adapter = ContainerRuntimeAdapter.Create(ContainerRuntime.Wslc, "wslc");
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
 
-        Assert.Equal(ContainerRuntime.Wslc, adapter.Runtime);
-        Assert.IsAssignableTo<DockerRuntimeAdapter>(adapter);
+        Assert.IsAssignableTo<DockerContainerRuntime>(runtime);
     }
 
     [Fact]
     public void WslcCreateArguments_DoNotUsePullOption()
     {
-        var adapter = ContainerRuntimeAdapter.Create(ContainerRuntime.Wslc, "wslc");
         var definition = new ContainerDefinition(new RegistryImage("busybox:1.37"));
 
-        var args = adapter.BuildCreateArguments(definition, "busybox:1.37");
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var args = runtime.BuildCreateArguments(definition, "busybox:1.37");
 
         Assert.DoesNotContain("--pull", args);
     }
@@ -52,8 +48,6 @@ public sealed class DockerRuntimeAdapterTests
     [Fact]
     public void ParseInspect_UsesTopLevelPorts()
     {
-        var adapter = ContainerRuntimeAdapter.Create(ContainerRuntime.Wslc, "wslc");
-
         var inspectOutput =
                 """
                 [
@@ -82,7 +76,8 @@ public sealed class DockerRuntimeAdapterTests
                 ]
                 """;
 
-        var container = adapter.ParseInspect(inspectOutput);
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var container = runtime.ParseInspect(inspectOutput);
 
         Assert.Equal(50809, container.Ports[8080]);
         Assert.Equal("v", container.Labels["k"]);
@@ -91,8 +86,6 @@ public sealed class DockerRuntimeAdapterTests
     [Fact]
     public void ParseInspect_ConvertsLargeUnsignedExitCodeToSignedInt()
     {
-        var adapter = ContainerRuntimeAdapter.Create(ContainerRuntime.Docker, "docker");
-
         var inspectOutput =
                 """
                 [
@@ -110,7 +103,8 @@ public sealed class DockerRuntimeAdapterTests
                 ]
                 """;
 
-        var container = adapter.ParseInspect(inspectOutput);
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+        var container = runtime.ParseInspect(inspectOutput);
 
         Assert.Equal(unchecked((int)3221225786u), container.ExitCode);
     }

@@ -10,65 +10,7 @@ public partial class TemporaryContainer
     {
         ArgumentNullException.ThrowIfNull(path);
         var id = RequireId();
-
-        try
-        {
-            return await OpenReadAsync(id, ["cat", path], cancellationToken).ConfigureAwait(false);
-        }
-        catch (ProcessExecutionException)
-        {
-            try
-            {
-                return await OpenReadAsync(id,
-                [
-                    "powershell",
-                    "-NoProfile",
-                    "-Command",
-                    "$bytes=[System.IO.File]::ReadAllBytes('" + EscapePowerShellSingleQuotedString(path) + "'); [Console]::OpenStandardOutput().Write($bytes, 0, $bytes.Length)",
-                ], cancellationToken).ConfigureAwait(false);
-            }
-            catch (ProcessExecutionException)
-            {
-                return await OpenReadUsingCopyAsync(id, path, cancellationToken).ConfigureAwait(false);
-            }
-        }
-    }
-
-    private async Task<Stream> OpenReadAsync(string id, IReadOnlyList<string> command, CancellationToken cancellationToken)
-    {
-        var options = new ExecOptions();
-        foreach (var item in command)
-            options.Command.Add(item);
-
-        var args = Adapter.BuildExecArguments(id, options);
-
-        var stream = new MemoryStream();
-        try
-        {
-            await Cli.RunToStreamAsync(args, stream, cancellationToken).ConfigureAwait(false);
-            stream.Position = 0;
-            return stream;
-        }
-        catch
-        {
-            await stream.DisposeAsync().ConfigureAwait(false);
-            throw;
-        }
-    }
-
-    private async Task<Stream> OpenReadUsingCopyAsync(string id, string path, CancellationToken cancellationToken)
-    {
-        var tempFile = Path.Combine(Path.GetTempPath(), "MezTC_" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            await Cli.RunBufferedAsync(Adapter.BuildCopyFromContainerArguments(id, path, tempFile), cancellationToken).ConfigureAwait(false);
-            return new Internals.TemporaryFileStream(tempFile);
-        }
-        catch
-        {
-            File.Delete(tempFile);
-            throw;
-        }
+        return await Runtime.OpenReadAsync(id, path, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Writes a file to the container, creating or overwriting it.</summary>
@@ -81,35 +23,7 @@ public partial class TemporaryContainer
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(content);
         var id = RequireId();
-
-        if (Runtime is ContainerRuntime.Wslc)
-        {
-            var result = await ExecAsync(options =>
-            {
-                options.StandardInput = InputSource.FromStream(content);
-                options.Command.Add("sh");
-                options.Command.Add("-c");
-                options.Command.Add("cat > " + QuoteShellArgument(path));
-            }, cancellationToken).ConfigureAwait(false);
-
-            if (result.ExitCode != 0)
-                throw new InvalidOperationException("Unable to write file to the container. " + result.StandardError);
-
-            return;
-        }
-
-        var tempFile = Path.Combine(Path.GetTempPath(), "MezTC_" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            await using (var fileStream = File.Create(tempFile))
-                await content.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
-
-            await Cli.RunBufferedAsync(Adapter.BuildCopyToContainerArguments(id, tempFile, path), cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            File.Delete(tempFile);
-        }
+        await Runtime.WriteFileAsync(id, path, content, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Copies a file or directory from the host into the container.</summary>
@@ -123,14 +37,7 @@ public partial class TemporaryContainer
         ArgumentNullException.ThrowIfNull(destination);
         var id = RequireId();
 
-        if (Runtime is ContainerRuntime.Wslc)
-        {
-            await using var stream = File.OpenRead(source);
-            await WriteFileAsync(destination, stream, cancellationToken).ConfigureAwait(false);
-            return;
-        }
-
-        await Cli.RunBufferedAsync(Adapter.BuildCopyToContainerArguments(id, source, destination), cancellationToken).ConfigureAwait(false);
+        await Runtime.CopyToContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Copies a file or directory from the container to the host.</summary>
@@ -144,24 +51,6 @@ public partial class TemporaryContainer
         ArgumentNullException.ThrowIfNull(destination);
         var id = RequireId();
 
-        if (Runtime is ContainerRuntime.Wslc)
-        {
-            await using var stream = await OpenReadAsync(source, cancellationToken).ConfigureAwait(false);
-            await using var fileStream = File.Create(destination);
-            await stream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
-            return;
-        }
-
-        await Cli.RunBufferedAsync(Adapter.BuildCopyFromContainerArguments(id, source, destination), cancellationToken).ConfigureAwait(false);
-    }
-
-    private static string QuoteShellArgument(string value)
-    {
-        return "'" + value.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
-    }
-
-    private static string EscapePowerShellSingleQuotedString(string value)
-    {
-        return value.Replace("'", "''", StringComparison.Ordinal);
+        await Runtime.CopyFromContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
     }
 }

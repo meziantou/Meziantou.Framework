@@ -8,7 +8,7 @@ public partial class TemporaryContainer
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
-        await Cli.RunBufferedAsync(Adapter.BuildStopArguments(id), cancellationToken).ConfigureAwait(false);
+        await Runtime.StopAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Restarts the container and refreshes the published-port mapping.</summary>
@@ -17,16 +17,7 @@ public partial class TemporaryContainer
     public async Task RestartAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
-        if (Adapter.SupportsRestart)
-        {
-            await Cli.RunBufferedAsync(Adapter.BuildRestartArguments(id), cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            await Cli.RunBufferedAsync(Adapter.BuildStopArguments(id), cancellationToken).ConfigureAwait(false);
-            await Cli.RunBufferedAsync(Adapter.BuildStartArguments(id), cancellationToken).ConfigureAwait(false);
-        }
-
+        await Runtime.RestartAsync(id, cancellationToken).ConfigureAwait(false);
         await RefreshPortsAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -37,10 +28,7 @@ public partial class TemporaryContainer
     public async Task PauseAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
-        if (!Adapter.SupportsPause)
-            throw new NotSupportedException($"The '{Runtime}' runtime does not support pausing containers.");
-
-        await Cli.RunBufferedAsync(Adapter.BuildPauseArguments(id), cancellationToken).ConfigureAwait(false);
+        await Runtime.PauseAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Resumes a paused container.</summary>
@@ -50,10 +38,7 @@ public partial class TemporaryContainer
     public async Task UnpauseAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
-        if (!Adapter.SupportsPause)
-            throw new NotSupportedException($"The '{Runtime}' runtime does not support pausing containers.");
-
-        await Cli.RunBufferedAsync(Adapter.BuildUnpauseArguments(id), cancellationToken).ConfigureAwait(false);
+        await Runtime.UnpauseAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Sends a kill signal to the container.</summary>
@@ -62,7 +47,7 @@ public partial class TemporaryContainer
     public async Task KillAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
-        await Cli.RunBufferedAsync(Adapter.BuildKillArguments(id), cancellationToken).ConfigureAwait(false);
+        await Runtime.KillAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Removes the container.</summary>
@@ -74,7 +59,7 @@ public partial class TemporaryContainer
         if (_id is null)
             return;
 
-        await Cli.RunBufferedAsync(Adapter.BuildRemoveArguments(_id), cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        await Runtime.DeleteAsync(_id, cancellationToken).ConfigureAwait(false);
         _portMap = null;
     }
 
@@ -87,7 +72,6 @@ public partial class TemporaryContainer
         if (_id is null)
             return false;
 
-        var result = await Cli.RunBufferedAsync(Adapter.BuildExistsArguments(_id), cancellationToken, allowNonZero: true).ConfigureAwait(false);
-        return result.ExitCode == 0;
+        return await Runtime.ExistsAsync(_id, cancellationToken).ConfigureAwait(false);
     }
 }

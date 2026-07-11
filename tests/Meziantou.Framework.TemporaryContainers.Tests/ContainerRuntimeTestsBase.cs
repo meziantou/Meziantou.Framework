@@ -34,7 +34,7 @@ public abstract class ContainerRuntimeTestsBase
         Runtime = runtime;
         _useWindowsContainerImages = DetectUseWindowsContainerImages(runtime);
 
-        global::Xunit.Assert.SkipUnless(ContainerRuntime.IsAvailable(runtime), $"The '{runtime}' container runtime is not available on this system.");
+        global::Xunit.Assert.SkipUnless(runtime.IsSupported(), $"The '{runtime}' container runtime is not available on this system.");
     }
 
     protected ContainerRuntime Runtime { get; }

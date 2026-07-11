@@ -36,20 +36,11 @@ public abstract class ContainerRuntime
     /// <summary>Use the WSL container CLI (<c>wslc</c>, Windows).</summary>
     public static ContainerRuntime Wslc { get; } = new DockerContainerRuntime(nameof(Wslc), DockerContainerRuntime.Flavor.Wslc);
 
-    /// <summary>Determines whether any supported container runtime can be resolved.</summary>
-    /// <returns><see langword="true"/> if a supported runtime executable is available and operational; otherwise, <see langword="false"/>.</returns>
-    public static bool IsAvailable()
-    {
-        return IsAvailable(Auto);
-    }
-
-    /// <summary>Determines whether the specified container runtime can be resolved.</summary>
-    /// <param name="runtime">The runtime to look for, or <see cref="Auto"/> to accept any supported runtime.</param>
+    /// <summary>Determines whether this runtime can be resolved.</summary>
     /// <returns><see langword="true"/> if the runtime executable is available and operational; otherwise, <see langword="false"/>.</returns>
-    public static bool IsAvailable(ContainerRuntime runtime)
+    public bool IsSupported()
     {
-        ArgumentNullException.ThrowIfNull(runtime);
-        return ContainerRuntimeResolver.TryResolve(runtime, out _, out _, logger: null);
+        return IsSupported(logger: null);
     }
 
     /// <summary>Gets the runtime that would be used when <see cref="Auto"/> is requested.</summary>
@@ -60,10 +51,9 @@ public abstract class ContainerRuntime
         return ContainerRuntimeResolver.TryResolve(Auto, out runtime, out _, logger: null);
     }
 
-    internal static bool IsAvailable(ContainerRuntime runtime, ILogger? logger)
+    internal bool IsSupported(ILogger? logger)
     {
-        ArgumentNullException.ThrowIfNull(runtime);
-        return ContainerRuntimeResolver.TryResolve(runtime, out _, out _, logger);
+        return ContainerRuntimeResolver.TryResolve(this, out _, out _, logger);
     }
 
     internal virtual ContainerRuntime Bind(string executable, ILogger? logger) => this;

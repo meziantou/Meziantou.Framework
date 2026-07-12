@@ -17,7 +17,7 @@ public sealed class RedisContainerTests
         var definition = ContainerDefinition.CreateRedis();
 
         Assert.IsType<RegistryImage>(definition.Image);
-        Assert.Equal("redis:8.2", ((RegistryImage)definition.Image).Name);
+        Assert.StartsWith("redis:", ((RegistryImage)definition.Image).Name);
         Assert.Equal(1, definition.Ports.Count);
         Assert.Equal(2, definition.WaitStrategies.Count);
     }

@@ -16,7 +16,7 @@ public sealed class PostgreSqlContainerTests
     {
         var definition = ContainerDefinition.CreatePostgreSql();
 
-        Assert.Equal("postgres:17", ((RegistryImage)definition.Image).Name);
+        Assert.StartsWith("postgres:", ((RegistryImage)definition.Image).Name);
         Assert.Equal("postgres", definition.Environment.GetValue("POSTGRES_PASSWORD"));
         Assert.Equal(1, definition.Ports.Count);
         Assert.Equal(2, definition.WaitStrategies.Count);

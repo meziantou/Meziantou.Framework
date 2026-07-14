@@ -146,6 +146,7 @@ public sealed partial class MiddlewarePipelineDebuggingTests
         }).Validate(text, """
             Pipeline:
               - Microsoft.AspNetCore.Routing.EndpointRoutingMiddleware [System.Func`2[[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*],[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*]]::CreateMiddleware]
+              - Microsoft.AspNetCore.Antiforgery.CsrfProtectionMiddleware [System.Func`2[[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*],[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*]]::CreateMiddleware]
               - Meziantou.AspNetCore.NoCacheMiddleware [System.Func`2[[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*],[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*]]::CreateMiddleware]
               - Microsoft.AspNetCore.Routing.EndpointMiddleware [System.Func`2[[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*],[Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.AspNetCore.Http.Abstractions, Version=*, Culture=neutral, PublicKeyToken=*]]::CreateMiddleware]
 

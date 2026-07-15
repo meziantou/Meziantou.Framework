@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Tests;
 
 public abstract class AssertionsAnalyzerTestBase
 {
-    private static readonly ReferenceAssemblies Net11 = new ReferenceAssemblies("net11.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "11.0.0-preview.5.26302.115"), Path.Combine("ref", "net11.0"));
+    private static readonly ReferenceAssemblies Net11 = new ReferenceAssemblies("net11.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "11.0.0-preview.6.26359.118"), Path.Combine("ref", "net11.0"));
 
     protected static CSharpAnalyzerTest<TAnalyzer, DefaultVerifier> CreateAnalyzerTest<TAnalyzer>(string source, bool addAssertionsReference = true)
         where TAnalyzer : DiagnosticAnalyzer, new()

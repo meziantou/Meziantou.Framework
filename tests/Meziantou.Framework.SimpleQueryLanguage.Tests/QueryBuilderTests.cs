@@ -474,6 +474,20 @@ public sealed class QueryBuilderTests
     }
 
     [Theory]
+    [InlineData(-11, true)]
+    [InlineData(-10, false)]
+    [InlineData(-9, false)]
+    public void FieldRange_Int32_LessThan_NegativeValue(int value, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("amount", (obj, range) => range.IsInRange(obj.Int32Value));
+
+        var query = queryBuilder.Build("amount<-10");
+
+        Assert.Equal(expectedResult, query.Evaluate(new() { Int32Value = value }));
+    }
+
+    [Theory]
     [InlineData(10)]
     [InlineData(int.MaxValue)]
     public void FieldRange_Int32_LessThan_False(int value)

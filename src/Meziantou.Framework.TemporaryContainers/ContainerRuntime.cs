@@ -79,21 +79,6 @@ public abstract class ContainerRuntime
         return IsSupportedCore();
     }
 
-    /// <summary>Gets the runtime that would be used when <see cref="Auto"/> is requested.</summary>
-    /// <param name="runtime">When this method returns, contains the resolved runtime if one was found.</param>
-    /// <returns><see langword="true"/> if a runtime was found; otherwise, <see langword="false"/>.</returns>
-    public static bool TryGetAvailableRuntime(out ContainerRuntime runtime)
-    {
-        if (Auto.TryResolve() is { } resolved)
-        {
-            runtime = resolved;
-            return true;
-        }
-
-        runtime = null!;
-        return false;
-    }
-
     internal virtual bool IsSupportedCore() => TryResolve() is not null;
 
     /// <summary>Resolves this runtime into a fully-bound, ready-to-use instance, or returns <see langword="null"/> if the runtime is unavailable.</summary>

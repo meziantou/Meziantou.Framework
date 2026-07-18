@@ -18,12 +18,6 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         _flavor = flavor;
     }
 
-    private DockerContainerRuntime(string name, Flavor flavor, string executable)
-        : base(name, executable)
-    {
-        _flavor = flavor;
-    }
-
     internal override string ExecutableName => _flavor switch
     {
         Flavor.Docker => "docker",
@@ -31,8 +25,6 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         Flavor.Wslc => "wslc",
         _ => throw new InvalidOperationException($"Unknown flavor: {_flavor}"),
     };
-
-    protected override ExecutableContainerRuntime CreateBoundRuntime(string executable) => new DockerContainerRuntime(ToString(), _flavor, executable);
 
     internal override bool LogsIncludeTimestamps => true;
 

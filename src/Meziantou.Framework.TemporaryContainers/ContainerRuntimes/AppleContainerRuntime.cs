@@ -14,14 +14,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
     {
     }
 
-    private AppleContainerRuntime(string name, string executable)
-        : base(name, executable)
-    {
-    }
-
     internal override string ExecutableName => "container";
-
-    protected override ExecutableContainerRuntime CreateBoundRuntime(string executable) => new AppleContainerRuntime(ToString(), executable);
 
     internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {

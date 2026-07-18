@@ -14,15 +14,13 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 {
     private readonly HttpClient _httpClient;
     private readonly string _apiVersion;
-    private readonly DockerContainerRuntime? _cliFallback;
     private readonly DockerRegistryAuthProvider _authProvider;
 
-    private DockerApiRuntime(HttpClient httpClient, string apiVersion, DockerContainerRuntime? cliFallback)
+    private DockerApiRuntime(HttpClient httpClient, string apiVersion)
         : base("DockerApi")
     {
         _httpClient = httpClient;
         _apiVersion = apiVersion;
-        _cliFallback = cliFallback;
         _authProvider = new DockerRegistryAuthProvider();
     }
 
@@ -44,7 +42,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
                 if (string.IsNullOrWhiteSpace(version?.ApiVersion))
                     continue;
 
-                runtime = new DockerApiRuntime(client, version.ApiVersion, GetDockerCliFallback());
+                runtime = new DockerApiRuntime(client, version.ApiVersion);
                 client = null;
                 return true;
             }
@@ -194,12 +192,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     internal override async Task<ExecResult> ExecAsync(string id, ExecOptions options, CancellationToken cancellationToken)
     {
         if (options.StandardInput is not null)
-        {
-            if (_cliFallback is null)
-                throw new NotSupportedException("The Docker API runtime does not support stdin for exec operations without docker CLI fallback.");
-
-            return await _cliFallback.ExecAsync(id, options, cancellationToken).ConfigureAwait(false);
-        }
+            throw new NotSupportedException("The Docker API runtime does not support stdin for exec operations.");
 
         var createExecRequest = new DockerApiModels.ExecCreateRequest
         {
@@ -240,44 +233,27 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal override Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)
     {
-        return ExecuteUsingFallbackAsync(runtime => runtime.OpenReadAsync(id, path, cancellationToken));
+        throw new NotSupportedException("The Docker API runtime does not support reading files from containers.");
     }
 
-    internal override async Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
+    internal override Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
     {
-        await ExecuteUsingFallbackAsync(async runtime =>
-        {
-            await runtime.WriteFileAsync(id, path, content, cancellationToken).ConfigureAwait(false);
-            return true;
-        }).ConfigureAwait(false);
+        throw new NotSupportedException("The Docker API runtime does not support writing files to containers.");
     }
 
-    internal override async Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
+    internal override Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
     {
-        await ExecuteUsingFallbackAsync(async runtime =>
-        {
-            await runtime.CopyToContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
-            return true;
-        }).ConfigureAwait(false);
+        throw new NotSupportedException("The Docker API runtime does not support copying files to containers.");
     }
 
-    internal override async Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
+    internal override Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
     {
-        await ExecuteUsingFallbackAsync(async runtime =>
-        {
-            await runtime.CopyFromContainerAsync(id, source, destination, cancellationToken).ConfigureAwait(false);
-            return true;
-        }).ConfigureAwait(false);
+        throw new NotSupportedException("The Docker API runtime does not support copying files from containers.");
     }
 
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
     {
         return info.Ports;
-    }
-
-    private static DockerContainerRuntime? GetDockerCliFallback()
-    {
-        return (DockerContainerRuntime?)ContainerRuntime.Docker.TryResolve();
     }
 
     private async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
@@ -315,16 +291,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
                 return existing.ImageId;
 
             case DockerfileImage dockerfile:
-                if (_cliFallback is null)
-                    throw new NotSupportedException("The Docker API runtime does not support Dockerfile image builds without docker CLI fallback.");
-
-                return await _cliFallback.PrepareImageAsync(dockerfile, pullPolicy, cancellationToken).ConfigureAwait(false);
+                _ = dockerfile;
+                throw new NotSupportedException("The Docker API runtime does not support Dockerfile image builds.");
 
             case ArchiveImage archive:
-                if (_cliFallback is null)
-                    throw new NotSupportedException("The Docker API runtime does not support image archive loading without docker CLI fallback.");
-
-                return await _cliFallback.PrepareImageAsync(archive, pullPolicy, cancellationToken).ConfigureAwait(false);
+                _ = archive;
+                throw new NotSupportedException("The Docker API runtime does not support loading image archives.");
 
             default:
                 throw new NotSupportedException($"Image source '{source.GetType()}' is not supported.");
@@ -532,14 +504,6 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     {
         var json = JsonSerializer.Serialize(payload, typeInfo);
         return new StringContent(json, Encoding.UTF8, "application/json");
-    }
-
-    private async Task<T> ExecuteUsingFallbackAsync<T>(Func<DockerContainerRuntime, Task<T>> callback)
-    {
-        if (_cliFallback is null)
-            throw new NotSupportedException("The Docker API runtime does not support this operation without docker CLI fallback.");
-
-        return await callback(_cliFallback).ConfigureAwait(false);
     }
 
 }

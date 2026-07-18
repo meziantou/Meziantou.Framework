@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Channels;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
@@ -6,20 +7,33 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 /// <summary>Base runtime backed by an executable CLI.</summary>
 internal abstract class ExecutableContainerRuntime : ContainerRuntime
 {
-    private readonly ContainerCli? _cli;
+    private ContainerCli? _cli;
+    private readonly Lock _syncObject = new();
 
     protected ExecutableContainerRuntime(string name)
         : base(name)
     {
     }
 
-    protected ExecutableContainerRuntime(string name, string executable)
-        : base(name)
+    private protected ContainerCli Cli
     {
-        _cli = new ContainerCli(this, executable);
-    }
+        get
+        {
+            if (_cli is { } cli)
+                return cli;
 
-    private protected ContainerCli Cli => _cli ?? throw new InvalidOperationException($"The runtime '{this}' is not bound to an executable.");
+            lock (_syncObject)
+            {
+                if (_cli is null)
+                {
+                    var executable = FindExecutable() ?? throw new InvalidOperationException($"The runtime '{this}' is not available.");
+                    _cli = new ContainerCli(this, executable);
+                }
+
+                return _cli;
+            }
+        }
+    }
 
     internal abstract string ExecutableName { get; }
 
@@ -27,11 +41,8 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     internal override ContainerRuntime? TryResolve()
     {
-        var exe = FindExecutable();
-        return exe is not null ? CreateBoundRuntime(exe) : null;
+        return IsSupportedCore() ? this : null;
     }
-
-    protected abstract ExecutableContainerRuntime CreateBoundRuntime(string executable);
 
     internal string? FindExecutable()
     {

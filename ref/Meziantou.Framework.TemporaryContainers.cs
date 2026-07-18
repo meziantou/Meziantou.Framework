@@ -186,7 +186,6 @@ namespace Meziantou.Framework.TemporaryContainers
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime AppleContainer { get => throw null; }
         public static Meziantou.Framework.TemporaryContainers.ContainerRuntime Wslc { get => throw null; }
         public bool IsSupported() => throw null;
-        public static bool TryGetAvailableRuntime(out Meziantou.Framework.TemporaryContainers.ContainerRuntime runtime) => throw null;
         public override string ToString() => throw null;
     }
 

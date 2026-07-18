@@ -18,16 +18,16 @@ internal static class DockerApiCreateRequestBuilder
             NetworkMode = definition.Network.Network,
         };
 
-        Dictionary<string, object?>? exposedPorts = null;
+        Dictionary<string, DockerApiModels.EmptyObject>? exposedPorts = null;
         Dictionary<string, List<DockerPortBindingDto>?>? portBindings = null;
         if (definition.Ports.Count > 0)
         {
-            exposedPorts = new Dictionary<string, object?>(definition.Ports.Count, StringComparer.Ordinal);
+            exposedPorts = new Dictionary<string, DockerApiModels.EmptyObject>(definition.Ports.Count, StringComparer.Ordinal);
             portBindings = new Dictionary<string, List<DockerPortBindingDto>?>(definition.Ports.Count, StringComparer.Ordinal);
             foreach (var port in definition.Ports)
             {
                 var key = string.Create(CultureInfo.InvariantCulture, $"{port.Port}/tcp");
-                exposedPorts[key] = new { };
+                exposedPorts[key] = new DockerApiModels.EmptyObject();
                 portBindings[key] =
                 [
                     new DockerPortBindingDto

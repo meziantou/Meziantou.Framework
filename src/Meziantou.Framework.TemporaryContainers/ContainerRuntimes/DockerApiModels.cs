@@ -75,9 +75,13 @@ internal static class DockerApiModels
         public string[]? Env { get; set; }
         public string[]? Entrypoint { get; set; }
         public string[]? Cmd { get; set; }
-        public Dictionary<string, object?>? ExposedPorts { get; set; }
+        public Dictionary<string, EmptyObject>? ExposedPorts { get; set; }
         public HostConfig? HostConfig { get; set; }
         public NetworkingConfig? NetworkingConfig { get; set; }
+    }
+
+    internal sealed class EmptyObject
+    {
     }
 
     internal sealed class HostConfig

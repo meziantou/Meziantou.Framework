@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
@@ -55,5 +56,17 @@ public sealed class DockerApiCreateRequestBuilderTests
         Assert.Equal(1_500_000_000, payload.HostConfig.NanoCpus);
         Assert.Equal("my-network", payload.HostConfig.NetworkMode);
         Assert.Equal(["my-alias"], payload.NetworkingConfig!.EndpointsConfig!["my-network"].Aliases);
+    }
+
+    [Fact]
+    public void Build_UsesSourceGeneratedSerializableTypeForExposedPorts()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+        definition.Ports.Add(6379);
+
+        var payload = DockerApiCreateRequestBuilder.Build(definition, "redis:8");
+        var json = JsonSerializer.Serialize(payload, DockerApiJsonContext.Default.CreateContainerRequest);
+
+        Assert.Contains("\"ExposedPorts\":{\"6379/tcp\":{}}", json);
     }
 }

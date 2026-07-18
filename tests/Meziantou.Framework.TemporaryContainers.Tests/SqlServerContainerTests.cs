@@ -1,5 +1,6 @@
 using Meziantou.Xunit;
 using Microsoft.Data.SqlClient;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
@@ -9,6 +10,12 @@ public sealed class SqlServerContainerTests
     {
         if (!OperatingSystem.IsLinux() && TestEnvironment.IsOnGitHubActions())
             global::Xunit.Assert.Skip("Only runs on Linux.");
+
+        if (TestEnvironment.IsGlobalizationInvariant())
+            global::Xunit.Assert.Skip("SQL Server tests require full globalization support.");
+
+        if (OperatingSystem.IsLinux() && RuntimeInformation.ProcessArchitecture == Architecture.Arm64 && TestEnvironment.IsOnGitHubActions())
+            global::Xunit.Assert.Skip("The default SQL Server image is not supported on ARM64 GitHub Actions runners.");
     }
 
     [Fact]

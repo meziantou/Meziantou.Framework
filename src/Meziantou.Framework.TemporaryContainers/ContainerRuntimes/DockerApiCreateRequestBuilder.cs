@@ -27,7 +27,7 @@ internal static class DockerApiCreateRequestBuilder
             foreach (var port in definition.Ports)
             {
                 var key = string.Create(CultureInfo.InvariantCulture, $"{port.Port}/tcp");
-                exposedPorts[key] = new DockerApiModels.EmptyObject();
+                exposedPorts[key] = DockerApiModels.EmptyObject.Instance;
                 portBindings[key] =
                 [
                     new DockerPortBindingDto

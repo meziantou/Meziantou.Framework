@@ -82,6 +82,7 @@ internal static class DockerApiModels
 
     internal sealed class EmptyObject
     {
+        public static EmptyObject Instance { get; } = new EmptyObject();
     }
 
     internal sealed class HostConfig

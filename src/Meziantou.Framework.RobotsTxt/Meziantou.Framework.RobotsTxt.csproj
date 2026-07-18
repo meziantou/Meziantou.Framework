@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>robots.txt parser following RFC 9309 with Google path-wildcard extensions</Description>
   </PropertyGroup>

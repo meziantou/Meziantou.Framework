@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +23,34 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
     internal override ContainerRuntime Bind(string executable, ILogger? logger)
     {
         return new AppleContainerRuntime(ToString(), executable, logger);
+    }
+
+    internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
+    {
+        // Apple's container runtime does not support random-port assignment and does not
+        // report host port bindings in inspect output. Pre-assign free host ports so that
+        // GetMappedPort works correctly after the container starts.
+        var portsWithoutHostPort = new List<int>();
+        foreach (var port in definition.Ports)
+        {
+            if (port.HostPort is null)
+                portsWithoutHostPort.Add(port.Port);
+        }
+
+        foreach (var containerPort in portsWithoutHostPort)
+        {
+            definition.Ports.Remove(containerPort);
+            definition.Ports.Add(GetFreeTcpPort(), containerPort);
+        }
+
+        return base.EnsureCreatedAsync(definition, cancellationToken);
+    }
+
+    private static int GetFreeTcpPort()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        return ((IPEndPoint)listener.LocalEndpoint).Port;
     }
 
     internal override bool LogsIncludeTimestamps => false;

@@ -53,10 +53,30 @@ namespace Meziantou.Framework.TemporaryContainers
         public ContainerDefinition(Meziantou.Framework.TemporaryContainers.ImageSource image) { }
         public ContainerDefinition(Meziantou.Framework.TemporaryContainers.ContainerDefinition other) { }
         public virtual Meziantou.Framework.TemporaryContainers.TemporaryContainer CreateContainer() => throw null;
-        public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis() => throw null;
-        public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+    }
+
+    public static class ContainerDefinitionMongoDbExtensions
+    {
+        public static Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition CreateMongoDb() => throw null;
+        public static Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition CreateMongoDb(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+    }
+
+    public static class ContainerDefinitionPostgreSqlExtensions
+    {
         public static Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition CreatePostgreSql() => throw null;
         public static Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition CreatePostgreSql(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+    }
+
+    public static class ContainerDefinitionRedisExtensions
+    {
+        public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis() => throw null;
+        public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
+    }
+
+    public static class ContainerDefinitionSqlServerExtensions
+    {
+        public static Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition CreateSqlServer() => throw null;
+        public static Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition CreateSqlServer(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
     }
 
     public sealed class ContainerEnvironmentCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.IEnumerable
@@ -260,6 +280,19 @@ namespace Meziantou.Framework.TemporaryContainers
         Stderr = 1
     }
 
+    public sealed class MongoDbContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer
+    {
+        public string GetConnectionString(bool enableJournaling = false) => throw null;
+    }
+
+    public sealed class MongoDbContainerDefinition : Meziantou.Framework.TemporaryContainers.ContainerDefinition
+    {
+        public string RootUsername { get => throw null; set { } }
+        public string RootPassword { get => throw null; set { } }
+        [System.Runtime.CompilerServices.PreserveBaseOverrides]
+        public virtual Meziantou.Framework.TemporaryContainers.MongoDbContainer CreateContainer() => throw null;
+    }
+
     public sealed class PostgreSqlContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer
     {
         public string GetConnectionString() => throw null;
@@ -287,6 +320,18 @@ namespace Meziantou.Framework.TemporaryContainers
     {
         [System.Runtime.CompilerServices.PreserveBaseOverrides]
         public virtual Meziantou.Framework.TemporaryContainers.RedisContainer CreateContainer() => throw null;
+    }
+
+    public sealed class SqlServerContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer
+    {
+        public string GetConnectionString() => throw null;
+    }
+
+    public sealed class SqlServerContainerDefinition : Meziantou.Framework.TemporaryContainers.ContainerDefinition
+    {
+        public string SaPassword { get => throw null; set { } }
+        [System.Runtime.CompilerServices.PreserveBaseOverrides]
+        public virtual Meziantou.Framework.TemporaryContainers.SqlServerContainer CreateContainer() => throw null;
     }
 
     public class TemporaryContainer : System.IAsyncDisposable

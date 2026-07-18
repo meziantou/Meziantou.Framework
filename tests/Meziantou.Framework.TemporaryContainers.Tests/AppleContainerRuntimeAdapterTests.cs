@@ -26,14 +26,14 @@ public sealed class AppleContainerRuntimeAdapterTests
     {
         var runtime = CreateRuntime();
         var definition = new ContainerDefinition(new RegistryImage("nginx"));
-        definition.Ports.Add(8080);
+        definition.Ports.Add(9090, 8080);
         definition.Environment.Add("A", "1");
 
         var args = runtime.BuildCreateArguments(definition, "nginx");
 
         Assert.Equal("create", args[0]);
         Assert.Contains("--publish", args);
-        Assert.Contains("8080:8080", args);
+        Assert.Contains("9090:8080", args);
         Assert.Contains("A=1", args);
         Assert.Contains("nginx", args);
     }

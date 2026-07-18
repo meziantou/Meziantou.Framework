@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
     <Description>CLI tool to update dependencies in source repositories</Description>
   </PropertyGroup>
 

@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.TemporaryContainers;
 
-/// <summary>A <see cref="ContainerDefinition"/> pre-configured for PostgreSQL. Create one with <see cref="ContainerDefinition.CreatePostgreSql()"/>.</summary>
+/// <summary>A <see cref="ContainerDefinition"/> pre-configured for PostgreSQL. Create one with <see cref="ContainerDefinitionPostgreSqlExtensions.CreatePostgreSql()"/>.</summary>
 public sealed class PostgreSqlContainerDefinition : ContainerDefinition
 {
     internal PostgreSqlContainerDefinition(ImageSource image)

@@ -240,6 +240,7 @@ public partial class QuerySyntax
             {
                 case QuerySyntaxKind.TextToken:
                 case QuerySyntaxKind.ColonToken:
+                case QuerySyntaxKind.NotKeyword:
                     return true;
                 default:
                     return false;

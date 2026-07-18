@@ -30,6 +30,22 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Equal(10, result[0].Int32Value);
     }
 
+    [Theory]
+    [InlineData(-11, true)]
+    [InlineData(-10, false)]
+    [InlineData(-9, false)]
+    public void FieldEquals_LessThan_NegativeValue(int value, bool expectedResult)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("amount", item => item.Int32Value);
+        var query = queryBuilder.Build("amount<-10");
+
+        var items = new[] { new Sample { Int32Value = value } }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.Equal(expectedResult, result.Count == 1);
+    }
+
     [Fact]
     public void FieldEquals_Range()
     {

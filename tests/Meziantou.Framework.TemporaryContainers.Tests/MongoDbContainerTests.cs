@@ -22,7 +22,6 @@ public sealed class MongoDbContainerTests
         Assert.Equal("root", definition.RootUsername);
         Assert.Equal("root", definition.Environment.GetValue("MONGO_INITDB_ROOT_USERNAME"));
         Assert.Equal(password, definition.Environment.GetValue("MONGO_INITDB_ROOT_PASSWORD"));
-        Assert.False(definition.EnableJournaling);
         Assert.Equal(24, password.Length);
         Assert.Contains(password, static c => char.IsUpper(c));
         Assert.Contains(password, static c => char.IsLower(c));
@@ -58,13 +57,10 @@ public sealed class MongoDbContainerTests
     {
         SkipOnNonCompatibleEnvironments();
 
-        var definition = ContainerDefinition.CreateMongoDb();
-        definition.EnableJournaling = true;
-
-        await using var container = definition.CreateContainer();
+        await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
         await container.StartAsync(XunitCancellationToken);
 
-        Assert.Contains("j=true", container.GetConnectionString());
+        Assert.Contains("j=true", container.GetConnectionString(enableJournaling: true));
     }
 
     [Fact]

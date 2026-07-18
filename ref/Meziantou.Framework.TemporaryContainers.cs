@@ -282,14 +282,13 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public sealed class MongoDbContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer
     {
-        public string GetConnectionString() => throw null;
+        public string GetConnectionString(bool enableJournaling = false) => throw null;
     }
 
     public sealed class MongoDbContainerDefinition : Meziantou.Framework.TemporaryContainers.ContainerDefinition
     {
         public string RootUsername { get => throw null; set { } }
         public string RootPassword { get => throw null; set { } }
-        public bool EnableJournaling { get => throw null; set { } }
         [System.Runtime.CompilerServices.PreserveBaseOverrides]
         public virtual Meziantou.Framework.TemporaryContainers.MongoDbContainer CreateContainer() => throw null;
     }

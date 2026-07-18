@@ -289,6 +289,7 @@ namespace Meziantou.Framework.TemporaryContainers
     {
         public string RootUsername { get => throw null; set { } }
         public string RootPassword { get => throw null; set { } }
+        public bool EnableJournaling { get => throw null; set { } }
         [System.Runtime.CompilerServices.PreserveBaseOverrides]
         public virtual Meziantou.Framework.TemporaryContainers.MongoDbContainer CreateContainer() => throw null;
     }

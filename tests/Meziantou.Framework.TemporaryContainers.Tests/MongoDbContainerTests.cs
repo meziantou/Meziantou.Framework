@@ -22,6 +22,7 @@ public sealed class MongoDbContainerTests
         Assert.Equal("root", definition.RootUsername);
         Assert.Equal("root", definition.Environment.GetValue("MONGO_INITDB_ROOT_USERNAME"));
         Assert.Equal(password, definition.Environment.GetValue("MONGO_INITDB_ROOT_PASSWORD"));
+        Assert.False(definition.EnableJournaling);
         Assert.Equal(24, password.Length);
         Assert.Contains(password, static c => char.IsUpper(c));
         Assert.Contains(password, static c => char.IsLower(c));
@@ -40,6 +41,30 @@ public sealed class MongoDbContainerTests
 
         Assert.Equal("custom-root", definition.Environment.GetValue("MONGO_INITDB_ROOT_USERNAME"));
         Assert.Equal("Abcdef1!Abcdef1!", definition.Environment.GetValue("MONGO_INITDB_ROOT_PASSWORD"));
+    }
+
+    [Fact]
+    public async Task GetConnectionString_JournalingDisabledByDefault()
+    {
+        SkipOnNonCompatibleEnvironments();
+        await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
+        await container.StartAsync(XunitCancellationToken);
+
+        Assert.Contains("j=false", container.GetConnectionString());
+    }
+
+    [Fact]
+    public async Task GetConnectionString_JournalingCanBeEnabled()
+    {
+        SkipOnNonCompatibleEnvironments();
+
+        var definition = ContainerDefinition.CreateMongoDb();
+        definition.EnableJournaling = true;
+
+        await using var container = definition.CreateContainer();
+        await container.StartAsync(XunitCancellationToken);
+
+        Assert.Contains("j=true", container.GetConnectionString());
     }
 
     [Fact]

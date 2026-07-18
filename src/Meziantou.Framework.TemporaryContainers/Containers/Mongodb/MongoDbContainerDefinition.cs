@@ -40,10 +40,14 @@ public sealed class MongoDbContainerDefinition : ContainerDefinition
         }
     }
 
+    /// <summary>Gets or sets a value indicating whether MongoDB journaling is enabled for client operations through the generated connection string.</summary>
+    /// <remarks>When <see langword="false"/> (default), generated connection strings include <c>j=0</c>.</remarks>
+    public bool EnableJournaling { get; set; }
+
     /// <summary>Creates a <see cref="MongoDbContainer"/> from a deep copy of this definition.</summary>
     /// <returns>A new MongoDB container.</returns>
     public override MongoDbContainer CreateContainer()
     {
-        return new MongoDbContainer(new ContainerDefinition(this), RootUsername, RootPassword);
+        return new MongoDbContainer(new ContainerDefinition(this), RootUsername, RootPassword, EnableJournaling);
     }
 }

@@ -18,7 +18,7 @@ public abstract class ContainerRuntime
 
     private protected ContainerRuntime(string name) => _name = name;
 
-    /// <summary>Automatically detect an available runtime (docker, then podman, then a platform-specific runtime).</summary>
+    /// <summary>Automatically detect an available runtime (Docker Engine API when available, then docker, podman, and platform-specific runtimes).</summary>
     public static ContainerRuntime Auto { get; } = new AutoContainerRuntime();
 
     /// <summary>Use the <c>docker</c> CLI.</summary>

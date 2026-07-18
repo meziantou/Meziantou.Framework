@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
   </ItemGroup>
 

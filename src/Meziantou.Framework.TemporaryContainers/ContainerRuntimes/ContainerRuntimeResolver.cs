@@ -12,7 +12,7 @@ internal static class ContainerRuntimeResolver
             return runtime;
 
         throw new InvalidOperationException(requested == ContainerRuntime.Auto
-            ? "No supported container runtime ('docker', 'podman', 'container', or 'wslc') is available."
+            ? "No supported container runtime (Docker Engine API, 'docker', 'podman', 'container', or 'wslc') is available."
             : $"The '{GetExecutableName(requested)}' runtime is not available.");
     }
 
@@ -30,6 +30,12 @@ internal static class ContainerRuntimeResolver
                     executable = path;
                     return true;
                 }
+            }
+
+            if (DockerApiRuntime.TryCreate(logger, out runtime))
+            {
+                executable = "";
+                return true;
             }
 
             runtime = requested;

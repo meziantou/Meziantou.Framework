@@ -8,6 +8,7 @@ public partial class TemporaryContainer
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
+        await StopForwardingLogsAsync().ConfigureAwait(false);
         await Runtime.StopAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
@@ -17,7 +18,9 @@ public partial class TemporaryContainer
     public async Task RestartAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
+        await StopForwardingLogsAsync().ConfigureAwait(false);
         await Runtime.RestartAsync(id, cancellationToken).ConfigureAwait(false);
+        StartForwardingLogs();
         await RefreshPortsAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -47,6 +50,7 @@ public partial class TemporaryContainer
     public async Task KillAsync(CancellationToken cancellationToken = default)
     {
         var id = RequireId();
+        await StopForwardingLogsAsync().ConfigureAwait(false);
         await Runtime.KillAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
@@ -59,6 +63,7 @@ public partial class TemporaryContainer
         if (_id is null)
             return;
 
+        await StopForwardingLogsAsync().ConfigureAwait(false);
         await Runtime.DeleteAsync(_id, cancellationToken).ConfigureAwait(false);
         _portMap = null;
     }

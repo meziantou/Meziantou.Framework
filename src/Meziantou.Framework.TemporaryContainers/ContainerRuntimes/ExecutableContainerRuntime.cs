@@ -1,26 +1,66 @@
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Channels;
-using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 /// <summary>Base runtime backed by an executable CLI.</summary>
 internal abstract class ExecutableContainerRuntime : ContainerRuntime
 {
-    private readonly ContainerCli? _cli;
+    private ContainerCli? _cli;
+    private readonly Lock _syncObject = new();
 
     protected ExecutableContainerRuntime(string name)
         : base(name)
     {
     }
 
-    protected ExecutableContainerRuntime(string name, string executable, ILogger? logger)
-        : base(name)
+    private protected ContainerCli Cli
     {
-        _cli = new ContainerCli(this, executable, logger);
+        get
+        {
+            return EnsureCliInitialized() ?? throw CreateUnavailableRuntimeException(this);
+        }
     }
 
-    private protected ContainerCli Cli => _cli ?? throw new InvalidOperationException($"The runtime '{this}' is not bound to an executable.");
+    internal abstract string ExecutableName { get; }
+
+    public override bool IsSupported() => EnsureCliInitialized() is not null;
+
+    internal string? FindExecutable()
+    {
+        // On Windows, Docker Desktop ships both an extensionless shim and the real '.exe';
+        // the shim cannot be launched by Process.Start, so prefer an executable extension.
+        if (OperatingSystem.IsWindows())
+        {
+            foreach (var extension in (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT")
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (ExecutableFinder.GetFullExecutablePath(ExecutableName + extension) is { } withExtension)
+                    return withExtension;
+            }
+        }
+
+        return ExecutableFinder.GetFullExecutablePath(ExecutableName);
+    }
+
+    private ContainerCli? EnsureCliInitialized()
+    {
+        if (_cli is { } cli)
+            return cli;
+
+        lock (_syncObject)
+        {
+            if (_cli is { } existingCli)
+                return existingCli;
+
+            if (FindExecutable() is not { } executable)
+                return null;
+
+            _cli = new ContainerCli(this, executable);
+            return _cli;
+        }
+    }
 
     internal abstract Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken);
 

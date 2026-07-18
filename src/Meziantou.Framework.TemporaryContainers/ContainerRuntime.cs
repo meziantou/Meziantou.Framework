@@ -1,24 +1,15 @@
 using Meziantou.Framework.TemporaryContainers.Internals;
-using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>Identifies the container runtime CLI used to manage containers.</summary>
 public abstract class ContainerRuntime
 {
-    private sealed class AutoContainerRuntime : ContainerRuntime
-    {
-        public AutoContainerRuntime()
-            : base(nameof(Auto))
-        {
-        }
-    }
-
     private readonly string _name;
 
     private protected ContainerRuntime(string name) => _name = name;
 
-    /// <summary>Automatically detect an available runtime (docker, then podman, then a platform-specific runtime).</summary>
+    /// <summary>Automatically detect an available runtime.</summary>
     public static ContainerRuntime Auto { get; } = new AutoContainerRuntime();
 
     /// <summary>Use the <c>docker</c> CLI.</summary>
@@ -35,25 +26,13 @@ public abstract class ContainerRuntime
 
     /// <summary>Determines whether this runtime can be resolved.</summary>
     /// <returns><see langword="true"/> if the runtime executable is available and operational; otherwise, <see langword="false"/>.</returns>
-    public bool IsSupported()
-    {
-        return IsSupported(logger: null);
-    }
+    public virtual bool IsSupported() => false;
 
-    /// <summary>Gets the runtime that would be used when <see cref="Auto"/> is requested.</summary>
-    /// <param name="runtime">When this method returns, contains the resolved runtime if one was found.</param>
-    /// <returns><see langword="true"/> if a runtime was found; otherwise, <see langword="false"/>.</returns>
-    public static bool TryGetAvailableRuntime(out ContainerRuntime runtime)
+    internal void EnsureSupported()
     {
-        return ContainerRuntimeResolver.TryResolve(Auto, out runtime, out _, logger: null);
+        if (!IsSupported())
+            throw CreateUnavailableRuntimeException(this);
     }
-
-    internal bool IsSupported(ILogger? logger)
-    {
-        return ContainerRuntimeResolver.TryResolve(this, out _, out _, logger);
-    }
-
-    internal virtual ContainerRuntime Bind(string executable, ILogger? logger) => this;
 
     internal virtual bool SupportsPause => false;
 
@@ -110,7 +89,12 @@ public abstract class ContainerRuntime
     internal virtual IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
         => throw CreateNotSupportedException();
 
-    private NotSupportedException CreateNotSupportedException() => new NotSupportedException($"The '{this}' runtime cannot execute container operations.");
+    private NotSupportedException CreateNotSupportedException() => new($"The '{this}' runtime cannot execute container operations.");
+
+    private protected static InvalidOperationException CreateUnavailableRuntimeException(ContainerRuntime runtime)
+        => new(runtime == Auto
+            ? "No supported container runtime (Docker Engine API, 'docker', 'podman', 'container', or 'wslc') is available."
+            : $"The '{runtime}' runtime is not available.");
 
     public override string ToString() => _name;
 }

@@ -78,7 +78,7 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
         return false;
     }
 
-    internal override bool IsSupported(ILogger? logger)
+    internal static bool TryProbe(ILogger? logger)
     {
         foreach (var endpoint in DockerApiTransport.GetEndpoints())
         {
@@ -103,6 +103,11 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
 
         return false;
     }
+
+    internal override bool IsSupported(ILogger? logger) => TryProbe(logger);
+
+    internal override ContainerRuntime? TryResolve(ILogger? logger)
+        => TryCreate(logger, out var runtime) ? runtime : null;
 
     internal override bool SupportsPause => true;
 
@@ -276,11 +281,7 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
 
     private static DockerContainerRuntime? GetDockerCliFallback(ILogger? logger)
     {
-        var dockerPath = ExecutableFinder.GetFullExecutablePath("docker");
-        if (dockerPath is null)
-            return null;
-
-        return (DockerContainerRuntime)ContainerRuntime.Docker.Bind(dockerPath, logger);
+        return (DockerContainerRuntime?)ContainerRuntime.Docker.TryResolve(logger);
     }
 
     private async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)

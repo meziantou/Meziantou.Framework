@@ -24,8 +24,30 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     internal abstract string ExecutableName { get; }
 
-    internal override bool IsSupported(ILogger? logger)
-        => ContainerRuntimeResolver.FindExecutable(ExecutableName) is not null;
+    internal override bool IsSupported(ILogger? logger) => FindExecutable() is not null;
+
+    internal override ContainerRuntime? TryResolve(ILogger? logger)
+    {
+        var exe = FindExecutable();
+        return exe is not null ? Bind(exe, logger) : null;
+    }
+
+    internal string? FindExecutable()
+    {
+        // On Windows, Docker Desktop ships both an extensionless shim and the real '.exe';
+        // the shim cannot be launched by Process.Start, so prefer an executable extension.
+        if (OperatingSystem.IsWindows())
+        {
+            foreach (var extension in (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT")
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (ExecutableFinder.GetFullExecutablePath(ExecutableName + extension) is { } withExtension)
+                    return withExtension;
+            }
+        }
+
+        return ExecutableFinder.GetFullExecutablePath(ExecutableName);
+    }
 
     internal abstract Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken);
 

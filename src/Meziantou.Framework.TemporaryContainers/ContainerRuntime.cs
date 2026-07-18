@@ -14,7 +14,44 @@ public abstract class ContainerRuntime
         }
 
         internal override bool IsSupported(ILogger? logger)
-            => ContainerRuntimeResolver.TryResolve(this, out _, out _, logger);
+        {
+            if (DockerApiRuntime.TryProbe(logger))
+                return true;
+
+            foreach (var candidate in GetCliCandidates())
+            {
+                if (candidate.IsSupported(logger))
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal override ContainerRuntime? TryResolve(ILogger? logger)
+        {
+            if (DockerApiRuntime.TryCreate(logger, out var apiRuntime))
+                return apiRuntime;
+
+            foreach (var candidate in GetCliCandidates())
+            {
+                if (candidate.TryResolve(logger) is { } resolved)
+                    return resolved;
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<ExecutableContainerRuntime> GetCliCandidates()
+        {
+            yield return (ExecutableContainerRuntime)ContainerRuntime.Docker;
+            yield return (ExecutableContainerRuntime)ContainerRuntime.Podman;
+
+            if (OperatingSystem.IsMacOS())
+                yield return (ExecutableContainerRuntime)ContainerRuntime.AppleContainer;
+
+            if (OperatingSystem.IsWindows())
+                yield return (ExecutableContainerRuntime)ContainerRuntime.Wslc;
+        }
     }
 
     private readonly string _name;
@@ -48,10 +85,27 @@ public abstract class ContainerRuntime
     /// <returns><see langword="true"/> if a runtime was found; otherwise, <see langword="false"/>.</returns>
     public static bool TryGetAvailableRuntime(out ContainerRuntime runtime)
     {
-        return ContainerRuntimeResolver.TryResolve(Auto, out runtime, out _, logger: null);
+        if (Auto.TryResolve(logger: null) is { } resolved)
+        {
+            runtime = resolved;
+            return true;
+        }
+
+        runtime = null!;
+        return false;
     }
 
-    internal virtual bool IsSupported(ILogger? logger) => false;
+    internal virtual bool IsSupported(ILogger? logger) => TryResolve(logger) is not null;
+
+    /// <summary>Resolves this runtime into a fully-bound, ready-to-use instance, or returns <see langword="null"/> if the runtime is unavailable.</summary>
+    internal virtual ContainerRuntime? TryResolve(ILogger? logger) => null;
+
+    internal ContainerRuntime Resolve(ILogger? logger)
+    {
+        return TryResolve(logger) ?? throw new InvalidOperationException(this == Auto
+            ? "No supported container runtime (Docker Engine API, 'docker', 'podman', 'container', or 'wslc') is available."
+            : $"The '{this}' runtime is not available.");
+    }
 
     internal virtual ContainerRuntime Bind(string executable, ILogger? logger) => this;
 

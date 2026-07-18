@@ -43,7 +43,7 @@ private void EnsureRuntimeResolved()
     if (_runtime is not null)
         return;
 
-    _runtime = Internals.ContainerRuntimeResolver.Resolve(_definition.Runtime, _definition.Logging.Logger);
+    _runtime = _definition.Runtime.Resolve(_definition.Logging.Logger);
 }
 
     /// <summary>Creates the container if it does not exist yet, without starting it. When <see cref="ContainerDefinition.ReuseId"/> is set, an existing matching container is adopted instead.</summary>

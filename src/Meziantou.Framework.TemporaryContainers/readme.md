@@ -33,18 +33,29 @@ await container.StartAsync();
 
 ## Database helpers
 
-`CreateRedis` and `CreatePostgreSql` return pre-configured definitions whose container exposes `GetConnectionString()`.
+`CreateRedis`, `CreatePostgreSql`, `CreateMongoDb`, and `CreateSqlServer` return pre-configured definitions whose container exposes `GetConnectionString()`.
 
 ```c#
 await using var redis = ContainerDefinition.CreateRedis().CreateContainer();
 await redis.StartAsync();
 var redisConnectionString = redis.GetConnectionString(); // 127.0.0.1:<port>
 
-var definition = ContainerDefinition.CreatePostgreSql(); // or CreatePostgreSql(ImageSource.FromRegistry("postgres:16"))
-definition.Environment.Add("POSTGRES_DB", "mydb");
-await using var postgres = definition.CreateContainer();
+var postgresDefinition = ContainerDefinition.CreatePostgreSql(); // or CreatePostgreSql(ImageSource.FromRegistry("postgres:16"))
+postgresDefinition.Environment.Add("POSTGRES_DB", "mydb");
+await using var postgres = postgresDefinition.CreateContainer();
 await postgres.StartAsync();
-var postgresConnectionString = postgres.GetConnectionString(); // Host=127.0.0.1;Port=<port>;Username=postgres;Password=postgres;Database=mydb
+var postgresConnectionString = postgres.GetConnectionString(); // Host=127.0.0.1;Port=<port>;Username=postgres;******;Database=mydb
+
+await using var mongo = ContainerDefinition.CreateMongoDb().CreateContainer();
+await mongo.StartAsync();
+var mongoConnectionString = mongo.GetConnectionString(); // mongodb://127.0.0.1:<port>
+
+var sqlDefinition = ContainerDefinition.CreateSqlServer();
+// Optional: override the generated strong random password
+sqlDefinition.SaPassword = "Abcdef1!Abcdef1!";
+await using var sqlServer = sqlDefinition.CreateContainer();
+await sqlServer.StartAsync();
+var sqlServerConnectionString = sqlServer.GetConnectionString(); // Server=127.0.0.1,<port>;Database=master;User Id=sa;Pwd=<password>;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30
 ```
 
 ## Interacting with a container

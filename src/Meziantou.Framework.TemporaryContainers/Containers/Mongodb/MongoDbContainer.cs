@@ -1,0 +1,26 @@
+namespace Meziantou.Framework.TemporaryContainers;
+
+/// <summary>A temporary MongoDB container. Obtain one from <see cref="MongoDbContainerDefinition.CreateContainer"/>.</summary>
+public sealed class MongoDbContainer : TemporaryContainer
+{
+    private readonly string _username;
+    private readonly string _password;
+
+    internal MongoDbContainer(ContainerDefinition definition, string username, string password)
+        : base(definition)
+    {
+        _username = username;
+        _password = password;
+    }
+
+    /// <summary>Gets a MongoDB connection string for the running container, using root credentials configured on the definition.</summary>
+    /// <param name="enableJournaling">A value indicating whether to enable journaling (<c>j=true</c>) in the connection string.</param>
+    /// <returns>The connection string.</returns>
+    /// <exception cref="InvalidOperationException">The container has not been started.</exception>
+    public string GetConnectionString(bool enableJournaling = false)
+    {
+        var port = GetMappedPort(27017);
+        var journaling = enableJournaling ? "true" : "false";
+        return string.Create(CultureInfo.InvariantCulture, $"mongodb://{Uri.EscapeDataString(_username)}:{Uri.EscapeDataString(_password)}@127.0.0.1:{port}/?authSource=admin&j={journaling}");
+    }
+}

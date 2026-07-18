@@ -22,6 +22,11 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     private protected ContainerCli Cli => _cli ?? throw new InvalidOperationException($"The runtime '{this}' is not bound to an executable.");
 
+    internal abstract string ExecutableName { get; }
+
+    internal override bool IsSupported(ILogger? logger)
+        => ContainerRuntimeResolver.FindExecutable(ExecutableName) is not null;
+
     internal abstract Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken);
 
     internal abstract Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken);

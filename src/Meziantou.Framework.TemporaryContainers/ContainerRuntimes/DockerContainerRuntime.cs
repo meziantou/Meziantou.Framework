@@ -26,6 +26,14 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         _flavor = flavor;
     }
 
+    internal override string ExecutableName => _flavor switch
+    {
+        Flavor.Docker => "docker",
+        Flavor.Podman => "podman",
+        Flavor.Wslc => "wslc",
+        _ => throw new InvalidOperationException($"Unknown flavor: {_flavor}"),
+    };
+
     internal override ContainerRuntime Bind(string executable, ILogger? logger)
     {
         return new DockerContainerRuntime(ToString(), _flavor, executable, logger);

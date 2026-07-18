@@ -12,13 +12,16 @@ public abstract class ContainerRuntime
             : base(nameof(Auto))
         {
         }
+
+        internal override bool IsSupported(ILogger? logger)
+            => ContainerRuntimeResolver.TryResolve(this, out _, out _, logger);
     }
 
     private readonly string _name;
 
     private protected ContainerRuntime(string name) => _name = name;
 
-    /// <summary>Automatically detect an available runtime (Docker Engine API when available, then docker, podman, and platform-specific runtimes).</summary>
+    /// <summary>Automatically detect an available runtime.</summary>
     public static ContainerRuntime Auto { get; } = new AutoContainerRuntime();
 
     /// <summary>Use the <c>docker</c> CLI.</summary>
@@ -48,10 +51,7 @@ public abstract class ContainerRuntime
         return ContainerRuntimeResolver.TryResolve(Auto, out runtime, out _, logger: null);
     }
 
-    internal bool IsSupported(ILogger? logger)
-    {
-        return ContainerRuntimeResolver.TryResolve(this, out _, out _, logger);
-    }
+    internal virtual bool IsSupported(ILogger? logger) => false;
 
     internal virtual ContainerRuntime Bind(string executable, ILogger? logger) => this;
 

@@ -22,20 +22,22 @@ internal static class ContainerRuntimeResolver
 
         if (requested == ContainerRuntime.Auto)
         {
+            // Docker Engine API first — no process spawning overhead
+            if (DockerApiRuntime.TryCreate(logger, out runtime))
+            {
+                executable = "";
+                return true;
+            }
+
+            // CLI runtimes — use IsSupported() on each candidate for a unified detection path
             foreach (var (candidateRuntime, candidateName) in GetAutoCandidates())
             {
-                if (FindExecutable(candidateName) is { } path)
+                if (candidateRuntime.IsSupported(logger) && FindExecutable(candidateName) is { } path)
                 {
                     runtime = candidateRuntime.Bind(path, logger);
                     executable = path;
                     return true;
                 }
-            }
-
-            if (DockerApiRuntime.TryCreate(logger, out runtime))
-            {
-                executable = "";
-                return true;
             }
 
             runtime = requested;
@@ -56,7 +58,7 @@ internal static class ContainerRuntimeResolver
         return false;
     }
 
-    private static string? FindExecutable(string name)
+    internal static string? FindExecutable(string name)
     {
         // On Windows a runtime such as Docker Desktop ships both an extensionless shim and the real
         // '.exe'; the shim cannot be launched by Process.Start, so prefer an executable extension.
@@ -86,13 +88,9 @@ internal static class ContainerRuntimeResolver
 
     private static string GetExecutableName(ContainerRuntime runtime)
     {
-        return runtime switch
-        {
-            _ when runtime == ContainerRuntime.Docker => "docker",
-            _ when runtime == ContainerRuntime.Podman => "podman",
-            _ when runtime == ContainerRuntime.AppleContainer => "container",
-            _ when runtime == ContainerRuntime.Wslc => "wslc",
-            _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown container runtime."),
-        };
+        if (runtime is ExecutableContainerRuntime exe)
+            return exe.ExecutableName;
+
+        throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown container runtime.");
     }
 }

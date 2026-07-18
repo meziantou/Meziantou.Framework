@@ -78,6 +78,32 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
         return false;
     }
 
+    internal override bool IsSupported(ILogger? logger)
+    {
+        foreach (var endpoint in DockerApiTransport.GetEndpoints())
+        {
+            HttpClient? client = null;
+            try
+            {
+                client = DockerApiTransport.CreateClient(endpoint);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                var response = client.GetAsync("/version", cts.Token).ConfigureAwait(false).GetAwaiter().GetResult();
+                if (response.IsSuccessStatusCode)
+                    return true;
+            }
+            catch (OperationCanceledException) { }
+            catch (HttpRequestException) { }
+            catch (SocketException) { }
+            catch (IOException) { }
+            finally
+            {
+                client?.Dispose();
+            }
+        }
+
+        return false;
+    }
+
     internal override bool SupportsPause => true;
 
     internal override bool SupportsRestart => true;

@@ -20,6 +20,8 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
     {
     }
 
+    internal override string ExecutableName => "container";
+
     internal override ContainerRuntime Bind(string executable, ILogger? logger)
     {
         return new AppleContainerRuntime(ToString(), executable, logger);

@@ -457,23 +457,9 @@ public abstract class ContainerRuntimeTestsBase
         return definition;
     }
 
-    private void AddHttpPortBinding(ContainerDefinition definition)
+    private static void AddHttpPortBinding(ContainerDefinition definition)
     {
-        if (Runtime == ContainerRuntime.AppleContainer)
-        {
-            definition.Ports.Add(GetFreeTcpPort(), 8080);
-        }
-        else
-        {
-            definition.Ports.Add(8080);
-        }
-    }
-
-    private static int GetFreeTcpPort()
-    {
-        using var listener = new TcpListener(System.Net.IPAddress.Loopback, 0);
-        listener.Start();
-        return ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        definition.Ports.Add(8080);
     }
 
     private static async Task<string> GetStringWithRetryAsync(HttpClient client, Uri uri, CancellationToken cancellationToken)
@@ -490,6 +476,20 @@ public abstract class ContainerRuntimeTestsBase
                 await Task.Delay(250, cancellationToken);
             }
         }
+    }
+
+    [Fact]
+    public async Task TwoContainers_SameExposedPort_GetDifferentMappedPorts()
+    {
+        await using var container1 = await StartWithRetryAsync(CreateHttpServerDefinition());
+        await using var container2 = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        var port1 = container1.GetMappedPort(8080);
+        var port2 = container2.GetMappedPort(8080);
+
+        Assert.True(port1 > 0);
+        Assert.True(port2 > 0);
+        Assert.NotEqual(port1, port2);
     }
 
     private async Task<string> GetIndexContentAsync(TemporaryContainer container)

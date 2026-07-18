@@ -37,11 +37,11 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     internal abstract string ExecutableName { get; }
 
-    internal override bool IsSupportedCore() => FindExecutable() is not null;
+    public override bool IsSupported() => FindExecutable() is not null;
 
     internal override ContainerRuntime? TryResolve()
     {
-        return IsSupportedCore() ? this : null;
+        return IsSupported() ? this : null;
     }
 
     internal string? FindExecutable()

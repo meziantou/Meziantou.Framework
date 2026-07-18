@@ -12,7 +12,7 @@ public abstract class ContainerRuntime
         {
         }
 
-        internal override bool IsSupportedCore()
+        public override bool IsSupported()
         {
             if (DockerApiRuntime.TryProbe())
                 return true;
@@ -74,12 +74,7 @@ public abstract class ContainerRuntime
 
     /// <summary>Determines whether this runtime can be resolved.</summary>
     /// <returns><see langword="true"/> if the runtime executable is available and operational; otherwise, <see langword="false"/>.</returns>
-    public bool IsSupported()
-    {
-        return IsSupportedCore();
-    }
-
-    internal virtual bool IsSupportedCore() => TryResolve() is not null;
+    public virtual bool IsSupported() => TryResolve() is not null;
 
     /// <summary>Resolves this runtime into a fully-bound, ready-to-use instance, or returns <see langword="null"/> if the runtime is unavailable.</summary>
     internal virtual ContainerRuntime? TryResolve() => null;

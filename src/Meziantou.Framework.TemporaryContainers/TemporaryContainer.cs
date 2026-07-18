@@ -34,13 +34,13 @@ public partial class TemporaryContainer : IAsyncDisposable
     {
         get
         {
-            EnsureRuntimeResolved();
+            EnsureRuntimeCreated();
             return _runtime;
         }
     }
 
 [MemberNotNull(nameof(_runtime))]
-private void EnsureRuntimeResolved()
+private void EnsureRuntimeCreated()
 {
     if (_runtime is not null)
         return;
@@ -57,7 +57,7 @@ private void EnsureRuntimeResolved()
         if (_created)
             return;
 
-        EnsureRuntimeResolved();
+        EnsureRuntimeCreated();
 
         _id = await Runtime.EnsureCreatedAsync(_definition, cancellationToken).ConfigureAwait(false);
 

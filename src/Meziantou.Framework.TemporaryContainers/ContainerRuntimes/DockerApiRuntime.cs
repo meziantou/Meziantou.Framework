@@ -98,7 +98,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return false;
     }
 
-    internal override bool IsSupportedCore() => TryProbe();
+    public override bool IsSupported() => TryProbe();
 
     internal override ContainerRuntime? TryResolve()
         => TryCreate(out var runtime) ? runtime : null;

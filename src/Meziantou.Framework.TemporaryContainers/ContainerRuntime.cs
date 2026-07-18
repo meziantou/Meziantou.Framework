@@ -1,5 +1,4 @@
 using Meziantou.Framework.TemporaryContainers.Internals;
-using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
@@ -13,28 +12,28 @@ public abstract class ContainerRuntime
         {
         }
 
-        internal override bool IsSupported(ILogger? logger)
+        internal override bool IsSupportedCore()
         {
-            if (DockerApiRuntime.TryProbe(logger))
+            if (DockerApiRuntime.TryProbe())
                 return true;
 
             foreach (var candidate in GetCliCandidates())
             {
-                if (candidate.IsSupported(logger))
+                if (candidate.IsSupported())
                     return true;
             }
 
             return false;
         }
 
-        internal override ContainerRuntime? TryResolve(ILogger? logger)
+        internal override ContainerRuntime? TryResolve()
         {
-            if (DockerApiRuntime.TryCreate(logger, out var apiRuntime))
+            if (DockerApiRuntime.TryCreate(out var apiRuntime))
                 return apiRuntime;
 
             foreach (var candidate in GetCliCandidates())
             {
-                if (candidate.TryResolve(logger) is { } resolved)
+                if (candidate.TryResolve() is { } resolved)
                     return resolved;
             }
 
@@ -43,14 +42,14 @@ public abstract class ContainerRuntime
 
         private static IEnumerable<ExecutableContainerRuntime> GetCliCandidates()
         {
-            yield return (ExecutableContainerRuntime)ContainerRuntime.Docker;
-            yield return (ExecutableContainerRuntime)ContainerRuntime.Podman;
+            yield return (ExecutableContainerRuntime)Docker;
+            yield return (ExecutableContainerRuntime)Podman;
 
             if (OperatingSystem.IsMacOS())
-                yield return (ExecutableContainerRuntime)ContainerRuntime.AppleContainer;
+                yield return (ExecutableContainerRuntime)AppleContainer;
 
             if (OperatingSystem.IsWindows())
-                yield return (ExecutableContainerRuntime)ContainerRuntime.Wslc;
+                yield return (ExecutableContainerRuntime)Wslc;
         }
     }
 
@@ -77,7 +76,7 @@ public abstract class ContainerRuntime
     /// <returns><see langword="true"/> if the runtime executable is available and operational; otherwise, <see langword="false"/>.</returns>
     public bool IsSupported()
     {
-        return IsSupported(logger: null);
+        return IsSupportedCore();
     }
 
     /// <summary>Gets the runtime that would be used when <see cref="Auto"/> is requested.</summary>
@@ -85,7 +84,7 @@ public abstract class ContainerRuntime
     /// <returns><see langword="true"/> if a runtime was found; otherwise, <see langword="false"/>.</returns>
     public static bool TryGetAvailableRuntime(out ContainerRuntime runtime)
     {
-        if (Auto.TryResolve(logger: null) is { } resolved)
+        if (Auto.TryResolve() is { } resolved)
         {
             runtime = resolved;
             return true;
@@ -95,19 +94,17 @@ public abstract class ContainerRuntime
         return false;
     }
 
-    internal virtual bool IsSupported(ILogger? logger) => TryResolve(logger) is not null;
+    internal virtual bool IsSupportedCore() => TryResolve() is not null;
 
     /// <summary>Resolves this runtime into a fully-bound, ready-to-use instance, or returns <see langword="null"/> if the runtime is unavailable.</summary>
-    internal virtual ContainerRuntime? TryResolve(ILogger? logger) => null;
+    internal virtual ContainerRuntime? TryResolve() => null;
 
-    internal ContainerRuntime Resolve(ILogger? logger)
+    internal ContainerRuntime Resolve()
     {
-        return TryResolve(logger) ?? throw new InvalidOperationException(this == Auto
+        return TryResolve() ?? throw new InvalidOperationException(this == Auto
             ? "No supported container runtime (Docker Engine API, 'docker', 'podman', 'container', or 'wslc') is available."
             : $"The '{this}' runtime is not available.");
     }
-
-    internal virtual ContainerRuntime Bind(string executable, ILogger? logger) => this;
 
     internal virtual bool SupportsPause => false;
 

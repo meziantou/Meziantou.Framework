@@ -16,7 +16,7 @@ public sealed class ContainerLoggingOptions
         CaptureStandardError = other.CaptureStandardError;
     }
 
-    /// <summary>Gets or sets the logger used to trace CLI invocations and forward container output.</summary>
+    /// <summary>Gets or sets the logger used to forward container logs while the container is running.</summary>
     public ILogger? Logger { get; set; }
 
     /// <summary>Gets or sets a value indicating whether standard output is forwarded to <see cref="Logger"/>.</summary>

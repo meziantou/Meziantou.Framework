@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json;
 using Meziantou.Framework;
-using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
@@ -10,14 +9,13 @@ internal sealed class DockerRegistryAuthProvider
     private const string DockerHubRegistry = "index.docker.io";
     private readonly Lazy<DockerApiModels.AuthConfigFile?> _configuration;
 
-    internal DockerRegistryAuthProvider(ILogger? logger)
-        : this(logger, overrideConfiguration: null)
+    internal DockerRegistryAuthProvider()
+        : this(overrideConfiguration: null)
     {
     }
 
-    internal DockerRegistryAuthProvider(ILogger? logger, DockerApiModels.AuthConfigFile? overrideConfiguration)
+    internal DockerRegistryAuthProvider(DockerApiModels.AuthConfigFile? overrideConfiguration)
     {
-        _ = logger;
         _configuration = new Lazy<DockerApiModels.AuthConfigFile?>(() => overrideConfiguration ?? LoadConfiguration(), LazyThreadSafetyMode.ExecutionAndPublication);
     }
 

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 /// <summary>Runtime implementation for docker-compatible CLIs (docker, podman, and wslc).</summary>
@@ -20,8 +18,8 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         _flavor = flavor;
     }
 
-    private DockerContainerRuntime(string name, Flavor flavor, string executable, ILogger? logger)
-        : base(name, executable, logger)
+    private DockerContainerRuntime(string name, Flavor flavor, string executable)
+        : base(name, executable)
     {
         _flavor = flavor;
     }
@@ -34,10 +32,7 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         _ => throw new InvalidOperationException($"Unknown flavor: {_flavor}"),
     };
 
-    internal override ContainerRuntime Bind(string executable, ILogger? logger)
-    {
-        return new DockerContainerRuntime(ToString(), _flavor, executable, logger);
-    }
+    protected override ExecutableContainerRuntime CreateBoundRuntime(string executable) => new DockerContainerRuntime(ToString(), _flavor, executable);
 
     internal override bool LogsIncludeTimestamps => true;
 

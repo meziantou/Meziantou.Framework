@@ -1,25 +1,19 @@
-using Microsoft.Extensions.Logging;
-
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
-internal sealed partial class ContainerCli
+internal sealed class ContainerCli
 {
     private readonly string _executable;
-    private readonly ILogger? _logger;
 
-    public ContainerCli(ContainerRuntime runtime, string executable, ILogger? logger)
+    public ContainerCli(ContainerRuntime runtime, string executable)
     {
         Runtime = runtime;
         _executable = executable;
-        _logger = logger;
     }
 
     public ContainerRuntime Runtime { get; }
 
     public async Task<CliResult> RunBufferedAsync(IReadOnlyList<string> args, CancellationToken cancellationToken, bool allowNonZero = false, InputSource? input = null)
     {
-        LogExecuting(args);
-
         var wrapper = ProcessWrapper.Create(_executable)
             .WithArguments(args)
             .WithValidation(allowNonZero ? ProcessValidationMode.None : ProcessValidationMode.FailIfNonZeroExitCode);
@@ -36,8 +30,6 @@ internal sealed partial class ContainerCli
 
     public async Task RunToStreamAsync(IReadOnlyList<string> args, Stream standardOutput, CancellationToken cancellationToken)
     {
-        LogExecuting(args);
-
         await ProcessWrapper.Create(_executable)
             .WithArguments(args)
             .WithValidation(ProcessValidationMode.FailIfNonZeroExitCode)
@@ -48,8 +40,6 @@ internal sealed partial class ContainerCli
 
     public ProcessInstance ExecuteStreaming(IReadOnlyList<string> args, Action<string> onStandardOutput, Action<string> onStandardError, CancellationToken cancellationToken)
     {
-        LogExecuting(args);
-
         return ProcessWrapper.Create(_executable)
             .WithArguments(args)
             .WithValidation(ProcessValidationMode.None)
@@ -58,12 +48,4 @@ internal sealed partial class ContainerCli
             .ExecuteAsync(cancellationToken);
     }
 
-    private void LogExecuting(IReadOnlyList<string> args)
-    {
-        if (_logger is { } logger && logger.IsEnabled(LogLevel.Debug))
-            LogExecuting(logger, Runtime.ToString(), string.Join(' ', args));
-    }
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Executing {Runtime} {Arguments}")]
-    private static partial void LogExecuting(ILogger logger, string runtime, string arguments);
 }

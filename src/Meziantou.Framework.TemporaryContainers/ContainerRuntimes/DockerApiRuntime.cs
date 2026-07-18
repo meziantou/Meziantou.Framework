@@ -7,29 +7,26 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Meziantou.Framework;
-using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
-internal sealed partial class DockerApiRuntime : ContainerRuntime
+internal sealed class DockerApiRuntime : ContainerRuntime
 {
     private readonly HttpClient _httpClient;
     private readonly string _apiVersion;
     private readonly DockerContainerRuntime? _cliFallback;
     private readonly DockerRegistryAuthProvider _authProvider;
-    private readonly ILogger? _logger;
 
-    private DockerApiRuntime(HttpClient httpClient, string apiVersion, DockerContainerRuntime? cliFallback, ILogger? logger)
+    private DockerApiRuntime(HttpClient httpClient, string apiVersion, DockerContainerRuntime? cliFallback)
         : base("DockerApi")
     {
         _httpClient = httpClient;
         _apiVersion = apiVersion;
         _cliFallback = cliFallback;
-        _logger = logger;
-        _authProvider = new DockerRegistryAuthProvider(logger);
+        _authProvider = new DockerRegistryAuthProvider();
     }
 
-    public static bool TryCreate(ILogger? logger, out ContainerRuntime runtime)
+    public static bool TryCreate(out ContainerRuntime runtime)
     {
         foreach (var endpoint in DockerApiTransport.GetEndpoints())
         {
@@ -47,8 +44,7 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
                 if (string.IsNullOrWhiteSpace(version?.ApiVersion))
                     continue;
 
-                logger?.LogDebug("Container runtime auto-detection selected Docker Engine API endpoint {Endpoint}", endpoint.DisplayName);
-                runtime = new DockerApiRuntime(client, version.ApiVersion, GetDockerCliFallback(logger), logger);
+                runtime = new DockerApiRuntime(client, version.ApiVersion, GetDockerCliFallback());
                 client = null;
                 return true;
             }
@@ -78,7 +74,7 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
         return false;
     }
 
-    internal static bool TryProbe(ILogger? logger)
+    internal static bool TryProbe()
     {
         foreach (var endpoint in DockerApiTransport.GetEndpoints())
         {
@@ -104,10 +100,10 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
         return false;
     }
 
-    internal override bool IsSupported(ILogger? logger) => TryProbe(logger);
+    internal override bool IsSupportedCore() => TryProbe();
 
-    internal override ContainerRuntime? TryResolve(ILogger? logger)
-        => TryCreate(logger, out var runtime) ? runtime : null;
+    internal override ContainerRuntime? TryResolve()
+        => TryCreate(out var runtime) ? runtime : null;
 
     internal override bool SupportsPause => true;
 
@@ -279,9 +275,9 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
         return info.Ports;
     }
 
-    private static DockerContainerRuntime? GetDockerCliFallback(ILogger? logger)
+    private static DockerContainerRuntime? GetDockerCliFallback()
     {
-        return (DockerContainerRuntime?)ContainerRuntime.Docker.TryResolve(logger);
+        return (DockerContainerRuntime?)ContainerRuntime.Docker.TryResolve();
     }
 
     private async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
@@ -349,12 +345,7 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
         if (!string.IsNullOrEmpty(registryAuth))
             request.Headers.TryAddWithoutValidation("X-Registry-Auth", registryAuth);
 
-        if (_logger is { } logger)
-            LogRequest(logger, request.Method.Method, request.RequestUri?.AbsolutePath ?? endpoint);
-
         using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        if (_logger is { } logger2)
-            LogResponse(logger2, (int)response.StatusCode, request.Method.Method, request.RequestUri?.AbsolutePath ?? endpoint);
 
         if (!response.IsSuccessStatusCode)
             throw await CreateRequestExceptionAsync(response, request.Method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);
@@ -377,12 +368,7 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
             Content = content,
         };
 
-        if (_logger is { } logger)
-            LogRequest(logger, method.Method, request.RequestUri?.AbsolutePath ?? endpoint);
-
         var response = await _httpClient.SendAsync(request, completionOption, cancellationToken).ConfigureAwait(false);
-        if (_logger is { } logger2)
-            LogResponse(logger2, (int)response.StatusCode, method.Method, request.RequestUri?.AbsolutePath ?? endpoint);
 
         if (response.IsSuccessStatusCode || allowNotFound && response.StatusCode == HttpStatusCode.NotFound)
             return response;
@@ -556,9 +542,4 @@ internal sealed partial class DockerApiRuntime : ContainerRuntime
         return await callback(_cliFallback).ConfigureAwait(false);
     }
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Docker API request: {Method} {Endpoint}")]
-    private static partial void LogRequest(ILogger logger, string method, string endpoint);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Docker API response: {StatusCode} for {Method} {Endpoint}")]
-    private static partial void LogResponse(ILogger logger, int statusCode, string method, string endpoint);
 }

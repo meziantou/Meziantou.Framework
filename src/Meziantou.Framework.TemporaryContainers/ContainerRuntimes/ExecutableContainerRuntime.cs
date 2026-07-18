@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
-using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
@@ -14,23 +13,25 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     {
     }
 
-    protected ExecutableContainerRuntime(string name, string executable, ILogger? logger)
+    protected ExecutableContainerRuntime(string name, string executable)
         : base(name)
     {
-        _cli = new ContainerCli(this, executable, logger);
+        _cli = new ContainerCli(this, executable);
     }
 
     private protected ContainerCli Cli => _cli ?? throw new InvalidOperationException($"The runtime '{this}' is not bound to an executable.");
 
     internal abstract string ExecutableName { get; }
 
-    internal override bool IsSupported(ILogger? logger) => FindExecutable() is not null;
+    internal override bool IsSupportedCore() => FindExecutable() is not null;
 
-    internal override ContainerRuntime? TryResolve(ILogger? logger)
+    internal override ContainerRuntime? TryResolve()
     {
         var exe = FindExecutable();
-        return exe is not null ? Bind(exe, logger) : null;
+        return exe is not null ? CreateBoundRuntime(exe) : null;
     }
+
+    protected abstract ExecutableContainerRuntime CreateBoundRuntime(string executable);
 
     internal string? FindExecutable()
     {

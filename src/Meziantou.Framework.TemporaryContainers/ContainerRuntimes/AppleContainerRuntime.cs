@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
@@ -15,17 +14,14 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
     {
     }
 
-    private AppleContainerRuntime(string name, string executable, ILogger? logger)
-        : base(name, executable, logger)
+    private AppleContainerRuntime(string name, string executable)
+        : base(name, executable)
     {
     }
 
     internal override string ExecutableName => "container";
 
-    internal override ContainerRuntime Bind(string executable, ILogger? logger)
-    {
-        return new AppleContainerRuntime(ToString(), executable, logger);
-    }
+    protected override ExecutableContainerRuntime CreateBoundRuntime(string executable) => new AppleContainerRuntime(ToString(), executable);
 
     internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {

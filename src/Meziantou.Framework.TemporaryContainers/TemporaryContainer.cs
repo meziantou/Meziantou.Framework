@@ -8,6 +8,8 @@ public partial class TemporaryContainer : IAsyncDisposable
     private string? _id;
     private string? _name;
     private Dictionary<int, int>? _portMap;
+    private CancellationTokenSource? _forwardLogsCancellationTokenSource;
+    private Task? _forwardLogsTask;
     private bool _created;
     private bool _disposed;
 
@@ -43,7 +45,7 @@ private void EnsureRuntimeResolved()
     if (_runtime is not null)
         return;
 
-    _runtime = _definition.Runtime.Resolve(_definition.Logging.Logger);
+    _runtime = _definition.Runtime.Resolve();
 }
 
     /// <summary>Creates the container if it does not exist yet, without starting it. When <see cref="ContainerDefinition.ReuseId"/> is set, an existing matching container is adopted instead.</summary>
@@ -62,6 +64,9 @@ private void EnsureRuntimeResolved()
         var info = await InspectAsync(cancellationToken).ConfigureAwait(false);
         _name = info.Name;
         _created = true;
+
+        if (_definition.ReuseId is not null && info.State is ContainerState.Running)
+            StartForwardingLogs();
     }
 
     /// <summary>Creates the container if needed, starts it, refreshes the published-port mapping, and runs the registered wait strategies.</summary>
@@ -72,6 +77,7 @@ private void EnsureRuntimeResolved()
         ObjectDisposedException.ThrowIf(_disposed, this);
         await EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
         await Runtime.StartAsync(Id, cancellationToken).ConfigureAwait(false);
+        StartForwardingLogs();
         await RefreshPortsAsync(cancellationToken).ConfigureAwait(false);
         await WaitUntilReadyAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -123,6 +129,7 @@ private void EnsureRuntimeResolved()
             return;
 
         _disposed = true;
+        await StopForwardingLogsAsync().ConfigureAwait(false);
 
         if (_id is null || _definition.ReuseId is not null)
             return;

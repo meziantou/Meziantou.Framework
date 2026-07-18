@@ -20,7 +20,7 @@ public sealed class DockerRegistryAuthProviderTests
             },
         };
 
-        var provider = new DockerRegistryAuthProvider(logger: null, overrideConfiguration: config);
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
         var header = await provider.GetRegistryAuthHeaderValueAsync("redis:8", CancellationToken.None);
 
         Assert.NotNull(header);
@@ -45,7 +45,7 @@ public sealed class DockerRegistryAuthProviderTests
             },
         };
 
-        var provider = new DockerRegistryAuthProvider(logger: null, overrideConfiguration: config);
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
         var header = await provider.GetRegistryAuthHeaderValueAsync("registry.example.com/app/image:latest", CancellationToken.None);
 
         Assert.NotNull(header);

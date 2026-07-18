@@ -45,7 +45,8 @@ private void EnsureRuntimeCreated()
     if (_runtime is not null)
         return;
 
-    _runtime = _definition.Runtime.Resolve();
+    _runtime = _definition.Runtime;
+    _runtime.EnsureSupported();
 }
 
     /// <summary>Creates the container if it does not exist yet, without starting it. When <see cref="ContainerDefinition.ReuseId"/> is set, an existing matching container is adopted instead.</summary>

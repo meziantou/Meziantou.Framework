@@ -190,10 +190,7 @@ public sealed class ContainerDefinitionTests
 
         public ContainerState State { get; set; } = ContainerState.Created;
 
-        internal override ContainerRuntime? TryResolve()
-        {
-            return this;
-        }
+        public override bool IsSupported() => true;
 
         internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
         {

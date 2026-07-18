@@ -19,30 +19,13 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     {
         get
         {
-            if (_cli is { } cli)
-                return cli;
-
-            lock (_syncObject)
-            {
-                if (_cli is null)
-                {
-                    var executable = FindExecutable() ?? throw new InvalidOperationException($"The runtime '{this}' is not available.");
-                    _cli = new ContainerCli(this, executable);
-                }
-
-                return _cli;
-            }
+            return EnsureCliInitialized() ?? throw CreateUnavailableRuntimeException(this);
         }
     }
 
     internal abstract string ExecutableName { get; }
 
-    public override bool IsSupported() => FindExecutable() is not null;
-
-    internal override ContainerRuntime? TryResolve()
-    {
-        return IsSupported() ? this : null;
-    }
+    public override bool IsSupported() => EnsureCliInitialized() is not null;
 
     internal string? FindExecutable()
     {
@@ -59,6 +42,24 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         }
 
         return ExecutableFinder.GetFullExecutablePath(ExecutableName);
+    }
+
+    private ContainerCli? EnsureCliInitialized()
+    {
+        if (_cli is { } cli)
+            return cli;
+
+        lock (_syncObject)
+        {
+            if (_cli is { } existingCli)
+                return existingCli;
+
+            if (FindExecutable() is not { } executable)
+                return null;
+
+            _cli = new ContainerCli(this, executable);
+            return _cli;
+        }
     }
 
     internal abstract Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, CancellationToken cancellationToken);

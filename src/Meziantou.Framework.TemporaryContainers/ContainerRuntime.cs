@@ -5,54 +5,6 @@ namespace Meziantou.Framework.TemporaryContainers;
 /// <summary>Identifies the container runtime CLI used to manage containers.</summary>
 public abstract class ContainerRuntime
 {
-    private sealed class AutoContainerRuntime : ContainerRuntime
-    {
-        public AutoContainerRuntime()
-            : base(nameof(Auto))
-        {
-        }
-
-        public override bool IsSupported()
-        {
-            if (DockerApiRuntime.TryProbe())
-                return true;
-
-            foreach (var candidate in GetCliCandidates())
-            {
-                if (candidate.IsSupported())
-                    return true;
-            }
-
-            return false;
-        }
-
-        internal override ContainerRuntime? TryResolve()
-        {
-            if (DockerApiRuntime.TryCreate(out var apiRuntime))
-                return apiRuntime;
-
-            foreach (var candidate in GetCliCandidates())
-            {
-                if (candidate.TryResolve() is { } resolved)
-                    return resolved;
-            }
-
-            return null;
-        }
-
-        private static IEnumerable<ExecutableContainerRuntime> GetCliCandidates()
-        {
-            yield return (ExecutableContainerRuntime)Docker;
-            yield return (ExecutableContainerRuntime)Podman;
-
-            if (OperatingSystem.IsMacOS())
-                yield return (ExecutableContainerRuntime)AppleContainer;
-
-            if (OperatingSystem.IsWindows())
-                yield return (ExecutableContainerRuntime)Wslc;
-        }
-    }
-
     private readonly string _name;
 
     private protected ContainerRuntime(string name) => _name = name;
@@ -74,16 +26,12 @@ public abstract class ContainerRuntime
 
     /// <summary>Determines whether this runtime can be resolved.</summary>
     /// <returns><see langword="true"/> if the runtime executable is available and operational; otherwise, <see langword="false"/>.</returns>
-    public virtual bool IsSupported() => TryResolve() is not null;
+    public virtual bool IsSupported() => false;
 
-    /// <summary>Resolves this runtime into a fully-bound, ready-to-use instance, or returns <see langword="null"/> if the runtime is unavailable.</summary>
-    internal virtual ContainerRuntime? TryResolve() => null;
-
-    internal ContainerRuntime Resolve()
+    internal void EnsureSupported()
     {
-        return TryResolve() ?? throw new InvalidOperationException(this == Auto
-            ? "No supported container runtime (Docker Engine API, 'docker', 'podman', 'container', or 'wslc') is available."
-            : $"The '{this}' runtime is not available.");
+        if (!IsSupported())
+            throw CreateUnavailableRuntimeException(this);
     }
 
     internal virtual bool SupportsPause => false;
@@ -141,7 +89,12 @@ public abstract class ContainerRuntime
     internal virtual IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
         => throw CreateNotSupportedException();
 
-    private NotSupportedException CreateNotSupportedException() => new NotSupportedException($"The '{this}' runtime cannot execute container operations.");
+    private NotSupportedException CreateNotSupportedException() => new($"The '{this}' runtime cannot execute container operations.");
+
+    private protected static InvalidOperationException CreateUnavailableRuntimeException(ContainerRuntime runtime)
+        => new(runtime == Auto
+            ? "No supported container runtime (Docker Engine API, 'docker', 'podman', 'container', or 'wslc') is available."
+            : $"The '{runtime}' runtime is not available.");
 
     public override string ToString() => _name;
 }

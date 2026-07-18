@@ -132,46 +132,4 @@ public class ContainerDefinition
         return new TemporaryContainer(new ContainerDefinition(this));
     }
 
-    /// <summary>Creates a definition pre-configured for a Redis container (port 6379 and a readiness wait strategy).</summary>
-    /// <returns>A Redis container definition using the <c>redis:8.2</c> image.</returns>
-    public static RedisContainerDefinition CreateRedis()
-    {
-        return CreateRedis(ImageSource.FromRegistry("redis:8.2"));
-    }
-
-    /// <summary>Creates a definition pre-configured for a Redis container (port 6379 and a readiness wait strategy).</summary>
-    /// <param name="image">The Redis image to use.</param>
-    /// <returns>A Redis container definition.</returns>
-    public static RedisContainerDefinition CreateRedis(ImageSource image)
-    {
-        ArgumentNullException.ThrowIfNull(image);
-        var definition = new RedisContainerDefinition(image);
-        definition.Ports.Add(6379);
-        definition.WaitStrategies.Add(Wait.ForLogMessage("Ready to accept connections"));
-        definition.WaitStrategies.Add(Wait.ForPort(6379));
-        return definition;
-    }
-
-    /// <summary>Creates a definition pre-configured for a PostgreSQL container (port 5432, a default password, and a readiness wait strategy).</summary>
-    /// <returns>A PostgreSQL container definition using the <c>postgres:17</c> image.</returns>
-    public static PostgreSqlContainerDefinition CreatePostgreSql()
-    {
-        return CreatePostgreSql(ImageSource.FromRegistry("postgres:17"));
-    }
-
-    /// <summary>Creates a definition pre-configured for a PostgreSQL container (port 5432, a default password, and a readiness wait strategy).</summary>
-    /// <param name="image">The PostgreSQL image to use.</param>
-    /// <returns>A PostgreSQL container definition.</returns>
-    public static PostgreSqlContainerDefinition CreatePostgreSql(ImageSource image)
-    {
-        ArgumentNullException.ThrowIfNull(image);
-        var definition = new PostgreSqlContainerDefinition(image);
-        if (!definition.Environment.Contains("POSTGRES_PASSWORD"))
-            definition.Environment.Add("POSTGRES_PASSWORD", "postgres");
-
-        definition.Ports.Add(5432);
-        definition.WaitStrategies.Add(Wait.ForLogMessage("database system is ready to accept connections", occurrences: 2));
-        definition.WaitStrategies.Add(Wait.ForPort(5432));
-        return definition;
-    }
 }

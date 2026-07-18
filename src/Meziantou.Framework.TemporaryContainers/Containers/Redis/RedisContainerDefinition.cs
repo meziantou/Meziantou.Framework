@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.TemporaryContainers;
 
-/// <summary>A <see cref="ContainerDefinition"/> pre-configured for Redis. Create one with <see cref="ContainerDefinition.CreateRedis()"/>.</summary>
+/// <summary>A <see cref="ContainerDefinition"/> pre-configured for Redis. Create one with <see cref="ContainerDefinitionRedisExtensions.CreateRedis()"/>.</summary>
 public sealed class RedisContainerDefinition : ContainerDefinition
 {
     internal RedisContainerDefinition(ImageSource image)

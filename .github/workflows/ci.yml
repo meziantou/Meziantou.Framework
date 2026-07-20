@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - name: Build eng scripts
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
@@ -60,7 +60,7 @@ jobs:
     outputs:
       has-project: ${{ steps.package-project.outputs.has-project }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-26.04
     needs: [ create_nuget ]
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - parallel:
           - name: Setup .NET
             uses: ./.github/actions/setup-dotnet
@@ -154,7 +154,7 @@ jobs:
         run: |
           $SanitizedName = "${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=test-results-$SanitizedName-shard-${{ matrix.shard }}" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
@@ -184,7 +184,7 @@ jobs:
       - parallel:
           - name: Cache Public API test compilation outputs
             if: steps.build-project.outputs.has-project == 'true'
-            uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+            uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
             with:
               path: ${{ env.MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY }}
               key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}
@@ -249,7 +249,7 @@ jobs:
         runtime: [ "win-x64", "linux-x64", "osx-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable/Trimmable.csproj
@@ -262,7 +262,7 @@ jobs:
         runtime: [ "win-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Setup .NET
         uses: ./.github/actions/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained tests/Trimmable.Wpf/Trimmable.Wpf.csproj
@@ -272,7 +272,7 @@ jobs:
     runs-on: ubuntu-26.04
     needs: [build_and_test]
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Download test results
         id: download-test-results
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -313,7 +313,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - parallel:
           - name: Setup .NET
             uses: ./.github/actions/setup-dotnet

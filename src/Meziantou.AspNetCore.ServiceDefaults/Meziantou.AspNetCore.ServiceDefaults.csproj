@@ -14,18 +14,18 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.16.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net10.0'">
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <!-- Force Microsoft.OpenApi to a non-vulnerable (transitive: Microsoft.AspNetCore.OpenApi) -->
-    <PackageReference Include="Microsoft.OpenApi" Version="2.9.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.10.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net11.0'">
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0-preview.6.26359.118" />
     <!-- Force Microsoft.OpenApi to a non-vulnerable (transitive: Microsoft.AspNetCore.OpenApi) -->
-    <PackageReference Include="Microsoft.OpenApi" Version="3.7.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="3.8.0" />
   </ItemGroup>
 </Project>

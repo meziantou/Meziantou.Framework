@@ -248,6 +248,26 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateStruct_Guid_UserDefinedNew()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid))]
+            public partial struct Test
+            {
+                public static Test New() => FromGuid(System.Guid.CreateVersion7());
+            }
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            var newMethod = (MethodInfo)type.GetMember("New").Single();
+            var newInstance = newMethod.Invoke(null, null);
+            var value = (Guid)type.GetProperty("Value")!.GetValue(newInstance)!;
+            Assert.Equal(7, value.Version);
+        });
+    }
+
+    [Fact]
     public async Task Generate_ExistingOperators()
     {
         var sourceCode = """

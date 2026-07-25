@@ -420,6 +420,10 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                         IsOpGreaterThanOrEqualDefined = true;
                         break;
 
+                    case IMethodSymbol { IsStatic: true, Name: "New", Arity: 0, Parameters: [] }:
+                        IsNewDefined = true;
+                        break;
+
                     case IMethodSymbol { IsStatic: true, Name: "TryParse", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [{ Type.SpecialType: SpecialType.System_String }, ..] }:
                         IsTryParseDefined_String = true;
                         break;
@@ -569,6 +573,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool IsSealed { get; }
         public bool IsReferenceType { get; }
         public bool IsCtorDefined { get; }
+        public bool IsNewDefined { get; }
         public bool IsFieldDefined { get; }
         public bool IsValueDefined { get; }
         public bool IsValueAsStringDefined { get; }
@@ -635,6 +640,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && AddCodeGeneratedAttribute == other.AddCodeGeneratedAttribute
                 && IsSealed == other.IsSealed
                 && IsCtorDefined == other.IsCtorDefined
+                && IsNewDefined == other.IsNewDefined
                 && IsFieldDefined == other.IsFieldDefined
                 && IsValueDefined == other.IsValueDefined
                 && IsValueAsStringDefined == other.IsValueAsStringDefined
@@ -683,6 +689,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(AddCodeGeneratedAttribute);
             hashcode.Add(IsSealed);
             hashcode.Add(IsCtorDefined);
+            hashcode.Add(IsNewDefined);
             hashcode.Add(IsFieldDefined);
             hashcode.Add(IsValueDefined);
             hashcode.Add(IsValueAsStringDefined);

@@ -125,7 +125,7 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // if Guid => New
-        if (context.IdType is IdType.System_Guid)
+        if (context.IdType is IdType.System_Guid && !context.IsNewDefined)
         {
             WriteNewMember(
                  XmlSummary("Initializes a new instance of the ", XmlSeeCref(context.TypeName), " using a new ", XmlSeeCref("global::System.Guid"), "."),

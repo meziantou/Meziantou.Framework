@@ -8,7 +8,6 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">

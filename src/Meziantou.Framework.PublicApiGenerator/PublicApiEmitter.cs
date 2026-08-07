@@ -91,7 +91,7 @@ internal static class PublicApiEmitter
         if (targetFrameworks.Count > 0)
         {
             sb.Append("// Target Frameworks: ");
-            sb.AppendLine(string.Join(", ", targetFrameworks));
+            sb.AppendJoin(", ", targetFrameworks).AppendLine();
         }
 
         sb.Append(assemblyAttributesSource);
@@ -149,13 +149,14 @@ internal static class PublicApiEmitter
         var lastSegment = lastSeparatorIndex < 0
             ? namespaceName
             : namespaceName[(lastSeparatorIndex + 1)..];
+
         if (string.IsNullOrEmpty(lastSegment))
             return [with(StringComparer.Ordinal)];
 
         return [with(StringComparer.Ordinal), lastSegment];
     }
 
-    private static string QualifyConflictingNamespaceReferences(string source, HashSet<string> conflictingNamespaceIdentifiers)
+    private static string QualifyConflictingNamespaceReferences(string source, IReadOnlySet<string> conflictingNamespaceIdentifiers)
     {
         var sb = new StringBuilder(source.Length);
         var inString = false;
@@ -225,7 +226,7 @@ internal static class PublicApiEmitter
         return sb.ToString();
     }
 
-    private static bool TryGetConflictingIdentifierLength(string source, int index, HashSet<string> conflictingNamespaceIdentifiers, out int identifierLength)
+    private static bool TryGetConflictingIdentifierLength(string source, int index, IReadOnlySet<string> conflictingNamespaceIdentifiers, out int identifierLength)
     {
         identifierLength = 0;
         if (index >= source.Length || (!char.IsLetter(source[index]) && source[index] != '_'))

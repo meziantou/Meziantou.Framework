@@ -143,16 +143,16 @@ internal static class PublicApiEmitter
     private static HashSet<string> GetConflictingNamespaceIdentifiers(string namespaceName)
     {
         if (string.IsNullOrEmpty(namespaceName))
-            return [];
+            return [with(StringComparer.Ordinal)];
 
         var lastSeparatorIndex = namespaceName.LastIndexOf('.', StringComparison.Ordinal);
         var lastSegment = lastSeparatorIndex < 0
             ? namespaceName
             : namespaceName[(lastSeparatorIndex + 1)..];
         if (string.IsNullOrEmpty(lastSegment))
-            return [];
+            return [with(StringComparer.Ordinal)];
 
-        return [lastSegment];
+        return [with(StringComparer.Ordinal), lastSegment];
     }
 
     private static string QualifyConflictingNamespaceReferences(string source, HashSet<string> conflictingNamespaceIdentifiers)

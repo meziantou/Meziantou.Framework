@@ -934,13 +934,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
             }
         }
 
-        if (!isKey && value.Length >= 2 &&
-            ((value[0] == '-' && value[1] == ' ') || (value[0] == '?' && value[1] == ' ')))
-        {
-            return false;
-        }
-
-        if (isKey && value.Length == 1 && value[0] == '-')
+        // A leading '-' or '?' followed by separation/end is a collection/key indicator, not a plain scalar.
+        if ((value[0] is '-' or '?') && (value.Length == 1 || char.IsWhiteSpace(value[1])))
         {
             return false;
         }

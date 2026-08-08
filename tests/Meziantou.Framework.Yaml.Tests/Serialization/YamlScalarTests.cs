@@ -215,6 +215,18 @@ public sealed class YamlScalarTests
     }
 
     [Fact]
+    public void StringSerializer_QuotesStandaloneQuestionMarkValue()
+    {
+        var yaml = YamlSerializer.Serialize(new IndicatorStringModel { Bar = "?" });
+
+        Assert.Contains("Bar: \"?\"", yaml);
+        var roundTrip = YamlSerializer.Deserialize<IndicatorStringModel>(yaml);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal("?", roundTrip.Bar);
+    }
+
+    [Fact]
     public void SchemaAwareDeserialization_UsesExtendedSchemaForPlainScalars()
     {
         var options = new YamlSerializerOptions
@@ -242,5 +254,10 @@ public sealed class YamlScalarTests
         Assert.Equal("null", values["quotedNull"]);
         Assert.Equal(2, values["binary"]);
         Assert.Equal(16, values["hex"]);
+    }
+
+    private sealed class IndicatorStringModel
+    {
+        public string? Bar { get; set; }
     }
 }

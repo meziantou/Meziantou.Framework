@@ -55,12 +55,16 @@ public class YamlValue : YamlElement
         return value.ToString() ?? string.Empty;
     }
 
-    internal Scalar Scalar
+    /// <summary>Gets or sets the scalar event represented by this YAML value, including source location marks.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+    public Scalar Scalar
     {
         get { return _scalar; }
         [MemberNotNull(nameof(_scalar))]
         set
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             _scalar = value;
         }
     }

@@ -164,6 +164,21 @@ public class YamlSerializerApiTests
     }
 
     [Fact]
+    public void ReflectionContext_YamlValueScalar_IsPublicAndPreservesOriginalNodeLocation()
+    {
+        var property = typeof(YamlValue).GetProperty(nameof(YamlValue.Scalar));
+        Assert.NotNull(property);
+        Assert.True(property.GetMethod!.IsPublic);
+        Assert.True(property.SetMethod!.IsPublic);
+
+        var root = YamlSerializer.Deserialize<YamlMapping>("key:\n value\n")!;
+        var value = (YamlValue)root["key"]!;
+
+        Assert.Equal(1, value.Scalar.Start.Line);
+        Assert.Equal(1, value.Scalar.Start.Column);
+    }
+
+    [Fact]
     public void ReflectionContext_YamlNodeMember_RoundTripsDynamicContent()
     {
         var yaml = """

@@ -646,6 +646,7 @@ namespace Meziantou.Framework.Yaml.Model
 
     public class YamlValue : Meziantou.Framework.Yaml.Model.YamlElement
     {
+        public Meziantou.Framework.Yaml.Events.Scalar Scalar { get => throw null; set { } }
         public string? Anchor { get => throw null; set { } }
         public string? Tag { get => throw null; set { } }
         public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; set { } }

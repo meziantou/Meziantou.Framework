@@ -4927,7 +4927,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("                }");
         builder.AppendLine("                else");
         builder.AppendLine("                {");
-        if (!TryEmitReadWithStaticOptionsConverter(builder, sourceGenerationOptions, member.Type, readExpr =>
+        if (!TryEmitReadWithStaticOptionsConverter(builder, sourceGenerationOptions, member.Type, (builder, readExpr) =>
         {
             builder.AppendLine("                    {");
             builder.Append("                        var untyped = ").Append(readExpr).AppendLine(";");
@@ -4989,7 +4989,7 @@ public sealed partial class YamlSerializerContextGenerator
         return true;
     }
 
-    private static bool TryEmitReadWithStaticOptionsConverter(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, Action<string> action)
+    private static bool TryEmitReadWithStaticOptionsConverter(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, Action<StringBuilder, string> action)
     {
         if (!TryGetStaticOptionsConverterType(sourceGenerationOptions, typeSymbol, out var converterIndex))
         {
@@ -4998,7 +4998,7 @@ public sealed partial class YamlSerializerContextGenerator
 
         var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var readExpr = $"{GetSourceGenerationConverterFieldName(converterIndex)}.Read(reader, typeof({typeName}))";
-        action(readExpr);
+        action(builder, readExpr);
         return true;
     }
 
@@ -5900,7 +5900,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(innerIndent).AppendLine("else");
         builder.Append(innerIndent).AppendLine("{");
         var bodyIndent = innerIndent + "    ";
-        if (TryEmitReadWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, readExpr =>
+        if (TryEmitReadWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, (builder, readExpr) =>
         {
             builder.Append(bodyIndent).Append(valueVarName).Append(" = (").Append(typeName).Append(")(").Append(readExpr).AppendLine(")!;");
         }))

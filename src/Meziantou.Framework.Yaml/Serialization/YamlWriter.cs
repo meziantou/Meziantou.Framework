@@ -915,6 +915,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private static bool IsPlainSafe(ReadOnlySpan<char> value, bool isKey)
     {
+        _ = isKey; // Currently unused, but may be used in future for stricter key rules.
+
         // Keep it conservative: if in doubt, quote.
         if (value.Length == 0)
         {

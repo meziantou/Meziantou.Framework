@@ -234,6 +234,12 @@ public sealed record YamlSerializerOptions
     /// <summary>
     /// Gets or sets a metadata resolver used to retrieve <see cref="YamlTypeInfo"/> instances.
     /// </summary>
+    /// <remarks>
+    /// When this is a source-generated <see cref="Meziantou.Framework.Yaml.Serialization.YamlSerializerContext"/> and this options
+    /// instance differs from the context's own options, generated metadata may be initialized for this options
+    /// instance. Cache and reuse the resulting <see cref="YamlTypeInfo"/> for repeated operations with the same
+    /// runtime converter set.
+    /// </remarks>
     public IYamlTypeInfoResolver? TypeInfoResolver { get; init; }
 
     internal int EffectiveMaxDepth => YamlDepthHelper.GetEffectiveMaxDepth(MaxDepth);

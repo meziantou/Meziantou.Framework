@@ -3128,4 +3128,79 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         emitDeclaration(indent + "    ");
         builder.Append(indent).AppendLine("}");
     }
+
+    private static ImmutableArray<ITypeSymbol> CollectRuntimeCustomConverterTypes(ImmutableArray<ITypeSymbol> types)
+    {
+        var builder = ImmutableArray.CreateBuilder<ITypeSymbol>();
+        var seen = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+
+        foreach (var type in types)
+        {
+            AddRuntimeCustomConverterType(type, includeMembers: true, builder, seen);
+        }
+
+        return builder.ToImmutable();
+    }
+
+    private static void AddRuntimeCustomConverterType(
+        ITypeSymbol type,
+        bool includeMembers,
+        ImmutableArray<ITypeSymbol>.Builder builder,
+        HashSet<ITypeSymbol> seen)
+    {
+        if (!seen.Add(type))
+        {
+            return;
+        }
+
+        builder.Add(type);
+
+        if (type is IArrayTypeSymbol arrayType)
+        {
+            AddRuntimeCustomConverterType(arrayType.ElementType, includeMembers: true, builder, seen);
+            return;
+        }
+
+        if (type is not INamedTypeSymbol namedType)
+        {
+            return;
+        }
+
+        if (namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T && namedType.TypeArguments.Length == 1)
+        {
+            AddRuntimeCustomConverterType(namedType.TypeArguments[0], includeMembers: includeMembers, builder, seen);
+        }
+
+        if (TryGetSequenceElementType(type, out var elementType, out _))
+        {
+            AddRuntimeCustomConverterType(elementType, includeMembers: true, builder, seen);
+            return;
+        }
+
+        if (TryGetDictionaryTypes(type, out var keyType, out var valueType, out _))
+        {
+            AddRuntimeCustomConverterType(keyType, includeMembers: true, builder, seen);
+            AddRuntimeCustomConverterType(valueType, includeMembers: true, builder, seen);
+            return;
+        }
+
+        foreach (var typeArgument in namedType.TypeArguments)
+        {
+            AddRuntimeCustomConverterType(typeArgument, includeMembers: true, builder, seen);
+        }
+
+        if (!includeMembers || IsKnownScalar(type) || IsYamlNodeType(type) || IsUntypedObject(type))
+        {
+            return;
+        }
+
+        foreach (var member in GetSerializableMembers(namedType))
+        {
+            var memberType = GetMemberType(member);
+            if (memberType is not null)
+            {
+                AddRuntimeCustomConverterType(memberType, includeMembers: true, builder, seen);
+            }
+        }
+    }
 }

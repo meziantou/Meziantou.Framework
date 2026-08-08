@@ -607,6 +607,25 @@ internal sealed class GeneratedRuntimeConverterHolder
     public Guid? OptionalId { get; set; }
 }
 
+internal sealed class CountingRuntimeGuidConverterFactory(string marker, Guid replacementValue) : YamlConverterFactory
+{
+    public int CanConvertCount { get; private set; }
+
+    public int CreateConverterCount { get; private set; }
+
+    public override bool CanConvert(Type typeToConvert)
+    {
+        CanConvertCount++;
+        return typeToConvert == typeof(Guid);
+    }
+
+    public override YamlConverter CreateConverter(Type typeToConvert, YamlSerializerOptions options)
+    {
+        CreateConverterCount++;
+        return new RuntimeGuidConverter(marker, replacementValue);
+    }
+}
+
 internal sealed class ThrowingGeneratedConverterFactory : YamlConverterFactory
 {
     public override bool CanConvert(Type typeToConvert) => true;
@@ -2812,5 +2831,33 @@ extra_list:
         Assert.Equal(optionalId, value.OptionalId);
         Assert.Contains("Id: \"ref:id\"", yaml);
         Assert.Contains("OptionalId: \"ref:optional-id\"", yaml);
+    }
+
+    [Fact]
+    public void GeneratedContextResolvesRuntimeConvertersWhenTypeInfoIsInitialized()
+    {
+        var id = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var factory = new CountingRuntimeGuidConverterFactory("ref:id", id);
+        var context = TestYamlSerializerContext.Default;
+        var options = new YamlSerializerOptions
+        {
+            TypeInfoResolver = context,
+            Converters = [factory],
+        };
+
+        var typeInfo = (YamlTypeInfo<GeneratedRuntimeConverterHolder>)context.GetTypeInfo(typeof(GeneratedRuntimeConverterHolder), options)!;
+        var canConvertCount = factory.CanConvertCount;
+        var createConverterCount = factory.CreateConverterCount;
+
+        var yaml = YamlSerializer.Serialize(new GeneratedRuntimeConverterHolder { Id = id }, typeInfo);
+        var value = YamlSerializer.Deserialize("Id: ref:id\n", typeInfo);
+
+        Assert.True(canConvertCount > 0);
+        Assert.Equal(1, createConverterCount);
+        Assert.Equal(canConvertCount, factory.CanConvertCount);
+        Assert.Equal(createConverterCount, factory.CreateConverterCount);
+        Assert.Contains("Id: \"ref:id\"", yaml);
+        Assert.NotNull(value);
+        Assert.Equal(id, value.Id);
     }
 }

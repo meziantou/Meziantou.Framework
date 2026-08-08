@@ -1127,12 +1127,12 @@ public static class YamlSerializer
     {
         if (options.TypeInfoResolver is YamlSerializerContext context && !ReferenceEquals(options, context.Options))
         {
-            // Options were created from context.CreateOptions(); resolve type info from the context
-            // but use the caller's options for runtime behavior (SourceName, WriteIndented, etc.).
-            var contextTypeInfo = context.GetTypeInfo(requestedType, context.Options);
+            // Resolve type info from the context with the caller's options so generated contexts can
+            // initialize any option-dependent metadata before serialization/deserialization starts.
+            var contextTypeInfo = context.GetTypeInfo(requestedType, options);
             if (contextTypeInfo is not null)
             {
-                return new YamlTypeInfoWithOptions(contextTypeInfo, options);
+                return contextTypeInfo;
             }
 
             throw new InvalidOperationException($"No generated metadata is available for '{requestedType}' on context '{context.GetType()}'.");

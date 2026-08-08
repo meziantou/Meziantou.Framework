@@ -298,12 +298,27 @@ namespace Meziantou.Framework.Yaml
         public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
         public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static T Deserialize<T>(System.ReadOnlySpan<char> yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static T Deserialize<T>(System.ReadOnlySpan<char> yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static object? Deserialize(System.ReadOnlySpan<char> yaml, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static object? Deserialize(System.ReadOnlySpan<char> yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static string Serialize<T>(T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static string Serialize(object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
+        public static void Serialize(System.IO.TextWriter writer, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
+        public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
+        public static void Serialize(System.IO.Stream utf8Stream, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
+        public static object? Deserialize(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static object? Deserialize(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static T Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static object? Deserialize(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
         public static T Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static T Deserialize<T>(System.ReadOnlySpan<char> yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
         public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
         public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }

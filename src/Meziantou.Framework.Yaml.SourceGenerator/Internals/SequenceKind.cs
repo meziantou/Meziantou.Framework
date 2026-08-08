@@ -4,6 +4,7 @@ internal enum SequenceKind
 {
     List,
     Enumerable,
+    MutableCollection,
     Set,
     ImmutableArray,
     ImmutableList,

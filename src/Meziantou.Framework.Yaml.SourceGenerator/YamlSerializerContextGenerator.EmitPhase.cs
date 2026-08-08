@@ -2499,6 +2499,19 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("    }");
                     return;
 
+                case SequenceKind.MutableCollection:
+                    builder.Append("        var collection = new ").Append(typeName).AppendLine("();");
+                    builder.AppendLine("        if (rootAnchor is not null) { reader.RegisterAnchor(rootAnchor, collection); }");
+                    builder.AppendLine("        while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
+                    builder.AppendLine("        {");
+                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                    builder.Append("            collection.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
+                    builder.AppendLine("        }");
+                    builder.AppendLine("        reader.Read();");
+                    builder.AppendLine("        return collection;");
+                    builder.AppendLine("    }");
+                    return;
+
                 default:
                     builder.Append("        var list = new global::System.Collections.Generic.List<").Append(elementTypeName).AppendLine(">();");
                     builder.AppendLine("        if (rootAnchor is not null) { reader.RegisterAnchor(rootAnchor, list); }");
@@ -4004,6 +4017,19 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("                    var immutableSet = builderSet.ToImmutable();");
                     builder.AppendLine("                    if (memberAnchor is not null) { reader.RegisterAnchor(memberAnchor, immutableSet); }");
                     builder.Append("                    ").Append(member.AssignExpression("immutableSet")).AppendLine(";");
+                    builder.AppendLine("                }");
+                    return;
+
+                case SequenceKind.MutableCollection:
+                    builder.Append("                    var collection = new ").Append(memberTypeName).AppendLine("();");
+                    builder.AppendLine("                    if (memberAnchor is not null) { reader.RegisterAnchor(memberAnchor, collection); }");
+                    builder.AppendLine("                    while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
+                    builder.AppendLine("                    {");
+                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "                        ");
+                    builder.Append("                        collection.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
+                    builder.AppendLine("                    }");
+                    builder.AppendLine("                    reader.Read();");
+                    builder.Append("                    ").Append(member.AssignExpression("collection")).AppendLine(";");
                     builder.AppendLine("                }");
                     return;
 

@@ -149,9 +149,9 @@ public sealed partial class YamlSerializerContextGenerator
         for (var index = 0; index < types.Length; index++)
         {
             var typeName = types[index].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            EmitWriteValue(builder, index, types[index], typeName, derivedTypeMappings, indexByType, propertyNamingPolicy);
+            EmitWriteValue(builder, index, types[index], typeName, derivedTypeMappings, indexByType, propertyNamingPolicy, model.SourceGenerationOptions);
             builder.AppendLine();
-            EmitReadValue(builder, index, types[index], typeName, derivedTypeMappings, indexByType, propertyNamingPolicy);
+            EmitReadValue(builder, index, types[index], typeName, derivedTypeMappings, indexByType, propertyNamingPolicy, model.SourceGenerationOptions);
             builder.AppendLine();
         }
 
@@ -166,7 +166,8 @@ public sealed partial class YamlSerializerContextGenerator
         string typeName,
         ImmutableArray<DerivedTypeMappingModel> derivedTypeMappings,
         Dictionary<ITypeSymbol, int> indexByType,
-        YamlNamingPolicy? propertyNamingPolicy)
+        YamlNamingPolicy? propertyNamingPolicy,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var attributeConverterTypeName = GetYamlConverterAttributeTypeName((ISymbol)typeSymbol);
 
@@ -529,15 +530,22 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine();
 
-                var discriminatorPropertyNameExpression = polymorphism.DiscriminatorPropertyNameOverride is null
-                    ? "options.PolymorphismOptions.TypeDiscriminatorPropertyName"
-                    : ToLiteral(polymorphism.DiscriminatorPropertyNameOverride);
-                var discriminatorStyleExpression = polymorphism.DiscriminatorStyleOverrideValue is null
-                    ? "options.PolymorphismOptions.DiscriminatorStyle"
-                    : $"(global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle){polymorphism.DiscriminatorStyleOverrideValue.Value}";
+                var discriminatorPropertyNameExpression = GetDiscriminatorPropertyNameExpression(polymorphism, sourceGenerationOptions);
+                var discriminatorStyleOverride = polymorphism.DiscriminatorStyleOverrideValue ?? GetDiscriminatorStyleOverride(sourceGenerationOptions);
+                var hasDiscriminatorStyleOverride = discriminatorStyleOverride.HasValue;
+                var writeTagForOverride = discriminatorStyleOverride is int writeStyle && DiscriminatorStyleWritesTag(writeStyle);
+                var writePropertyForOverride = discriminatorStyleOverride is int writePropertyStyle && DiscriminatorStyleWritesProperty(writePropertyStyle);
+                var mayWriteDiscriminatorProperty = !hasDiscriminatorStyleOverride || writePropertyForOverride;
 
-                builder.Append("        var discriminatorPropertyName = ").Append(discriminatorPropertyNameExpression).AppendLine(";");
-                builder.Append("        var discriminatorStyle = ").Append(discriminatorStyleExpression).AppendLine(";");
+                if (mayWriteDiscriminatorProperty)
+                {
+                    builder.Append("        var discriminatorPropertyName = ").Append(discriminatorPropertyNameExpression).AppendLine(";");
+                }
+
+                if (!hasDiscriminatorStyleOverride)
+                {
+                    builder.AppendLine("        var discriminatorStyle = options.PolymorphismOptions.DiscriminatorStyle;");
+                }
 
                 for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
                 {
@@ -554,20 +562,42 @@ public sealed partial class YamlSerializerContextGenerator
 
                     if (derived.Tag is not null)
                     {
-                        builder.Append("            if (discriminatorStyle is global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Tag or global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Both) { writer.WriteTag(")
-                            .Append(ToLiteral(derived.Tag)).AppendLine("); }");
+                        if (hasDiscriminatorStyleOverride)
+                        {
+                            if (writeTagForOverride)
+                            {
+                                builder.Append("            writer.WriteTag(").Append(ToLiteral(derived.Tag)).AppendLine(");");
+                            }
+                        }
+                        else
+                        {
+                            builder.Append("            if (discriminatorStyle is global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Tag or global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Both) { writer.WriteTag(")
+                                .Append(ToLiteral(derived.Tag)).AppendLine("); }");
+                        }
                     }
 
                     builder.AppendLine("            writer.WriteStartMapping();");
                     if (derived.Discriminator is not null)
                     {
-                        builder.AppendLine("            if (discriminatorStyle is global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Property or global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Both)");
-                        builder.AppendLine("            {");
-                        builder.AppendLine("                writer.WritePropertyName(discriminatorPropertyName);");
-                        builder.Append("                writer.WriteScalar(").Append(ToLiteral(derived.Discriminator)).AppendLine(");");
-                        builder.AppendLine("            }");
+                        if (hasDiscriminatorStyleOverride)
+                        {
+                            if (writePropertyForOverride)
+                            {
+                                builder.AppendLine("            writer.WritePropertyName(discriminatorPropertyName);");
+                                builder.Append("            writer.WriteScalar(").Append(ToLiteral(derived.Discriminator)).AppendLine(");");
+                            }
+                        }
+                        else
+                        {
+                            builder.AppendLine("            if (discriminatorStyle is global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Property or global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Both)");
+                            builder.AppendLine("            {");
+                            builder.AppendLine("                writer.WritePropertyName(discriminatorPropertyName);");
+                            builder.Append("                writer.WriteScalar(").Append(ToLiteral(derived.Discriminator)).AppendLine(");");
+                            builder.AppendLine("            }");
+                        }
                     }
-                    builder.Append("            WriteMembers").Append(derivedIndex).Append("(writer, ").Append(derivedLocal).AppendLine(", discriminatorPropertyName);");
+                    builder.Append("            WriteMembers").Append(derivedIndex).Append("(writer, ").Append(derivedLocal).Append(", ")
+                        .Append(mayWriteDiscriminatorProperty ? "discriminatorPropertyName" : "null").AppendLine(");");
                     builder.AppendLine("            writer.WriteEndMapping();");
                     if (emitLifecycleCallbacks)
                     {
@@ -601,7 +631,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("        return;");
             builder.AppendLine("    }");
             builder.AppendLine();
-            EmitWriteMembersMethod(builder, index, typeName, members, extensionData, indexByType);
+            EmitWriteMembersMethod(builder, index, typeName, members, extensionData, indexByType, sourceGenerationOptions);
             return;
         }
 
@@ -609,7 +639,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("    }");
     }
 
-    private static void EmitWriteMembersMethod(StringBuilder builder, int index, string typeName, ImmutableArray<MemberModel> members, ExtensionDataMemberModel? extensionData, Dictionary<ITypeSymbol, int> indexByType)
+    private static void EmitWriteMembersMethod(StringBuilder builder, int index, string typeName, ImmutableArray<MemberModel> members, ExtensionDataMemberModel? extensionData, Dictionary<ITypeSymbol, int> indexByType, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         builder.Append("    private static void WriteMembers").Append(index)
             .Append("(global::Meziantou.Framework.Yaml.Serialization.YamlWriter writer, ").Append(typeName)
@@ -618,79 +648,15 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("        var options = writer.Options;");
         builder.AppendLine("        var hasCustomConverters = options.Converters.Count != 0;");
         builder.AppendLine();
+        var defaultIgnoreConditionOverride = GetDefaultIgnoreConditionOverride(sourceGenerationOptions);
+        var sortedMappingOrderOverride = GetSortedMappingOrderOverride(sourceGenerationOptions);
 
         foreach (var member in members)
         {
             var memberValueVar = "__value" + index + "_" + member.Symbol.Name;
-            var ignoreVar = "__ignore" + index + "_" + member.Symbol.Name;
             var nameVar = "__name" + index + "_" + member.Symbol.Name;
 
-            builder.Append("        if (").Append(GetShouldSerializeMemberExpression(member)).AppendLine(")");
-            builder.AppendLine("        {");
-            builder.Append("        var ").Append(memberValueVar).Append(" = ").Append(member.AccessExpression).AppendLine(";");
-            EmitThrowIfNullForNonNullableMemberOnWrite(builder, member, typeName, memberValueVar, "        ");
-            builder.Append("        var ").Append(ignoreVar).Append(" = ").Append(member.IgnoreConditionExpression).AppendLine(";");
-
-            builder.Append("        if (").Append(ignoreVar).AppendLine(" is global::Meziantou.Framework.Yaml.YamlIgnoreCondition.Always or global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWriting)");
-            builder.AppendLine("        {");
-            builder.AppendLine("            // Skip value ignored during serialization.");
-            builder.AppendLine("        }");
-            builder.Append("        else if (").Append(ignoreVar).AppendLine(" == global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingNull)");
-            builder.AppendLine("        {");
-            if (member.Type.IsReferenceType)
-            {
-                builder.Append("            if (").Append(memberValueVar).AppendLine(" is null)");
-                builder.AppendLine("            {");
-                builder.AppendLine("                // Skip null value.");
-                builder.AppendLine("            }");
-                builder.AppendLine("            else");
-                builder.AppendLine("            {");
-                builder.Append("                var ").Append(nameVar).Append(" = ").Append(member.SerializedNameExpressionForWrite).AppendLine(";");
-                builder.Append("                if (discriminatorPropertyName is null || !global::System.String.Equals(").Append(nameVar).AppendLine(", discriminatorPropertyName, global::System.StringComparison.Ordinal))");
-                builder.AppendLine("                {");
-                builder.Append("                    writer.WritePropertyName(").Append(nameVar).AppendLine(");");
-                EmitWriteMemberValueWithCustomConverter(builder, member, indexByType, valueExpression: memberValueVar, indent: "                    ");
-                builder.AppendLine("                }");
-                builder.AppendLine("            }");
-            }
-            else
-            {
-                builder.AppendLine("            // Value types are never null.");
-                builder.Append("            var ").Append(nameVar).Append(" = ").Append(member.SerializedNameExpressionForWrite).AppendLine(";");
-                builder.Append("            if (discriminatorPropertyName is null || !global::System.String.Equals(").Append(nameVar).AppendLine(", discriminatorPropertyName, global::System.StringComparison.Ordinal))");
-                builder.AppendLine("            {");
-                builder.Append("                writer.WritePropertyName(").Append(nameVar).AppendLine(");");
-                EmitWriteMemberValueWithCustomConverter(builder, member, indexByType, valueExpression: memberValueVar, indent: "                ");
-                builder.AppendLine("            }");
-            }
-            builder.AppendLine("        }");
-            builder.Append("        else if (").Append(ignoreVar).AppendLine(" == global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingDefault)");
-            builder.AppendLine("        {");
-            builder.Append("            if (global::System.Collections.Generic.EqualityComparer<").Append(member.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).Append(">.Default.Equals(")
-                .Append(memberValueVar).AppendLine(", default))");
-            builder.AppendLine("            {");
-            builder.AppendLine("                // Skip default value.");
-            builder.AppendLine("            }");
-            builder.AppendLine("            else");
-            builder.AppendLine("            {");
-            builder.Append("                var ").Append(nameVar).Append(" = ").Append(member.SerializedNameExpressionForWrite).AppendLine(";");
-            builder.Append("                if (discriminatorPropertyName is null || !global::System.String.Equals(").Append(nameVar).AppendLine(", discriminatorPropertyName, global::System.StringComparison.Ordinal))");
-            builder.AppendLine("                {");
-            builder.Append("                    writer.WritePropertyName(").Append(nameVar).AppendLine(");");
-            EmitWriteMemberValueWithCustomConverter(builder, member, indexByType, valueExpression: memberValueVar, indent: "                    ");
-            builder.AppendLine("                }");
-            builder.AppendLine("            }");
-            builder.AppendLine("        }");
-            builder.AppendLine("        else");
-            builder.AppendLine("        {");
-            builder.Append("            var ").Append(nameVar).Append(" = ").Append(member.SerializedNameExpressionForWrite).AppendLine(";");
-            builder.Append("            if (discriminatorPropertyName is null || !global::System.String.Equals(").Append(nameVar).AppendLine(", discriminatorPropertyName, global::System.StringComparison.Ordinal))");
-            builder.AppendLine("            {");
-            builder.Append("                writer.WritePropertyName(").Append(nameVar).AppendLine(");");
-            EmitWriteMemberValueWithCustomConverter(builder, member, indexByType, valueExpression: memberValueVar, indent: "                ");
-            builder.AppendLine("            }");
-            builder.AppendLine("        }");
-            builder.AppendLine("        }");
+            EmitWriteMember(builder, member, indexByType, memberValueVar, nameVar, defaultIgnoreConditionOverride);
         }
 
         if (extensionData is not null)
@@ -706,130 +672,243 @@ public sealed partial class YamlSerializerContextGenerator
                 var valueTypeName = GetGeneratedTypeName(dictionaryValueType);
                 var valueTypeOfName = dictionaryValueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-                builder.AppendLine("            if (options.MappingOrder == global::Meziantou.Framework.Yaml.YamlMappingOrderPolicy.Sorted)");
-                builder.AppendLine("            {");
-                builder.Append("                var items = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, ").Append(valueTypeName).AppendLine(">>(extensionData.Count);");
-                builder.AppendLine("                foreach (var pair in extensionData)");
-                builder.AppendLine("                {");
-                builder.AppendLine("                    items.Add(pair);");
-                builder.AppendLine("                }");
-                builder.AppendLine("                items.Sort(static (x, y) => global::System.String.CompareOrdinal(x.Key, y.Key));");
-                builder.AppendLine("                for (var i = 0; i < items.Count; i++)");
-                builder.AppendLine("                {");
-                builder.AppendLine("                    var key = items[i].Key;");
-                builder.AppendLine("                    if (discriminatorPropertyName is not null && global::System.String.Equals(key, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        continue;");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    writer.WritePropertyName(key);");
-                builder.AppendLine("                    var extensionValue = items[i].Value;");
-                builder.AppendLine("                    if (extensionValue is null)");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        writer.WriteNullValue();");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    else");
-                builder.AppendLine("                    {");
-                builder.Append("                        var converter = writer.GetConverter(typeof(").Append(valueTypeOfName).AppendLine("));");
-                builder.AppendLine("                        converter.Write(writer, extensionValue);");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                }");
-                builder.AppendLine("            }");
-                builder.AppendLine("            else");
-                builder.AppendLine("            {");
-                builder.AppendLine("                foreach (var pair in extensionData)");
-                builder.AppendLine("                {");
-                builder.AppendLine("                    var key = pair.Key;");
-                builder.AppendLine("                    if (discriminatorPropertyName is not null && global::System.String.Equals(key, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        continue;");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    writer.WritePropertyName(key);");
-                builder.AppendLine("                    var extensionValue = pair.Value;");
-                builder.AppendLine("                    if (extensionValue is null)");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        writer.WriteNullValue();");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    else");
-                builder.AppendLine("                    {");
-                builder.Append("                        var converter = writer.GetConverter(typeof(").Append(valueTypeOfName).AppendLine("));");
-                builder.AppendLine("                        converter.Write(writer, extensionValue);");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                }");
-                builder.AppendLine("            }");
+                EmitMappingOrderBranch(
+                    builder,
+                    sortedMappingOrderOverride,
+                    "            ",
+                    sortedIndent =>
+                    {
+                        builder.Append(sortedIndent).Append("var items = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, ").Append(valueTypeName).AppendLine(">>(extensionData.Count);");
+                        builder.Append(sortedIndent).AppendLine("foreach (var pair in extensionData)");
+                        builder.Append(sortedIndent).AppendLine("{");
+                        builder.Append(sortedIndent).AppendLine("    items.Add(pair);");
+                        builder.Append(sortedIndent).AppendLine("}");
+                        builder.Append(sortedIndent).AppendLine("items.Sort(static (x, y) => global::System.String.CompareOrdinal(x.Key, y.Key));");
+                        builder.Append(sortedIndent).AppendLine("for (var i = 0; i < items.Count; i++)");
+                        builder.Append(sortedIndent).AppendLine("{");
+                        builder.Append(sortedIndent).AppendLine("    var key = items[i].Key;");
+                        builder.Append(sortedIndent).AppendLine("    if (discriminatorPropertyName is not null && global::System.String.Equals(key, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
+                        builder.Append(sortedIndent).AppendLine("    {");
+                        builder.Append(sortedIndent).AppendLine("        continue;");
+                        builder.Append(sortedIndent).AppendLine("    }");
+                        builder.Append(sortedIndent).AppendLine("    writer.WritePropertyName(key);");
+                        builder.Append(sortedIndent).AppendLine("    var extensionValue = items[i].Value;");
+                        builder.Append(sortedIndent).AppendLine("    if (extensionValue is null)");
+                        builder.Append(sortedIndent).AppendLine("    {");
+                        builder.Append(sortedIndent).AppendLine("        writer.WriteNullValue();");
+                        builder.Append(sortedIndent).AppendLine("    }");
+                        builder.Append(sortedIndent).AppendLine("    else");
+                        builder.Append(sortedIndent).AppendLine("    {");
+                        builder.Append(sortedIndent).Append("        var converter = writer.GetConverter(typeof(").Append(valueTypeOfName).AppendLine("));");
+                        builder.Append(sortedIndent).AppendLine("        converter.Write(writer, extensionValue);");
+                        builder.Append(sortedIndent).AppendLine("    }");
+                        builder.Append(sortedIndent).AppendLine("}");
+                    },
+                    declarationIndent =>
+                    {
+                        builder.Append(declarationIndent).AppendLine("foreach (var pair in extensionData)");
+                        builder.Append(declarationIndent).AppendLine("{");
+                        builder.Append(declarationIndent).AppendLine("    var key = pair.Key;");
+                        builder.Append(declarationIndent).AppendLine("    if (discriminatorPropertyName is not null && global::System.String.Equals(key, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
+                        builder.Append(declarationIndent).AppendLine("    {");
+                        builder.Append(declarationIndent).AppendLine("        continue;");
+                        builder.Append(declarationIndent).AppendLine("    }");
+                        builder.Append(declarationIndent).AppendLine("    writer.WritePropertyName(key);");
+                        builder.Append(declarationIndent).AppendLine("    var extensionValue = pair.Value;");
+                        builder.Append(declarationIndent).AppendLine("    if (extensionValue is null)");
+                        builder.Append(declarationIndent).AppendLine("    {");
+                        builder.Append(declarationIndent).AppendLine("        writer.WriteNullValue();");
+                        builder.Append(declarationIndent).AppendLine("    }");
+                        builder.Append(declarationIndent).AppendLine("    else");
+                        builder.Append(declarationIndent).AppendLine("    {");
+                        builder.Append(declarationIndent).Append("        var converter = writer.GetConverter(typeof(").Append(valueTypeOfName).AppendLine("));");
+                        builder.Append(declarationIndent).AppendLine("        converter.Write(writer, extensionValue);");
+                        builder.Append(declarationIndent).AppendLine("    }");
+                        builder.Append(declarationIndent).AppendLine("}");
+                    });
             }
             else
             {
-                builder.AppendLine("            if (extensionData is not global::Meziantou.Framework.Yaml.Model.YamlMapping mapping)");
-                builder.AppendLine("            {");
-                builder.AppendLine("                throw new global::Meziantou.Framework.Yaml.YamlException(global::Meziantou.Framework.Yaml.Mark.Empty, global::Meziantou.Framework.Yaml.Mark.Empty, \"Extension data must be a Meziantou.Framework.Yaml.Model.YamlMapping.\");");
-                builder.AppendLine("            }");
-                builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>>)mapping;");
-                builder.AppendLine("            if (options.MappingOrder == global::Meziantou.Framework.Yaml.YamlMappingOrderPolicy.Sorted)");
-                builder.AppendLine("            {");
-                builder.AppendLine("                var items = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>>(list.Count);");
-                builder.AppendLine("                for (var i = 0; i < list.Count; i++)");
-                builder.AppendLine("                {");
-                builder.AppendLine("                    var pair = list[i];");
-                builder.AppendLine("                    if (pair.Key is not global::Meziantou.Framework.Yaml.Model.YamlValue keyValue)");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        throw new global::Meziantou.Framework.Yaml.YamlException(global::Meziantou.Framework.Yaml.Mark.Empty, global::Meziantou.Framework.Yaml.Mark.Empty, \"Only scalar mapping keys are supported for extension data.\");");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    items.Add(new global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>(keyValue.Value, pair.Value));");
-                builder.AppendLine("                }");
-                builder.AppendLine("                items.Sort(static (x, y) => global::System.String.CompareOrdinal(x.Key, y.Key));");
-                builder.AppendLine("                for (var i = 0; i < items.Count; i++)");
-                builder.AppendLine("                {");
-                builder.AppendLine("                    var key = items[i].Key;");
-                builder.AppendLine("                    if (discriminatorPropertyName is not null && global::System.String.Equals(key, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        continue;");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    writer.WritePropertyName(key);");
-                builder.AppendLine("                    var extensionValue = items[i].Value;");
-                builder.AppendLine("                    if (extensionValue is null)");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        writer.WriteNullValue();");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    else");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        var converter = writer.GetConverter(typeof(global::Meziantou.Framework.Yaml.Model.YamlNode));");
-                builder.AppendLine("                        converter.Write(writer, extensionValue);");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                }");
-                builder.AppendLine("            }");
-                builder.AppendLine("            else");
-                builder.AppendLine("            {");
-                builder.AppendLine("                for (var i = 0; i < list.Count; i++)");
-                builder.AppendLine("                {");
-                builder.AppendLine("                    var pair = list[i];");
-                builder.AppendLine("                    if (pair.Key is not global::Meziantou.Framework.Yaml.Model.YamlValue keyValue)");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        throw new global::Meziantou.Framework.Yaml.YamlException(global::Meziantou.Framework.Yaml.Mark.Empty, global::Meziantou.Framework.Yaml.Mark.Empty, \"Only scalar mapping keys are supported for extension data.\");");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    var key = keyValue.Value;");
-                builder.AppendLine("                    if (discriminatorPropertyName is not null && global::System.String.Equals(key, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        continue;");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    writer.WritePropertyName(key);");
-                builder.AppendLine("                    var extensionValue = pair.Value;");
-                builder.AppendLine("                    if (extensionValue is null)");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        writer.WriteNullValue();");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                    else");
-                builder.AppendLine("                    {");
-                builder.AppendLine("                        var converter = writer.GetConverter(typeof(global::Meziantou.Framework.Yaml.Model.YamlNode));");
-                builder.AppendLine("                        converter.Write(writer, extensionValue);");
-                builder.AppendLine("                    }");
-                builder.AppendLine("                }");
-                builder.AppendLine("            }");
+                builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>>)extensionData;");
+                EmitMappingOrderBranch(
+                    builder,
+                    sortedMappingOrderOverride,
+                    "            ",
+                    sortedIndent =>
+                    {
+                        builder.Append(sortedIndent).AppendLine("var items = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>>(list.Count);");
+                        builder.Append(sortedIndent).AppendLine("for (var i = 0; i < list.Count; i++)");
+                        builder.Append(sortedIndent).AppendLine("{");
+                        builder.Append(sortedIndent).AppendLine("    var pair = list[i];");
+                        builder.Append(sortedIndent).AppendLine("    if (pair.Key is not global::Meziantou.Framework.Yaml.Model.YamlValue keyValue)");
+                        builder.Append(sortedIndent).AppendLine("    {");
+                        builder.Append(sortedIndent).AppendLine("        throw new global::Meziantou.Framework.Yaml.YamlException(global::Meziantou.Framework.Yaml.Mark.Empty, global::Meziantou.Framework.Yaml.Mark.Empty, \"Only scalar mapping keys are supported for extension data.\");");
+                        builder.Append(sortedIndent).AppendLine("    }");
+                        builder.Append(sortedIndent).AppendLine("    items.Add(new global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>(keyValue.Value, pair.Value));");
+                        builder.Append(sortedIndent).AppendLine("}");
+                        builder.Append(sortedIndent).AppendLine("items.Sort(static (x, y) => global::System.String.CompareOrdinal(x.Key, y.Key));");
+                        builder.Append(sortedIndent).AppendLine("for (var i = 0; i < items.Count; i++)");
+                        builder.Append(sortedIndent).AppendLine("{");
+                        builder.Append(sortedIndent).AppendLine("    var key = items[i].Key;");
+                        builder.Append(sortedIndent).AppendLine("    if (discriminatorPropertyName is not null && global::System.String.Equals(key, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
+                        builder.Append(sortedIndent).AppendLine("    {");
+                        builder.Append(sortedIndent).AppendLine("        continue;");
+                        builder.Append(sortedIndent).AppendLine("    }");
+                        builder.Append(sortedIndent).AppendLine("    writer.WritePropertyName(key);");
+                        builder.Append(sortedIndent).AppendLine("    var extensionValue = items[i].Value;");
+                        builder.Append(sortedIndent).AppendLine("    if (extensionValue is null)");
+                        builder.Append(sortedIndent).AppendLine("    {");
+                        builder.Append(sortedIndent).AppendLine("        writer.WriteNullValue();");
+                        builder.Append(sortedIndent).AppendLine("    }");
+                        builder.Append(sortedIndent).AppendLine("    else");
+                        builder.Append(sortedIndent).AppendLine("    {");
+                        builder.Append(sortedIndent).AppendLine("        var converter = writer.GetConverter(typeof(global::Meziantou.Framework.Yaml.Model.YamlNode));");
+                        builder.Append(sortedIndent).AppendLine("        converter.Write(writer, extensionValue);");
+                        builder.Append(sortedIndent).AppendLine("    }");
+                        builder.Append(sortedIndent).AppendLine("}");
+                    },
+                    declarationIndent =>
+                    {
+                        builder.Append(declarationIndent).AppendLine("for (var i = 0; i < list.Count; i++)");
+                        builder.Append(declarationIndent).AppendLine("{");
+                        builder.Append(declarationIndent).AppendLine("    var pair = list[i];");
+                        builder.Append(declarationIndent).AppendLine("    if (pair.Key is not global::Meziantou.Framework.Yaml.Model.YamlValue keyValue)");
+                        builder.Append(declarationIndent).AppendLine("    {");
+                        builder.Append(declarationIndent).AppendLine("        throw new global::Meziantou.Framework.Yaml.YamlException(global::Meziantou.Framework.Yaml.Mark.Empty, global::Meziantou.Framework.Yaml.Mark.Empty, \"Only scalar mapping keys are supported for extension data.\");");
+                        builder.Append(declarationIndent).AppendLine("    }");
+                        builder.Append(declarationIndent).AppendLine("    var key = keyValue.Value;");
+                        builder.Append(declarationIndent).AppendLine("    if (discriminatorPropertyName is not null && global::System.String.Equals(key, discriminatorPropertyName, global::System.StringComparison.Ordinal))");
+                        builder.Append(declarationIndent).AppendLine("    {");
+                        builder.Append(declarationIndent).AppendLine("        continue;");
+                        builder.Append(declarationIndent).AppendLine("    }");
+                        builder.Append(declarationIndent).AppendLine("    writer.WritePropertyName(key);");
+                        builder.Append(declarationIndent).AppendLine("    var extensionValue = pair.Value;");
+                        builder.Append(declarationIndent).AppendLine("    if (extensionValue is null)");
+                        builder.Append(declarationIndent).AppendLine("    {");
+                        builder.Append(declarationIndent).AppendLine("        writer.WriteNullValue();");
+                        builder.Append(declarationIndent).AppendLine("    }");
+                        builder.Append(declarationIndent).AppendLine("    else");
+                        builder.Append(declarationIndent).AppendLine("    {");
+                        builder.Append(declarationIndent).AppendLine("        var converter = writer.GetConverter(typeof(global::Meziantou.Framework.Yaml.Model.YamlNode));");
+                        builder.Append(declarationIndent).AppendLine("        converter.Write(writer, extensionValue);");
+                        builder.Append(declarationIndent).AppendLine("    }");
+                        builder.Append(declarationIndent).AppendLine("}");
+                    });
             }
 
             builder.AppendLine("        }");
         }
 
         builder.AppendLine("    }");
+    }
+
+    private static void EmitWriteMember(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, int? defaultIgnoreConditionOverride)
+    {
+        var effectiveIgnoreCondition = member.IgnoreCondition ?? defaultIgnoreConditionOverride;
+        if (effectiveIgnoreCondition.HasValue)
+        {
+            EmitWriteMemberWithKnownIgnoreConditionInt(builder, member, indexByType, memberValueVar, nameVar, effectiveIgnoreCondition.Value);
+            return;
+        }
+
+        builder.Append("        if (").Append(GetShouldSerializeMemberExpression(member)).AppendLine(")");
+        builder.AppendLine("        {");
+        builder.Append("        var ").Append(memberValueVar).Append(" = ").Append(member.AccessExpression).AppendLine(";");
+        var typeName = member.Symbol.ContainingType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "unknown";
+        EmitThrowIfNullForNonNullableMemberOnWrite(builder, member, typeName, memberValueVar, "        ");
+        builder.AppendLine("        var __ignoreCondition = options.DefaultIgnoreCondition;");
+        builder.AppendLine("        if (__ignoreCondition is global::Meziantou.Framework.Yaml.YamlIgnoreCondition.Always or global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWriting)");
+        builder.AppendLine("        {");
+        builder.AppendLine("            // Skip value ignored during serialization.");
+        builder.AppendLine("        }");
+        builder.AppendLine("        else if (__ignoreCondition == global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingNull)");
+        builder.AppendLine("        {");
+        EmitWriteMemberWithNullCheck(builder, member, indexByType, memberValueVar, nameVar, "            ");
+        builder.AppendLine("        }");
+        builder.AppendLine("        else if (__ignoreCondition == global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingDefault)");
+        builder.AppendLine("        {");
+        EmitWriteMemberWithDefaultCheck(builder, member, indexByType, memberValueVar, nameVar, "            ");
+        builder.AppendLine("        }");
+        builder.AppendLine("        else");
+        builder.AppendLine("        {");
+        EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, "            ");
+        builder.AppendLine("        }");
+        builder.AppendLine("        }");
+    }
+
+    private static void EmitWriteMemberWithKnownIgnoreConditionInt(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, int ignoreCondition)
+    {
+        // ignoreCondition: 0=Never, 1=WhenWritingNull, 2=WhenWritingDefault, 3=Always, 4=WhenWriting, 5=WhenReading
+        if (ignoreCondition is 3 /* Always */ or 4 /* WhenWriting */)
+        {
+            // Always skipped on write — emit nothing
+            return;
+        }
+
+        builder.Append("        if (").Append(GetShouldSerializeMemberExpression(member)).AppendLine(")");
+        builder.AppendLine("        {");
+        builder.Append("        var ").Append(memberValueVar).Append(" = ").Append(member.AccessExpression).AppendLine(";");
+        var typeName = member.Symbol.ContainingType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "unknown";
+        EmitThrowIfNullForNonNullableMemberOnWrite(builder, member, typeName, memberValueVar, "        ");
+
+        if (ignoreCondition is 1 /* WhenWritingNull */)
+        {
+            EmitWriteMemberWithNullCheck(builder, member, indexByType, memberValueVar, nameVar, "        ");
+        }
+        else if (ignoreCondition is 2 /* WhenWritingDefault */)
+        {
+            EmitWriteMemberWithDefaultCheck(builder, member, indexByType, memberValueVar, nameVar, "        ");
+        }
+        else
+        {
+            // 0 = Never or 5 = WhenReading → always write
+            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, "        ");
+        }
+        builder.AppendLine("        }");
+    }
+
+    private static void EmitWriteMemberWithNullCheck(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent)
+    {
+        if (member.Type.IsReferenceType)
+        {
+            builder.Append(indent).Append("if (").Append(memberValueVar).AppendLine(" is null)");
+            builder.Append(indent).AppendLine("{");
+            builder.Append(indent).AppendLine("    // Skip null value.");
+            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).AppendLine("else");
+            builder.Append(indent).AppendLine("{");
+            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent + "    ");
+            builder.Append(indent).AppendLine("}");
+        }
+        else
+        {
+            builder.Append(indent).AppendLine("// Value types are never null.");
+            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent);
+        }
+    }
+
+    private static void EmitWriteMemberWithDefaultCheck(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent)
+    {
+        builder.Append(indent).Append("if (global::System.Collections.Generic.EqualityComparer<")
+            .Append(member.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).Append(">.Default.Equals(")
+            .Append(memberValueVar).AppendLine(", default))");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    // Skip default value.");
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("else");
+        builder.Append(indent).AppendLine("{");
+        EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent + "    ");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static void EmitWriteMemberProperty(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent)
+    {
+        builder.Append(indent).Append("var ").Append(nameVar).Append(" = ").Append(member.SerializedNameExpressionForWrite).AppendLine(";");
+        builder.Append(indent).Append("if (discriminatorPropertyName is null || !global::System.String.Equals(").Append(nameVar).AppendLine(", discriminatorPropertyName, global::System.StringComparison.Ordinal))");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("    writer.WritePropertyName(").Append(nameVar).AppendLine(");");
+        EmitWriteMemberValueWithCustomConverter(builder, member, indexByType, valueExpression: memberValueVar, indent: indent + "    ");
+        builder.Append(indent).AppendLine("}");
     }
 
     private static string GetShouldSerializeMemberExpression(MemberModel member)
@@ -924,7 +1003,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(indent).AppendLine("}");
     }
 
-    private static void EmitReadObjectCoreMethod(StringBuilder builder, int index, ITypeSymbol typeSymbol, string typeName, ImmutableArray<MemberModel> members, ExtensionDataMemberModel? extensionData, Dictionary<ITypeSymbol, int> indexByType, YamlNamingPolicy? propertyNamingPolicy)
+    private static void EmitReadObjectCoreMethod(StringBuilder builder, int index, ITypeSymbol typeSymbol, string typeName, ImmutableArray<MemberModel> members, ExtensionDataMemberModel? extensionData, Dictionary<ITypeSymbol, int> indexByType, YamlNamingPolicy? propertyNamingPolicy, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var emitLifecycleCallbacks =
             typeSymbol is INamedTypeSymbol lifecycleType &&
@@ -935,10 +1014,20 @@ public sealed partial class YamlSerializerContextGenerator
             .AppendLine("(global::Meziantou.Framework.Yaml.Serialization.YamlReader reader)");
         builder.AppendLine("    {");
         builder.AppendLine("        var options = reader.Options;");
-        builder.Append("        var preferredObjectCreationHandling = ").Append(GetPreferredObjectCreationHandlingExpression(typeSymbol)).AppendLine(";");
-        if (extensionData is null)
+        var typeCreationOverride = typeSymbol is INamedTypeSymbol namedTypeForCreation ? TryGetObjectCreationHandlingOverride(namedTypeForCreation) : null;
+        var preferredObjectCreationHandlingOverride = typeCreationOverride ?? GetPreferredObjectCreationHandlingOverride(sourceGenerationOptions);
+        var typeUnmappedOverride = typeSymbol is INamedTypeSymbol namedTypeForUnmapped ? TryGetUnmappedMemberHandlingOverride(namedTypeForUnmapped) : null;
+        var unmappedMemberHandlingOverride = typeUnmappedOverride ?? GetUnmappedMemberHandlingOverride(sourceGenerationOptions);
+        var propertyNameComparerExpression = GetPropertyNameComparerExpression(sourceGenerationOptions);
+        var propertyNameComparisonExpression = GetPropertyNameComparisonExpression(sourceGenerationOptions);
+        var mergeEnabledExpression = GetMergeEnabledExpression(sourceGenerationOptions);
+        if (preferredObjectCreationHandlingOverride is null)
         {
-            builder.Append("        var unmappedMemberHandling = ").Append(GetUnmappedMemberHandlingExpression(typeSymbol)).AppendLine(";");
+            builder.AppendLine("        var preferredObjectCreationHandling = options.PreferredObjectCreationHandling;");
+        }
+        if (unmappedMemberHandlingOverride is null && extensionData is null)
+        {
+            builder.AppendLine("        var unmappedMemberHandling = options.RejectUnmatchedProperties ? global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow : options.UnmappedMemberHandling;");
         }
         builder.AppendLine("        var hasCustomConverters = options.Converters.Count != 0;");
         builder.AppendLine("        if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.StartMapping)");
@@ -980,7 +1069,7 @@ public sealed partial class YamlSerializerContextGenerator
                  members.Any(static member => member.NeedsObjectInitializer) ||
                  extensionData is { IsInitOnly: true }))
             {
-                EmitReadObjectCoreWithConstructor(builder, index, ctorType, typeName, selectedConstructor, members, extensionData, indexByType, emitLifecycleCallbacks, propertyNamingPolicy);
+                EmitReadObjectCoreWithConstructor(builder, index, ctorType, typeName, selectedConstructor, members, extensionData, indexByType, emitLifecycleCallbacks, propertyNamingPolicy, unmappedMemberHandlingOverride, sourceGenerationOptions);
                 builder.AppendLine("    }");
                 return;
             }
@@ -1021,7 +1110,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("            if (container is null)");
                 builder.AppendLine("            {");
                 builder.Append("                container = new global::System.Collections.Generic.Dictionary<string, ").Append(valueTypeName)
-                    .AppendLine(">(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal);");
+                    .Append(">(").Append(propertyNameComparerExpression).AppendLine(");");
                 if (extensionData.CanAssign)
                 {
                     builder.Append("                instance.").Append(extensionData.Symbol.Name).AppendLine(" = container;");
@@ -1085,9 +1174,9 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine();
         }
 
-        builder.AppendLine("        var mergeEnabled = options.Schema is global::Meziantou.Framework.Yaml.YamlSchemaKind.Core or global::Meziantou.Framework.Yaml.YamlSchemaKind.Extended;");
+        builder.Append("        var mergeEnabled = ").Append(mergeEnabledExpression).AppendLine(";");
         builder.AppendLine("        global::System.Collections.Generic.HashSet<string>? explicitKeys = mergeEnabled");
-        builder.AppendLine("            ? new global::System.Collections.Generic.HashSet<string>(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal)");
+        builder.Append("            ? new global::System.Collections.Generic.HashSet<string>(").Append(propertyNameComparerExpression).AppendLine(")");
         builder.AppendLine("            : null;");
         builder.AppendLine();
         builder.AppendLine("        void ReadAndApplyMerge()");
@@ -1157,7 +1246,7 @@ public sealed partial class YamlSerializerContextGenerator
         foreach (var member in readCandidates)
         {
             builder.Append("                if (!matched && ").Append(GetShouldReadMemberExpression(member)).Append(" && global::System.String.Equals(mergeKey, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("                {");
             builder.AppendLine("                    matched = true;");
@@ -1179,7 +1268,9 @@ public sealed partial class YamlSerializerContextGenerator
                 member,
                 typeName,
                 indexByType,
-                extensionData is not null ? "ReadAndStoreExtensionData(mergeKey);" : "reader.Skip();");
+                extensionData is not null ? "ReadAndStoreExtensionData(mergeKey);" : "reader.Skip();",
+                preferredObjectCreationHandlingOverride,
+                sourceGenerationOptions);
 
             builder.AppendLine("                }");
         }
@@ -1192,11 +1283,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
         else
         {
-            builder.AppendLine("                    if (unmappedMemberHandling == global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow)");
-            builder.AppendLine("                    {");
-            builder.Append("                        throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnmappedMember(reader, typeof(").Append(typeName).AppendLine("), mergeKey);");
-            builder.AppendLine("                    }");
-            builder.AppendLine("                    reader.Skip();");
+            EmitHandleUnmatchedMember(builder, typeName, "mergeKey", unmappedMemberHandlingOverride, "                    ");
         }
         builder.AppendLine("                }");
         builder.AppendLine("            }");
@@ -1226,7 +1313,7 @@ public sealed partial class YamlSerializerContextGenerator
         foreach (var member in readCandidates)
         {
             builder.Append("            if (!matched && ").Append(GetShouldReadMemberExpression(member)).Append(" && global::System.String.Equals(key, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("            {");
             builder.AppendLine("                matched = true;");
@@ -1248,7 +1335,9 @@ public sealed partial class YamlSerializerContextGenerator
                 member,
                 typeName,
                 indexByType,
-                extensionData is not null ? "ReadAndStoreExtensionData(key);" : "reader.Skip();");
+                extensionData is not null ? "ReadAndStoreExtensionData(key);" : "reader.Skip();",
+                preferredObjectCreationHandlingOverride,
+                sourceGenerationOptions);
             builder.AppendLine("            }");
         }
 
@@ -1260,11 +1349,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
         else
         {
-            builder.AppendLine("                if (unmappedMemberHandling == global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow)");
-            builder.AppendLine("                {");
-            builder.Append("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnmappedMember(reader, typeof(").Append(typeName).AppendLine("), key);");
-            builder.AppendLine("                }");
-            builder.AppendLine("                reader.Skip();");
+            EmitHandleUnmatchedMember(builder, typeName, "key", unmappedMemberHandlingOverride, "                ");
         }
         builder.AppendLine("            }");
         builder.AppendLine("        }");
@@ -1327,7 +1412,9 @@ public sealed partial class YamlSerializerContextGenerator
         ExtensionDataMemberModel? extensionData,
         Dictionary<ITypeSymbol, int> indexByType,
         bool emitLifecycleCallbacks,
-        YamlNamingPolicy? propertyNamingPolicy)
+        YamlNamingPolicy? propertyNamingPolicy,
+        string? unmappedMemberHandlingOverride,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         // Map constructor parameters to member YAML names when possible (STJ-like binding rules).
         var parameters = constructor.Parameters;
@@ -1453,9 +1540,12 @@ public sealed partial class YamlSerializerContextGenerator
         }
 
         builder.AppendLine();
-        builder.AppendLine("        var mergeEnabled = options.Schema is global::Meziantou.Framework.Yaml.YamlSchemaKind.Core or global::Meziantou.Framework.Yaml.YamlSchemaKind.Extended;");
+        var mergeEnabledExpression = GetMergeEnabledExpression(sourceGenerationOptions);
+        var propertyNameComparerExpression = GetPropertyNameComparerExpression(sourceGenerationOptions);
+        var propertyNameComparisonExpression = GetPropertyNameComparisonExpression(sourceGenerationOptions);
+        builder.Append("        var mergeEnabled = ").Append(mergeEnabledExpression).AppendLine(";");
         builder.AppendLine("        global::System.Collections.Generic.HashSet<string>? explicitKeys = mergeEnabled");
-        builder.AppendLine("            ? new global::System.Collections.Generic.HashSet<string>(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal)");
+        builder.Append("            ? new global::System.Collections.Generic.HashSet<string>(").Append(propertyNameComparerExpression).AppendLine(")");
         builder.AppendLine("            : null;");
         builder.AppendLine();
         builder.AppendLine("        void ReadAndApplyMerge()");
@@ -1529,7 +1619,7 @@ public sealed partial class YamlSerializerContextGenerator
         {
             var member = readIgnoredMembers[i];
             builder.Append("                if (!matched && global::System.String.Equals(mergeKey, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("                {");
             builder.AppendLine("                    matched = true;");
@@ -1544,7 +1634,7 @@ public sealed partial class YamlSerializerContextGenerator
             var parameterName = parameter.Name ?? string.Empty;
 
             builder.Append("                if (!matched && global::System.String.Equals(mergeKey, ").Append(parameterYamlNameExpressions[i])
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("                {");
             builder.AppendLine("                    matched = true;");
@@ -1588,7 +1678,7 @@ public sealed partial class YamlSerializerContextGenerator
                 member.SerializedNameExpressionForWrite,
                 member.AccessExpression,
                 rhs => localValueVar + " = " + rhs,
-                member.IgnoreConditionExpression,
+                member.IgnoreCondition,
                 member.AttributeConverterTypeName,
                 member.ObjectCreationHandling,
                 member.BlockSequenceMappingStyle,
@@ -1606,7 +1696,7 @@ public sealed partial class YamlSerializerContextGenerator
                 member.EnumCustomNames);
 
             builder.Append("                if (!matched && ").Append(GetShouldReadMemberExpression(member)).Append(" && global::System.String.Equals(mergeKey, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("                {");
             builder.AppendLine("                    matched = true;");
@@ -1614,7 +1704,7 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.Append("                    ").Append(requiredVar).AppendLine(" = true;");
             }
-            EmitReadMemberValueWithCustomConverter(builder, localModel, indexByType);
+            EmitReadMemberValueWithCustomConverter(builder, localModel, indexByType, sourceGenerationOptions);
             builder.Append("                    ").Append(localSeenVar).AppendLine(" = true;");
             builder.AppendLine("                }");
         }
@@ -1629,7 +1719,7 @@ public sealed partial class YamlSerializerContextGenerator
             }
 
             builder.Append("                if (!matched && ").Append(GetShouldReadMemberExpression(member)).Append(" && global::System.String.Equals(mergeKey, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("                {");
             builder.AppendLine("                    matched = true;");
@@ -1654,11 +1744,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
         else
         {
-            builder.AppendLine("                    if (unmappedMemberHandling == global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow)");
-            builder.AppendLine("                    {");
-            builder.Append("                        throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnmappedMember(reader, typeof(").Append(typeName).AppendLine("), mergeKey);");
-            builder.AppendLine("                    }");
-            builder.AppendLine("                    reader.Skip();");
+            EmitHandleUnmatchedMember(builder, typeName, "mergeKey", unmappedMemberHandlingOverride, "                    ");
         }
         builder.AppendLine("                }");
         builder.AppendLine("            }");
@@ -1690,7 +1776,7 @@ public sealed partial class YamlSerializerContextGenerator
         {
             var member = readIgnoredMembers[i];
             builder.Append("            if (!matched && global::System.String.Equals(key, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("            {");
             builder.AppendLine("                matched = true;");
@@ -1705,7 +1791,7 @@ public sealed partial class YamlSerializerContextGenerator
             var parameterName = parameter.Name ?? string.Empty;
 
             builder.Append("            if (!matched && global::System.String.Equals(key, ").Append(parameterYamlNameExpressions[i])
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("            {");
             builder.AppendLine("                matched = true;");
@@ -1750,7 +1836,7 @@ public sealed partial class YamlSerializerContextGenerator
                 member.SerializedNameExpressionForWrite,
                 member.AccessExpression,
                 rhs => localValueVar + " = " + rhs,
-                member.IgnoreConditionExpression,
+                member.IgnoreCondition,
                 member.AttributeConverterTypeName,
                 member.ObjectCreationHandling,
                 member.BlockSequenceMappingStyle,
@@ -1768,7 +1854,7 @@ public sealed partial class YamlSerializerContextGenerator
                 member.EnumCustomNames);
 
             builder.Append("            if (!matched && ").Append(GetShouldReadMemberExpression(member)).Append(" && global::System.String.Equals(key, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("            {");
             builder.AppendLine("                matched = true;");
@@ -1776,7 +1862,7 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.Append("                ").Append(requiredVar).AppendLine(" = true;");
             }
-            EmitReadMemberValueWithCustomConverter(builder, localModel, indexByType);
+            EmitReadMemberValueWithCustomConverter(builder, localModel, indexByType, sourceGenerationOptions);
             builder.Append("                ").Append(localSeenVar).AppendLine(" = true;");
             builder.AppendLine("            }");
         }
@@ -1791,7 +1877,7 @@ public sealed partial class YamlSerializerContextGenerator
             }
 
             builder.Append("            if (!matched && ").Append(GetShouldReadMemberExpression(member)).Append(" && global::System.String.Equals(key, ").Append(member.SerializedNameExpressionForRead)
-                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+                .Append(", " + propertyNameComparisonExpression + "))");
             builder.AppendLine();
             builder.AppendLine("            {");
             builder.AppendLine("                matched = true;");
@@ -1816,11 +1902,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
         else
         {
-            builder.AppendLine("                if (unmappedMemberHandling == global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow)");
-            builder.AppendLine("                {");
-            builder.Append("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnmappedMember(reader, typeof(").Append(typeName).AppendLine("), key);");
-            builder.AppendLine("                }");
-            builder.AppendLine("                reader.Skip();");
+            EmitHandleUnmatchedMember(builder, typeName, "key", unmappedMemberHandlingOverride, "                ");
         }
         builder.AppendLine("            }");
         builder.AppendLine("        }");
@@ -1908,7 +1990,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("            if (container is null)");
                     builder.AppendLine("            {");
                     builder.Append("                container = new global::System.Collections.Generic.Dictionary<string, ").Append(valueTypeName)
-                        .AppendLine(">(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal);");
+                        .Append(">(").Append(propertyNameComparerExpression).AppendLine(");");
                     builder.Append("                ").Append(initOnlyExtensionDataValueVarName).AppendLine(" = container;");
                     builder.AppendLine("            }");
                     builder.AppendLine("            for (var i = 0; i < extensionEntries.Count; i++)");
@@ -2054,7 +2136,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("            if (container is null)");
                 builder.AppendLine("            {");
                 builder.Append("                container = new global::System.Collections.Generic.Dictionary<string, ").Append(valueTypeName)
-                    .AppendLine(">(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal);");
+                    .Append(">(").Append(propertyNameComparerExpression).AppendLine(");");
                 if (extensionData.CanAssign)
                 {
                     builder.Append("                instance.").Append(extensionData.Symbol.Name).AppendLine(" = container;");
@@ -2207,7 +2289,8 @@ public sealed partial class YamlSerializerContextGenerator
         string typeName,
         ImmutableArray<DerivedTypeMappingModel> derivedTypeMappings,
         Dictionary<ITypeSymbol, int> indexByType,
-        YamlNamingPolicy? propertyNamingPolicy)
+        YamlNamingPolicy? propertyNamingPolicy,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var attributeConverterTypeName = GetYamlConverterAttributeTypeName((ISymbol)typeSymbol);
 
@@ -2452,16 +2535,19 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("        reader.Read();");
 
             var dictionaryTypePrefix = GetDictionaryTypePrefix(typeSymbol);
+            var dictPropertyNameComparerExpression = GetPropertyNameComparerExpression(sourceGenerationOptions);
+            var dictMergeEnabledExpression = GetMergeEnabledExpression(sourceGenerationOptions);
+            var dictDuplicateKeyHandlingOverride = GetDuplicateKeyHandlingOverride(sourceGenerationOptions);
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
                 builder.Append("        var dictionary = new ").Append(dictionaryTypePrefix).Append("<string, ").Append(valueTypeName)
-                    .AppendLine(">(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal);");
-                builder.AppendLine("        var mergeEnabled = options.Schema is global::Meziantou.Framework.Yaml.YamlSchemaKind.Core or global::Meziantou.Framework.Yaml.YamlSchemaKind.Extended;");
+                    .Append(">(").Append(dictPropertyNameComparerExpression).AppendLine(");");
+                builder.Append("        var mergeEnabled = ").Append(dictMergeEnabledExpression).AppendLine(";");
                 builder.AppendLine("        global::System.Collections.Generic.HashSet<string>? explicitKeys = mergeEnabled");
-                builder.AppendLine("            ? new global::System.Collections.Generic.HashSet<string>(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal)");
+                builder.Append("            ? new global::System.Collections.Generic.HashSet<string>(").Append(dictPropertyNameComparerExpression).AppendLine(")");
                 builder.AppendLine("            : null;");
                 builder.AppendLine("        global::System.Collections.Generic.HashSet<string>? seenKeys = mergeEnabled");
-                builder.AppendLine("            ? new global::System.Collections.Generic.HashSet<string>(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal)");
+                builder.Append("            ? new global::System.Collections.Generic.HashSet<string>(").Append(dictPropertyNameComparerExpression).AppendLine(")");
                 builder.AppendLine("            : null;");
             }
             else
@@ -2551,16 +2637,7 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("            if (seenKeys is not null && !seenKeys.Add(key))");
                 builder.AppendLine("            {");
-                builder.AppendLine("                switch (options.DuplicateKeyHandling)");
-                builder.AppendLine("                {");
-                builder.AppendLine("                    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error:");
-                builder.AppendLine("                        throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, key);");
-                builder.AppendLine("                    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.FirstWins:");
-                builder.AppendLine("                        break;");
-                builder.AppendLine("                    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins:");
-                builder.Append("                        dictionary[key] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
-                builder.AppendLine("                        break;");
-                builder.AppendLine("                }");
+                EmitDuplicateKeyHandling(builder, dictDuplicateKeyHandlingOverride, "key", $"dictionary[key] = {GetNonNullableValueExpression(dictionaryValueType, "value")}", "                ");
                 builder.AppendLine("            }");
                 builder.AppendLine("            else");
                 builder.AppendLine("            {");
@@ -2571,16 +2648,7 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("            if (dictionary.ContainsKey(key))");
                 builder.AppendLine("            {");
-                builder.AppendLine("                switch (options.DuplicateKeyHandling)");
-                builder.AppendLine("                {");
-                builder.AppendLine("                    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error:");
-                builder.AppendLine("                        throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, key.ToString() ?? string.Empty);");
-                builder.AppendLine("                    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.FirstWins:");
-                builder.AppendLine("                        break;");
-                builder.AppendLine("                    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins:");
-                builder.Append("                        dictionary[key] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
-                builder.AppendLine("                        break;");
-                builder.AppendLine("                }");
+                EmitDuplicateKeyHandling(builder, dictDuplicateKeyHandlingOverride, "key.ToString() ?? string.Empty", $"dictionary[key] = {GetNonNullableValueExpression(dictionaryValueType, "value")}", "                ");
                 builder.AppendLine("            }");
                 builder.AppendLine("            else");
                 builder.AppendLine("            {");
@@ -2890,95 +2958,119 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("        var rootTag = reader.Tag;");
 
-                var discriminatorPropertyNameExpression = polymorphism.DiscriminatorPropertyNameOverride is null
-                    ? "options.PolymorphismOptions.TypeDiscriminatorPropertyName"
-                    : ToLiteral(polymorphism.DiscriminatorPropertyNameOverride);
-                var discriminatorStyleExpression = polymorphism.DiscriminatorStyleOverrideValue is null
-                    ? "options.PolymorphismOptions.DiscriminatorStyle"
-                    : $"(global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle){polymorphism.DiscriminatorStyleOverrideValue.Value}";
-                var unknownHandlingExpression = polymorphism.UnknownDerivedTypeHandlingOverrideValue is null
-                    ? "options.PolymorphismOptions.UnknownDerivedTypeHandling"
-                    : $"(global::Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling){polymorphism.UnknownDerivedTypeHandlingOverrideValue.Value}";
+                var discriminatorPropertyNameExpression = GetDiscriminatorPropertyNameExpression(polymorphism, sourceGenerationOptions);
+                var discriminatorStyleOverride = polymorphism.DiscriminatorStyleOverrideValue ?? GetDiscriminatorStyleOverride(sourceGenerationOptions);
+                var unknownDerivedTypeHandlingOverride = polymorphism.UnknownDerivedTypeHandlingOverrideValue ?? GetUnknownDerivedTypeHandlingOverride(sourceGenerationOptions);
 
                 builder.Append("        var discriminatorPropertyName = ").Append(discriminatorPropertyNameExpression).AppendLine(";");
-                builder.Append("        var discriminatorStyle = ").Append(discriminatorStyleExpression).AppendLine(";");
-                builder.Append("        var unknownDerivedTypeHandling = ").Append(unknownHandlingExpression).AppendLine(";");
+                if (!discriminatorStyleOverride.HasValue)
+                {
+                    builder.AppendLine("        var discriminatorStyle = options.PolymorphismOptions.DiscriminatorStyle;");
+                }
+
+                if (!unknownDerivedTypeHandlingOverride.HasValue)
+                {
+                    builder.AppendLine("        var unknownDerivedTypeHandling = options.PolymorphismOptions.UnknownDerivedTypeHandling;");
+                }
+
                 builder.AppendLine("        var buffered = global::Meziantou.Framework.Yaml.Serialization.YamlReader.BufferCurrentNodeToStringAndFindDiscriminator(reader, discriminatorPropertyName, out var discriminatorValue);");
                 builder.AppendLine("        var bufferedReader = reader.CreateReader(buffered);");
                 builder.AppendLine("        if (!bufferedReader.Read()) { return default; }");
 
-                builder.AppendLine("        if (discriminatorStyle is not global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Tag && discriminatorValue is not null)");
-                builder.AppendLine("        {");
-                for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
+                var readsProperty = !discriminatorStyleOverride.HasValue || DiscriminatorStyleReadsProperty(discriminatorStyleOverride.Value);
+                var readsTag = !discriminatorStyleOverride.HasValue || DiscriminatorStyleReadsTag(discriminatorStyleOverride.Value);
+
+                if (readsProperty)
                 {
-                    var derived = polymorphism.DerivedTypes[i];
-                    if (derived.Discriminator is null)
+                    if (discriminatorStyleOverride.HasValue)
                     {
-                        continue;
+                        builder.AppendLine("        if (discriminatorValue is not null)");
+                    }
+                    else
+                    {
+                        builder.AppendLine("        if (discriminatorStyle is not global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Tag && discriminatorValue is not null)");
                     }
 
-                    if (!indexByType.TryGetValue(derived.DerivedType, out var derivedIndex))
+                    builder.AppendLine("        {");
+                    for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
                     {
-                        continue;
+                        var derived = polymorphism.DerivedTypes[i];
+                        if (derived.Discriminator is null)
+                        {
+                            continue;
+                        }
+
+                        if (!indexByType.TryGetValue(derived.DerivedType, out var derivedIndex))
+                        {
+                            continue;
+                        }
+
+                        builder.Append("            if (global::System.String.Equals(discriminatorValue, ").Append(ToLiteral(derived.Discriminator))
+                            .AppendLine(", global::System.StringComparison.Ordinal))");
+                        builder.AppendLine("            {");
+                        builder.Append("                return (").Append(typeName).Append(")ReadValue").Append(derivedIndex).AppendLine("(bufferedReader)!;");
+                        builder.AppendLine("            }");
                     }
 
-                    builder.Append("            if (global::System.String.Equals(discriminatorValue, ").Append(ToLiteral(derived.Discriminator))
-                        .AppendLine(", global::System.StringComparison.Ordinal))");
-                    builder.AppendLine("            {");
-                    builder.Append("                return (").Append(typeName).Append(")ReadValue").Append(derivedIndex).AppendLine("(bufferedReader)!;");
-                    builder.AppendLine("            }");
-                }
-
-                // When discriminator value is present but unrecognized, try default type before failing
-                if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndexForUnknown))
-                {
-                    builder.Append("            return (").Append(typeName).Append(")ReadValue").Append(defaultIndexForUnknown).AppendLine("(bufferedReader)!;");
-                }
-                else
-                {
-                    builder.AppendLine("            if (unknownDerivedTypeHandling == global::Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling.Fail)");
-                    builder.AppendLine("            {");
-                    builder.Append("                throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnknownTypeDiscriminator(bufferedReader, discriminatorValue, typeof(").Append(typeName).AppendLine("));");
-                    builder.AppendLine("            }");
-                }
-                builder.AppendLine("        }");
-
-                builder.AppendLine("        if (discriminatorStyle is not global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Property && rootTag is not null)");
-                builder.AppendLine("        {");
-                for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
-                {
-                    var derived = polymorphism.DerivedTypes[i];
-                    if (derived.Tag is null)
+                    // When discriminator value is present but unrecognized, try default type before failing
+                    if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndexForUnknown))
                     {
-                        continue;
+                        builder.Append("            return (").Append(typeName).Append(")ReadValue").Append(defaultIndexForUnknown).AppendLine("(bufferedReader)!;");
+                    }
+                    else
+                    {
+                        EmitUnknownDerivedTypeFailure(builder, unknownDerivedTypeHandlingOverride,
+                            $"global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnknownTypeDiscriminator(bufferedReader, discriminatorValue, typeof({typeName}))", "            ");
                     }
 
-                    if (!indexByType.TryGetValue(derived.DerivedType, out var derivedIndex))
+                    builder.AppendLine("        }");
+                }
+
+                if (readsTag)
+                {
+                    if (discriminatorStyleOverride.HasValue)
                     {
-                        continue;
+                        builder.AppendLine("        if (rootTag is not null)");
+                    }
+                    else
+                    {
+                        builder.AppendLine("        if (discriminatorStyle is not global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Property && rootTag is not null)");
                     }
 
-                    builder.Append("            if (global::System.String.Equals(rootTag, ").Append(ToLiteral(derived.Tag))
-                        .AppendLine(", global::System.StringComparison.Ordinal))");
-                    builder.AppendLine("            {");
-                    builder.Append("                return (").Append(typeName).Append(")ReadValue").Append(derivedIndex).AppendLine("(bufferedReader)!;");
-                    builder.AppendLine("            }");
-                }
+                    builder.AppendLine("        {");
+                    for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
+                    {
+                        var derived = polymorphism.DerivedTypes[i];
+                        if (derived.Tag is null)
+                        {
+                            continue;
+                        }
 
-                // When tag is present but unrecognized, try default type before failing
-                if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndexForUnknownTag))
-                {
-                    builder.Append("            return (").Append(typeName).Append(")ReadValue").Append(defaultIndexForUnknownTag).AppendLine("(bufferedReader)!;");
-                }
-                else
-                {
-                    builder.AppendLine("            if (unknownDerivedTypeHandling == global::Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling.Fail)");
-                    builder.AppendLine("            {");
-                    builder.Append("                throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnknownTypeTag(bufferedReader, rootTag, typeof(").Append(typeName).AppendLine("));");
-                    builder.AppendLine("            }");
-                }
-                builder.AppendLine("        }");
+                        if (!indexByType.TryGetValue(derived.DerivedType, out var derivedIndex))
+                        {
+                            continue;
+                        }
 
+                        builder.Append("            if (global::System.String.Equals(rootTag, ").Append(ToLiteral(derived.Tag))
+                            .AppendLine(", global::System.StringComparison.Ordinal))");
+                        builder.AppendLine("            {");
+                        builder.Append("                return (").Append(typeName).Append(")ReadValue").Append(derivedIndex).AppendLine("(bufferedReader)!;");
+                        builder.AppendLine("            }");
+                    }
+
+                    // When tag is present but unrecognized, try default type before failing
+                    if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndexForUnknownTag))
+                    {
+                        builder.Append("            return (").Append(typeName).Append(")ReadValue").Append(defaultIndexForUnknownTag).AppendLine("(bufferedReader)!;");
+                    }
+                    else
+                    {
+                        EmitUnknownDerivedTypeFailure(builder, unknownDerivedTypeHandlingOverride,
+                            $"global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnknownTypeTag(bufferedReader, rootTag, typeof({typeName}))", "            ");
+                    }
+
+                    builder.AppendLine("        }");
+                }
                 // Fallback: use default derived type if available
                 if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndex))
                 {
@@ -2994,14 +3086,14 @@ public sealed partial class YamlSerializerContextGenerator
                 }
                 builder.AppendLine("    }");
                 builder.AppendLine();
-                EmitReadObjectCoreMethod(builder, index, typeSymbol, typeName, members, extensionData, indexByType, propertyNamingPolicy);
+                EmitReadObjectCoreMethod(builder, index, typeSymbol, typeName, members, extensionData, indexByType, propertyNamingPolicy, sourceGenerationOptions);
                 return;
             }
 
             builder.Append("        return ReadObjectCore").Append(index).AppendLine("(reader);");
             builder.AppendLine("    }");
             builder.AppendLine();
-            EmitReadObjectCoreMethod(builder, index, typeSymbol, typeName, members, extensionData, indexByType, propertyNamingPolicy);
+            EmitReadObjectCoreMethod(builder, index, typeSymbol, typeName, members, extensionData, indexByType, propertyNamingPolicy, sourceGenerationOptions);
             return;
         }
 
@@ -3329,7 +3421,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(indent).AppendLine("}");
     }
 
-    private static void EmitReadMemberValue(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType)
+    private static void EmitReadMemberValue(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         if (member.Type is INamedTypeSymbol nullableType && nullableType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
         {
@@ -3956,16 +4048,19 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("                    reader.Read();");
 
             var memberDictionaryTypePrefix = GetDictionaryTypePrefix(member.Type);
+            var memberPropertyNameComparerExpression = GetPropertyNameComparerExpression(sourceGenerationOptions);
+            var memberMergeEnabledExpression = GetMergeEnabledExpression(sourceGenerationOptions);
+            var memberDuplicateKeyHandlingOverride = GetDuplicateKeyHandlingOverride(sourceGenerationOptions);
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
                 builder.Append("                    var dictionary = new ").Append(memberDictionaryTypePrefix).Append("<string, ").Append(valueTypeName)
-                    .AppendLine(">(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal);");
-                builder.AppendLine("                    var dictionaryMergeEnabled = options.Schema is global::Meziantou.Framework.Yaml.YamlSchemaKind.Core or global::Meziantou.Framework.Yaml.YamlSchemaKind.Extended;");
+                    .Append(">(").Append(memberPropertyNameComparerExpression).AppendLine(");");
+                builder.Append("                    var dictionaryMergeEnabled = ").Append(memberMergeEnabledExpression).AppendLine(";");
                 builder.AppendLine("                    global::System.Collections.Generic.HashSet<string>? dictionaryExplicitKeys = dictionaryMergeEnabled");
-                builder.AppendLine("                        ? new global::System.Collections.Generic.HashSet<string>(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal)");
+                builder.Append("                        ? new global::System.Collections.Generic.HashSet<string>(").Append(memberPropertyNameComparerExpression).AppendLine(")");
                 builder.AppendLine("                        : null;");
                 builder.AppendLine("                    global::System.Collections.Generic.HashSet<string>? dictionarySeenKeys = dictionaryMergeEnabled");
-                builder.AppendLine("                        ? new global::System.Collections.Generic.HashSet<string>(options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal)");
+                builder.Append("                        ? new global::System.Collections.Generic.HashSet<string>(").Append(memberPropertyNameComparerExpression).AppendLine(")");
                 builder.AppendLine("                        : null;");
                 builder.AppendLine("                    global::Meziantou.Framework.Yaml.Serialization.YamlConverter? dictionaryMergeConverter = null;");
             }
@@ -4058,16 +4153,7 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("                        if (dictionarySeenKeys is not null && !dictionarySeenKeys.Add(entryKey))");
                 builder.AppendLine("                        {");
-                builder.AppendLine("                            switch (options.DuplicateKeyHandling)");
-                builder.AppendLine("                            {");
-                builder.AppendLine("                                case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error:");
-                builder.AppendLine("                                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, entryKey);");
-                builder.AppendLine("                                case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.FirstWins:");
-                builder.AppendLine("                                    break;");
-                builder.AppendLine("                                case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins:");
-                builder.Append("                                    dictionary[entryKey] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
-                builder.AppendLine("                                    break;");
-                builder.AppendLine("                            }");
+                EmitDuplicateKeyHandling(builder, memberDuplicateKeyHandlingOverride, "entryKey", $"dictionary[entryKey] = {GetNonNullableValueExpression(dictionaryValueType, "value")}", "                            ");
                 builder.AppendLine("                        }");
                 builder.AppendLine("                        else");
                 builder.AppendLine("                        {");
@@ -4078,16 +4164,7 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("                        if (dictionary.ContainsKey(entryKey))");
                 builder.AppendLine("                        {");
-                builder.AppendLine("                            switch (options.DuplicateKeyHandling)");
-                builder.AppendLine("                            {");
-                builder.AppendLine("                                case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error:");
-                builder.AppendLine("                                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, entryKey.ToString() ?? string.Empty);");
-                builder.AppendLine("                                case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.FirstWins:");
-                builder.AppendLine("                                    break;");
-                builder.AppendLine("                                case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins:");
-                builder.Append("                                    dictionary[entryKey] = ").Append(GetNonNullableValueExpression(dictionaryValueType, "value")).AppendLine(";");
-                builder.AppendLine("                                    break;");
-                builder.AppendLine("                            }");
+                EmitDuplicateKeyHandling(builder, memberDuplicateKeyHandlingOverride, "entryKey.ToString() ?? string.Empty", $"dictionary[entryKey] = {GetNonNullableValueExpression(dictionaryValueType, "value")}", "                            ");
                 builder.AppendLine("                        }");
                 builder.AppendLine("                        else");
                 builder.AppendLine("                        {");
@@ -4118,7 +4195,9 @@ public sealed partial class YamlSerializerContextGenerator
         MemberModel member,
         string declaringTypeName,
         Dictionary<ITypeSymbol, int> indexByType,
-        string readOnlyFallbackStatement)
+        string readOnlyFallbackStatement,
+        string? preferredObjectCreationHandlingOverride,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var memberTypeName = member.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var explicitPopulate = string.Equals(member.ObjectCreationHandling, "Populate", StringComparison.Ordinal);
@@ -4128,23 +4207,35 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (explicitPopulate)
         {
-            EmitPopulateObjectMemberValue(builder, member, memberTypeName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: true, indent: "                ");
+            EmitPopulateObjectMemberValue(builder, member, memberTypeName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: true, indent: "                ", sourceGenerationOptions);
             return;
         }
 
         if (explicitReplace)
         {
-            EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                ");
+            EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                ", sourceGenerationOptions);
+            return;
+        }
+
+        if (string.Equals(preferredObjectCreationHandlingOverride, "Populate", StringComparison.Ordinal))
+        {
+            EmitPopulateObjectMemberValue(builder, member, memberTypeName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: false, indent: "                ", sourceGenerationOptions);
+            return;
+        }
+
+        if (string.Equals(preferredObjectCreationHandlingOverride, "Replace", StringComparison.Ordinal))
+        {
+            EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                ", sourceGenerationOptions);
             return;
         }
 
         builder.AppendLine("                if (preferredObjectCreationHandling == global::Meziantou.Framework.Yaml.YamlObjectCreationHandling.Populate)");
         builder.AppendLine("                {");
-        EmitPopulateObjectMemberValue(builder, member, memberTypeName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: false, indent: "                    ");
+        EmitPopulateObjectMemberValue(builder, member, memberTypeName, declaringTypeName, indexByType, readOnlyFallbackStatement, canAssign, canPopulateValueType, explicitPopulate: false, indent: "                    ", sourceGenerationOptions);
         builder.AppendLine("                }");
         builder.AppendLine("                else");
         builder.AppendLine("                {");
-        EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                    ");
+        EmitReplaceObjectMemberValue(builder, member, indexByType, readOnlyFallbackStatement, canAssign, indent: "                    ", sourceGenerationOptions);
         builder.AppendLine("                }");
     }
 
@@ -4158,7 +4249,8 @@ public sealed partial class YamlSerializerContextGenerator
         bool canAssign,
         bool canPopulateValueType,
         bool explicitPopulate,
-        string indent)
+        string indent,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         builder.Append(indent).AppendLine("if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar && global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
         builder.Append(indent).AppendLine("{");
@@ -4205,7 +4297,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
         else if (canAssign)
         {
-            EmitReadMemberValueWithCustomConverter(builder, member, indexByType);
+            EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions);
         }
         else
         {
@@ -4232,7 +4324,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(indent).AppendLine("        {");
             if (canAssign)
             {
-                EmitReadMemberValueWithCustomConverter(builder, member, indexByType);
+                EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions);
             }
             else
             {
@@ -4260,11 +4352,12 @@ public sealed partial class YamlSerializerContextGenerator
         Dictionary<ITypeSymbol, int> indexByType,
         string readOnlyFallbackStatement,
         bool canAssign,
-        string indent)
+        string indent,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         if (canAssign)
         {
-            EmitReadMemberValueWithCustomConverter(builder, member, indexByType);
+            EmitReadMemberValueWithCustomConverter(builder, member, indexByType, sourceGenerationOptions);
         }
         else
         {
@@ -4272,7 +4365,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
     }
 
-    private static void EmitReadMemberValueWithCustomConverter(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType)
+    private static void EmitReadMemberValueWithCustomConverter(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var memberTypeName = member.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         if (member.AttributeConverterTypeName is not null)
@@ -4336,7 +4429,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("                }");
         builder.AppendLine("                else");
         builder.AppendLine("                {");
-        EmitReadMemberValue(builder, member, indexByType);
+        EmitReadMemberValue(builder, member, indexByType, sourceGenerationOptions);
         builder.AppendLine("                }");
     }
 

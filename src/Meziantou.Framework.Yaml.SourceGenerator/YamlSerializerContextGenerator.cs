@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -1262,13 +1263,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         Func<string, string> assign = member is IPropertySymbol propAssign
             ? rhs => "instance." + propAssign.Name + " = " + rhs
             : rhs => "instance." + member.Name + " = " + rhs;
-        var ignoreConditionExpression = GetIgnoreConditionExpression(member);
+        var memberIgnoreCondition = TryGetIgnoreCondition(member, out var rawCondition) ? rawCondition : (int?)null;
         var converterTypeName = GetYamlConverterAttributeTypeName(member);
         var objectCreationHandling = GetObjectCreationHandling(member);
         var (blockSequenceMappingStyle, blockSequenceSequenceStyle) = GetBlockSequenceItemStyles(member);
         var isRequiredKeyword = member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true };
         var isRequired = isRequiredKeyword || HasAttribute(member, "Meziantou.Framework.Yaml.Serialization.YamlRequiredAttribute");
-        var isIgnoredOnRead = TryGetIgnoreCondition(member, out var ignoreCondition) && ignoreCondition == IgnoreWhenReading;
+        var isIgnoredOnRead = memberIgnoreCondition == IgnoreWhenReading;
         var isInitOnly = member is IPropertySymbol property && IsInitOnlyProperty(property);
         var hasIncludeAttribute = HasAttribute(member, "Meziantou.Framework.Yaml.Serialization.YamlIncludeAttribute");
         var requiresIncludeFields = member is IFieldSymbol { DeclaredAccessibility: Accessibility.Public } && !hasIncludeAttribute;
@@ -1277,7 +1278,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var disallowNull = IsNonNullableReferenceType(type);
         var numberHandling = converterTypeName is null ? GetNumberHandlingValue(member, type) : null;
         var enumCustomNames = converterTypeName is null ? GetEnumCustomNames(type) : null;
-        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, ignoreConditionExpression, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, numberHandling, enumCustomNames);
+        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, memberIgnoreCondition, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, numberHandling, enumCustomNames);
     }
 
     private static (string ForRead, string ForWrite) GetSerializedMemberNameExpressions(ISymbol member, YamlNamingPolicy? propertyNamingPolicy)
@@ -1324,23 +1325,6 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             "KebabCaseLower" => YamlNamingPolicy.KebabCaseLower,
             "KebabCaseUpper" => YamlNamingPolicy.KebabCaseUpper,
             _ => null,
-        };
-    }
-
-    private static string GetIgnoreConditionExpression(ISymbol member)
-    {
-        if (!TryGetIgnoreCondition(member, out var condition))
-        {
-            return "options.DefaultIgnoreCondition";
-        }
-
-        return condition switch
-        {
-            IgnoreWhenWritingDefault => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingDefault",
-            IgnoreWhenWritingNull => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingNull",
-            IgnoreWhenWriting => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWriting",
-            IgnoreWhenReading => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenReading",
-            _ => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.Never",
         };
     }
 
@@ -1882,6 +1866,12 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private const int IgnoreAlways = 3;
     private const int IgnoreWhenWriting = 4;
     private const int IgnoreWhenReading = 5;
+
+    private const int DiscriminatorStyleTag = 0;
+    private const int DiscriminatorStyleProperty = 1;
+    private const int DiscriminatorStyleBoth = 2;
+    private const int UnknownDerivedTypeHandlingFail = 0;
+    private const int UnknownDerivedTypeHandlingFallBackToBase = 1;
 
     private static bool IsIgnoredAlways(ISymbol symbol)
         => TryGetIgnoreCondition(symbol, out var condition) && condition == IgnoreAlways;
@@ -2609,34 +2599,6 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return lastDot >= 0 && lastDot < text.Length - 1 ? text.Substring(lastDot + 1) : text;
     }
 
-    private static string GetUnmappedMemberHandlingExpression(ITypeSymbol typeSymbol)
-    {
-        if (typeSymbol is INamedTypeSymbol namedType)
-        {
-            var overrideValue = TryGetUnmappedMemberHandlingOverride(namedType);
-            if (!string.IsNullOrEmpty(overrideValue))
-            {
-                return "global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling." + overrideValue;
-            }
-        }
-
-        return "options.RejectUnmatchedProperties ? global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow : options.UnmappedMemberHandling";
-    }
-
-    private static string GetPreferredObjectCreationHandlingExpression(ITypeSymbol typeSymbol)
-    {
-        if (typeSymbol is INamedTypeSymbol namedType)
-        {
-            var overrideValue = TryGetObjectCreationHandlingOverride(namedType);
-            if (!string.IsNullOrEmpty(overrideValue))
-            {
-                return "global::Meziantou.Framework.Yaml.YamlObjectCreationHandling." + overrideValue;
-            }
-        }
-
-        return "options.PreferredObjectCreationHandling";
-    }
-
     private static string? TryGetUnmappedMemberHandlingOverride(INamedTypeSymbol typeSymbol)
     {
         foreach (var attribute in typeSymbol.GetAttributes())
@@ -2751,4 +2713,201 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static string ToLiteral(string value)
         => "@\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+
+    private static int? GetDefaultIgnoreConditionOverride(SourceGenerationOptionsModel options)
+        => options.DefaultIgnoreCondition switch
+        {
+            "Never" => IgnoreNever,
+            "WhenWritingNull" => IgnoreWhenWritingNull,
+            "WhenWritingDefault" => IgnoreWhenWritingDefault,
+            "Always" => IgnoreAlways,
+            "WhenWriting" => IgnoreWhenWriting,
+            "WhenReading" => IgnoreWhenReading,
+            _ => null,
+        };
+
+    private static int? GetDiscriminatorStyleOverride(SourceGenerationOptionsModel options)
+        => options.DiscriminatorStyle switch
+        {
+            "Tag" => DiscriminatorStyleTag,
+            "Property" => DiscriminatorStyleProperty,
+            "Both" => DiscriminatorStyleBoth,
+            _ => null,
+        };
+
+    private static int? GetUnknownDerivedTypeHandlingOverride(SourceGenerationOptionsModel options)
+        => options.UnknownDerivedTypeHandling switch
+        {
+            "Fail" => UnknownDerivedTypeHandlingFail,
+            "FallBackToBase" => UnknownDerivedTypeHandlingFallBackToBase,
+            _ => null,
+        };
+
+    private static string? GetUnmappedMemberHandlingOverride(SourceGenerationOptionsModel options)
+        => string.IsNullOrEmpty(options.UnmappedMemberHandling) ? null : options.UnmappedMemberHandling;
+
+    private static string? GetPreferredObjectCreationHandlingOverride(SourceGenerationOptionsModel options)
+        => string.IsNullOrEmpty(options.PreferredObjectCreationHandling) ? null : options.PreferredObjectCreationHandling;
+
+    private static string? GetDuplicateKeyHandlingOverride(SourceGenerationOptionsModel options)
+        => string.IsNullOrEmpty(options.DuplicateKeyHandling) ? null : options.DuplicateKeyHandling;
+
+    private static bool? GetSortedMappingOrderOverride(SourceGenerationOptionsModel options)
+        => options.MappingOrder switch
+        {
+            "Sorted" => true,
+            "Declaration" => false,
+            _ => null,
+        };
+
+    private static string GetPropertyNameComparerExpression(SourceGenerationOptionsModel options)
+        => options.PropertyNameCaseInsensitive switch
+        {
+            true => "global::System.StringComparer.OrdinalIgnoreCase",
+            false => "global::System.StringComparer.Ordinal",
+            _ => "options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal",
+        };
+
+    private static string GetPropertyNameComparisonExpression(SourceGenerationOptionsModel options)
+        => options.PropertyNameCaseInsensitive switch
+        {
+            true => "global::System.StringComparison.OrdinalIgnoreCase",
+            false => "global::System.StringComparison.Ordinal",
+            _ => "options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal",
+        };
+
+    private static string GetMergeEnabledExpression(SourceGenerationOptionsModel options)
+        => options.Schema switch
+        {
+            "Core" or "Extended" => "true",
+            "Failsafe" or "Json" => "false",
+            _ => "options.Schema is global::Meziantou.Framework.Yaml.YamlSchemaKind.Core or global::Meziantou.Framework.Yaml.YamlSchemaKind.Extended",
+        };
+
+    private static string GetDiscriminatorPropertyNameExpression(PolymorphismInfoModel polymorphism, SourceGenerationOptionsModel options)
+    {
+        if (polymorphism.DiscriminatorPropertyNameOverride is not null)
+            return ToLiteral(polymorphism.DiscriminatorPropertyNameOverride);
+
+        if (options.TypeDiscriminatorPropertyName is not null)
+            return ToLiteral(options.TypeDiscriminatorPropertyName);
+
+        return "options.PolymorphismOptions.TypeDiscriminatorPropertyName";
+    }
+
+    private static bool DiscriminatorStyleWritesTag(int style)
+        => style is DiscriminatorStyleTag or DiscriminatorStyleBoth;
+
+    private static bool DiscriminatorStyleWritesProperty(int style)
+        => style is DiscriminatorStyleProperty or DiscriminatorStyleBoth;
+
+    private static bool DiscriminatorStyleReadsTag(int style)
+        => style is DiscriminatorStyleTag or DiscriminatorStyleBoth;
+
+    private static bool DiscriminatorStyleReadsProperty(int style)
+        => style is DiscriminatorStyleProperty or DiscriminatorStyleBoth;
+
+    private static void EmitDuplicateKeyHandling(
+        StringBuilder builder,
+        string? duplicateKeyHandlingOverride,
+        string duplicateKeyExpression,
+        string lastWinsAssignment,
+        string indent)
+    {
+        switch (duplicateKeyHandlingOverride)
+        {
+            case "Error":
+                builder.Append(indent).Append("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, ").Append(duplicateKeyExpression).AppendLine(");");
+                return;
+            case "FirstWins":
+                builder.Append(indent).AppendLine("// Keep the first value for a duplicate key.");
+                return;
+            case "LastWins":
+                builder.Append(indent).Append(lastWinsAssignment).AppendLine(";");
+                return;
+        }
+
+        builder.Append(indent).AppendLine("switch (options.DuplicateKeyHandling)");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error:");
+        builder.Append(indent).Append("        throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, ").Append(duplicateKeyExpression).AppendLine(");");
+        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.FirstWins:");
+        builder.Append(indent).AppendLine("        break;");
+        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins:");
+        builder.Append(indent).Append("        ").Append(lastWinsAssignment).AppendLine(";");
+        builder.Append(indent).AppendLine("        break;");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static void EmitUnknownDerivedTypeFailure(
+        StringBuilder builder,
+        int? unknownDerivedTypeHandlingOverride,
+        string throwExpression,
+        string indent)
+    {
+        if (unknownDerivedTypeHandlingOverride.HasValue)
+        {
+            if (unknownDerivedTypeHandlingOverride.Value == UnknownDerivedTypeHandlingFail)
+            {
+                builder.Append(indent).Append("throw ").Append(throwExpression).AppendLine(";");
+            }
+
+            return;
+        }
+
+        builder.Append(indent).AppendLine("if (unknownDerivedTypeHandling == global::Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling.Fail)");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("    throw ").Append(throwExpression).AppendLine(";");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static void EmitHandleUnmatchedMember(
+        StringBuilder builder,
+        string typeName,
+        string keyExpression,
+        string? unmappedMemberHandlingOverride,
+        string indent)
+    {
+        if (string.Equals(unmappedMemberHandlingOverride, "Disallow", StringComparison.Ordinal))
+        {
+            builder.Append(indent).Append("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnmappedMember(reader, typeof(").Append(typeName).Append("), ").Append(keyExpression).AppendLine(");");
+            return;
+        }
+
+        if (unmappedMemberHandlingOverride is null)
+        {
+            builder.Append(indent).AppendLine("if (unmappedMemberHandling == global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow)");
+            builder.Append(indent).AppendLine("{");
+            builder.Append(indent).Append("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnmappedMember(reader, typeof(").Append(typeName).Append("), ").Append(keyExpression).AppendLine(");");
+            builder.Append(indent).AppendLine("}");
+        }
+
+        builder.Append(indent).AppendLine("reader.Skip();");
+    }
+
+    private static void EmitMappingOrderBranch(
+        StringBuilder builder,
+        bool? sortedMappingOrderOverride,
+        string indent,
+        Action<string> emitSorted,
+        Action<string> emitDeclaration)
+    {
+        if (sortedMappingOrderOverride.HasValue)
+        {
+            if (sortedMappingOrderOverride.Value)
+                emitSorted(indent);
+            else
+                emitDeclaration(indent);
+            return;
+        }
+
+        builder.Append(indent).AppendLine("if (options.MappingOrder == global::Meziantou.Framework.Yaml.YamlMappingOrderPolicy.Sorted)");
+        builder.Append(indent).AppendLine("{");
+        emitSorted(indent + "    ");
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("else");
+        builder.Append(indent).AppendLine("{");
+        emitDeclaration(indent + "    ");
+        builder.Append(indent).AppendLine("}");
+    }
 }

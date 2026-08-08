@@ -11,7 +11,7 @@ internal sealed class MemberModel
         string serializedNameExpressionForWrite,
         string accessExpression,
         Func<string, string> assignExpression,
-        string ignoreConditionExpression,
+        int? ignoreCondition,
         string? attributeConverterTypeName,
         string? objectCreationHandling,
         string? blockSequenceMappingStyle,
@@ -34,7 +34,7 @@ internal sealed class MemberModel
         SerializedNameExpressionForWrite = serializedNameExpressionForWrite;
         AccessExpression = accessExpression;
         AssignExpression = assignExpression;
-        IgnoreConditionExpression = ignoreConditionExpression;
+        IgnoreCondition = ignoreCondition;
         AttributeConverterTypeName = attributeConverterTypeName;
         ObjectCreationHandling = objectCreationHandling;
         BlockSequenceMappingStyle = blockSequenceMappingStyle;
@@ -58,7 +58,7 @@ internal sealed class MemberModel
     public string SerializedNameExpressionForWrite { get; }
     public string AccessExpression { get; }
     public Func<string, string> AssignExpression { get; }
-    public string IgnoreConditionExpression { get; }
+    public int? IgnoreCondition { get; }
     public string? AttributeConverterTypeName { get; }
     public string? ObjectCreationHandling { get; }
     public string? BlockSequenceMappingStyle { get; }

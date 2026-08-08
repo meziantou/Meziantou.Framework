@@ -505,6 +505,36 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
+        if (typeSymbol is INamedTypeSymbol interfaceType && interfaceType.TypeKind == TypeKind.Interface)
+        {
+            builder.AppendLine("        if (value is null)");
+            builder.AppendLine("        {");
+            builder.AppendLine("            writer.WriteNullValue();");
+            builder.AppendLine("            return;");
+            builder.AppendLine("        }");
+            builder.AppendLine();
+            builder.AppendLine("        if (writer.TryWriteReference(value)) { return; }");
+
+            if (TryGetPolymorphismInfo(interfaceType, derivedTypeMappings, out var interfacePolymorphism) && interfacePolymorphism.DerivedTypes.Length != 0)
+            {
+                EmitWriteLifecycleCallbackHelpers(builder, typeName);
+                EmitWritePolymorphicDispatch(
+                    builder,
+                    typeName,
+                    interfacePolymorphism,
+                    indexByType,
+                    sourceGenerationOptions,
+                    emitLifecycleCallbacks: true,
+                    canWriteBaseObject: false);
+                builder.AppendLine("    }");
+                return;
+            }
+
+            builder.AppendLine("        throw new global::System.NotSupportedException(\"The generated YAML serializer does not support this interface type without polymorphic derived types.\");");
+            builder.AppendLine("    }");
+            return;
+        }
+
         if (typeSymbol is INamedTypeSymbol named && (named.TypeKind == TypeKind.Class || named.TypeKind == TypeKind.Struct))
         {
             var emitLifecycleCallbacks =
@@ -679,6 +709,290 @@ public sealed partial class YamlSerializerContextGenerator
 
         builder.AppendLine("        throw new global::System.NotSupportedException(\"The generated YAML serializer does not support this type.\");");
         builder.AppendLine("    }");
+    }
+
+    private static void EmitWriteLifecycleCallbackHelpers(StringBuilder builder, string typeName)
+    {
+        builder.AppendLine();
+        builder.AppendLine("        void InvokeOnSerializing()");
+        builder.AppendLine("        {");
+        builder.AppendLine("            if (value is global::Meziantou.Framework.Yaml.Serialization.IYamlOnSerializing onSerializing)");
+        builder.AppendLine("            {");
+        builder.AppendLine("                try");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    onSerializing.OnSerializing();");
+        builder.AppendLine("                }");
+        builder.AppendLine("                catch (global::System.Exception exception)");
+        builder.AppendLine("                {");
+        builder.Append("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowCallbackInvocationFailed(typeof(").Append(typeName).AppendLine("), \"IYamlOnSerializing.OnSerializing\", exception);");
+        builder.AppendLine("                }");
+        builder.AppendLine("            }");
+        builder.AppendLine("        }");
+        builder.AppendLine();
+        builder.AppendLine("        void InvokeOnSerialized()");
+        builder.AppendLine("        {");
+        builder.AppendLine("            if (value is global::Meziantou.Framework.Yaml.Serialization.IYamlOnSerialized onSerialized)");
+        builder.AppendLine("            {");
+        builder.AppendLine("                try");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    onSerialized.OnSerialized();");
+        builder.AppendLine("                }");
+        builder.AppendLine("                catch (global::System.Exception exception)");
+        builder.AppendLine("                {");
+        builder.Append("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowCallbackInvocationFailed(typeof(").Append(typeName).AppendLine("), \"IYamlOnSerialized.OnSerialized\", exception);");
+        builder.AppendLine("                }");
+        builder.AppendLine("            }");
+        builder.AppendLine("        }");
+        builder.AppendLine();
+        builder.AppendLine("        InvokeOnSerializing();");
+    }
+
+    private static void EmitWritePolymorphicDispatch(
+        StringBuilder builder,
+        string typeName,
+        PolymorphismInfoModel polymorphism,
+        Dictionary<ITypeSymbol, int> indexByType,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        bool emitLifecycleCallbacks,
+        bool canWriteBaseObject)
+    {
+        builder.AppendLine();
+
+        var discriminatorPropertyNameExpression = GetDiscriminatorPropertyNameExpression(polymorphism, sourceGenerationOptions);
+        var discriminatorStyleOverride = polymorphism.DiscriminatorStyleOverrideValue ?? GetDiscriminatorStyle(sourceGenerationOptions);
+        var hasDiscriminatorStyleOverride = discriminatorStyleOverride.HasValue;
+        var writeTagForOverride = discriminatorStyleOverride is int writeStyle && DiscriminatorStyleWritesTag(writeStyle);
+        var writePropertyForOverride = discriminatorStyleOverride is int writePropertyStyle && DiscriminatorStyleWritesProperty(writePropertyStyle);
+        var mayWriteDiscriminatorProperty = !hasDiscriminatorStyleOverride || writePropertyForOverride;
+
+        if (!hasDiscriminatorStyleOverride ||
+            (mayWriteDiscriminatorProperty && discriminatorPropertyNameExpression.Contains("options.", StringComparison.Ordinal)))
+        {
+            builder.AppendLine("        var options = writer.Options;");
+        }
+
+        if (mayWriteDiscriminatorProperty)
+        {
+            builder.Append("        var discriminatorPropertyName = ").Append(discriminatorPropertyNameExpression).AppendLine(";");
+        }
+
+        if (!hasDiscriminatorStyleOverride)
+        {
+            builder.AppendLine("        var discriminatorStyle = options.PolymorphismOptions.DiscriminatorStyle;");
+        }
+
+        for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
+        {
+            var derived = polymorphism.DerivedTypes[i];
+            var derivedTypeName = derived.DerivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (!indexByType.TryGetValue(derived.DerivedType, out var derivedIndex))
+            {
+                continue;
+            }
+
+            var derivedLocal = $"derived{derivedIndex}";
+            builder.Append("        if (value is ").Append(derivedTypeName).Append(' ').Append(derivedLocal).AppendLine(")");
+            builder.AppendLine("        {");
+
+            if (derived.Tag is not null)
+            {
+                if (hasDiscriminatorStyleOverride)
+                {
+                    if (writeTagForOverride)
+                    {
+                        builder.Append("            writer.WriteTag(").Append(ToLiteral(derived.Tag)).AppendLine(");");
+                    }
+                }
+                else
+                {
+                    builder.Append("            if (discriminatorStyle is global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Tag or global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Both) { writer.WriteTag(")
+                        .Append(ToLiteral(derived.Tag)).AppendLine("); }");
+                }
+            }
+
+            builder.AppendLine("            writer.WriteStartMapping();");
+            if (derived.Discriminator is not null)
+            {
+                if (hasDiscriminatorStyleOverride)
+                {
+                    if (writePropertyForOverride)
+                    {
+                        builder.AppendLine("            writer.WritePropertyName(discriminatorPropertyName);");
+                        builder.Append("            writer.WriteScalar(").Append(ToLiteral(derived.Discriminator)).AppendLine(");");
+                    }
+                }
+                else
+                {
+                    builder.AppendLine("            if (discriminatorStyle is global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Property or global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Both)");
+                    builder.AppendLine("            {");
+                    builder.AppendLine("                writer.WritePropertyName(discriminatorPropertyName);");
+                    builder.Append("                writer.WriteScalar(").Append(ToLiteral(derived.Discriminator)).AppendLine(");");
+                    builder.AppendLine("            }");
+                }
+            }
+
+            builder.Append("            WriteMembers").Append(derivedIndex).Append("(writer, ").Append(derivedLocal).Append(", ")
+                .Append(mayWriteDiscriminatorProperty ? "discriminatorPropertyName" : "null").AppendLine(", runtimeConverters);");
+            builder.AppendLine("            writer.WriteEndMapping();");
+            if (emitLifecycleCallbacks)
+            {
+                builder.AppendLine("            InvokeOnSerialized();");
+            }
+
+            builder.AppendLine("            return;");
+            builder.AppendLine("        }");
+        }
+
+        if (canWriteBaseObject)
+        {
+            builder.Append("        if (value.GetType() != typeof(").Append(typeName).AppendLine("))");
+            builder.AppendLine("        {");
+            builder.Append("            throw new global::System.NotSupportedException($\"Type '{value.GetType()}' is not a registered derived type of '{typeof(")
+                .Append(typeName).AppendLine(")}'.\");");
+            builder.AppendLine("        }");
+            builder.AppendLine();
+        }
+        else
+        {
+            builder.Append("        throw new global::System.NotSupportedException($\"Type '{value.GetType()}' is not a registered derived type of '{typeof(")
+                .Append(typeName).AppendLine(")}'.\");");
+        }
+    }
+
+    private static void EmitReadPolymorphicDispatch(
+        StringBuilder builder,
+        int index,
+        string typeName,
+        PolymorphismInfoModel polymorphism,
+        Dictionary<ITypeSymbol, int> indexByType,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        bool canReadBaseObject)
+    {
+        builder.AppendLine("        var rootTag = reader.Tag;");
+
+        var discriminatorPropertyNameExpression = GetDiscriminatorPropertyNameExpression(polymorphism, sourceGenerationOptions);
+        var discriminatorStyleOverride = polymorphism.DiscriminatorStyleOverrideValue ?? GetDiscriminatorStyle(sourceGenerationOptions);
+        var hasDiscriminatorStyleOverride = discriminatorStyleOverride.HasValue;
+        var readPropertyDiscriminatorForOverride = discriminatorStyleOverride is int readPropertyStyle && DiscriminatorStyleReadsProperty(readPropertyStyle);
+        var readTagDiscriminatorForOverride = discriminatorStyleOverride is int readTagStyle && DiscriminatorStyleReadsTag(readTagStyle);
+
+        if (!hasDiscriminatorStyleOverride || discriminatorPropertyNameExpression.Contains("options.", StringComparison.Ordinal))
+        {
+            builder.AppendLine("        var options = reader.Options;");
+        }
+
+        builder.Append("        var discriminatorPropertyName = ").Append(discriminatorPropertyNameExpression).AppendLine(";");
+        if (!hasDiscriminatorStyleOverride)
+        {
+            builder.AppendLine("        var discriminatorStyle = options.PolymorphismOptions.DiscriminatorStyle;");
+        }
+
+        var unknownDerivedTypeHandling = polymorphism.UnknownDerivedTypeHandlingOverrideValue ?? GetUnknownDerivedTypeHandling(sourceGenerationOptions);
+        if (!unknownDerivedTypeHandling.HasValue)
+        {
+            builder.AppendLine("        var unknownDerivedTypeHandling = options.PolymorphismOptions.UnknownDerivedTypeHandling;");
+        }
+
+        builder.AppendLine("        var buffered = global::Meziantou.Framework.Yaml.Serialization.YamlReader.BufferCurrentNodeToStringAndFindDiscriminator(reader, discriminatorPropertyName, out var discriminatorValue);");
+        builder.AppendLine("        var bufferedReader = reader.CreateReader(buffered);");
+        builder.AppendLine("        if (!bufferedReader.Read()) { return default; }");
+
+        if (!hasDiscriminatorStyleOverride || readPropertyDiscriminatorForOverride)
+        {
+            builder.AppendLine(hasDiscriminatorStyleOverride
+                ? "        if (discriminatorValue is not null)"
+                : "        if (discriminatorStyle is not global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Tag && discriminatorValue is not null)");
+            builder.AppendLine("        {");
+            for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
+            {
+                var derived = polymorphism.DerivedTypes[i];
+                if (derived.Discriminator is null)
+                {
+                    continue;
+                }
+
+                if (!indexByType.TryGetValue(derived.DerivedType, out var derivedIndex))
+                {
+                    continue;
+                }
+
+                builder.Append("            if (global::System.String.Equals(discriminatorValue, ").Append(ToLiteral(derived.Discriminator))
+                    .AppendLine(", global::System.StringComparison.Ordinal))");
+                builder.AppendLine("            {");
+                builder.Append("                return (").Append(typeName).Append(")ReadValue").Append(derivedIndex).AppendLine("(bufferedReader, runtimeConverters)!;");
+                builder.AppendLine("            }");
+            }
+
+            if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndexForUnknown))
+            {
+                builder.Append("            return (").Append(typeName).Append(")ReadValue").Append(defaultIndexForUnknown).AppendLine("(bufferedReader, runtimeConverters)!;");
+            }
+            else
+            {
+                EmitUnknownDerivedTypeFailure(
+                    builder,
+                    unknownDerivedTypeHandling,
+                    "global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnknownTypeDiscriminator(bufferedReader, discriminatorValue, typeof(" + typeName + "))",
+                    indent: "            ");
+            }
+
+            builder.AppendLine("        }");
+        }
+
+        if (!hasDiscriminatorStyleOverride || readTagDiscriminatorForOverride)
+        {
+            builder.AppendLine(hasDiscriminatorStyleOverride
+                ? "        if (rootTag is not null)"
+                : "        if (discriminatorStyle is not global::Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Property && rootTag is not null)");
+            builder.AppendLine("        {");
+            for (var i = 0; i < polymorphism.DerivedTypes.Length; i++)
+            {
+                var derived = polymorphism.DerivedTypes[i];
+                if (derived.Tag is null)
+                {
+                    continue;
+                }
+
+                if (!indexByType.TryGetValue(derived.DerivedType, out var derivedIndex))
+                {
+                    continue;
+                }
+
+                builder.Append("            if (global::System.String.Equals(rootTag, ").Append(ToLiteral(derived.Tag))
+                    .AppendLine(", global::System.StringComparison.Ordinal))");
+                builder.AppendLine("            {");
+                builder.Append("                return (").Append(typeName).Append(")ReadValue").Append(derivedIndex).AppendLine("(bufferedReader, runtimeConverters)!;");
+                builder.AppendLine("            }");
+            }
+
+            if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndexForUnknownTag))
+            {
+                builder.Append("            return (").Append(typeName).Append(")ReadValue").Append(defaultIndexForUnknownTag).AppendLine("(bufferedReader, runtimeConverters)!;");
+            }
+            else
+            {
+                EmitUnknownDerivedTypeFailure(
+                    builder,
+                    unknownDerivedTypeHandling,
+                    "global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnknownTypeTag(bufferedReader, rootTag, typeof(" + typeName + "))",
+                    indent: "            ");
+            }
+
+            builder.AppendLine("        }");
+        }
+
+        if (polymorphism.DefaultDerivedType is not null && indexByType.TryGetValue(polymorphism.DefaultDerivedType, out var defaultIndex))
+        {
+            builder.Append("        return (").Append(typeName).Append(")ReadValue").Append(defaultIndex).AppendLine("(bufferedReader, runtimeConverters)!;");
+        }
+        else if (!canReadBaseObject)
+        {
+            builder.Append("        throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowAbstractTypeWithoutDiscriminator(bufferedReader, typeof(").Append(typeName).AppendLine("));");
+        }
+        else
+        {
+            builder.Append("        return ReadObjectCore").Append(index).AppendLine("(bufferedReader, runtimeConverters);");
+        }
     }
 
     private static void EmitWriteMembersMethod(StringBuilder builder, int index, string typeName, ImmutableArray<MemberModel> members, ExtensionDataMemberModel? extensionData, Dictionary<ITypeSymbol, int> indexByType, SourceGenerationOptionsModel sourceGenerationOptions)
@@ -3022,6 +3336,37 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.Append("        return ").Append(valueExpression).AppendLine(";");
             });
+            builder.AppendLine("    }");
+            return;
+        }
+
+        if (typeSymbol is INamedTypeSymbol interfaceType
+            && interfaceType.TypeKind == TypeKind.Interface
+            && TryGetPolymorphismInfo(interfaceType, derivedTypeMappings, out var interfacePolymorphism)
+            && interfacePolymorphism.DerivedTypes.Length != 0)
+        {
+            builder.AppendLine("        if (reader.TryReadAlias(out var rootAliasValue))");
+            builder.AppendLine("        {");
+            builder.Append("            return (").Append(typeName).AppendLine(")rootAliasValue!;");
+            builder.AppendLine("        }");
+            builder.AppendLine("        if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar && global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
+            builder.AppendLine("        {");
+            builder.AppendLine("            reader.Read();");
+            builder.AppendLine("            return default;");
+            builder.AppendLine("        }");
+            builder.AppendLine("        if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.StartMapping)");
+            builder.AppendLine("        {");
+            builder.AppendLine("            throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedMapping(reader);");
+            builder.AppendLine("        }");
+
+            EmitReadPolymorphicDispatch(
+                builder,
+                index,
+                typeName,
+                interfacePolymorphism,
+                indexByType,
+                sourceGenerationOptions,
+                canReadBaseObject: false);
             builder.AppendLine("    }");
             return;
         }

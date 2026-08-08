@@ -642,7 +642,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         {
             var type = queue.Dequeue();
 
-            foreach (var dependency in GetTransitiveSerializableDependencies(type, sourceGenerationOptions, compilation))
+            foreach (var dependency in GetTransitiveSerializableDependencies(type, contextMappings, sourceGenerationOptions, compilation))
             {
                 if (seen.Add(dependency))
                 {
@@ -688,12 +688,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static IEnumerable<ITypeSymbol> GetTransitiveSerializableDependencies(
         ITypeSymbol type,
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
         SourceGenerationOptionsModel sourceGenerationOptions,
         Compilation compilation)
     {
         if (TryGetArrayElementType(type, out var arrayElementType))
         {
-            if (ShouldGenerateTransitiveType(arrayElementType, sourceGenerationOptions, compilation))
+            if (ShouldGenerateTransitiveType(arrayElementType, contextMappings, sourceGenerationOptions, compilation))
             {
                 yield return arrayElementType;
             }
@@ -703,7 +704,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         if (TryGetSequenceElementType(type, out var sequenceElementType, out _))
         {
-            if (ShouldGenerateTransitiveType(sequenceElementType, sourceGenerationOptions, compilation))
+            if (ShouldGenerateTransitiveType(sequenceElementType, contextMappings, sourceGenerationOptions, compilation))
             {
                 yield return sequenceElementType;
             }
@@ -714,7 +715,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         if (TryGetDictionaryTypes(type, out var dictionaryKeyType, out var dictionaryValueType, out _))
         {
             if (IsSupportedDictionaryKeyType(dictionaryKeyType) &&
-                ShouldGenerateTransitiveType(dictionaryValueType, sourceGenerationOptions, compilation))
+                ShouldGenerateTransitiveType(dictionaryValueType, contextMappings, sourceGenerationOptions, compilation))
             {
                 yield return dictionaryValueType;
             }
@@ -748,7 +749,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 continue;
             }
 
-            foreach (var dependency in GetTransitiveSerializableMemberDependencies(memberType, sourceGenerationOptions, compilation))
+            foreach (var dependency in GetTransitiveSerializableMemberDependencies(memberType, contextMappings, sourceGenerationOptions, compilation))
             {
                 yield return dependency;
             }
@@ -757,12 +758,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static IEnumerable<ITypeSymbol> GetTransitiveSerializableMemberDependencies(
         ITypeSymbol memberType,
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
         SourceGenerationOptionsModel sourceGenerationOptions,
         Compilation compilation)
     {
         if (TryGetArrayElementType(memberType, out var arrayElementType))
         {
-            if (ShouldGenerateTransitiveType(arrayElementType, sourceGenerationOptions, compilation))
+            if (ShouldGenerateTransitiveType(arrayElementType, contextMappings, sourceGenerationOptions, compilation))
             {
                 yield return arrayElementType;
             }
@@ -772,7 +774,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         if (TryGetSequenceElementType(memberType, out var sequenceElementType, out _))
         {
-            if (ShouldGenerateTransitiveType(sequenceElementType, sourceGenerationOptions, compilation))
+            if (ShouldGenerateTransitiveType(sequenceElementType, contextMappings, sourceGenerationOptions, compilation))
             {
                 yield return sequenceElementType;
             }
@@ -783,7 +785,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         if (TryGetDictionaryTypes(memberType, out var dictionaryKeyType, out var dictionaryValueType, out _))
         {
             if (IsSupportedDictionaryKeyType(dictionaryKeyType) &&
-                ShouldGenerateTransitiveType(dictionaryValueType, sourceGenerationOptions, compilation))
+                ShouldGenerateTransitiveType(dictionaryValueType, contextMappings, sourceGenerationOptions, compilation))
             {
                 yield return dictionaryValueType;
             }
@@ -791,7 +793,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             yield break;
         }
 
-        if (ShouldGenerateTransitiveType(memberType, sourceGenerationOptions, compilation))
+        if (ShouldGenerateTransitiveType(memberType, contextMappings, sourceGenerationOptions, compilation))
         {
             yield return memberType;
         }
@@ -799,6 +801,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static bool ShouldGenerateTransitiveType(
         ITypeSymbol type,
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
         SourceGenerationOptionsModel sourceGenerationOptions,
         Compilation compilation)
     {
@@ -820,9 +823,15 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             return false;
         }
 
+        if (named.TypeKind == TypeKind.Interface)
+        {
+            return TryGetPolymorphismInfo(named, contextMappings, out var polymorphism) &&
+                polymorphism.DerivedTypes.Length != 0;
+        }
+
         if (named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T ||
             named.SpecialType == SpecialType.System_Object ||
-            named.TypeKind is TypeKind.Interface or TypeKind.Delegate or TypeKind.TypeParameter ||
+            named.TypeKind is TypeKind.Delegate or TypeKind.TypeParameter ||
             named.IsUnboundGenericType ||
             named.TypeArguments.Any(static typeArgument => typeArgument.TypeKind == TypeKind.TypeParameter))
         {

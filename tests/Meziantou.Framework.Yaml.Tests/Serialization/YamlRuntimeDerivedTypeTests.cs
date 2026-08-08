@@ -78,6 +78,7 @@ public class YamlRuntimeDerivedTypeTests
     }
 
     // Interface-based polymorphism
+    [YamlPolymorphic]
     private interface IPlugin
     {
         string Name { get; set; }
@@ -973,4 +974,48 @@ public class YamlRuntimeDerivedTypeTests
         var notif = YamlSerializer.Deserialize<Notification>(notifYaml, options);
         Assert.IsType<EmailNotification>(notif);
     }
+
+    // ---- Interface Polymorphism ----
+
+    [Fact]
+    public void RuntimeDerivedTypesDeserializeInterfaceWithPropertyDiscriminator()
+    {
+        var options = CreateInterfacePluginOptions();
+
+        var value = YamlSerializer.Deserialize<IPlugin>("$type: audio\nName: Mixer\nChannels: 8\n", options);
+
+        Assert.NotNull(value);
+        Assert.IsType<AudioPlugin>(value);
+        Assert.Equal("Mixer", value.Name);
+        Assert.Equal(8, ((AudioPlugin)value).Channels);
+    }
+
+    [Fact]
+    public void RuntimeDerivedTypesSerializeInterfaceWithPropertyDiscriminator()
+    {
+        var options = CreateInterfacePluginOptions();
+
+        IPlugin value = new VideoPlugin { Name = "Renderer", Width = 1920 };
+        var yaml = YamlSerializer.Serialize(value, typeof(IPlugin), options);
+
+        Assert.Contains("$type: video", yaml);
+        Assert.Contains("Name: Renderer", yaml);
+        Assert.Contains("Width: 1920", yaml);
+    }
+
+    private static YamlSerializerOptions CreateInterfacePluginOptions()
+        => new()
+        {
+            PolymorphismOptions = new YamlPolymorphismOptions
+            {
+                DerivedTypeMappings =
+                {
+                    [typeof(IPlugin)] = new List<YamlDerivedType>
+                    {
+                        new YamlDerivedType(typeof(AudioPlugin), "audio"),
+                        new YamlDerivedType(typeof(VideoPlugin), "video"),
+                    },
+                },
+            },
+        };
 }

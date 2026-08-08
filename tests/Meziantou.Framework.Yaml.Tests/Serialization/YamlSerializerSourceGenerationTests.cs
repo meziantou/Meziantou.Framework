@@ -502,6 +502,43 @@ internal sealed class GeneratedTypeConverter : YamlConverter<GeneratedTypeWithCo
         => writer.WriteScalar(value.Value);
 }
 
+internal sealed class GeneratedConvertedScalar
+{
+    public GeneratedConvertedScalar(int value) => Value = value;
+    public int Value { get; }
+}
+
+internal sealed class GeneratedConvertedScalarHolder
+{
+    public GeneratedConvertedScalar? Scalar { get; set; }
+}
+
+internal sealed class GeneratedConvertedScalarConverter : YamlConverter<GeneratedConvertedScalar>
+{
+    public override GeneratedConvertedScalar? Read(YamlReader reader)
+    {
+        if (reader.TokenType != YamlTokenType.Scalar)
+        {
+            throw new InvalidOperationException();
+        }
+
+        var value = reader.ScalarValue;
+        reader.Read();
+        return new GeneratedConvertedScalar(value is null ? -1 : int.Parse(value, System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    public override void Write(YamlWriter writer, GeneratedConvertedScalar value)
+        => writer.WriteScalar(value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+}
+
+internal sealed class ThrowingGeneratedConverterFactory : YamlConverterFactory
+{
+    public override bool CanConvert(Type typeToConvert) => true;
+
+    public override YamlConverter CreateConverter(Type typeToConvert, YamlSerializerOptions options)
+        => throw new InvalidOperationException("Factory should not be called at runtime by generated code.");
+}
+
 internal sealed class GeneratedYamlCtorModel
 {
 #pragma warning disable IDE0060 // Remove unused parameter
@@ -754,6 +791,14 @@ internal sealed partial class TestYamlSerializerContextWithSnakeCaseNamingPolicy
     Converters = new[] { typeof(ConstantIntConverter) })]
 [YamlSerializable(typeof(int))]
 internal sealed partial class TestYamlSerializerContextWithConverters : YamlSerializerContext
+{
+}
+
+[YamlSourceGenerationOptions(
+    Converters = new[] { typeof(ThrowingGeneratedConverterFactory), typeof(GeneratedConvertedScalarConverter) })]
+[YamlSerializable(typeof(GeneratedConvertedScalar))]
+[YamlSerializable(typeof(GeneratedConvertedScalarHolder))]
+internal sealed partial class TestYamlSerializerContextWithNestedConverter : YamlSerializerContext
 {
 }
 
@@ -1880,7 +1925,7 @@ public class YamlSerializerSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContextHonorsCustomConverters()
+    public void GeneratedContextIgnoresRuntimeCustomConverters()
     {
         var context = new TestYamlSerializerContext(
             new YamlSerializerOptions
@@ -1893,18 +1938,38 @@ public class YamlSerializerSourceGenerationTests
 
         var primitivesTypeInfo = context.GeneratedPrimitives;
         var yaml = YamlSerializer.Serialize(new GeneratedPrimitives { Int32Value = 5 }, primitivesTypeInfo);
-        Assert.Contains("Int32Value: 123", yaml);
+        Assert.Contains("Int32Value: 5", yaml);
 
         var roundtripped = YamlSerializer.Deserialize(yaml, primitivesTypeInfo);
         Assert.NotNull(roundtripped);
-        Assert.Equal(123, roundtripped.Int32Value);
+        Assert.Equal(5, roundtripped.Int32Value);
 
         var listTypeInfo = context.ListInt32;
         var yamlList = YamlSerializer.Serialize(new List<int> { 1, 2 }, listTypeInfo);
-        Assert.Contains("- 123", yamlList);
+        Assert.Contains("- 1", yamlList);
+        Assert.Contains("- 2", yamlList);
         var list = YamlSerializer.Deserialize(yamlList, listTypeInfo);
         Assert.NotNull(list);
-        Assert.Equal(new[] { 123, 123 }, list);
+        Assert.Equal(new[] { 1, 2 }, list);
+    }
+
+    [Fact]
+    public void GeneratedContextUsesSourceGenerationOptionsConvertersForNestedTypes()
+    {
+        // ThrowingGeneratedConverterFactory is in the options but the generated code should use
+        // the statically-resolved GeneratedConvertedScalarConverter, never calling the factory.
+        var context = TestYamlSerializerContextWithNestedConverter.Default;
+
+        var holder = new GeneratedConvertedScalarHolder { Scalar = new GeneratedConvertedScalar(42) };
+        var typeInfo = context.GeneratedConvertedScalarHolder;
+
+        var yaml = YamlSerializer.Serialize(holder, typeInfo);
+        Assert.Contains("Scalar: 42", yaml);
+
+        var roundtripped = YamlSerializer.Deserialize(yaml, typeInfo);
+        Assert.NotNull(roundtripped);
+        Assert.NotNull(roundtripped.Scalar);
+        Assert.Equal(42, roundtripped.Scalar.Value);
     }
 
     [Fact]

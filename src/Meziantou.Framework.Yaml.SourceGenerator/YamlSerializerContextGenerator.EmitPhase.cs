@@ -55,6 +55,7 @@ public sealed partial class YamlSerializerContextGenerator
 
         builder.Append("partial class ").Append(model.TypeName).AppendLine();
         builder.AppendLine("{");
+        EmitSourceGenerationConverterFields(builder, model.SourceGenerationOptions);
         builder.Append("    public static ").Append(model.TypeName).AppendLine(" Default { get; } = new(CreateDefaultOptions(), isDefault: true);");
         builder.AppendLine();
         if (!model.ContextSymbol.InstanceConstructors.Any(static ctor => ctor.Parameters.Length == 0 && !ctor.IsImplicitlyDeclared))
@@ -174,9 +175,6 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append("    private static void WriteValue").Append(index)
             .Append("(global::Meziantou.Framework.Yaml.Serialization.YamlWriter writer, ").Append(typeName).Append(typeSymbol.IsReferenceType ? "?" : string.Empty).AppendLine(" value)");
         builder.AppendLine("    {");
-        builder.AppendLine("        var options = writer.Options;");
-        builder.AppendLine("        var hasCustomConverters = options.Converters.Count != 0;");
-        builder.AppendLine();
 
         if (attributeConverterTypeName is not null)
         {
@@ -189,6 +187,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("        }");
             }
 
+            builder.AppendLine("        var options = writer.Options;");
             builder.Append("        global::Meziantou.Framework.Yaml.Serialization.YamlConverter attributeConverter = new ").Append(attributeConverterTypeName).AppendLine("();");
             builder.AppendLine("        if (attributeConverter is global::Meziantou.Framework.Yaml.Serialization.YamlConverterFactory factory)");
             builder.AppendLine("        {");
@@ -206,16 +205,18 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
-        builder.Append("        if (hasCustomConverters && writer.TryGetCustomConverter(typeof(").Append(typeName).AppendLine("), out var rootCustomConverter) && rootCustomConverter is not null)");
-        builder.AppendLine("        {");
-        builder.AppendLine("            rootCustomConverter.Write(writer, value);");
-        builder.AppendLine("            return;");
-        builder.AppendLine("        }");
+        if (TryEmitWriteWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, "value", "        ", emitReturn: true))
+        {
+            builder.AppendLine("    }");
+            return;
+        }
+
+        builder.AppendLine("        var options = writer.Options;");
         builder.AppendLine();
 
         if (typeSymbol is INamedTypeSymbol unionType && TryGetCSharpUnionCases(unionType, out var unionCases))
         {
-            EmitWriteCSharpUnionValue(builder, unionType, typeName, unionCases, indexByType);
+            EmitWriteCSharpUnionValue(builder, unionType, typeName, unionCases, indexByType, sourceGenerationOptions);
             builder.AppendLine("    }");
             return;
         }
@@ -343,7 +344,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("        for (var i = 0; i < value.Length; i++)");
             builder.AppendLine("        {");
             builder.AppendLine("            var element = value[i];");
-            EmitWriteKnownType(builder, arrayElementType, indexByType, "element", indent: "            ");
+            EmitWriteKnownType(builder, sourceGenerationOptions, arrayElementType, indexByType, "element", indent: "            ");
             builder.AppendLine("        }");
             builder.AppendLine("        writer.WriteEndSequence();");
             builder.AppendLine("        return;");
@@ -365,7 +366,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("        for (var i = 0; i < value.Length; i++)");
                 builder.AppendLine("        {");
                 builder.AppendLine("            var element = value[i];");
-                EmitWriteKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                EmitWriteKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                 builder.AppendLine("        }");
                 builder.AppendLine("        writer.WriteEndSequence();");
                 builder.AppendLine("        return;");
@@ -387,14 +388,14 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("        for (var i = 0; i < value.Count; i++)");
                 builder.AppendLine("        {");
                 builder.AppendLine("            var element = value[i];");
-                EmitWriteKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                EmitWriteKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                 builder.AppendLine("        }");
             }
             else
             {
                 builder.AppendLine("        foreach (var element in value)");
                 builder.AppendLine("        {");
-                EmitWriteKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                EmitWriteKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                 builder.AppendLine("        }");
             }
             builder.AppendLine("        writer.WriteEndSequence();");
@@ -461,7 +462,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("            writer.WritePropertyName(((global::System.IFormattable)pair.Key).ToString(null, global::System.Globalization.CultureInfo.InvariantCulture));");
             }
 
-            EmitWriteKnownType(builder, dictionaryValueType, indexByType, "pair.Value", indent: "            ");
+            EmitWriteKnownType(builder, sourceGenerationOptions, dictionaryValueType, indexByType, "pair.Value", indent: "            ");
             builder.AppendLine("        }");
             builder.AppendLine("        writer.WriteEndMapping();");
             builder.AppendLine("        return;");
@@ -646,7 +647,6 @@ public sealed partial class YamlSerializerContextGenerator
             .AppendLine(" value, string? discriminatorPropertyName)");
         builder.AppendLine("    {");
         builder.AppendLine("        var options = writer.Options;");
-        builder.AppendLine("        var hasCustomConverters = options.Converters.Count != 0;");
         builder.AppendLine();
         var defaultIgnoreConditionOverride = GetDefaultIgnoreConditionOverride(sourceGenerationOptions);
         var sortedMappingOrderOverride = GetSortedMappingOrderOverride(sourceGenerationOptions);
@@ -656,7 +656,7 @@ public sealed partial class YamlSerializerContextGenerator
             var memberValueVar = "__value" + index + "_" + member.Symbol.Name;
             var nameVar = "__name" + index + "_" + member.Symbol.Name;
 
-            EmitWriteMember(builder, member, indexByType, memberValueVar, nameVar, defaultIgnoreConditionOverride);
+            EmitWriteMember(builder, member, indexByType, memberValueVar, nameVar, defaultIgnoreConditionOverride, sourceGenerationOptions);
         }
 
         if (extensionData is not null)
@@ -802,12 +802,12 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("    }");
     }
 
-    private static void EmitWriteMember(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, int? defaultIgnoreConditionOverride)
+    private static void EmitWriteMember(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, int? defaultIgnoreConditionOverride, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var effectiveIgnoreCondition = member.IgnoreCondition ?? defaultIgnoreConditionOverride;
         if (effectiveIgnoreCondition.HasValue)
         {
-            EmitWriteMemberWithKnownIgnoreConditionInt(builder, member, indexByType, memberValueVar, nameVar, effectiveIgnoreCondition.Value);
+            EmitWriteMemberWithKnownIgnoreConditionInt(builder, member, indexByType, memberValueVar, nameVar, effectiveIgnoreCondition.Value, sourceGenerationOptions);
             return;
         }
 
@@ -823,20 +823,20 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("        }");
         builder.AppendLine("        else if (__ignoreCondition == global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingNull)");
         builder.AppendLine("        {");
-        EmitWriteMemberWithNullCheck(builder, member, indexByType, memberValueVar, nameVar, "            ");
+        EmitWriteMemberWithNullCheck(builder, member, indexByType, memberValueVar, nameVar, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine("        else if (__ignoreCondition == global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingDefault)");
         builder.AppendLine("        {");
-        EmitWriteMemberWithDefaultCheck(builder, member, indexByType, memberValueVar, nameVar, "            ");
+        EmitWriteMemberWithDefaultCheck(builder, member, indexByType, memberValueVar, nameVar, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine("        else");
         builder.AppendLine("        {");
-        EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, "            ");
+        EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine("        }");
     }
 
-    private static void EmitWriteMemberWithKnownIgnoreConditionInt(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, int ignoreCondition)
+    private static void EmitWriteMemberWithKnownIgnoreConditionInt(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, int ignoreCondition, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         // ignoreCondition: 0=Never, 1=WhenWritingNull, 2=WhenWritingDefault, 3=Always, 4=WhenWriting, 5=WhenReading
         if (ignoreCondition is 3 /* Always */ or 4 /* WhenWriting */)
@@ -853,21 +853,21 @@ public sealed partial class YamlSerializerContextGenerator
 
         if (ignoreCondition is 1 /* WhenWritingNull */)
         {
-            EmitWriteMemberWithNullCheck(builder, member, indexByType, memberValueVar, nameVar, "        ");
+            EmitWriteMemberWithNullCheck(builder, member, indexByType, memberValueVar, nameVar, "        ", sourceGenerationOptions);
         }
         else if (ignoreCondition is 2 /* WhenWritingDefault */)
         {
-            EmitWriteMemberWithDefaultCheck(builder, member, indexByType, memberValueVar, nameVar, "        ");
+            EmitWriteMemberWithDefaultCheck(builder, member, indexByType, memberValueVar, nameVar, "        ", sourceGenerationOptions);
         }
         else
         {
             // 0 = Never or 5 = WhenReading → always write
-            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, "        ");
+            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, "        ", sourceGenerationOptions);
         }
         builder.AppendLine("        }");
     }
 
-    private static void EmitWriteMemberWithNullCheck(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent)
+    private static void EmitWriteMemberWithNullCheck(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         if (member.Type.IsReferenceType)
         {
@@ -877,17 +877,17 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(indent).AppendLine("}");
             builder.Append(indent).AppendLine("else");
             builder.Append(indent).AppendLine("{");
-            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent + "    ");
+            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent + "    ", sourceGenerationOptions);
             builder.Append(indent).AppendLine("}");
         }
         else
         {
             builder.Append(indent).AppendLine("// Value types are never null.");
-            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent);
+            EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent, sourceGenerationOptions);
         }
     }
 
-    private static void EmitWriteMemberWithDefaultCheck(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent)
+    private static void EmitWriteMemberWithDefaultCheck(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         builder.Append(indent).Append("if (global::System.Collections.Generic.EqualityComparer<")
             .Append(member.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).Append(">.Default.Equals(")
@@ -897,17 +897,17 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(indent).AppendLine("}");
         builder.Append(indent).AppendLine("else");
         builder.Append(indent).AppendLine("{");
-        EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent + "    ");
+        EmitWriteMemberProperty(builder, member, indexByType, memberValueVar, nameVar, indent + "    ", sourceGenerationOptions);
         builder.Append(indent).AppendLine("}");
     }
 
-    private static void EmitWriteMemberProperty(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent)
+    private static void EmitWriteMemberProperty(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string memberValueVar, string nameVar, string indent, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         builder.Append(indent).Append("var ").Append(nameVar).Append(" = ").Append(member.SerializedNameExpressionForWrite).AppendLine(";");
         builder.Append(indent).Append("if (discriminatorPropertyName is null || !global::System.String.Equals(").Append(nameVar).AppendLine(", discriminatorPropertyName, global::System.StringComparison.Ordinal))");
         builder.Append(indent).AppendLine("{");
         builder.Append(indent).Append("    writer.WritePropertyName(").Append(nameVar).AppendLine(");");
-        EmitWriteMemberValueWithCustomConverter(builder, member, indexByType, valueExpression: memberValueVar, indent: indent + "    ");
+        EmitWriteMemberValueWithCustomConverter(builder, member, indexByType, valueExpression: memberValueVar, indent: indent + "    ", sourceGenerationOptions: sourceGenerationOptions);
         builder.Append(indent).AppendLine("}");
     }
 
@@ -1029,7 +1029,6 @@ public sealed partial class YamlSerializerContextGenerator
         {
             builder.AppendLine("        var unmappedMemberHandling = options.RejectUnmatchedProperties ? global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow : options.UnmappedMemberHandling;");
         }
-        builder.AppendLine("        var hasCustomConverters = options.Converters.Count != 0;");
         builder.AppendLine("        if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.StartMapping)");
         builder.AppendLine("        {");
         builder.AppendLine("            throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedMapping(reader);");
@@ -1657,7 +1656,7 @@ public sealed partial class YamlSerializerContextGenerator
             }
 
             var tmpVar = $"__merge_ctor{index}_tmp{i}";
-            EmitReadKnownType(builder, parameter.Type, indexByType, tmpVar, indent: "                    ");
+            EmitReadKnownType(builder, sourceGenerationOptions, parameter.Type, indexByType, tmpVar, indent: "                    ");
             EmitThrowIfNullForNonNullableConstructorParameter(builder, typeSymbol, parameter, tmpVar, "                    ");
             builder.Append("                    ").Append(parameterValueVarNames[i]).Append(" = ").Append(GetNonNullableValueExpression(parameter.Type, tmpVar)).AppendLine(";");
             builder.Append("                    ").Append(parameterSeenVarNames[i]).AppendLine(" = true;");
@@ -1815,7 +1814,7 @@ public sealed partial class YamlSerializerContextGenerator
             }
 
             var tmpVar = $"__ctor{index}_tmp{i}";
-            EmitReadKnownType(builder, parameter.Type, indexByType, tmpVar, indent: "                ");
+            EmitReadKnownType(builder, sourceGenerationOptions, parameter.Type, indexByType, tmpVar, indent: "                ");
             EmitThrowIfNullForNonNullableConstructorParameter(builder, typeSymbol, parameter, tmpVar, "                ");
             builder.Append("                ").Append(parameterValueVarNames[i]).Append(" = ").Append(GetNonNullableValueExpression(parameter.Type, tmpVar)).AppendLine(";");
             builder.Append("                ").Append(parameterSeenVarNames[i]).AppendLine(" = true;");
@@ -2297,12 +2296,10 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append("    private static ").Append(typeName).Append(typeSymbol.IsReferenceType ? "?" : string.Empty).Append(" ReadValue").Append(index)
             .AppendLine("(global::Meziantou.Framework.Yaml.Serialization.YamlReader reader)");
         builder.AppendLine("    {");
-        builder.AppendLine("        var options = reader.Options;");
-        builder.AppendLine("        var hasCustomConverters = options.Converters.Count != 0;");
-        builder.AppendLine();
 
         if (attributeConverterTypeName is not null)
         {
+            builder.AppendLine("        var options = reader.Options;");
             builder.Append("        global::Meziantou.Framework.Yaml.Serialization.YamlConverter attributeConverter = new ").Append(attributeConverterTypeName).AppendLine("();");
             builder.AppendLine("        if (attributeConverter is global::Meziantou.Framework.Yaml.Serialization.YamlConverterFactory factory)");
             builder.AppendLine("        {");
@@ -2318,20 +2315,19 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
-        builder.Append("        if (hasCustomConverters && reader.TryGetCustomConverter(typeof(").Append(typeName).AppendLine("), out var rootCustomConverter) && rootCustomConverter is not null)");
-        builder.AppendLine("        {");
-        builder.Append("            var untyped = rootCustomConverter.Read(reader, typeof(").Append(typeName).AppendLine("));");
-        builder.AppendLine("            if (untyped is null)");
-        builder.AppendLine("            {");
-        builder.AppendLine("                return default;");
-        builder.AppendLine("            }");
-        builder.Append("            return (").Append(typeName).AppendLine(")untyped;");
-        builder.AppendLine("        }");
+        if (TryGetStaticOptionsConverterType(sourceGenerationOptions, typeSymbol, out var rootConverterIndex))
+        {
+            builder.Append("        return ").Append(GetSourceGenerationConverterFieldName(rootConverterIndex)).AppendLine(".Read(reader);");
+            builder.AppendLine("    }");
+            return;
+        }
+
+        builder.AppendLine("        var options = reader.Options;");
         builder.AppendLine();
 
         if (typeSymbol is INamedTypeSymbol unionType && TryGetCSharpUnionCases(unionType, out var unionCases))
         {
-            EmitReadCSharpUnionValue(builder, typeName, unionCases, indexByType);
+            EmitReadCSharpUnionValue(builder, typeName, unionCases, indexByType, sourceGenerationOptions);
             builder.AppendLine("    }");
             return;
         }
@@ -2412,7 +2408,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append("        var list = new global::System.Collections.Generic.List<").Append(elementTypeName).AppendLine(">();");
             builder.AppendLine("        while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
             builder.AppendLine("        {");
-            EmitReadKnownType(builder, arrayElementType, indexByType, "element", indent: "            ");
+            EmitReadKnownType(builder, sourceGenerationOptions, arrayElementType, indexByType, "element", indent: "            ");
             builder.Append("            list.Add(").Append(GetNonNullableValueExpression(arrayElementType, "element")).AppendLine(");");
             builder.AppendLine("        }");
             builder.AppendLine("        reader.Read();");
@@ -2449,7 +2445,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("        if (rootAnchor is not null) { reader.RegisterAnchor(rootAnchor, set); }");
                     builder.AppendLine("        while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("        {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                     builder.Append("            set.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("        }");
                     builder.AppendLine("        reader.Read();");
@@ -2461,7 +2457,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("        var builderArray = global::System.Collections.Immutable.ImmutableArray.CreateBuilder<").Append(elementTypeName).AppendLine(">();");
                     builder.AppendLine("        while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("        {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                     builder.Append("            builderArray.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("        }");
                     builder.AppendLine("        reader.Read();");
@@ -2475,7 +2471,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("        var builderList = global::System.Collections.Immutable.ImmutableList.CreateBuilder<").Append(elementTypeName).AppendLine(">();");
                     builder.AppendLine("        while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("        {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                     builder.Append("            builderList.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("        }");
                     builder.AppendLine("        reader.Read();");
@@ -2489,7 +2485,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("        var builderSet = global::System.Collections.Immutable.ImmutableHashSet.CreateBuilder<").Append(elementTypeName).AppendLine(">();");
                     builder.AppendLine("        while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("        {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                     builder.Append("            builderSet.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("        }");
                     builder.AppendLine("        reader.Read();");
@@ -2504,7 +2500,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("        if (rootAnchor is not null) { reader.RegisterAnchor(rootAnchor, collection); }");
                     builder.AppendLine("        while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("        {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                     builder.Append("            collection.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("        }");
                     builder.AppendLine("        reader.Read();");
@@ -2517,7 +2513,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("        if (rootAnchor is not null) { reader.RegisterAnchor(rootAnchor, list); }");
                     builder.AppendLine("        while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("        {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "            ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "            ");
                     builder.Append("            list.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("        }");
                     builder.AppendLine("        reader.Read();");
@@ -2645,7 +2641,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("            explicitKeys?.Add(key);");
             }
 
-            EmitReadKnownType(builder, dictionaryValueType, indexByType, "value", indent: "            ");
+            EmitReadKnownType(builder, sourceGenerationOptions, dictionaryValueType, indexByType, "value", indent: "            ");
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
                 builder.AppendLine("            if (seenKeys is not null && !seenKeys.Add(key))");
@@ -3114,7 +3110,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("    }");
     }
 
-    private static void EmitWriteMemberValue(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent)
+    private static void EmitWriteMemberValue(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var innerIndent = indent + "    ";
 
@@ -3228,7 +3224,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append(innerIndent + "    ").Append("for (var i = 0; i < ").Append(valueExpression).AppendLine(".Length; i++)");
             builder.Append(innerIndent + "    ").AppendLine("{");
             builder.Append(innerIndent + "        ").Append("var element = ").Append(valueExpression).AppendLine("[i];");
-            EmitWriteKnownType(builder, arrayElementType, indexByType, "element", indent: innerIndent + "        ");
+            EmitWriteKnownType(builder, sourceGenerationOptions, arrayElementType, indexByType, "element", indent: innerIndent + "        ");
             builder.Append(innerIndent + "    ").AppendLine("}");
             builder.Append(innerIndent + "    ").AppendLine("writer.WriteEndSequence();");
             builder.Append(innerIndent).AppendLine("}");
@@ -3250,7 +3246,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.Append(innerIndent).Append("for (var i = 0; i < ").Append(valueExpression).AppendLine(".Length; i++)");
                 builder.Append(innerIndent).AppendLine("{");
                 builder.Append(innerIndent + "    ").Append("var element = ").Append(valueExpression).AppendLine("[i];");
-                EmitWriteKnownType(builder, sequenceElementType, indexByType, "element", indent: innerIndent + "    ");
+                EmitWriteKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: innerIndent + "    ");
                 builder.Append(innerIndent).AppendLine("}");
                 builder.Append(innerIndent).AppendLine("writer.WriteEndSequence();");
                 builder.Append(indent).AppendLine("}");
@@ -3274,14 +3270,14 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.Append(innerIndent + "    ").Append("for (var i = 0; i < ").Append(valueExpression).AppendLine(".Count; i++)");
                 builder.Append(innerIndent + "    ").AppendLine("{");
                 builder.Append(innerIndent + "        ").Append("var element = ").Append(valueExpression).AppendLine("[i];");
-                EmitWriteKnownType(builder, sequenceElementType, indexByType, "element", indent: innerIndent + "        ");
+                EmitWriteKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: innerIndent + "        ");
                 builder.Append(innerIndent + "    ").AppendLine("}");
             }
             else
             {
                 builder.Append(innerIndent + "    ").Append("foreach (var element in ").Append(valueExpression).AppendLine(")");
                 builder.Append(innerIndent + "    ").AppendLine("{");
-                EmitWriteKnownType(builder, sequenceElementType, indexByType, "element", indent: innerIndent + "        ");
+                EmitWriteKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: innerIndent + "        ");
                 builder.Append(innerIndent + "    ").AppendLine("}");
             }
             builder.Append(innerIndent + "    ").AppendLine("writer.WriteEndSequence();");
@@ -3351,7 +3347,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.Append(innerIndent + "        ").AppendLine("writer.WritePropertyName(((global::System.IFormattable)pair.Key).ToString(null, global::System.Globalization.CultureInfo.InvariantCulture));");
             }
 
-            EmitWriteKnownType(builder, dictionaryValueType, indexByType, "pair.Value", indent: innerIndent + "        ");
+            EmitWriteKnownType(builder, sourceGenerationOptions, dictionaryValueType, indexByType, "pair.Value", indent: innerIndent + "        ");
             builder.Append(innerIndent + "    ").AppendLine("}");
             builder.Append(innerIndent + "    ").AppendLine("writer.WriteEndMapping();");
             builder.Append(innerIndent).AppendLine("}");
@@ -3368,7 +3364,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(indent).AppendLine("throw new global::System.NotSupportedException(\"The generated YAML serializer does not support this member type.\");");
     }
 
-    private static void EmitWriteMemberValueWithCustomConverter(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent)
+    private static void EmitWriteMemberValueWithCustomConverter(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         if (member.BlockSequenceMappingStyle is not null || member.BlockSequenceSequenceStyle is not null)
         {
@@ -3385,15 +3381,15 @@ public sealed partial class YamlSerializerContextGenerator
                 .Append(", ")
                 .Append(sequenceStyle)
                 .AppendLine(");");
-            EmitWriteMemberValueWithCustomConverterCore(builder, member, indexByType, valueExpression, indent + "    ");
+            EmitWriteMemberValueWithCustomConverterCore(builder, member, indexByType, valueExpression, indent + "    ", sourceGenerationOptions);
             builder.Append(indent).AppendLine("}");
             return;
         }
 
-        EmitWriteMemberValueWithCustomConverterCore(builder, member, indexByType, valueExpression, indent);
+        EmitWriteMemberValueWithCustomConverterCore(builder, member, indexByType, valueExpression, indent, sourceGenerationOptions);
     }
 
-    private static void EmitWriteMemberValueWithCustomConverterCore(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent)
+    private static void EmitWriteMemberValueWithCustomConverterCore(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent, SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var memberTypeName = member.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         if (member.AttributeConverterTypeName is not null)
@@ -3424,14 +3420,12 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
-        builder.Append(indent).Append("if (hasCustomConverters && writer.TryGetCustomConverter(typeof(").Append(memberTypeName).AppendLine("), out var memberCustomConverter) && memberCustomConverter is not null)");
-        builder.Append(indent).AppendLine("{");
-        builder.Append(indent + "    ").Append("memberCustomConverter.Write(writer, ").Append(valueExpression).AppendLine(");");
-        builder.Append(indent).AppendLine("}");
-        builder.Append(indent).AppendLine("else");
-        builder.Append(indent).AppendLine("{");
-        EmitWriteMemberValue(builder, member, indexByType, valueExpression, indent + "    ");
-        builder.Append(indent).AppendLine("}");
+        if (TryEmitWriteWithStaticOptionsConverter(builder, sourceGenerationOptions, member.Type, valueExpression, indent, emitReturn: false))
+        {
+            return;
+        }
+
+        EmitWriteMemberValue(builder, member, indexByType, valueExpression, indent, sourceGenerationOptions);
     }
 
     private static void EmitReadMemberValue(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, SourceGenerationOptionsModel sourceGenerationOptions)
@@ -3928,7 +3922,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append("                    var list = new global::System.Collections.Generic.List<").Append(elementTypeName).AppendLine(">();");
             builder.AppendLine("                    while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
             builder.AppendLine("                    {");
-            EmitReadKnownType(builder, arrayElementType, indexByType, "element", indent: "                        ");
+            EmitReadKnownType(builder, sourceGenerationOptions, arrayElementType, indexByType, "element", indent: "                        ");
             builder.Append("                        list.Add(").Append(GetNonNullableValueExpression(arrayElementType, "element")).AppendLine(");");
             builder.AppendLine("                    }");
             builder.AppendLine("                    reader.Read();");
@@ -3970,7 +3964,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("                    if (memberAnchor is not null) { reader.RegisterAnchor(memberAnchor, set); }");
                     builder.AppendLine("                    while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("                    {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "                        ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "                        ");
                     builder.Append("                        set.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("                    }");
                     builder.AppendLine("                    reader.Read();");
@@ -3982,7 +3976,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("                    var builderArray = global::System.Collections.Immutable.ImmutableArray.CreateBuilder<").Append(elementTypeName).AppendLine(">();");
                     builder.AppendLine("                    while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("                    {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "                        ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "                        ");
                     builder.Append("                        builderArray.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("                    }");
                     builder.AppendLine("                    reader.Read();");
@@ -3996,7 +3990,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("                    var builderList = global::System.Collections.Immutable.ImmutableList.CreateBuilder<").Append(elementTypeName).AppendLine(">();");
                     builder.AppendLine("                    while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("                    {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "                        ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "                        ");
                     builder.Append("                        builderList.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("                    }");
                     builder.AppendLine("                    reader.Read();");
@@ -4010,7 +4004,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("                    var builderSet = global::System.Collections.Immutable.ImmutableHashSet.CreateBuilder<").Append(elementTypeName).AppendLine(">();");
                     builder.AppendLine("                    while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("                    {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "                        ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "                        ");
                     builder.Append("                        builderSet.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("                    }");
                     builder.AppendLine("                    reader.Read();");
@@ -4025,7 +4019,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("                    if (memberAnchor is not null) { reader.RegisterAnchor(memberAnchor, collection); }");
                     builder.AppendLine("                    while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("                    {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "                        ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "                        ");
                     builder.Append("                        collection.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("                    }");
                     builder.AppendLine("                    reader.Read();");
@@ -4038,7 +4032,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("                    if (memberAnchor is not null) { reader.RegisterAnchor(memberAnchor, list); }");
                     builder.AppendLine("                    while (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.EndSequence)");
                     builder.AppendLine("                    {");
-                    EmitReadKnownType(builder, sequenceElementType, indexByType, "element", indent: "                        ");
+                    EmitReadKnownType(builder, sourceGenerationOptions, sequenceElementType, indexByType, "element", indent: "                        ");
                     builder.Append("                        list.Add(").Append(GetNonNullableValueExpression(sequenceElementType, "element")).AppendLine(");");
                     builder.AppendLine("                    }");
                     builder.AppendLine("                    reader.Read();");
@@ -4174,7 +4168,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("                        dictionaryExplicitKeys?.Add(entryKey);");
             }
 
-            EmitReadKnownType(builder, dictionaryValueType, indexByType, "value", indent: "                        ");
+            EmitReadKnownType(builder, sourceGenerationOptions, dictionaryValueType, indexByType, "value", indent: "                        ");
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
                 builder.AppendLine("                        if (dictionarySeenKeys is not null && !dictionarySeenKeys.Add(entryKey))");
@@ -4440,23 +4434,76 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
-        builder.Append("                if (hasCustomConverters && reader.TryGetCustomConverter(typeof(").Append(memberTypeName).AppendLine("), out var memberCustomConverter) && memberCustomConverter is not null)");
-        builder.AppendLine("                {");
-        builder.Append("                    var untyped = memberCustomConverter.Read(reader, typeof(").Append(memberTypeName).AppendLine("));");
-        builder.AppendLine("                    if (untyped is null)");
-        builder.AppendLine("                    {");
-        EmitThrowIfNullForNonNullableMemberOnRead(builder, member, "untyped", "                        ");
-        builder.Append("                        ").Append(member.AssignExpression(GetDefaultMemberAssignmentExpression(member))).AppendLine(";");
-        builder.AppendLine("                    }");
-        builder.AppendLine("                    else");
-        builder.AppendLine("                    {");
-        builder.Append("                        ").Append(member.AssignExpression($"({memberTypeName})untyped")).AppendLine(";");
-        builder.AppendLine("                    }");
-        builder.AppendLine("                }");
-        builder.AppendLine("                else");
-        builder.AppendLine("                {");
-        EmitReadMemberValue(builder, member, indexByType, sourceGenerationOptions);
-        builder.AppendLine("                }");
+        if (!TryEmitReadWithStaticOptionsConverter(builder, sourceGenerationOptions, member.Type, readExpr =>
+        {
+            builder.AppendLine("                {");
+            builder.Append("                    var untyped = ").Append(readExpr).AppendLine(";");
+            builder.AppendLine("                    if (untyped is null)");
+            builder.AppendLine("                    {");
+            EmitThrowIfNullForNonNullableMemberOnRead(builder, member, "untyped", "                        ");
+            builder.Append("                        ").Append(member.AssignExpression(GetDefaultMemberAssignmentExpression(member))).AppendLine(";");
+            builder.AppendLine("                    }");
+            builder.AppendLine("                    else");
+            builder.AppendLine("                    {");
+            builder.Append("                        ").Append(member.AssignExpression($"({memberTypeName})untyped")).AppendLine(";");
+            builder.AppendLine("                    }");
+            builder.AppendLine("                }");
+        }))
+        {
+            EmitReadMemberValue(builder, member, indexByType, sourceGenerationOptions);
+        }
+    }
+
+    private static bool TryEmitWriteWithStaticOptionsConverter(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, string valueExpression, string indent, bool emitReturn)
+    {
+        if (!TryGetStaticOptionsConverterType(sourceGenerationOptions, typeSymbol, out var converterIndex))
+        {
+            return false;
+        }
+
+        var fieldName = GetSourceGenerationConverterFieldName(converterIndex);
+        if (typeSymbol.IsReferenceType)
+        {
+            builder.Append(indent).Append("if (").Append(valueExpression).AppendLine(" is null)");
+            builder.Append(indent).AppendLine("{");
+            builder.Append(indent).AppendLine("    writer.WriteNullValue();");
+            if (emitReturn)
+            {
+                builder.Append(indent).AppendLine("    return;");
+            }
+            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).AppendLine("else");
+            builder.Append(indent).AppendLine("{");
+            builder.Append(indent).Append("    ").Append(fieldName).Append(".Write(writer, ").Append(valueExpression).AppendLine(");");
+            if (emitReturn)
+            {
+                builder.Append(indent).AppendLine("    return;");
+            }
+            builder.Append(indent).AppendLine("}");
+        }
+        else
+        {
+            builder.Append(indent).Append(fieldName).Append(".Write(writer, ").Append(valueExpression).AppendLine(");");
+            if (emitReturn)
+            {
+                builder.Append(indent).AppendLine("return;");
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryEmitReadWithStaticOptionsConverter(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, Action<string> action)
+    {
+        if (!TryGetStaticOptionsConverterType(sourceGenerationOptions, typeSymbol, out var converterIndex))
+        {
+            return false;
+        }
+
+        var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var readExpr = $"{GetSourceGenerationConverterFieldName(converterIndex)}.Read(reader, typeof({typeName}))";
+        action(readExpr);
+        return true;
     }
 
     private static bool TryEmitWriteScalar(StringBuilder builder, ITypeSymbol typeSymbol, string valueExpression, string indent)
@@ -5121,7 +5168,8 @@ public sealed partial class YamlSerializerContextGenerator
         INamedTypeSymbol unionType,
         string unionTypeName,
         ImmutableArray<CSharpUnionCaseModel> unionCases,
-        Dictionary<ITypeSymbol, int> indexByType)
+        Dictionary<ITypeSymbol, int> indexByType,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         if (unionType.IsReferenceType)
         {
@@ -5148,7 +5196,7 @@ public sealed partial class YamlSerializerContextGenerator
             var runtimeTypeName = unionCase.RuntimeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             builder.Append("        if (unionValue is ").Append(runtimeTypeName).Append(" unionCaseValue").Append(i).AppendLine(")");
             builder.AppendLine("        {");
-            EmitWriteKnownType(builder, unionCase.RuntimeType, indexByType, "unionCaseValue" + i, indent: "            ");
+            EmitWriteKnownType(builder, sourceGenerationOptions, unionCase.RuntimeType, indexByType, "unionCaseValue" + i, indent: "            ");
             builder.AppendLine("            return;");
             builder.AppendLine("        }");
             builder.AppendLine();
@@ -5161,7 +5209,8 @@ public sealed partial class YamlSerializerContextGenerator
         StringBuilder builder,
         string unionTypeName,
         ImmutableArray<CSharpUnionCaseModel> unionCases,
-        Dictionary<ITypeSymbol, int> indexByType)
+        Dictionary<ITypeSymbol, int> indexByType,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         builder.AppendLine("        if (reader.TryReadAlias(out var rootAliasValue))");
         builder.AppendLine("        {");
@@ -5203,27 +5252,27 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            var scalarValue = global::Meziantou.Framework.Yaml.Serialization.YamlScalar.ResolveObject(reader);");
         builder.AppendLine("            if (scalarValue is bool)");
         builder.AppendLine("            {");
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Boolean, indexByType, "                ");
+        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Boolean, indexByType, "                ", sourceGenerationOptions);
         builder.AppendLine("            }");
         builder.AppendLine();
         builder.AppendLine("            if (scalarValue is sbyte or byte or short or ushort or int or uint or long or ulong or nint or nuint or float or double or decimal or global::System.Half or global::System.Int128 or global::System.UInt128)");
         builder.AppendLine("            {");
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Number, indexByType, "                ");
+        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Number, indexByType, "                ", sourceGenerationOptions);
         builder.AppendLine("            }");
         builder.AppendLine();
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.String, indexByType, "            ");
+        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.String, indexByType, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine();
 
         builder.AppendLine("        if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.StartSequence)");
         builder.AppendLine("        {");
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Sequence, indexByType, "            ");
+        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Sequence, indexByType, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine();
 
         builder.AppendLine("        if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.StartMapping)");
         builder.AppendLine("        {");
-        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Mapping, indexByType, "            ");
+        EmitReadCSharpUnionKind(builder, unionTypeName, unionCases, CSharpUnionCaseKind.Mapping, indexByType, "            ", sourceGenerationOptions);
         builder.AppendLine("        }");
         builder.AppendLine();
 
@@ -5259,7 +5308,8 @@ public sealed partial class YamlSerializerContextGenerator
         ImmutableArray<CSharpUnionCaseModel> unionCases,
         CSharpUnionCaseKind kind,
         Dictionary<ITypeSymbol, int> indexByType,
-        string indent)
+        string indent,
+        SourceGenerationOptionsModel sourceGenerationOptions)
     {
         var unionCase = GetSingleCSharpUnionCase(unionCases, kind, out var ambiguous);
         if (ambiguous)
@@ -5275,86 +5325,74 @@ public sealed partial class YamlSerializerContextGenerator
         }
 
         builder.Append(indent).AppendLine("{");
-        EmitReadKnownType(builder, unionCase.Type, indexByType, "unionCaseValue", indent + "    ");
+        EmitReadKnownType(builder, sourceGenerationOptions, unionCase.Type, indexByType, "unionCaseValue", indent + "    ");
         builder.Append(indent).Append("    return new ").Append(unionTypeName).Append('(').Append(GetNonNullableValueExpression(unionCase.Type, "unionCaseValue")).AppendLine(");");
         builder.Append(indent).AppendLine("}");
     }
 
-    private static void EmitWriteKnownType(StringBuilder builder, ITypeSymbol typeSymbol, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent)
+    private static void EmitWriteKnownType(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent)
     {
         var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        builder.Append(indent).Append("if (hasCustomConverters && writer.TryGetCustomConverter(typeof(").Append(typeName).AppendLine("), out var elementCustomConverter) && elementCustomConverter is not null)");
-        builder.Append(indent).AppendLine("{");
-        builder.Append(indent).Append("    elementCustomConverter.Write(writer, ").Append(valueExpression).AppendLine(");");
-        builder.Append(indent).AppendLine("}");
-        builder.Append(indent).AppendLine("else");
-        builder.Append(indent).AppendLine("{");
 
-        var innerIndent = indent + "    ";
+        if (TryEmitWriteWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, valueExpression, indent, emitReturn: false))
+        {
+            return;
+        }
+
         if (typeSymbol.SpecialType == SpecialType.System_Object)
         {
-            builder.Append(innerIndent).AppendLine("var objectConverter = writer.GetConverter(typeof(object));");
-            builder.Append(innerIndent).Append("objectConverter.Write(writer, ").Append(valueExpression).AppendLine(");");
-            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).AppendLine("var objectConverter = writer.GetConverter(typeof(object));");
+            builder.Append(indent).Append("objectConverter.Write(writer, ").Append(valueExpression).AppendLine(");");
             return;
         }
 
         if (IsYamlNodeType(typeSymbol))
         {
-            EmitWriteWithYamlNodeConverter(builder, typeName, valueExpression, innerIndent);
-            builder.Append(indent).AppendLine("}");
+            EmitWriteWithYamlNodeConverter(builder, typeName, valueExpression, indent);
             return;
         }
 
-        if (TryEmitWriteScalar(builder, typeSymbol, valueExpression, innerIndent))
+        if (TryEmitWriteScalar(builder, typeSymbol, valueExpression, indent))
         {
-            builder.Append(indent).AppendLine("}");
             return;
         }
 
         if (indexByType.TryGetValue(typeSymbol, out var typeIndex))
         {
-            builder.Append(innerIndent).Append("WriteValue").Append(typeIndex).Append("(writer, ").Append(valueExpression).AppendLine(");");
-            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).Append("WriteValue").Append(typeIndex).Append("(writer, ").Append(valueExpression).AppendLine(");");
             return;
         }
 
-        builder.Append(innerIndent).AppendLine("throw new global::System.NotSupportedException(\"The generated YAML serializer does not support this element type.\");");
-        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("throw new global::System.NotSupportedException(\"The generated YAML serializer does not support this element type.\");");
     }
 
-    private static void EmitReadKnownType(StringBuilder builder, ITypeSymbol typeSymbol, Dictionary<ITypeSymbol, int> indexByType, string valueVarName, string indent)
+    private static void EmitReadKnownType(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, Dictionary<ITypeSymbol, int> indexByType, string valueVarName, string indent)
     {
         var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         builder.Append(indent).Append("var ").Append(valueVarName).Append(" = default(").Append(typeName).AppendLine(");");
-        builder.Append(indent).Append("if (hasCustomConverters && reader.TryGetCustomConverter(typeof(").Append(typeName).AppendLine("), out var elementCustomConverter) && elementCustomConverter is not null)");
-        builder.Append(indent).AppendLine("{");
-        builder.Append(indent).Append("    var untyped = elementCustomConverter.Read(reader, typeof(").Append(typeName).AppendLine("));");
-        builder.Append(indent).AppendLine("    if (untyped is not null)");
-        builder.Append(indent).AppendLine("    {");
-        builder.Append(indent).Append("        ").Append(valueVarName).Append(" = (").Append(typeName).AppendLine(")untyped;");
-        builder.Append(indent).AppendLine("    }");
-        builder.Append(indent).AppendLine("}");
-        builder.Append(indent).AppendLine("else");
-        builder.Append(indent).AppendLine("{");
 
-        var innerIndent = indent + "    ";
+        if (TryEmitReadWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, readExpr =>
+        {
+            builder.Append(indent).Append(valueVarName).Append(" = (").Append(typeName).Append(")(").Append(readExpr).AppendLine(")!;");
+        }))
+        {
+            return;
+        }
+
         if (typeSymbol.SpecialType == SpecialType.System_Object)
         {
-            builder.Append(innerIndent).AppendLine("var objectConverter = reader.GetConverter(typeof(object));");
-            builder.Append(innerIndent).AppendLine("var objectValue = objectConverter.Read(reader, typeof(object));");
-            builder.Append(innerIndent).Append(valueVarName).AppendLine(" = objectValue;");
-            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).AppendLine("var objectConverter = reader.GetConverter(typeof(object));");
+            builder.Append(indent).AppendLine("var objectValue = objectConverter.Read(reader, typeof(object));");
+            builder.Append(indent).Append(valueVarName).AppendLine(" = objectValue;");
             return;
         }
 
         if (IsYamlNodeType(typeSymbol))
         {
-            EmitReadWithYamlNodeConverter(builder, typeName, innerIndent, valueExpression =>
+            EmitReadWithYamlNodeConverter(builder, typeName, indent, valueExpression =>
             {
-                builder.Append(innerIndent).Append(valueVarName).Append(" = ").Append(valueExpression).AppendLine(";");
+                builder.Append(indent).Append(valueVarName).Append(" = ").Append(valueExpression).AppendLine(";");
             });
-            builder.Append(indent).AppendLine("}");
             return;
         }
 
@@ -5368,6 +5406,8 @@ public sealed partial class YamlSerializerContextGenerator
                 acceptsNull = true;
             }
 
+            builder.Append(indent).AppendLine("{");
+            var innerIndent = indent + "    ";
             builder.Append(innerIndent).AppendLine("if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar)");
             builder.Append(innerIndent).AppendLine("{");
             builder.Append(innerIndent).AppendLine("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalar(reader);");
@@ -5389,19 +5429,18 @@ public sealed partial class YamlSerializerContextGenerator
                 EmitReadScalarAssignment(builder, scalarType, valueVarName, indent: innerIndent);
                 builder.Append(innerIndent).AppendLine("reader.Read();");
             }
+
             builder.Append(indent).AppendLine("}");
             return;
         }
 
         if (indexByType.TryGetValue(typeSymbol, out var typeIndex))
         {
-            builder.Append(innerIndent).Append(valueVarName).Append(" = ReadValue").Append(typeIndex).AppendLine("(reader);");
-            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).Append(valueVarName).Append(" = ReadValue").Append(typeIndex).AppendLine("(reader);");
             return;
         }
 
-        builder.Append(innerIndent).AppendLine("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowNotSupported(reader, \"The generated YAML serializer does not support this element type.\");");
-        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowNotSupported(reader, \"The generated YAML serializer does not support this element type.\");");
     }
 
     private static void EmitWriteWithYamlNodeConverter(StringBuilder builder, string typeName, string valueExpression, string indent)
@@ -5644,11 +5683,66 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("            {");
             for (var i = 0; i < options.ConverterTypes.Length; i++)
             {
-                var converterType = options.ConverterTypes[i].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                builder.Append("                new ").Append(converterType).AppendLine("(),");
+                builder.Append("                ").Append(GetSourceGenerationConverterFieldName(i)).AppendLine(",");
             }
             builder.AppendLine("            },");
         }
+    }
+
+    private static void EmitSourceGenerationConverterFields(StringBuilder builder, SourceGenerationOptionsModel options)
+    {
+        if (options.ConverterTypes.IsDefaultOrEmpty)
+        {
+            return;
+        }
+
+        for (var i = 0; i < options.ConverterTypes.Length; i++)
+        {
+            var converterTypeName = options.ConverterTypes[i].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            builder.Append("    private static readonly ").Append(converterTypeName).Append(' ').Append(GetSourceGenerationConverterFieldName(i)).Append(" = new ").Append(converterTypeName).AppendLine("();");
+        }
+
+        builder.AppendLine();
+    }
+
+    private static string GetSourceGenerationConverterFieldName(int index)
+    {
+        return "s_sourceGenerationConverter" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryGetStaticOptionsConverterType(SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, out int converterIndex)
+    {
+        if (sourceGenerationOptions.ConverterTypes.IsDefaultOrEmpty)
+        {
+            converterIndex = -1;
+            return false;
+        }
+
+        // Unwrap Nullable<T> for matching.
+        var unwrappedType = typeSymbol;
+        if (typeSymbol is INamedTypeSymbol nullableType && nullableType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+        {
+            unwrappedType = nullableType.TypeArguments[0];
+        }
+
+        for (var i = 0; i < sourceGenerationOptions.ConverterTypes.Length; i++)
+        {
+            // Walk up the base type chain looking for YamlConverter<T> where T matches.
+            for (var current = sourceGenerationOptions.ConverterTypes[i] as INamedTypeSymbol; current is not null; current = current.BaseType)
+            {
+                if (current.IsGenericType &&
+                    current.Name == "YamlConverter" &&
+                    current.TypeArguments.Length == 1 &&
+                    SymbolEqualityComparer.Default.Equals(current.TypeArguments[0], unwrappedType))
+                {
+                    converterIndex = i;
+                    return true;
+                }
+            }
+        }
+
+        converterIndex = -1;
+        return false;
     }
 
 }

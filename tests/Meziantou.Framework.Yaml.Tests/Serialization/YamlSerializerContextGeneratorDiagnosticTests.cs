@@ -865,5 +865,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         AssertGeneratedSourceDoesNotContain(generatedSource, "if (options.");
         AssertGeneratedSourceDoesNotContain(generatedSource, "switch (options.");
         AssertGeneratedSourceDoesNotContain(generatedSource, "extensionData is not global::Meziantou.Framework.Yaml.Model.YamlMapping");
+        AssertGeneratedSourceDoesNotContain(generatedSource, "hasCustomConverters");
+        AssertGeneratedSourceDoesNotContain(generatedSource, "TryGetCustomConverter");
     }
 }

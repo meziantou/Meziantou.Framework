@@ -13,6 +13,9 @@ namespace Meziantou.Framework.Yaml.SourceGeneration;
 [Generator]
 public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerator
 {
+    private const string GeneratedCodeTool = "Meziantou.Framework.Yaml.SourceGenerator";
+    private static readonly string GeneratedCodeVersion = typeof(YamlSerializerContextGenerator).Assembly.GetName().Version?.ToString() ?? "0.0.0.0";
+
     private static readonly string ThrowHelperContent = GetThrowHelperContent();
     private static readonly SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
         SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);

@@ -1,3 +1,4 @@
+using System.Reflection;
 using Meziantou.Framework.Yaml.Model;
 using Meziantou.Framework.Yaml.Serialization;
 
@@ -150,6 +151,35 @@ public class YamlSerializerApiTests
     }
 
     [Fact]
+    public void ReflectionContext_YamlNodeRoot_PreservesOriginalNodeLocations()
+    {
+        var yaml = "foo: bar\n\nbaz:\n  bla: bloo\nseq:\n\n- item\n";
+
+        var root = YamlSerializer.Deserialize<YamlMapping>(yaml)!;
+
+        var baz = (YamlMapping)root["baz"]!;
+        Assert.Equal(3, baz.MappingStart.Start.Line);
+
+        var sequence = (YamlSequence)root["seq"]!;
+        Assert.Equal(6, sequence.SequenceStart.Start.Line);
+    }
+
+    [Fact]
+    public void ReflectionContext_YamlValueScalar_IsPublicAndPreservesOriginalNodeLocation()
+    {
+        var property = typeof(YamlValue).GetProperty(nameof(YamlValue.Scalar));
+        Assert.NotNull(property);
+        Assert.True(property.GetMethod!.IsPublic);
+        Assert.True(property.SetMethod!.IsPublic);
+
+        var root = YamlSerializer.Deserialize<YamlMapping>("key:\n value\n")!;
+        var value = (YamlValue)root["key"]!;
+
+        Assert.Equal(1, value.Scalar.Start.Line);
+        Assert.Equal(1, value.Scalar.Start.Column);
+    }
+
+    [Fact]
     public void ReflectionContext_YamlNodeMember_RoundTripsDynamicContent()
     {
         var yaml = """
@@ -170,6 +200,25 @@ public class YamlSerializerApiTests
 
         Assert.Contains("Content:", serialized);
         Assert.Contains("values:", serialized);
+    }
+
+    [Fact]
+    public void ReflectionContext_YamlNodeMember_PreservesOriginalNodeLocations()
+    {
+        var yaml = """
+            Name: dynamic
+            Content:
+              foo: bar
+
+              baz:
+                bla: bloo
+            """;
+
+        var payload = YamlSerializer.Deserialize<YamlNodePayload>(yaml)!;
+
+        var content = (YamlMapping)payload.Content!;
+        var baz = (YamlMapping)content["baz"]!;
+        Assert.Equal(5, baz.MappingStart.Start.Line);
     }
 
     [Fact]
@@ -221,11 +270,76 @@ public class YamlSerializerApiTests
     public void DeserializeFromReadOnlySpan()
     {
         ReadOnlySpan<char> yaml = "FirstName: Ada\nAge: 37";
+#pragma warning disable CS0618 // Exercise obsolete compatibility overload.
         var result = YamlSerializer.Deserialize<Person>(yaml);
+#pragma warning restore CS0618
 
         Assert.NotNull(result);
         Assert.Equal("Ada", result.FirstName);
         Assert.Equal(37, result.Age);
+    }
+
+    [Fact]
+    public void ReadOnlySpanDeserializeOverloadsAreObsolete()
+    {
+        var spanOverloadCount = 0;
+        foreach (var method in typeof(YamlSerializer).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+        {
+            foreach (var parameter in method.GetParameters())
+            {
+                if (parameter.ParameterType == typeof(ReadOnlySpan<char>))
+                {
+                    spanOverloadCount++;
+                    var obsolete = method.GetCustomAttribute<ObsoleteAttribute>();
+                    Assert.NotNull(obsolete);
+                    Assert.False(obsolete.IsError, method.ToString());
+                    Assert.Contains("string or TextReader overload", obsolete.Message);
+                    break;
+                }
+            }
+        }
+
+        Assert.Equal(5, spanOverloadCount);
+    }
+
+    [Fact]
+    public void TextReaderWriterOverloadsSupportExplicitTypeInfo()
+    {
+        var typeInfo = new StringTypeInfo(new YamlSerializerOptions());
+        using var writer = new System.IO.StringWriter();
+
+        YamlSerializer.Serialize(writer, (object)"hello", typeInfo);
+        using var reader = new System.IO.StringReader(writer.ToString());
+        var value = YamlSerializer.Deserialize(reader, typeInfo);
+
+        Assert.Equal("value: hello\n", writer.ToString());
+        Assert.Equal("hello", value);
+    }
+
+    [Fact]
+    public void StreamOverloadsSupportExplicitTypeInfo()
+    {
+        var typeInfo = new StringTypeInfo(new YamlSerializerOptions());
+        using var stream = new System.IO.MemoryStream();
+
+        YamlSerializer.Serialize(stream, "hello", typeInfo);
+        stream.Position = 0;
+        var value = YamlSerializer.Deserialize(stream, typeInfo);
+
+        Assert.Equal("hello", value);
+        Assert.Equal("value: hello\n", System.Text.Encoding.UTF8.GetString(stream.ToArray()));
+    }
+
+    [Fact]
+    public void NonGenericTypeInfoOverloadsSerializeAndDeserializePayload()
+    {
+        YamlTypeInfo typeInfo = new StringTypeInfo(new YamlSerializerOptions());
+
+        var yaml = YamlSerializer.Serialize((object)"hello", typeInfo);
+        var value = YamlSerializer.Deserialize(yaml, typeInfo);
+
+        Assert.Equal("value: hello\n", yaml);
+        Assert.Equal("hello", value);
     }
 
     [Fact]

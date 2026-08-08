@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Immutable;
 using System.Reflection;
 using Meziantou.Framework.Yaml.Serialization.Converters;
@@ -246,6 +247,10 @@ public abstract class YamlReaderWriterBase
         [UnconditionalSuppressMessage(
             "Trimming",
             "IL2070",
+            Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+        [UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2067",
             Justification = "This code path is only used by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
         public static YamlConverter? CreateConverter(Type typeToConvert)
         {
@@ -543,8 +548,53 @@ public abstract class YamlReaderWriterBase
                 }
             }
 
+            if (TryGetMutableCollectionElementType(typeToConvert, out var collectionElementType))
+            {
+                var converterType = typeof(YamlMutableCollectionConverter<,>).MakeGenericType(typeToConvert, collectionElementType);
+                return (YamlConverter)Activator.CreateInstance(converterType)!;
+            }
+
             var objectConverterType = typeof(YamlObjectConverter<>).MakeGenericType(typeToConvert);
             return (YamlConverter)Activator.CreateInstance(objectConverterType)!;
+        }
+
+        private static bool TryGetMutableCollectionElementType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type,
+            [NotNullWhen(true)] out Type? elementType)
+        {
+            elementType = null;
+
+            if (type.IsInterface || type.IsAbstract || typeof(IDictionary).IsAssignableFrom(type) || type.GetConstructor(Type.EmptyTypes) is null)
+            {
+                return false;
+            }
+
+            Type? matchedElementType = null;
+            foreach (var interfaceType in type.GetInterfaces())
+            {
+                if (interfaceType.IsGenericType &&
+                    (interfaceType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
+                     interfaceType.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)))
+                {
+                    return false;
+                }
+
+                if (!interfaceType.IsGenericType || interfaceType.GetGenericTypeDefinition() != typeof(ICollection<>))
+                {
+                    continue;
+                }
+
+                var currentElementType = interfaceType.GetGenericArguments()[0];
+                if (matchedElementType is not null && matchedElementType != currentElementType)
+                {
+                    return false;
+                }
+
+                matchedElementType = currentElementType;
+            }
+
+            elementType = matchedElementType;
+            return elementType is not null;
         }
     }
 }

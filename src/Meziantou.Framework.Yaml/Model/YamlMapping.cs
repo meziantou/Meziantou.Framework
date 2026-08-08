@@ -21,7 +21,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
         _contents = new Dictionary<YamlElement, YamlElement?>();
     }
 
-    private YamlMapping(MappingStart mappingStart, MappingEnd mappingEnd, List<YamlElement> keys, Dictionary<YamlElement, YamlElement?> contents)
+    internal YamlMapping(MappingStart mappingStart, MappingEnd mappingEnd, List<YamlElement> keys, Dictionary<YamlElement, YamlElement?> contents)
     {
         _keys = keys;
         _contents = contents;

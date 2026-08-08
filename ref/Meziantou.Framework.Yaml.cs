@@ -177,7 +177,10 @@ namespace Meziantou.Framework.Yaml
     {
         Never = 0,
         WhenWritingNull = 1,
-        WhenWritingDefault = 2
+        WhenWritingDefault = 2,
+        Always = 3,
+        WhenWriting = 4,
+        WhenReading = 5
     }
 
     public enum YamlKnownNamingPolicy
@@ -232,7 +235,8 @@ namespace Meziantou.Framework.Yaml
     public enum YamlReferenceHandling
     {
         None = 0,
-        Preserve = 1
+        Preserve = 1,
+        PreserveMinimal = 2
     }
 
     public sealed class YamlScalarStylePreferences
@@ -295,12 +299,27 @@ namespace Meziantou.Framework.Yaml
         public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
         public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static T Deserialize<T>(System.ReadOnlySpan<char> yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static T Deserialize<T>(System.ReadOnlySpan<char> yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static object? Deserialize(System.ReadOnlySpan<char> yaml, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static object? Deserialize(System.ReadOnlySpan<char> yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static string Serialize<T>(T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static string Serialize(object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static void Serialize<T>(System.IO.TextWriter writer, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
+        public static void Serialize(System.IO.TextWriter writer, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
+        public static void Serialize<T>(System.IO.Stream utf8Stream, T value, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) { }
+        public static void Serialize(System.IO.Stream utf8Stream, object? value, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) { }
+        public static object? Deserialize(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static T Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static object? Deserialize(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static T Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static object? Deserialize(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
         public static T Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        [System.Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", false)]
         public static T Deserialize<T>(System.ReadOnlySpan<char> yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
         public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) { }
         public static void Serialize<T>(System.Buffers.IBufferWriter<char> destination, T value, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) { }
@@ -646,6 +665,7 @@ namespace Meziantou.Framework.Yaml.Model
 
     public class YamlValue : Meziantou.Framework.Yaml.Model.YamlElement
     {
+        public Meziantou.Framework.Yaml.Events.Scalar Scalar { get => throw null; set { } }
         public string? Anchor { get => throw null; set { } }
         public string? Tag { get => throw null; set { } }
         public Meziantou.Framework.Yaml.ScalarStyle Style { get => throw null; set { } }
@@ -846,6 +866,7 @@ namespace Meziantou.Framework.Yaml.Serialization
     [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
     public sealed class YamlIgnoreAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
+        public Meziantou.Framework.Yaml.YamlIgnoreCondition Condition { get => throw null; set { } }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]

@@ -109,7 +109,10 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
             }
 
             var anchor = writer.ReferenceWriter.GetOrAddAnchor(value);
-            writer.WriteAnchor(anchor);
+            if (anchor is not null)
+            {
+                writer.WriteAnchor(anchor);
+            }
         }
 
         writer.WriteStartMapping();

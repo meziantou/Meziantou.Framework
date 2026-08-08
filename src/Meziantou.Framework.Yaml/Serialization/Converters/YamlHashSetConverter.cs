@@ -79,7 +79,10 @@ internal sealed class YamlHashSetConverter<TElement> : YamlConverter<HashSet<TEl
             }
 
             var anchor = writer.ReferenceWriter.GetOrAddAnchor(value);
-            writer.WriteAnchor(anchor);
+            if (anchor is not null)
+            {
+                writer.WriteAnchor(anchor);
+            }
         }
 
         writer.WriteStartSequence();

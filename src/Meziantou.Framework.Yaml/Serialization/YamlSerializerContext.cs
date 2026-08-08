@@ -57,6 +57,12 @@ public abstract partial class YamlSerializerContext : IYamlTypeInfoResolver
     /// same source-generated context.
     /// </para>
     /// <para>
+    /// If the overrides include runtime <see cref="YamlSerializerOptions.Converters"/>, generated contexts
+    /// resolve supported converter replacements when a generated <see cref="YamlTypeInfo"/> is initialized.
+    /// Reuse that <see cref="YamlTypeInfo"/> for repeated operations with the same converter set to avoid
+    /// reinitializing option-specific generated metadata.
+    /// </para>
+    /// <para>
     /// The returned options always has <see cref="YamlSerializerOptions.TypeInfoResolver"/> set to this context.
     /// Any <see cref="YamlSerializerOptions.TypeInfoResolver"/> value set by <paramref name="configure"/> is overwritten.
     /// </para>

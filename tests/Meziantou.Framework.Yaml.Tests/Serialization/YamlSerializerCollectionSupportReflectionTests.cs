@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
 public sealed class YamlSerializerCollectionSupportReflectionTests
@@ -236,6 +237,40 @@ public sealed class YamlSerializerCollectionSupportReflectionTests
 
         [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Test class")]
         public IReadOnlyDictionary<TestColor, int>? Secondary { get; set; }
+    }
+
+    [Fact]
+    public void RoundTrip_ObservableCollection_ShouldPreserveCollectionType()
+    {
+        var value = new ObservableCollection<string> { "Hello", "World" };
+
+        var yaml = YamlSerializer.Serialize(value);
+        var result = YamlSerializer.Deserialize<ObservableCollection<string>>(yaml);
+
+        Assert.NotNull(result);
+        Assert.IsType<ObservableCollection<string>>(result);
+        Assert.Equal(new[] { "Hello", "World" }, result);
+    }
+
+    [Fact]
+    public void Populate_ObservableCollectionProperty_ShouldAddValuesToExistingCollection()
+    {
+        var yaml = "Items:\n- added\n";
+        var options = new YamlSerializerOptions
+        {
+            PreferredObjectCreationHandling = YamlObjectCreationHandling.Populate,
+        };
+
+        var result = YamlSerializer.Deserialize<ObservableCollectionPayload>(yaml, options);
+
+        Assert.NotNull(result);
+        Assert.IsType<ObservableCollection<string>>(result.Items);
+        Assert.Equal(new[] { "existing", "added" }, result.Items);
+    }
+
+    private sealed class ObservableCollectionPayload
+    {
+        public ObservableCollection<string> Items { get; } = new() { "existing" };
     }
 
     private static string ExtractAnchor(string yaml, string prefix)

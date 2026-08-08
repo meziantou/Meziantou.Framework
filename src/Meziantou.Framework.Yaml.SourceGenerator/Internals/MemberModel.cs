@@ -11,12 +11,13 @@ internal sealed class MemberModel
         string serializedNameExpressionForWrite,
         string accessExpression,
         Func<string, string> assignExpression,
-        string ignoreConditionExpression,
+        int? ignoreCondition,
         string? attributeConverterTypeName,
         string? objectCreationHandling,
         string? blockSequenceMappingStyle,
         string? blockSequenceSequenceStyle,
         bool isRequired,
+        bool isIgnoredOnRead,
         bool isInitOnly,
         bool isRequiredKeyword,
         bool requiresIncludeFields,
@@ -33,12 +34,13 @@ internal sealed class MemberModel
         SerializedNameExpressionForWrite = serializedNameExpressionForWrite;
         AccessExpression = accessExpression;
         AssignExpression = assignExpression;
-        IgnoreConditionExpression = ignoreConditionExpression;
+        IgnoreCondition = ignoreCondition;
         AttributeConverterTypeName = attributeConverterTypeName;
         ObjectCreationHandling = objectCreationHandling;
         BlockSequenceMappingStyle = blockSequenceMappingStyle;
         BlockSequenceSequenceStyle = blockSequenceSequenceStyle;
         IsRequired = isRequired;
+        IsIgnoredOnRead = isIgnoredOnRead;
         IsInitOnly = isInitOnly;
         IsRequiredKeyword = isRequiredKeyword;
         RequiresIncludeFields = requiresIncludeFields;
@@ -56,12 +58,13 @@ internal sealed class MemberModel
     public string SerializedNameExpressionForWrite { get; }
     public string AccessExpression { get; }
     public Func<string, string> AssignExpression { get; }
-    public string IgnoreConditionExpression { get; }
+    public int? IgnoreCondition { get; }
     public string? AttributeConverterTypeName { get; }
     public string? ObjectCreationHandling { get; }
     public string? BlockSequenceMappingStyle { get; }
     public string? BlockSequenceSequenceStyle { get; }
     public bool IsRequired { get; }
+    public bool IsIgnoredOnRead { get; }
     public bool IsInitOnly { get; }
     public bool IsRequiredKeyword { get; }
     public bool RequiresIncludeFields { get; }

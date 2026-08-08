@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -12,6 +13,9 @@ namespace Meziantou.Framework.Yaml.SourceGeneration;
 [Generator]
 public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerator
 {
+    private const string GeneratedCodeTool = "Meziantou.Framework.Yaml.SourceGenerator";
+    private static readonly string GeneratedCodeVersion = typeof(YamlSerializerContextGenerator).Assembly.GetName().Version?.ToString() ?? "0.0.0.0";
+
     private static readonly string ThrowHelperContent = GetThrowHelperContent();
     private static readonly SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
         SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
@@ -27,7 +31,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static readonly DiagnosticDescriptor UnsupportedMemberType = new(
         id: "MFY002",
         title: "Unsupported member type",
-        messageFormat: "Type '{0}' contains member '{1}' of unsupported type '{2}'. Add [YamlSerializable(typeof({2}))] to the context or change the member type.",
+        messageFormat: "Type '{0}' contains member '{1}' of unsupported type '{2}'. Use a supported scalar, collection, dictionary with a supported key, concrete generated type, or converter.",
         category: "Meziantou.Framework.Yaml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -332,7 +336,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var derivedTypeMappings = ValidateDerivedTypeMappings(model, diagnostics);
         var resolvedTypes = ExpandSerializableTypes(
             model.SerializableTypes.Select(static item => item.TypeSymbol).ToImmutableArray(),
-            derivedTypeMappings);
+            derivedTypeMappings,
+            model.SourceGenerationOptions,
+            compilation);
 
         var indexByType = new Dictionary<ITypeSymbol, int>(resolvedTypes.Length, SymbolEqualityComparer.Default);
         for (var i = 0; i < resolvedTypes.Length; i++)
@@ -397,7 +403,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                     continue;
                 }
 
-                if (IsKnownScalar(memberType) || IsYamlNodeType(memberType))
+                if (IsKnownScalar(memberType) || IsYamlNodeType(memberType) || IsUntypedObject(memberType))
                 {
                     continue;
                 }
@@ -417,7 +423,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 if (TryGetArrayElementType(memberType, out var arrayElementType) ||
                     TryGetSequenceElementType(memberType, out arrayElementType, out _))
                 {
-                    if (IsKnownScalar(arrayElementType) || IsYamlNodeType(arrayElementType) || indexByType.ContainsKey(arrayElementType) ||
+                    if (IsKnownScalar(arrayElementType) || IsYamlNodeType(arrayElementType) || IsUntypedObject(arrayElementType) || indexByType.ContainsKey(arrayElementType) ||
                         IsTypeHandledByConverter(arrayElementType, model.SourceGenerationOptions.ConverterTypes, compilation))
                     {
                         continue;
@@ -445,7 +451,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                         continue;
                     }
 
-                    if (IsKnownScalar(dictionaryValueType) || IsYamlNodeType(dictionaryValueType) || indexByType.ContainsKey(dictionaryValueType) ||
+                    if (IsKnownScalar(dictionaryValueType) || IsYamlNodeType(dictionaryValueType) || IsUntypedObject(dictionaryValueType) || indexByType.ContainsKey(dictionaryValueType) ||
                         IsTypeHandledByConverter(dictionaryValueType, model.SourceGenerationOptions.ConverterTypes, compilation))
                     {
                         continue;
@@ -598,10 +604,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static ImmutableArray<ITypeSymbol> ExpandSerializableTypes(
         ImmutableArray<ITypeSymbol> roots,
-        ImmutableArray<DerivedTypeMappingModel> contextMappings)
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        Compilation compilation)
     {
-        // Always include explicitly declared root types. Additionally include polymorphic derived types
-        // so generated polymorphism dispatch can call into their serializers without requiring explicit roots.
+        // Always include explicitly declared root types. Additionally include polymorphic derived types and
+        // statically discoverable member/element/value types so generated serializers can call into their
+        // serializers without requiring explicit roots.
         var builder = ImmutableArray.CreateBuilder<ITypeSymbol>();
         var seen = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
         var queue = new Queue<ITypeSymbol>();
@@ -635,6 +644,16 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         while (queue.Count != 0)
         {
             var type = queue.Dequeue();
+
+            foreach (var dependency in GetTransitiveSerializableDependencies(type, contextMappings, sourceGenerationOptions, compilation))
+            {
+                if (seen.Add(dependency))
+                {
+                    builder.Add(dependency);
+                    queue.Enqueue(dependency);
+                }
+            }
+
             if (type is not INamedTypeSymbol named)
             {
                 continue;
@@ -669,6 +688,162 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         return builder.ToImmutable();
     }
+
+    private static IEnumerable<ITypeSymbol> GetTransitiveSerializableDependencies(
+        ITypeSymbol type,
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        Compilation compilation)
+    {
+        if (TryGetArrayElementType(type, out var arrayElementType))
+        {
+            if (ShouldGenerateTransitiveType(arrayElementType, contextMappings, sourceGenerationOptions, compilation))
+            {
+                yield return arrayElementType;
+            }
+
+            yield break;
+        }
+
+        if (TryGetSequenceElementType(type, out var sequenceElementType, out _))
+        {
+            if (ShouldGenerateTransitiveType(sequenceElementType, contextMappings, sourceGenerationOptions, compilation))
+            {
+                yield return sequenceElementType;
+            }
+
+            yield break;
+        }
+
+        if (TryGetDictionaryTypes(type, out var dictionaryKeyType, out var dictionaryValueType, out _))
+        {
+            if (IsSupportedDictionaryKeyType(dictionaryKeyType) &&
+                ShouldGenerateTransitiveType(dictionaryValueType, contextMappings, sourceGenerationOptions, compilation))
+            {
+                yield return dictionaryValueType;
+            }
+
+            yield break;
+        }
+
+        if (type is not INamedTypeSymbol named ||
+            (named.TypeKind != TypeKind.Class && named.TypeKind != TypeKind.Struct) ||
+            IsYamlNodeType(named))
+        {
+            yield break;
+        }
+
+        var extensionDataMembers = GetExtensionDataMembers(named);
+        foreach (var member in GetSerializableMembers(named))
+        {
+            if (extensionDataMembers.Any(extensionDataMember => SymbolEqualityComparer.Default.Equals(member, extensionDataMember)))
+            {
+                continue;
+            }
+
+            if (GetYamlConverterAttributeTypeName(member) is not null)
+            {
+                continue;
+            }
+
+            var memberType = GetMemberType(member);
+            if (memberType is null)
+            {
+                continue;
+            }
+
+            foreach (var dependency in GetTransitiveSerializableMemberDependencies(memberType, contextMappings, sourceGenerationOptions, compilation))
+            {
+                yield return dependency;
+            }
+        }
+    }
+
+    private static IEnumerable<ITypeSymbol> GetTransitiveSerializableMemberDependencies(
+        ITypeSymbol memberType,
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        Compilation compilation)
+    {
+        if (TryGetArrayElementType(memberType, out var arrayElementType))
+        {
+            if (ShouldGenerateTransitiveType(arrayElementType, contextMappings, sourceGenerationOptions, compilation))
+            {
+                yield return arrayElementType;
+            }
+
+            yield break;
+        }
+
+        if (TryGetSequenceElementType(memberType, out var sequenceElementType, out _))
+        {
+            if (ShouldGenerateTransitiveType(sequenceElementType, contextMappings, sourceGenerationOptions, compilation))
+            {
+                yield return sequenceElementType;
+            }
+
+            yield break;
+        }
+
+        if (TryGetDictionaryTypes(memberType, out var dictionaryKeyType, out var dictionaryValueType, out _))
+        {
+            if (IsSupportedDictionaryKeyType(dictionaryKeyType) &&
+                ShouldGenerateTransitiveType(dictionaryValueType, contextMappings, sourceGenerationOptions, compilation))
+            {
+                yield return dictionaryValueType;
+            }
+
+            yield break;
+        }
+
+        if (ShouldGenerateTransitiveType(memberType, contextMappings, sourceGenerationOptions, compilation))
+        {
+            yield return memberType;
+        }
+    }
+
+    private static bool ShouldGenerateTransitiveType(
+        ITypeSymbol type,
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        Compilation compilation)
+    {
+        if (IsKnownScalar(type) ||
+            IsYamlNodeType(type) ||
+            IsUntypedObject(type) ||
+            IsTypeHandledByConverter(type, sourceGenerationOptions.ConverterTypes, compilation))
+        {
+            return false;
+        }
+
+        if (type is IArrayTypeSymbol)
+        {
+            return true;
+        }
+
+        if (type is not INamedTypeSymbol named)
+        {
+            return false;
+        }
+
+        if (named.TypeKind == TypeKind.Interface)
+        {
+            return TryGetPolymorphismInfo(named, contextMappings, out var polymorphism) &&
+                polymorphism.DerivedTypes.Length != 0;
+        }
+
+        if (named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T ||
+            named.SpecialType == SpecialType.System_Object ||
+            named.TypeKind is TypeKind.Delegate or TypeKind.TypeParameter ||
+            named.IsUnboundGenericType ||
+            named.TypeArguments.Any(static typeArgument => typeArgument.TypeKind == TypeKind.TypeParameter))
+        {
+            return false;
+        }
+
+        return named.TypeKind is TypeKind.Class or TypeKind.Struct or TypeKind.Enum;
+    }
+
     private static bool TryGetArrayElementType(ITypeSymbol type, out ITypeSymbol elementType)
     {
         if (type is IArrayTypeSymbol arrayType && arrayType.Rank == 1)
@@ -750,9 +925,62 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             }
         }
 
+        if (TryGetMutableCollectionElementType(type, out elementType))
+        {
+            kind = SequenceKind.MutableCollection;
+            return true;
+        }
+
         elementType = null!;
         kind = default;
         return false;
+    }
+
+    private static bool TryGetMutableCollectionElementType(ITypeSymbol type, out ITypeSymbol elementType)
+    {
+        elementType = null!;
+
+        if (type is not INamedTypeSymbol named ||
+            named.TypeKind != TypeKind.Class ||
+            named.IsAbstract ||
+            named.InstanceConstructors.All(static constructor => constructor.Parameters.Length != 0 || constructor.DeclaredAccessibility != Accessibility.Public))
+        {
+            return false;
+        }
+
+        ITypeSymbol? matchedElementType = null;
+        foreach (var interfaceType in named.AllInterfaces)
+        {
+            var constructed = interfaceType.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (string.Equals(constructed, "global::System.Collections.IDictionary", StringComparison.Ordinal) ||
+                string.Equals(constructed, "global::System.Collections.Generic.IDictionary<TKey, TValue>", StringComparison.Ordinal) ||
+                string.Equals(constructed, "global::System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (!string.Equals(constructed, "global::System.Collections.Generic.ICollection<T>", StringComparison.Ordinal) ||
+                interfaceType.TypeArguments.Length != 1)
+            {
+                continue;
+            }
+
+            var currentElementType = interfaceType.TypeArguments[0];
+            if (matchedElementType is not null && !SymbolEqualityComparer.Default.Equals(matchedElementType, currentElementType))
+            {
+                return false;
+            }
+
+            matchedElementType = currentElementType;
+        }
+
+        if (matchedElementType is null)
+        {
+            return false;
+        }
+
+        elementType = matchedElementType;
+        return true;
     }
 
     private static bool TryGetDictionaryValueType(ITypeSymbol type, out ITypeSymbol valueType)
@@ -1262,12 +1490,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         Func<string, string> assign = member is IPropertySymbol propAssign
             ? rhs => "instance." + propAssign.Name + " = " + rhs
             : rhs => "instance." + member.Name + " = " + rhs;
-        var ignoreConditionExpression = GetIgnoreConditionExpression();
+        var memberIgnoreCondition = TryGetIgnoreCondition(member, out var rawCondition) ? rawCondition : (int?)null;
         var converterTypeName = GetYamlConverterAttributeTypeName(member);
         var objectCreationHandling = GetObjectCreationHandling(member);
         var (blockSequenceMappingStyle, blockSequenceSequenceStyle) = GetBlockSequenceItemStyles(member);
         var isRequiredKeyword = member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true };
         var isRequired = isRequiredKeyword || HasAttribute(member, "Meziantou.Framework.Yaml.Serialization.YamlRequiredAttribute");
+        var isIgnoredOnRead = memberIgnoreCondition == IgnoreWhenReading;
         var isInitOnly = member is IPropertySymbol property && IsInitOnlyProperty(property);
         var hasIncludeAttribute = HasAttribute(member, "Meziantou.Framework.Yaml.Serialization.YamlIncludeAttribute");
         var requiresIncludeFields = member is IFieldSymbol { DeclaredAccessibility: Accessibility.Public } && !hasIncludeAttribute;
@@ -1276,7 +1505,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var disallowNull = IsNonNullableReferenceType(type);
         var numberHandling = converterTypeName is null ? GetNumberHandlingValue(member, type) : null;
         var enumCustomNames = converterTypeName is null ? GetEnumCustomNames(type) : null;
-        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, ignoreConditionExpression, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, numberHandling, enumCustomNames);
+        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, memberIgnoreCondition, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, numberHandling, enumCustomNames);
     }
 
     private static (string ForRead, string ForWrite) GetSerializedMemberNameExpressions(ISymbol member, YamlNamingPolicy? propertyNamingPolicy)
@@ -1324,12 +1553,6 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             "KebabCaseUpper" => YamlNamingPolicy.KebabCaseUpper,
             _ => null,
         };
-    }
-
-    private static string GetIgnoreConditionExpression()
-    {
-        // Member-level ignore overrides options default. YAML ignore is treated as Always (handled by member filtering).
-        return "options.DefaultIgnoreCondition";
     }
 
     private static int? GetNumberHandlingValue(ISymbol member, ITypeSymbol memberType)
@@ -1579,6 +1802,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return false;
     }
 
+    private static bool IsUntypedObject(ITypeSymbol type)
+        => type.SpecialType == SpecialType.System_Object;
+
     private static ImmutableArray<ISymbol> GetSerializableMembers(INamedTypeSymbol type)
     {
         // Arrays/collections/dictionaries are handled by dedicated generated code paths, not as object graphs.
@@ -1624,7 +1850,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                         continue;
                     }
 
-                    if (HasAttribute(property, "Meziantou.Framework.Yaml.Serialization.YamlIgnoreAttribute"))
+                    if (IsIgnoredAlways(property))
                     {
                         continue;
                     }
@@ -1651,7 +1877,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                         continue;
                     }
 
-                    if (HasAttribute(field, "Meziantou.Framework.Yaml.Serialization.YamlIgnoreAttribute"))
+                    if (IsIgnoredAlways(field))
                     {
                         continue;
                     }
@@ -1863,6 +2089,61 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static string GetGeneratedTypeName(ITypeSymbol type)
         => type.ToDisplayString(FullyQualifiedNullableFormat);
+
+    private const int IgnoreNever = 0;
+    private const int IgnoreWhenWritingNull = 1;
+    private const int IgnoreWhenWritingDefault = 2;
+    private const int IgnoreAlways = 3;
+    private const int IgnoreWhenWriting = 4;
+    private const int IgnoreWhenReading = 5;
+
+    private const int DiscriminatorStyleTag = 0;
+    private const int DiscriminatorStyleProperty = 1;
+    private const int DiscriminatorStyleBoth = 2;
+    private const int UnknownDerivedTypeHandlingFail = 0;
+    private const int UnknownDerivedTypeHandlingFallBackToBase = 1;
+
+    private static bool IsIgnoredAlways(ISymbol symbol)
+        => TryGetIgnoreCondition(symbol, out var condition) && condition == IgnoreAlways;
+
+    private static bool TryGetIgnoreCondition(ISymbol symbol, out int condition)
+    {
+        condition = IgnoreNever;
+
+        foreach (var attribute in symbol.GetAttributes())
+        {
+            if (attribute.AttributeClass is null)
+            {
+                continue;
+            }
+
+            var attributeName = attribute.AttributeClass.ToDisplayString();
+            if (!string.Equals(attributeName, "Meziantou.Framework.Yaml.Serialization.YamlIgnoreAttribute", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            condition = IgnoreAlways;
+
+            foreach (var pair in attribute.NamedArguments)
+            {
+                if (!string.Equals(pair.Key, "Condition", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (pair.Value.Value is not null)
+                {
+                    condition = Convert.ToInt32(pair.Value.Value, System.Globalization.CultureInfo.InvariantCulture);
+                    break;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
 
     private static bool HasAttribute(ISymbol symbol, string metadataName)
     {
@@ -2548,34 +2829,6 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return lastDot >= 0 && lastDot < text.Length - 1 ? text.Substring(lastDot + 1) : text;
     }
 
-    private static string GetUnmappedMemberHandlingExpression(ITypeSymbol typeSymbol)
-    {
-        if (typeSymbol is INamedTypeSymbol namedType)
-        {
-            var overrideValue = TryGetUnmappedMemberHandlingOverride(namedType);
-            if (!string.IsNullOrEmpty(overrideValue))
-            {
-                return "global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling." + overrideValue;
-            }
-        }
-
-        return "options.RejectUnmatchedProperties ? global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow : options.UnmappedMemberHandling";
-    }
-
-    private static string GetPreferredObjectCreationHandlingExpression(ITypeSymbol typeSymbol)
-    {
-        if (typeSymbol is INamedTypeSymbol namedType)
-        {
-            var overrideValue = TryGetObjectCreationHandlingOverride(namedType);
-            if (!string.IsNullOrEmpty(overrideValue))
-            {
-                return "global::Meziantou.Framework.Yaml.YamlObjectCreationHandling." + overrideValue;
-            }
-        }
-
-        return "options.PreferredObjectCreationHandling";
-    }
-
     private static string? TryGetUnmappedMemberHandlingOverride(INamedTypeSymbol typeSymbol)
     {
         foreach (var attribute in typeSymbol.GetAttributes())
@@ -2690,4 +2943,276 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static string ToLiteral(string value)
         => "@\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+
+    private static int? GetDefaultIgnoreCondition(SourceGenerationOptionsModel options)
+        => options.DefaultIgnoreCondition switch
+        {
+            "Never" => IgnoreNever,
+            "WhenWritingNull" => IgnoreWhenWritingNull,
+            "WhenWritingDefault" => IgnoreWhenWritingDefault,
+            "Always" => IgnoreAlways,
+            "WhenWriting" => IgnoreWhenWriting,
+            "WhenReading" => IgnoreWhenReading,
+            _ => null,
+        };
+
+    private static int? GetDiscriminatorStyle(SourceGenerationOptionsModel options)
+        => options.DiscriminatorStyle switch
+        {
+            "Tag" => DiscriminatorStyleTag,
+            "Property" => DiscriminatorStyleProperty,
+            "Both" => DiscriminatorStyleBoth,
+            _ => null,
+        };
+
+    private static int? GetUnknownDerivedTypeHandling(SourceGenerationOptionsModel options)
+        => options.UnknownDerivedTypeHandling switch
+        {
+            "Fail" => UnknownDerivedTypeHandlingFail,
+            "FallBackToBase" => UnknownDerivedTypeHandlingFallBackToBase,
+            _ => null,
+        };
+
+    private static string? GetUnmappedMemberHandling(SourceGenerationOptionsModel options)
+        => options.UnmappedMemberHandling is { Length: > 0 } value ? value : null;
+
+    private static string? GetPreferredObjectCreationHandling(SourceGenerationOptionsModel options)
+        => options.PreferredObjectCreationHandling is { Length: > 0 } value ? value : null;
+
+    private static string? GetDuplicateKeyHandling(SourceGenerationOptionsModel options)
+        => options.DuplicateKeyHandling is { Length: > 0 } value ? value : null;
+
+    private static bool? GetSortedMappingOrder(SourceGenerationOptionsModel options)
+        => options.MappingOrder switch
+        {
+            "Sorted" => true,
+            "Declaration" => false,
+            _ => null,
+        };
+
+    private static string GetPropertyNameComparerExpression(SourceGenerationOptionsModel options)
+        => options.PropertyNameCaseInsensitive switch
+        {
+            true => "global::System.StringComparer.OrdinalIgnoreCase",
+            false => "global::System.StringComparer.Ordinal",
+            _ => "options.PropertyNameCaseInsensitive ? global::System.StringComparer.OrdinalIgnoreCase : global::System.StringComparer.Ordinal",
+        };
+
+    private static string GetPropertyNameComparisonExpression(SourceGenerationOptionsModel options)
+        => options.PropertyNameCaseInsensitive switch
+        {
+            true => "global::System.StringComparison.OrdinalIgnoreCase",
+            false => "global::System.StringComparison.Ordinal",
+            _ => "options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal",
+        };
+
+    private static string GetMergeEnabledExpression(SourceGenerationOptionsModel options)
+        => options.Schema switch
+        {
+            "Core" or "Extended" => "true",
+            "Failsafe" or "Json" => "false",
+            _ => "options.Schema is global::Meziantou.Framework.Yaml.YamlSchemaKind.Core or global::Meziantou.Framework.Yaml.YamlSchemaKind.Extended",
+        };
+
+    private static string GetDiscriminatorPropertyNameExpression(PolymorphismInfoModel polymorphism, SourceGenerationOptionsModel options)
+    {
+        if (polymorphism.DiscriminatorPropertyNameOverride is not null)
+            return ToLiteral(polymorphism.DiscriminatorPropertyNameOverride);
+
+        if (options.TypeDiscriminatorPropertyName is not null)
+            return ToLiteral(options.TypeDiscriminatorPropertyName);
+
+        return "options.PolymorphismOptions.TypeDiscriminatorPropertyName";
+    }
+
+    private static bool DiscriminatorStyleWritesTag(int style)
+        => style is DiscriminatorStyleTag or DiscriminatorStyleBoth;
+
+    private static bool DiscriminatorStyleWritesProperty(int style)
+        => style is DiscriminatorStyleProperty or DiscriminatorStyleBoth;
+
+    private static bool DiscriminatorStyleReadsTag(int style)
+        => style is DiscriminatorStyleTag or DiscriminatorStyleBoth;
+
+    private static bool DiscriminatorStyleReadsProperty(int style)
+        => style is DiscriminatorStyleProperty or DiscriminatorStyleBoth;
+
+    private static void EmitDuplicateKeyHandling(
+        StringBuilder builder,
+        string? duplicateKeyHandlingOverride,
+        string duplicateKeyExpression,
+        string lastWinsAssignment,
+        string indent)
+    {
+        switch (duplicateKeyHandlingOverride)
+        {
+            case "Error":
+                builder.Append(indent).Append("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, ").Append(duplicateKeyExpression).AppendLine(");");
+                return;
+            case "FirstWins":
+                builder.Append(indent).AppendLine("// Keep the first value for a duplicate key.");
+                return;
+            case "LastWins":
+                builder.Append(indent).Append(lastWinsAssignment).AppendLine(";");
+                return;
+        }
+
+        builder.Append(indent).AppendLine("switch (options.DuplicateKeyHandling)");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.Error:");
+        builder.Append(indent).Append("        throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowDuplicateMappingKey(reader, ").Append(duplicateKeyExpression).AppendLine(");");
+        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.FirstWins:");
+        builder.Append(indent).AppendLine("        break;");
+        builder.Append(indent).AppendLine("    case global::Meziantou.Framework.Yaml.YamlDuplicateKeyHandling.LastWins:");
+        builder.Append(indent).Append("        ").Append(lastWinsAssignment).AppendLine(";");
+        builder.Append(indent).AppendLine("        break;");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static void EmitUnknownDerivedTypeFailure(
+        StringBuilder builder,
+        int? unknownDerivedTypeHandlingOverride,
+        string throwExpression,
+        string indent)
+    {
+        if (unknownDerivedTypeHandlingOverride.HasValue)
+        {
+            if (unknownDerivedTypeHandlingOverride.Value == UnknownDerivedTypeHandlingFail)
+            {
+                builder.Append(indent).Append("throw ").Append(throwExpression).AppendLine(";");
+            }
+
+            return;
+        }
+
+        builder.Append(indent).AppendLine("if (unknownDerivedTypeHandling == global::Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling.Fail)");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("    throw ").Append(throwExpression).AppendLine(";");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static void EmitHandleUnmatchedMember(
+        StringBuilder builder,
+        string typeName,
+        string keyExpression,
+        string? unmappedMemberHandlingOverride,
+        string indent)
+    {
+        if (string.Equals(unmappedMemberHandlingOverride, "Disallow", StringComparison.Ordinal))
+        {
+            builder.Append(indent).Append("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnmappedMember(reader, typeof(").Append(typeName).Append("), ").Append(keyExpression).AppendLine(");");
+            return;
+        }
+
+        if (unmappedMemberHandlingOverride is null)
+        {
+            builder.Append(indent).AppendLine("if (unmappedMemberHandling == global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow)");
+            builder.Append(indent).AppendLine("{");
+            builder.Append(indent).Append("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowUnmappedMember(reader, typeof(").Append(typeName).Append("), ").Append(keyExpression).AppendLine(");");
+            builder.Append(indent).AppendLine("}");
+        }
+
+        builder.Append(indent).AppendLine("reader.Skip();");
+    }
+
+    private static void EmitMappingOrderBranch(
+        StringBuilder builder,
+        bool? sortedMappingOrderOverride,
+        string indent,
+        Action<string> emitSorted,
+        Action<string> emitDeclaration)
+    {
+        if (sortedMappingOrderOverride.HasValue)
+        {
+            if (sortedMappingOrderOverride.Value)
+                emitSorted(indent);
+            else
+                emitDeclaration(indent);
+            return;
+        }
+
+        builder.Append(indent).AppendLine("if (options.MappingOrder == global::Meziantou.Framework.Yaml.YamlMappingOrderPolicy.Sorted)");
+        builder.Append(indent).AppendLine("{");
+        emitSorted(indent + "    ");
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("else");
+        builder.Append(indent).AppendLine("{");
+        emitDeclaration(indent + "    ");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static ImmutableArray<ITypeSymbol> CollectRuntimeCustomConverterTypes(ImmutableArray<ITypeSymbol> types)
+    {
+        var builder = ImmutableArray.CreateBuilder<ITypeSymbol>();
+        var seen = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+
+        foreach (var type in types)
+        {
+            AddRuntimeCustomConverterType(type, includeMembers: true, builder, seen);
+        }
+
+        return builder.ToImmutable();
+    }
+
+    private static void AddRuntimeCustomConverterType(
+        ITypeSymbol type,
+        bool includeMembers,
+        ImmutableArray<ITypeSymbol>.Builder builder,
+        HashSet<ITypeSymbol> seen)
+    {
+        if (!seen.Add(type))
+        {
+            return;
+        }
+
+        builder.Add(type);
+
+        if (type is IArrayTypeSymbol arrayType)
+        {
+            AddRuntimeCustomConverterType(arrayType.ElementType, includeMembers: true, builder, seen);
+            return;
+        }
+
+        if (type is not INamedTypeSymbol namedType)
+        {
+            return;
+        }
+
+        if (namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T && namedType.TypeArguments.Length == 1)
+        {
+            AddRuntimeCustomConverterType(namedType.TypeArguments[0], includeMembers: includeMembers, builder, seen);
+        }
+
+        if (TryGetSequenceElementType(type, out var elementType, out _))
+        {
+            AddRuntimeCustomConverterType(elementType, includeMembers: true, builder, seen);
+            return;
+        }
+
+        if (TryGetDictionaryTypes(type, out var keyType, out var valueType, out _))
+        {
+            AddRuntimeCustomConverterType(keyType, includeMembers: true, builder, seen);
+            AddRuntimeCustomConverterType(valueType, includeMembers: true, builder, seen);
+            return;
+        }
+
+        foreach (var typeArgument in namedType.TypeArguments)
+        {
+            AddRuntimeCustomConverterType(typeArgument, includeMembers: true, builder, seen);
+        }
+
+        if (!includeMembers || IsKnownScalar(type) || IsYamlNodeType(type) || IsUntypedObject(type))
+        {
+            return;
+        }
+
+        foreach (var member in GetSerializableMembers(namedType))
+        {
+            var memberType = GetMemberType(member);
+            if (memberType is not null)
+            {
+                AddRuntimeCustomConverterType(memberType, includeMembers: true, builder, seen);
+            }
+        }
+    }
 }

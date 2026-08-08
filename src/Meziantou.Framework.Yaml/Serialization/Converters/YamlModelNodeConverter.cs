@@ -1,3 +1,4 @@
+using Meziantou.Framework.Yaml.Events;
 using Meziantou.Framework.Yaml.Model;
 
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
@@ -25,15 +26,12 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         var start = reader.Start;
         var end = reader.End;
 
-        var buffered = YamlReader.BufferCurrentNodeToString(reader);
-        var parser = Parser.CreateParser(new StringReader(buffered), reader.Options.EffectiveMaxDepth, sourceName);
-        var stream = YamlStream.Load(new EventReader(parser));
-        if (stream.Count == 0 || stream[0].Contents is null)
+        var node = ReadNode(reader, new Dictionary<string, YamlElement>(StringComparer.Ordinal));
+        if (node is null)
         {
             return null;
         }
 
-        var node = stream[0].Contents;
         if (!typeToConvert.IsInstanceOfType(node))
         {
             throw new YamlException(sourceName, start, end, $"Cannot deserialize YAML node '{node?.GetType()}' into '{typeToConvert}'.");
@@ -58,6 +56,114 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         }
 
         WriteNode(writer, node);
+    }
+
+    private static YamlElement? ReadNode(YamlReader reader, Dictionary<string, YamlElement> anchors)
+    {
+        switch (reader.CurrentEvent)
+        {
+            case MappingStart mappingStart:
+                return ReadMapping(reader, mappingStart, anchors);
+
+            case SequenceStart sequenceStart:
+                return ReadSequence(reader, sequenceStart, anchors);
+
+            case Scalar scalar:
+                reader.Read();
+                var value = new YamlValue(scalar);
+                RegisterAnchor(value, anchors);
+                return value;
+
+            case AnchorAlias alias:
+                reader.Read();
+                if (!anchors.TryGetValue(alias.Value, out var anchored))
+                {
+                    throw new YamlException(
+                        alias.Start,
+                        alias.End,
+                        FormattableString.Invariant($"Found an alias '*{alias.Value}' referencing an unknown anchor."));
+                }
+
+                // The model API does not currently preserve aliases as a distinct node type.
+                // Materialize a copy so that writing the model back out does not emit duplicate anchors.
+                var clone = (YamlElement)anchored.DeepClone();
+                clone.Anchor = null;
+                return clone;
+
+            default:
+                return null;
+        }
+    }
+
+    private static YamlMapping ReadMapping(YamlReader reader, MappingStart mappingStart, Dictionary<string, YamlElement> anchors)
+    {
+        reader.Read();
+
+        var keys = new List<YamlElement>();
+        var contents = new Dictionary<YamlElement, YamlElement?>();
+        while (reader.TokenType != YamlTokenType.EndMapping)
+        {
+            if (reader.TokenType == YamlTokenType.None)
+            {
+                throw new YamlException("Unexpected end of mapping while loading YAML model.");
+            }
+
+            var key = ReadNode(reader, anchors);
+            var value = ReadNode(reader, anchors);
+
+            if (key is null || value is null)
+            {
+                throw new YamlException("Unexpected end of mapping while loading YAML model.");
+            }
+
+            keys.Add(key);
+            contents[key] = value;
+        }
+
+        var mappingEnd = reader.CurrentEvent as MappingEnd
+            ?? throw new YamlException(reader.SourceName, reader.Start, reader.End, "Expected the end of a YAML mapping.");
+        reader.Read();
+
+        var mapping = new YamlMapping(mappingStart, mappingEnd, keys, contents);
+        RegisterAnchor(mapping, anchors);
+        return mapping;
+    }
+
+    private static YamlSequence ReadSequence(YamlReader reader, SequenceStart sequenceStart, Dictionary<string, YamlElement> anchors)
+    {
+        reader.Read();
+
+        var contents = new List<YamlElement>();
+        while (reader.TokenType != YamlTokenType.EndSequence)
+        {
+            if (reader.TokenType == YamlTokenType.None)
+            {
+                throw new YamlException("Unexpected end of sequence while loading YAML model.");
+            }
+
+            var item = ReadNode(reader, anchors);
+            if (item is not null)
+            {
+                contents.Add(item);
+            }
+        }
+
+        var sequenceEnd = reader.CurrentEvent as SequenceEnd
+            ?? throw new YamlException(reader.SourceName, reader.Start, reader.End, "Expected the end of a YAML sequence.");
+        reader.Read();
+
+        var sequence = new YamlSequence(sequenceStart, sequenceEnd, contents);
+        RegisterAnchor(sequence, anchors);
+        return sequence;
+    }
+
+    private static void RegisterAnchor(YamlElement element, Dictionary<string, YamlElement> anchors)
+    {
+        var anchor = element.Anchor;
+        if (!string.IsNullOrEmpty(anchor))
+        {
+            anchors[anchor] = element;
+        }
     }
 
     private static void WriteNode(YamlWriter writer, YamlNode node)

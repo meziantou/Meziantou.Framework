@@ -556,6 +556,57 @@ internal sealed class GeneratedConvertedScalarConverter : YamlConverter<Generate
         => writer.WriteScalar(value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
 }
 
+internal sealed class RuntimeIntConverter(int replacementValue) : YamlConverter<int>
+{
+    public override int Read(YamlReader reader)
+    {
+        reader.Skip();
+        return replacementValue;
+    }
+
+    public override void Write(YamlWriter writer, int value)
+        => writer.WriteScalar(replacementValue.ToString(System.Globalization.CultureInfo.InvariantCulture));
+}
+
+internal sealed class RuntimeGuidConverter(string marker, Guid replacementValue) : YamlConverter<Guid>
+{
+    public override Guid Read(YamlReader reader)
+    {
+        var scalar = reader.ScalarValue ?? string.Empty;
+        reader.Read();
+        return string.Equals(scalar, marker, StringComparison.Ordinal) ? replacementValue : Guid.Parse(scalar);
+    }
+
+    public override void Write(YamlWriter writer, Guid value)
+        => writer.WriteScalar(value == replacementValue ? marker : value.ToString("D"));
+}
+
+internal sealed class RuntimeNullableGuidConverter(string marker, Guid replacementValue) : YamlConverter<Guid?>
+{
+    public override Guid? Read(YamlReader reader)
+    {
+        if (YamlScalar.IsNull(reader))
+        {
+            reader.Read();
+            return null;
+        }
+
+        var scalar = reader.ScalarValue ?? string.Empty;
+        reader.Read();
+        return string.Equals(scalar, marker, StringComparison.Ordinal) ? replacementValue : Guid.Parse(scalar);
+    }
+
+    public override void Write(YamlWriter writer, Guid? value)
+        => writer.WriteScalar(value == replacementValue ? marker : value.GetValueOrDefault().ToString("D"));
+}
+
+internal sealed class GeneratedRuntimeConverterHolder
+{
+    public Guid Id { get; set; }
+
+    public Guid? OptionalId { get; set; }
+}
+
 internal sealed class ThrowingGeneratedConverterFactory : YamlConverterFactory
 {
     public override bool CanConvert(Type typeToConvert) => true;
@@ -758,6 +809,7 @@ internal sealed class GeneratedYamlIgnoreConditions
 [YamlSerializable(typeof(GeneratedAttributedExtensionDataPayload))]
 [YamlSerializable(typeof(GeneratedMemberConverterPayload))]
 [YamlSerializable(typeof(GeneratedTypeWithConverter))]
+[YamlSerializable(typeof(GeneratedRuntimeConverterHolder))]
 [YamlSerializable(typeof(GeneratedYamlCtorModel))]
 [YamlSerializable(typeof(GeneratedJsonCtorModel))]
 [YamlSerializable(typeof(GeneratedInternalYamlCtorModel))]
@@ -2010,7 +2062,7 @@ public class YamlSerializerSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContextIgnoresRuntimeCustomConverters()
+    public void GeneratedContextUsesRuntimeCustomConvertersForKnownScalars()
     {
         var context = new TestYamlSerializerContext(
             new YamlSerializerOptions
@@ -2023,19 +2075,18 @@ public class YamlSerializerSourceGenerationTests
 
         var primitivesTypeInfo = context.GeneratedPrimitives;
         var yaml = YamlSerializer.Serialize(new GeneratedPrimitives { Int32Value = 5 }, primitivesTypeInfo);
-        Assert.Contains("Int32Value: 5", yaml);
+        Assert.Contains("Int32Value: 123", yaml);
 
         var roundtripped = YamlSerializer.Deserialize(yaml, primitivesTypeInfo);
         Assert.NotNull(roundtripped);
-        Assert.Equal(5, roundtripped.Int32Value);
+        Assert.Equal(123, roundtripped.Int32Value);
 
         var listTypeInfo = context.ListInt32;
         var yamlList = YamlSerializer.Serialize(new List<int> { 1, 2 }, listTypeInfo);
-        Assert.Contains("- 1", yamlList);
-        Assert.Contains("- 2", yamlList);
+        Assert.Contains("- 123", yamlList);
         var list = YamlSerializer.Deserialize(yamlList, listTypeInfo);
         Assert.NotNull(list);
-        Assert.Equal(new[] { 1, 2 }, list);
+        Assert.Equal(new[] { 123, 123 }, list);
     }
 
     [Fact]
@@ -2716,5 +2767,50 @@ extra_list:
         Assert.Equal("hi", deserialized.Null);
         Assert.Equal(40, deserialized.WriteOnly);
         Assert.Equal(0, deserialized.ReadOnly);
+    }
+
+    [Fact]
+    public void GeneratedContextAllowsRuntimeConverterReplacementForBuildTimeConverter()
+    {
+        var context = TestYamlSerializerContextWithConverters.Default;
+        var options = new YamlSerializerOptions
+        {
+            TypeInfoResolver = context,
+            Converters = [new RuntimeIntConverter(456)],
+        };
+
+        var yaml = YamlSerializer.Serialize(42, typeof(int), options);
+        var roundTrip = YamlSerializer.Deserialize(yaml, typeof(int), options);
+
+        Assert.Equal("456\n", yaml);
+        Assert.Equal(456, roundTrip);
+    }
+
+    [Fact]
+    public void GeneratedContextAllowsRuntimeConverterReplacementForGeneratedScalarMembers()
+    {
+        var id = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var optionalId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var context = TestYamlSerializerContext.Default;
+        var options = new YamlSerializerOptions
+        {
+            TypeInfoResolver = context,
+            Converters =
+            [
+                new RuntimeGuidConverter("ref:id", id),
+                new RuntimeNullableGuidConverter("ref:optional-id", optionalId),
+            ],
+        };
+
+        var value = YamlSerializer.Deserialize<GeneratedRuntimeConverterHolder>(
+            "Id: ref:id\nOptionalId: ref:optional-id\n",
+            options);
+        var yaml = YamlSerializer.Serialize(new GeneratedRuntimeConverterHolder { Id = id, OptionalId = optionalId }, options);
+
+        Assert.NotNull(value);
+        Assert.Equal(id, value.Id);
+        Assert.Equal(optionalId, value.OptionalId);
+        Assert.Contains("Id: \"ref:id\"", yaml);
+        Assert.Contains("OptionalId: \"ref:optional-id\"", yaml);
     }
 }

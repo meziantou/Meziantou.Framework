@@ -147,6 +147,8 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine();
         }
 
+        EmitRuntimeCustomConverterHelpers(builder, model.SourceGenerationOptions);
+        builder.AppendLine();
         for (var index = 0; index < types.Length; index++)
         {
             var typeName = types[index].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -204,6 +206,8 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine("    }");
             return;
         }
+
+        EmitWriteWithRuntimeCustomConverter(builder, typeName, "value", indent: "        ", emitReturn: true, variableSuffix: "Root" + index.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         if (TryEmitWriteWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, "value", "        ", emitReturn: true))
         {
@@ -2354,6 +2358,11 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
+        EmitReadWithRuntimeCustomConverter(builder, typeName, "        ", variableSuffix: "Root" + index.ToString(System.Globalization.CultureInfo.InvariantCulture), emitAssignment: convertedValue =>
+        {
+            builder.Append("            return ").Append(convertedValue).AppendLine(";");
+        });
+
         if (TryGetStaticOptionsConverterType(sourceGenerationOptions, typeSymbol, out var rootConverterIndex))
         {
             builder.Append("        return ").Append(GetSourceGenerationConverterFieldName(rootConverterIndex)).AppendLine(".Read(reader);");
@@ -3485,12 +3494,26 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
-        if (TryEmitWriteWithStaticOptionsConverter(builder, sourceGenerationOptions, member.Type, valueExpression, indent, emitReturn: false))
+        var runtimeSuffix = GetStableIdentifierSuffix(member.Symbol.Name + ":" + memberTypeName);
+        var runtimeConverterName = "runtimeConverter" + runtimeSuffix;
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("if (TryGetRuntimeCustomConverter(writer, typeof(").Append(memberTypeName).Append("), out var ").Append(runtimeConverterName).AppendLine("))");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("    ").Append(runtimeConverterName).Append("!.Write(writer, ").Append(valueExpression).AppendLine(");");
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("else");
+        builder.Append(indent).AppendLine("{");
+        var innerIndent = indent + "    ";
+        if (TryEmitWriteWithStaticOptionsConverter(builder, sourceGenerationOptions, member.Type, valueExpression, innerIndent, emitReturn: false))
         {
+            builder.Append(indent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
             return;
         }
 
-        EmitWriteMemberValue(builder, member, indexByType, valueExpression, indent, sourceGenerationOptions);
+        EmitWriteMemberValue(builder, member, indexByType, valueExpression, innerIndent, sourceGenerationOptions);
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("}");
     }
 
     private static void EmitReadMemberValue(StringBuilder builder, MemberModel member, Dictionary<ITypeSymbol, int> indexByType, SourceGenerationOptionsModel sourceGenerationOptions)
@@ -4511,24 +4534,47 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
+        var runtimeSuffix = GetStableIdentifierSuffix(member.Symbol.Name + ":" + memberTypeName);
+        var runtimeConverterName = "runtimeConverter" + runtimeSuffix;
+        var runtimeValueName = "runtimeValue" + runtimeSuffix;
+        var memberTypeNameNullable = member.Type.ToDisplayString(FullyQualifiedNullableFormat);
+        builder.AppendLine("                {");
+        builder.AppendLine("                if (TryGetRuntimeCustomConverter(reader, typeof(" + memberTypeName + "), out var " + runtimeConverterName + "))");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    var " + runtimeValueName + " = " + runtimeConverterName + "!.Read(reader, typeof(" + memberTypeName + "));");
+        builder.AppendLine("                    if (" + runtimeValueName + " is null)");
+        builder.AppendLine("                    {");
+        EmitThrowIfNullForNonNullableMemberOnRead(builder, member, runtimeValueName, "                        ");
+        builder.Append("                        ").Append(member.AssignExpression(GetDefaultMemberAssignmentExpression(member))).AppendLine(";");
+        builder.AppendLine("                    }");
+        builder.AppendLine("                    else");
+        builder.AppendLine("                    {");
+        builder.Append("                        ").Append(member.AssignExpression($"({memberTypeNameNullable})" + runtimeValueName + "!")).AppendLine(";");
+        builder.AppendLine("                    }");
+        builder.AppendLine("                }");
+        builder.AppendLine("                else");
+        builder.AppendLine("                {");
         if (!TryEmitReadWithStaticOptionsConverter(builder, sourceGenerationOptions, member.Type, readExpr =>
         {
-            builder.AppendLine("                {");
-            builder.Append("                    var untyped = ").Append(readExpr).AppendLine(";");
-            builder.AppendLine("                    if (untyped is null)");
             builder.AppendLine("                    {");
-            EmitThrowIfNullForNonNullableMemberOnRead(builder, member, "untyped", "                        ");
-            builder.Append("                        ").Append(member.AssignExpression(GetDefaultMemberAssignmentExpression(member))).AppendLine(";");
+            builder.Append("                        var untyped = ").Append(readExpr).AppendLine(";");
+            builder.AppendLine("                        if (untyped is null)");
+            builder.AppendLine("                        {");
+            EmitThrowIfNullForNonNullableMemberOnRead(builder, member, "untyped", "                            ");
+            builder.Append("                            ").Append(member.AssignExpression(GetDefaultMemberAssignmentExpression(member))).AppendLine(";");
+            builder.AppendLine("                        }");
+            builder.AppendLine("                        else");
+            builder.AppendLine("                        {");
+            builder.Append("                            ").Append(member.AssignExpression($"({memberTypeName})untyped")).AppendLine(";");
+            builder.AppendLine("                        }");
             builder.AppendLine("                    }");
-            builder.AppendLine("                    else");
-            builder.AppendLine("                    {");
-            builder.Append("                        ").Append(member.AssignExpression($"({memberTypeName})untyped")).AppendLine(";");
-            builder.AppendLine("                    }");
-            builder.AppendLine("                }");
         }))
         {
             EmitReadMemberValue(builder, member, indexByType, sourceGenerationOptions);
         }
+
+        builder.AppendLine("                }");
+        builder.AppendLine("                }");
     }
 
     private static bool TryEmitWriteWithStaticOptionsConverter(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, string valueExpression, string indent, bool emitReturn)
@@ -5410,66 +5456,106 @@ public sealed partial class YamlSerializerContextGenerator
     private static void EmitWriteKnownType(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, Dictionary<ITypeSymbol, int> indexByType, string valueExpression, string indent)
     {
         var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-        if (TryEmitWriteWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, valueExpression, indent, emitReturn: false))
+        builder.Append(indent).AppendLine("{");
+        var innerIndent = indent + "    ";
+        var runtimeSuffix = GetStableIdentifierSuffix("write:" + typeName + ":" + valueExpression + ":" + indent.Length.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var runtimeConverterName = "runtimeConverter" + runtimeSuffix;
+        builder.Append(innerIndent).Append("if (TryGetRuntimeCustomConverter(writer, typeof(").Append(typeName).Append("), out var ").Append(runtimeConverterName).AppendLine("))");
+        builder.Append(innerIndent).AppendLine("{");
+        builder.Append(innerIndent).Append("    ").Append(runtimeConverterName).Append("!.Write(writer, ").Append(valueExpression).AppendLine(");");
+        builder.Append(innerIndent).AppendLine("}");
+        builder.Append(innerIndent).AppendLine("else");
+        builder.Append(innerIndent).AppendLine("{");
+        var bodyIndent = innerIndent + "    ";
+        if (TryEmitWriteWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, valueExpression, bodyIndent, emitReturn: false))
         {
-            return;
-        }
-
-        if (IsUntypedObject(typeSymbol))
-        {
-            EmitWriteWithUntypedObjectConverter(builder, valueExpression, indent);
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
             return;
         }
 
         if (IsYamlNodeType(typeSymbol))
         {
-            EmitWriteWithYamlNodeConverter(builder, typeName, valueExpression, indent);
+            EmitWriteWithYamlNodeConverter(builder, typeName, valueExpression, bodyIndent);
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
             return;
         }
 
-        if (TryEmitWriteScalar(builder, typeSymbol, valueExpression, indent))
+        if (IsUntypedObject(typeSymbol))
         {
+            EmitWriteWithUntypedObjectConverter(builder, valueExpression, bodyIndent);
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
+            return;
+        }
+
+        if (TryEmitWriteScalar(builder, typeSymbol, valueExpression, bodyIndent))
+        {
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
             return;
         }
 
         if (indexByType.TryGetValue(typeSymbol, out var typeIndex))
         {
-            builder.Append(indent).Append("WriteValue").Append(typeIndex).Append("(writer, ").Append(valueExpression).AppendLine(");");
+            builder.Append(bodyIndent).Append("WriteValue").Append(typeIndex).Append("(writer, ").Append(valueExpression).AppendLine(");");
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
             return;
         }
 
-        builder.Append(indent).AppendLine("throw new global::System.NotSupportedException(\"The generated YAML serializer does not support this element type.\");");
+        builder.Append(bodyIndent).AppendLine("throw new global::System.NotSupportedException(\"The generated YAML serializer does not support this element type.\");");
+        builder.Append(innerIndent).AppendLine("}");
+        builder.Append(indent).AppendLine("}");
     }
 
     private static void EmitReadKnownType(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, Dictionary<ITypeSymbol, int> indexByType, string valueVarName, string indent)
     {
         var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         builder.Append(indent).Append("var ").Append(valueVarName).Append(" = default(").Append(typeName).AppendLine(");");
-
+        builder.Append(indent).AppendLine("{");
+        var innerIndent = indent + "    ";
+        var runtimeSuffix = GetStableIdentifierSuffix("read:" + typeName + ":" + valueVarName + ":" + indent.Length.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var runtimeConverterName = "runtimeConverter" + runtimeSuffix;
+        var runtimeValueName = "runtimeValue" + runtimeSuffix;
+        builder.Append(innerIndent).Append("if (TryGetRuntimeCustomConverter(reader, typeof(").Append(typeName).Append("), out var ").Append(runtimeConverterName).AppendLine("))");
+        builder.Append(innerIndent).AppendLine("{");
+        builder.Append(innerIndent).Append("    var ").Append(runtimeValueName).Append(" = ").Append(runtimeConverterName).Append("!.Read(reader, typeof(").Append(typeName).AppendLine("));");
+        builder.Append(innerIndent).Append("    ").Append(valueVarName).Append(" = ").Append(runtimeValueName).Append(" is null ? default : (").Append(typeName).Append(')').Append(runtimeValueName).AppendLine(";");
+        builder.Append(innerIndent).AppendLine("}");
+        builder.Append(innerIndent).AppendLine("else");
+        builder.Append(innerIndent).AppendLine("{");
+        var bodyIndent = innerIndent + "    ";
         if (TryEmitReadWithStaticOptionsConverter(builder, sourceGenerationOptions, typeSymbol, readExpr =>
         {
-            builder.Append(indent).Append(valueVarName).Append(" = (").Append(typeName).Append(")(").Append(readExpr).AppendLine(")!;");
+            builder.Append(bodyIndent).Append(valueVarName).Append(" = (").Append(typeName).Append(")(").Append(readExpr).AppendLine(")!;");
         }))
         {
-            return;
-        }
-
-        if (IsUntypedObject(typeSymbol))
-        {
-            EmitReadWithUntypedObjectConverter(builder, indent, valueExpression =>
-            {
-                builder.Append(indent).Append(valueVarName).Append(" = ").Append(valueExpression).AppendLine(";");
-            });
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
             return;
         }
 
         if (IsYamlNodeType(typeSymbol))
         {
-            EmitReadWithYamlNodeConverter(builder, typeName, indent, valueExpression =>
+            EmitReadWithYamlNodeConverter(builder, typeName, bodyIndent, valueExpression =>
             {
-                builder.Append(indent).Append(valueVarName).Append(" = ").Append(valueExpression).AppendLine(";");
+                builder.Append(bodyIndent).Append(valueVarName).Append(" = ").Append(valueExpression).AppendLine(";");
             });
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
+            return;
+        }
+
+        if (IsUntypedObject(typeSymbol))
+        {
+            EmitReadWithUntypedObjectConverter(builder, bodyIndent, valueExpression =>
+            {
+                builder.Append(bodyIndent).Append(valueVarName).Append(" = ").Append(valueExpression).AppendLine(";");
+            });
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
             return;
         }
 
@@ -5483,41 +5569,47 @@ public sealed partial class YamlSerializerContextGenerator
                 acceptsNull = true;
             }
 
-            builder.Append(indent).AppendLine("{");
-            var innerIndent = indent + "    ";
-            builder.Append(innerIndent).AppendLine("if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar)");
-            builder.Append(innerIndent).AppendLine("{");
-            builder.Append(innerIndent).AppendLine("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalar(reader);");
-            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(bodyIndent).AppendLine("{");
+            var scalarIndent = bodyIndent + "    ";
+            builder.Append(scalarIndent).AppendLine("if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar)");
+            builder.Append(scalarIndent).AppendLine("{");
+            builder.Append(scalarIndent).AppendLine("    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalar(reader);");
+            builder.Append(scalarIndent).AppendLine("}");
             if (acceptsNull)
             {
-                builder.Append(innerIndent).AppendLine("if (global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
-                builder.Append(innerIndent).AppendLine("{");
-                builder.Append(innerIndent).AppendLine("    reader.Read();");
-                builder.Append(innerIndent).AppendLine("}");
-                builder.Append(innerIndent).AppendLine("else");
-                builder.Append(innerIndent).AppendLine("{");
-                EmitReadScalarAssignment(builder, scalarType, valueVarName, indent: innerIndent + "    ");
-                builder.Append(innerIndent).AppendLine("    reader.Read();");
-                builder.Append(innerIndent).AppendLine("}");
+                builder.Append(scalarIndent).AppendLine("if (global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
+                builder.Append(scalarIndent).AppendLine("{");
+                builder.Append(scalarIndent).AppendLine("    reader.Read();");
+                builder.Append(scalarIndent).AppendLine("}");
+                builder.Append(scalarIndent).AppendLine("else");
+                builder.Append(scalarIndent).AppendLine("{");
+                EmitReadScalarAssignment(builder, scalarType, valueVarName, indent: scalarIndent + "    ");
+                builder.Append(scalarIndent).AppendLine("    reader.Read();");
+                builder.Append(scalarIndent).AppendLine("}");
             }
             else
             {
-                EmitReadScalarAssignment(builder, scalarType, valueVarName, indent: innerIndent);
-                builder.Append(innerIndent).AppendLine("reader.Read();");
+                EmitReadScalarAssignment(builder, scalarType, valueVarName, indent: scalarIndent);
+                builder.Append(scalarIndent).AppendLine("reader.Read();");
             }
 
+            builder.Append(bodyIndent).AppendLine("}");
+            builder.Append(innerIndent).AppendLine("}");
             builder.Append(indent).AppendLine("}");
             return;
         }
 
         if (indexByType.TryGetValue(typeSymbol, out var typeIndex))
         {
-            builder.Append(indent).Append(valueVarName).Append(" = ReadValue").Append(typeIndex).AppendLine("(reader);");
+            builder.Append(bodyIndent).Append(valueVarName).Append(" = ReadValue").Append(typeIndex).AppendLine("(reader);");
+            builder.Append(innerIndent).AppendLine("}");
+            builder.Append(indent).AppendLine("}");
             return;
         }
 
-        builder.Append(indent).AppendLine("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowNotSupported(reader, \"The generated YAML serializer does not support this element type.\");");
+        builder.Append(bodyIndent).AppendLine("throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowNotSupported(reader, \"The generated YAML serializer does not support this element type.\");");
+        builder.Append(innerIndent).AppendLine("}");
+        builder.Append(indent).AppendLine("}");
     }
 
     private static void EmitWriteWithYamlNodeConverter(StringBuilder builder, string typeName, string valueExpression, string indent)
@@ -5551,6 +5643,46 @@ public sealed partial class YamlSerializerContextGenerator
         builder.Append(indent).AppendLine("var objectConverter = reader.GetConverter(typeof(global::System.Object));");
         builder.Append(indent).AppendLine("var objectValue = objectConverter.Read(reader, typeof(global::System.Object));");
         emitAssignment("objectValue");
+    }
+
+    private static void EmitWriteWithRuntimeCustomConverter(
+        StringBuilder builder,
+        string typeName,
+        string valueExpression,
+        string indent,
+        bool emitReturn,
+        string variableSuffix)
+    {
+        var runtimeConverterName = "runtimeConverter" + variableSuffix;
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("if (TryGetRuntimeCustomConverter(writer, typeof(").Append(typeName).Append("), out var ").Append(runtimeConverterName).AppendLine("))");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("    ").Append(runtimeConverterName).Append("!.Write(writer, ").Append(valueExpression).AppendLine(");");
+        if (emitReturn)
+        {
+            builder.Append(indent).AppendLine("    return;");
+        }
+
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    private static void EmitReadWithRuntimeCustomConverter(
+        StringBuilder builder,
+        string typeName,
+        string indent,
+        string variableSuffix,
+        Action<string> emitAssignment)
+    {
+        var runtimeConverterName = "runtimeConverter" + variableSuffix;
+        var runtimeValueName = "runtimeValue" + variableSuffix;
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("if (TryGetRuntimeCustomConverter(reader, typeof(").Append(typeName).Append("), out var ").Append(runtimeConverterName).AppendLine("))");
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).Append("    var ").Append(runtimeValueName).Append(" = ").Append(runtimeConverterName).Append("!.Read(reader, typeof(").Append(typeName).AppendLine("));");
+        emitAssignment(runtimeValueName + " is null ? default : (" + typeName + ")" + runtimeValueName);
+        builder.Append(indent).AppendLine("}");
+        builder.Append(indent).AppendLine("}");
     }
 
     private static void AppendOptionAssignments(StringBuilder builder, SourceGenerationOptionsModel options)
@@ -5798,6 +5930,81 @@ public sealed partial class YamlSerializerContextGenerator
     private static string GetSourceGenerationConverterFieldName(int index)
     {
         return "s_sourceGenerationConverter" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string GetStableIdentifierSuffix(string value)
+    {
+        unchecked
+        {
+            uint hash = 2166136261;
+            for (var i = 0; i < value.Length; i++)
+            {
+                hash ^= value[i];
+                hash *= 16777619;
+            }
+
+            return hash.ToString("X8", System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
+
+    private static void EmitRuntimeCustomConverterHelpers(StringBuilder builder, SourceGenerationOptionsModel sourceGenerationOptions)
+    {
+        builder.AppendLine("    private static bool TryGetRuntimeCustomConverter(global::Meziantou.Framework.Yaml.Serialization.YamlReaderWriterBase readerWriter, global::System.Type typeToConvert, out global::Meziantou.Framework.Yaml.Serialization.YamlConverter? converter)");
+        builder.AppendLine("    {");
+        builder.AppendLine("        var converters = readerWriter.Options.Converters;");
+        builder.AppendLine("        for (var i = 0; i < converters.Count; i++)");
+        builder.AppendLine("        {");
+        builder.AppendLine("            var candidate = converters[i];");
+        if (!sourceGenerationOptions.ConverterTypes.IsDefaultOrEmpty)
+        {
+            builder.AppendLine("            if (IsSourceGenerationConverter(candidate))");
+            builder.AppendLine("            {");
+            builder.AppendLine("                continue;");
+            builder.AppendLine("            }");
+            builder.AppendLine();
+        }
+
+        builder.AppendLine("            if (candidate is global::Meziantou.Framework.Yaml.Serialization.YamlConverterFactory factory)");
+        builder.AppendLine("            {");
+        builder.AppendLine("                if (!factory.CanConvert(typeToConvert))");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    continue;");
+        builder.AppendLine("                }");
+        builder.AppendLine();
+        builder.AppendLine("                var created = factory.CreateConverter(typeToConvert, readerWriter.Options);");
+        builder.AppendLine("                if (created is null || !created.CanConvert(typeToConvert))");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    throw new global::System.InvalidOperationException($\"Converter factory '{factory.GetType()}' returned an invalid converter for '{typeToConvert}'.\");");
+        builder.AppendLine("                }");
+        builder.AppendLine();
+        builder.AppendLine("                converter = created;");
+        builder.AppendLine("                return true;");
+        builder.AppendLine("            }");
+        builder.AppendLine();
+        builder.AppendLine("            if (candidate.CanConvert(typeToConvert))");
+        builder.AppendLine("            {");
+        builder.AppendLine("                converter = candidate;");
+        builder.AppendLine("                return true;");
+        builder.AppendLine("            }");
+        builder.AppendLine("        }");
+        builder.AppendLine();
+        builder.AppendLine("        converter = null;");
+        builder.AppendLine("        return false;");
+        builder.AppendLine("    }");
+
+        if (sourceGenerationOptions.ConverterTypes.IsDefaultOrEmpty)
+        {
+            return;
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("    private static bool IsSourceGenerationConverter(global::Meziantou.Framework.Yaml.Serialization.YamlConverter converter)");
+        builder.AppendLine("        => ");
+        for (var i = 0; i < sourceGenerationOptions.ConverterTypes.Length; i++)
+        {
+            builder.Append("            global::System.Object.ReferenceEquals(converter, ").Append(GetSourceGenerationConverterFieldName(i)).Append(')');
+            builder.AppendLine(i == sourceGenerationOptions.ConverterTypes.Length - 1 ? ";" : " ||");
+        }
     }
 
     private static bool TryGetStaticOptionsConverterType(SourceGenerationOptionsModel sourceGenerationOptions, ITypeSymbol typeSymbol, out int converterIndex)

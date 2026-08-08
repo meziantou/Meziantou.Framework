@@ -682,6 +682,7 @@ public static class YamlSerializer
     /// <param name="yaml">The YAML payload as a span.</param>
     /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
     /// <returns>The deserialized value.</returns>
+    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
     public static T? Deserialize<T>(ReadOnlySpan<char> yaml, YamlSerializerOptions? options = null)
     {
         return Deserialize<T>(yaml.ToString(), options);
@@ -694,6 +695,7 @@ public static class YamlSerializer
     /// <returns>The deserialized value.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">No generated metadata is available for <typeparamref name="T"/> in <paramref name="context"/>.</exception>
+    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
     public static T? Deserialize<T>(ReadOnlySpan<char> yaml, YamlSerializerContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -706,6 +708,7 @@ public static class YamlSerializer
     /// <param name="options">The serializer options. If <see langword="null"/>, <see cref="YamlSerializerOptions.Default"/> is used.</param>
     /// <returns>The deserialized value.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="returnType"/> is <see langword="null"/>.</exception>
+    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
     public static object? Deserialize(ReadOnlySpan<char> yaml, Type returnType, YamlSerializerOptions? options = null)
     {
         return Deserialize(yaml.ToString(), returnType, options);
@@ -718,6 +721,7 @@ public static class YamlSerializer
     /// <returns>The deserialized value.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="returnType"/> or <paramref name="context"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidOperationException">No generated metadata is available for <paramref name="returnType"/> in <paramref name="context"/>.</exception>
+    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
     public static object? Deserialize(ReadOnlySpan<char> yaml, Type returnType, YamlSerializerContext context)
     {
         ArgumentNullException.ThrowIfNull(returnType);
@@ -735,6 +739,153 @@ public static class YamlSerializer
     {
         ArgumentNullException.ThrowIfNull(typeInfo);
         return SerializeCore(typeInfo, value);
+    }
+
+    /// <summary>
+    /// Serializes a value using explicit type metadata.
+    /// </summary>
+    /// <param name="value">The value to serialize.</param>
+    /// <param name="typeInfo">The metadata used for serialization.</param>
+    /// <returns>A YAML payload.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static string Serialize(object? value, YamlTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return SerializeCore(typeInfo, value);
+    }
+
+    /// <summary>
+    /// Serializes a value to a writer using explicit type metadata.
+    /// </summary>
+    /// <typeparam name="T">The represented CLR type.</typeparam>
+    /// <param name="writer">The destination writer.</param>
+    /// <param name="value">The value to serialize.</param>
+    /// <param name="typeInfo">The metadata used for serialization.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static void Serialize<T>(TextWriter writer, T value, YamlTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        SerializeCore(typeInfo, value, writer);
+    }
+
+    /// <summary>
+    /// Serializes a value to a writer using explicit type metadata.
+    /// </summary>
+    /// <param name="writer">The destination writer.</param>
+    /// <param name="value">The value to serialize.</param>
+    /// <param name="typeInfo">The metadata used for serialization.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static void Serialize(TextWriter writer, object? value, YamlTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        SerializeCore(typeInfo, value, writer);
+    }
+
+    /// <summary>
+    /// Serializes a value to a stream using UTF-8 encoding and explicit type metadata.
+    /// </summary>
+    /// <typeparam name="T">The represented CLR type.</typeparam>
+    /// <param name="utf8Stream">The destination stream.</param>
+    /// <param name="value">The value to serialize.</param>
+    /// <param name="typeInfo">The metadata used for serialization.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="utf8Stream"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static void Serialize<T>(Stream utf8Stream, T value, YamlTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(utf8Stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        using var writer = new StreamWriter(utf8Stream, DefaultStreamEncoding, bufferSize: 1024, leaveOpen: true);
+        Serialize(writer, value, typeInfo);
+        writer.Flush();
+    }
+
+    /// <summary>
+    /// Serializes a value to a stream using UTF-8 encoding and explicit type metadata.
+    /// </summary>
+    /// <param name="utf8Stream">The destination stream.</param>
+    /// <param name="value">The value to serialize.</param>
+    /// <param name="typeInfo">The metadata used for serialization.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="utf8Stream"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static void Serialize(Stream utf8Stream, object? value, YamlTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(utf8Stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        using var writer = new StreamWriter(utf8Stream, DefaultStreamEncoding, bufferSize: 1024, leaveOpen: true);
+        Serialize(writer, value, typeInfo);
+        writer.Flush();
+    }
+
+    /// <summary>Deserializes a payload using explicit type metadata.</summary>
+    /// <param name="yaml">The YAML payload.</param>
+    /// <param name="typeInfo">The metadata used for deserialization.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="yaml"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static object? Deserialize(string yaml, YamlTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(yaml);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return DeserializeCore(typeInfo, yaml);
+    }
+
+    /// <summary>
+    /// Deserializes a payload from a text reader using explicit type metadata.
+    /// </summary>
+    /// <typeparam name="T">The represented CLR type.</typeparam>
+    /// <param name="reader">The source reader.</param>
+    /// <param name="typeInfo">The metadata used for deserialization.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static T? Deserialize<T>(TextReader reader, YamlTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return DeserializeCore(typeInfo, reader);
+    }
+
+    /// <summary>
+    /// Deserializes a payload from a text reader using explicit type metadata.
+    /// </summary>
+    /// <param name="reader">The source reader.</param>
+    /// <param name="typeInfo">The metadata used for deserialization.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static object? Deserialize(TextReader reader, YamlTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        return DeserializeCore(typeInfo, reader);
+    }
+
+    /// <summary>
+    /// Deserializes a payload from a stream using UTF-8 encoding and explicit type metadata.
+    /// </summary>
+    /// <typeparam name="T">The represented CLR type.</typeparam>
+    /// <param name="utf8Stream">The source stream.</param>
+    /// <param name="typeInfo">The metadata used for deserialization.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="utf8Stream"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static T? Deserialize<T>(Stream utf8Stream, YamlTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(utf8Stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        using var reader = new StreamReader(utf8Stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+        return Deserialize(reader, typeInfo);
+    }
+
+    /// <summary>
+    /// Deserializes a payload from a stream using UTF-8 encoding and explicit type metadata.
+    /// </summary>
+    /// <param name="utf8Stream">The source stream.</param>
+    /// <param name="typeInfo">The metadata used for deserialization.</param>
+    /// <returns>The deserialized value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="utf8Stream"/> or <paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    public static object? Deserialize(Stream utf8Stream, YamlTypeInfo typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(utf8Stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        using var reader = new StreamReader(utf8Stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+        return Deserialize(reader, typeInfo);
     }
 
     /// <summary>Deserializes a payload using explicit type metadata.</summary>
@@ -756,6 +907,7 @@ public static class YamlSerializer
     /// <param name="typeInfo">The metadata used for deserialization.</param>
     /// <returns>The deserialized value.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="typeInfo"/> is <see langword="null"/>.</exception>
+    [Obsolete("ReadOnlySpan<char> overloads copy the input; use the string or TextReader overload instead.", error: false)]
     public static T? Deserialize<T>(ReadOnlySpan<char> yaml, YamlTypeInfo<T> typeInfo)
     {
         ArgumentNullException.ThrowIfNull(typeInfo);

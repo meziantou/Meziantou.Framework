@@ -136,7 +136,10 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>
             }
 
             var anchor = writer.ReferenceWriter.GetOrAddAnchor(value);
-            writer.WriteAnchor(anchor);
+            if (anchor is not null)
+            {
+                writer.WriteAnchor(anchor);
+            }
         }
 
         if (value is IYamlOnSerializing onSerializing)

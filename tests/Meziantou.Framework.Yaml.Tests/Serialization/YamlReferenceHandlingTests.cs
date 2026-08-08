@@ -115,4 +115,39 @@ public class YamlReferenceHandlingTests
         Assert.Contains("&id001", roundTrip);
         Assert.Contains("self: *id001", roundTrip);
     }
+
+    [Fact]
+    public void PreserveMinimalOnlyAnchorsSharedReferences()
+    {
+        var node = new Node { Name = "shared" };
+        var container = new Container { A = node, B = node };
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.PreserveMinimal };
+
+        var yaml = YamlSerializer.Serialize(container, options);
+
+        Assert.DoesNotStartWith("&", yaml);
+        Assert.Contains("A: &id001", yaml);
+        Assert.Contains("B: *id001", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<Container>(yaml, options);
+        Assert.NotNull(roundTrip);
+        Assert.True(ReferenceEquals(roundTrip.A, roundTrip.B));
+    }
+
+    [Fact]
+    public void PreserveMinimalPreservesCycles()
+    {
+        var node = new Node { Name = "root" };
+        node.Next = node;
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.PreserveMinimal };
+
+        var yaml = YamlSerializer.Serialize(node, options);
+
+        Assert.Contains("&id001", yaml);
+        Assert.Contains("Next: *id001", yaml);
+
+        var roundTrip = YamlSerializer.Deserialize<Node>(yaml, options);
+        Assert.NotNull(roundTrip);
+        Assert.True(ReferenceEquals(roundTrip, roundTrip.Next));
+    }
 }

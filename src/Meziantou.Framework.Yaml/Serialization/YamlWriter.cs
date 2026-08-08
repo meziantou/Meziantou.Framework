@@ -31,7 +31,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         ArgumentNullException.ThrowIfNull(writer);
         _writer = writer;
-        _referenceWriter = Options.ReferenceHandling == YamlReferenceHandling.Preserve ? new YamlReferenceWriter() : null;
+        _referenceWriter = Options.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceWriter() : null;
         InitializeFormattingState();
     }
 
@@ -46,7 +46,15 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
         _stringBuilder = stringBuilder;
-        _referenceWriter = Options.ReferenceHandling == YamlReferenceHandling.Preserve ? new YamlReferenceWriter() : null;
+        _referenceWriter = Options.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceWriter() : null;
+        InitializeFormattingState();
+    }
+
+    internal YamlWriter(TextWriter writer, YamlSerializerOptions options, YamlReferenceWriter referenceWriter)
+        : base(options)
+    {
+        _writer = writer;
+        _referenceWriter = referenceWriter;
         InitializeFormattingState();
     }
 
@@ -86,7 +94,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <returns><see langword="true"/> when an alias was written and no further output for this value is required.</returns>
     /// <remarks>
     /// This method is intended for use by generated serializers and custom converters. It is a no-op unless
-    /// <see cref="YamlSerializerOptions.ReferenceHandling"/> is <see cref="YamlReferenceHandling.Preserve"/>.
+    /// <see cref="YamlSerializerOptions.ReferenceHandling"/> is <see cref="YamlReferenceHandling.Preserve"/> or
+    /// <see cref="YamlReferenceHandling.PreserveMinimal"/>.
     /// </remarks>
     public bool TryWriteReference(object? value)
     {
@@ -108,7 +117,10 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         var anchor = _referenceWriter.GetOrAddAnchor(value);
-        WriteAnchor(anchor);
+        if (anchor is not null)
+        {
+            WriteAnchor(anchor);
+        }
         return false;
     }
 

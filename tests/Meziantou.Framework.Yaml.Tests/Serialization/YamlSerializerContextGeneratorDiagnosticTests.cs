@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
+
 public class YamlSerializerContextGeneratorDiagnosticTests
 {
     private static readonly string[] NullableWarningIds = ["CS8600", "CS8601", "CS8602", "CS8603", "CS8604", "CS8618"];
@@ -345,7 +346,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     }
 
     [Fact]
-    public void MFY002_StillFires_WhenNoConverterHandlesType()
+    public void MFY002_IsSuppressed_WhenMemberTypeIsTransitivelyGenerated()
     {
         const string Source = """
             using Meziantou.Framework.Yaml.Serialization;
@@ -370,27 +371,20 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             .Where(static d => d.Id == "MFY002")
             .ToArray();
 
-        var diagnostic = Assert.Single(diagnostics);
-        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.Contains("UnhandledType", diagnostic.GetMessage());
+        Assert.Empty(diagnostics);
 
         var result = RunGenerator(Source);
         Assert.Empty(result.GeneratorDiagnostics);
-        Assert.Empty(result.GeneratedSource);
+        Assert.Contains("UnhandledType", result.GeneratedSource);
     }
 
     [Fact]
-    public void MFY002_StillFires_WhenConverterHandlesDifferentType()
+    public void MFY002_StillFires_WhenConverterDoesNotHandleUnsupportedMemberType()
     {
         const string Source = """
             using Meziantou.Framework.Yaml.Serialization;
 
             public sealed class TypeA
-            {
-                public string Value { get; set; } = string.Empty;
-            }
-
-            public sealed class TypeB
             {
                 public string Value { get; set; } = string.Empty;
             }
@@ -410,12 +404,12 @@ public class YamlSerializerContextGeneratorDiagnosticTests
                 }
             }
 
-            public sealed class ModelWithTypeB
+            public sealed class ModelWithUnsupportedInterface
             {
-                public TypeB? Item { get; set; }
+                public System.IDisposable? Item { get; set; }
             }
 
-            [YamlSerializable(typeof(ModelWithTypeB))]
+            [YamlSerializable(typeof(ModelWithUnsupportedInterface))]
             [YamlSourceGenerationOptions(Converters = [typeof(TypeAConverter)])]
             internal partial class TestContext : YamlSerializerContext
             {
@@ -427,7 +421,59 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             .ToArray();
 
         var diagnostic = Assert.Single(diagnostics);
-        Assert.Contains("TypeB", diagnostic.GetMessage());
+        Assert.Contains("IDisposable", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void GeneratorTransitivelyGeneratesExternalMemberTypes()
+    {
+        const string source = """
+            using Meziantou.Framework.Yaml.Serialization;
+            using Meziantou.Framework.Yaml.Tests.Serialization;
+
+            [YamlSerializable(typeof(ExternalTransitiveRoot))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var result = RunGenerator(
+            source,
+            MetadataReference.CreateFromFile(typeof(ExternalTransitiveRoot).Assembly.Location));
+
+        var diagnostics = result.Diagnostics
+            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .Where(static diagnostic => diagnostic.Location.SourceTree?.FilePath.EndsWith(".g.cs", StringComparison.Ordinal) != true)
+            .ToArray();
+
+        Assert.Empty(diagnostics);
+        Assert.Contains("ExternalTransitiveChild", result.GeneratedSource);
+    }
+
+    [Fact]
+    public void MFY002_IsSuppressed_WhenMemberTypeIsUntypedObject()
+    {
+        const string source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class ModelWithObject
+            {
+                public object? Item { get; set; }
+            }
+
+            [YamlSerializable(typeof(ModelWithObject))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var result = RunGenerator(source);
+
+        var diagnostics = result.Diagnostics
+            .Where(static d => d.Id == "MFY002")
+            .ToArray();
+
+        Assert.Empty(diagnostics);
     }
 
     [Fact]
@@ -676,9 +722,9 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         return compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().GetAwaiter().GetResult().ToArray();
     }
 
-    private static (Compilation OutputCompilation, Diagnostic[] GeneratorDiagnostics, Diagnostic[] Diagnostics, string GeneratedSource) RunGenerator([StringSyntax("c#-test")]string source)
+    private static (Compilation OutputCompilation, Diagnostic[] GeneratorDiagnostics, Diagnostic[] Diagnostics, string GeneratedSource) RunGenerator([StringSyntax("c#-test")]string source, params MetadataReference[] additionalReferences)
     {
-        var compilation = CreateCompilation(source);
+        var compilation = CreateCompilation(source, additionalReferences);
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
@@ -696,7 +742,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         return (outputCompilation, generatorDiagnostics.ToArray(), generatorDiagnostics.Concat(outputCompilation.GetDiagnostics()).ToArray(), generatedSource);
     }
 
-    private static CSharpCompilation CreateCompilation([StringSyntax("c#-test")] string source)
+    private static CSharpCompilation CreateCompilation([StringSyntax("c#-test")] string source, MetadataReference[]? additionalReferences = null)
     {
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
         var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
@@ -704,14 +750,14 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         return CSharpCompilation.Create(
             assemblyName: "GeneratorWarningTests",
             syntaxTrees: new[] { syntaxTree },
-            references: GetMetadataReferences(),
+            references: GetMetadataReferences(additionalReferences ?? []),
             options: new CSharpCompilationOptions(
                 OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable)
                 .WithSpecificDiagnosticOptions(NullableWarningsAsErrors));
     }
 
-    private static MetadataReference[] GetMetadataReferences()
+    private static MetadataReference[] GetMetadataReferences(params MetadataReference[] additionalReferences)
     {
         var platformAssemblies = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? string.Empty)
             .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
@@ -725,6 +771,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             ])
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(path => MetadataReference.CreateFromFile(path))
+            .Concat(additionalReferences)
             .ToArray();
     }
 

@@ -28,7 +28,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static readonly DiagnosticDescriptor UnsupportedMemberType = new(
         id: "MFY002",
         title: "Unsupported member type",
-        messageFormat: "Type '{0}' contains member '{1}' of unsupported type '{2}'. Add [YamlSerializable(typeof({2}))] to the context or change the member type.",
+        messageFormat: "Type '{0}' contains member '{1}' of unsupported type '{2}'. Use a supported scalar, collection, dictionary with a supported key, concrete generated type, or converter.",
         category: "Meziantou.Framework.Yaml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -333,7 +333,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var derivedTypeMappings = ValidateDerivedTypeMappings(model, diagnostics);
         var resolvedTypes = ExpandSerializableTypes(
             model.SerializableTypes.Select(static item => item.TypeSymbol).ToImmutableArray(),
-            derivedTypeMappings);
+            derivedTypeMappings,
+            model.SourceGenerationOptions,
+            compilation);
 
         var indexByType = new Dictionary<ITypeSymbol, int>(resolvedTypes.Length, SymbolEqualityComparer.Default);
         for (var i = 0; i < resolvedTypes.Length; i++)
@@ -398,7 +400,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                     continue;
                 }
 
-                if (IsKnownScalar(memberType) || IsYamlNodeType(memberType))
+                if (IsKnownScalar(memberType) || IsYamlNodeType(memberType) || IsUntypedObject(memberType))
                 {
                     continue;
                 }
@@ -418,7 +420,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 if (TryGetArrayElementType(memberType, out var arrayElementType) ||
                     TryGetSequenceElementType(memberType, out arrayElementType, out _))
                 {
-                    if (IsKnownScalar(arrayElementType) || IsYamlNodeType(arrayElementType) || indexByType.ContainsKey(arrayElementType) ||
+                    if (IsKnownScalar(arrayElementType) || IsYamlNodeType(arrayElementType) || IsUntypedObject(arrayElementType) || indexByType.ContainsKey(arrayElementType) ||
                         IsTypeHandledByConverter(arrayElementType, model.SourceGenerationOptions.ConverterTypes, compilation))
                     {
                         continue;
@@ -446,7 +448,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                         continue;
                     }
 
-                    if (IsKnownScalar(dictionaryValueType) || IsYamlNodeType(dictionaryValueType) || indexByType.ContainsKey(dictionaryValueType) ||
+                    if (IsKnownScalar(dictionaryValueType) || IsYamlNodeType(dictionaryValueType) || IsUntypedObject(dictionaryValueType) || indexByType.ContainsKey(dictionaryValueType) ||
                         IsTypeHandledByConverter(dictionaryValueType, model.SourceGenerationOptions.ConverterTypes, compilation))
                     {
                         continue;
@@ -599,10 +601,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static ImmutableArray<ITypeSymbol> ExpandSerializableTypes(
         ImmutableArray<ITypeSymbol> roots,
-        ImmutableArray<DerivedTypeMappingModel> contextMappings)
+        ImmutableArray<DerivedTypeMappingModel> contextMappings,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        Compilation compilation)
     {
-        // Always include explicitly declared root types. Additionally include polymorphic derived types
-        // so generated polymorphism dispatch can call into their serializers without requiring explicit roots.
+        // Always include explicitly declared root types. Additionally include polymorphic derived types and
+        // statically discoverable member/element/value types so generated serializers can call into their
+        // serializers without requiring explicit roots.
         var builder = ImmutableArray.CreateBuilder<ITypeSymbol>();
         var seen = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
         var queue = new Queue<ITypeSymbol>();
@@ -636,6 +641,16 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         while (queue.Count != 0)
         {
             var type = queue.Dequeue();
+
+            foreach (var dependency in GetTransitiveSerializableDependencies(type, sourceGenerationOptions, compilation))
+            {
+                if (seen.Add(dependency))
+                {
+                    builder.Add(dependency);
+                    queue.Enqueue(dependency);
+                }
+            }
+
             if (type is not INamedTypeSymbol named)
             {
                 continue;
@@ -670,6 +685,153 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         return builder.ToImmutable();
     }
+
+    private static IEnumerable<ITypeSymbol> GetTransitiveSerializableDependencies(
+        ITypeSymbol type,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        Compilation compilation)
+    {
+        if (TryGetArrayElementType(type, out var arrayElementType))
+        {
+            if (ShouldGenerateTransitiveType(arrayElementType, sourceGenerationOptions, compilation))
+            {
+                yield return arrayElementType;
+            }
+
+            yield break;
+        }
+
+        if (TryGetSequenceElementType(type, out var sequenceElementType, out _))
+        {
+            if (ShouldGenerateTransitiveType(sequenceElementType, sourceGenerationOptions, compilation))
+            {
+                yield return sequenceElementType;
+            }
+
+            yield break;
+        }
+
+        if (TryGetDictionaryTypes(type, out var dictionaryKeyType, out var dictionaryValueType, out _))
+        {
+            if (IsSupportedDictionaryKeyType(dictionaryKeyType) &&
+                ShouldGenerateTransitiveType(dictionaryValueType, sourceGenerationOptions, compilation))
+            {
+                yield return dictionaryValueType;
+            }
+
+            yield break;
+        }
+
+        if (type is not INamedTypeSymbol named ||
+            (named.TypeKind != TypeKind.Class && named.TypeKind != TypeKind.Struct) ||
+            IsYamlNodeType(named))
+        {
+            yield break;
+        }
+
+        var extensionDataMembers = GetExtensionDataMembers(named);
+        foreach (var member in GetSerializableMembers(named))
+        {
+            if (extensionDataMembers.Any(extensionDataMember => SymbolEqualityComparer.Default.Equals(member, extensionDataMember)))
+            {
+                continue;
+            }
+
+            if (GetYamlConverterAttributeTypeName(member) is not null)
+            {
+                continue;
+            }
+
+            var memberType = GetMemberType(member);
+            if (memberType is null)
+            {
+                continue;
+            }
+
+            foreach (var dependency in GetTransitiveSerializableMemberDependencies(memberType, sourceGenerationOptions, compilation))
+            {
+                yield return dependency;
+            }
+        }
+    }
+
+    private static IEnumerable<ITypeSymbol> GetTransitiveSerializableMemberDependencies(
+        ITypeSymbol memberType,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        Compilation compilation)
+    {
+        if (TryGetArrayElementType(memberType, out var arrayElementType))
+        {
+            if (ShouldGenerateTransitiveType(arrayElementType, sourceGenerationOptions, compilation))
+            {
+                yield return arrayElementType;
+            }
+
+            yield break;
+        }
+
+        if (TryGetSequenceElementType(memberType, out var sequenceElementType, out _))
+        {
+            if (ShouldGenerateTransitiveType(sequenceElementType, sourceGenerationOptions, compilation))
+            {
+                yield return sequenceElementType;
+            }
+
+            yield break;
+        }
+
+        if (TryGetDictionaryTypes(memberType, out var dictionaryKeyType, out var dictionaryValueType, out _))
+        {
+            if (IsSupportedDictionaryKeyType(dictionaryKeyType) &&
+                ShouldGenerateTransitiveType(dictionaryValueType, sourceGenerationOptions, compilation))
+            {
+                yield return dictionaryValueType;
+            }
+
+            yield break;
+        }
+
+        if (ShouldGenerateTransitiveType(memberType, sourceGenerationOptions, compilation))
+        {
+            yield return memberType;
+        }
+    }
+
+    private static bool ShouldGenerateTransitiveType(
+        ITypeSymbol type,
+        SourceGenerationOptionsModel sourceGenerationOptions,
+        Compilation compilation)
+    {
+        if (IsKnownScalar(type) ||
+            IsYamlNodeType(type) ||
+            IsUntypedObject(type) ||
+            IsTypeHandledByConverter(type, sourceGenerationOptions.ConverterTypes, compilation))
+        {
+            return false;
+        }
+
+        if (type is IArrayTypeSymbol)
+        {
+            return true;
+        }
+
+        if (type is not INamedTypeSymbol named)
+        {
+            return false;
+        }
+
+        if (named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T ||
+            named.SpecialType == SpecialType.System_Object ||
+            named.TypeKind is TypeKind.Interface or TypeKind.Delegate or TypeKind.TypeParameter ||
+            named.IsUnboundGenericType ||
+            named.TypeArguments.Any(static typeArgument => typeArgument.TypeKind == TypeKind.TypeParameter))
+        {
+            return false;
+        }
+
+        return named.TypeKind is TypeKind.Class or TypeKind.Struct or TypeKind.Enum;
+    }
+
     private static bool TryGetArrayElementType(ITypeSymbol type, out ITypeSymbol elementType)
     {
         if (type is IArrayTypeSymbol arrayType && arrayType.Rank == 1)
@@ -1627,6 +1789,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         return false;
     }
+
+    private static bool IsUntypedObject(ITypeSymbol type)
+        => type.SpecialType == SpecialType.System_Object;
 
     private static ImmutableArray<ISymbol> GetSerializableMembers(INamedTypeSymbol type)
     {

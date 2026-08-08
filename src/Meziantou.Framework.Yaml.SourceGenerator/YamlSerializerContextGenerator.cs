@@ -2767,7 +2767,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static string ToLiteral(string value)
         => "@\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
-    private static int? GetDefaultIgnoreConditionOverride(SourceGenerationOptionsModel options)
+    private static int? GetDefaultIgnoreCondition(SourceGenerationOptionsModel options)
         => options.DefaultIgnoreCondition switch
         {
             "Never" => IgnoreNever,
@@ -2779,7 +2779,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             _ => null,
         };
 
-    private static int? GetDiscriminatorStyleOverride(SourceGenerationOptionsModel options)
+    private static int? GetDiscriminatorStyle(SourceGenerationOptionsModel options)
         => options.DiscriminatorStyle switch
         {
             "Tag" => DiscriminatorStyleTag,
@@ -2788,7 +2788,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             _ => null,
         };
 
-    private static int? GetUnknownDerivedTypeHandlingOverride(SourceGenerationOptionsModel options)
+    private static int? GetUnknownDerivedTypeHandling(SourceGenerationOptionsModel options)
         => options.UnknownDerivedTypeHandling switch
         {
             "Fail" => UnknownDerivedTypeHandlingFail,
@@ -2796,16 +2796,16 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             _ => null,
         };
 
-    private static string? GetUnmappedMemberHandlingOverride(SourceGenerationOptionsModel options)
-        => string.IsNullOrEmpty(options.UnmappedMemberHandling) ? null : options.UnmappedMemberHandling;
+    private static string? GetUnmappedMemberHandling(SourceGenerationOptionsModel options)
+        => options.UnmappedMemberHandling is { Length: > 0 } value ? value : null;
 
-    private static string? GetPreferredObjectCreationHandlingOverride(SourceGenerationOptionsModel options)
-        => string.IsNullOrEmpty(options.PreferredObjectCreationHandling) ? null : options.PreferredObjectCreationHandling;
+    private static string? GetPreferredObjectCreationHandling(SourceGenerationOptionsModel options)
+        => options.PreferredObjectCreationHandling is { Length: > 0 } value ? value : null;
 
-    private static string? GetDuplicateKeyHandlingOverride(SourceGenerationOptionsModel options)
-        => string.IsNullOrEmpty(options.DuplicateKeyHandling) ? null : options.DuplicateKeyHandling;
+    private static string? GetDuplicateKeyHandling(SourceGenerationOptionsModel options)
+        => options.DuplicateKeyHandling is { Length: > 0 } value ? value : null;
 
-    private static bool? GetSortedMappingOrderOverride(SourceGenerationOptionsModel options)
+    private static bool? GetSortedMappingOrder(SourceGenerationOptionsModel options)
         => options.MappingOrder switch
         {
             "Sorted" => true,

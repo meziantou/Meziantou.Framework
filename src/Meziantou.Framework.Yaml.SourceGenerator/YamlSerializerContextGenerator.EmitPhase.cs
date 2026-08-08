@@ -631,7 +631,11 @@ public sealed partial class YamlSerializerContextGenerator
             EmitThrowIfNullForNonNullableMemberOnWrite(builder, member, typeName, memberValueVar, "        ");
             builder.Append("        var ").Append(ignoreVar).Append(" = ").Append(member.IgnoreConditionExpression).AppendLine(";");
 
-            builder.Append("        if (").Append(ignoreVar).AppendLine(" == global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingNull)");
+            builder.Append("        if (").Append(ignoreVar).AppendLine(" is global::Meziantou.Framework.Yaml.YamlIgnoreCondition.Always or global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWriting)");
+            builder.AppendLine("        {");
+            builder.AppendLine("            // Skip value ignored during serialization.");
+            builder.AppendLine("        }");
+            builder.Append("        else if (").Append(ignoreVar).AppendLine(" == global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingNull)");
             builder.AppendLine("        {");
             if (member.Type.IsReferenceType)
             {
@@ -1070,7 +1074,7 @@ public sealed partial class YamlSerializerContextGenerator
             }
         }
 
-        var requiredMembers = members.Where(static m => m.IsRequired).ToArray();
+        var requiredMembers = members.Where(static m => m.IsRequired && !m.IsIgnoredOnRead).ToArray();
         var readCandidates = members;
         for (var i = 0; i < requiredMembers.Length; i++)
         {
@@ -1157,6 +1161,14 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine();
             builder.AppendLine("                {");
             builder.AppendLine("                    matched = true;");
+            if (member.IsIgnoredOnRead)
+            {
+                builder.AppendLine("                    reader.Skip();");
+                builder.AppendLine("                    continue;");
+                builder.AppendLine("                }");
+                continue;
+            }
+
             if (member.IsRequired)
             {
                 builder.Append("                    __required").Append(index).Append('_').Append(member.Symbol.Name).AppendLine(" = true;");
@@ -1218,6 +1230,14 @@ public sealed partial class YamlSerializerContextGenerator
             builder.AppendLine();
             builder.AppendLine("            {");
             builder.AppendLine("                matched = true;");
+            if (member.IsIgnoredOnRead)
+            {
+                builder.AppendLine("                reader.Skip();");
+                builder.AppendLine("                continue;");
+                builder.AppendLine("            }");
+                continue;
+            }
+
             if (member.IsRequired)
             {
                 builder.Append("                __required").Append(index).Append('_').Append(member.Symbol.Name).AppendLine(" = true;");
@@ -1346,7 +1366,8 @@ public sealed partial class YamlSerializerContextGenerator
             parameterSeenVarNames[i] = $"__ctor{index}_{parameterName}_seen";
         }
 
-        var requiredMembers = members.Where(static m => m.IsRequired).ToArray();
+        var requiredMembers = members.Where(static m => m.IsRequired && !m.IsIgnoredOnRead).ToArray();
+        var readIgnoredMembers = members.Where(static m => m.IsIgnoredOnRead).ToArray();
         var requiredVarBySymbol = new Dictionary<ISymbol, string>(requiredMembers.Length, SymbolEqualityComparer.Default);
         for (var i = 0; i < requiredMembers.Length; i++)
         {
@@ -1356,7 +1377,7 @@ public sealed partial class YamlSerializerContextGenerator
         // Buffer writable members that are not constructor-bound. Init-only members are applied in the object initializer
         // when the instance is created, while mutable members are assigned afterwards.
         var bufferedMembers = members
-            .Where(m => IsWritableMember(m.Symbol) && !ctorBoundMembers.Contains(m.Symbol))
+            .Where(m => !m.IsIgnoredOnRead && IsWritableMember(m.Symbol) && !ctorBoundMembers.Contains(m.Symbol))
             .ToArray();
         var initializerMembers = bufferedMembers.Where(static m => m.NeedsObjectInitializer).ToArray();
         var postCreateBufferedMembers = bufferedMembers.Where(static m => !m.NeedsObjectInitializer).ToArray();
@@ -1503,6 +1524,19 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine();
         builder.AppendLine("                var matched = false;");
 
+        // Read-ignored members are matched before constructor parameters so they are skipped, not captured as extension data.
+        for (var i = 0; i < readIgnoredMembers.Length; i++)
+        {
+            var member = readIgnoredMembers[i];
+            builder.Append("                if (!matched && global::System.String.Equals(mergeKey, ").Append(member.SerializedNameExpressionForRead)
+                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+            builder.AppendLine();
+            builder.AppendLine("                {");
+            builder.AppendLine("                    matched = true;");
+            builder.AppendLine("                    reader.Skip();");
+            builder.AppendLine("                }");
+        }
+
         // Constructor parameters first.
         for (var i = 0; i < parameters.Length; i++)
         {
@@ -1560,6 +1594,7 @@ public sealed partial class YamlSerializerContextGenerator
                 member.BlockSequenceMappingStyle,
                 member.BlockSequenceSequenceStyle,
                 member.IsRequired,
+                member.IsIgnoredOnRead,
                 member.IsInitOnly,
                 member.IsRequiredKeyword,
                 member.RequiresIncludeFields,
@@ -1650,6 +1685,19 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine();
         builder.AppendLine("            var matched = false;");
 
+        // Read-ignored members are matched before constructor parameters so they are skipped, not captured as extension data.
+        for (var i = 0; i < readIgnoredMembers.Length; i++)
+        {
+            var member = readIgnoredMembers[i];
+            builder.Append("            if (!matched && global::System.String.Equals(key, ").Append(member.SerializedNameExpressionForRead)
+                .Append(", options.PropertyNameCaseInsensitive ? global::System.StringComparison.OrdinalIgnoreCase : global::System.StringComparison.Ordinal))");
+            builder.AppendLine();
+            builder.AppendLine("            {");
+            builder.AppendLine("                matched = true;");
+            builder.AppendLine("                reader.Skip();");
+            builder.AppendLine("            }");
+        }
+
         // Constructor parameters first.
         for (var i = 0; i < parameters.Length; i++)
         {
@@ -1708,6 +1756,7 @@ public sealed partial class YamlSerializerContextGenerator
                 member.BlockSequenceMappingStyle,
                 member.BlockSequenceSequenceStyle,
                 member.IsRequired,
+                member.IsIgnoredOnRead,
                 member.IsInitOnly,
                 member.IsRequiredKeyword,
                 member.RequiresIncludeFields,

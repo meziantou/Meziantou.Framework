@@ -1262,12 +1262,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         Func<string, string> assign = member is IPropertySymbol propAssign
             ? rhs => "instance." + propAssign.Name + " = " + rhs
             : rhs => "instance." + member.Name + " = " + rhs;
-        var ignoreConditionExpression = GetIgnoreConditionExpression();
+        var ignoreConditionExpression = GetIgnoreConditionExpression(member);
         var converterTypeName = GetYamlConverterAttributeTypeName(member);
         var objectCreationHandling = GetObjectCreationHandling(member);
         var (blockSequenceMappingStyle, blockSequenceSequenceStyle) = GetBlockSequenceItemStyles(member);
         var isRequiredKeyword = member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true };
         var isRequired = isRequiredKeyword || HasAttribute(member, "Meziantou.Framework.Yaml.Serialization.YamlRequiredAttribute");
+        var isIgnoredOnRead = TryGetIgnoreCondition(member, out var ignoreCondition) && ignoreCondition == IgnoreWhenReading;
         var isInitOnly = member is IPropertySymbol property && IsInitOnlyProperty(property);
         var hasIncludeAttribute = HasAttribute(member, "Meziantou.Framework.Yaml.Serialization.YamlIncludeAttribute");
         var requiresIncludeFields = member is IFieldSymbol { DeclaredAccessibility: Accessibility.Public } && !hasIncludeAttribute;
@@ -1276,7 +1277,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var disallowNull = IsNonNullableReferenceType(type);
         var numberHandling = converterTypeName is null ? GetNumberHandlingValue(member, type) : null;
         var enumCustomNames = converterTypeName is null ? GetEnumCustomNames(type) : null;
-        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, ignoreConditionExpression, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, numberHandling, enumCustomNames);
+        return new MemberModel(member, type, nameForRead, nameForWrite, accessExpression, assign, ignoreConditionExpression, converterTypeName, objectCreationHandling, blockSequenceMappingStyle, blockSequenceSequenceStyle, isRequired, isIgnoredOnRead, isInitOnly, isRequiredKeyword, requiresIncludeFields, disallowNull, disallowNull, isReadOnlyProperty, isReadOnlyField, numberHandling, enumCustomNames);
     }
 
     private static (string ForRead, string ForWrite) GetSerializedMemberNameExpressions(ISymbol member, YamlNamingPolicy? propertyNamingPolicy)
@@ -1326,10 +1327,21 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         };
     }
 
-    private static string GetIgnoreConditionExpression()
+    private static string GetIgnoreConditionExpression(ISymbol member)
     {
-        // Member-level ignore overrides options default. YAML ignore is treated as Always (handled by member filtering).
-        return "options.DefaultIgnoreCondition";
+        if (!TryGetIgnoreCondition(member, out var condition))
+        {
+            return "options.DefaultIgnoreCondition";
+        }
+
+        return condition switch
+        {
+            IgnoreWhenWritingDefault => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingDefault",
+            IgnoreWhenWritingNull => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWritingNull",
+            IgnoreWhenWriting => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenWriting",
+            IgnoreWhenReading => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.WhenReading",
+            _ => "global::Meziantou.Framework.Yaml.YamlIgnoreCondition.Never",
+        };
     }
 
     private static int? GetNumberHandlingValue(ISymbol member, ITypeSymbol memberType)
@@ -1624,7 +1636,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                         continue;
                     }
 
-                    if (HasAttribute(property, "Meziantou.Framework.Yaml.Serialization.YamlIgnoreAttribute"))
+                    if (IsIgnoredAlways(property))
                     {
                         continue;
                     }
@@ -1651,7 +1663,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                         continue;
                     }
 
-                    if (HasAttribute(field, "Meziantou.Framework.Yaml.Serialization.YamlIgnoreAttribute"))
+                    if (IsIgnoredAlways(field))
                     {
                         continue;
                     }
@@ -1863,6 +1875,55 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static string GetGeneratedTypeName(ITypeSymbol type)
         => type.ToDisplayString(FullyQualifiedNullableFormat);
+
+    private const int IgnoreNever = 0;
+    private const int IgnoreWhenWritingNull = 1;
+    private const int IgnoreWhenWritingDefault = 2;
+    private const int IgnoreAlways = 3;
+    private const int IgnoreWhenWriting = 4;
+    private const int IgnoreWhenReading = 5;
+
+    private static bool IsIgnoredAlways(ISymbol symbol)
+        => TryGetIgnoreCondition(symbol, out var condition) && condition == IgnoreAlways;
+
+    private static bool TryGetIgnoreCondition(ISymbol symbol, out int condition)
+    {
+        condition = IgnoreNever;
+
+        foreach (var attribute in symbol.GetAttributes())
+        {
+            if (attribute.AttributeClass is null)
+            {
+                continue;
+            }
+
+            var attributeName = attribute.AttributeClass.ToDisplayString();
+            if (!string.Equals(attributeName, "Meziantou.Framework.Yaml.Serialization.YamlIgnoreAttribute", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            condition = IgnoreAlways;
+
+            foreach (var pair in attribute.NamedArguments)
+            {
+                if (!string.Equals(pair.Key, "Condition", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (pair.Value.Value is not null)
+                {
+                    condition = Convert.ToInt32(pair.Value.Value, System.Globalization.CultureInfo.InvariantCulture);
+                    break;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
 
     private static bool HasAttribute(ISymbol symbol, string metadataName)
     {

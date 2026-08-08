@@ -177,7 +177,10 @@ namespace Meziantou.Framework.Yaml
     {
         Never = 0,
         WhenWritingNull = 1,
-        WhenWritingDefault = 2
+        WhenWritingDefault = 2,
+        Always = 3,
+        WhenWriting = 4,
+        WhenReading = 5
     }
 
     public enum YamlKnownNamingPolicy
@@ -847,6 +850,7 @@ namespace Meziantou.Framework.Yaml.Serialization
     [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
     public sealed class YamlIgnoreAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
+        public Meziantou.Framework.Yaml.YamlIgnoreCondition Condition { get => throw null; set { } }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property)]

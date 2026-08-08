@@ -606,6 +606,29 @@ internal sealed class GeneratedReadOnlyPopulateStructContainer
     public GeneratedPopulateStructChild Child { get; } = new() { Existing = 1 };
 }
 
+internal sealed class GeneratedYamlIgnoreConditions
+{
+    public int Keep { get; set; }
+
+    [YamlIgnore]
+    public int Always { get; set; }
+
+    [YamlIgnore(Condition = YamlIgnoreCondition.Never)]
+    public int Never { get; set; }
+
+    [YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingDefault)]
+    public int Default { get; set; }
+
+    [YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingNull)]
+    public string? Null { get; set; }
+
+    [YamlIgnore(Condition = YamlIgnoreCondition.WhenWriting)]
+    public int WriteOnly { get; set; }
+
+    [YamlIgnore(Condition = YamlIgnoreCondition.WhenReading)]
+    public int ReadOnly { get; set; }
+}
+
 [YamlSerializable(typeof(GeneratedPerson))]
 [YamlSerializable(typeof(GeneratedContainer))]
 [YamlSerializable(typeof(GeneratedPrimitives))]
@@ -678,6 +701,7 @@ internal sealed class GeneratedReadOnlyPopulateStructContainer
 [YamlSerializable(typeof(YamlValue))]
 [YamlSerializable(typeof(YamlNode))]
 [YamlSerializable(typeof(GeneratedYamlNodePayload))]
+[YamlSerializable(typeof(GeneratedYamlIgnoreConditions))]
 internal sealed partial class TestYamlSerializerContext : YamlSerializerContext
 {
     public TestYamlSerializerContext()
@@ -2480,5 +2504,34 @@ extra_list:
 
         var ex = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize("Name: Bob\n", typeInfo));
         Assert.Contains("age", ex.Message);
+    }
+
+    [Fact]
+    public void GeneratedContextHonorsYamlIgnoreCondition()
+    {
+        var context = new TestYamlSerializerContext(new YamlSerializerOptions { DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingDefault });
+        var typeInfo = context.GeneratedYamlIgnoreConditions;
+
+        var yaml = YamlSerializer.Serialize(
+            new GeneratedYamlIgnoreConditions { Keep = 1, Always = 2, Never = 0, Default = 0, Null = null, WriteOnly = 3, ReadOnly = 4 },
+            typeInfo);
+
+        Assert.Contains("Keep: 1", yaml);
+        Assert.Contains("Never: 0", yaml);
+        Assert.Contains("ReadOnly: 4", yaml);
+        Assert.DoesNotContain("Always:", yaml);
+        Assert.DoesNotContain("Default:", yaml);
+        Assert.DoesNotContain("Null:", yaml);
+        Assert.DoesNotContain("WriteOnly:", yaml);
+
+        var deserialized = YamlSerializer.Deserialize("Keep: 10\nAlways: 20\nNever: 60\nDefault: 30\nNull: hi\nWriteOnly: 40\nReadOnly: 50\n", typeInfo);
+        Assert.NotNull(deserialized);
+        Assert.Equal(10, deserialized.Keep);
+        Assert.Equal(0, deserialized.Always);
+        Assert.Equal(60, deserialized.Never);
+        Assert.Equal(30, deserialized.Default);
+        Assert.Equal("hi", deserialized.Null);
+        Assert.Equal(40, deserialized.WriteOnly);
+        Assert.Equal(0, deserialized.ReadOnly);
     }
 }

@@ -38,6 +38,29 @@ public sealed class YamlObjectConverterContractTests
         public int Count { get; set; }
     }
 
+    private sealed class YamlIgnoreConditionModel
+    {
+        public int Keep { get; set; }
+
+        [YamlIgnore]
+        public int Always { get; set; }
+
+        [YamlIgnore(Condition = YamlIgnoreCondition.Never)]
+        public int Never { get; set; }
+
+        [YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingDefault)]
+        public int Default { get; set; }
+
+        [YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingNull)]
+        public string? Null { get; set; }
+
+        [YamlIgnore(Condition = YamlIgnoreCondition.WhenWriting)]
+        public int WriteOnly { get; set; }
+
+        [YamlIgnore(Condition = YamlIgnoreCondition.WhenReading)]
+        public int ReadOnly { get; set; }
+    }
+
     private sealed class Person
     {
         public string FirstName { get; set; } = string.Empty;
@@ -156,6 +179,32 @@ public sealed class YamlObjectConverterContractTests
 
         var yaml2 = YamlSerializer.Serialize(new DefaultIgnoredModel { Count = 2 }, new YamlSerializerOptions { DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingDefault });
         Assert.Contains("Count: 2", yaml2);
+    }
+
+    [Fact]
+    public void YamlIgnoreCondition_MatchesJsonIgnoreBehavior()
+    {
+        var yaml = YamlSerializer.Serialize(
+            new YamlIgnoreConditionModel { Keep = 1, Always = 2, Never = 0, Default = 0, Null = null, WriteOnly = 3, ReadOnly = 4 },
+            new YamlSerializerOptions { DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingDefault });
+
+        Assert.Contains("Keep: 1", yaml);
+        Assert.Contains("Never: 0", yaml);
+        Assert.Contains("ReadOnly: 4", yaml);
+        Assert.DoesNotContain("Always:", yaml);
+        Assert.DoesNotContain("Default:", yaml);
+        Assert.DoesNotContain("Null:", yaml);
+        Assert.DoesNotContain("WriteOnly:", yaml);
+
+        var deserialized = YamlSerializer.Deserialize<YamlIgnoreConditionModel>("Keep: 10\nAlways: 20\nNever: 60\nDefault: 30\nNull: hi\nWriteOnly: 40\nReadOnly: 50\n");
+        Assert.NotNull(deserialized);
+        Assert.Equal(10, deserialized.Keep);
+        Assert.Equal(0, deserialized.Always);
+        Assert.Equal(60, deserialized.Never);
+        Assert.Equal(30, deserialized.Default);
+        Assert.Equal("hi", deserialized.Null);
+        Assert.Equal(40, deserialized.WriteOnly);
+        Assert.Equal(0, deserialized.ReadOnly);
     }
 
     [Fact]

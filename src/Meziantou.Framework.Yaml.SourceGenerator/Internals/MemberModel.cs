@@ -17,6 +17,7 @@ internal sealed class MemberModel
         string? blockSequenceMappingStyle,
         string? blockSequenceSequenceStyle,
         bool isRequired,
+        bool isIgnoredOnRead,
         bool isInitOnly,
         bool isRequiredKeyword,
         bool requiresIncludeFields,
@@ -39,6 +40,7 @@ internal sealed class MemberModel
         BlockSequenceMappingStyle = blockSequenceMappingStyle;
         BlockSequenceSequenceStyle = blockSequenceSequenceStyle;
         IsRequired = isRequired;
+        IsIgnoredOnRead = isIgnoredOnRead;
         IsInitOnly = isInitOnly;
         IsRequiredKeyword = isRequiredKeyword;
         RequiresIncludeFields = requiresIncludeFields;
@@ -62,6 +64,7 @@ internal sealed class MemberModel
     public string? BlockSequenceMappingStyle { get; }
     public string? BlockSequenceSequenceStyle { get; }
     public bool IsRequired { get; }
+    public bool IsIgnoredOnRead { get; }
     public bool IsInitOnly { get; }
     public bool IsRequiredKeyword { get; }
     public bool RequiresIncludeFields { get; }

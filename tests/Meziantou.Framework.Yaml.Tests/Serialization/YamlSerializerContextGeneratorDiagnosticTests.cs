@@ -427,7 +427,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     [Fact]
     public void GeneratorTransitivelyGeneratesExternalMemberTypes()
     {
-        const string source = """
+        const string Source = """
             using Meziantou.Framework.Yaml.Serialization;
             using Meziantou.Framework.Yaml.Tests.Serialization;
 
@@ -438,7 +438,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             """;
 
         var result = RunGenerator(
-            source,
+            Source,
             MetadataReference.CreateFromFile(typeof(ExternalTransitiveRoot).Assembly.Location));
 
         var diagnostics = result.Diagnostics
@@ -453,7 +453,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     [Fact]
     public void MFY002_IsSuppressed_WhenMemberTypeIsUntypedObject()
     {
-        const string source = """
+        const string Source = """
             using Meziantou.Framework.Yaml.Serialization;
 
             public sealed class ModelWithObject
@@ -467,7 +467,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             }
             """;
 
-        var result = RunGenerator(source);
+        var result = RunGenerator(Source);
 
         var diagnostics = result.Diagnostics
             .Where(static d => d.Id == "MFY002")
@@ -816,7 +816,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     [Fact]
     public void GeneratedSource_ResolvesAttributeDrivenBranchesAtBuildTime()
     {
-        const string source = """
+        const string Source = """
             #nullable enable
 
             using System.Collections.Generic;
@@ -895,7 +895,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             }
             """;
 
-        var generatedSource = GenerateSourceFor(source, "StaticAttributeContext.g.cs");
+        var generatedSource = GenerateSourceFor(Source, "StaticAttributeContext.g.cs");
 
         AssertGeneratedSourceDoesNotContain(generatedSource, "__ignoreCondition");
         AssertGeneratedSourceDoesNotContain(generatedSource, "options.DefaultIgnoreCondition");

@@ -235,7 +235,8 @@ namespace Meziantou.Framework.Yaml
     public enum YamlReferenceHandling
     {
         None = 0,
-        Preserve = 1
+        Preserve = 1,
+        PreserveMinimal = 2
     }
 
     public sealed class YamlScalarStylePreferences

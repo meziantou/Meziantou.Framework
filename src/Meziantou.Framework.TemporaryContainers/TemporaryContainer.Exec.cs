@@ -14,6 +14,9 @@ public partial class TemporaryContainer
         var options = new ExecOptions();
         configure(options);
 
+        if (options.Command is null)
+            throw new InvalidOperationException("ExecOptions.Command must be set.");
+
         if (options.Command.Count == 0)
             throw new InvalidOperationException("ExecOptions.Command must contain at least one element.");
 

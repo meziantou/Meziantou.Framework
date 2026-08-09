@@ -209,7 +209,7 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public sealed class ExecOptions
     {
-        public System.Collections.Generic.IList<string> Command { get => throw null; }
+        public System.Collections.Generic.IList<string> Command { get => throw null; set { } }
         public string? WorkingDirectory { get => throw null; set { } }
         public string? User { get => throw null; set { } }
         public System.Collections.Generic.IDictionary<string, string> Environment { get => throw null; }

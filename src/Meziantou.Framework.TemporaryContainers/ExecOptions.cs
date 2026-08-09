@@ -3,8 +3,8 @@ namespace Meziantou.Framework.TemporaryContainers;
 /// <summary>Options for a command executed inside a running container.</summary>
 public sealed class ExecOptions
 {
-    /// <summary>Gets the command and its arguments. The first element is the executable.</summary>
-    public IList<string> Command { get; } = [];
+    /// <summary>Gets or sets the command and its arguments. The first element is the executable.</summary>
+    public IList<string> Command { get; set; } = [];
 
     /// <summary>Gets or sets the working directory inside the container.</summary>
     public string? WorkingDirectory { get; set; }

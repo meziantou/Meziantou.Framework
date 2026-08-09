@@ -28,10 +28,7 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
             if (_resolvedRuntime is { } resolved)
                 return resolved;
 
-            if (_dockerApiRuntime.IsSupported())
-                return _resolvedRuntime = _dockerApiRuntime;
-
-            foreach (var candidate in GetCliCandidates())
+            foreach (var candidate in GetAllCandidates())
             {
                 if (candidate.IsSupported())
                     return _resolvedRuntime = candidate;
@@ -46,16 +43,17 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         return GetResolvedRuntimeOrNull() ?? throw CreateUnavailableRuntimeException(this);
     }
 
-    private static IEnumerable<ContainerRuntime> GetCliCandidates()
+    private IEnumerable<ContainerRuntime> GetAllCandidates()
     {
-        yield return Docker;
-        yield return Podman;
+        if (OperatingSystem.IsWindows())
+            yield return Wslc;
 
         if (OperatingSystem.IsMacOS())
             yield return AppleContainer;
 
-        if (OperatingSystem.IsWindows())
-            yield return Wslc;
+        yield return _dockerApiRuntime;
+        yield return Docker;
+        yield return Podman;
     }
 
     internal override bool SupportsPause => GetResolvedRuntimeOrThrow().SupportsPause;

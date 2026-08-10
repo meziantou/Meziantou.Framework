@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <IsPackable>True</IsPackable>
-    <SkipLocalsInit>true</SkipLocalsInit>
     <EnablePackageValidation Condition="'$(EnablePackageValidation)' == ''">true</EnablePackageValidation>
 
     <PublicApiGeneratorGenerateOnBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and '$(PublicApiGeneratorGenerateOnBuild)' == ''">false</PublicApiGeneratorGenerateOnBuild>

@@ -194,7 +194,7 @@ public partial class Assert
                 return false;
         }
 
-        private static int GetFirstDifferenceIndex(string expected, string actual, StringComparison comparison)
+        static int GetFirstDifferenceIndex(string expected, string actual, StringComparison comparison)
         {
             for (var i = 0; i < expected.Length; i++)
             {

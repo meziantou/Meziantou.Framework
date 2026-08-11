@@ -2,6 +2,7 @@ using System.Net;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Response.Records;
+using DnsResponseCode = Meziantou.Framework.DnsClient.Response.DnsResponseCode;
 
 namespace Meziantou.Framework.DnsClient.Protocol;
 

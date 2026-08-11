@@ -186,13 +186,3 @@ namespace Meziantou.AspNetCore.Components
         protected void Execute() { }
     }
 }
-namespace Meziantou.AspNetCore.Components.Internals
-{
-    public static class JsRuntimeExtensions
-    {
-        public static System.Threading.Tasks.ValueTask SafeInvokeVoidAsync(this Microsoft.JSInterop.IJSRuntime jsRuntime, string identifier, params object?[] args) => throw null;
-        public static System.Threading.Tasks.ValueTask SafeInvokeVoidAsync(this Microsoft.JSInterop.IJSRuntime jsRuntime, string identifier, System.Threading.CancellationToken cancellationToken, params object?[] args) => throw null;
-        public static System.Threading.Tasks.ValueTask SafeInvokeVoidAsync(this Microsoft.JSInterop.IJSObjectReference jsRuntime, string identifier, System.Threading.CancellationToken cancellationToken, params object?[] args) => throw null;
-        public static System.Threading.Tasks.ValueTask SafeInvokeVoidAsync(this Microsoft.JSInterop.IJSObjectReference jsRuntime, string identifier, params object?[] args) => throw null;
-    }
-}

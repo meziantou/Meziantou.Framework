@@ -19,6 +19,7 @@ using System.Net.Http.Json;
 using System.Numerics;
 using System.Reflection;
 using System.Xml;
+using Meziantou.Framework.HumanReadable.Converters;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
 using Meziantou.Xunit;
 
@@ -1641,18 +1642,18 @@ public sealed partial class SerializerTests : SerializerTestsBase
         AssertSerialization(new Validation
         {
             Subject = obj,
+            Options = new HumanReadableSerializerOptions().AddHttpConverters(new HumanReadableHttpOptions()),
             Expected = """
+                Method: POST
+                RequestUri: /sample
                 Version: 1.1
                 VersionPolicy: RequestVersionExact
+                Headers:
+                  Accept: text/plain
                 Content:
                   Headers:
                     Content-Type: text/plain; charset=utf-8
                   Value: dummy
-                Method: POST
-                RequestUri: /sample
-                Headers:
-                  Accept: text/plain
-                Options: {}
                 """,
         });
     }

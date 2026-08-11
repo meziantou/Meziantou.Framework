@@ -1,3 +1,4 @@
+using Meziantou.AspNetCore.Components.Internals;
 using Microsoft.JSInterop;
 
 namespace Meziantou.AspNetCore.Components;
@@ -44,7 +45,9 @@ public sealed class ClipboardService
     /// <returns>A task that represents the asynchronous operation. The task result contains the text from the clipboard.</returns>
     public ValueTask<string> ReadTextAsync(CancellationToken cancellationToken = default)
     {
+#pragma warning disable BL0016 // Unguarded JS interop call
         return _jsRuntime.InvokeAsync<string>("navigator.clipboard.readText", cancellationToken);
+#pragma warning restore BL0016 // Unguarded JS interop call
     }
 
     /// <summary>Writes text to the clipboard.</summary>
@@ -53,6 +56,6 @@ public sealed class ClipboardService
     /// <returns>A task that represents the asynchronous operation.</returns>
     public ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default)
     {
-        return _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", cancellationToken, text);
+        return _jsRuntime.SafeInvokeVoidAsync("navigator.clipboard.writeText", cancellationToken, text);
     }
 }

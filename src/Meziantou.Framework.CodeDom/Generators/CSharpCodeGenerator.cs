@@ -630,7 +630,7 @@ public partial class CSharpCodeGenerator
         WriteGenericParameterConstraints(writer, type);
 
         var baseTypes = type.Implements;
-        if (baseTypes.Any())
+        if (baseTypes.Count != 0)
         {
             writer.Write(" : ");
             WriteTypeReferences(writer, baseTypes, ", ");
@@ -650,7 +650,7 @@ public partial class CSharpCodeGenerator
         WriteGenericParameters(writer, type);
 
         var baseTypes = type.Implements;
-        if (baseTypes.Any())
+        if (baseTypes.Count != 0)
         {
             writer.Write(" : ");
             WriteTypeReferences(writer, baseTypes, ", ");
@@ -1298,7 +1298,7 @@ public partial class CSharpCodeGenerator
 
     private void WriteGenericParameters(IndentedTextWriter writer, IList<TypeReference> types)
     {
-        if (types.Any())
+        if (types.Count != 0)
         {
             writer.Write("<");
             WriteTypeReferences(writer, types, ", ");

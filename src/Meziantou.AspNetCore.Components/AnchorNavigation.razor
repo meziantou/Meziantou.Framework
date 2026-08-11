@@ -56,7 +56,7 @@
             if (!string.IsNullOrEmpty(elementId))
             {
                 var module = await Module;
-                await module.InvokeVoidAsync("blazorScrollToId", elementId);
+                await module.SafeInvokeVoidAsync("blazorScrollToId", elementId);
             }
         }
     }

@@ -86,7 +86,7 @@
                     else
                     {
                         System.Diagnostics.Debug.Assert(_instance != null);
-                        await _instance.InvokeVoidAsync("onNewItems");
+                        await _instance.SafeInvokeVoidAsync("onNewItems");
                     }
                 }
             }
@@ -133,9 +133,16 @@
         // Initialize the IntersectionObserver
         if (firstRender)
         {
-            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/Meziantou.AspNetCore.Components/InfiniteScrolling.js");
-            _currentComponentReference = DotNetObjectReference.Create(this);
-            _instance = await _module.InvokeAsync<IJSObjectReference>("initialize", _lastItemIndicator, _currentComponentReference);
+            try
+            {
+                _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/Meziantou.AspNetCore.Components/InfiniteScrolling.js");
+                _currentComponentReference = DotNetObjectReference.Create(this);
+                _instance = await _module.InvokeAsync<IJSObjectReference>("initialize", _lastItemIndicator, _currentComponentReference);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to initialize IntersectionObserver: {ex}");
+            }
         }
     }
 
@@ -151,7 +158,7 @@
         // Stop the IntersectionObserver
         if (_instance != null)
         {
-            await _instance.InvokeVoidAsync("dispose");
+            await _instance.SafeInvokeVoidAsync("dispose");
             await _instance.DisposeAsync();
             _instance = null;
         }

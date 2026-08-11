@@ -397,14 +397,21 @@ internal class AssertionFormatter
 
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
     {
-        return CreateMessage("Assert.Equal() assertion failed.", error.Message)
+        var builder = CreateMessage("Assert.Equal() assertion failed.", error.Message)
             .AppendGroup(
                 ("Expected expression", error.ExpectedExpression),
-                ("Actual expression", error.ActualExpression))
-            .AppendGroup(
-                ("Expected", FormatValue(error.ExpectedValue)),
-                ("Actual", FormatValue(error.ActualValue)))
-            .ToString();
+                ("Actual expression", error.ActualExpression));
+
+        if (error.FirstDifferenceIndex is not null)
+        {
+            builder.Append("Index of first difference", error.FirstDifferenceIndex.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        return builder
+           .AppendGroup(
+               ("Expected", FormatValue(error.ExpectedValue, error.FirstDifferenceIndex)),
+               ("Actual", FormatValue(error.ActualValue, error.FirstDifferenceIndex)))
+           .ToString();
     }
 
     public virtual string Format<T>(EqualWithToleranceAssertionError<T> error)

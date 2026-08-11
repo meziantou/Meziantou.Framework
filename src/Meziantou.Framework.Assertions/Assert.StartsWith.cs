@@ -110,7 +110,7 @@ public partial class Assert
         if (actual.StartsWith(expected, comparison))
             return;
 
-        var firstDifferenceIndex = GetFirstDifferenceIndex(expected, actual, comparison);
+        var firstDifferenceIndex = GetFirstDifferenceIndex(expected.AsSpan(), actual.AsSpan(), comparison);
         throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharStartsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression, message)));
     }
 

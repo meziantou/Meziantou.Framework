@@ -195,8 +195,9 @@ public sealed class AssertEqualTests
             Assert.Equal() assertion failed.
             Expected expression: expected
             Actual expression:   actual
-            Expected: "Hello\n\"World\""
-            Actual:   "Hello\tWorld"
+            Index of first difference: 5
+            Expected: "Hello\̲n̲\"World\""
+            Actual:   "Hello\̲t̲World"
             """);
     }
 
@@ -212,6 +213,22 @@ public sealed class AssertEqualTests
             Actual expression:   actual
             Expected: "Hello"
             Actual:   <null>
+            """);
+    }
+
+    [Fact]
+    public void String_ShowsDifferenceIndex_WhenActualHasAdditionalSuffix()
+    {
+        var expected = "Hello";
+        var actual = "Hello world";
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 5
+            Expected: "Hello"
+            Actual:   "Hello ̲world"
             """);
     }
 

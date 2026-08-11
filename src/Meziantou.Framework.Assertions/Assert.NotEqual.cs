@@ -40,7 +40,7 @@ public partial class Assert
     {
         if (ValuesEqual(expected, actual))
         {
-            throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<T, T?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<T, T?>("Not expected", expected, actual, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
         }
     }
 
@@ -49,8 +49,17 @@ public partial class Assert
     {
         if (ValuesEqual(expected, actual))
         {
-            throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<TExpected, TActual?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<TExpected, TActual?>("Not expected", expected, actual, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
         }
+    }
+
+    public static void NotEqual(string expected, string? actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (actual is null || !expected.Equals(actual, comparison))
+            return;
+
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<string, string?>("Not expected", expected, actual, GetFirstDifferenceIndex(expected, actual, comparison), actualExpression, expectedExpression, message)));
     }
 
     public static void NotEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -75,7 +84,7 @@ public partial class Assert
         if (!SpansEqual(expected.Span, actual.Span))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<ReadOnlyMemory<TExpected>, ReadOnlyMemory<TActual>>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<ReadOnlyMemory<TExpected>, ReadOnlyMemory<TActual>>("Not expected", expected, actual, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     public static void NotEqual<T>(IEnumerable<T> expected, IEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -86,7 +95,7 @@ public partial class Assert
         if (!CollectionsEqual(expected, actual, (IEqualityComparer<T>)EqualityComparer<T>.Default))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<T>, IEnumerable<T>?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<T>, IEnumerable<T>?>("Not expected", expected, actual, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     public static void NotEqual<T>(IEnumerable<T> expected, IEnumerable<T>? actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -97,7 +106,7 @@ public partial class Assert
         if (!CollectionsEqual(expected, actual, comparer))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<T>, IEnumerable<T>?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<T>, IEnumerable<T>?>("Not expected", expected, actual, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     [OverloadResolutionPriority(-1)]
@@ -109,7 +118,7 @@ public partial class Assert
         if (!CollectionsEqual(expected, actual, (System.Collections.IEqualityComparer?)null))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<TExpected>, IEnumerable<TActual>?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<TExpected>, IEnumerable<TActual>?>("Not expected", expected, actual, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     public static async Task NotEqual<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -122,7 +131,7 @@ public partial class Assert
         if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, (IEqualityComparer<T>)EqualityComparer<T>.Default).ConfigureAwait(false))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     public static async Task NotEqual<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -135,7 +144,7 @@ public partial class Assert
         if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, comparer).ConfigureAwait(false))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     [OverloadResolutionPriority(-1)]
@@ -149,7 +158,7 @@ public partial class Assert
         if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, (System.Collections.IEqualityComparer?)null).ConfigureAwait(false))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<TExpected>, IReadOnlyList<TActual>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<TExpected>, IReadOnlyList<TActual>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     public static void NotEqual(System.Collections.IEnumerable expected, System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -160,7 +169,7 @@ public partial class Assert
         if (!CollectionsEqual(EnumerateObjects(expected), EnumerateObjects(actual), (System.Collections.IEqualityComparer?)null))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>("Not expected", expected, actual, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     public static void NotEqual(System.Collections.IEnumerable expected, System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -171,7 +180,7 @@ public partial class Assert
         if (!CollectionsEqual(EnumerateObjects(expected), EnumerateObjects(actual), comparer))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>("Not expected", expected, actual, firstDifferenceIndex: null, actualExpression, expectedExpression, message)));
     }
 
     private static bool SpansEqual<TExpected, TActual>(ReadOnlySpan<TExpected> expected, ReadOnlySpan<TActual> actual)
@@ -183,6 +192,17 @@ public partial class Assert
         {
             if (!ValuesEqual(expected[i], actual[i]))
                 return false;
+        }
+
+        private static int GetFirstDifferenceIndex(string expected, string actual, StringComparison comparison)
+        {
+            for (var i = 0; i < expected.Length; i++)
+            {
+                if (!actual.AsSpan(i, 1).Equals(expected.AsSpan(i, 1), comparison))
+                    return i;
+            }
+
+            return expected.Length;
         }
 
         return true;

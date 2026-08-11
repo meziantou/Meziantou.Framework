@@ -62,7 +62,9 @@ public static class HumanReadableHttpExtensions
 #pragma warning restore CS0618
 
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Options), new HumanReadableIgnoreAttribute() { Condition = HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection });
+#if NET11_0_OR_GREATER
         options.AddAttribute(typeof(HttpRequestMessage), "ConnectionId", new HumanReadableIgnoreAttribute());
+#endif
     }
 
     private static void ConfigureHttpResponseMessage(HumanReadableSerializerOptions options, HumanReadableHttpResponseMessageOptions? responseOptions)

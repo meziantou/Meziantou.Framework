@@ -2,7 +2,7 @@ using Microsoft.JSInterop;
 
 namespace Meziantou.AspNetCore.Components.Internals;
 
-public static class JsRuntimeExtensions
+internal static class JsRuntimeExtensions
 {
     public static async ValueTask SafeInvokeVoidAsync(this IJSRuntime jsRuntime, string identifier, params object?[] args)
     {

@@ -538,7 +538,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
 
     private protected static IEnumerable<T> FilterBySetPosition<T>(IList<T> source, IList<int>? setPositions)
     {
-        if (setPositions is null || !setPositions.Any())
+        if (setPositions is null || setPositions.Count == 0)
             return source;
 
         var result = new List<T>();

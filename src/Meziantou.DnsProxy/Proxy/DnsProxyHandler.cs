@@ -7,6 +7,7 @@ using Meziantou.Framework.DnsFilter;
 using Meziantou.Framework.DnsServer.Handler;
 using Meziantou.Framework.DnsServer.Protocol;
 using Microsoft.Extensions.Logging;
+using DnsResponseCode = Meziantou.Framework.DnsServer.Protocol.DnsResponseCode;
 
 namespace Meziantou.DnsProxy.Proxy;
 

@@ -4,7 +4,7 @@ internal static class ParametrableTypeExtensions
 {
     public static bool HasConstraints(this TypeParameter parameter)
     {
-        return parameter.Constraints.Any();
+        return parameter.Constraints.Count != 0;
     }
 
     public static bool HasConstraints(this IParametrableType parametrable)

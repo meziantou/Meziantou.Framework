@@ -19,6 +19,7 @@ using System.Net.Http.Json;
 using System.Numerics;
 using System.Reflection;
 using System.Xml;
+using Meziantou.Framework.HumanReadable.Converters;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
 using Meziantou.Xunit;
 
@@ -1641,6 +1642,22 @@ public sealed partial class SerializerTests : SerializerTestsBase
         AssertSerialization(new Validation
         {
             Subject = obj,
+#if NET11_0_OR_GREATER
+            Expected = """
+                Version: 1.1
+                VersionPolicy: RequestVersionExact
+                Content:
+                  Headers:
+                    Content-Type: text/plain; charset=utf-8
+                  Value: dummy
+                Method: POST
+                RequestUri: /sample
+                Headers:
+                  Accept: text/plain
+                Options: {}
+                ConnectionId: <null>
+                """,
+#else
             Expected = """
                 Version: 1.1
                 VersionPolicy: RequestVersionExact
@@ -1654,6 +1671,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
                   Accept: text/plain
                 Options: {}
                 """,
+#endif
         });
     }
 

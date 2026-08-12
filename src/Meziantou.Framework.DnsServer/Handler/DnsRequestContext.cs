@@ -1,5 +1,6 @@
 using System.Net;
 using Meziantou.Framework.DnsServer.Protocol;
+using DnsResponseCode = Meziantou.Framework.DnsServer.Protocol.DnsResponseCode;
 
 namespace Meziantou.Framework.DnsServer.Handler;
 

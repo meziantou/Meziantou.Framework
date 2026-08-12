@@ -6,6 +6,7 @@ using Meziantou.Framework.DnsClient.Protocol;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Transport;
+using DnsResponseCode = Meziantou.Framework.DnsClient.Response.DnsResponseCode;
 
 namespace Meziantou.Framework.DnsClient;
 

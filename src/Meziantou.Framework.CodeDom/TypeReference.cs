@@ -164,7 +164,7 @@ public class TypeReference
         {
             var sb = new StringBuilder();
             sb.Append(TypeName);
-            if (Parameters.Any())
+            if (Parameters.Count != 0)
             {
                 sb.Append('<');
                 var first = true;
@@ -194,7 +194,7 @@ public class TypeReference
         {
             var sb = new StringBuilder();
             sb.Append(TypeName);
-            if (Parameters.Any())
+            if (Parameters.Count != 0)
             {
                 sb.Append('<');
                 var first = true;

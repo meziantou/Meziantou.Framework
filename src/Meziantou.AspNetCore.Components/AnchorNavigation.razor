@@ -7,7 +7,9 @@
 @code {
     const string ImportPath = "./_content/Meziantou.AspNetCore.Components/AnchorNavigation.js";
     private Task<IJSObjectReference>? _module;
+#pragma warning disable BL0016
     private Task<IJSObjectReference> Module => _module ??= JSRuntime.InvokeAsync<IJSObjectReference>("import", ImportPath).AsTask();
+#pragma warning restore BL0016
 
     protected override void OnInitialized()
     {
@@ -56,7 +58,7 @@
             if (!string.IsNullOrEmpty(elementId))
             {
                 var module = await Module;
-                await module.InvokeVoidAsync("blazorScrollToId", elementId);
+                await module.SafeInvokeVoidAsync("blazorScrollToId", elementId);
             }
         }
     }

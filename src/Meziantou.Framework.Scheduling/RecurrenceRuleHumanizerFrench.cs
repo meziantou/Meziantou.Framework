@@ -105,7 +105,7 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             sb.Append(" semaines");
         }
 
-        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Count != 0)
         {
             sb.Append(" le ");
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.None));
@@ -131,16 +131,16 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             sb.Append(" mois");
         }
 
-        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Any())
+        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Count != 0)
         {
             sb.Append(" le ");
             ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayOrdinalHumanText).ToList(), ", ", " et ");
             sb.Append(" jour");
         }
 
-        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Count != 0)
         {
-            if (rrule.BySetPositions is not null && rrule.BySetPositions.Any())
+            if (rrule.BySetPositions is not null && rrule.BySetPositions.Count != 0)
             {
                 sb.Append(" le ");
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
@@ -171,14 +171,14 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             sb.Append(" ans");
         }
 
-        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Any())
+        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Count != 0)
         {
             if (rrule.ByMonthDays.Any(day => day < 0))
             {
                 sb.Append(" le ");
                 ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayOrdinalHumanText).ToList(), ", ", " et ");
                 sb.Append(" jour");
-                if (rrule.ByMonths is not null && rrule.ByMonths.Any())
+                if (rrule.ByMonths is not null && rrule.ByMonths.Count != 0)
                 {
                     var monthsList = ListToHumanText(FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
                     if (MustPrecedeByApostrophe(monthsList))
@@ -197,7 +197,7 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             {
                 sb.Append(" le ");
                 ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(md => md.ToString(cultureInfo)).ToList(), ", ", " et ");
-                if (rrule.ByMonths is not null && rrule.ByMonths.Any())
+                if (rrule.ByMonths is not null && rrule.ByMonths.Count != 0)
                 {
                     sb.Append(' ');
                     ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
@@ -205,9 +205,9 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             }
         }
 
-        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Count != 0)
         {
-            if (rrule.BySetPositions is not null && rrule.BySetPositions.Any())
+            if (rrule.BySetPositions is not null && rrule.BySetPositions.Count != 0)
             {
                 sb.Append(" le ");
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
@@ -215,7 +215,7 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
             sb.Append(' ');
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
-            if (rrule.ByMonths is not null && rrule.ByMonths.Any())
+            if (rrule.ByMonths is not null && rrule.ByMonths.Count != 0)
             {
                 var monthsList = ListToHumanText(FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
                 if (MustPrecedeByApostrophe(monthsList))

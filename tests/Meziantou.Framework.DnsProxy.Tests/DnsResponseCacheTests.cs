@@ -4,6 +4,7 @@ using Meziantou.DnsProxy.Proxy;
 using Meziantou.Framework.DnsServer.Protocol;
 using Meziantou.Framework.DnsServer.Protocol.Records;
 using Microsoft.Extensions.Options;
+using DnsResponseCode = Meziantou.Framework.DnsServer.Protocol.DnsResponseCode;
 
 namespace Meziantou.Framework.DnsProxy.Tests;
 

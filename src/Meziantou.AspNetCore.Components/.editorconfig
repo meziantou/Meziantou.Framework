@@ -1,2 +1,5 @@
-[*.cs]
+[*.{cs,razor}]
 dotnet_diagnostic.MA0004.severity = none
+
+# BL0016: Unguarded JS interop call
+dotnet_diagnostic.BL0016.severity = none

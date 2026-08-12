@@ -247,8 +247,6 @@ public sealed partial class SnapshotEndToEndTests
     [Fact]
     public async Task Validate_EndToEnd_MultipleXunitTests_RunsSingleFilteredTest()
     {
-        // Use xunit v2 (Xunit framework) because xunit.v3 3.x uses Microsoft.Testing.Platform,
-        // which does not support VSTest-style FullyQualifiedName filters through dotnet test.
         var snapshotFiles = await AssertSnapshot(
             """
             public sealed class GeneratedSnapshotTests
@@ -268,8 +266,7 @@ public sealed partial class SnapshotEndToEndTests
                 }
             }
             """,
-            testFramework: SnapshotTestFramework.Xunit,
-            testFilter: "FullyQualifiedName~GeneratedSnapshotTests.SampleFact");
+            testFilter: "GeneratedSnapshotTests.SampleFact");
 
         AssertSnapshotContent(snapshotFiles,
         [
@@ -1262,8 +1259,19 @@ public sealed partial class SnapshotEndToEndTests
 
         if (!string.IsNullOrWhiteSpace(testFilter))
         {
-            arguments.Add("--filter");
-            arguments.Add(testFilter);
+            if (testFramework == SnapshotTestFramework.XunitV3)
+            {
+                // xunit.v3 uses Microsoft.Testing.Platform; VSTest-style --filter is ignored.
+                // Use xunit's MTP extension option --filter-method passed after the -- separator.
+                arguments.Add("--");
+                arguments.Add("--filter-method");
+                arguments.Add(testFilter);
+            }
+            else
+            {
+                arguments.Add("--filter");
+                arguments.Add(testFilter);
+            }
         }
 
         return [.. arguments];
@@ -1363,7 +1371,7 @@ public sealed partial class SnapshotEndToEndTests
     {
         return testFramework switch
         {
-            SnapshotTestFramework.TUnit => "<TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>",
+            SnapshotTestFramework.TUnit or SnapshotTestFramework.XunitV3 => "<TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>",
             _ => "",
         };
     }

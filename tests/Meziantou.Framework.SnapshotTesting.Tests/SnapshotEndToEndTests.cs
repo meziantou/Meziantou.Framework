@@ -247,6 +247,8 @@ public sealed partial class SnapshotEndToEndTests
     [Fact]
     public async Task Validate_EndToEnd_MultipleXunitTests_RunsSingleFilteredTest()
     {
+        // Use xunit v2 (Xunit framework) because xunit.v3 3.x uses Microsoft.Testing.Platform,
+        // which does not support VSTest-style FullyQualifiedName filters through dotnet test.
         var snapshotFiles = await AssertSnapshot(
             """
             public sealed class GeneratedSnapshotTests
@@ -266,6 +268,7 @@ public sealed partial class SnapshotEndToEndTests
                 }
             }
             """,
+            testFramework: SnapshotTestFramework.Xunit,
             testFilter: "FullyQualifiedName~GeneratedSnapshotTests.SampleFact");
 
         AssertSnapshotContent(snapshotFiles,

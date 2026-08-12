@@ -5,7 +5,10 @@ namespace Meziantou.Framework.Globbing;
 /// <summary>Provides extension methods for working with glob patterns.</summary>
 public static class GlobExtensions
 {
-    private static readonly EnumerationOptions DefaultEnumerationOptions = new() { RecurseSubdirectories = true };
+    private static readonly EnumerationOptions DefaultEnumerationOptions = new();
+    private static readonly EnumerationOptions DefaultEnumerationOptionsIncludingHidden = new() { AttributesToSkip = default(FileAttributes) };
+    private static readonly EnumerationOptions DefaultRecursiveEnumerationOptions = new() { RecurseSubdirectories = true };
+    private static readonly EnumerationOptions DefaultRecursiveEnumerationOptionsIncludingHidden = new() { RecurseSubdirectories = true, AttributesToSkip = default(FileAttributes) };
 
     /// <summary>Determines whether the specified path matches the glob pattern.</summary>
     /// <param name="glob">The glob pattern to match against.</param>
@@ -75,10 +78,7 @@ public static class GlobExtensions
         if (!glob.CanMatchFiles)
             yield break;
 
-        if (options is null && glob.TraverseDirectories)
-        {
-            options = DefaultEnumerationOptions;
-        }
+        options ??= GetDefaultEnumerationOptions(glob);
 
         using var enumerator = new GlobFileSystemEnumerator(glob, directory, options);
         while (enumerator.MoveNext())
@@ -92,13 +92,26 @@ public static class GlobExtensions
     /// <returns>An enumerable collection of file system entry paths that match the glob pattern.</returns>
     public static IEnumerable<string> EnumerateFileSystemEntries(this IGlobEvaluatable glob, string directory, EnumerationOptions? options = null)
     {
-        if (options is null && glob.TraverseDirectories)
-        {
-            options = DefaultEnumerationOptions;
-        }
+        options ??= GetDefaultEnumerationOptions(glob);
 
         using var enumerator = new GlobFileSystemEnumerator(glob, directory, options);
         while (enumerator.MoveNext())
             yield return enumerator.Current;
+    }
+
+    private static EnumerationOptions GetDefaultEnumerationOptions(IGlobEvaluatable glob)
+    {
+        return (glob.TraverseDirectories, MatchLeadingDot(glob)) switch
+        {
+            (true, true) => DefaultRecursiveEnumerationOptionsIncludingHidden,
+            (true, false) => DefaultRecursiveEnumerationOptions,
+            (false, true) => DefaultEnumerationOptionsIncludingHidden,
+            (false, false) => DefaultEnumerationOptions,
+        };
+    }
+
+    private static bool MatchLeadingDot(IGlobEvaluatable glob)
+    {
+        return glob is Glob { MatchLeadingDot: true } or GlobCollection { MatchLeadingDot: true };
     }
 }

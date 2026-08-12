@@ -110,7 +110,7 @@ public sealed class DependencyScannerTests
         var file1 = directory.CreateEmptyFile($"packages.json");
         var file2 = directory.CreateEmptyFile($"node_modules/packages.json");
 
-        var globs = new GlobCollection(Glob.Parse("**/*", GlobOptions.None), Glob.Parse("!**/node_modules/**/*", GlobOptions.None));
+        var globs = new GlobCollection(Glob.Parse("**/*", GlobDialect.Standard), Glob.Parse("!**/node_modules/**/*", GlobDialect.Standard));
         var options = new ScannerOptions()
         {
             RecurseSubdirectories = true,

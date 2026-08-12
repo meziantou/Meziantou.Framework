@@ -16,10 +16,10 @@ public class GlobTests
     [InlineData("a{a,/}b")] // literal contains '/'
     public void ParseInvalid(string pattern)
     {
-        Assert.False(Glob.TryParse(pattern, GlobOptions.None, out var result));
+        Assert.False(Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.None, out var result));
         Assert.Null(result);
 
-        Assert.Throws<ArgumentException>(() => Glob.Parse(pattern, GlobOptions.None));
+        Assert.Throws<ArgumentException>(() => Glob.Parse(pattern, GlobDialect.Standard));
     }
 
     [Theory]
@@ -33,8 +33,8 @@ public class GlobTests
     [InlineData("!test/**/a*.txt", "test/a/b/c/d")]
     public void ShouldRecurse(string pattern, string folderPath)
     {
-        var glob = Glob.Parse(pattern, GlobOptions.None);
-        var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        var globi = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase);
         Assert.True(glob.IsPartialMatch(folderPath));
         Assert.True(globi.IsPartialMatch(folderPath));
     }
@@ -45,8 +45,8 @@ public class GlobTests
     [InlineData("test/**/a*.txt", "titi/b/c/d")]
     public void ShouldNotRecurse(string pattern, string folderPath)
     {
-        var glob = Glob.Parse(pattern, GlobOptions.None);
-        var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        var globi = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase);
         Assert.False(glob.IsPartialMatch(folderPath));
         Assert.False(globi.IsPartialMatch(folderPath));
     }
@@ -55,7 +55,6 @@ public class GlobTests
     [InlineData("a/b", "a/b")]
     [InlineData("a?c", "abc")]
     [InlineData("a?c", "adc")]
-    [InlineData("*.txt", ".txt")]
     [InlineData("*.txt", "test.txt")]
     [InlineData(".*", ".gitignore")]
     [InlineData("*.*", "a.txt")]
@@ -166,8 +165,8 @@ public class GlobTests
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
         var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
 
-        var glob = Glob.Parse(pattern, GlobOptions.None);
-        var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        var globi = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase);
         Assert.True(glob.IsMatch(path));
         Assert.True(glob.IsMatch(directoryName, fileName, itemType));
         Assert.True(globi.IsMatch(path));
@@ -185,7 +184,6 @@ public class GlobTests
     [Theory]
     [InlineData("a?c", "a?C")]
     [InlineData("a?c", "adC")]
-    [InlineData("*.txt", ".Txt")]
     [InlineData("*.txt", "test.Txt")]
     [InlineData(".*", ".GitIgnore")]
     [InlineData("!*.txt", "A.TXT")]
@@ -233,7 +231,44 @@ public class GlobTests
     [InlineData("*abc", "ZABC")]
     public void MatchIgnoreCase(string pattern, string path)
     {
-        var glob = Glob.Parse(pattern, GlobOptions.IgnoreCase);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase);
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Theory]
+    [InlineData("*", ".hidden")]
+    [InlineData("?", ".")]
+    [InlineData("[.]", ".")]
+    [InlineData("**/*.txt", ".hidden/test.txt")]
+    [InlineData("**/*.txt", "src/.hidden/test.txt")]
+    public void DoesNotMatchLeadingDotByDefault(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        Assert.False(glob.IsMatch(path));
+        Assert.False(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Theory]
+    [InlineData("*", ".hidden")]
+    [InlineData("?", ".")]
+    [InlineData("[.]", ".")]
+    [InlineData("**/*.txt", ".hidden/test.txt")]
+    [InlineData("**/*.txt", "src/.hidden/test.txt")]
+    public void MatchLeadingDotOption(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Theory]
+    [InlineData(".*", ".hidden")]
+    [InlineData("**/.hidden/*.txt", ".hidden/test.txt")]
+    [InlineData("**/.hidden/*.txt", "src/.hidden/test.txt")]
+    public void MatchExplicitLeadingDot(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
         Assert.True(glob.IsMatch(path));
         Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
     }
@@ -294,8 +329,8 @@ public class GlobTests
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
         var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
 
-        var glob = Glob.Parse(pattern, GlobOptions.None);
-        var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        var globi = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase);
         Assert.False(glob.IsMatch(path));
         Assert.False(glob.IsMatch(directoryName, fileName, itemType));
         Assert.False(globi.IsMatch(path));
@@ -323,7 +358,7 @@ public class GlobTests
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
         var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
 
-        var glob = Glob.Parse(pattern, GlobOptions.None);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
         Assert.True(glob.IsMatch(path));
         Assert.True(glob.IsMatch(directoryName, fileName, itemType));
     }
@@ -351,7 +386,7 @@ public class GlobTests
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
         var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
 
-        var glob = Glob.Parse(pattern, GlobOptions.None);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
         Assert.False(glob.IsMatch(path));
         Assert.False(glob.IsMatch(directoryName, fileName, itemType));
     }
@@ -367,7 +402,7 @@ public class GlobTests
     [InlineData("range/[a-b][C-D]", "range/BD")]
     public void DoesNotMatch_CaseSensitive(string pattern, string path)
     {
-        var glob = Glob.Parse(pattern, GlobOptions.None);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
         Assert.False(glob.IsMatch(path));
         Assert.False(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
     }
@@ -383,7 +418,7 @@ public class GlobTests
         directory.CreateEmptyFile("d1/f3.txt");
         directory.CreateEmptyFile("d1/f3.png");
 
-        var glob = Glob.Parse("**/*.txt", options);
+        var glob = Glob.Parse("**/*.txt", GlobDialect.Standard, options);
 
         AssertEnumerateFiles(directory, glob, ["d1/d2/f1.txt", "d1/d2/f2.txt", "d1/f3.txt"]);
     }
@@ -398,7 +433,7 @@ public class GlobTests
         directory.CreateEmptyFile("d1/d2/f2.txt");
         directory.CreateEmptyFile("d1/f3.txt");
 
-        var glob = Glob.Parse("d1/*.txt", options);
+        var glob = Glob.Parse("d1/*.txt", GlobDialect.Standard, options);
         AssertEnumerateFiles(directory, glob, ["d1/f3.txt"]);
     }
 
@@ -412,7 +447,7 @@ public class GlobTests
         directory.CreateEmptyFile("d1/d2/f2.txt");
         directory.CreateEmptyFile("d1/f3.txt");
 
-        var glob = Glob.Parse("d1/*.txt", options);
+        var glob = Glob.Parse("d1/*.txt", GlobDialect.Standard, options);
         AssertEnumerateFileSystemEntries(directory, glob, ["d1/f3.txt"]);
     }
 
@@ -427,7 +462,7 @@ public class GlobTests
         directory.CreateEmptyFile("d1/d3/f2.txt");
         directory.CreateEmptyFile("d1/f3.txt");
 
-        var glob = Glob.Parse("d1/*/", options);
+        var glob = Glob.Parse("d1/*/", GlobDialect.Standard, options);
         AssertEnumerateFileSystemEntries(directory, glob, ["d1/d2", "d1/d3"]);
     }
 
@@ -443,8 +478,8 @@ public class GlobTests
         directory.CreateEmptyFile("d3/f4.txt");
 
         var glob = new GlobCollection(
-            Glob.Parse("**/*.txt", options),
-            Glob.Parse("!d1/*.txt", options));
+            Glob.Parse("**/*.txt", GlobDialect.Standard, options),
+            Glob.Parse("!d1/*.txt", GlobDialect.Standard, options));
 
         AssertEnumerateFiles(directory, glob,
         [
@@ -463,9 +498,9 @@ public class GlobTests
         directory.CreateEmptyFile("System Volume Information/f2.txt");
 
         var glob = new GlobCollection(
-            Glob.Parse("**/*.txt", GlobOptions.IgnoreCase),
-            Glob.Parse("!*/System Volume Information/", GlobOptions.IgnoreCase),
-            Glob.Parse("!*/System Volume Information/**/*", GlobOptions.IgnoreCase));
+            Glob.Parse("**/*.txt", GlobDialect.Standard, GlobOptions.IgnoreCase),
+            Glob.Parse("!*/System Volume Information/", GlobDialect.Standard, GlobOptions.IgnoreCase),
+            Glob.Parse("!*/System Volume Information/**/*", GlobDialect.Standard, GlobOptions.IgnoreCase));
 
         Assert.True(glob.IsMatch("System Volume Information/f1.txt"));
         AssertEnumerateFiles(directory, glob,
@@ -484,9 +519,9 @@ public class GlobTests
         directory.CreateEmptyFile("System Volume Information/f2.txt");
 
         var glob = new GlobCollection(
-            Glob.Parse("**/*.txt", GlobOptions.IgnoreCase),
-            Glob.Parse("!System Volume Information/", GlobOptions.IgnoreCase),
-            Glob.Parse("!System Volume Information/**/*", GlobOptions.IgnoreCase));
+            Glob.Parse("**/*.txt", GlobDialect.Standard, GlobOptions.IgnoreCase),
+            Glob.Parse("!System Volume Information/", GlobDialect.Standard, GlobOptions.IgnoreCase),
+            Glob.Parse("!System Volume Information/**/*", GlobDialect.Standard, GlobOptions.IgnoreCase));
 
         Assert.False(glob.IsMatch("System Volume Information/f1.txt"));
 
@@ -509,10 +544,10 @@ public class GlobTests
         directory.CreateEmptyFile("d3/f5.txt");
 
         var glob = new GlobCollection(
-            Glob.Parse("**/*", options),
-            Glob.Parse("**/*/", options),
-            Glob.Parse("!d1/*.txt", options),
-            Glob.Parse("!d1/d1.2/", options));
+            Glob.Parse("**/*", GlobDialect.Standard, options),
+            Glob.Parse("**/*/", GlobDialect.Standard, options),
+            Glob.Parse("!d1/*.txt", GlobDialect.Standard, options),
+            Glob.Parse("!d1/d1.2/", GlobDialect.Standard, options));
 
         AssertEnumerateFileSystemEntries(directory, glob,
         [
@@ -525,6 +560,18 @@ public class GlobTests
             "d3/f5.txt",
         ]);
     }
+
+    [Fact]
+    public void EnumerateFiles_LeadingDot()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile(".hidden/f1.txt");
+        directory.CreateEmptyFile("visible/f2.txt");
+
+        AssertEnumerateFiles(directory, Glob.Parse("**/*.txt", GlobDialect.Standard), ["visible/f2.txt"]);
+        AssertEnumerateFiles(directory, Glob.Parse("**/*.txt", GlobDialect.Standard, GlobOptions.MatchLeadingDot), [".hidden/f1.txt", "visible/f2.txt"]);
+    }
+
     [Theory]
     [InlineData("readme.md", "readme.md")]
     [InlineData("readme.md", "a/readme.md")]
@@ -539,8 +586,8 @@ public class GlobTests
     [InlineData("a/**/?.txt", "a/c/d/b.txt")]
     public void MatchGit(string pattern, string path)
     {
-        var glob = Glob.Parse(pattern, GlobOptions.Git);
-        var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase | GlobOptions.Git);
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        var globi = Glob.Parse(pattern, GlobDialect.Git, GlobOptions.IgnoreCase);
         Assert.True(glob.IsMatch(path));
         Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
         Assert.True(globi.IsMatch(path));
@@ -556,6 +603,17 @@ public class GlobTests
     }
 
     [Theory]
+    [InlineData("*", ".hidden")]
+    [InlineData("**/*.txt", ".hidden/test.txt")]
+    [InlineData("**/*.txt", "src/.hidden/test.txt")]
+    public void MatchGitLeadingDot(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Theory]
     [InlineData("**/.*", "foobar.")]
     [InlineData("a/", "sample")]
     [InlineData("a/", "b/a")]
@@ -565,8 +623,8 @@ public class GlobTests
     [InlineData("a/*", "a/b/c.txt")]
     public void DoesNotMatchGit(string pattern, string path)
     {
-        var glob = Glob.Parse(pattern, GlobOptions.Git);
-        var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase | GlobOptions.Git);
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
+        var globi = Glob.Parse(pattern, GlobDialect.Git, GlobOptions.IgnoreCase);
         Assert.False(glob.IsMatch(path));
         Assert.False(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
         Assert.False(globi.IsMatch(path));
@@ -591,7 +649,7 @@ public class GlobTests
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
         var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
 
-        var glob = Glob.Parse(pattern, GlobOptions.Git);
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
         Assert.True(glob.IsMatch(path));
         Assert.True(glob.IsMatch(directoryName, fileName, itemType));
     }
@@ -612,9 +670,86 @@ public class GlobTests
         var fileName = Path.GetFileName(pathWithoutEndingSlash);
         var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
 
-        var glob = Glob.Parse(pattern, GlobOptions.Git);
+        var glob = Glob.Parse(pattern, GlobDialect.Git);
         Assert.False(glob.IsMatch(path));
         Assert.False(glob.IsMatch(directoryName, fileName, itemType));
+    }
+
+    [Theory]
+    [InlineData("**/*.cs", "src/Program.cs")]
+    [InlineData(@"src\**\*.cs", "src/Generated/Program.cs")]
+    [InlineData(@"src\*.cs", "src/Program.cs")]
+    [InlineData("%2A.cs", "*.cs")]
+    [InlineData("%3F.cs", "?.cs")]
+    [InlineData("[abc].cs", "[abc].cs")]
+    [InlineData("{a,b}.cs", "{a,b}.cs")]
+    [InlineData("!file.cs", "!file.cs")]
+    public void MatchMSBuild(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.MSBuild);
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Theory]
+    [InlineData("a**")]
+    [InlineData("**a")]
+    [InlineData("a**b")]
+    public void MSBuildRecursiveWildcardMustBeAPathSegment(string pattern)
+    {
+        Assert.False(Glob.TryParse(pattern, GlobDialect.MSBuild, GlobOptions.None, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData("*", "src/Program.cs")]
+    [InlineData("a?b", "a/b")]
+    [InlineData("a[/]b", "a/b")]
+    [InlineData("**", "src/Program.cs")]
+    [InlineData("*.cs", "src/Program.cs")]
+    [InlineData("!file.cs", "!file.cs")]
+    [InlineData("{a,b}.cs", "{a,b}.cs")]
+    [InlineData("*", ".hidden")]
+    public void MatchPosix(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Posix);
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Theory]
+    [InlineData("*", "src/Program.cs")]
+    [InlineData("a?b", "a/b")]
+    [InlineData("**", "src/Program.cs")]
+    [InlineData("*.cs", "src/Program.cs")]
+    public void DoesNotMatchPosixPathAcrossPathSeparators(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.PosixPath);
+        Assert.False(glob.IsMatch(path));
+        Assert.False(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Theory]
+    [InlineData("src/*.cs", "src/Program.cs")]
+    [InlineData("src/?/Program.cs", "src/a/Program.cs")]
+    [InlineData("!file.cs", "!file.cs")]
+    [InlineData("{a,b}.cs", "{a,b}.cs")]
+    [InlineData("*", ".hidden")]
+    public void MatchPosixPath(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.PosixPath);
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path)!, Path.GetFileName(path)));
+    }
+
+    [Fact]
+    public void EnumerateFiles_PosixMatchesAcrossPathSeparators()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("Program.cs");
+        directory.CreateEmptyFile("src/Program.cs");
+
+        AssertEnumerateFiles(directory, Glob.Parse("*.cs", GlobDialect.Posix), ["Program.cs", "src/Program.cs"]);
     }
 
     private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult)

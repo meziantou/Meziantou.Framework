@@ -66,7 +66,7 @@ internal static class Program
 
         if (!string.IsNullOrEmpty(globPattern))
         {
-            if (!Glob.TryParse(globPattern, GlobOptions.None, out var glob))
+            if (!Glob.TryParse(globPattern, GlobDialect.Standard, GlobOptions.None, out var glob))
             {
                 await Console.Error.WriteLineAsync($"Glob pattern '{globPattern}' is invalid");
                 return -1;
@@ -127,7 +127,7 @@ internal static class Program
 
             if (!string.IsNullOrEmpty(filePattern))
             {
-                if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
+                if (!Glob.TryParse(filePattern, GlobDialect.Standard, GlobOptions.None, out var glob))
                 {
                     await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid".AsMemory(), cancellationToken);
                     return -1;
@@ -282,7 +282,7 @@ internal static class Program
 
             if (!string.IsNullOrEmpty(filePattern))
             {
-                if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
+                if (!Glob.TryParse(filePattern, GlobDialect.Standard, GlobOptions.None, out var glob))
                 {
                     await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid".AsMemory(), cancellationToken);
                     return -1;

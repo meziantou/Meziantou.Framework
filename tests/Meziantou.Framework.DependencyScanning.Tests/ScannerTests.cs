@@ -886,7 +886,7 @@ jobs:
         AddFile("custom/sample.yml", Original);
         var result = await GetDependencies<RegexScanner>([new RegexScanner()
         {
-            FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
+            FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobDialect.Standard)),
             DependencyType = DependencyType.DockerImage,
             Regex = DockerImageWithVersionRegex(),
         }]);
@@ -916,7 +916,7 @@ jobs:
         AddFile("custom/sample.yml", Original);
         var result = await GetDependencies<RegexScanner>([new RegexScanner()
         {
-            FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
+            FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobDialect.Standard)),
             DependencyType = DependencyType.DockerImage,
             Regex = DockerImageWithOptionalVersionRegex(),
         }]);

@@ -8,7 +8,7 @@ internal static class GlobParser
 {
     private static readonly char[] DirectorySeparator = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
 
-    public static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
+    public static bool TryParse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
     {
         result = null;
         if (pattern.IsEmpty)
@@ -17,22 +17,25 @@ internal static class GlobParser
             return false;
         }
 
-        var ignoreCase = options.HasFlag(GlobOptions.IgnoreCase);
+        var settings = new GlobParserSettings(dialect, options);
 
         var exclude = false;
         var segments = new List<Segment>();
+        var matchLeadingDot = new List<bool>();
         List<Segment>? subSegments = null;
         List<string>? setSubsegment = null;
         List<CharacterRange>? rangeSubsegment = null;
         char? rangeStart = null;
         var rangeInverse = false;
+        var currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
 
-        if (options.HasFlag(GlobOptions.Git))
+        if (dialect is GlobDialect.Git)
         {
             // Check if there is a separator at start or middle of the string
             if (pattern[0..^1].IndexOf('/') < 0)
             {
                 segments.Add(RecursiveMatchAllSegment.Instance);
+                matchLeadingDot.Add(settings.MatchLeadingDot);
             }
         }
 
@@ -49,29 +52,37 @@ internal static class GlobParser
                 var c = pattern[i];
                 if (escape)
                 {
-                    currentLiteral.Append(c);
+                    AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, c, settings.MatchLeadingDot);
                     escape = false;
                     continue;
                 }
 
-                if (c == '!' && i == 0)
+                if (c == '!' && i == 0 && settings.SupportsLeadingExclude)
                 {
                     exclude = true;
                     continue;
                 }
 
+                if (dialect is GlobDialect.MSBuild && TryDecodeMsBuildEscape(pattern, i, out var escapedCharacter))
+                {
+                    AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, escapedCharacter, settings.MatchLeadingDot);
+                    i += 2;
+                    continue;
+                }
+
                 if (parserContext == GlobParserContext.Segment)
                 {
-                    if (c == '/')
+                    if (settings.IsPatternSeparator(c))
                     {
-                        FinishSegment(segments, ref subSegments, ref currentLiteral, ignoreCase);
+                        FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
+                        currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
                         continue;
                     }
                     else if (c == '.')
                     {
-                        if (subSegments is null && currentLiteral.Length == 0)
+                        if (settings.NormalizeDotSegments && subSegments is null && currentLiteral.Length == 0)
                         {
-                            if (EndOfSegmentEqual(pattern[i..], ".."))
+                            if (EndOfSegmentEqual(pattern[i..], "..", settings))
                             {
                                 if (segments.Count == 0)
                                 {
@@ -86,11 +97,12 @@ internal static class GlobParser
                                 }
 
                                 segments.RemoveAt(segments.Count - 1);
+                                matchLeadingDot.RemoveAt(matchLeadingDot.Count - 1);
                                 i += 2;
                                 continue;
                             }
 
-                            if (EndOfSegmentEqual(pattern[i..], "."))
+                            if (EndOfSegmentEqual(pattern[i..], ".", settings))
                             {
                                 i += 1;
                                 continue;
@@ -99,29 +111,40 @@ internal static class GlobParser
                     }
                     else if (c == '?')
                     {
-                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAnyCharacterSegment.Instance);
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, settings.AnyCharacterSegment);
                         continue;
                     }
                     else if (c == '*')
                     {
+                        if (dialect is GlobDialect.MSBuild && i + 1 < pattern.Length && pattern[i + 1] == '*' &&
+                            (subSegments is not null || currentLiteral.Length > 0 || !EndOfSegmentEqual(pattern[i..], "**", settings)))
+                        {
+                            errorMessage = "the recursive wildcard '**' must be its own path segment";
+                            return false;
+                        }
+
                         if (subSegments is null && currentLiteral.Length == 0)
                         {
-                            if (EndOfSegmentEqual(pattern[i..], "**"))
+                            if (settings.SupportsRecursiveWildcard && EndOfSegmentEqual(pattern[i..], "**", settings))
                             {
                                 // Merge two consecutive '**' (**/**)
                                 if (segments.Count == 0 || segments[^1] is not RecursiveMatchAllSegment)
                                 {
                                     segments.Add(RecursiveMatchAllSegment.Instance);
+                                    matchLeadingDot.Add(settings.MatchLeadingDot);
                                 }
 
                                 i += 2;
+                                currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
                                 continue;
                             }
 
-                            if (EndOfSegmentEqual(pattern[i..], "*"))
+                            if (EndOfSegmentEqual(pattern[i..], "*", settings))
                             {
                                 segments.Add(MatchAllSegment.Instance);
+                                matchLeadingDot.Add(currentSegmentMatchLeadingDot);
                                 i += 1;
+                                currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
                                 continue;
                             }
                         }
@@ -130,21 +153,21 @@ internal static class GlobParser
                         if (currentLiteral.Length == 0 && subSegments is not null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
                             continue;
 
-                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAllSubSegment.Instance);
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, MatchAllSubSegment.Instance);
                         continue;
                     }
-                    else if (c == '{') // Start LiteralSet
+                    else if (c == '{' && settings.SupportsLiteralSet) // Start LiteralSet
                     {
                         Debug.Assert(setSubsegment is null);
-                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, subSegment: null);
                         parserContext = GlobParserContext.LiteralSet;
                         setSubsegment = [];
                         continue;
                     }
-                    else if (c == '[') // Range
+                    else if (c == '[' && dialect is not GlobDialect.MSBuild) // Range
                     {
                         Debug.Assert(rangeSubsegment is null);
-                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, subSegment: null);
                         parserContext = GlobParserContext.Range;
                         rangeSubsegment = [];
                         rangeInverse = i + 1 < pattern.Length && pattern[i + 1] == '!';
@@ -170,13 +193,13 @@ internal static class GlobParser
                         setSubsegment.Add(currentLiteral.AsSpan().ToString());
                         currentLiteral.Clear();
 
-                        if (setSubsegment.Exists(s => s.IndexOfAny(DirectorySeparator) >= 0))
+                        if (settings.PathSeparatorAware && setSubsegment.Exists(s => s.IndexOfAny(DirectorySeparator) >= 0))
                         {
                             errorMessage = "set contains a path separator";
                             return false;
                         }
 
-                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, new LiteralSetSegment(setSubsegment.ToArray(), ignoreCase));
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, new LiteralSetSegment(setSubsegment.ToArray(), settings.IgnoreCase));
                         setSubsegment = null;
                         parserContext = GlobParserContext.Segment;
                         continue;
@@ -197,13 +220,13 @@ internal static class GlobParser
 
                         if (rangeSubsegment.Count > 0)
                         {
-                            if (rangeSubsegment.Exists(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
+                            if (settings.PathSeparatorAware && rangeSubsegment.Exists(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
                             {
                                 errorMessage = "range contains a path separator";
                                 return false;
                             }
 
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, CreateRangeSubsegment(rangeSubsegment, rangeInverse, ignoreCase));
+                            AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, CreateRangeSubsegment(rangeSubsegment, rangeInverse, settings.IgnoreCase));
                             rangeSubsegment = null;
                             parserContext = GlobParserContext.Segment;
                             continue;
@@ -241,11 +264,20 @@ internal static class GlobParser
                 switch (c)
                 {
                     case '\\': // Escape next character
-                        escape = true;
+                        if (dialect is GlobDialect.MSBuild)
+                        {
+                            FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
+                            currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
+                        }
+                        else
+                        {
+                            escape = true;
+                        }
+
                         break;
 
                     default:
-                        currentLiteral.Append(c);
+                        AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, c, settings.MatchLeadingDot);
                         break;
                 }
             }
@@ -263,26 +295,28 @@ internal static class GlobParser
                 return false;
             }
 
-            FinishSegment(segments, ref subSegments, ref currentLiteral, ignoreCase);
+            FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
 
-            if (options.HasFlag(GlobOptions.Git))
+            if (dialect is GlobDialect.Git)
             {
                 if (pattern[^1] == '/')
                 {
                     segments.Add(RecursiveMatchAllSegment.Instance);
+                    matchLeadingDot.Add(settings.MatchLeadingDot);
                     segments.Add(MatchAllSegment.Instance);
+                    matchLeadingDot.Add(settings.MatchLeadingDot);
                 }
             }
             else
             {
-                if (pattern[^1] == '/')
+                if (settings.PathSeparatorAware && settings.IsPatternSeparator(pattern[^1]))
                 {
                     matchType = GlobMatchType.Directory;
                 }
             }
 
             errorMessage = null;
-            result = CreateGlob(segments, exclude, ignoreCase, matchType);
+            result = CreateGlob(segments, matchLeadingDot, exclude, settings.IgnoreCase, matchType, settings.MatchLeadingDot, settings.PathSeparatorAware);
             return true;
         }
         finally
@@ -305,7 +339,7 @@ internal static class GlobParser
             }
         }
 
-        static void FinishSegment(List<Segment> segments, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase)
+        static void FinishSegment(List<Segment> segments, List<bool> matchLeadingDot, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, bool currentSegmentMatchLeadingDot, bool pathSeparatorAware)
         {
             if (subSegments is not null)
             {
@@ -315,21 +349,23 @@ internal static class GlobParser
                     currentLiteral.Clear();
                 }
 
-                segments.Add(CreateSegment(subSegments, ignoreCase));
+                segments.Add(CreateSegment(subSegments, ignoreCase, pathSeparatorAware));
+                matchLeadingDot.Add(currentSegmentMatchLeadingDot);
                 subSegments = null;
             }
             else if (currentLiteral.Length > 0)
             {
                 segments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
+                matchLeadingDot.Add(currentSegmentMatchLeadingDot);
                 currentLiteral.Clear();
             }
         }
     }
 
-    private static Glob CreateGlob(List<Segment> segments, bool exclude, bool ignoreCase, GlobMatchType matchType)
+    private static Glob CreateGlob(List<Segment> segments, List<bool> matchLeadingDot, bool exclude, bool ignoreCase, GlobMatchType matchType, bool optimizeRecursiveWildcards, bool pathSeparatorAware)
     {
         // Optimize segments
-        if (segments.Count >= 3)
+        if (optimizeRecursiveWildcards && segments.Count >= 3)
         {
             for (var i = segments.Count - 3; i >= 0; i--)
             {
@@ -358,47 +394,101 @@ internal static class GlobParser
                 if (isFixedSuffix)
                 {
                     segments.RemoveRange(i, suffixLength + 1);
+                    matchLeadingDot.RemoveRange(i, suffixLength + 1);
                     segments.Insert(i, new PathSuffixSegment([.. suffix], ignoreCase));
+                    matchLeadingDot.Insert(i, true);
                     break;
                 }
             }
         }
 
-        if (segments.Count >= 2)
+        if (optimizeRecursiveWildcards && segments.Count >= 2)
         {
             if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is MatchAllSegment) // **/*
             {
                 var lastSegment = MatchNonEmptyTextSegment.Instance;
                 segments.RemoveRange(segments.Count - 2, 2);
+                matchLeadingDot.RemoveRange(matchLeadingDot.Count - 2, 2);
                 segments.Add(lastSegment);
+                matchLeadingDot.Add(true);
             }
             else if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is EndsWithSegment endsWith) // **/*.txt
             {
                 var lastSegment = new MatchAllEndsWithSegment(endsWith.Value, ignoreCase);
                 segments.RemoveRange(segments.Count - 2, 2);
+                matchLeadingDot.RemoveRange(matchLeadingDot.Count - 2, 2);
                 segments.Add(lastSegment);
+                matchLeadingDot.Add(true);
             }
             else if (segments[^2] is RecursiveMatchAllSegment) // **/segment
             {
                 var lastSegment = new LastSegment(segments[^1]);
                 segments.RemoveRange(segments.Count - 2, 2);
+                matchLeadingDot.RemoveRange(matchLeadingDot.Count - 2, 2);
                 segments.Add(lastSegment);
+                matchLeadingDot.Add(true);
             }
         }
 
-        return new Glob([.. segments], exclude ? GlobMode.Exclude : GlobMode.Include, matchType);
+        return new Glob([.. segments], [.. matchLeadingDot], pathSeparatorAware, exclude ? GlobMode.Exclude : GlobMode.Include, matchType);
     }
 
-    private static bool EndOfSegmentEqual(ReadOnlySpan<char> rest, string expected)
+    private static bool EndOfSegmentEqual(ReadOnlySpan<char> rest, string expected, GlobParserSettings settings)
     {
         // Could be "{rest}/" or "{rest}"$
         if (rest.Length == expected.Length)
             return rest.SequenceEqual(expected.AsSpan());
 
         if (rest.Length > expected.Length)
-            return rest.StartsWith(expected.AsSpan(), StringComparison.Ordinal) && rest[expected.Length] == '/';
+            return rest.StartsWith(expected.AsSpan(), StringComparison.Ordinal) && settings.IsPatternSeparator(rest[expected.Length]);
 
         return false;
+    }
+
+    private static void AppendLiteral(ref ValueStringBuilder currentLiteral, ref bool currentSegmentMatchLeadingDot, List<Segment>? subSegments, char c, bool defaultMatchLeadingDot)
+    {
+        if (!defaultMatchLeadingDot && c == '.' && subSegments is null && currentLiteral.Length == 0)
+        {
+            currentSegmentMatchLeadingDot = true;
+        }
+
+        currentLiteral.Append(c);
+    }
+
+    private static bool TryDecodeMsBuildEscape(ReadOnlySpan<char> pattern, int index, out char c)
+    {
+        if (pattern[index] == '%' && index + 2 < pattern.Length && TryGetHexValue(pattern[index + 1], out var high) && TryGetHexValue(pattern[index + 2], out var low))
+        {
+            c = (char)((high * 16) + low);
+            return true;
+        }
+
+        c = '\0';
+        return false;
+
+        static bool TryGetHexValue(char c, out int result)
+        {
+            if (c is >= '0' and <= '9')
+            {
+                result = c - '0';
+                return true;
+            }
+
+            if (c is >= 'a' and <= 'f')
+            {
+                result = c - 'a' + 10;
+                return true;
+            }
+
+            if (c is >= 'A' and <= 'F')
+            {
+                result = c - 'A' + 10;
+                return true;
+            }
+
+            result = 0;
+            return false;
+        }
     }
 
     private static Segment CreateRangeSubsegment(List<CharacterRange> ranges, bool inverse, bool ignoreCase)
@@ -464,7 +554,7 @@ internal static class GlobParser
         };
     }
 
-    private static Segment CreateSegment(List<Segment> parts, bool ignoreCase)
+    private static Segment CreateSegment(List<Segment> parts, bool ignoreCase, bool pathSeparatorAware)
     {
         Debug.Assert(parts.Count > 0);
 
@@ -565,10 +655,13 @@ internal static class GlobParser
 
                     if (nextCharacters is not null)
                     {
-                        nextCharacters.Add(Path.DirectorySeparatorChar);
-                        if (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar)
+                        if (pathSeparatorAware)
                         {
-                            nextCharacters.Add(Path.AltDirectorySeparatorChar);
+                            nextCharacters.Add(Path.DirectorySeparatorChar);
+                            if (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar)
+                            {
+                                nextCharacters.Add(Path.AltDirectorySeparatorChar);
+                            }
                         }
 
                         parts.Insert(i, new ConsumeSegmentUntilSegment([.. nextCharacters], ignoreCase));
@@ -587,5 +680,36 @@ internal static class GlobParser
             return parts[0];
 
         return new RaggedSegment(parts.ToArray());
+    }
+
+    private readonly struct GlobParserSettings
+    {
+        private readonly GlobDialect _dialect;
+
+        public GlobParserSettings(GlobDialect dialect, GlobOptions options)
+        {
+            _dialect = dialect;
+            IgnoreCase = options.HasFlag(GlobOptions.IgnoreCase);
+            MatchLeadingDot = dialect is GlobDialect.Git or GlobDialect.Posix or GlobDialect.PosixPath || options.HasFlag(GlobOptions.MatchLeadingDot);
+        }
+
+        public bool IgnoreCase { get; }
+        public bool MatchLeadingDot { get; }
+        public bool NormalizeDotSegments => _dialect is not (GlobDialect.Posix or GlobDialect.PosixPath);
+        public bool PathSeparatorAware => _dialect is not GlobDialect.Posix;
+        public bool SupportsLeadingExclude => _dialect is GlobDialect.Standard or GlobDialect.Git;
+        public bool SupportsLiteralSet => _dialect is GlobDialect.Standard or GlobDialect.Git;
+        public bool SupportsRecursiveWildcard => _dialect is GlobDialect.Standard or GlobDialect.Git or GlobDialect.MSBuild;
+        public Segment AnyCharacterSegment => _dialect is GlobDialect.Posix ? MatchAnyTextCharacterSegment.Instance : MatchAnyCharacterSegment.Instance;
+
+        public bool IsPatternSeparator(char c)
+        {
+            return _dialect switch
+            {
+                GlobDialect.Posix => false,
+                GlobDialect.MSBuild => c is '/' or '\\',
+                _ => c == '/',
+            };
+        }
     }
 }

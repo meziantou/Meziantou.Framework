@@ -1642,19 +1642,36 @@ public sealed partial class SerializerTests : SerializerTestsBase
         AssertSerialization(new Validation
         {
             Subject = obj,
-            Options = new HumanReadableSerializerOptions().AddHttpConverters(new HumanReadableHttpOptions()),
+#if NET11_0_OR_GREATER
             Expected = """
-                Method: POST
-                RequestUri: /sample
                 Version: 1.1
                 VersionPolicy: RequestVersionExact
-                Headers:
-                  Accept: text/plain
                 Content:
                   Headers:
                     Content-Type: text/plain; charset=utf-8
                   Value: dummy
+                Method: POST
+                RequestUri: /sample
+                Headers:
+                  Accept: text/plain
+                Options: {}
+                ConnectionId: <null>
                 """,
+#else
+            Expected = """
+                Version: 1.1
+                VersionPolicy: RequestVersionExact
+                Content:
+                  Headers:
+                    Content-Type: text/plain; charset=utf-8
+                  Value: dummy
+                Method: POST
+                RequestUri: /sample
+                Headers:
+                  Accept: text/plain
+                Options: {}
+                """,
+#endif
         });
     }
 

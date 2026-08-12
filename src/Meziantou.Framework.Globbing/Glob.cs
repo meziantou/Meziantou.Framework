@@ -181,7 +181,7 @@ public sealed class Glob : IGlobEvaluatable
         {
             var path = directory.IsEmpty
                 ? filename.ToString()
-                : directory.ToString() + Path.DirectorySeparatorChar + filename.ToString();
+                : directory.ToString() + '/' + filename.ToString();
             directory = path.AsSpan();
             filename = [];
         }

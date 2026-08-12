@@ -195,8 +195,9 @@ public sealed class AssertEqualTests
             Assert.Equal() assertion failed.
             Expected expression: expected
             Actual expression:   actual
-            Expected: "Hello\n\"World\""
-            Actual:   "Hello\tWorld"
+            Index of first difference: 5
+            Expected: "Hello\̲n̲\"World\""
+            Actual:   "Hello\̲t̲World"
             """);
     }
 
@@ -233,7 +234,43 @@ public sealed class AssertEqualTests
     [Fact]
     public void String_IgnoreCase_FailsWhenDisabled()
     {
-        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal("Hello", "hello"));
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal("Hello", "hello"), """
+            Assert.Equal() assertion failed.
+            Expected expression: "Hello"
+            Actual expression:   "hello"
+            Index of first difference: 0
+            Expected: "H̲ello"
+            Actual:   "h̲ello"
+            """);
+    }
+
+    [Fact]
+    public void String_IgnoreCase_FailsAtFirstRelevantDifference()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal("HelloX", "helloY", ignoreCase: true), """
+            Assert.Equal() assertion failed.
+            Expected expression: "HelloX"
+            Actual expression:   "helloY"
+            Index of first difference: 5
+            Expected: "HelloX̲"
+            Actual:   "helloY̲"
+            """);
+    }
+
+    [Fact]
+    public void BoxedString_FailsWithFirstDifference()
+    {
+        object expected = "abc";
+        object actual = "axc";
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 1
+            Expected: "ab̲c"
+            Actual:   "ax̲c"
+            """);
     }
 
     [Fact]
@@ -605,6 +642,47 @@ public sealed class AssertEqualTests
 
             AssertionsAssert.Equal(expected, actual);
         }
+    }
+
+    [Fact]
+    public void HighlightsReadOnlySpanLengthDifference()
+    {
+        AssertionTestHelpers.Validate(Validate, """
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected length: 3
+            Actual length:   2
+            Index of first difference: 2
+            Expected: [1, 2, 3̲]
+            Actual:   [1, 2]
+            """);
+
+        static void Validate()
+        {
+            ReadOnlySpan<int> expected = [1, 2, 3];
+            ReadOnlySpan<int> actual = [1, 2];
+
+            AssertionsAssert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    public void HighlightsReadOnlyMemoryLengthDifference()
+    {
+        ReadOnlyMemory<int> expected = new[] { 1, 2 };
+        ReadOnlyMemory<int> actual = new[] { 1, 2, 3 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected length: 2
+            Actual length:   3
+            Index of first difference: 2
+            Expected: [1, 2]
+            Actual:   [1, 2, 3̲]
+            """);
     }
 
     [Fact]

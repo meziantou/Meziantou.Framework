@@ -7,13 +7,13 @@ public class GlobParserTests
 {
     private static Segment[] GetSegments(string pattern)
     {
-        var glob = Glob.Parse(pattern, GlobOptions.None);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
         return glob._segments;
     }
 
     private static Segment[] GetSubSegments(string pattern)
     {
-        var glob = Glob.Parse(pattern, GlobOptions.None);
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
         Assert.All(glob._segments, item => Assert.IsType<RaggedSegment>(item));
         return ((RaggedSegment)glob._segments[0])._segments;
     }
@@ -22,7 +22,7 @@ public class GlobParserTests
     [InlineData("*")]
     public void ValidPatterns(string content)
     {
-        Glob.Parse(content, GlobOptions.None);
+        Glob.Parse(content, GlobDialect.Standard);
     }
 
     [Theory]
@@ -30,7 +30,7 @@ public class GlobParserTests
     [InlineData("")]
     public void InvalidPatterns(string? content)
     {
-        Assert.Throws<ArgumentException>(() => Glob.Parse(content!, GlobOptions.None));
+        Assert.Throws<ArgumentException>(() => Glob.Parse(content!, GlobDialect.Standard));
     }
 
     [Fact]

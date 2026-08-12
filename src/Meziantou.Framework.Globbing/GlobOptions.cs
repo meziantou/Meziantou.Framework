@@ -10,6 +10,6 @@ public enum GlobOptions
     /// <summary>Perform case-insensitive matching. Only ASCII letters are supported for case-insensitive character ranges.</summary>
     IgnoreCase = 0x1,
 
-    /// <summary>Use gitignore patterns.</summary>
-    Git = 0x2,
+    /// <summary>Allow wildcard patterns to match path segments that start with a dot.</summary>
+    MatchLeadingDot = 0x2,
 }

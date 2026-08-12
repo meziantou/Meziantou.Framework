@@ -4,8 +4,8 @@ public sealed class GlobCollectionTests
     [Fact]
     public void CanUseCollectionInitializer()
     {
-        var a = Glob.Parse("a", GlobOptions.None);
-        var b = Glob.Parse("b", GlobOptions.None);
+        var a = Glob.Parse("a", GlobDialect.Standard);
+        var b = Glob.Parse("b", GlobDialect.Standard);
 
         GlobCollection globs = [a, b];
         Assert.Collection(globs,

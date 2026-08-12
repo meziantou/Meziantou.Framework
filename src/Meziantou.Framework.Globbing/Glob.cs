@@ -58,7 +58,7 @@ namespace Meziantou.Framework.Globbing;
 /// <example>
 /// Parse a glob pattern and check if a path matches:
 /// <code>
-/// var glob = Glob.Parse("src/**/*.txt", GlobOptions.None);
+/// var glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
 /// if (glob.IsMatch("src/folder/file.txt"))
 /// {
 ///     Console.WriteLine("File matches!");
@@ -66,7 +66,7 @@ namespace Meziantou.Framework.Globbing;
 /// </code>
 /// Enumerate files that match a glob pattern:
 /// <code>
-/// var glob = Glob.Parse("**/*.cs", GlobOptions.IgnoreCase);
+/// var glob = Glob.Parse("**/*.cs", GlobDialect.Standard, GlobOptions.IgnoreCase);
 /// foreach (var file in glob.EnumerateFiles("C:/MyProject"))
 /// {
 ///     Console.WriteLine(file);
@@ -79,6 +79,8 @@ public sealed class Glob : IGlobEvaluatable
 {
     private readonly GlobMatchType _matchType;
     internal readonly Segment[] _segments;
+    private readonly bool[] _matchLeadingDot;
+    private readonly bool _pathSeparatorAware;
 
     // Anchors are precomputed once per pattern. Only segments that immediately follow a
     // RecursiveMatchAllSegment ('**') can be tested as an anchor during matching, so we only
@@ -87,14 +89,17 @@ public sealed class Glob : IGlobEvaluatable
 
     /// <summary>Gets the glob mode indicating whether this pattern includes or excludes matches.</summary>
     public GlobMode Mode { get; }
+    internal bool MatchLeadingDot => _matchLeadingDot.Contains(true);
 
     bool IGlobEvaluatable.CanMatchFiles => _matchType is GlobMatchType.File or GlobMatchType.Any;
     bool IGlobEvaluatable.CanMatchDirectories => _matchType is GlobMatchType.Directory or GlobMatchType.Any;
-    bool IGlobEvaluatable.TraverseDirectories => _segments.Length > 1 || ShouldRecurse(_segments[0]);
+    bool IGlobEvaluatable.TraverseDirectories => !_pathSeparatorAware || _segments.Length > 1 || ShouldRecurse(_segments[0]);
 
-    internal Glob(Segment[] segments, GlobMode mode, GlobMatchType matchType)
+    internal Glob(Segment[] segments, bool[] matchLeadingDot, bool pathSeparatorAware, GlobMode mode, GlobMatchType matchType)
     {
         _segments = segments;
+        _matchLeadingDot = matchLeadingDot;
+        _pathSeparatorAware = pathSeparatorAware;
         _matchType = matchType;
         Mode = mode;
 
@@ -110,22 +115,24 @@ public sealed class Glob : IGlobEvaluatable
 
     /// <summary>Parses a glob pattern string.</summary>
     /// <param name="pattern">The glob pattern to parse.</param>
+    /// <param name="dialect">The glob pattern dialect to use.</param>
     /// <param name="options">Options for controlling pattern parsing behavior.</param>
     /// <returns>A <see cref="Glob"/> object representing the parsed pattern.</returns>
     /// <exception cref="ArgumentException">The pattern is invalid.</exception>
-    public static Glob Parse(string pattern, GlobOptions options)
+    public static Glob Parse(string pattern, GlobDialect dialect, GlobOptions options = GlobOptions.None)
     {
-        return Parse(pattern.AsSpan(), options);
+        return Parse(pattern.AsSpan(), dialect, options);
     }
 
     /// <summary>Parses a glob pattern string.</summary>
     /// <param name="pattern">The glob pattern to parse.</param>
+    /// <param name="dialect">The glob pattern dialect to use.</param>
     /// <param name="options">Options for controlling pattern parsing behavior.</param>
     /// <returns>A <see cref="Glob"/> object representing the parsed pattern.</returns>
     /// <exception cref="ArgumentException">The pattern is invalid.</exception>
-    public static Glob Parse(ReadOnlySpan<char> pattern, GlobOptions options)
+    public static Glob Parse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options = GlobOptions.None)
     {
-        if (TryParse(pattern, options, out var result, out var errorMessage))
+        if (TryParse(pattern, dialect, options, out var result, out var errorMessage))
             return result;
 
         throw new ArgumentException($"The pattern '{pattern.ToString()}' is invalid: {errorMessage}", nameof(pattern));
@@ -133,27 +140,29 @@ public sealed class Glob : IGlobEvaluatable
 
     /// <summary>Attempts to parse a glob pattern string.</summary>
     /// <param name="pattern">The glob pattern to parse.</param>
+    /// <param name="dialect">The glob pattern dialect to use.</param>
     /// <param name="options">Options for controlling pattern parsing behavior.</param>
     /// <param name="result">When this method returns, contains the parsed <see cref="Glob"/> if parsing succeeded, or <see langword="null"/> if parsing failed.</param>
     /// <returns><see langword="true"/> if the pattern was parsed successfully; otherwise, <see langword="false"/>.</returns>
-    public static bool TryParse(string pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result)
+    public static bool TryParse(string pattern, GlobDialect dialect, GlobOptions options, [NotNullWhen(true)] out Glob? result)
     {
-        return TryParse(pattern.AsSpan(), options, out result);
+        return TryParse(pattern.AsSpan(), dialect, options, out result);
     }
 
     /// <summary>Attempts to parse a glob pattern string.</summary>
     /// <param name="pattern">The glob pattern to parse.</param>
+    /// <param name="dialect">The glob pattern dialect to use.</param>
     /// <param name="options">Options for controlling pattern parsing behavior.</param>
     /// <param name="result">When this method returns, contains the parsed <see cref="Glob"/> if parsing succeeded, or <see langword="null"/> if parsing failed.</param>
     /// <returns><see langword="true"/> if the pattern was parsed successfully; otherwise, <see langword="false"/>.</returns>
-    public static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result)
+    public static bool TryParse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options, [NotNullWhen(true)] out Glob? result)
     {
-        return TryParse(pattern, options, out result, out _);
+        return TryParse(pattern, dialect, options, out result, out _);
     }
 
-    private static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
+    private static bool TryParse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
     {
-        return GlobParser.TryParse(pattern, options, out result, out errorMessage);
+        return GlobParser.TryParse(pattern, dialect, options, out result, out errorMessage);
     }
 
     /// <summary>Determines whether the specified path matches this glob pattern.</summary>
@@ -168,7 +177,16 @@ public sealed class Glob : IGlobEvaluatable
 
     internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
-        var pathReader = new PathReader(directory, filename, itemType);
+        if (!_pathSeparatorAware && !filename.IsEmpty)
+        {
+            var path = directory.IsEmpty
+                ? filename.ToString()
+                : directory.ToString() + '/' + filename.ToString();
+            directory = path.AsSpan();
+            filename = [];
+        }
+
+        var pathReader = new PathReader(directory, filename, itemType, _pathSeparatorAware);
 
         if (_matchType is not GlobMatchType.Any)
         {
@@ -179,10 +197,10 @@ public sealed class Glob : IGlobEvaluatable
                 return false;
         }
 
-        return IsMatchCore(pathReader, _segments, _segmentAnchors);
+        return IsMatchCore(pathReader, _segments, _segmentAnchors, _matchLeadingDot);
     }
 
-    private static bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments, ReadOnlySpan<SegmentAnchor?> anchors)
+    private static bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments, ReadOnlySpan<SegmentAnchor?> anchors, ReadOnlySpan<bool> matchLeadingDot)
     {
         for (var i = 0; i < patternSegments.Length; i++)
         {
@@ -194,21 +212,31 @@ public sealed class Glob : IGlobEvaluatable
                     return false; // Match only files
 
                 var remainingAnchors = anchors[(i + 1)..];
-                if (IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors))
+                var remainingMatchLeadingDot = matchLeadingDot[(i + 1)..];
+                if (IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors, remainingMatchLeadingDot))
                     return true;
 
                 var segmentAnchor = remainingAnchors[0];
+                if (!CanMatchLeadingDot(pathReader, matchLeadingDot[i]))
+                    return false;
+
                 pathReader.ConsumeSegment();
                 while (!pathReader.IsEndOfPath)
                 {
                     if (segmentAnchor.HasValue && !segmentAnchor.GetValueOrDefault().Contains(pathReader.CurrentText))
                     {
+                        if (!CanMatchLeadingDot(pathReader, matchLeadingDot[i]))
+                            return false;
+
                         pathReader.ConsumeSegment();
                         continue;
                     }
 
-                    if (IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors))
+                    if (IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors, remainingMatchLeadingDot))
                         return true;
+
+                    if (!CanMatchLeadingDot(pathReader, matchLeadingDot[i]))
+                        return false;
 
                     pathReader.ConsumeSegment();
                 }
@@ -217,6 +245,9 @@ public sealed class Glob : IGlobEvaluatable
             }
 
             if (pathReader.IsEndOfPath)
+                return false;
+
+            if (!CanMatchLeadingDot(pathReader, matchLeadingDot[i]))
                 return false;
 
             if (!patternSegment.IsMatch(ref pathReader))
@@ -243,27 +274,43 @@ public sealed class Glob : IGlobEvaluatable
 
     internal bool IsPartialMatchCore(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
     {
-        return IsPartialMatchCore(new PathReader(folderPath, filename, itemType: null), _segments);
+        if (!_pathSeparatorAware)
+            return true;
+
+        return IsPartialMatchCore(new PathReader(folderPath, filename, itemType: null), _segments, _matchLeadingDot);
     }
 
-    private static bool IsPartialMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
+    private static bool IsPartialMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments, ReadOnlySpan<bool> matchLeadingDot)
     {
-        foreach (var patternSegment in patternSegments)
+        for (var i = 0; i < patternSegments.Length; i++)
         {
+            var patternSegment = patternSegments[i];
             if (ShouldRecurse(patternSegment))
-                return true;
+            {
+                if (IsPartialMatchCore(pathReader, patternSegments[(i + 1)..], matchLeadingDot[(i + 1)..]))
+                    return true;
+
+                return pathReader.IsEndOfPath || CanMatchLeadingDot(pathReader, matchLeadingDot[i]);
+            }
 
             if (pathReader.IsEndOfPath)
                 return true;
+
+            if (!CanMatchLeadingDot(pathReader, matchLeadingDot[i]))
+                return false;
 
             if (!patternSegment.IsMatch(ref pathReader))
                 return false;
 
             pathReader.ConsumeSegment();
-            patternSegments = patternSegments[1..];
         }
 
         return true;
+    }
+
+    private static bool CanMatchLeadingDot(PathReader pathReader, bool matchLeadingDot)
+    {
+        return matchLeadingDot || pathReader.CurrentSegment.IsEmpty || pathReader.CurrentSegment[0] != '.';
     }
 
     private static bool ShouldRecurse(Segment patternSegment)

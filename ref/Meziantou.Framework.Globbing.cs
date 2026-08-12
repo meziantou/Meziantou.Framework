@@ -7,10 +7,10 @@ namespace Meziantou.Framework.Globbing
     public sealed class Glob : Meziantou.Framework.Globbing.IGlobEvaluatable
     {
         public Meziantou.Framework.Globbing.GlobMode Mode { get => throw null; }
-        public static Meziantou.Framework.Globbing.Glob Parse(string pattern, Meziantou.Framework.Globbing.GlobOptions options) => throw null;
-        public static Meziantou.Framework.Globbing.Glob Parse(System.ReadOnlySpan<char> pattern, Meziantou.Framework.Globbing.GlobOptions options) => throw null;
-        public static bool TryParse(string pattern, Meziantou.Framework.Globbing.GlobOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Globbing.Glob? result) => throw null;
-        public static bool TryParse(System.ReadOnlySpan<char> pattern, Meziantou.Framework.Globbing.GlobOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Globbing.Glob? result) => throw null;
+        public static Meziantou.Framework.Globbing.Glob Parse(string pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options = 0) => throw null;
+        public static Meziantou.Framework.Globbing.Glob Parse(System.ReadOnlySpan<char> pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options = 0) => throw null;
+        public static bool TryParse(string pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Globbing.Glob? result) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> pattern, Meziantou.Framework.Globbing.GlobDialect dialect, Meziantou.Framework.Globbing.GlobOptions options, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Globbing.Glob? result) => throw null;
         public bool IsMatch(System.ReadOnlySpan<char> directory, System.ReadOnlySpan<char> filename, Meziantou.Framework.Globbing.PathItemType? itemType) => throw null;
         public bool IsPartialMatch(System.ReadOnlySpan<char> folderPath, System.ReadOnlySpan<char> filename) => throw null;
         public override string ToString() => throw null;
@@ -31,6 +31,15 @@ namespace Meziantou.Framework.Globbing
         public bool IsPartialMatch(System.ReadOnlySpan<char> folderPath, System.ReadOnlySpan<char> filename) => throw null;
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Globbing.IGlobEvaluatable> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
+    public enum GlobDialect
+    {
+        Standard = 0,
+        Git = 1,
+        MSBuild = 2,
+        Posix = 3,
+        PosixPath = 4
     }
 
     public static class GlobExtensions
@@ -72,7 +81,7 @@ namespace Meziantou.Framework.Globbing
     {
         None = 0,
         IgnoreCase = 1,
-        Git = 2
+        MatchLeadingDot = 2
     }
 
     public interface IGlobEvaluatable

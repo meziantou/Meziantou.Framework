@@ -8,9 +8,11 @@ internal ref struct PathReader
 {
     private ReadOnlySpan<char> _filename;
     private int _currentSegmentLength;
+    private readonly bool _pathSeparatorAware;
 
-    public PathReader(ReadOnlySpan<char> path, ReadOnlySpan<char> filename, PathItemType? itemType)
+    public PathReader(ReadOnlySpan<char> path, ReadOnlySpan<char> filename, PathItemType? itemType, bool pathSeparatorAware = true)
     {
+        _pathSeparatorAware = pathSeparatorAware;
         if (path.IsEmpty)
         {
             CurrentText = filename;
@@ -65,7 +67,7 @@ internal ref struct PathReader
         {
             if (_currentSegmentLength == int.MinValue)
             {
-                _currentSegmentLength = CurrentText.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                _currentSegmentLength = _pathSeparatorAware ? CurrentText.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : -1;
                 if (_currentSegmentLength == -1)
                 {
                     _currentSegmentLength = CurrentText.Length;
@@ -76,7 +78,7 @@ internal ref struct PathReader
         }
     }
 
-    public readonly bool IsEndOfCurrentSegment => CurrentText.IsEmpty || IsPathSeparator(CurrentText[0]);
+    public readonly bool IsEndOfCurrentSegment => CurrentText.IsEmpty || (_pathSeparatorAware && IsPathSeparator(CurrentText[0]));
 
     public readonly ReadOnlySpan<char> LastSegment
     {
@@ -109,6 +111,14 @@ internal ref struct PathReader
 
     public void ConsumeEndOfSegment()
     {
+        if (!_pathSeparatorAware)
+        {
+            CurrentText = _filename;
+            _filename = [];
+            _currentSegmentLength = CurrentText.Length;
+            return;
+        }
+
         if (CurrentText.IsEmpty)
         {
             CurrentText = _filename;
@@ -144,6 +154,14 @@ internal ref struct PathReader
 
     public void ConsumeSegment()
     {
+        if (!_pathSeparatorAware)
+        {
+            CurrentText = _filename;
+            _filename = [];
+            _currentSegmentLength = CurrentText.Length;
+            return;
+        }
+
         var endSegmentIndex = CurrentText.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (endSegmentIndex == -1)
         {
@@ -212,6 +230,9 @@ internal ref struct PathReader
 
     public readonly bool IsPathSeparator()
     {
+        if (!_pathSeparatorAware)
+            return false;
+
         var c = CurrentText[0];
         return c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
     }

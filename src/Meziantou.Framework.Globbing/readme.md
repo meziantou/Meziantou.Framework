@@ -22,7 +22,7 @@ dotnet package add Meziantou.Framework.Globbing
 - `IsMatch` tests whether a file matches the glob pattern
 
     ````csharp
-    Glob glob = Glob.Parse("src/**/*.txt", GlobOptions.IgnoreCase);
+    Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard, GlobOptions.IgnoreCase);
     glob.IsMatch("src/abc.txt");
     ````
 
@@ -30,7 +30,7 @@ dotnet package add Meziantou.Framework.Globbing
 
     ````csharp
     // Enumerate files that match the glob in the folder rootDirectory
-    Glob glob = Glob.Parse("src/**/*.txt", GlobOptions.None);
+    Glob glob = Glob.Parse("src/**/*.txt", GlobDialect.Standard);
     foreach(var file in glob.EnumerateFiles("rootDirectory"))
     {
         Console.WriteLine(file);

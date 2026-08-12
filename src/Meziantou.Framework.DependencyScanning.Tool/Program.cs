@@ -329,9 +329,9 @@ internal static class Program
         if (patterns is null || patterns.Length is 0)
         {
             return new GlobCollection(
-                Glob.Parse("**/*", GlobOptions.None),
-                Glob.Parse("!**/node_modules/**/*", GlobOptions.None),
-                Glob.Parse("!**/.playwright/package/**/*", GlobOptions.None));
+                Glob.Parse("**/*", GlobDialect.Standard),
+                Glob.Parse("!**/node_modules/**/*", GlobDialect.Standard),
+                Glob.Parse("!**/.playwright/package/**/*", GlobDialect.Standard));
         }
 
         var parsedPatterns = new List<IGlobEvaluatable>(patterns.Length);
@@ -340,7 +340,7 @@ internal static class Program
             if (string.IsNullOrWhiteSpace(pattern))
                 continue;
 
-            if (!Glob.TryParse(pattern, GlobOptions.IgnoreCase, out var parsedPattern))
+            if (!Glob.TryParse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase, out var parsedPattern))
             {
                 error.WriteLine($"Glob pattern '{pattern}' is invalid");
                 return null;

@@ -8,8 +8,8 @@ namespace Meziantou.Framework.Globbing;
 /// Combine multiple glob patterns with include and exclude rules:
 /// <code>
 /// var globs = new GlobCollection(
-///     Glob.Parse("**/*.txt", GlobOptions.None),
-///     Glob.Parse("!temp/**/*", GlobOptions.None)
+///     Glob.Parse("**/*.txt", GlobDialect.Standard),
+///     Glob.Parse("!temp/**/*", GlobDialect.Standard)
 /// );
 ///
 /// foreach (var file in globs.EnumerateFiles("C:/MyProject"))
@@ -101,7 +101,7 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
         if (line[0] == '#')
             return;
 
-        globs.Add(Glob.Parse(line, GlobOptions.Git));
+        globs.Add(Glob.Parse(line, GlobDialect.Git));
     }
 
     private static ReadOnlySpan<char> TrimGitIgnoreLineEnd(ReadOnlySpan<char> line)
@@ -134,6 +134,7 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     bool IGlobEvaluatable.CanMatchFiles => _globs.Any(g => g.Mode is GlobMode.Include && g.CanMatchFiles);
     bool IGlobEvaluatable.CanMatchDirectories => _globs.Any(g => g.Mode is GlobMode.Include && g.CanMatchDirectories);
     bool IGlobEvaluatable.TraverseDirectories => _globs.Any(g => g.Mode is GlobMode.Include && ((IGlobEvaluatable)g).TraverseDirectories);
+    internal bool MatchLeadingDot => _globs.Any(static g => g is Glob { MatchLeadingDot: true } or GlobCollection { MatchLeadingDot: true });
 
     /// <summary>Gets the number of glob patterns in the collection.</summary>
     public int Count => _globs.Length;

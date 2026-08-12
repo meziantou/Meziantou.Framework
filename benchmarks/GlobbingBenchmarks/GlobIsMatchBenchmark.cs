@@ -32,7 +32,7 @@ public class GlobIsMatchBenchmark
     [GlobalSetup]
     public void Initialize()
     {
-        _meziantouGlob = Glob.Parse(Pattern, GlobOptions.None);
+        _meziantouGlob = Glob.Parse(Pattern, GlobDialect.Standard);
     }
 
     [Benchmark]

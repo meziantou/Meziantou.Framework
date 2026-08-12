@@ -100,14 +100,14 @@ public class EnumerateFilesBenchmark
     [Benchmark]
     public int Meziantou_Globbing()
     {
-        var glob = Glob.Parse(Pattern, GlobOptions.None);
+        var glob = Glob.Parse(Pattern, GlobDialect.Standard);
         return glob.EnumerateFiles(GetPath()).Count();
     }
 
     [Benchmark]
     public int Meziantou_Globbing_IgnoreCase()
     {
-        var glob = Glob.Parse(Pattern, GlobOptions.IgnoreCase);
+        var glob = Glob.Parse(Pattern, GlobDialect.Standard, GlobOptions.IgnoreCase);
         return glob.EnumerateFiles(GetPath()).Count();
     }
 }

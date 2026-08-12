@@ -177,10 +177,9 @@ public sealed class Glob : IGlobEvaluatable
 
     internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
-        string? path = null;
         if (!_pathSeparatorAware && !filename.IsEmpty)
         {
-            path = directory.IsEmpty
+            var path = directory.IsEmpty
                 ? filename.ToString()
                 : directory.ToString() + Path.DirectorySeparatorChar + filename.ToString();
             directory = path.AsSpan();

@@ -397,13 +397,20 @@ internal class AssertionFormatter
 
     public virtual string Format<TExpected, TActual>(EqualAssertionError<TExpected, TActual> error)
     {
-        return CreateMessage("Assert.Equal() assertion failed.", error.Message)
+        var builder = CreateMessage("Assert.Equal() assertion failed.", error.Message)
             .AppendGroup(
                 ("Expected expression", error.ExpectedExpression),
-                ("Actual expression", error.ActualExpression))
+                ("Actual expression", error.ActualExpression));
+
+        if (error.FirstDifferenceIndex is not null)
+        {
+            builder.Append("Index of first difference", error.FirstDifferenceIndex.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        return builder
             .AppendGroup(
-                ("Expected", FormatValue(error.ExpectedValue)),
-                ("Actual", FormatValue(error.ActualValue)))
+                ("Expected", FormatValue(error.ExpectedValue, error.FirstDifferenceIndex)),
+                ("Actual", FormatValue(error.ActualValue, error.FirstDifferenceIndex)))
             .ToString();
     }
 
@@ -456,9 +463,10 @@ internal class AssertionFormatter
             .AppendGroup(
                 ("Expected length", error.ExpectedValue.Length.ToString(CultureInfo.InvariantCulture)),
                 ("Actual length", error.ActualValue.Length.ToString(CultureInfo.InvariantCulture)))
+            .Append("Index of first difference", error.FirstDifferenceIndex.ToString(CultureInfo.InvariantCulture))
             .AppendGroup(
-                ("Expected", FormatReadOnlySpanValue(error.ExpectedValue)),
-                ("Actual", FormatReadOnlySpanValue(error.ActualValue)))
+                ("Expected", FormatReadOnlySpanValue(error.ExpectedValue, error.FirstDifferenceIndex < error.ExpectedValue.Length ? error.FirstDifferenceIndex : null)),
+                ("Actual", FormatReadOnlySpanValue(error.ActualValue, error.FirstDifferenceIndex < error.ActualValue.Length ? error.FirstDifferenceIndex : null)))
             .ToString();
     }
 

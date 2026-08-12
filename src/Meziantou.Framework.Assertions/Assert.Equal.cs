@@ -47,7 +47,7 @@ public partial class Assert
 
         if (!ValuesEqual(expected, actual))
         {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<object?, object?>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<object?, object?>(expected, actual, GetStringFirstDifferenceIndex(expected, actual, StringComparison.Ordinal), message, actualExpression, expectedExpression)));
         }
     }
 
@@ -62,7 +62,7 @@ public partial class Assert
 
         if (!ValuesEqual(expected, actual))
         {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<T, T>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<T, T>(expected, actual, GetStringFirstDifferenceIndex(expected, actual, StringComparison.Ordinal), message, actualExpression, expectedExpression)));
         }
     }
 
@@ -75,7 +75,7 @@ public partial class Assert
         if (string.Equals(expectedValue, actualValue, comparison))
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<string?, string?>(expectedValue, actualValue, message, actualExpression, expectedExpression)));
+        throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<string?, string?>(expectedValue, actualValue, GetStringFirstDifferenceIndex(expectedValue, actualValue, comparison), message, actualExpression, expectedExpression)));
     }
 
     public static void Equal<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -113,7 +113,7 @@ public partial class Assert
     {
         if (expected.Length != actual.Length)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanLengthAssertionError<TExpected, TActual>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanLengthAssertionError<TExpected, TActual>(expected, actual, Math.Min(expected.Length, actual.Length), message, actualExpression, expectedExpression)));
         }
 
         for (var i = 0; i < expected.Length; i++)
@@ -129,7 +129,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IEnumerable<T>, IEnumerable<T>?>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IEnumerable<T>, IEnumerable<T>?>(expected, actual, null, message, actualExpression, expectedExpression)));
         }
 
         EqualCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression);
@@ -139,7 +139,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IEnumerable<T>, IEnumerable<T>?>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IEnumerable<T>, IEnumerable<T>?>(expected, actual, null, message, actualExpression, expectedExpression)));
         }
 
         EqualCollections<T>(expected, actual, comparer, message, actualExpression, expectedExpression);
@@ -150,7 +150,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IEnumerable<TExpected>, IEnumerable<TActual>?>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IEnumerable<TExpected>, IEnumerable<TActual>?>(expected, actual, null, message, actualExpression, expectedExpression)));
         }
 
         EqualCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression);
@@ -219,7 +219,7 @@ public partial class Assert
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
             await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IAsyncEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IAsyncEnumerable<T>?>(expectedSnapshot.Items, actual, null, message, actualExpression, expectedExpression)));
         }
 
         await EqualAsyncCollections<T>(expected, actual, EqualityComparer<T>.Default, message, actualExpression, expectedExpression).ConfigureAwait(false);
@@ -231,7 +231,7 @@ public partial class Assert
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
             await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IAsyncEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IAsyncEnumerable<T>?>(expectedSnapshot.Items, actual, null, message, actualExpression, expectedExpression)));
         }
 
         await EqualAsyncCollections<T>(expected, actual, comparer, message, actualExpression, expectedExpression).ConfigureAwait(false);
@@ -244,7 +244,7 @@ public partial class Assert
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
             await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<TExpected>, IAsyncEnumerable<TActual>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<TExpected>, IAsyncEnumerable<TActual>?>(expectedSnapshot.Items, actual, null, message, actualExpression, expectedExpression)));
         }
 
         await EqualAsyncCollections(expected, actual, comparer: (System.Collections.IEqualityComparer?)null, message, actualExpression, expectedExpression).ConfigureAwait(false);
@@ -254,7 +254,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IEnumerable<T>, IAsyncEnumerable<T>?>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IEnumerable<T>, IAsyncEnumerable<T>?>(expected, actual, null, message, actualExpression, expectedExpression)));
         }
 
         var actualList = new List<T>();
@@ -272,7 +272,7 @@ public partial class Assert
         {
             await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
             await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IEnumerable<T>?>(expectedSnapshot.Items, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<IReadOnlyList<T>, IEnumerable<T>?>(expectedSnapshot.Items, actual, null, message, actualExpression, expectedExpression)));
         }
 
         var expectedList = new List<T>();
@@ -345,7 +345,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>(expected, actual, null, message, actualExpression, expectedExpression)));
         }
 
         Equal(expected, actual, comparer: null, message, actualExpression, expectedExpression);
@@ -355,7 +355,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>(expected, actual, message, actualExpression, expectedExpression)));
+            throw new AssertionException(ErrorFormatter.Format(new EqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>(expected, actual, null, message, actualExpression, expectedExpression)));
         }
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);
@@ -426,5 +426,31 @@ public partial class Assert
     private static StringComparison GetStringComparison(bool ignoreCase)
     {
         return ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+    }
+
+    private static int? GetStringFirstDifferenceIndex(object? expected, object? actual, StringComparison comparison)
+    {
+        if (expected is not string expectedString || actual is not string actualString)
+            return null;
+
+        return GetStringFirstDifferenceIndex(expectedString, actualString, comparison);
+    }
+
+    private static int? GetStringFirstDifferenceIndex(string? expected, string? actual, StringComparison comparison)
+    {
+        if (expected is null || actual is null)
+            return null;
+
+        var minLength = Math.Min(expected.Length, actual.Length);
+        for (var i = 0; i < minLength; i++)
+        {
+            if (!actual.AsSpan(i, 1).Equals(expected.AsSpan(i, 1), comparison))
+                return i;
+        }
+
+        if (expected.Length == actual.Length)
+            return null;
+
+        return minLength;
     }
 }

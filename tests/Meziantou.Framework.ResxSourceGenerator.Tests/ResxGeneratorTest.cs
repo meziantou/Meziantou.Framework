@@ -123,6 +123,114 @@ public sealed class ResxGeneratorTest
     }
 
     [Fact]
+    public async Task GenerateProperties_WithFormatParameterMetadata()
+    {
+        XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+        var element = new XElement("root",
+            new XAttribute(XNamespace.Xmlns + "mfrg", generatorNamespace),
+            new XElement("data",
+                new XAttribute("name", "HelloWorld"),
+                new XElement("value", "Hello {0} from {1}!"),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "name"), new XAttribute("comment", "Name to greet.")),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "country"), new XAttribute("typename", "global::System.String"), new XAttribute("comment", "Country name."))));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("FormatHelloWorld(global::System.Globalization.CultureInfo? provider, object? name, global::System.String country)", fileContent);
+        Assert.Contains("FormatHelloWorld(object? name, global::System.String country)", fileContent);
+        Assert.Contains("<param name=\"name\">Name to greet.</param>", fileContent);
+        Assert.Contains("<param name=\"country\">Country name.</param>", fileContent);
+        Assert.DoesNotContain("object? arg0", fileContent);
+    }
+
+    [Fact]
+    public async Task GenerateProperties_WithMissingAndExtraFormatParameterMetadata()
+    {
+        XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+        var element = new XElement("root",
+            new XAttribute(XNamespace.Xmlns + "mfrg", generatorNamespace),
+            new XElement("data",
+                new XAttribute("name", "HelloWorld"),
+                new XElement("value", "Hello {0} from {1}!"),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "name"), new XAttribute("comment", "Name to greet.")),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", ""), new XAttribute("comment", "Fallback parameter.")),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "unused"), new XAttribute("comment", "Ignored parameter."))));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("FormatHelloWorld(object? name, object? arg1)", fileContent);
+        Assert.Contains("<param name=\"name\">Name to greet.</param>", fileContent);
+        Assert.Contains("<param name=\"arg1\">Fallback parameter.</param>", fileContent);
+        Assert.DoesNotContain("unused", fileContent);
+        Assert.DoesNotContain("Ignored parameter.", fileContent);
+    }
+
+    [Fact]
+    public async Task GenerateProperties_WithFallbackFormatParameterNameCollision()
+    {
+        XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+        var element = new XElement("root",
+            new XAttribute(XNamespace.Xmlns + "mfrg", generatorNamespace),
+            new XElement("data",
+                new XAttribute("name", "HelloWorld"),
+                new XElement("value", "Hello {0} from {1}!"),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "arg1")),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", ""))));
+
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Namespace = "test",
+            ResourceName = "test",
+        });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("FormatHelloWorld(object? arg1, object? arg1_)", fileContent);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GenerateProperties_UsesFormatParameterMetadataFromAnyDuplicateEntry(bool parameterMetadataInFirstFile)
+    {
+        XNamespace generatorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+        var elementWithoutParameterMetadata = new XElement("root",
+            new XElement("data", new XAttribute("name", "HelloWorld"), new XElement("value", "Hello {0}!")));
+        var elementWithParameterMetadata = new XElement("root",
+            new XAttribute(XNamespace.Xmlns + "mfrg", generatorNamespace),
+            new XElement("data",
+                new XAttribute("name", "HelloWorld"),
+                new XElement("value", "Hello {0}!"),
+                new XElement(generatorNamespace + "parameter", new XAttribute("name", "name"), new XAttribute("typename", "global::System.String"), new XAttribute("comment", "Name to greet."))));
+
+        var firstElement = parameterMetadataInFirstFile ? elementWithParameterMetadata : elementWithoutParameterMetadata;
+        var secondElement = parameterMetadataInFirstFile ? elementWithoutParameterMetadata : elementWithParameterMetadata;
+
+        var result = await GenerateFiles(
+            [
+                ("test.en.resx", firstElement.ToString()),
+                ("test.resx", secondElement.ToString()),
+            ], new OptionProvider
+            {
+                Namespace = "test",
+                ResourceName = "test",
+            });
+
+        var fileContent = result.GeneratedFileRoot.ToFullString();
+        Assert.Contains("FormatHelloWorld(global::System.String name)", fileContent);
+        Assert.Contains("<param name=\"name\">Name to greet.</param>", fileContent);
+    }
+
+    [Fact]
     public async Task GeneratePropertiesFromMultipleResx()
     {
         var element1 = new XElement("root",

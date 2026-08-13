@@ -19,6 +19,20 @@ _ = Sample.FormatHello("meziantou"); // Hello meziantou
 
 The generator also supports binary resources and expose them as `byte[]`.
 
+You can customize generated format method parameter names, types, and XML documentation comments by adding metadata in the `https://meziantou.net/meziantou.framework/resxgenerator` namespace:
+
+````xml
+<root xmlns:mfrg="https://meziantou.net/meziantou.framework/resxgenerator">
+  <data name="Location" xml:space="preserve">
+    <value>I live in country {0}, city {1}</value>
+    <mfrg:parameter name="country" comment="Country name." />
+    <mfrg:parameter name="city" typename="global::System.String" comment="City name." />
+  </data>
+</root>
+````
+
+The parameter elements are matched to composite format placeholders by their order in the `.resx` file. When `typename` is omitted, the generated parameter type is `object?`.
+
 ## How to configure the source generator
 
 Install the NuGet package `Meziantou.Framework.ResxSourceGenerator` ([NuGet](https://www.nuget.org/packages/Meziantou.Framework.ResxSourceGenerator/))

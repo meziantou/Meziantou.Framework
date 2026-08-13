@@ -13,6 +13,8 @@ namespace Meziantou.Framework.ResxSourceGenerator;
 [Generator]
 public sealed partial class ResxGenerator : IIncrementalGenerator
 {
+    private const string ResxGeneratorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var compilationProvider = context.CompilationProvider.Select(static (compilation, cancellationToken) =>
@@ -320,22 +322,24 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
                         if (args >= 0)
                         {
-                            var inParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "object? arg" + arg.ToString(CultureInfo.InvariantCulture)));
-                            var callParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "arg" + arg.ToString(CultureInfo.InvariantCulture)));
+                            var parameters = GetFormatParameters(entry, args);
+                            var inParams = string.Join(", ", parameters.Select(parameter => parameter.TypeName + " " + EscapeCSharpIdentifier(parameter.Name)));
+                            var callParams = string.Join(", ", parameters.Select(parameter => EscapeCSharpIdentifier(parameter.Name)));
+                            var formatComment = CreateFormatComment(comment, parameters);
 
                             sb.AppendLine(@"
-        /// " + comment + @"
+        /// " + formatComment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
-            return GetString(provider, """ + entry.Name + "\", " + callParams + @");
+            return GetString(culture: provider, name: """ + entry.Name + @""", args: new object?[] { " + callParams + @" });
         }
 ");
 
                             sb.AppendLine(@"
-        /// " + comment + @"
+        /// " + formatComment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
         {
-            return GetString(""" + entry.Name + "\", " + callParams + @");
+            return GetString(name: """ + entry.Name + @""", args: new object?[] { " + callParams + @" });
         }
 ");
                         }
@@ -408,15 +412,27 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                     var type = element.Attribute("type")?.Value;
                     var comment = element.Attribute("comment")?.Value;
                     var value = element.Element("value")?.Value;
+                    var parameters = element.Elements(XName.Get("parameter", ResxGeneratorNamespace))
+                        .Select(parameter => new ResxParameter
+                        {
+                            Name = parameter.Attribute("name")?.Value,
+                            TypeName = parameter.Attribute("typename")?.Value,
+                            Comment = parameter.Attribute("comment")?.Value,
+                        })
+                        .ToList();
 
                     var existingEntry = entries.Find(e => e.Name == name);
                     if (existingEntry is not null)
                     {
                         existingEntry.Comment ??= comment;
+                        if (existingEntry.Parameters.Count == 0)
+                        {
+                            existingEntry.Parameters.AddRange(parameters);
+                        }
                     }
                     else
                     {
-                        entries.Add(new ResxEntry { Name = name, Value = value, Comment = comment, Type = type });
+                        entries.Add(new ResxEntry { Name = name, Value = value, Comment = comment, Type = type, Parameters = parameters });
                     }
                 }
             }
@@ -427,6 +443,168 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         }
 
         return entries;
+    }
+
+    private static List<FormatParameter> GetFormatParameters(ResxEntry entry, int maxArgumentIndex)
+    {
+        const string DefaultTypeName = "object?";
+        var parameters = new List<FormatParameter>();
+        var usedNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "provider",
+        };
+
+        for (var index = 0; index <= maxArgumentIndex; index++)
+        {
+            var fallbackName = GetUniqueFallbackName(index, usedNames);
+            var name = fallbackName;
+            var typeName = DefaultTypeName;
+            var comment = (string?)null;
+            if (index < entry.Parameters.Count)
+            {
+                var parameter = entry.Parameters[index];
+                comment = parameter.Comment;
+                if (!string.IsNullOrWhiteSpace(parameter.TypeName))
+                {
+                    typeName = parameter.TypeName.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(parameter.Name))
+                {
+                    var csharpName = ToCSharpNameIdentifier(parameter.Name);
+                    if (!string.IsNullOrEmpty(csharpName) && usedNames.Add(csharpName))
+                    {
+                        name = csharpName;
+                    }
+                }
+            }
+
+            if (name == fallbackName)
+            {
+                _ = usedNames.Add(name);
+            }
+
+            parameters.Add(new FormatParameter(name, typeName, comment));
+        }
+
+        return parameters;
+    }
+
+    private static string GetUniqueFallbackName(int index, HashSet<string> usedNames)
+    {
+        var name = "arg" + index.ToString(CultureInfo.InvariantCulture);
+        while (usedNames.Contains(name))
+        {
+            name += "_";
+        }
+
+        return name;
+    }
+
+    private static string CreateFormatComment(string comment, List<FormatParameter> parameters)
+    {
+        var elements = new List<string>
+        {
+            comment,
+        };
+
+        foreach (var parameter in parameters)
+        {
+            if (string.IsNullOrWhiteSpace(parameter.Comment))
+                continue;
+
+            var element = new XElement("param", new XAttribute("name", parameter.Name), parameter.Comment);
+            elements.Add(element.ToString().Replace(Environment.NewLine, Environment.NewLine + "       /// ", StringComparison.Ordinal));
+        }
+
+        return string.Join(Environment.NewLine + "        /// ", elements);
+    }
+
+    private static string EscapeCSharpIdentifier(string name)
+    {
+        return IsCSharpKeyword(name) ? "@" + name : name;
+    }
+
+    private static bool IsCSharpKeyword(string name)
+    {
+        return name is
+            "abstract" or
+            "as" or
+            "base" or
+            "bool" or
+            "break" or
+            "byte" or
+            "case" or
+            "catch" or
+            "char" or
+            "checked" or
+            "class" or
+            "const" or
+            "continue" or
+            "decimal" or
+            "default" or
+            "delegate" or
+            "do" or
+            "double" or
+            "else" or
+            "enum" or
+            "event" or
+            "explicit" or
+            "extern" or
+            "false" or
+            "finally" or
+            "fixed" or
+            "float" or
+            "for" or
+            "foreach" or
+            "goto" or
+            "if" or
+            "implicit" or
+            "in" or
+            "int" or
+            "interface" or
+            "internal" or
+            "is" or
+            "lock" or
+            "long" or
+            "namespace" or
+            "new" or
+            "null" or
+            "object" or
+            "operator" or
+            "out" or
+            "override" or
+            "params" or
+            "private" or
+            "protected" or
+            "public" or
+            "readonly" or
+            "ref" or
+            "return" or
+            "sbyte" or
+            "sealed" or
+            "short" or
+            "sizeof" or
+            "stackalloc" or
+            "static" or
+            "string" or
+            "struct" or
+            "switch" or
+            "this" or
+            "throw" or
+            "true" or
+            "try" or
+            "typeof" or
+            "uint" or
+            "ulong" or
+            "unchecked" or
+            "unsafe" or
+            "ushort" or
+            "using" or
+            "virtual" or
+            "void" or
+            "volatile" or
+            "while";
     }
 
 
@@ -475,6 +653,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         public string? Value { get; set; }
         public string? Comment { get; set; }
         public string? Type { get; set; }
+        public List<ResxParameter> Parameters { get; set; } = [];
 
         public bool IsText
         {
@@ -521,4 +700,13 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 
         public bool IsFileRef => Type is not null && Type.StartsWith("System.Resources.ResXFileRef,", StringComparison.Ordinal);
     }
+
+    private sealed class ResxParameter
+    {
+        public string? Name { get; set; }
+        public string? TypeName { get; set; }
+        public string? Comment { get; set; }
+    }
+
+    private sealed record FormatParameter(string Name, string TypeName, string? Comment);
 }

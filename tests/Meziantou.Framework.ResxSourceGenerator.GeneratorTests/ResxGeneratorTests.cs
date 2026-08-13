@@ -17,6 +17,13 @@ public class ResxGeneratorTests
     }
 
     [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
+    public void ResxWithCustomParameterElementsCanBeReadByResourceManager()
+    {
+        Assert.Equal("Hello {0}!", Resource1.ResourceManager.GetString("Hello", CultureInfo.GetCultureInfo("en-US")));
+        Assert.Equal("Bonjour {0}!", Resource1.ResourceManager.GetString("Hello", CultureInfo.GetCultureInfo("fr")));
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.Disabled)]
     public void StringValue()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");

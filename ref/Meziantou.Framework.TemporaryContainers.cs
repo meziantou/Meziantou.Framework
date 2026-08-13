@@ -240,7 +240,7 @@ namespace Meziantou.Framework.TemporaryContainers
         System.Threading.Tasks.Task WaitAsync(Meziantou.Framework.TemporaryContainers.TemporaryContainer container, System.Threading.CancellationToken cancellationToken);
     }
 
-    public abstract class ImageSource : System.IEquatable<Meziantou.Framework.TemporaryContainers.ImageSource>
+    public closed class ImageSource : System.IEquatable<Meziantou.Framework.TemporaryContainers.ImageSource>
     {
         protected System.Type EqualityContract { get => throw null; }
         public static implicit operator Meziantou.Framework.TemporaryContainers.ImageSource(string name) => throw null;

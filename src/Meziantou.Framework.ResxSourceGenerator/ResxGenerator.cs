@@ -331,7 +331,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         /// " + formatComment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
-            return GetString(provider, """ + entry.Name + "\", " + callParams + @");
+            return GetString(culture: provider, name: """ + entry.Name + @""", args: new object?[] { " + callParams + @" });
         }
 ");
 
@@ -339,7 +339,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
         /// " + formatComment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
         {
-            return GetString(""" + entry.Name + "\", " + callParams + @");
+            return GetString(name: """ + entry.Name + @""", args: new object?[] { " + callParams + @" });
         }
 ");
                         }

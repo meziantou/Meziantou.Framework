@@ -33,6 +33,7 @@ public sealed class ProcessWrapper
     private ProcessLimits? _limits;
     private Action<JobObject>? _windowsJobObjectConfiguration;
     private Action<CGroup2>? _linuxControlGroupConfiguration;
+    private bool _validationModeConfigured;
 
     private ProcessWrapper(string fileName)
     {
@@ -59,6 +60,7 @@ public sealed class ProcessWrapper
         _limits = other._limits;
         _windowsJobObjectConfiguration = other._windowsJobObjectConfiguration;
         _linuxControlGroupConfiguration = other._linuxControlGroupConfiguration;
+        _validationModeConfigured = other._validationModeConfigured;
         _processFactory = other._processFactory;
         _processWrapperInterceptors = other._processWrapperInterceptors;
         _processStartInfoInterceptors = other._processStartInfoInterceptors;
@@ -136,6 +138,19 @@ public sealed class ProcessWrapper
         }
 
         CopyWindowsStartInfoCredentials(source, startInfo);
+#if NET11_0_OR_GREATER
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
+        {
+            startInfo.KillOnParentExit = source.KillOnParentExit;
+        }
+
+        startInfo.StartDetached = source.StartDetached;
+
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        {
+            startInfo.StartSuspended = source.StartSuspended;
+        }
+#endif
 
         return startInfo;
     }
@@ -248,6 +263,34 @@ public sealed class ProcessWrapper
         return this;
     }
 
+#if NET11_0_OR_GREATER
+    /// <summary>Sets whether the child process should be killed when the parent process exits.</summary>
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("android")]
+    public ProcessWrapper WithKillOnParentExit(bool killOnParentExit = true)
+    {
+        _startInfo.KillOnParentExit = killOnParentExit;
+        return this;
+    }
+
+    /// <summary>Sets whether the child process should be detached from the parent process.</summary>
+    public ProcessWrapper WithStartDetached(bool startDetached = true)
+    {
+        _startInfo.StartDetached = startDetached;
+        return this;
+    }
+
+    /// <summary>Sets whether the child process should start in a suspended state.</summary>
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("macos")]
+    public ProcessWrapper WithStartSuspended(bool startSuspended = true)
+    {
+        _startInfo.StartSuspended = startSuspended;
+        return this;
+    }
+#endif
+
     /// <summary>Configures environment variables using a callback. Accumulates with previous calls.</summary>
     public ProcessWrapper WithEnvironmentVariables(Action<ProcessWrapperEnvironmentVariables> configure)
     {
@@ -279,6 +322,7 @@ public sealed class ProcessWrapper
     public ProcessWrapper WithValidation(ProcessValidationMode mode)
     {
         _validationMode = mode;
+        _validationModeConfigured = true;
         return this;
     }
 
@@ -438,6 +482,38 @@ public sealed class ProcessWrapper
             cancellationToken);
     }
 
+#if NET11_0_OR_GREATER
+    /// <summary>Starts the process without tracking it and returns its process ID.</summary>
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    [SupportedOSPlatform("maccatalyst")]
+    public int StartAndForget()
+    {
+        ApplyProcessWrapperInterceptors();
+
+        if (!_outputTargets.IsEmpty)
+            throw new InvalidOperationException("Output streams cannot be configured when starting a process without tracking it.");
+
+        if (!_errorTargets.IsEmpty)
+            throw new InvalidOperationException("Error streams cannot be configured when starting a process without tracking it.");
+
+        if (_inputSource is not null)
+            throw new InvalidOperationException("Input streams cannot be configured when starting a process without tracking it.");
+
+        if (_limits is not null || _windowsJobObjectConfiguration is not null || _linuxControlGroupConfiguration is not null)
+            throw new InvalidOperationException("Process limits cannot be configured when starting a process without tracking it.");
+
+        if (_validationModeConfigured && _validationMode != ProcessValidationMode.None)
+            throw new InvalidOperationException("Process validation cannot be configured when starting a process without tracking it.");
+
+        var startInfo = CloneStartInfo(_startInfo);
+        startInfo.FileName = ResolveFileName(startInfo.FileName, startInfo.WorkingDirectory);
+        ApplyProcessStartInfoInterceptors(startInfo);
+
+        return Process.StartAndForget(startInfo);
+    }
+#endif
+
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "ProcessInstance will dispose it")]
     private T StartProcess<T>(ImmutableArray<OutputTarget> outputTargets, ImmutableArray<OutputTarget> errorTargets, Func<IProcessHandle, Task, Task, CancellationTokenRegistration, IDisposable?, Func<bool>, Activity?, string, IReadOnlyList<string>, ProcessLogVerbosity, CancellationToken, T> factory, CancellationToken cancellationToken)
     {
@@ -462,7 +538,7 @@ public sealed class ProcessWrapper
         var processLimiter = CreateProcessLimiter();
 #if NET11_0_OR_GREATER
         var shouldResumeProcess = false;
-        if (processLimiter is not null && (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()))
+        if (processLimiter is not null && (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) && !startInfo.StartSuspended)
         {
             startInfo.StartSuspended = true;
             shouldResumeProcess = true;

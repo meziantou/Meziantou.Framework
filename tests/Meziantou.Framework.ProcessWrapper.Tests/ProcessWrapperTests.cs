@@ -1214,7 +1214,182 @@ public class ProcessWrapperTests
         Assert.Same(command, command.WithLimits(limits => limits.CpuPercentage = 50));
         Assert.Same(command, command.WithWindowsJobObject(_ => { }));
         Assert.Same(command, command.WithLinuxControlGroup(_ => { }));
+#if NET11_0_OR_GREATER
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsAndroid())
+        {
+            Assert.Same(command, command.WithKillOnParentExit());
+        }
+
+        Assert.Same(command, command.WithStartDetached());
+
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+        {
+            Assert.Same(command, command.WithStartSuspended());
+        }
+#endif
     }
+
+#if NET11_0_OR_GREATER
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithKillOnParentExit_PropagatesToProcessStartInfo()
+    {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid())
+            return;
+
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return FakeProcess.Create(0, outputText: "", errorText: "");
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await ProcessWrapper.Create("dotnet")
+                .WithKillOnParentExit()
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.True(capturedStartInfo.KillOnParentExit);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithStartDetached_PropagatesToProcessStartInfo()
+    {
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return FakeProcess.Create(0, outputText: "", errorText: "");
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await ProcessWrapper.Create("dotnet")
+                .WithStartDetached()
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.True(capturedStartInfo.StartDetached);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithStartSuspended_PropagatesToProcessStartInfo()
+    {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            return;
+
+        ProcessStartInfo? capturedStartInfo = null;
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfo = startInfo;
+            return FakeProcess.Create(0, outputText: "", errorText: "");
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await ProcessWrapper.Create("dotnet")
+                .WithStartSuspended()
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.NotNull(capturedStartInfo);
+        Assert.True(capturedStartInfo.StartSuspended);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_PreservesNet11StartInfoOptions()
+    {
+        var capturedStartInfos = new List<ProcessStartInfo>();
+        var fakeFactory = new FakeProcessFactory(startInfo =>
+        {
+            capturedStartInfos.Add(startInfo);
+            return FakeProcess.Create(0, outputText: "", errorText: "");
+        });
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            _ = await (ProcessWrapper.Create("first").WithStartDetached() | ProcessWrapper.Create("second").WithStartDetached())
+                .ExecuteBufferedAsync();
+        });
+
+        Assert.Collection(
+            capturedStartInfos,
+            startInfo => Assert.True(startInfo.StartDetached),
+            startInfo => Assert.True(startInfo.StartDetached));
+    }
+
+    [Fact]
+    public async Task StartAndForget_AppliesConfigurationAndInterceptors()
+    {
+        using var temporaryDirectory = TemporaryDirectory.Create();
+        var temporaryDirectoryPath = temporaryDirectory.FullPath.Value;
+        var outputPath = Path.Combine(temporaryDirectoryPath, "start-and-forget-output.txt");
+
+        string executableName;
+        if (OperatingSystem.IsWindows())
+        {
+            executableName = "start-and-forget.cmd";
+            _ = temporaryDirectory.CreateTextFile(executableName, "@echo off\r\necho %TEST_VAR_52% %TEST_VAR_53% %1>\"%OUTPUT_FILE%\"\r\n");
+        }
+        else
+        {
+            executableName = "start-and-forget.sh";
+            var scriptPath = temporaryDirectory.CreateTextFile(executableName, "#!/bin/sh\nprintf '%s %s %s' \"$TEST_VAR_52\" \"$TEST_VAR_53\" \"$1\" > \"$OUTPUT_FILE\"\n");
+            File.SetUnixFileMode(scriptPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        using var processWrapperInterceptorRegistration = ProcessWrapper.AddInterceptor(new WrapperEnvironmentVariableInterceptor("TEST_VAR_52", "wrapper"));
+        using var processStartInfoInterceptorRegistration = ProcessWrapper.AddInterceptor(new StartInfoEnvironmentVariableInterceptor("TEST_VAR_53", "start-info"));
+
+        var processId = ProcessWrapper.Create(executableName)
+            .WithWorkingDirectory(temporaryDirectoryPath)
+            .WithArguments("argument")
+            .WithEnvironmentVariables(env => env.Set("OUTPUT_FILE", outputPath))
+            .StartAndForget();
+
+        Assert.True(processId > 0);
+
+        var output = await WaitForFileTextAsync(outputPath);
+        Assert.Equal("wrapper start-info argument", output.Trim());
+    }
+
+    [Fact]
+    public void StartAndForget_WithUnsupportedConfiguration_Throws()
+    {
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithOutputStream(OutputTarget.ToTextDelegate(_ => { })).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithErrorStream(OutputTarget.ToTextDelegate(_ => { })).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithInputStream("stdin").StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithLimits(new ProcessLimits()).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithWindowsJobObject(_ => { }).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithLinuxControlGroup(_ => { }).StartAndForget());
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").WithValidation(ProcessValidationMode.FailIfNonZeroExitCode).StartAndForget());
+
+        using var processWrapperInterceptorRegistration = ProcessWrapper.AddInterceptor(new ValidationProcessWrapperInterceptor(ProcessValidationMode.FailIfStdError));
+        Assert.Throws<InvalidOperationException>(() => ProcessWrapper.Create("dotnet").StartAndForget());
+    }
+
+    [Fact]
+    public async Task ProcessInstance_Signal_WhenSafeHandleIsUnavailable_Throws()
+    {
+        var fakeProcess = FakeProcess.CreatePending(0);
+        var fakeFactory = new FakeProcessFactory(fakeProcess);
+
+        await RunWithDefaultProcessFactoryAsync(fakeFactory, async () =>
+        {
+            var process = ProcessWrapper.Create("dotnet")
+                .WithValidation(ProcessValidationMode.None)
+                .ExecuteAsync();
+
+            _ = Assert.Throws<InvalidOperationException>(() => process.Signal(System.Runtime.InteropServices.PosixSignal.SIGTERM));
+
+            fakeProcess.Complete();
+            _ = await process;
+        });
+    }
+#endif
 
     [Fact]
     public void ProcessPipe_WithInvalidMaxBufferSize_Throws()
@@ -1751,6 +1926,30 @@ public class ProcessWrapperTests
         return path;
     }
 
+#if NET11_0_OR_GREATER
+    private static async Task<string> WaitForFileTextAsync(string path)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        while (stopwatch.Elapsed <= TimeSpan.FromSeconds(10))
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    return await File.ReadAllTextAsync(path);
+                }
+            }
+            catch (IOException)
+            {
+            }
+
+            await Task.Delay(50);
+        }
+
+        throw new TimeoutException($"The file '{path}' was not created.");
+    }
+#endif
+
     private sealed class WrapperEnvironmentVariableInterceptor(string variableName, string variableValue) : IProcessWrapperInterceptor
     {
         public void Intercept(ProcessWrapper processWrapper)
@@ -1778,6 +1977,17 @@ public class ProcessWrapperTests
             events.Add(eventName);
         }
     }
+
+#if NET11_0_OR_GREATER
+    private sealed class ValidationProcessWrapperInterceptor(ProcessValidationMode validationMode) : IProcessWrapperInterceptor
+    {
+        public void Intercept(ProcessWrapper processWrapper)
+        {
+            ArgumentNullException.ThrowIfNull(processWrapper);
+            processWrapper.WithValidation(validationMode);
+        }
+    }
+#endif
 
     private sealed class RecordingProcessStartInfoInterceptor(List<string> events, string eventName) : IProcessStartInfoInterceptor
     {

@@ -459,17 +459,17 @@ public sealed class ProcessWrapper
         var processFileName = startInfo.FileName;
         var arguments = (IReadOnlyList<string>)[.. startInfo.ArgumentList];
 
-        var processFactory = _processFactory ?? DefaultProcessFactory;
-        var processHandle = processFactory.Create(startInfo);
         var processLimiter = CreateProcessLimiter();
 #if NET11_0_OR_GREATER
         var shouldResumeProcess = false;
-        if (processLimiter is WindowsProcessLimiter && OperatingSystem.IsWindows())
+        if (processLimiter is not null && (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()))
         {
             startInfo.StartSuspended = true;
             shouldResumeProcess = true;
         }
 #endif
+        var processFactory = _processFactory ?? DefaultProcessFactory;
+        var processHandle = processFactory.Create(startInfo);
 
         var processStarted = false;
         try
@@ -482,7 +482,7 @@ public sealed class ProcessWrapper
             processStarted = true;
             processLimiter?.Apply(processHandle);
 #if NET11_0_OR_GREATER
-            if (shouldResumeProcess && OperatingSystem.IsWindows())
+            if (shouldResumeProcess && (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()))
             {
                 var safeProcessHandle = processHandle.SafeProcessHandle
                     ?? throw new InvalidOperationException("Cannot resume the process because the process safe handle is not available.");

@@ -136,6 +136,12 @@ namespace Meziantou.Framework
         public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.ProcessResult> ConfigureAwait(bool continueOnCapturedContext) => throw null;
         public System.Runtime.CompilerServices.ConfiguredTaskAwaitable<Meziantou.Framework.ProcessResult> ConfigureAwait(System.Threading.Tasks.ConfigureAwaitOptions options) => throw null;
         public void Kill(bool entireProcessTree = true) { }
+        #if NET11_0
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
+        public bool Signal(System.Runtime.InteropServices.PosixSignal signal) => throw null;
+        #endif
     }
 
     public sealed class ProcessLimits
@@ -232,6 +238,16 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessWrapper WithCredentials(string userName, System.Security.SecureString password, string? domain = null) => throw null;
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public Meziantou.Framework.ProcessWrapper WithUseCredentialsForNetworkingOnly(bool useCredentialsForNetworkingOnly = true) => throw null;
+        #if NET11_0
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("linux")]
+        [System.Runtime.Versioning.SupportedOSPlatform("android")]
+        public Meziantou.Framework.ProcessWrapper WithKillOnParentExit(bool killOnParentExit = true) => throw null;
+        public Meziantou.Framework.ProcessWrapper WithStartDetached(bool startDetached = true) => throw null;
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatform("macos")]
+        public Meziantou.Framework.ProcessWrapper WithStartSuspended(bool startSuspended = true) => throw null;
+        #endif
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Action<Meziantou.Framework.ProcessWrapperEnvironmentVariables> configure) => throw null;
         public Meziantou.Framework.ProcessWrapper WithEnvironmentVariables(System.Collections.Generic.IReadOnlyDictionary<string, string?> variables) => throw null;
         public Meziantou.Framework.ProcessWrapper WithValidation(Meziantou.Framework.ProcessValidationMode mode) => throw null;
@@ -252,6 +268,12 @@ namespace Meziantou.Framework
         public Meziantou.Framework.ProcessWrapper WithInputStream(Meziantou.Framework.InputSource source) => throw null;
         public Meziantou.Framework.ProcessInstance ExecuteAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
         public Meziantou.Framework.BufferedProcessInstance ExecuteBufferedAsync(System.Threading.CancellationToken cancellationToken = null) => throw null;
+        #if NET11_0
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
+        public int StartAndForget() => throw null;
+        #endif
     }
 
     public sealed class ProcessWrapperEnvironmentVariables

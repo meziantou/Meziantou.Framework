@@ -1,6 +1,10 @@
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.CompilerServices;
+#if NET11_0_OR_GREATER
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+#endif
 using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework;
@@ -85,6 +89,21 @@ public class ProcessInstance
 
         KillProcess(process, entireProcessTree);
     }
+
+#if NET11_0_OR_GREATER
+    /// <summary>Sends a signal to the process.</summary>
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    [SupportedOSPlatform("maccatalyst")]
+    public bool Signal(PosixSignal signal)
+    {
+        var processHandle = UnsafeGetProcessHandle();
+        if (processHandle is null)
+            throw new InvalidOperationException("Cannot signal the process because the process safe handle is not available.");
+
+        return processHandle.Signal(signal);
+    }
+#endif
 
     internal static void KillProcess(IProcessHandle process, bool entireProcessTree)
     {

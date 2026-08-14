@@ -388,7 +388,7 @@ COPY --from=build /workspace/bin/app /usr/local/bin/app
     {
         AssertHighlighter("dockerfile",
 """
-COPY --from=alpine:3.20 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=alpine:3.24 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 """,
 """
 <span class="hljs-keyword">COPY</span><span class="language-bash"> --from=alpine:3.20 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/</span>

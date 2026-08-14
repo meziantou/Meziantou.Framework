@@ -169,7 +169,7 @@ public sealed class FlacTests
             // The file should still be a valid FLAC (starts with fLaC)
             using var stream = File.OpenRead(tempFile);
             var magic = new byte[4];
-            stream.ReadAtLeast(magic, 4);
+            stream.ReadExactly(magic);
             Assert.Equal((byte)'f', magic[0]);
             Assert.Equal((byte)'L', magic[1]);
             Assert.Equal((byte)'a', magic[2]);

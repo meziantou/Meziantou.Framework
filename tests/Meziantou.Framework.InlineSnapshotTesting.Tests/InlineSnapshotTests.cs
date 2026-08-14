@@ -860,7 +860,7 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
             strs = new string[] { "a", "b" },
         };
         InlineSnapshot
-            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.ScrubValue<string>((value, index) => "prefix-" + index.ToString(CultureInfo.InvariantCulture))))
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.ScrubValue<string>((value, index) => "prefix-" + index.ToString(CultureInfo.InvariantCulture), StringComparer.Ordinal)))
             .Validate(value, """
                 strs:
                   - prefix-0
@@ -879,7 +879,7 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
         InlineSnapshot
             .WithSerializer(options =>
             {
-                options.ScrubValue<string>((value, index) => "str-" + index.ToString(CultureInfo.InvariantCulture));
+                options.ScrubValue<string>((value, index) => "str-" + index.ToString(CultureInfo.InvariantCulture), StringComparer.Ordinal);
                 options.ScrubValue<int>((value, index) => "int-" + index.ToString(CultureInfo.InvariantCulture));
             })
             .Validate(value, """

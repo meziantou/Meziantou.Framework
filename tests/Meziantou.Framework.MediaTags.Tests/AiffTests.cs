@@ -68,7 +68,7 @@ public sealed class AiffTests
             // File should start with FORM....AIFF
             using var stream = File.OpenRead(tempFile);
             var header = new byte[12];
-            stream.ReadAtLeast(header, 12);
+            stream.ReadExactly(header);
             Assert.Equal((byte)'F', header[0]);
             Assert.Equal((byte)'O', header[1]);
             Assert.Equal((byte)'R', header[2]);

@@ -71,7 +71,7 @@ public sealed class WavTests
             // File should still start with RIFF....WAVE
             using var stream = File.OpenRead(tempFile);
             var header = new byte[12];
-            stream.ReadAtLeast(header, 12);
+            stream.ReadExactly(header);
             Assert.Equal((byte)'R', header[0]);
             Assert.Equal((byte)'I', header[1]);
             Assert.Equal((byte)'F', header[2]);

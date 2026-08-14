@@ -11,7 +11,7 @@ public static class ContainerDefinitionPostgreSqlExtensions
         /// <returns>A PostgreSQL container definition using the <c>postgres:17</c> image.</returns>
         public static PostgreSqlContainerDefinition CreatePostgreSql()
         {
-            return CreatePostgreSql(ImageSource.FromRegistry("postgres:17"));
+            return CreatePostgreSql(ImageSource.FromRegistry("postgres:18"));
         }
 
         /// <summary>Creates a definition pre-configured for a PostgreSQL container (port 5432, a default password, and a readiness wait strategy).</summary>

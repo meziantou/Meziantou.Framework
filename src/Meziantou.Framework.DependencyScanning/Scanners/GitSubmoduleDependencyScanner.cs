@@ -303,7 +303,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
                 var entryStart = stream.Position;
                 if (!TryReadExactly(stream, entryHeader))
                 {
-                    result = [];
+                    result = [with(StringComparer.Ordinal)];
                     return false;
                 }
 
@@ -313,7 +313,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
                 {
                     if (!TryReadExactly(stream, extendedFlagsBuffer))
                     {
-                        result = [];
+                        result = [with(StringComparer.Ordinal)];
                         return false;
                     }
                 }
@@ -324,7 +324,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
                     var value = stream.ReadByte();
                     if (value < 0)
                     {
-                        result = [];
+                        result = [with(StringComparer.Ordinal)];
                         return false;
                     }
 
@@ -340,7 +340,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
                 {
                     if (!TryReadExactly(stream, paddingBuffer[..paddingByteCount]))
                     {
-                        result = [];
+                        result = [with(StringComparer.Ordinal)];
                         return false;
                     }
                 }
@@ -357,12 +357,12 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         }
         catch (IOException)
         {
-            result = [];
+            result = [with(StringComparer.Ordinal)];
             return false;
         }
         catch (UnauthorizedAccessException)
         {
-            result = [];
+            result = [with(StringComparer.Ordinal)];
             return false;
         }
     }

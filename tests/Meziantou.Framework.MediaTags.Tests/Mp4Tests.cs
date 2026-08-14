@@ -199,6 +199,29 @@ public sealed class Mp4Tests
     }
 
     [Fact]
+    public void ReadTags_TruncatedAtom_DoesNotReadZeroPaddedData()
+    {
+        var valueBytes = Encoding.UTF8.GetBytes("A");
+        var dataPayload = new byte[8 + valueBytes.Length];
+        BinaryPrimitives.WriteUInt32BigEndian(dataPayload, 1);
+        valueBytes.CopyTo(dataPayload, 8);
+
+        var titleAtomType = Encoding.Latin1.GetString([0xA9, (byte)'n', (byte)'a', (byte)'m']);
+        var titleAtom = CreateAtom(titleAtomType, CreateAtom("data", dataPayload));
+        var ilstAtom = CreateAtom("ilst", titleAtom);
+        var metaPayload = new byte[4 + ilstAtom.Length];
+        ilstAtom.CopyTo(metaPayload, 4);
+        var mp4 = CreateAtom("moov", CreateAtom("udta", CreateAtom("meta", metaPayload)));
+        BinaryPrimitives.WriteUInt32BigEndian(mp4, (uint)(mp4.Length + 4));
+
+        using var stream = new MemoryStream(mp4);
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp4);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+    }
+
+    [Fact]
     public void ReadTags_FreeformReplayGain_NullTerminatedText()
     {
         using var stream = new MemoryStream(CreateMp4WithFreeformTags([

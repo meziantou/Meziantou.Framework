@@ -42,6 +42,9 @@ internal sealed class Mp4Atom
                 size = endPosition - atomPosition;
             }
 
+            if (size < headerSize || atomPosition > endPosition - size)
+                break;
+
             var atom = new Mp4Atom
             {
                 Position = atomPosition,
@@ -57,6 +60,9 @@ internal sealed class Mp4Atom
                 // For 'meta' atom, skip 4-byte version/flags
                 if (type == "meta")
                 {
+                    if (dataSize < 4)
+                        break;
+
                     stream.Seek(4, SeekOrigin.Current);
                     atom.Children.AddRange(ReadAtoms(stream, atomEnd, recurse: true));
                 }
@@ -68,7 +74,8 @@ internal sealed class Mp4Atom
             else if (dataSize > 0 && dataSize <= 10 * 1024 * 1024) // Max 10MB for single atom data
             {
                 atom.Data = new byte[dataSize];
-                stream.ReadAtLeast(atom.Data, (int)dataSize, throwOnEndOfStream: false);
+                if (stream.ReadAtLeast(atom.Data, (int)dataSize, throwOnEndOfStream: false) < dataSize)
+                    break;
             }
 
             stream.Position = atomEnd;

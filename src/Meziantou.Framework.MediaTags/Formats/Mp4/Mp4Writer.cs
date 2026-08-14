@@ -12,7 +12,8 @@ internal sealed class Mp4Writer : IMediaTagWriter
 
             // Read the entire file to get the atom structure
             var fileData = new byte[inputStream.Length];
-            inputStream.ReadAtLeast(fileData, fileData.Length, throwOnEndOfStream: false);
+            if (inputStream.ReadAtLeast(fileData, fileData.Length, throwOnEndOfStream: false) < fileData.Length)
+                return MediaTagResult.Failure(MediaTagError.CorruptFile, "File ended before all MP4 data could be read.");
 
             // Parse atoms
             inputStream.Position = 0;

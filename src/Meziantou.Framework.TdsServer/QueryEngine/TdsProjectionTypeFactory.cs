@@ -8,7 +8,7 @@ internal static class TdsProjectionTypeFactory
     private static readonly AssemblyBuilder AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Meziantou.Framework.Tds.QueryEngine.Projections"), AssemblyBuilderAccess.Run);
     private static readonly ModuleBuilder ModuleBuilder = AssemblyBuilder.DefineDynamicModule("Projections");
     private static readonly Lock Lock = new();
-    private static readonly Dictionary<string, Type> Types = [];
+    private static readonly Dictionary<string, Type> Types = [with(StringComparer.Ordinal)];
 
     public static Type GetProjectionType(IReadOnlyList<TdsProjectionMember> members)
     {

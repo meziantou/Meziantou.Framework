@@ -62,9 +62,23 @@
       "enabled": false
     },
     {
+      "matchPackageNames": [ "Microsoft.OpenApi" ],
+      "matchFileNames": [
+        "src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj"
+      ],
+      "matchUpdateTypes": [ "major" ],
+      "enabled": false
+    },
+    {
       "matchPackageNames": [ "Microsoft.Windows.CsWin32" ],
       "groupName": "cswin32",
       "enabled": true
+    },
+    {
+      "matchFileNames": [
+        "tests/Meziantou.Framework.SyntaxHighlighting.Tests/DockerfileHighlighterTests.cs"
+      ],
+      "enabled": false
     }
   ]
 }

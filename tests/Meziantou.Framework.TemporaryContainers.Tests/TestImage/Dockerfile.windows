@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/windows/servercore:ltsc2022
+FROM mcr.microsoft.com/windows/servercore:ltsc2022@sha256:0df5b1c3394198525f426e379b61d8f09ce60cb449b1cb4cab163e965672cd67
 
 RUN powershell -NoProfile -Command "New-Item -ItemType Directory -Path C:/www -Force | Out-Null; Set-Content -Path C:/www/index.html -Value 'hello from container' -NoNewline"
 

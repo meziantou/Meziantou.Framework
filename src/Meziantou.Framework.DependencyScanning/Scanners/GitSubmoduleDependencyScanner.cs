@@ -264,7 +264,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         var indexPath = Path.Combine(gitDirectory, "index");
         if (!File.Exists(indexPath))
         {
-            result = [];
+            result = [with(StringComparer.Ordinal)];
             return false;
         }
 
@@ -275,20 +275,20 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
             Span<byte> header = stackalloc byte[12];
             if (!TryReadExactly(stream, header))
             {
-                result = [];
+                result = [with(StringComparer.Ordinal)];
                 return false;
             }
 
             if (!header[..4].SequenceEqual("DIRC"u8))
             {
-                result = [];
+                result = [with(StringComparer.Ordinal)];
                 return false;
             }
 
             var version = BinaryPrimitives.ReadUInt32BigEndian(header[4..8]);
             if (version is not 2 and not 3)
             {
-                result = [];
+                result = [with(StringComparer.Ordinal)];
                 return false;
             }
 

@@ -94,4 +94,19 @@ public sealed class WavTests
         var result = MediaFile.ReadTags(stream, MediaFormat.Wav);
         Assert.False(result.IsSuccess);
     }
+
+    [Fact]
+    public void ReadTags_TruncatedInfoChunk_DoesNotReadZeroPaddedData()
+    {
+        using var stream = new MemoryStream([
+            (byte)'R', (byte)'I', (byte)'F', (byte)'F', 25, 0, 0, 0, (byte)'W', (byte)'A', (byte)'V', (byte)'E',
+            (byte)'L', (byte)'I', (byte)'S', (byte)'T', 16, 0, 0, 0, (byte)'I', (byte)'N', (byte)'F', (byte)'O',
+            (byte)'I', (byte)'N', (byte)'A', (byte)'M', 4, 0, 0, 0, (byte)'A',
+        ]);
+
+        var result = MediaFile.ReadTags(stream, MediaFormat.Wav);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value.Title);
+    }
 }

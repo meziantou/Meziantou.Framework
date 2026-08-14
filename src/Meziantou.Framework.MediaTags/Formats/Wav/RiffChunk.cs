@@ -23,6 +23,8 @@ internal sealed class RiffChunk
 
             var id = Encoding.ASCII.GetString(header[..4]);
             var size = BinaryPrimitives.ReadInt32LittleEndian(header[4..]);
+            if (size < 0)
+                break;
 
             var chunk = new RiffChunk
             {
@@ -31,25 +33,30 @@ internal sealed class RiffChunk
                 DataPosition = stream.Position,
             };
 
+            if (chunk.DataPosition > endPosition - size)
+                break;
+
+            var chunkEnd = chunk.DataPosition + size;
             if (id == "LIST")
             {
                 // LIST chunk has a 4-byte type followed by sub-chunks
                 if (size >= 4)
                 {
-                    stream.ReadAtLeast(listType, 4, throwOnEndOfStream: false);
+                    if (stream.ReadAtLeast(listType, 4, throwOnEndOfStream: false) < 4)
+                        break;
+
                     chunk.Id = "LIST-" + Encoding.ASCII.GetString(listType);
-                    chunk.SubChunks.AddRange(ReadChunks(stream, chunk.DataPosition + size));
+                    chunk.SubChunks.AddRange(ReadChunks(stream, chunkEnd));
                 }
             }
             else if (size > 0 && size <= 10 * 1024 * 1024)
             {
                 chunk.Data = new byte[size];
-                stream.ReadAtLeast(chunk.Data, size, throwOnEndOfStream: false);
+                if (stream.ReadAtLeast(chunk.Data, size, throwOnEndOfStream: false) < size)
+                    break;
             }
-            else
-            {
-                stream.Seek(size, SeekOrigin.Current);
-            }
+
+            stream.Position = chunkEnd;
 
             // Chunks are padded to even byte boundaries
             if (size % 2 != 0 && stream.Position < endPosition)

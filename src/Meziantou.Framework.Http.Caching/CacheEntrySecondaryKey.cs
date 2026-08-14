@@ -121,7 +121,7 @@ internal readonly struct CacheEntrySecondaryKey : IEquatable<CacheEntrySecondary
         foreach (var header in _headers.OrderBy(h => h.Key, StringComparer.OrdinalIgnoreCase))
         {
             hash.Add(header.Key, StringComparer.OrdinalIgnoreCase);
-            hash.Add(header.Value);
+            hash.Add(header.Value, StringComparer.Ordinal);
         }
 
         return hash.ToHashCode();

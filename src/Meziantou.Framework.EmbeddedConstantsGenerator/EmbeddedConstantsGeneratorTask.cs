@@ -9,6 +9,7 @@ internal static class EmbeddedConstantsGeneratorTask
 
     private static readonly HashSet<string> CSharpKeywords =
     [
+        with(StringComparer.Ordinal),
         "abstract",
         "as",
         "base",

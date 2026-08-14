@@ -72,7 +72,7 @@ public abstract class SchemaBase : IYamlSchema
 
         if (nodeEvent is Scalar scalar)
         {
-            TryParse(scalar, false, out var tag, out _);
+            _ = TryParse(scalar, decodeValue: false, out var tag, out _);
             return tag;
         }
 

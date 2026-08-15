@@ -82,7 +82,7 @@ await using var mock = new HttpClientMock(configureLogging: null, configureServi
 
 You can forward logs to the xUnit `ITestOutputHelper`. This can be useful to debug issues with the mock.
 
-1. Add the `Meziantou.Extensions.Logging.Xunit` package to your project
+1. Add the `Meziantou.Extensions.Logging.Xunit.v3` package to your project
 1. ````c#
    using var loggerProvider = new XUnitLoggerProvider(testOutputHelper);
    await using var mock = new HttpClientMock(loggerProvider);

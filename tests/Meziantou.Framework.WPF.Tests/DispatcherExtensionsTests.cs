@@ -20,7 +20,7 @@ public sealed class DispatcherExtensionsTests
 
         while (Volatile.Read(ref dispatcher) is null)
         {
-            await Task.Delay(1);
+            await Task.Delay(1, TestContext.Current.CancellationToken);
         }
 
         var currentDispatcher = Volatile.Read(ref dispatcher);

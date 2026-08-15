@@ -16,7 +16,7 @@
   <ItemGroup>
     <PackageReference Include="MongoDB.Driver" Version="3.10.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
-    <PackageReference Include="StackExchange.Redis" Version="3.0.25" />
+    <PackageReference Include="StackExchange.Redis" Version="3.1.0" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
   </ItemGroup>
 

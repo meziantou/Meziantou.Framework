@@ -12,7 +12,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     private static readonly string[] NullableWarningIds = ["CS8600", "CS8601", "CS8602", "CS8603", "CS8604", "CS8618"];
 
     private static readonly ImmutableDictionary<string, ReportDiagnostic> NullableWarningsAsErrors =
-        NullableWarningIds.ToImmutableDictionary(static id => id, static _ => ReportDiagnostic.Error);
+        NullableWarningIds.ToImmutableDictionary(id => id, static _ => ReportDiagnostic.Error, StringComparer.Ordinal);
 
     [Fact]
     public void GeneratorDoesNotReportNullableWarningsForMissingNullableInitOnlyProperties()

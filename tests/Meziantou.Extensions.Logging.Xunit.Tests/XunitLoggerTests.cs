@@ -24,6 +24,6 @@ public sealed class XunitLoggerTests
         logger.LogInformation("Test");
         logger.LogInformation("Test {Sample}", "value");
 
-        Assert.Equal(["Test", "Test value"], output.Logs);
+        Assert.Equal(["Test", "Test value"], output.Logs, StringComparer.Ordinal);
     }
 }

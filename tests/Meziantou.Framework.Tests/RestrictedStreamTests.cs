@@ -553,8 +553,12 @@ public sealed class RestrictedStreamTests
         var buffer = new byte[3];
 
         var result = restrictedStream.BeginRead(buffer, 0, 3, null, null);
+        result.AsyncWaitHandle.WaitOne();
+        var bytesRead = restrictedStream.EndRead(result);
 
         Assert.NotNull(result);
+        Assert.Equal(3, bytesRead);
+        Assert.Equal([1, 2, 3], buffer);
     }
 
     [Fact]
@@ -588,7 +592,7 @@ public sealed class RestrictedStreamTests
         var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowReading = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
         var buffer = new byte[3];
-        var asyncResult = baseStream.BeginRead(buffer, 0, 3, null, null);
+        var asyncResult = restrictedStream.BeginRead(buffer, 0, 3, null, null);
         asyncResult.AsyncWaitHandle.WaitOne();
 
         var bytesRead = restrictedStream.EndRead(asyncResult);
@@ -617,8 +621,11 @@ public sealed class RestrictedStreamTests
         var data = new byte[] { 1, 2, 3 };
 
         var result = restrictedStream.BeginWrite(data, 0, 3, null, null);
+        result.AsyncWaitHandle.WaitOne();
+        restrictedStream.EndWrite(result);
 
         Assert.NotNull(result);
+        Assert.Equal([1, 2, 3], baseStream.ToArray());
     }
 
     [Fact]
@@ -652,7 +659,7 @@ public sealed class RestrictedStreamTests
         var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowWriting = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
         var data = new byte[] { 1, 2, 3 };
-        var asyncResult = baseStream.BeginWrite(data, 0, 3, null, null);
+        var asyncResult = restrictedStream.BeginWrite(data, 0, 3, null, null);
         asyncResult.AsyncWaitHandle.WaitOne();
 
         restrictedStream.EndWrite(asyncResult);
@@ -786,7 +793,7 @@ public sealed class RestrictedStreamTests
         var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowReading = true, MaxReadLength = 5 };
         using var restrictedStream = new RestrictedStream(baseStream, options);
         var buffer = new byte[10];
-        var asyncResult = baseStream.BeginRead(buffer, 0, 5, null, null);
+        var asyncResult = restrictedStream.BeginRead(buffer, 0, 5, null, null);
         asyncResult.AsyncWaitHandle.WaitOne();
 
         var bytesRead = restrictedStream.EndRead(asyncResult);

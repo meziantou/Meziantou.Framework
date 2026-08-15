@@ -190,21 +190,21 @@ public class EnumerableTests
     public void IsDistinct_MultipleNulls()
     {
         var array = new[] { "a", null, null };
-        Assert.False(array.IsDistinct());
+        Assert.False(array.IsDistinct(StringComparer.Ordinal));
     }
 
     [Fact]
     public void IsDistinct_MultipleIdenticalValues()
     {
         var array = new[] { "a", "b", "a" };
-        Assert.False(array.IsDistinct());
+        Assert.False(array.IsDistinct(StringComparer.Ordinal));
     }
 
     [Fact]
     public void IsDistinct()
     {
         var array = new[] { "a", "b", "c" };
-        Assert.True(array.IsDistinct());
+        Assert.True(array.IsDistinct(StringComparer.Ordinal));
     }
 
     [Fact]

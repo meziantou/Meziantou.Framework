@@ -83,7 +83,7 @@ public sealed class PathGetFullPathOnFullPathCodeFixProvider : CodeFixProvider
             invocationOperation.Arguments.Length >= 1)
         {
             var argument = invocationOperation.Arguments[0].Value;
-            if (SymbolEqualityComparer.Default.Equals(UnwrapImplicitConversion(argument).Type, fullPathType) &&
+            if (SymbolEqualityComparer.Default.Equals(FullPathAnalyzerCommon.UnwrapToFullPath(argument, fullPathType).Type, fullPathType) &&
                 argument.Syntax is ExpressionSyntax fullPathExpression)
             {
                 replacementExpression = fullPathExpression;
@@ -93,15 +93,5 @@ public sealed class PathGetFullPathOnFullPathCodeFixProvider : CodeFixProvider
 
         replacementExpression = null!;
         return false;
-    }
-
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
     }
 }

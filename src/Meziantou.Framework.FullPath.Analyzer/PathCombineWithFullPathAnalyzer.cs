@@ -10,8 +10,8 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathCombineWithFullPathDiagnosticId,
-        title: "Use '/' operator instead of Path.Combine",
-        messageFormat: "Use FullPath '/' operations instead of calling Path.Combine",
+        title: "Use '/' operator instead of Path.Combine or Path.Join",
+        messageFormat: "Use FullPath '/' operations instead of calling Path.{0}",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);
@@ -35,7 +35,7 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
     private static void Analyze(OperationAnalysisContext context, FullPathContext analyzerContext)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
-        if (invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" } targetMethod)
+        if (invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" or "Join" } targetMethod)
             return;
 
         if (!SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, analyzerContext.PathType))
@@ -46,7 +46,7 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
             if (!analyzerContext.IsFullPathType(argument.Value))
                 continue;
 
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation()));
+            context.ReportDiagnostic(Diagnostic.Create(Descriptor, invocationOperation.Syntax.GetLocation(), targetMethod.Name));
             return;
         }
     }

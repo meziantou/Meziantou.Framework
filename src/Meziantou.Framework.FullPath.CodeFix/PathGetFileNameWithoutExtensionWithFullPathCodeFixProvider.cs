@@ -83,7 +83,7 @@ public sealed class PathGetFileNameWithoutExtensionWithFullPathCodeFixProvider :
             SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) &&
             invocationOperation.Arguments.Length == 1)
         {
-            var fullPathOperation = UnwrapImplicitConversion(invocationOperation.Arguments[0].Value);
+            var fullPathOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[0].Value, fullPathType);
             if (SymbolEqualityComparer.Default.Equals(fullPathOperation.Type, fullPathType) &&
                 fullPathOperation.Syntax is ExpressionSyntax fullPathExpression)
             {
@@ -97,15 +97,5 @@ public sealed class PathGetFileNameWithoutExtensionWithFullPathCodeFixProvider :
 
         replacementExpression = null!;
         return false;
-    }
-
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
-    {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
-        {
-            operation = conversionOperation.Operand;
-        }
-
-        return operation;
     }
 }

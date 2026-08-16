@@ -18,16 +18,39 @@ internal sealed class FullPathContext(Compilation compilation)
 
     public bool IsFullPathType(IOperation operation)
     {
-        return IsFullPathType(UnwrapImplicitConversion(operation).Type);
+        return IsFullPathType(UnwrapToFullPath(operation).Type);
     }
 
-    private static IOperation UnwrapImplicitConversion(IOperation operation)
+    public IOperation UnwrapToFullPath(IOperation operation)
     {
-        while (operation is IConversionOperation conversionOperation && conversionOperation.IsImplicit)
+        return FullPathAnalyzerCommon.UnwrapToFullPath(operation, FullPathType);
+    }
+
+    /// <summary>
+    /// Walks <paramref name="operation"/> and reports whether it contains at least one <see langword="return"/> with a
+    /// value, and whether every such value is a <c>FullPath</c>. Nested local functions are not walked.
+    /// </summary>
+    public void AnalyzeReturnOperations(IOperation operation, ref bool hasReturnValue, ref bool allReturnsAreFullPath)
+    {
+        if (!allReturnsAreFullPath)
+            return;
+
+        if (operation is ILocalFunctionOperation)
+            return;
+
+        if (operation is IReturnOperation returnOperation && returnOperation.ReturnedValue is not null)
         {
-            operation = conversionOperation.Operand;
+            hasReturnValue = true;
+            if (!IsFullPathType(returnOperation.ReturnedValue))
+            {
+                allReturnsAreFullPath = false;
+                return;
+            }
         }
 
-        return operation;
+        foreach (var childOperation in operation.ChildOperations)
+        {
+            AnalyzeReturnOperations(childOperation, ref hasReturnValue, ref allReturnsAreFullPath);
+        }
     }
 }

@@ -1,3 +1,6 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
+
 namespace Meziantou.Framework.Analyzers.FullPath;
 
 internal static class FullPathAnalyzerCommon
@@ -13,5 +16,82 @@ internal static class FullPathAnalyzerCommon
     internal const string PathChangeExtensionWithFullPathDiagnosticId = "MFFP0009";
     internal const string PathGetRelativePathWithFullPathDiagnosticId = "MFFP0010";
     internal const string MethodShouldReturnFullPathDiagnosticId = "MFFP0011";
+    internal const string PropertyShouldReturnFullPathDiagnosticId = "MFFP0012";
+    internal const string VariableShouldBeFullPathDiagnosticId = "MFFP0013";
+    internal const string ParameterShouldBeFullPathDiagnosticId = "MFFP0014";
 
+    /// <summary>
+    /// Returns the underlying <c>FullPath</c> operation of an expression that produces its string representation,
+    /// or the operation itself when it is not such an expression.
+    /// </summary>
+    /// <remarks>
+    /// Handles the implicit conversion to <see cref="string"/>, the explicit cast, the <c>Value</c> and <c>RawValue</c>
+    /// properties, and <c>ToString()</c>, so that <c>fullPath</c>, <c>(string)fullPath</c>, <c>fullPath.Value</c>,
+    /// <c>fullPath.RawValue</c>, and <c>fullPath.ToString()</c> are all recognized.
+    /// </remarks>
+    internal static IOperation UnwrapToFullPath(IOperation operation, ITypeSymbol? fullPathType)
+    {
+        while (true)
+        {
+            switch (operation)
+            {
+                case IConversionOperation conversionOperation when conversionOperation.IsImplicit || IsFullPathType(conversionOperation.Operand.Type, fullPathType):
+                    operation = conversionOperation.Operand;
+                    break;
+
+                case IPropertyReferenceOperation { Instance: not null } propertyReferenceOperation
+                    when propertyReferenceOperation.Property.Name is "Value" or "RawValue" && IsFullPathType(propertyReferenceOperation.Instance.Type, fullPathType):
+                    operation = propertyReferenceOperation.Instance;
+                    break;
+
+                case IInvocationOperation { Instance: not null } invocationOperation
+                    when invocationOperation.TargetMethod is { Name: "ToString", Parameters.IsEmpty: true } && IsFullPathType(invocationOperation.Instance.Type, fullPathType):
+                    operation = invocationOperation.Instance;
+                    break;
+
+                default:
+                    return operation;
+            }
+        }
+    }
+
+    private static bool IsFullPathType(ITypeSymbol? typeSymbol, ITypeSymbol? fullPathType)
+    {
+        return SymbolEqualityComparer.Default.Equals(typeSymbol, fullPathType);
+    }
+
+    /// <summary>
+    /// Determines whether the declared type of a member can be changed without breaking a base type or an interface.
+    /// </summary>
+    internal static bool CanChangeDeclaredType(ISymbol symbol)
+    {
+        if (symbol.IsOverride || symbol.IsVirtual || symbol.IsAbstract)
+            return false;
+
+        var containingType = symbol.ContainingType;
+        if (containingType is null)
+            return true;
+
+        foreach (var interfaceType in containingType.AllInterfaces)
+        {
+            foreach (var interfaceMember in interfaceType.GetMembers())
+            {
+                if (SymbolEqualityComparer.Default.Equals(containingType.FindImplementationForInterfaceMember(interfaceMember), symbol))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    internal static Location? GetFirstSourceLocation(ISymbol symbol)
+    {
+        foreach (var candidateLocation in symbol.Locations)
+        {
+            if (candidateLocation.IsInSource)
+                return candidateLocation;
+        }
+
+        return null;
+    }
 }

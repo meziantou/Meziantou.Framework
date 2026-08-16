@@ -3,6 +3,9 @@ using StackExchange.Redis;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
+// Each test starts its own container. Running them all at once saturates the CI agents and makes the container
+// runtimes fail transiently (image pull races, port collisions), so this class does not run in parallel.
+[TestClass(DisableParallelization = true)]
 public sealed class RedisContainerTests
 {
     private static void SkipOnNonCompatibleEnvironments()
@@ -55,22 +58,8 @@ public sealed class RedisContainerTests
         Assert.Equal("value", value.ToString());
     }
 
-    private static async Task<RedisContainer> StartWithRetryAsync(RedisContainerDefinition definition)
+    private static Task<RedisContainer> StartWithRetryAsync(RedisContainerDefinition definition)
     {
-        const int MaxRetries = 3;
-        for (var i = 0; ; i++)
-        {
-            var container = definition.CreateContainer();
-            try
-            {
-                await container.StartAsync(XunitCancellationToken);
-                return container;
-            }
-            catch when (i < MaxRetries)
-            {
-                await container.DisposeAsync();
-                await Task.Delay(1000, XunitCancellationToken);
-            }
-        }
+        return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken);
     }
 }

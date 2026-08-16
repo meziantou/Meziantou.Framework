@@ -4,6 +4,9 @@ using MongoDB.Driver;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
+// Each test starts its own container. Running them all at once saturates the CI agents and makes the container
+// runtimes fail transiently (image pull races, port collisions), so this class does not run in parallel.
+[TestClass(DisableParallelization = true)]
 public sealed class MongoDbContainerTests
 {
     private static void SkipOnNonCompatibleEnvironments()
@@ -46,8 +49,7 @@ public sealed class MongoDbContainerTests
     public async Task GetConnectionString_JournalingDisabledByDefault()
     {
         SkipOnNonCompatibleEnvironments();
-        await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
-        await container.StartAsync(XunitCancellationToken);
+        await using var container = await StartWithRetryAsync(ContainerDefinition.CreateMongoDb());
 
         Assert.Contains("j=false", container.GetConnectionString());
     }
@@ -57,8 +59,7 @@ public sealed class MongoDbContainerTests
     {
         SkipOnNonCompatibleEnvironments();
 
-        await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
-        await container.StartAsync(XunitCancellationToken);
+        await using var container = await StartWithRetryAsync(ContainerDefinition.CreateMongoDb());
 
         Assert.Contains("j=true", container.GetConnectionString(enableJournaling: true));
     }
@@ -94,22 +95,8 @@ public sealed class MongoDbContainerTests
         Assert.Equal(1, count);
     }
 
-    private static async Task<MongoDbContainer> StartWithRetryAsync(MongoDbContainerDefinition definition)
+    private static Task<MongoDbContainer> StartWithRetryAsync(MongoDbContainerDefinition definition)
     {
-        const int MaxRetries = 3;
-        for (var i = 0; ; i++)
-        {
-            var container = definition.CreateContainer();
-            try
-            {
-                await container.StartAsync(XunitCancellationToken);
-                return container;
-            }
-            catch when (i < MaxRetries)
-            {
-                await container.DisposeAsync();
-                await Task.Delay(1000, XunitCancellationToken);
-            }
-        }
+        return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken);
     }
 }

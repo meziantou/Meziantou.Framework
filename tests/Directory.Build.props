@@ -3,6 +3,8 @@
 
   <PropertyGroup>
     <EnableCodeCoverage>false</EnableCodeCoverage>
+    <!-- The assertions come from the project reference below, not from the package the SDK adds by default -->
+    <EnableMeziantouAssertions>false</EnableMeziantouAssertions>
     <!-- Platform-specific test projects skip all their tests on the other platforms -->
     <MinimumExpectedTests>0</MinimumExpectedTests>
     <IncludeDefaultTestReferences Condition="'$(IncludeDefaultTestReferences)' == ''">true</IncludeDefaultTestReferences>

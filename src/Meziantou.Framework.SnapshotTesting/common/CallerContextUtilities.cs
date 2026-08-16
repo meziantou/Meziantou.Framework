@@ -69,7 +69,7 @@ internal static partial class CallerContextUtilities
             return null;
 
         if (TryResolveSourceFilePath(sourceFilePath, out var resolvedPath))
-            return FullPath.FromPath(resolvedPath);
+            return resolvedPath;
 
         return fallbackToOriginalPath ? FullPath.FromPath(sourceFilePath) : null;
     }

@@ -21,6 +21,12 @@ internal static class FullPathAnalyzerCommon
     internal const string ParameterShouldBeFullPathDiagnosticId = "MFFP0014";
     internal const string CompareFullPathAsStringDiagnosticId = "MFFP0015";
     internal const string FullPathEqualsStringDiagnosticId = "MFFP0016";
+    internal const string RedundantPathPredicateDiagnosticId = "MFFP0018";
+    internal const string RedundantFromPathDiagnosticId = "MFFP0019";
+    internal const string FromPathWithFileSystemInfoDiagnosticId = "MFFP0020";
+    internal const string UseIsEmptyDiagnosticId = "MFFP0021";
+    internal const string UseCreateParentDirectoryDiagnosticId = "MFFP0022";
+    internal const string DirectoryGetParentWithFullPathDiagnosticId = "MFFP0023";
 
     /// <summary>
     /// Returns the underlying <c>FullPath</c> operation of an expression that produces its string representation,

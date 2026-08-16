@@ -68,6 +68,12 @@ System.IO.File.WriteAllText(filePath, content);
 | `MFFP0014` | FullPath | Declare the parameter as FullPath instead of string | Info | ✔️ |
 | `MFFP0015` | FullPath | Compare FullPath values instead of their string representation | Warning | ✔️ |
 | `MFFP0016` | FullPath | FullPath.Equals with a string argument is always false | Warning | ✔️ |
+| `MFFP0018` | FullPath | Path.IsPathRooted and Path.IsPathFullyQualified are redundant on a FullPath | Info | ✔️ |
+| `MFFP0019` | FullPath | Simplify the FullPath.FromPath call | Info | ✔️ |
+| `MFFP0020` | FullPath | Use FullPath.FromFileSystemInfo instead of FullPath.FromPath | Info | ✔️ |
+| `MFFP0021` | FullPath | Use FullPath.IsEmpty | Info | ✔️ |
+| `MFFP0022` | FullPath | Use FullPath.CreateParentDirectory instead of Directory.CreateDirectory | Info | ✔️ |
+| `MFFP0023` | FullPath | Use FullPath.Parent instead of Directory.GetParent | Info | ✔️ |
 <!-- analyzer-rules -->
 
 # Additional resources

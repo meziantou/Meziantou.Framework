@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+
+    <!-- The assembly opts out of parallelization on GitHub Actions (XunitCollectionBehavior.cs) -->
+    <EnableXunitFullParallelization>false</EnableXunitFullParallelization>
   </PropertyGroup>
 
   <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />

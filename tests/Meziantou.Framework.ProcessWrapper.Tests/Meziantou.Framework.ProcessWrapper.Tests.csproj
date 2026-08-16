@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
+
+    <!-- The tests swap the static ProcessWrapper.DefaultProcessFactory, so they cannot run concurrently -->
+    <EnableXunitFullParallelization>false</EnableXunitFullParallelization>
   </PropertyGroup>
 
   <ItemGroup>

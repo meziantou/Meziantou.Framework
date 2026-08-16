@@ -114,4 +114,12 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0028` | Assertions | Use Assert.NotEmpty instead of Assert.True(collection.Any()) | Warning | ✔️ |
 | `MFAS0029` | Assertions | Use Assert.Empty instead of Assert.False(collection.Any()) | Warning | ✔️ |
 | `MFAS0030` | Assertions | Use Assert.Empty or Assert.NotEmpty instead of a count assertion | Warning | ✔️ |
+| `MFAS0031` | Assertions | Use Assert.Equal instead of Assert.True(a == b) | Warning | ✔️ |
+| `MFAS0032` | Assertions | Use Assert.NotEqual instead of Assert.True(a != b) | Warning | ✔️ |
+| `MFAS0033` | Assertions | Use Assert.Equal instead of Assert.True(a.Equals(b)) | Warning | ✔️ |
+| `MFAS0034` | Assertions | Use Assert.NotEqual instead of Assert.False(a.Equals(b)) | Warning | ✔️ |
+| `MFAS0035` | Assertions | Use Assert.Equal instead of Assert.True(actual.SequenceEqual(expected)) | Warning | ✔️ |
+| `MFAS0036` | Assertions | Use Assert.NotEqual instead of Assert.False(actual.SequenceEqual(expected)) | Warning | ✔️ |
+| `MFAS0037` | Assertions | Use Assert.Same instead of Assert.True(ReferenceEquals(a, b)) | Warning | ✔️ |
+| `MFAS0038` | Assertions | Use Assert.NotSame instead of Assert.False(ReferenceEquals(a, b)) | Warning | ✔️ |
 <!-- analyzer-rules -->

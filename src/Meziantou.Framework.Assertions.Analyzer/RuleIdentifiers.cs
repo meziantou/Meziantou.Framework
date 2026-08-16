@@ -40,4 +40,13 @@ internal static class RuleIdentifiers
     internal const string UseNotEqualForSequenceEqualDiagnosticId = "MFAS0036";
     internal const string UseSameForReferenceEqualsDiagnosticId = "MFAS0037";
     internal const string UseNotSameForReferenceEqualsDiagnosticId = "MFAS0038";
+    internal const string UseInRangeDiagnosticId = "MFAS0039";
+    internal const string UseNotInRangeDiagnosticId = "MFAS0040";
+    internal const string UseProperSubsetDiagnosticId = "MFAS0041";
+    internal const string UseNotProperSubsetDiagnosticId = "MFAS0042";
+    internal const string UseProperSupersetDiagnosticId = "MFAS0043";
+    internal const string UseNotProperSupersetDiagnosticId = "MFAS0044";
+    internal const string UseNegatedConditionAssertionDiagnosticId = "MFAS0045";
+    internal const string UseIsTypeForRuntimeTypeDiagnosticId = "MFAS0046";
+    internal const string UseIsNotTypeForRuntimeTypeDiagnosticId = "MFAS0047";
 }

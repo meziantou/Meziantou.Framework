@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
@@ -34,6 +35,15 @@ public partial class Assert
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new EqualWithToleranceAssertionError<decimal>(expected, actual, tolerance, message, actualExpression, expectedExpression)));
+    }
+
+    public static void Equal<T>(T expected, T actual, T tolerance, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+        where T : IFloatingPoint<T>
+    {
+        if (expected.Equals(actual) || T.Abs(expected - actual) <= tolerance)
+            return;
+
+        throw new AssertionException(ErrorFormatter.Format(new EqualWithToleranceAssertionError<T>(expected, actual, tolerance, message, actualExpression, expectedExpression)));
     }
 
     [OverloadResolutionPriority(-2)]

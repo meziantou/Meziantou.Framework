@@ -60,6 +60,7 @@ Assertion helpers for .NET tests.
 - `DoesNotRaise`: Asserts a specific event is not raised.
 - `DoesNotRaiseAny`: Asserts no compatible event is raised.
 - `Fail`: Fails the test with a custom message.
+- `XunitSkip`: Skips the running xunit test with the specified reason.
 
 ## Use as the default `Assert` class
 

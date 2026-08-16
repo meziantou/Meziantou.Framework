@@ -320,6 +320,8 @@ namespace Meziantou.Framework.Assertions
         public static object IsType(System.Type expectedType, object? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
         public static T IsAssignableTo<T>(object? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
         public static object IsAssignableTo(System.Type expectedType, object? actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+        public static void XunitSkip(string reason) { }
     }
 
     public sealed class AssertionException : System.Exception

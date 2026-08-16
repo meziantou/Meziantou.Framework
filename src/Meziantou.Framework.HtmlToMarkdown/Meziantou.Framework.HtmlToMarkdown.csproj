@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.6.0" />
+    <PackageReference Include="AngleSharp" Version="1.7.0" />
   </ItemGroup>
 
 </Project>

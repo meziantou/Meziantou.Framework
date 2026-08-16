@@ -2,8 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-
-    <IsPackable>false</IsPackable>
+    <RootNamespace>Meziantou.AspNetCore.Components.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

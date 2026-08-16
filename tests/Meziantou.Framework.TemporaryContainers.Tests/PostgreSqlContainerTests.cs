@@ -58,22 +58,8 @@ public sealed class PostgreSqlContainerTests
         Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
     }
 
-    private static async Task<PostgreSqlContainer> StartWithRetryAsync(PostgreSqlContainerDefinition definition)
+    private static Task<PostgreSqlContainer> StartWithRetryAsync(PostgreSqlContainerDefinition definition)
     {
-        const int MaxRetries = 3;
-        for (var i = 0; ; i++)
-        {
-            var container = definition.CreateContainer();
-            try
-            {
-                await container.StartAsync(XunitCancellationToken);
-                return container;
-            }
-            catch when (i < MaxRetries)
-            {
-                await container.DisposeAsync();
-                await Task.Delay(1000, XunitCancellationToken);
-            }
-        }
+        return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken);
     }
 }

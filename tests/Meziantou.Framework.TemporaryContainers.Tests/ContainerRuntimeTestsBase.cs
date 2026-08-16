@@ -281,18 +281,27 @@ public abstract class ContainerRuntimeTestsBase
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
         var readyLineFound = false;
+        var logs = new List<string>();
         using var logsCts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
-        logsCts.CancelAfter(TimeSpan.FromSeconds(30));
-        await foreach (var log in container.GetLogsAsync(logsCts.Token))
+        logsCts.CancelAfter(TimeSpan.FromSeconds(60));
+        try
         {
-            if (log.Message.Contains("SERVER READY", StringComparison.Ordinal))
+            await foreach (var log in container.GetLogsAsync(logsCts.Token))
             {
-                readyLineFound = true;
-                break;
+                logs.Add(log.Message);
+                if (log.Message.Contains("SERVER READY", StringComparison.Ordinal))
+                {
+                    readyLineFound = true;
+                    break;
+                }
             }
         }
+        catch (OperationCanceledException) when (!XunitCancellationToken.IsCancellationRequested)
+        {
+            // The timeout expired. The assertion below reports the logs received so far.
+        }
 
-        Assert.True(readyLineFound);
+        Assert.True(readyLineFound, "The logs do not contain 'SERVER READY':\n" + string.Join('\n', logs));
     }
 
     [Fact]
@@ -408,12 +417,25 @@ public abstract class ContainerRuntimeTestsBase
         }
         finally
         {
+            await DeleteReusedContainerAsync(reuseId);
+        }
+    }
+
+    /// <summary>Removes the container kept alive by <see cref="ContainerDefinition.ReuseId"/>. Failures are reported but never thrown, so the cleanup cannot hide the failure under test.</summary>
+    private async Task DeleteReusedContainerAsync(string reuseId)
+    {
+        try
+        {
             var cleanupDefinition = CreateHttpServerDefinition();
             cleanupDefinition.ReuseId = reuseId;
             var cleanup = cleanupDefinition.CreateContainer();
             await cleanup.EnsureCreatedAsync(XunitCancellationToken);
             await cleanup.DeleteAsync(XunitCancellationToken);
             await cleanup.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            TestContext.Current.TestOutputHelper?.WriteLine($"Failed to delete the container reused by '{reuseId}': {ex}");
         }
     }
 
@@ -462,20 +484,32 @@ public abstract class ContainerRuntimeTestsBase
         definition.Ports.Add(8080);
     }
 
-    private static async Task<string> GetStringWithRetryAsync(HttpClient client, Uri uri, CancellationToken cancellationToken)
+    /// <summary>Polls the container until it serves a response. A container that just reported readiness may still refuse connections for a short while, and the connection itself may be reset while the runtime sets up the port forwarding.</summary>
+    private static async Task<string> GetStringWithRetryAsync(Uri uri, CancellationToken cancellationToken)
     {
-        const int MaxAttempts = 60;
-        for (var attempt = 1; ; attempt++)
+        var timeout = TimeSpan.FromSeconds(60);
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(timeout);
+
+        Exception? lastFailure = null;
+        while (!cts.IsCancellationRequested)
         {
             try
             {
-                return await client.GetStringAsync(uri, cancellationToken);
+                return await client.GetStringAsync(uri, cts.Token);
             }
-            catch (HttpRequestException) when (attempt < MaxAttempts)
+            catch (Exception ex) when (ex is HttpRequestException or IOException or SocketException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(250, cancellationToken);
+                lastFailure = ex;
+
+                // The test cancellation token is used on purpose: the delay must not be interrupted when the timeout expires.
+                await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
             }
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        throw new TimeoutException($"'{uri}' did not serve a response within {timeout}.", lastFailure);
     }
 
     [Fact]
@@ -508,26 +542,11 @@ public abstract class ContainerRuntimeTestsBase
         }
 
         var port = container.GetMappedPort(8080);
-        using var client = new HttpClient();
-        return await GetStringWithRetryAsync(client, new Uri($"http://127.0.0.1:{port}/"), XunitCancellationToken);
+        return await GetStringWithRetryAsync(new Uri($"http://127.0.0.1:{port}/"), XunitCancellationToken);
     }
 
-    protected static async Task<TemporaryContainer> StartWithRetryAsync(ContainerDefinition definition)
+    protected static Task<TemporaryContainer> StartWithRetryAsync(ContainerDefinition definition)
     {
-        const int MaxRetries = 3;
-        for (var i = 0; ; i++)
-        {
-            var container = definition.CreateContainer();
-            try
-            {
-                await container.StartAsync(XunitCancellationToken);
-                return container;
-            }
-            catch when (i < MaxRetries)
-            {
-                await container.DisposeAsync();
-                await Task.Delay(1000, XunitCancellationToken);
-            }
-        }
+        return ContainerTestHelper.StartWithRetryAsync(definition, XunitCancellationToken);
     }
 }

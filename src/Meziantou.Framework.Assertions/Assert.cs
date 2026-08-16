@@ -28,6 +28,7 @@ public static partial class Assert
 
     /// <summary>Fails the assertion with the specified message.</summary>
     /// <param name="message">The message that describes the failure.</param>
+    [DoesNotReturn]
     public static void Fail(string? message = null)
     {
         throw new AssertionException(ErrorFormatter.Format(new FailAssertionError(message)));

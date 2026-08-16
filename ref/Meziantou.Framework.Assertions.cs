@@ -87,6 +87,7 @@ namespace Meziantou.Framework.Assertions
         public static bool Equals(object? a, object? b) => throw null;
         [System.Obsolete("This is an override of Object.ReferenceEquals(). Use Assert.Same() instead.", true)]
         public static bool ReferenceEquals(object? a, object? b) => throw null;
+        [System.Diagnostics.CodeAnalysis.DoesNotReturn]
         public static void Fail(string? message = null) { }
         public static void Distinct<T>(System.ReadOnlySpan<T> actual, System.Collections.Generic.IEqualityComparer<T>? comparer = null, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }
         public static void Distinct(string actual, string? message = null, [System.Runtime.CompilerServices.CallerArgumentExpression("actual")] string? actualExpression = null) { }

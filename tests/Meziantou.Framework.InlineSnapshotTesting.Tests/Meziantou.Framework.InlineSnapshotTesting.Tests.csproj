@@ -2,9 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-
-    <!-- The assembly opts out of parallelization on GitHub Actions (XunitCollectionBehavior.cs) -->
-    <EnableXunitFullParallelization>false</EnableXunitFullParallelization>
   </PropertyGroup>
 
   <ItemGroup>

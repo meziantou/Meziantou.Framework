@@ -3,6 +3,8 @@
 
   <PropertyGroup>
     <EnableCodeCoverage>false</EnableCodeCoverage>
+    <!-- Platform-specific test projects skip all their tests on the other platforms -->
+    <MinimumExpectedTests>0</MinimumExpectedTests>
     <IncludeDefaultTestReferences Condition="'$(IncludeDefaultTestReferences)' == ''">true</IncludeDefaultTestReferences>
     <DefineConstants Condition="'$(GITHUB_ACTIONS)' == 'true'">$(DefineConstants);GITHUB_ACTIONS</DefineConstants>
     <TestTfmsInParallel Condition="'$(GITHUB_ACTIONS)' == 'true' AND $([MSBuild]::IsOsPlatform('Windows'))">false</TestTfmsInParallel>

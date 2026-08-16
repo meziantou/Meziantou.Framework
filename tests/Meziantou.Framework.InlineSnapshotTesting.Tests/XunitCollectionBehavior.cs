@@ -1,3 +1,3 @@
 #if GITHUB_ACTIONS
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
+[assembly: Parallelization(Mode = ParallelMode.None)]
 #endif

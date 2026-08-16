@@ -11,7 +11,7 @@ namespace Meziantou.Framework.DnsProxy.Tests;
 
 public sealed class DnsProxyIntegrationTests
 {
-    [Fact]
+    [Fact(DisableParallelization = true)]
     public async Task Proxy_StartsWithCustomConfiguration_AndProcessesRequests()
     {
         const int DnsPort = 0;
@@ -43,9 +43,9 @@ public sealed class DnsProxyIntegrationTests
 
         try
         {
-            using var factory = new WebApplicationFactory<DnsProxyProgram>();
+            await using var factory = new WebApplicationFactory<DnsProxyProgram>();
             var webClient = factory.CreateClient();
-            var html = await webClient.GetStringAsync("/");
+            var html = await webClient.GetStringAsync("/", XunitCancellationToken);
 
             Assert.Contains($"<span class='mono'>DnsPort</span>: {DnsPort}", html);
             Assert.Contains($"<span class='mono'>HttpPort</span>: {HttpPort}", html);

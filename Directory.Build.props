@@ -29,6 +29,11 @@
     <DefineConstants Condition="$(InvariantGlobalization) == 'true'">$(DefineConstants);INVARIANT_GLOBALIZATION_MODE_ENABLED</DefineConstants>
   </PropertyGroup>
 
+  <!-- Keep the xUnit.net defaults instead of the full parallelization the SDK enables, as the CI agents are resource-constrained -->
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <EnableXunitFullParallelization>false</EnableXunitFullParallelization>
+  </PropertyGroup>
+
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
   <PropertyGroup Condition="!$(TargetFramework.StartsWith('$(LatestTargetFramework)'))">
     <NoWarn>$(NoWarn);nullable;IDE0370</NoWarn>

@@ -25,17 +25,17 @@ public sealed class DnsClientIntegrationTests
 
     private static Task<DnsResponseMessage> QueryWithRetryAsync(DnsClient client, string domain, DnsQueryType queryType, DnsQueryClass queryClass = DnsQueryClass.IN)
     {
-        return XUnitStaticHelpers.Retry(() => client.QueryAsync(domain, queryType, queryClass, XUnitStaticHelpers.XunitCancellationToken));
+        return Retry(() => client.QueryAsync(domain, queryType, queryClass, XunitCancellationToken));
     }
 
     private static Task<DnsResponseMessage> ReverseLookupWithRetryAsync(DnsClient client, IPAddress ipAddress)
     {
-        return XUnitStaticHelpers.Retry(() => client.ReverseLookupAsync(ipAddress, XUnitStaticHelpers.XunitCancellationToken));
+        return Retry(() => client.ReverseLookupAsync(ipAddress, XunitCancellationToken));
     }
 
     private static Task<DnsResponseMessage> SendWithRetryAsync(DnsClient client, DnsQueryMessage query)
     {
-        return XUnitStaticHelpers.Retry(() => client.SendAsync(query, XUnitStaticHelpers.XunitCancellationToken));
+        return Retry(() => client.SendAsync(query, XunitCancellationToken));
     }
 
     private static async Task<DnsResponseMessage> QueryWithFallbackAsync(

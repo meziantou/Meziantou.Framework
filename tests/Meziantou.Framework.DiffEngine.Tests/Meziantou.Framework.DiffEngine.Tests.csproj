@@ -1,6 +1,9 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+
+    <!-- The tests set environment variables, so they cannot run concurrently -->
+    <EnableXunitFullParallelization>false</EnableXunitFullParallelization>
   </PropertyGroup>
 
   <ItemGroup>

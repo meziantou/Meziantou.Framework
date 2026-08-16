@@ -1,4 +1,9 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <PropertyGroup>
+    <IsTraversal>true</IsTraversal>
+  </PropertyGroup>
+
+
   <ItemGroup>
     <ProjectReference Include="../**/*.*proj" Exclude="../eng/*.*proj" />
   </ItemGroup>

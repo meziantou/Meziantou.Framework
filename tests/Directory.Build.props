@@ -3,15 +3,12 @@
 
   <PropertyGroup>
     <EnableCodeCoverage>false</EnableCodeCoverage>
-    <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
+    <!-- Platform-specific test projects skip all their tests on the other platforms -->
+    <MinimumExpectedTests>0</MinimumExpectedTests>
     <IncludeDefaultTestReferences Condition="'$(IncludeDefaultTestReferences)' == ''">true</IncludeDefaultTestReferences>
     <DefineConstants Condition="'$(GITHUB_ACTIONS)' == 'true'">$(DefineConstants);GITHUB_ACTIONS</DefineConstants>
     <TestTfmsInParallel Condition="'$(GITHUB_ACTIONS)' == 'true' AND $([MSBuild]::IsOsPlatform('Windows'))">false</TestTfmsInParallel>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)xunit.runner.json" CopyToOutputDirectory="PreserveNewest" Visible="false" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(IncludeDefaultTestReferences)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)../common/XUnitStaticHelpers.cs" Link="XUnitStaticHelpers.cs" Condition="'$(MSBuildProjectExtension)' == '.csproj'" Visible="false" />
@@ -20,8 +17,6 @@
     <Using Include="TestUtilities.XUnitStaticHelpers" Static="true" />
 
     <ProjectReference Include="$(MSBuildThisFileDirectory)../src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
 
     <Using Include="Meziantou.Framework.Assertions" />
     <Using Include="Meziantou.Framework.Assertions.Assert" Alias="Assert" />

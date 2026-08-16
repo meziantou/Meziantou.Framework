@@ -55,7 +55,7 @@ public sealed class DnsServerIntegrationTests
         try
         {
             using var client = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp);
-            var response = await XUnitStaticHelpers.Retry(() => client.QueryAsync("test.example.com", ClientDns.Query.DnsQueryType.A, XUnitStaticHelpers.XunitCancellationToken));
+            var response = await XUnitStaticHelpers.Retry(() => client.QueryAsync("test.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken));
 
             Assert.True(response.Header.IsResponse);
             Assert.Equal(ClientDns.Response.DnsResponseCode.NoError, response.Header.ResponseCode);

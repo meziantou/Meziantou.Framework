@@ -4,6 +4,38 @@ namespace Meziantou.Framework.TemporaryContainers.Tests;
 internal static class ContainerTestHelper
 {
     private const int MaxStartAttempts = 4;
+    private const int MaxRunAttempts = 3;
+
+    /// <summary>Runs a test body, retrying it from scratch when the container runtime command line itself fails. Assertion failures are never retried, so a real defect still fails the test on the first attempt.</summary>
+    public static async Task RunWithRuntimeRetryAsync(Func<Task> testBody, CancellationToken cancellationToken)
+    {
+        var failures = new List<Exception>();
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await testBody();
+                return;
+            }
+            catch (Exception ex) when (IsRuntimeFailure(ex))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                failures.Add(ex);
+
+                if (attempt >= MaxRunAttempts)
+                    throw new AggregateException($"The container runtime failed on all {MaxRunAttempts} attempts.", failures);
+
+                await Task.Delay(TimeSpan.FromSeconds(attempt), cancellationToken);
+            }
+        }
+    }
+
+    private static bool IsRuntimeFailure(Exception exception) => exception switch
+    {
+        ProcessExecutionException => true,
+        AggregateException aggregate => aggregate.InnerExceptions.Any(IsRuntimeFailure),
+        _ => false,
+    };
 
     public static Task<TemporaryContainer> StartWithRetryAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {

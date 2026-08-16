@@ -379,18 +379,24 @@ public abstract class ContainerRuntimeTestsBase
     }
 
     [Fact]
-    public async Task Lifecycle_RestartStopAndDelete()
+    public Task Lifecycle_RestartStopAndDelete()
     {
-        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+        // Restarting a container makes the runtime rebuild its port forwarding, which fails transiently on CI agents
+        // (rootless podman reports 'pasta failed with exit code 1: netlink: Unexpected sequence number'), so the whole
+        // test is retried. Only container runtime failures are retried: an assertion failure still fails immediately.
+        return ContainerTestHelper.RunWithRuntimeRetryAsync(async () =>
+        {
+            await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
-        await container.RestartAsync(XunitCancellationToken);
-        Assert.True(container.GetMappedPort(8080) > 0);
+            await container.RestartAsync(XunitCancellationToken);
+            Assert.True(container.GetMappedPort(8080) > 0);
 
-        await container.StopAsync(XunitCancellationToken);
-        Assert.Equal(ContainerState.Exited, (await container.InspectAsync(XunitCancellationToken)).State);
+            await container.StopAsync(XunitCancellationToken);
+            Assert.Equal(ContainerState.Exited, (await container.InspectAsync(XunitCancellationToken)).State);
 
-        await container.DeleteAsync(XunitCancellationToken);
-        Assert.False(await container.ExistsAsync(XunitCancellationToken));
+            await container.DeleteAsync(XunitCancellationToken);
+            Assert.False(await container.ExistsAsync(XunitCancellationToken));
+        }, XunitCancellationToken);
     }
 
     [Fact]

@@ -33,6 +33,7 @@ Assertion helpers for .NET tests.
 - `Matches`: Asserts text matches a regular expression.
 - `DoesNotMatch`: Asserts text does not match a regular expression.
 - `All`: Asserts all items in a collection satisfy an assertion.
+- `DoesNotAll`: Asserts at least one item in a collection does not satisfy a predicate.
 - `Collection`: Asserts collection items match a list of inspectors.
 - `Distinct`: Asserts all items in a sequence are distinct.
 - `NotDistinct`: Asserts a sequence contains duplicate items.
@@ -86,7 +87,7 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0001` | Assertions | Pass the expected value before the actual value | Warning | ✔️ |
 | `MFAS0002` | Assertions | Use Assert.Same instead of Assert.ReferenceEquals | Error | ✔️ |
 | `MFAS0003` | Assertions | Do not use Assert.IsType with static or abstract types | Error | ✔️ |
-| `MFAS0004` | Assertions | Use Assert.Empty for zero count checks | Warning | ✔️ |
+| `MFAS0004` | Assertions | Use Assert.Empty or Assert.NotEmpty for zero count checks | Warning | ✔️ |
 | `MFAS0005` | Assertions | Use specialized count assertions | Warning | ✔️ |
 | `MFAS0006` | Assertions | Use Assert.Null for null comparisons | Warning | ✔️ |
 | `MFAS0007` | Assertions | Use Assert.NotNull for null comparisons | Warning | ✔️ |

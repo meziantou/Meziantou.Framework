@@ -111,4 +111,7 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0025` | Assertions | Use Assert.DoesNotContain instead of Assert.False(collection.Any(...)) | Warning | ✔️ |
 | `MFAS0026` | Assertions | Use Assert.All instead of Assert.True(collection.All(...)) | Warning | ✔️ |
 | `MFAS0027` | Assertions | Use Assert.DoesNotAll instead of Assert.False(collection.All(...)) | Warning | ✔️ |
+| `MFAS0028` | Assertions | Use Assert.NotEmpty instead of Assert.True(collection.Any()) | Warning | ✔️ |
+| `MFAS0029` | Assertions | Use Assert.Empty instead of Assert.False(collection.Any()) | Warning | ✔️ |
+| `MFAS0030` | Assertions | Use Assert.Empty or Assert.NotEmpty instead of a count assertion | Warning | ✔️ |
 <!-- analyzer-rules -->

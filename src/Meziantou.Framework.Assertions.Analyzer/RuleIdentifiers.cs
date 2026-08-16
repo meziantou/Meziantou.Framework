@@ -49,4 +49,8 @@ internal static class RuleIdentifiers
     internal const string UseNegatedConditionAssertionDiagnosticId = "MFAS0045";
     internal const string UseIsTypeForRuntimeTypeDiagnosticId = "MFAS0046";
     internal const string UseIsNotTypeForRuntimeTypeDiagnosticId = "MFAS0047";
+    internal const string AwaitAssertionDiagnosticId = "MFAS0048";
+    internal const string AwaitAssertionArgumentDiagnosticId = "MFAS0049";
+    internal const string ConstantAssertionDiagnosticId = "MFAS0050";
+    internal const string UseFailAssertionDiagnosticId = "MFAS0051";
 }

@@ -2,9 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <!-- Each test of a runtime test class starts its own container. Running them all at once saturates the CI agents and makes the
-         container runtimes fail transiently (image pull races, port collisions), so only one test per class runs at a time. -->
-    <XunitParallelizationMode>Collections</XunitParallelizationMode>
   </PropertyGroup>
 
   <ItemGroup>

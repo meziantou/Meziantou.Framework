@@ -13,6 +13,7 @@ public sealed class AssertApiTests
         var methods = typeof(AssertionsAssert).GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
             .Where(method => !method.IsSpecialName)
             .Where(method => !IsObjectGuardMethod(method))
+            .Where(method => !IsSkipMethod(method))
             .OrderBy(method => method.Name, StringComparer.Ordinal)
             .ThenBy(method => string.Join(",", method.GetParameters().Select(parameter => parameter.ParameterType.FullName)), StringComparer.Ordinal);
 
@@ -45,5 +46,11 @@ public sealed class AssertApiTests
     {
         return string.Equals(method.Name, nameof(Equals), StringComparison.Ordinal) ||
                string.Equals(method.Name, nameof(ReferenceEquals), StringComparison.Ordinal);
+    }
+
+    // Skip methods do not report an assertion failure, so they take a skip reason instead of an additional message.
+    private static bool IsSkipMethod(MethodInfo method)
+    {
+        return string.Equals(method.Name, nameof(AssertionsAssert.XunitSkip), StringComparison.Ordinal);
     }
 }

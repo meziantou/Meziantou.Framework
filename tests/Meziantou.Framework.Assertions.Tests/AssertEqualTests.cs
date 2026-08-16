@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;
@@ -129,6 +130,40 @@ public sealed class AssertEqualTests
         var tolerance = 0.2m;
 
         AssertionsAssert.Equal(expected, actual, tolerance);
+    }
+
+    [Fact]
+    public void NFloatTolerance_Success()
+    {
+        var expected = (NFloat)1;
+        var actual = (NFloat)1.1;
+        var tolerance = (NFloat)0.2;
+
+        AssertionsAssert.Equal(expected, actual, tolerance);
+    }
+
+    [Fact]
+    public void NFloatTolerance_Fails()
+    {
+        var expected = (NFloat)1;
+        var actual = (NFloat)1.3;
+        var tolerance = (NFloat)0.2;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, tolerance), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: 1
+            Actual:   1.3
+            Tolerance: 0.2
+            """);
+    }
+
+    [Fact]
+    public void NFloatTolerance_AllowsSameSpecialValues()
+    {
+        AssertionsAssert.Equal(NFloat.NaN, NFloat.NaN, (NFloat)0);
+        AssertionsAssert.Equal(NFloat.PositiveInfinity, NFloat.PositiveInfinity, (NFloat)0);
     }
 
     [Fact]
@@ -783,6 +818,33 @@ public sealed class AssertEqualTests
         AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqual(expected, actual, tolerance, "custom message"), """
             Assert.NotEqual() assertion failed.
             Message: custom message
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: 1
+            Actual:       1.1
+            Tolerance: 0.2
+            """);
+    }
+
+    [Fact]
+    public void NotEqualWithNFloatTolerance_Success()
+    {
+        var expected = (NFloat)1;
+        var actual = (NFloat)1.3;
+        var tolerance = (NFloat)0.2;
+
+        AssertionsAssert.NotEqual(expected, actual, tolerance);
+    }
+
+    [Fact]
+    public void NotEqualWithNFloatTolerance_Fails()
+    {
+        var expected = (NFloat)1;
+        var actual = (NFloat)1.1;
+        var tolerance = (NFloat)0.2;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqual(expected, actual, tolerance), """
+            Assert.NotEqual() assertion failed.
             Expected expression: expected
             Actual expression:   actual
             Not expected: 1

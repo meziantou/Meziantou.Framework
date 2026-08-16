@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
@@ -33,6 +34,15 @@ public partial class Assert
         if (expected == actual || Math.Abs(expected - actual) <= tolerance)
         {
             throw new AssertionException(ErrorFormatter.Format(new NegativeEqualWithToleranceAssertionError<decimal>(expected, actual, tolerance, message, actualExpression, expectedExpression)));
+        }
+    }
+
+    public static void NotEqual<T>(T expected, T actual, T tolerance, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+        where T : IFloatingPoint<T>
+    {
+        if (expected.Equals(actual) || T.Abs(expected - actual) <= tolerance)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NegativeEqualWithToleranceAssertionError<T>(expected, actual, tolerance, message, actualExpression, expectedExpression)));
         }
     }
 

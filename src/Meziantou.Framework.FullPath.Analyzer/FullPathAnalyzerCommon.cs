@@ -19,6 +19,9 @@ internal static class FullPathAnalyzerCommon
     internal const string PropertyShouldReturnFullPathDiagnosticId = "MFFP0012";
     internal const string VariableShouldBeFullPathDiagnosticId = "MFFP0013";
     internal const string ParameterShouldBeFullPathDiagnosticId = "MFFP0014";
+    internal const string CompareFullPathAsStringDiagnosticId = "MFFP0015";
+    internal const string FullPathEqualsStringDiagnosticId = "MFFP0016";
+    internal const string StartsWithInsteadOfIsChildOfDiagnosticId = "MFFP0017";
 
     /// <summary>
     /// Returns the underlying <c>FullPath</c> operation of an expression that produces its string representation,

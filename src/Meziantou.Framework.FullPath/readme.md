@@ -66,6 +66,9 @@ System.IO.File.WriteAllText(filePath, content);
 | `MFFP0012` | FullPath | Declare the property as FullPath instead of string | Info | ✔️ |
 | `MFFP0013` | FullPath | Declare the variable as FullPath instead of string | Info | ✔️ |
 | `MFFP0014` | FullPath | Declare the parameter as FullPath instead of string | Info | ✔️ |
+| `MFFP0015` | FullPath | Compare FullPath values instead of their string representation | Warning | ✔️ |
+| `MFFP0016` | FullPath | FullPath.Equals with a string argument is always false | Warning | ✔️ |
+| `MFFP0017` | FullPath | Use FullPath.IsChildOf instead of StartsWith | Warning | ✔️ |
 <!-- analyzer-rules -->
 
 # Additional resources
